@@ -352,6 +352,23 @@ def test_add_from_raises_on_a_missing_key(library, monkeypatch):
     assert "FREESOUND_API_KEY" in str(exc.value) and "http" in str(exc.value)
 
 
+def test_a_per_request_key_reaches_the_source(monkeypatch):
+    """Keys resolve through ocracy's facade kit: explicit, then a bound key, then env."""
+    from ocracy.kit import using_credentials
+
+    from foley.sources.elevenlabs.adapter import ElevenLabsAdapter
+    from foley.sources.freesound.adapter import FreesoundAdapter
+
+    monkeypatch.setenv("FREESOUND_API_KEY", "server-key")
+    fs = FreesoundAdapter(http=lambda *a, **k: pytest.fail("no HTTP"))
+    assert fs.api_key == "server-key"
+    with using_credentials(freesound="user-key", elevenlabs="user-el-key"):
+        assert fs.api_key == "user-key"
+        assert FreesoundAdapter(api_key="explicit").api_key == "explicit"
+        monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
+        assert ElevenLabsAdapter().api_key == "user-el-key"
+
+
 def test_a_backend_failure_is_chained_into_generation_error(library, paid_source):
     adapter = paid_source("flaky", amount=0.01)
 

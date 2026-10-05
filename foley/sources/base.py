@@ -47,6 +47,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 __all__ = [
     "check_prompt_influence",
     "native_adherence",
+    "resolve_source_key",
     "SourceConfigurationError",
     "ClipSpec",
     "CorpusAdapter",
@@ -136,6 +137,29 @@ def native_adherence(
         lo, hi = float(coerce["lo"]), float(coerce["hi"])
         return lo + float(prompt_influence) * (hi - lo)
     raise ValueError(f"{config['name']}: unknown prompt_influence coerce {coerce!r}")
+
+
+def resolve_source_key(config: dict, api_key: Optional[str] = None) -> str:
+    """A source's API token: ``api_key``, else a bound key, else its env var.
+
+    The chain is the fleet's facade kit (``ocracy.kit.resolve_credential``), so a
+    server can bind a per-request key with ``ocracy.kit.using_credentials(<source>=key)``.
+    ``config["auth"]`` names the env var and the sign-up URL.
+
+    Raises:
+        SourceConfigurationError: Naming the env var and where to get a key.
+    """
+    from ocracy.kit import resolve_credential
+
+    name, auth = config["name"], config["auth"]
+    return resolve_credential(
+        name,
+        api_key=api_key,
+        env_var=auth["env_var"],
+        guidance={name: {"get_key_url": auth.get("apply_url")}},
+        error=SourceConfigurationError,
+        hint="Or pass api_key=.",
+    )
 
 
 @dataclass

@@ -22,9 +22,11 @@ the MCP and agent paths, which call it) and :func:`foley.add_from` go through he
    request is served from the :class:`~foley.stores.GenerationsCache` without calling
    the provider, and every paid response is written there **before** QC or ingest.
 
-The translator is the fleet's ``param_map`` translator (copied from ocracy's
-``translation.py`` per the facade-design skill, with the ``note`` policy and
-meaning-carrying raise that thorwhalen/ocracy#7 proposes for the shared kit).
+The translator is the fleet's facade kit (``ocracy.kit.make_translator``,
+thorwhalen/ocracy#7): foley's ``supported_affordances`` become an identity
+``param_map``, the vocabulary's defaults mark what was "not asked for", its
+``carries_meaning`` flags become ``always_raise``, and the duration window becomes a
+clamp spec.
 """
 
 from __future__ import annotations
@@ -34,6 +36,8 @@ import json
 import warnings
 from dataclasses import dataclass, field
 from typing import Optional
+
+from ocracy.kit import UnsupportedParameter, make_translator
 
 from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES
 from .base import check_prompt_influence
@@ -55,21 +59,30 @@ __all__ = [
 UNSUPPORTED_POLICIES = ("raise", "warn", "note")
 
 
-class UnsupportedParameter(ValueError):
-    """Raised when a backend cannot honour a parameter and the policy says not to drop it."""
+#: Where a ``warn`` points: the caller of :func:`foley.generate` / :func:`foley.add_from`
+#: (translate_affordances -> plan_generation -> the façade -> the caller).
+_WARN_STACKLEVEL = 4
 
 
-def _carries_meaning(name: str, config: dict, vocabulary: dict) -> bool:
-    aff = vocabulary.get(name)
-    return bool(aff and aff.carries_meaning) or name in config.get(
-        "meaning_carrying", ()
-    )
-
-
-def _is_default(name: str, value, vocabulary: dict) -> bool:
-    aff = vocabulary.get(name)
-    return value is None or (
-        aff is not None and aff.default is not None and value == aff.default
+def _translator(config: dict, vocabulary: dict):
+    """The kit translator for one source: its supported list, window and policy."""
+    nd = config.get("native_defaults") or {}
+    param_map = {name: {} for name in config.get("supported_affordances") or ()}
+    if "duration" in param_map:
+        param_map["duration"] = {
+            "min": nd.get("duration_min_s"),
+            "max": nd.get("duration_max_s"),
+            "out_of_range": "clamp",
+            "unit": "s",
+        }
+    meaning = [n for n, aff in vocabulary.items() if aff.carries_meaning]
+    return make_translator(
+        param_map,
+        backend=config.get("name", "this source"),
+        on_unsupported="warn" if config.get("on_unsupported_param") == "warn" else "note",
+        always_raise=(*meaning, *config.get("meaning_carrying", ())),
+        vocabulary={n: aff.default for n, aff in vocabulary.items()},
+        stacklevel=_WARN_STACKLEVEL,
     )
 
 
@@ -104,57 +117,8 @@ def translate_affordances(
     vocabulary = GENERATION_AFFORDANCES if vocabulary is None else vocabulary
     # Validated here, at planning time, so a bad value never reserves budget.
     check_prompt_influence(affordances.get("prompt_influence"))
-    supported = set(config.get("supported_affordances") or ())
-    source = config.get("name", "this source")
-    kept: dict = {}
-    notes: "list[str]" = []
-    for name, value in affordances.items():
-        if name in supported:
-            kept[name] = value
-            continue
-        if _is_default(name, value, vocabulary):
-            continue  # not asked for: nothing to drop
-        kind = "not supported by" if name in vocabulary else "not a parameter of"
-        msg = f"{name}={value!r} is {kind} {source}; dropped"
-        policy = on_unsupported
-        if policy is None:
-            if _carries_meaning(name, config, vocabulary):
-                policy = "raise"
-            else:
-                policy = (
-                    "warn" if config.get("on_unsupported_param") == "warn" else "note"
-                )
-        if policy == "raise":
-            raise UnsupportedParameter(
-                f"{name}={value!r} is {kind} {source}, and dropping it would change what "
-                "you get. Remove it, pick a backend that supports it, or pass "
-                "on_unsupported='warn' to drop it with a note."
-            )
-        if policy == "warn":
-            warnings.warn(msg, UserWarning, stacklevel=4)
-        notes.append(msg)
-    _clamp_duration(kept, config, notes)
-    return kept, notes
-
-
-def _clamp_duration(kept: dict, config: dict, notes: list) -> None:
-    """Clamp ``kept['duration']`` to the source's declared window, with a note."""
-    duration = kept.get("duration")
-    if duration is None:
-        return
-    nd = config.get("native_defaults") or {}
-    lo, hi = nd.get("duration_min_s"), nd.get("duration_max_s")
-    clamped = float(duration)
-    if lo is not None:
-        clamped = max(float(lo), clamped)
-    if hi is not None:
-        clamped = min(float(hi), clamped)
-    if clamped != float(duration):
-        notes.append(
-            f"duration={duration!r} s is outside {config.get('name')}'s "
-            f"[{lo}, {hi}] s window; clamped to {clamped:g} s"
-        )
-        kept["duration"] = clamped
+    result = _translator(config, vocabulary)(affordances, on_unsupported=on_unsupported)
+    return result.kwargs, result.notes
 
 
 def request_digest(

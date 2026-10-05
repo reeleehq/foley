@@ -36,6 +36,7 @@ from ..base import (
     SourceConfigurationError,
     generated_license,
     native_adherence,
+    resolve_source_key,
 )
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -154,15 +155,8 @@ class ElevenLabsAdapter:
 
     @property
     def api_key(self) -> str:
-        """The ElevenLabs token (from the constructor or ``$ELEVENLABS_API_KEY``)."""
-        env_var = self.config["auth"]["env_var"]
-        key = self._api_key if self._api_key is not None else os.environ.get(env_var)
-        if not key:
-            raise SourceConfigurationError(
-                f"ElevenLabs needs an API token: set ${env_var} or pass api_key=. "
-                f"Get one at {self.config['auth'].get('apply_url', 'https://elevenlabs.io')}."
-            )
-        return key
+        """The ElevenLabs token (constructor, else a bound key, else ``$ELEVENLABS_API_KEY``)."""
+        return resolve_source_key(self.config, self._api_key)
 
     def _headers(self) -> dict:
         return {self.config["auth"]["header"]: self.api_key}
