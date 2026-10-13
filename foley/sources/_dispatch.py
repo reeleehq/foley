@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import warnings
 from dataclasses import dataclass, field
 from typing import Optional
@@ -117,6 +118,9 @@ def translate_affordances(
     vocabulary = GENERATION_AFFORDANCES if vocabulary is None else vocabulary
     # Validated here, at planning time, so a bad value never reserves budget.
     check_prompt_influence(affordances.get("prompt_influence"))
+    duration = affordances.get("duration")
+    if duration is not None and not math.isfinite(float(duration)):
+        raise ValueError(f"duration must be a finite number of seconds, got {duration!r}")
     result = _translator(config, vocabulary)(affordances, on_unsupported=on_unsupported)
     return result.kwargs, result.notes
 

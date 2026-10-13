@@ -702,3 +702,28 @@ def test_a_bad_prompt_influence_is_refused_before_any_budget_is_reserved(
             foley.generate("a door creaks", backend="sixty", library=library,
                            prompt_influence=bad)
     assert adapter.calls == 0 and budget.spent_usd == 0
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+def test_a_non_finite_duration_is_refused_before_any_budget_is_reserved(
+    paid_source, library, bad
+):
+    from foley.cost import spend_scope
+
+    adapter = paid_source("sixty", amount=0.60)
+    with spend_scope(Budget(max_usd=1.0)) as budget:
+        with pytest.raises(ValueError, match="duration"):
+            foley.generate("a door creaks", backend="sixty", library=library,
+                           duration=bad)
+    assert adapter.calls == 0 and budget.spent_usd == 0
+
+
+def test_a_nan_estimate_is_unknown_cost_and_never_poisons_the_budget():
+    budget = Budget(max_usd=0.0)
+    with pytest.raises(CostApprovalRequired):
+        budget.reserve(float("nan"), what="x")
+    approved = Budget(max_usd=0.0, approve_unknown_cost=True)
+    approved.reserve(float("nan"), what="x")
+    assert approved.spent_usd == 0
+    with pytest.raises(BudgetExceeded):
+        approved.check(0.01, what="y")
