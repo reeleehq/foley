@@ -382,11 +382,11 @@ def _find_stream(
     llm=None,
 ) -> "Iterator[Candidate]":
     """The streaming body of :func:`find` (``find(stream=False)`` == ``list(_find_stream(...))``)."""
-    from ..cost import check, scoped_iter
+    from ..cost import check, default_max_usd, scoped_iter
 
     use = intended_use_for(intended_use)
     budget = budget or Budget(
-        max_refine_loops=max_refine_loops, max_usd=_default_max_usd(llm)
+        max_refine_loops=max_refine_loops, max_usd=default_max_usd(llm)
     )
 
     def run():
@@ -431,21 +431,6 @@ def _find_stream(
 
     # The budget is in force only while the stream runs, never between items.
     yield from scoped_iter(run, budget)
-
-
-def _default_max_usd(llm: "Optional[str]") -> float:
-    """The cap of a :func:`find` run given no budget: higher for a paid LLM the caller chose.
-
-    The provider is the one named by ``llm=`` or ``$FOLEY_LLM`` (the free default never
-    resolves to a paid one); see :data:`foley.cost.DEFAULT_MAX_USD_BY_LLM` (#88).
-    """
-    import os
-
-    from ..cost import DEFAULT_MAX_USD, DEFAULT_MAX_USD_BY_LLM
-    from .llm import LLM_ENV_VAR
-
-    chosen = llm or os.environ.get(LLM_ENV_VAR) or None
-    return DEFAULT_MAX_USD_BY_LLM.get(chosen, DEFAULT_MAX_USD)
 
 
 def estimate_find_usd(

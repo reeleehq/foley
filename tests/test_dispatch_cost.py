@@ -236,7 +236,7 @@ def test_paid_llm_calls_count_toward_the_cap(monkeypatch, library):
 def test_a_chosen_paid_llm_gets_a_default_cap_that_fits_a_default_run(monkeypatch, library):
     """#88: find(llm='anthropic') with the defaults is not refused before its first call."""
     from foley.agent import llm
-    from foley.agent.tools import _default_max_usd
+    from foley.cost import default_max_usd as _default_max_usd
     from foley.cost import DEFAULT_MAX_USD
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
@@ -250,6 +250,15 @@ def test_a_chosen_paid_llm_gets_a_default_cap_that_fits_a_default_run(monkeypatc
         foley.find(DEMO, library=library, llm="anthropic", k=20)
     monkeypatch.setenv("FOLEY_LLM", "anthropic")
     assert _default_max_usd(None) == 3.0  # the operator's choice counts too
+    # score() has one cap for the whole run, sized the same way (refused at $3, not $1).
+    with pytest.raises(BudgetExceeded, match=r"\$3\.00 cap"):
+        foley.score([DEMO], library=library, llm="anthropic", max_events=10)
+    # So has the MCP server, for its lifetime, when its operator chose Claude.
+    from foley.agent import mcp
+
+    mcp._STATE["budget"], mcp._STATE["max_usd"] = None, None
+    assert mcp._server_budget().max_usd == 3.0
+    mcp._STATE["budget"] = None
 
 
 def test_a_paid_rung_is_charged_its_actual_usage(monkeypatch):
