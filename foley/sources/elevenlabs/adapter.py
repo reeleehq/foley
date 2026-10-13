@@ -25,7 +25,9 @@ shared ingest pipeline.
 
 from __future__ import annotations
 
+import io
 import os
+import wave
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
@@ -40,6 +42,30 @@ from .config import SOURCE_CONFIG
 
 #: Unified affordances with no ElevenLabs SFX equivalent (warn-and-drop).
 _UNSUPPORTED = ("negative_prompt", "steps", "seed")
+
+
+#: Leading bytes of containers that must never be wrapped as raw PCM.
+_CONTAINER_MAGIC = (b"RIFF", b"fLaC", b"OggS")
+
+
+def _looks_like_raw_pcm(audio: bytes) -> bool:
+    """False for a known container or a text body (an HTML/JSON error page sent as 200).
+
+    Wrapping either as PCM would turn it into a "valid" WAV of noise and hide the
+    error from ingest's decode check.
+    """
+    head = audio[:64]
+    if not head or head[:4] in _CONTAINER_MAGIC or head[:3] == b"ID3":
+        return False
+    return not all(32 <= b < 127 or b in b"\t\n\r" for b in head)
+
+
+class _HTTPStatusError(RuntimeError):
+    """A non-200 from ElevenLabs (still a ``RuntimeError``); carries ``status_code``."""
+
+    def __init__(self, status_code: int, message: str):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 def _safe_detail(resp) -> str:
@@ -147,9 +173,9 @@ class ElevenLabsAdapter:
                 ``generation_seed`` stays ``None``.
             loop: Produce a seamless-loopable clip (native ``loop``; v2 default).
             output_format: Coarse foley token (``wav`` | ``opus`` | ``mp3``)
-                translated to the native enum; ``wav`` falls back to MP3 (the SFX
-                endpoint has no lossless container) and is re-archived to FLAC by
-                ingest.
+                translated to the native enum; ``wav`` is the lossless ``pcm_48000``
+                wrapped in a WAV header here, falling back to MP3 (with a note) if
+                the account's plan refuses PCM. Ingest re-archives to FLAC.
             **kw: Extra/unknown affordances (warn-and-dropped).
 
         Returns:
@@ -174,8 +200,11 @@ class ElevenLabsAdapter:
         if duration is not None:
             body["duration_seconds"] = self._clamp_duration(duration)
 
-        audio_bytes = self._invoke(
-            params={"output_format": native_output_format}, body=body
+        audio_bytes, native_output_format = self._invoke_with_fallback(
+            native_output_format, body, notes
+        )
+        audio_bytes = self._wrap_pcm(
+            audio_bytes, native_output_format, body.get("duration_seconds"), notes
         )
 
         # The RESOLVED native params (guards against passing unified names) — recorded
@@ -219,12 +248,71 @@ class ElevenLabsAdapter:
                 f"output_format {output_format!r} not offered by ElevenLabs SFX; "
                 f"using {native!r}"
             )
-        elif output_format == "wav":
-            notes.append(
-                "ElevenLabs SFX has no lossless WAV container; requested as "
-                f"{native!r} (re-archived to FLAC on ingest)"
-            )
         return native
+
+    def _invoke_with_fallback(
+        self, native_output_format: str, body: dict, notes: list
+    ) -> "tuple[bytes, str]":
+        """Call the endpoint; on a 4xx for a format with a declared fallback, retry once.
+
+        Whether PCM needs a higher plan tier for sound effects is unverified, so a
+        client error on ``pcm_*`` is retried with the config's ``fallback_on_4xx``
+        format (a 4xx produces no audio, so nothing is billed twice) and the
+        fallback is recorded in ``notes``. Returns ``(bytes, format actually used)``.
+        """
+        try:
+            return self._invoke(
+                params={"output_format": native_output_format}, body=body
+            ), native_output_format
+        except _HTTPStatusError as exc:
+            fallbacks = self.config["param_map"]["output_format"].get(
+                "fallback_on_4xx", {}
+            )
+            fallback = fallbacks.get(native_output_format)
+            if fallback is None or not 400 <= exc.status_code < 500:
+                raise
+            if exc.status_code in (401, 429):  # auth / rate limit: not the format
+                raise
+            notes.append(
+                f"output_format {native_output_format!r} refused by ElevenLabs "
+                f"({exc.status_code}); fell back to {fallback!r}"
+            )
+            return self._invoke(params={"output_format": fallback}, body=body), fallback
+
+    def _wrap_pcm(
+        self,
+        audio: bytes,
+        native_output_format: str,
+        duration_s: Optional[float],
+        notes: list,
+    ) -> bytes:
+        """Give raw ``pcm_*`` bytes a WAV header (16-bit LE); other formats pass through.
+
+        The channel count comes from the config. When a duration was requested and
+        the byte length says the clip is stereo instead, stereo is used and noted.
+        """
+        layout = (self.config["param_map"]["output_format"].get("pcm") or {}).get(
+            native_output_format
+        )
+        if layout is None or not _looks_like_raw_pcm(audio):
+            return audio  # a container or a text error body: decode decides, never wrap
+        rate, channels, width = layout["sample_rate"], layout.get("channels", 1), 2
+        if duration_s:
+            implied = len(audio) / (rate * width * float(duration_s))
+            if channels == 1 and 1.8 <= implied <= 2.2:
+                channels = 2
+                notes.append(
+                    f"{native_output_format}: byte length implies stereo; wrapped as 2 ch"
+                )
+        frame = width * channels
+        audio = audio[: len(audio) - len(audio) % frame]  # never a partial frame
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as w:
+            w.setnchannels(channels)
+            w.setsampwidth(width)
+            w.setframerate(rate)
+            w.writeframes(audio)
+        return buf.getvalue()
 
     def _warn_unsupported(self, notes: list, **passed) -> None:
         """Record a note for each unsupported affordance passed with a non-default value."""
@@ -257,7 +345,8 @@ class ElevenLabsAdapter:
             endpoint["method"], url, params=params, headers=headers, json=body
         )
         if resp.status_code != 200:
-            raise RuntimeError(
+            raise _HTTPStatusError(
+                resp.status_code,
                 f"ElevenLabs {endpoint['method']} {url} -> {resp.status_code}: "
                 f"{_safe_detail(resp)}"
             )

@@ -238,15 +238,72 @@ def test_elevenlabs_honors_residency_base_url():
     [
         ("mp3", "mp3_44100_128"),
         ("opus", "opus_48000_128"),
-        ("wav", "mp3_44100_128"),  # no lossless container; fall back to mp3
+        ("wav", "pcm_48000"),  # lossless PCM, wrapped in a WAV header locally (#71)
     ],
 )
 def test_elevenlabs_output_format_translation(token, native):
     transport = FakeTransport()
     clip = _el_adapter(transport).generate("rain", output_format=token)
     assert transport.calls[0].params["output_format"] == native
-    if token == "wav":  # a fallback note is recorded
-        assert any("WAV" in n or "lossless" in n for n in clip.notes)
+    assert clip.candidate.sound.license.generation_params["output_format"] == native
+
+
+def _pcm_s16le(seconds: float, *, rate=48000, channels=1) -> bytes:
+    t = np.arange(int(rate * seconds)) / rate
+    tone = (0.3 * np.sin(2 * np.pi * 440 * t) * 32767).astype("<i2")
+    return np.repeat(tone, channels).tobytes()
+
+
+def test_elevenlabs_wav_wraps_raw_pcm_in_a_wav_header():
+    raw = _pcm_s16le(0.5)
+    transport = FakeTransport(FakeResponse(200, None, raw))
+    clip = _el_adapter(transport).generate("rain", output_format="wav", duration=0.5)
+    assert clip.audio_bytes[:4] == b"RIFF"
+    data, sr = sf.read(io.BytesIO(clip.audio_bytes))
+    assert sr == 48000 and data.ndim == 1 and len(data) == 24000
+
+
+def test_elevenlabs_wav_detects_stereo_pcm_from_the_requested_duration():
+    raw = _pcm_s16le(1.0, channels=2)
+    transport = FakeTransport(FakeResponse(200, None, raw))
+    clip = _el_adapter(transport).generate("rain", output_format="wav", duration=1.0)
+    data, sr = sf.read(io.BytesIO(clip.audio_bytes))
+    assert data.shape == (48000, 2)
+    assert any("stereo" in n for n in clip.notes)
+
+
+class _RefusePcm(FakeTransport):
+    """Refuses ``pcm_*`` with ``status``; serves anything else."""
+
+    def __init__(self, status):
+        super().__init__()
+        self.status = status
+
+    def __call__(self, method, url, *, params=None, **kw):
+        resp = super().__call__(method, url, params=params, **kw)
+        if (params or {}).get("output_format", "").startswith("pcm"):
+            return FakeResponse(self.status, {"detail": "plan"}, b"")
+        return resp
+
+
+def test_elevenlabs_wav_falls_back_to_mp3_on_a_4xx_with_a_note():
+    transport = _RefusePcm(403)
+    clip = _el_adapter(transport).generate("rain", output_format="wav")
+    assert [c.params["output_format"] for c in transport.calls] == [
+        "pcm_48000",
+        "mp3_44100_128",
+    ]
+    assert any("fell back to 'mp3_44100_128'" in n for n in clip.notes)
+    gp = clip.candidate.sound.license.generation_params
+    assert gp["output_format"] == "mp3_44100_128"  # what was actually used
+
+
+@pytest.mark.parametrize("status", [401, 429, 500])
+def test_elevenlabs_wav_does_not_fall_back_on_auth_rate_or_server_errors(status):
+    transport = _RefusePcm(status)
+    with pytest.raises(RuntimeError, match=str(status)):
+        _el_adapter(transport).generate("rain", output_format="wav")
+    assert len(transport.calls) == 1
 
 
 # ---------------------------------------------------------------------------
