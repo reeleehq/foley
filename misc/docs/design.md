@@ -110,15 +110,15 @@ decomposition + verification:
 Published as an **MCP server via `py2mcp`** so the same tools drive the agent, the CLI,
 and external hosts.
 
-### 4. WEAVE — placing sound under the voice  *(report 06 — not yet researched)*
+### 4. WEAVE — placing sound under the voice  *(report 06; built)*
 
 Alignment (forced-align narration → word timestamps), ducking/side-chain, stereo/
 distance placement, crossfades, and LUFS/EBU-R128 mastering. Design target: an
 **editable, re-renderable sound-design timeline** (conceptually like cosmograph
 "snapshots/stories" applied to a narration's SFX layer) — not a one-shot bake. Run
-**Prompt 6** in the research library to seed this.
+**Prompt 6** in the research library to seed this. *(Done: report 06. Shipped in `foley/weave/`. Forced alignment uses WhisperX when installed. Otherwise a fake aligner spaces words evenly, and the result says so.)*
 
-## Public façade API (sketch — not yet implemented)
+## Public façade API (implemented; see `foley/__init__.py` for the current signatures)
 
 ```python
 import foley

@@ -84,6 +84,9 @@ class WeaveResult:
         None  # C2PA sidecar (ALWAYS present, fail-safe)
     )
     watermark: Optional[dict] = None  # AudioSeal meta iff watermarked, else None
+    #: What the caller should know about how the mix was made, e.g. that word timings
+    #: are estimates because no forced aligner is installed (#65).
+    notes: list = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -465,6 +468,8 @@ def weave(
 
     tl = replace(timeline, master=resolve_master(master))
     lib, tl = _bind_narration(narration, tl, library, sr)
+    aligner = aligner or _default_aligner()
+    notes = [_FAKE_ALIGNER_NOTE] if isinstance(aligner, FakeAligner) else []
 
     with obs.run("weave") as run:
         result = render(
@@ -484,6 +489,7 @@ def weave(
                 "stage": "weave",
                 "n_items": len(rendered.items),
                 "master": rendered.master.to_dict(),
+                "aligner": _aligner_name(aligner),
                 "run_manifest_ref": run_id,
             }
         )
@@ -513,7 +519,25 @@ def weave(
         run_manifest_ref=run_id,
         content_credential=prov["content_credential"],
         watermark=prov["watermark"],
+        notes=notes,
     )
+
+
+#: The note a weave made without a forced aligner carries (#65).
+_FAKE_ALIGNER_NOTE = (
+    "aligner=fake: no forced aligner is installed, so word timings are evenly "
+    "spaced estimates and word-anchored placements are approximate. Install "
+    "foley[align] (WhisperX) for real alignment."
+)
+
+
+def _aligner_name(aligner) -> str:
+    """``fake`` / ``whisperx`` for the built-ins, else the class name (run manifest)."""
+    if isinstance(aligner, FakeAligner):
+        return "fake"
+    if isinstance(aligner, WhisperXAligner):
+        return "whisperx"
+    return type(aligner).__name__
 
 
 def _emit_weave_steps(run, result: RenderResult) -> None:

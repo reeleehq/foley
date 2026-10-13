@@ -5,7 +5,9 @@ reports. The strategy is **retrieval-first**: get a searchable library working b
 sources multiply or generation/weaving deepen — validate "find the right sound" end to
 end early.
 
-## Phase 0 — Scaffold & research  ✅ (done)
+**Status (2026-10-13):** v1 shipped. Phases 1–5 are built, and most of phase 6 is too. What remains is marked open below, with the issue that tracks it. A box is checked only where the code exists on `main`. Where the shipped piece differs from the plan, the line says how.
+
+## Phase 0: scaffold and research ✅
 
 - [x] Name (`foley`), repo, wads setup, CI, `misc/docs/`
 - [x] Five research reports (source APIs, generation, recognition, indexing, retrieval-agent)
@@ -15,26 +17,26 @@ end early.
 
 *The keystone. Everything else plugs into this.*
 
-- [ ] `SoundRecord` + `LicenseRecord` schemas (`base.py`) — the canonical SSOT record
-- [ ] `SoundLibrary` façade over injected `dol` stores (blobs + metadata) — local-first
-- [ ] `Embedder` protocol + CLAP default (`laion/larger_clap_general`)
-- [ ] LanceDB `vindex`+`kindex`; hybrid search + RRF (`search.py`); sqlite-vec fallback
-- [ ] Ingestion pipeline (`ingest.py`): probe → PANNs tag → CLAP zero-shot → EnCLAP caption → embed
-- [ ] UCS + AudioSet taxonomy tables (`taxonomy/`)
-- [ ] `foley.ingest(folder)` and `foley.search(query)` working end to end
-- [ ] Seed corpus: FSD50K (CC0/CC-BY) as a starter library
+- [x] `SoundRecord` + `LicenseRecord` schemas (`base.py`) — the canonical SSOT record
+- [x] `SoundLibrary` façade over injected `dol` stores (blobs + metadata) — local-first
+- [x] `Embedder` protocol + CLAP default (`laion/larger_clap_general`)
+- [x] LanceDB `vindex`+`kindex`; hybrid search + RRF (`search.py`); sqlite-vec fallback
+- [x] Ingestion pipeline (`ingest.py`): probe → PANNs tag → CLAP zero-shot → caption → embed. **No learned captioner ships:** the `Captioner` protocol is in place, and the default captions from metadata. EnCLAP / Qwen2-Audio captioning is still open.
+- [x] UCS + AudioSet taxonomy tables (`taxonomy/`)
+- [x] `foley.ingest(folder)` and `foley.search(query)` working end to end
+- [x] Seed corpus: FSD50K (CC0/CC-BY) as a starter library
 
 **Done when:** `foley.ingest("~/sounds")` then `foley.search("thunder")` returns
 ranked, license-tagged hits by keyword + semantics.
 
 ## Phase 2 — Sources (retrieve + generate adapters)
 
-- [ ] Source adapter contract (`SOURCE_CONFIG`, registry auto-discovery) — arioso pattern
-- [ ] **Freesound** retrieve adapter (CC0-filtered) — `foley.add_from("freesound", …)`
-- [ ] **Stable Audio Open** generate adapter (local default) with `commercial_ok` guardrail
-- [ ] **ElevenLabs Sound Effects** generate adapter (hosted default)
-- [ ] `foley.generate(prompt, backend=…)` with unified param vocabulary
-- [ ] Stub adapters for partner-gated pro APIs (Epidemic/Storyblocks/…)
+- [x] Source adapter contract (`SOURCE_CONFIG`, registry auto-discovery) — arioso pattern
+- [x] **Freesound** retrieve adapter (CC0-filtered) — `foley.add_from("freesound", …)`
+- [x] **Stable Audio Open** generate adapter (local default) with `commercial_ok` guardrail
+- [x] **ElevenLabs Sound Effects** generate adapter (hosted default)
+- [x] `foley.generate(prompt, backend=…)` with unified param vocabulary
+- [ ] Stub adapters for partner-gated pro APIs (Epidemic/Storyblocks/…). **Not started.**
 
 **Done when:** foley can pull CC0 sounds from Freesound and generate SFX locally/hosted,
 all landing in the library with correct per-sound license flags.
@@ -43,38 +45,38 @@ all landing in the library with correct per-sound license flags.
 
 *The headline capability.*
 
-- [ ] `decompose_context` — LLM: story paragraph → salience-ranked diegetic sound-event list
-- [ ] `search_sounds` tool over the hybrid index
-- [ ] `verify_match` — CLAP-score → audio-LM listen-check → LLM-judge ladder
-- [ ] `decide` — generate-vs-retrieve policy; cache accepted generations back
-- [ ] `foley.find(context)` returns a verified shortlist of candidates
+- [x] `decompose_context` — LLM: story paragraph → salience-ranked diegetic sound-event list
+- [x] `search_sounds` tool over the hybrid index
+- [x] `verify_match` — CLAP-score → audio-LM listen-check → LLM-judge ladder (the Qwen2-Audio listen rung needs `foley[fit]`)
+- [x] `decide` — generate-vs-retrieve policy; cache accepted generations back
+- [x] `foley.find(context)` returns a verified shortlist of candidates
 
 **Done when:** given a paragraph, foley returns the right sounds for its salient moments,
 generating when the library has no match.
 
 ## Phase 4 — MCP server & preview UX
 
-- [ ] Expose the tool set as an MCP server via `py2mcp`
-- [ ] Preview / audition surface (shortlists, "more like this", human-in-the-loop pick)
-- [ ] CLI entry (`python -m foley …`)
-- [ ] `check_requirements` / setup-guidance (accompy-style) for optional deps & models
+- [x] Expose the tool set as an MCP server via `py2mcp`
+- [x] Preview / audition surface (shortlists, "more like this", human-in-the-loop pick)
+- [x] CLI entry (`foley …`, `foley-mcp`)
+- [x] `check_requirements` / setup-guidance (accompy-style) for optional deps & models
 
 ## Phase 5 — Weave (compose onto narration)
 
-*Needs research **Prompt 6** first (alignment/mixing/mastering).*
+*Researched in report 06.*
 
-- [ ] Forced-alignment of narration → word timestamps
-- [ ] Ducking/side-chain + stereo/distance placement + crossfades
-- [ ] LUFS/EBU-R128 mastering to platform targets
-- [ ] Editable, re-renderable **sound-design timeline** data model
-- [ ] `foley.weave(narration, candidates)` → mixed output
+- [ ] Forced-alignment of narration → word timestamps. **Partly done:** WhisperX is used when installed (`foley[align]`). Without it, the default `FakeAligner` spaces words evenly, and `WeaveResult.notes` and the run manifest (`aligner: fake`) say so. More real aligners: #43.
+- [x] Ducking/side-chain + stereo/distance placement + crossfades
+- [x] LUFS/EBU-R128 mastering to platform targets
+- [x] Editable, re-renderable **sound-design timeline** data model
+- [x] `foley.weave(narration, timeline)` → mixed output (and `foley.score(text, audio=…)` end to end)
 
 ## Phase 6 — Evaluation, breadth & polish
 
-- [ ] Eval harness: audio QC → retrieval metrics (R@k, mAP) → LLM/audio-LM fit-judging (**Prompt 8**)
-- [ ] Golden eval set: (narrative-context → expected-sound) pairs (**Prompt 11**)
-- [ ] More source & generation adapters; MS-CLAP/BEATs/Qwen2-Audio quality upgrades
-- [ ] Provenance/attribution export; disclosure/watermarking (**Prompt 7, 12**)
+- [x] Eval harness: audio QC → retrieval metrics (R@k, mAP) → LLM/audio-LM fit-judging (**Prompt 8**)
+- [x] Golden eval set: (narrative-context → expected-sound) pairs (**Prompt 11**)
+- [ ] More source & generation adapters (FSD50K, Clotho, BBC REMArc, Sonniss and FoleySet corpora ship); MS-CLAP/BEATs embedder upgrades are **not started**.
+- [x] Provenance/attribution export; disclosure/watermarking (credits, AudioSeal behind an extra, a C2PA sidecar) (**Prompt 7, 12**)
 
 ## Parallel research track (Prompts 6–12)
 

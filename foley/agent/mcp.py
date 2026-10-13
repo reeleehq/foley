@@ -216,6 +216,7 @@ def _weave_result_row(result) -> dict:
         "watermark": result.watermark,
         "content_credential": result.content_credential,
         "run_manifest_ref": result.run_manifest_ref,
+        "notes": list(getattr(result, "notes", ())),
     }
 
 
