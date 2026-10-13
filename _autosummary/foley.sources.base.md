@@ -44,6 +44,7 @@ so the derived permission flags stay single-sourced.
 | [`check_prompt_influence`](#foley.sources.base.check_prompt_influence)(value)                     | Raise `ValueError` unless `value` is `None` or a real number in `0..1`.                                                                            |
 |----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`native_adherence`](#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                        |
+| [`resolve_source_key`](#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var.                                                                               |
 | [`bulk_license`](#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])  | Build a bulk-acquisition [`LicenseRecord`](foley.base.md#foley.base.LicenseRecord), flags derived.                   |
 | [`per_clip_license_meta`](#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])     | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                      |
 | [`license_from_clip_meta`](#foley.sources.base.license_from_clip_meta)(source, spec)              | Build a clip's rights record from [`per_clip_license_meta()`](#foley.sources.base.per_clip_license_meta) fields (fail-closed).                   |
@@ -489,6 +490,19 @@ Register `adapter` in [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY) (
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If a *different* adapter is already registered under the name.
 * **Return type:**
   [`CorpusAdapter`](#foley.sources.base.CorpusAdapter)
+
+### foley.sources.base.resolve_source_key(config, api_key=None)
+
+A source’s API token: `api_key`, else a bound key, else its env var.
+
+The chain is the fleet’s facade kit (`ocracy.kit.resolve_credential`), so a
+server can bind a per-request key with `ocracy.kit.using_credentials(<source>=key)`.
+`config["auth"]` names the env var and the sign-up URL.
+
+* **Raises:**
+  [**SourceConfigurationError**](#foley.sources.base.SourceConfigurationError) – Naming the env var and where to get a key.
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.sources.base.ring_of(name)
 

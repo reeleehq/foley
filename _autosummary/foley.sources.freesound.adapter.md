@@ -58,7 +58,7 @@ Live Freesound APIv2 retrieve adapter (a [`SourceAdapter`](foley.sources.base.md
 
 #### *property* api_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
-The Freesound token (from the constructor or `$FREESOUND_API_KEY`).
+The Freesound token (constructor, else a bound key, else `$FREESOUND_API_KEY`).
 
 #### download(source_id, , preview_url=None)
 

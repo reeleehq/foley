@@ -58,7 +58,7 @@ ElevenLabs Sound Effects generate adapter (a [`GenerateAdapter`](foley.sources.b
 
 #### *property* api_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
-The ElevenLabs token (from the constructor or `$ELEVENLABS_API_KEY`).
+The ElevenLabs token (constructor, else a bound key, else `$ELEVENLABS_API_KEY`).
 
 #### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
 

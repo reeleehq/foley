@@ -1,4 +1,4 @@
-> built 2026-10-13 04:56 UTC from 01db4e3 (main) · foley 0.0.34. Details: build_info.json
+> built 2026-10-13 05:28 UTC from b0c47a2 (main) · foley 0.0.35. Details: build_info.json
 
 # index.html.md
 
@@ -44,7 +44,9 @@ clip = foley.generate("a single wooden door creak", backend="stable_audio", dura
 
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
-foley.add_from("freesound", query="ocean waves", license="cc0")  # needs FREESOUND_API_KEY
+foley.add_from(
+    "freesound", query="ocean waves", license="cc0"
+)  # needs FREESOUND_API_KEY
 
 # Compose: place the sounds under the narration (find → plan → weave)
 timeline = foley.plan(candidates)  # the editable sound-design plan
@@ -12108,7 +12110,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'netflix intro', 'ta-dum', 'ta dum', 'netflix chime', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'netflix chime', 'ta-dum', 'netflix sound', 'ta dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel jingle', 'intel bong', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -12989,6 +12991,7 @@ so the derived permission flags stay single-sourced.
 | [`check_prompt_influence`](_autosummary/foley.sources.base.html.md#foley.sources.base.check_prompt_influence)(value)                     | Raise `ValueError` unless `value` is `None` or a real number in `0..1`.                                                                            |
 |----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`native_adherence`](_autosummary/foley.sources.base.html.md#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                        |
+| [`resolve_source_key`](_autosummary/foley.sources.base.html.md#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var.                                                                               |
 | [`bulk_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])  | Build a bulk-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                   |
 | [`per_clip_license_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])     | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                      |
 | [`license_from_clip_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.license_from_clip_meta)(source, spec)              | Build a clip's rights record from [`per_clip_license_meta()`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta) fields (fail-closed).                   |
@@ -13435,6 +13438,19 @@ Register `adapter` in [`CORPUS_REGISTRY`](_autosummary/foley.sources.base.html.m
 * **Return type:**
   [`CorpusAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.CorpusAdapter)
 
+### foley.sources.base.resolve_source_key(config, api_key=None)
+
+A source’s API token: `api_key`, else a bound key, else its env var.
+
+The chain is the fleet’s facade kit (`ocracy.kit.resolve_credential`), so a
+server can bind a per-request key with `ocracy.kit.using_credentials(<source>=key)`.
+`config["auth"]` names the env var and the sign-up URL.
+
+* **Raises:**
+  [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – Naming the env var and where to get a key.
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 ### foley.sources.base.ring_of(name)
 
 Return the ring of the registered corpus `name` (raises `KeyError`).
@@ -13613,7 +13629,7 @@ ElevenLabs Sound Effects generate adapter (a [`GenerateAdapter`](_autosummary/fo
 
 #### *property* api_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
-The ElevenLabs token (from the constructor or `$ELEVENLABS_API_KEY`).
+The ElevenLabs token (constructor, else a bound key, else `$ELEVENLABS_API_KEY`).
 
 #### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
 
@@ -13791,7 +13807,7 @@ Live Freesound APIv2 retrieve adapter (a [`SourceAdapter`](_autosummary/foley.so
 
 #### *property* api_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
-The Freesound token (from the constructor or `$FREESOUND_API_KEY`).
+The Freesound token (constructor, else a bound key, else `$FREESOUND_API_KEY`).
 
 #### download(source_id, , preview_url=None)
 
@@ -16297,18 +16313,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-13 04:56 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/01db4e3a1ca1be8d3c82106148e23e4a49b82d3e"><code>01db4e3</code></a> on branch <code>main</code>, for **foley 0.0.34** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 05:28 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/b0c47a2a33c67ec8db5b8b3e8220490322bcd4d8"><code>b0c47a2</code></a> on branch <code>main</code>, for **foley 0.0.35** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.34) is behind the latest release on PyPI (0.0.35): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/01db4e3a1ca1be8d3c82106148e23e4a49b82d3e"><code>01db4e3a1ca1be8d3c82106148e23e4a49b82d3e</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/b0c47a2a33c67ec8db5b8b3e8220490322bcd4d8"><code>b0c47a2a33c67ec8db5b8b3e8220490322bcd4d8</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -16319,9 +16333,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38348767081">38348767081</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38351416257">38351416257</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>01db4e3a1ca1be8d3c82106148e23e4a49b82d3e</code> (in the history of the built commit) |
+| Event commit | <code>b0c47a2a33c67ec8db5b8b3e8220490322bcd4d8</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -16346,13 +16360,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.35/">0.0.35</a>, newer than the documented version (0.0.34).
+Latest release: <a href="https://pypi.org/project/foley/0.0.35/">0.0.35</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 01db4e3a1ca1be8d3c82106148e23e4a49b82d3e
+git checkout b0c47a2a33c67ec8db5b8b3e8220490322bcd4d8
 pip install "epythet==0.2.13"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

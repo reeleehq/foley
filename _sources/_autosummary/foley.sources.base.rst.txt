@@ -16,6 +16,7 @@ foley.sources.base
    
       check_prompt_influence
       native_adherence
+      resolve_source_key
       bulk_license
       per_clip_license_meta
       license_from_clip_meta

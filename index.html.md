@@ -40,7 +40,9 @@ clip = foley.generate("a single wooden door creak", backend="stable_audio", dura
 
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
-foley.add_from("freesound", query="ocean waves", license="cc0")  # needs FREESOUND_API_KEY
+foley.add_from(
+    "freesound", query="ocean waves", license="cc0"
+)  # needs FREESOUND_API_KEY
 
 # Compose: place the sounds under the narration (find → plan → weave)
 timeline = foley.plan(candidates)  # the editable sound-design plan
