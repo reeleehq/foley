@@ -60,15 +60,16 @@ def _server_budget():
     Keyed on the server, not on the ``session`` argument (which the calling agent
     chooses, so a per-session cap could be dodged by inventing session ids). The cap
     is set by whoever starts the server (``build_mcp_server(max_usd=...)``) and lasts
-    for the server's lifetime; restart the server to reset it.
+    for the server's lifetime; restart the server to reset it. Unset, it is
+    :func:`foley.cost.default_max_usd` ($1, or $3 under ``$FOLEY_LLM=anthropic``, #88).
     """
-    from ..cost import DEFAULT_MAX_USD
+    from ..cost import default_max_usd
     from .policy import Budget
 
     with _BUDGET_LOCK:  # tools run in a threadpool: one budget, even on a first burst
         if _STATE["budget"] is None:
             cap = _STATE["max_usd"]
-            _STATE["budget"] = Budget(max_usd=DEFAULT_MAX_USD if cap is None else cap)
+            _STATE["budget"] = Budget(max_usd=default_max_usd() if cap is None else cap)
         return _STATE["budget"]
 
 
@@ -740,7 +741,8 @@ def build_mcp_server(
         include: Optional subset of tool names to expose.
         name: The MCP server name.
         max_usd: The server's cumulative spend cap across every paid tool call, for
-            its lifetime (default :data:`foley.cost.DEFAULT_MAX_USD`, $1).
+            its lifetime (default :func:`foley.cost.default_max_usd`: $1, or $3 under
+            ``$FOLEY_LLM=anthropic``).
 
     Returns:
         A ``fastmcp.FastMCP`` server.

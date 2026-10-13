@@ -10,9 +10,10 @@ Three pieces, each small:
 * **A run-scoped budget.** :func:`spend_scope` makes a
   :class:`~foley.agent.policy.Budget` the active one for a ``find`` / ``score`` /
   ``generate`` run; :func:`authorize` is called before every paid call and refuses the
-  first one that would take the run past ``max_usd`` (default :data:`DEFAULT_MAX_USD`,
-  $1 — maintainer decision on #57), or whose cost is unknown unless the budget
-  approves unknown costs.
+  first one that would take the run past ``max_usd`` (default :func:`default_max_usd`:
+  :data:`DEFAULT_MAX_USD`, $1 — maintainer decision on #57 — or, when the caller chose
+  a paid LLM for the SELECT rungs, :data:`DEFAULT_MAX_USD_BY_LLM`, #88), or whose cost
+  is unknown unless the budget approves unknown costs.
 * **Two errors.** :class:`BudgetExceeded` and its subclass :class:`CostApprovalRequired`.
 
 Stdlib-only.
@@ -37,11 +38,40 @@ __all__ = [
     "authorize",
     "settle",
     "release",
+    "DEFAULT_MAX_USD_BY_LLM",
+    "default_max_usd",
     "charge",
 ]
 
 #: The default cumulative cap for one run (a ``find`` / ``score`` / ``generate`` call).
 DEFAULT_MAX_USD: float = 1.0
+
+#: The default cap of a :func:`foley.find` run whose LLM rungs the caller chose to pay
+#: for (``llm=`` or ``$FOLEY_LLM``), keyed by provider. With the defaults (6 events,
+#: ``k=10``, ``verify='listen'``) Claude's upper bound is about $2.52, so the $1 cap
+#: would refuse every such run before its first call; $3 lets it run and still caps
+#: it. A run usually spends far less than its bound (#88). ``Budget(max_usd=...)``
+#: overrides it.
+DEFAULT_MAX_USD_BY_LLM: "dict[str, float]" = {"anthropic": 3.0}
+
+
+def default_max_usd(llm: Optional[str] = None) -> float:
+    """The cap of a run given no budget: higher when the caller chose a paid LLM.
+
+    The provider is the one named by ``llm`` or, failing that, ``$FOLEY_LLM`` (the
+    free default never resolves to a paid one); see :data:`DEFAULT_MAX_USD_BY_LLM`.
+
+    >>> default_max_usd("fake")
+    1.0
+    >>> default_max_usd("anthropic")
+    3.0
+    """
+    import os
+
+    from .agent.llm import LLM_ENV_VAR
+
+    chosen = llm or os.environ.get(LLM_ENV_VAR) or None
+    return DEFAULT_MAX_USD_BY_LLM.get(chosen, DEFAULT_MAX_USD)
 
 #: Set to 1 to approve calls whose cost is unknown, for every run that does not say.
 APPROVE_UNKNOWN_COST_ENV = "FOLEY_APPROVE_UNKNOWN_COST"

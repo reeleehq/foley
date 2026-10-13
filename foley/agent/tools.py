@@ -322,7 +322,9 @@ def find(
         max_refine_loops: Max refine→re-retrieve passes per event (also the default
             :class:`Budget`).
         budget: An explicit :class:`Budget` (overrides ``max_refine_loops``). It is
-            also the run's spend cap: ``Budget(max_usd=...)`` (default $1) bounds
+            also the run's spend cap: ``Budget(max_usd=...)`` (default $1; $3 when
+            ``llm='anthropic'`` or ``$FOLEY_LLM=anthropic``, whose default run is
+            bounded at about $2.52 — :data:`foley.cost.DEFAULT_MAX_USD_BY_LLM`) bounds
             every paid call the run makes — generations and paid LLM rungs —
             cumulatively, and a call of unknown cost needs
             ``Budget(approve_unknown_cost=True)`` (#57).
@@ -380,10 +382,12 @@ def _find_stream(
     llm=None,
 ) -> "Iterator[Candidate]":
     """The streaming body of :func:`find` (``find(stream=False)`` == ``list(_find_stream(...))``)."""
-    from ..cost import check, scoped_iter
+    from ..cost import check, default_max_usd, scoped_iter
 
     use = intended_use_for(intended_use)
-    budget = budget or Budget(max_refine_loops=max_refine_loops)
+    budget = budget or Budget(
+        max_refine_loops=max_refine_loops, max_usd=default_max_usd(llm)
+    )
 
     def run():
         # Before the first paid call: the whole run's upper bound must fit every
