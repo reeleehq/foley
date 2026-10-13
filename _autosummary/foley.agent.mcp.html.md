@@ -69,7 +69,8 @@ injectable library / runtime / byte-store, and hands the resolved tool functions
   * **include** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Optional subset of tool names to expose.
   * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The MCP server name.
   * **max_usd** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The server’s cumulative spend cap across every paid tool call, for
-    its lifetime (default [`foley.cost.DEFAULT_MAX_USD`](foley.cost.html.md#foley.cost.DEFAULT_MAX_USD), $1).
+    its lifetime (default [`foley.cost.default_max_usd()`](foley.cost.html.md#foley.cost.default_max_usd): $1, or $3 under
+    `$FOLEY_LLM=anthropic`).
 * **Returns:**
   A `fastmcp.FastMCP` server.
 

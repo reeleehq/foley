@@ -66,7 +66,9 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
   * **max_refine_loops** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max refine→re-retrieve passes per event (also the default
     `Budget`).
   * **budget** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Budget`](foley.agent.policy.html.md#foley.agent.policy.Budget)]) – An explicit `Budget` (overrides `max_refine_loops`). It is
-    also the run’s spend cap: `Budget(max_usd=...)` (default $1) bounds
+    also the run’s spend cap: `Budget(max_usd=...)` (default $1; $3 when
+    `llm='anthropic'` or `$FOLEY_LLM=anthropic`, whose default run is
+    bounded at about $2.52 — [`foley.cost.DEFAULT_MAX_USD_BY_LLM`](foley.cost.html.md#foley.cost.DEFAULT_MAX_USD_BY_LLM)) bounds
     every paid call the run makes — generations and paid LLM rungs —
     cumulatively, and a call of unknown cost needs
     `Budget(approve_unknown_cost=True)` (#57).

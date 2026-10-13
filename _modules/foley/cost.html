@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=aa2ad26f"></script>
+    <script src="../../_static/documentation_options.js?v=423071ad"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.37" />
+  <meta name="docsearch:version" content="0.0.38" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -726,9 +726,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">* **A run-scoped budget.** :func:`spend_scope` makes a</span>
 <span class="sd">  :class:`~foley.agent.policy.Budget` the active one for a ``find`` / ``score`` /</span>
 <span class="sd">  ``generate`` run; :func:`authorize` is called before every paid call and refuses the</span>
-<span class="sd">  first one that would take the run past ``max_usd`` (default :data:`DEFAULT_MAX_USD`,</span>
-<span class="sd">  $1 — maintainer decision on #57), or whose cost is unknown unless the budget</span>
-<span class="sd">  approves unknown costs.</span>
+<span class="sd">  first one that would take the run past ``max_usd`` (default :func:`default_max_usd`:</span>
+<span class="sd">  :data:`DEFAULT_MAX_USD`, $1 — maintainer decision on #57 — or, when the caller chose</span>
+<span class="sd">  a paid LLM for the SELECT rungs, :data:`DEFAULT_MAX_USD_BY_LLM`, #88), or whose cost</span>
+<span class="sd">  is unknown unless the budget approves unknown costs.</span>
 <span class="sd">* **Two errors.** :class:`BudgetExceeded` and its subclass :class:`CostApprovalRequired`.</span>
 
 <span class="sd">Stdlib-only.</span>
@@ -753,11 +754,43 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"authorize"</span><span class="p">,</span>
     <span class="s2">"settle"</span><span class="p">,</span>
     <span class="s2">"release"</span><span class="p">,</span>
+    <span class="s2">"DEFAULT_MAX_USD_BY_LLM"</span><span class="p">,</span>
+    <span class="s2">"default_max_usd"</span><span class="p">,</span>
     <span class="s2">"charge"</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="c1">#: The default cumulative cap for one run (a ``find`` / ``score`` / ``generate`` call).</span>
 <span class="n">DEFAULT_MAX_USD</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+<span class="c1">#: The default cap of a :func:`foley.find` run whose LLM rungs the caller chose to pay</span>
+<span class="c1">#: for (``llm=`` or ``$FOLEY_LLM``), keyed by provider. With the defaults (6 events,</span>
+<span class="c1">#: ``k=10``, ``verify='listen'``) Claude's upper bound is about $2.52, so the $1 cap</span>
+<span class="c1">#: would refuse every such run before its first call; $3 lets it run and still caps</span>
+<span class="c1">#: it. A run usually spends far less than its bound (#88). ``Budget(max_usd=...)``</span>
+<span class="c1">#: overrides it.</span>
+<span class="n">DEFAULT_MAX_USD_BY_LLM</span><span class="p">:</span> <span class="s2">"dict[str, float]"</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"anthropic"</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="default_max_usd">
+<a class="viewcode-back" href="../../_autosummary/foley.cost.html#foley.cost.default_max_usd">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_max_usd</span><span class="p">(</span><span class="n">llm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The cap of a run given no budget: higher when the caller chose a paid LLM.</span>
+
+<span class="sd">    The provider is the one named by ``llm`` or, failing that, ``$FOLEY_LLM`` (the</span>
+<span class="sd">    free default never resolves to a paid one); see :data:`DEFAULT_MAX_USD_BY_LLM`.</span>
+
+<span class="sd">    &gt;&gt;&gt; default_max_usd("fake")</span>
+<span class="sd">    1.0</span>
+<span class="sd">    &gt;&gt;&gt; default_max_usd("anthropic")</span>
+<span class="sd">    3.0</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.agent.llm</span><span class="w"> </span><span class="kn">import</span> <span class="n">LLM_ENV_VAR</span>
+
+    <span class="n">chosen</span> <span class="o">=</span> <span class="n">llm</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">LLM_ENV_VAR</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">DEFAULT_MAX_USD_BY_LLM</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">chosen</span><span class="p">,</span> <span class="n">DEFAULT_MAX_USD</span><span class="p">)</span></div>
+
 
 <span class="c1">#: Set to 1 to approve calls whose cost is unknown, for every run that does not say.</span>
 <span class="n">APPROVE_UNKNOWN_COST_ENV</span> <span class="o">=</span> <span class="s2">"FOLEY_APPROVE_UNKNOWN_COST"</span>

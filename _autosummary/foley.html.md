@@ -1739,7 +1739,8 @@ injectable library / runtime / byte-store, and hands the resolved tool functions
   * **include** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Optional subset of tool names to expose.
   * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The MCP server name.
   * **max_usd** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The server’s cumulative spend cap across every paid tool call, for
-    its lifetime (default [`foley.cost.DEFAULT_MAX_USD`](foley.cost.html.md#foley.cost.DEFAULT_MAX_USD), $1).
+    its lifetime (default [`foley.cost.default_max_usd()`](foley.cost.html.md#foley.cost.default_max_usd): $1, or $3 under
+    `$FOLEY_LLM=anthropic`).
 * **Returns:**
   A `fastmcp.FastMCP` server.
 
@@ -2196,7 +2197,9 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
   * **max_refine_loops** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max refine→re-retrieve passes per event (also the default
     [`Budget`](#foley.Budget)).
   * **budget** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Budget`](foley.agent.policy.html.md#foley.agent.policy.Budget)]) – An explicit [`Budget`](#foley.Budget) (overrides `max_refine_loops`). It is
-    also the run’s spend cap: `Budget(max_usd=...)` (default $1) bounds
+    also the run’s spend cap: `Budget(max_usd=...)` (default $1; $3 when
+    `llm='anthropic'` or `$FOLEY_LLM=anthropic`, whose default run is
+    bounded at about $2.52 — [`foley.cost.DEFAULT_MAX_USD_BY_LLM`](foley.cost.html.md#foley.cost.DEFAULT_MAX_USD_BY_LLM)) bounds
     every paid call the run makes — generations and paid LLM rungs —
     cumulatively, and a call of unknown cost needs
     `Budget(approve_unknown_cost=True)` (#57).
@@ -2723,7 +2726,8 @@ injectable library / runtime / byte-store, and hands the resolved tool functions
   * **include** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Optional subset of tool names to expose.
   * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The MCP server name.
   * **max_usd** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The server’s cumulative spend cap across every paid tool call, for
-    its lifetime (default [`foley.cost.DEFAULT_MAX_USD`](foley.cost.html.md#foley.cost.DEFAULT_MAX_USD), $1).
+    its lifetime (default [`foley.cost.default_max_usd()`](foley.cost.html.md#foley.cost.default_max_usd): $1, or $3 under
+    `$FOLEY_LLM=anthropic`).
 * **Returns:**
   A `fastmcp.FastMCP` server.
 
@@ -3036,7 +3040,9 @@ editable [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeli
   * **llm** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Which LLM the SELECT rungs use (`'fake'` | `'local'` | `'anthropic'`;
     `None` reads `$FOLEY_LLM`, else the free default) — see [`foley.find()`](#foley.find).
   * **budget** – The run’s [`Budget`](foley.agent.policy.html.md#foley.agent.policy.Budget) — one spend cap
-    (`max_usd`, default $1) across every segment’s paid calls (#57).
+    (`max_usd`) across every segment’s paid calls (#57). Default: $1, or $3
+    when `llm` (or `$FOLEY_LLM`) is `'anthropic'`
+    ([`foley.cost.default_max_usd()`](foley.cost.html.md#foley.cost.default_max_usd), #88).
   * **\*\*weave_kwargs** – Forwarded to `foley.weave()` (e.g. `sign_cert`, `watermark`).
 * **Return type:**
   [`ScoreResult`](#foley.ScoreResult)

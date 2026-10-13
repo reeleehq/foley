@@ -9,6 +9,7 @@ foley.cost
    .. autosummary::
    
       DEFAULT_MAX_USD
+      DEFAULT_MAX_USD_BY_LLM
       APPROVE_UNKNOWN_COST_ENV
    
    .. rubric:: Functions
@@ -23,6 +24,7 @@ foley.cost
       authorize
       settle
       release
+      default_max_usd
       charge
    
    .. rubric:: Exceptions

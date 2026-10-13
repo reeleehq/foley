@@ -1,4 +1,4 @@
-> built 2026-10-13 09:42 UTC from 639606f (main) · foley 0.0.37. Details: build_info.json
+> built 2026-10-13 10:57 UTC from b075ee6 (main) · foley 0.0.38. Details: build_info.json
 
 # index.html.md
 
@@ -133,7 +133,7 @@ lazily, so a bare install stays light. What each adds:
 
 **Nothing paid runs unless you ask for it.** Having `ANTHROPIC_API_KEY` set does not switch the SELECT rungs to Claude: pass `llm="anthropic"` to `find()` / `score()` or set `FOLEY_LLM=anthropic` (`llm="local"` uses `FOLEY_LLM_BASE_URL`). By default they run the free deterministic fakes, or your local endpoint if one is configured. `with foley.offline():` (or `FOLEY_OFFLINE=1`) blocks every external source and LLM call foley makes, on every surface, raising `foley.runtime.EgressBlocked` (model weights are never downloaded offline: a model not already cached raises `foley.runtime.ModelNotCached`, naming the command to fetch it while online).
 
-**Every paid call is priced and capped.** `foley.estimate("generate", backend="elevenlabs", duration=3)` says what a call costs before it is made (`None` means unknown, never free). A `find` / `score` / `generate` run stops before the first paid call that would take it past `Budget(max_usd=1.0)` (the default), and a call of unknown cost needs `Budget(approve_unknown_cost=True)`. Every paid response is kept in `~/.local/share/foley/generations/` before QC, so an identical request is served from there instead of paying twice. What a backend could not honour is never silent: a parameter that changes the result (`seed` on ElevenLabs) raises, and every other drop or clamp is listed in the returned candidate’s `notes`.
+**Every paid call is priced and capped.** `foley.estimate("generate", backend="elevenlabs", duration=3)` says what a call costs before it is made (`None` means unknown, never free). A `find` / `score` / `generate` run stops before the first paid call that would take it past its `Budget(max_usd=...)` (default $1, or $3 when you chose Claude with `llm="anthropic"` / `FOLEY_LLM=anthropic`, since a default `find` with Claude is bounded at about $2.52), and a call of unknown cost needs `Budget(approve_unknown_cost=True)`. Every paid response is kept in `~/.local/share/foley/generations/` before QC, so an identical request is served from there instead of paying twice. What a backend could not honour is never silent: a parameter that changes the result (`seed` on ElevenLabs) raises, and every other drop or clamp is listed in the returned candidate’s `notes`.
 
 `foley.check_requirements()` (and the `foley_capabilities` MCP tool) report what’s installed and
 what’s degraded. Full docs: **[thorwhalen.github.io/foley](https://thorwhalen.github.io/foley)**.
@@ -661,7 +661,9 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
   * **max_refine_loops** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max refine→re-retrieve passes per event (also the default
     [`Budget`](_autosummary/foley.agent.html.md#foley.agent.Budget)).
   * **budget** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Budget`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget)]) – An explicit [`Budget`](_autosummary/foley.agent.html.md#foley.agent.Budget) (overrides `max_refine_loops`). It is
-    also the run’s spend cap: `Budget(max_usd=...)` (default $1) bounds
+    also the run’s spend cap: `Budget(max_usd=...)` (default $1; $3 when
+    `llm='anthropic'` or `$FOLEY_LLM=anthropic`, whose default run is
+    bounded at about $2.52 — [`foley.cost.DEFAULT_MAX_USD_BY_LLM`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD_BY_LLM)) bounds
     every paid call the run makes — generations and paid LLM rungs —
     cumulatively, and a call of unknown cost needs
     `Budget(approve_unknown_cost=True)` (#57).
@@ -1117,7 +1119,8 @@ injectable library / runtime / byte-store, and hands the resolved tool functions
   * **include** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Optional subset of tool names to expose.
   * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The MCP server name.
   * **max_usd** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The server’s cumulative spend cap across every paid tool call, for
-    its lifetime (default [`foley.cost.DEFAULT_MAX_USD`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD), $1).
+    its lifetime (default [`foley.cost.default_max_usd()`](_autosummary/foley.cost.html.md#foley.cost.default_max_usd): $1, or $3 under
+    `$FOLEY_LLM=anthropic`).
 * **Returns:**
   A `fastmcp.FastMCP` server.
 
@@ -1949,7 +1952,9 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
   * **max_refine_loops** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max refine→re-retrieve passes per event (also the default
     `Budget`).
   * **budget** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Budget`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget)]) – An explicit `Budget` (overrides `max_refine_loops`). It is
-    also the run’s spend cap: `Budget(max_usd=...)` (default $1) bounds
+    also the run’s spend cap: `Budget(max_usd=...)` (default $1; $3 when
+    `llm='anthropic'` or `$FOLEY_LLM=anthropic`, whose default run is
+    bounded at about $2.52 — [`foley.cost.DEFAULT_MAX_USD_BY_LLM`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD_BY_LLM)) bounds
     every paid call the run makes — generations and paid LLM rungs —
     cumulatively, and a call of unknown cost needs
     `Budget(approve_unknown_cost=True)` (#57).
@@ -2831,18 +2836,21 @@ Three pieces, each small:
 * **A run-scoped budget.** [`spend_scope()`](_autosummary/foley.cost.html.md#foley.cost.spend_scope) makes a
   [`Budget`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget) the active one for a `find` / `score` /
   > `generate` run; [`authorize()`](_autosummary/foley.cost.html.md#foley.cost.authorize) is called before every paid call and refuses the
-  > first one that would take the run past `max_usd` (default [`DEFAULT_MAX_USD`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD),
-  > $1 — maintainer decision on #57), or whose cost is unknown unless the budget
-  > approves unknown costs.
+  > first one that would take the run past `max_usd` (default [`default_max_usd()`](_autosummary/foley.cost.html.md#foley.cost.default_max_usd):
+
+  [`DEFAULT_MAX_USD`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD), $1 — maintainer decision on #57 — or, when the caller chose
+  : a paid LLM for the SELECT rungs, [`DEFAULT_MAX_USD_BY_LLM`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD_BY_LLM), #88), or whose cost
+    is unknown unless the budget approves unknown costs.
 * **Two errors.** [`BudgetExceeded`](_autosummary/foley.cost.html.md#foley.cost.BudgetExceeded) and its subclass [`CostApprovalRequired`](_autosummary/foley.cost.html.md#foley.cost.CostApprovalRequired).
 
 Stdlib-only.
 
 ### Module Attributes
 
-| [`DEFAULT_MAX_USD`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD)          | The default cumulative cap for one run (a `find` / `score` / `generate` call).    |
-|---------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| [`APPROVE_UNKNOWN_COST_ENV`](_autosummary/foley.cost.html.md#foley.cost.APPROVE_UNKNOWN_COST_ENV) | Set to 1 to approve calls whose cost is unknown, for every run that does not say. |
+| [`DEFAULT_MAX_USD`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD)          | The default cumulative cap for one run (a `find` / `score` / `generate` call).                                                                                                             |
+|---------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`DEFAULT_MAX_USD_BY_LLM`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD_BY_LLM)   | The default cap of a [`foley.find()`](_autosummary/foley.html.md#foley.find) run whose LLM rungs the caller chose to pay for (`llm=` or `$FOLEY_LLM`), keyed by provider. |
+| [`APPROVE_UNKNOWN_COST_ENV`](_autosummary/foley.cost.html.md#foley.cost.APPROVE_UNKNOWN_COST_ENV) | Set to 1 to approve calls whose cost is unknown, for every run that does not say.                                                                                                          |
 
 ### Functions
 
@@ -2855,6 +2863,7 @@ Stdlib-only.
 | [`authorize`](_autosummary/foley.cost.html.md#foley.cost.authorize)(estimate_usd, \*, what)        | Admit a paid call: every budget in force must afford it, and each reserves it.                                                 |
 | [`settle`](_autosummary/foley.cost.html.md#foley.cost.settle)(reserved_usd, actual_usd)         | Replace each budget's reservation with the actual cost (`None`: keep it).                                                      |
 | [`release`](_autosummary/foley.cost.html.md#foley.cost.release)(reserved_usd)                    | Undo a reservation for a call that was never sent.                                                                             |
+| [`default_max_usd`](_autosummary/foley.cost.html.md#foley.cost.default_max_usd)([llm])                   | The cap of a run given no budget: higher when the caller chose a paid LLM.                                                     |
 | [`charge`](_autosummary/foley.cost.html.md#foley.cost.charge)(usd)                              | Record `usd` against every budget in force (a no-op outside any run).                                                          |
 
 ### Exceptions
@@ -2882,6 +2891,15 @@ Raised before a call whose cost is unknown, when the budget has not approved tha
 ### foley.cost.DEFAULT_MAX_USD *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 1.0*
 
 The default cumulative cap for one run (a `find` / `score` / `generate` call).
+
+### foley.cost.DEFAULT_MAX_USD_BY_LLM *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [float](https://docs.python.org/3/builtins/functions.html#float)]* *= {'anthropic': 3.0}*
+
+The default cap of a [`foley.find()`](_autosummary/foley.html.md#foley.find) run whose LLM rungs the caller chose to pay
+for (`llm=` or `$FOLEY_LLM`), keyed by provider. With the defaults (6 events,
+`k=10`, `verify='listen'`) Claude’s upper bound is about $2.52, so the $1 cap
+would refuse every such run before its first call; $3 lets it run and still caps
+it. A run usually spends far less than its bound (#88). `Budget(max_usd=...)`
+overrides it.
 
 ### foley.cost.active_budget()
 
@@ -2919,6 +2937,23 @@ For a whole-run upper bound (`find`’s pre-flight).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.cost.default_max_usd(llm=None)
+
+The cap of a run given no budget: higher when the caller chose a paid LLM.
+
+The provider is the one named by `llm` or, failing that, `$FOLEY_LLM` (the
+free default never resolves to a paid one); see [`DEFAULT_MAX_USD_BY_LLM`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD_BY_LLM).
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+```pycon
+>>> default_max_usd("fake")
+1.0
+>>> default_max_usd("anthropic")
+3.0
+```
 
 ### foley.cost.estimate_call(config, \*\*affordances)
 
@@ -6020,7 +6055,8 @@ injectable library / runtime / byte-store, and hands the resolved tool functions
   * **include** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Optional subset of tool names to expose.
   * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The MCP server name.
   * **max_usd** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The server’s cumulative spend cap across every paid tool call, for
-    its lifetime (default [`foley.cost.DEFAULT_MAX_USD`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD), $1).
+    its lifetime (default [`foley.cost.default_max_usd()`](_autosummary/foley.cost.html.md#foley.cost.default_max_usd): $1, or $3 under
+    `$FOLEY_LLM=anthropic`).
 * **Returns:**
   A `fastmcp.FastMCP` server.
 
@@ -6477,7 +6513,9 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
   * **max_refine_loops** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max refine→re-retrieve passes per event (also the default
     [`Budget`](_autosummary/foley.html.md#foley.Budget)).
   * **budget** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Budget`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget)]) – An explicit [`Budget`](_autosummary/foley.html.md#foley.Budget) (overrides `max_refine_loops`). It is
-    also the run’s spend cap: `Budget(max_usd=...)` (default $1) bounds
+    also the run’s spend cap: `Budget(max_usd=...)` (default $1; $3 when
+    `llm='anthropic'` or `$FOLEY_LLM=anthropic`, whose default run is
+    bounded at about $2.52 — [`foley.cost.DEFAULT_MAX_USD_BY_LLM`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD_BY_LLM)) bounds
     every paid call the run makes — generations and paid LLM rungs —
     cumulatively, and a call of unknown cost needs
     `Budget(approve_unknown_cost=True)` (#57).
@@ -7004,7 +7042,8 @@ injectable library / runtime / byte-store, and hands the resolved tool functions
   * **include** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Optional subset of tool names to expose.
   * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The MCP server name.
   * **max_usd** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The server’s cumulative spend cap across every paid tool call, for
-    its lifetime (default [`foley.cost.DEFAULT_MAX_USD`](_autosummary/foley.cost.html.md#foley.cost.DEFAULT_MAX_USD), $1).
+    its lifetime (default [`foley.cost.default_max_usd()`](_autosummary/foley.cost.html.md#foley.cost.default_max_usd): $1, or $3 under
+    `$FOLEY_LLM=anthropic`).
 * **Returns:**
   A `fastmcp.FastMCP` server.
 
@@ -7317,7 +7356,9 @@ editable [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.Soun
   * **llm** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Which LLM the SELECT rungs use (`'fake'` | `'local'` | `'anthropic'`;
     `None` reads `$FOLEY_LLM`, else the free default) — see [`foley.find()`](_autosummary/foley.html.md#foley.find).
   * **budget** – The run’s [`Budget`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget) — one spend cap
-    (`max_usd`, default $1) across every segment’s paid calls (#57).
+    (`max_usd`) across every segment’s paid calls (#57). Default: $1, or $3
+    when `llm` (or `$FOLEY_LLM`) is `'anthropic'`
+    ([`foley.cost.default_max_usd()`](_autosummary/foley.cost.html.md#foley.cost.default_max_usd), #88).
   * **\*\*weave_kwargs** – Forwarded to `foley.weave()` (e.g. `sign_cert`, `watermark`).
 * **Return type:**
   [`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult)
@@ -12110,7 +12151,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'netflix chime', 'ta-dum', 'netflix sound', 'ta dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel inside', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta-dum', 'netflix intro', 'ta dum', 'netflix sound', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16313,18 +16354,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-13 09:42 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/639606f5df1a30ea537812ff9a2460fd2cd1e883"><code>639606f</code></a> on branch <code>main</code>, for **foley 0.0.37** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 10:57 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/b075ee68c15a0f7b3937262b8519f28fd6380a86"><code>b075ee6</code></a> on branch <code>main</code>, for **foley 0.0.38** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.37) is behind the latest release on PyPI (0.0.38): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/639606f5df1a30ea537812ff9a2460fd2cd1e883"><code>639606f5df1a30ea537812ff9a2460fd2cd1e883</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/b075ee68c15a0f7b3937262b8519f28fd6380a86"><code>b075ee68c15a0f7b3937262b8519f28fd6380a86</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -16335,9 +16374,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38377979021">38377979021</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38386747594">38386747594</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>639606f5df1a30ea537812ff9a2460fd2cd1e883</code> (in the history of the built commit) |
+| Event commit | <code>b075ee68c15a0f7b3937262b8519f28fd6380a86</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -16362,13 +16401,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.38/">0.0.38</a>, newer than the documented version (0.0.37).
+Latest release: <a href="https://pypi.org/project/foley/0.0.38/">0.0.38</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 639606f5df1a30ea537812ff9a2460fd2cd1e883
+git checkout b075ee68c15a0f7b3937262b8519f28fd6380a86
 pip install "epythet==0.2.15"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

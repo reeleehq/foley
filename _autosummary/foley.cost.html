@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=aa2ad26f"></script>
+    <script src="../_static/documentation_options.js?v=423071ad"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.37" />
+  <meta name="docsearch:version" content="0.0.38" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -472,10 +472,13 @@ per-second price with no duration and no maximum).</p></li>
 <a class="reference internal" href="foley.agent.policy.html#foley.agent.policy.Budget" title="foley.agent.policy.Budget"><code class="xref py py-class docutils literal notranslate"><span class="pre">Budget</span></code></a> the active one for a <code class="docutils literal notranslate"><span class="pre">find</span></code> / <code class="docutils literal notranslate"><span class="pre">score</span></code> /</p>
 <blockquote>
 <div><p><code class="docutils literal notranslate"><span class="pre">generate</span></code> run; <a class="reference internal" href="#foley.cost.authorize" title="foley.cost.authorize"><code class="xref py py-func docutils literal notranslate"><span class="pre">authorize()</span></code></a> is called before every paid call and refuses the
-first one that would take the run past <code class="docutils literal notranslate"><span class="pre">max_usd</span></code> (default <a class="reference internal" href="#foley.cost.DEFAULT_MAX_USD" title="foley.cost.DEFAULT_MAX_USD"><code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_MAX_USD</span></code></a>,
-$1 — maintainer decision on #57), or whose cost is unknown unless the budget
-approves unknown costs.</p>
+first one that would take the run past <code class="docutils literal notranslate"><span class="pre">max_usd</span></code> (default <a class="reference internal" href="#foley.cost.default_max_usd" title="foley.cost.default_max_usd"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_max_usd()</span></code></a>:</p>
 </div></blockquote>
+<dl class="simple">
+<dt><a class="reference internal" href="#foley.cost.DEFAULT_MAX_USD" title="foley.cost.DEFAULT_MAX_USD"><code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_MAX_USD</span></code></a>, $1 — maintainer decision on #57 — or, when the caller chose</dt><dd><p>a paid LLM for the SELECT rungs, <a class="reference internal" href="#foley.cost.DEFAULT_MAX_USD_BY_LLM" title="foley.cost.DEFAULT_MAX_USD_BY_LLM"><code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_MAX_USD_BY_LLM</span></code></a>, #88), or whose cost
+is unknown unless the budget approves unknown costs.</p>
+</dd>
+</dl>
 </li>
 <li><p><strong>Two errors.</strong> <a class="reference internal" href="#foley.cost.BudgetExceeded" title="foley.cost.BudgetExceeded"><code class="xref py py-class docutils literal notranslate"><span class="pre">BudgetExceeded</span></code></a> and its subclass <a class="reference internal" href="#foley.cost.CostApprovalRequired" title="foley.cost.CostApprovalRequired"><code class="xref py py-class docutils literal notranslate"><span class="pre">CostApprovalRequired</span></code></a>.</p></li>
 </ul>
@@ -486,7 +489,10 @@ approves unknown costs.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.cost.DEFAULT_MAX_USD" title="foley.cost.DEFAULT_MAX_USD"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_MAX_USD</span></code></a></p></td>
 <td><p>The default cumulative cap for one run (a <code class="docutils literal notranslate"><span class="pre">find</span></code> / <code class="docutils literal notranslate"><span class="pre">score</span></code> / <code class="docutils literal notranslate"><span class="pre">generate</span></code> call).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.cost.APPROVE_UNKNOWN_COST_ENV" title="foley.cost.APPROVE_UNKNOWN_COST_ENV"><code class="xref py py-obj docutils literal notranslate"><span class="pre">APPROVE_UNKNOWN_COST_ENV</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.cost.DEFAULT_MAX_USD_BY_LLM" title="foley.cost.DEFAULT_MAX_USD_BY_LLM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_MAX_USD_BY_LLM</span></code></a></p></td>
+<td><p>The default cap of a <a class="reference internal" href="foley.html#foley.find" title="foley.find"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.find()</span></code></a> run whose LLM rungs the caller chose to pay for (<code class="docutils literal notranslate"><span class="pre">llm=</span></code> or <code class="docutils literal notranslate"><span class="pre">$FOLEY_LLM</span></code>), keyed by provider.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.cost.APPROVE_UNKNOWN_COST_ENV" title="foley.cost.APPROVE_UNKNOWN_COST_ENV"><code class="xref py py-obj docutils literal notranslate"><span class="pre">APPROVE_UNKNOWN_COST_ENV</span></code></a></p></td>
 <td><p>Set to 1 to approve calls whose cost is unknown, for every run that does not say.</p></td>
 </tr>
 </tbody>
@@ -519,7 +525,10 @@ approves unknown costs.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.cost.release" title="foley.cost.release"><code class="xref py py-obj docutils literal notranslate"><span class="pre">release</span></code></a>(reserved_usd)</p></td>
 <td><p>Undo a reservation for a call that was never sent.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.cost.charge" title="foley.cost.charge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">charge</span></code></a>(usd)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.cost.default_max_usd" title="foley.cost.default_max_usd"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_max_usd</span></code></a>([llm])</p></td>
+<td><p>The cap of a run given no budget: higher when the caller chose a paid LLM.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.cost.charge" title="foley.cost.charge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">charge</span></code></a>(usd)</p></td>
 <td><p>Record <code class="docutils literal notranslate"><span class="pre">usd</span></code> against every budget in force (a no-op outside any run).</p></td>
 </tr>
 </tbody>
@@ -561,6 +570,17 @@ approves unknown costs.</p>
 <dt class="sig sig-object py" id="foley.cost.DEFAULT_MAX_USD">
 <span class="sig-prename descclassname"><span class="pre">foley.cost.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_MAX_USD</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.0</span></span><a class="headerlink" href="#foley.cost.DEFAULT_MAX_USD" title="Link to this definition">#</a></dt>
 <dd><p>The default cumulative cap for one run (a <code class="docutils literal notranslate"><span class="pre">find</span></code> / <code class="docutils literal notranslate"><span class="pre">score</span></code> / <code class="docutils literal notranslate"><span class="pre">generate</span></code> call).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.cost.DEFAULT_MAX_USD_BY_LLM">
+<span class="sig-prename descclassname"><span class="pre">foley.cost.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_MAX_USD_BY_LLM</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'anthropic':</span> <span class="pre">3.0}</span></span><a class="headerlink" href="#foley.cost.DEFAULT_MAX_USD_BY_LLM" title="Link to this definition">#</a></dt>
+<dd><p>The default cap of a <a class="reference internal" href="foley.html#foley.find" title="foley.find"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.find()</span></code></a> run whose LLM rungs the caller chose to pay
+for (<code class="docutils literal notranslate"><span class="pre">llm=</span></code> or <code class="docutils literal notranslate"><span class="pre">$FOLEY_LLM</span></code>), keyed by provider. With the defaults (6 events,
+<code class="docutils literal notranslate"><span class="pre">k=10</span></code>, <code class="docutils literal notranslate"><span class="pre">verify='listen'</span></code>) Claude’s upper bound is about $2.52, so the $1 cap
+would refuse every such run before its first call; $3 lets it run and still caps
+it. A run usually spends far less than its bound (#88). <code class="docutils literal notranslate"><span class="pre">Budget(max_usd=...)</span></code>
+overrides it.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -613,6 +633,25 @@ one refused before sending is released with <a class="reference internal" href="
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.cost.default_max_usd">
+<span class="sig-prename descclassname"><span class="pre">foley.cost.</span></span><span class="sig-name descname"><span class="pre">default_max_usd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">llm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/cost.html#default_max_usd"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.cost.default_max_usd" title="Link to this definition">#</a></dt>
+<dd><p>The cap of a run given no budget: higher when the caller chose a paid LLM.</p>
+<p>The provider is the one named by <code class="docutils literal notranslate"><span class="pre">llm</span></code> or, failing that, <code class="docutils literal notranslate"><span class="pre">$FOLEY_LLM</span></code> (the
+free default never resolves to a paid one); see <a class="reference internal" href="#foley.cost.DEFAULT_MAX_USD_BY_LLM" title="foley.cost.DEFAULT_MAX_USD_BY_LLM"><code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_MAX_USD_BY_LLM</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">default_max_usd</span><span class="p">(</span><span class="s2">"fake"</span><span class="p">)</span>
+<span class="go">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">default_max_usd</span><span class="p">(</span><span class="s2">"anthropic"</span><span class="p">)</span>
+<span class="go">3.0</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -741,10 +780,12 @@ one, a fresh default <a class="reference internal" href="foley.agent.policy.html
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.BudgetExceeded"><code class="docutils literal notranslate"><span class="pre">BudgetExceeded</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.CostApprovalRequired"><code class="docutils literal notranslate"><span class="pre">CostApprovalRequired</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.DEFAULT_MAX_USD"><code class="docutils literal notranslate"><span class="pre">DEFAULT_MAX_USD</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.DEFAULT_MAX_USD_BY_LLM"><code class="docutils literal notranslate"><span class="pre">DEFAULT_MAX_USD_BY_LLM</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.active_budget"><code class="docutils literal notranslate"><span class="pre">active_budget()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.authorize"><code class="docutils literal notranslate"><span class="pre">authorize()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.charge"><code class="docutils literal notranslate"><span class="pre">charge()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.check"><code class="docutils literal notranslate"><span class="pre">check()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.default_max_usd"><code class="docutils literal notranslate"><span class="pre">default_max_usd()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.estimate_call"><code class="docutils literal notranslate"><span class="pre">estimate_call()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.release"><code class="docutils literal notranslate"><span class="pre">release()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.scoped_iter"><code class="docutils literal notranslate"><span class="pre">scoped_iter()</span></code></a></li>

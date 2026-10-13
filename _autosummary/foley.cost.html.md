@@ -12,18 +12,21 @@ Three pieces, each small:
 * **A run-scoped budget.** [`spend_scope()`](#foley.cost.spend_scope) makes a
   [`Budget`](foley.agent.policy.html.md#foley.agent.policy.Budget) the active one for a `find` / `score` /
   > `generate` run; [`authorize()`](#foley.cost.authorize) is called before every paid call and refuses the
-  > first one that would take the run past `max_usd` (default [`DEFAULT_MAX_USD`](#foley.cost.DEFAULT_MAX_USD),
-  > $1 — maintainer decision on #57), or whose cost is unknown unless the budget
-  > approves unknown costs.
+  > first one that would take the run past `max_usd` (default [`default_max_usd()`](#foley.cost.default_max_usd):
+
+  [`DEFAULT_MAX_USD`](#foley.cost.DEFAULT_MAX_USD), $1 — maintainer decision on #57 — or, when the caller chose
+  : a paid LLM for the SELECT rungs, [`DEFAULT_MAX_USD_BY_LLM`](#foley.cost.DEFAULT_MAX_USD_BY_LLM), #88), or whose cost
+    is unknown unless the budget approves unknown costs.
 * **Two errors.** [`BudgetExceeded`](#foley.cost.BudgetExceeded) and its subclass [`CostApprovalRequired`](#foley.cost.CostApprovalRequired).
 
 Stdlib-only.
 
 ### Module Attributes
 
-| [`DEFAULT_MAX_USD`](#foley.cost.DEFAULT_MAX_USD)          | The default cumulative cap for one run (a `find` / `score` / `generate` call).    |
-|---------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| [`APPROVE_UNKNOWN_COST_ENV`](#foley.cost.APPROVE_UNKNOWN_COST_ENV) | Set to 1 to approve calls whose cost is unknown, for every run that does not say. |
+| [`DEFAULT_MAX_USD`](#foley.cost.DEFAULT_MAX_USD)          | The default cumulative cap for one run (a `find` / `score` / `generate` call).                                                                                                             |
+|---------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`DEFAULT_MAX_USD_BY_LLM`](#foley.cost.DEFAULT_MAX_USD_BY_LLM)   | The default cap of a [`foley.find()`](foley.html.md#foley.find) run whose LLM rungs the caller chose to pay for (`llm=` or `$FOLEY_LLM`), keyed by provider. |
+| [`APPROVE_UNKNOWN_COST_ENV`](#foley.cost.APPROVE_UNKNOWN_COST_ENV) | Set to 1 to approve calls whose cost is unknown, for every run that does not say.                                                                                                          |
 
 ### Functions
 
@@ -36,6 +39,7 @@ Stdlib-only.
 | [`authorize`](#foley.cost.authorize)(estimate_usd, \*, what)        | Admit a paid call: every budget in force must afford it, and each reserves it.                                                 |
 | [`settle`](#foley.cost.settle)(reserved_usd, actual_usd)         | Replace each budget's reservation with the actual cost (`None`: keep it).                                                      |
 | [`release`](#foley.cost.release)(reserved_usd)                    | Undo a reservation for a call that was never sent.                                                                             |
+| [`default_max_usd`](#foley.cost.default_max_usd)([llm])                   | The cap of a run given no budget: higher when the caller chose a paid LLM.                                                     |
 | [`charge`](#foley.cost.charge)(usd)                              | Record `usd` against every budget in force (a no-op outside any run).                                                          |
 
 ### Exceptions
@@ -63,6 +67,15 @@ Raised before a call whose cost is unknown, when the budget has not approved tha
 ### foley.cost.DEFAULT_MAX_USD *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 1.0*
 
 The default cumulative cap for one run (a `find` / `score` / `generate` call).
+
+### foley.cost.DEFAULT_MAX_USD_BY_LLM *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [float](https://docs.python.org/3/builtins/functions.html#float)]* *= {'anthropic': 3.0}*
+
+The default cap of a [`foley.find()`](foley.html.md#foley.find) run whose LLM rungs the caller chose to pay
+for (`llm=` or `$FOLEY_LLM`), keyed by provider. With the defaults (6 events,
+`k=10`, `verify='listen'`) Claude’s upper bound is about $2.52, so the $1 cap
+would refuse every such run before its first call; $3 lets it run and still caps
+it. A run usually spends far less than its bound (#88). `Budget(max_usd=...)`
+overrides it.
 
 ### foley.cost.active_budget()
 
@@ -100,6 +113,23 @@ For a whole-run upper bound (`find`’s pre-flight).
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.cost.default_max_usd(llm=None)
+
+The cap of a run given no budget: higher when the caller chose a paid LLM.
+
+The provider is the one named by `llm` or, failing that, `$FOLEY_LLM` (the
+free default never resolves to a paid one); see [`DEFAULT_MAX_USD_BY_LLM`](#foley.cost.DEFAULT_MAX_USD_BY_LLM).
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+```pycon
+>>> default_max_usd("fake")
+1.0
+>>> default_max_usd("anthropic")
+3.0
+```
 
 ### foley.cost.estimate_call(config, \*\*affordances)
 

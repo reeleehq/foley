@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=aa2ad26f"></script>
+    <script src="../../../_static/documentation_options.js?v=423071ad"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.37" />
+  <meta name="docsearch:version" content="0.0.38" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -776,15 +776,16 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Keyed on the server, not on the ``session`` argument (which the calling agent</span>
 <span class="sd">    chooses, so a per-session cap could be dodged by inventing session ids). The cap</span>
 <span class="sd">    is set by whoever starts the server (``build_mcp_server(max_usd=...)``) and lasts</span>
-<span class="sd">    for the server's lifetime; restart the server to reset it.</span>
+<span class="sd">    for the server's lifetime; restart the server to reset it. Unset, it is</span>
+<span class="sd">    :func:`foley.cost.default_max_usd` ($1, or $3 under ``$FOLEY_LLM=anthropic``, #88).</span>
 <span class="sd">    """</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_MAX_USD</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_max_usd</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.policy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Budget</span>
 
     <span class="k">with</span> <span class="n">_BUDGET_LOCK</span><span class="p">:</span>  <span class="c1"># tools run in a threadpool: one budget, even on a first burst</span>
         <span class="k">if</span> <span class="n">_STATE</span><span class="p">[</span><span class="s2">"budget"</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">cap</span> <span class="o">=</span> <span class="n">_STATE</span><span class="p">[</span><span class="s2">"max_usd"</span><span class="p">]</span>
-            <span class="n">_STATE</span><span class="p">[</span><span class="s2">"budget"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="n">DEFAULT_MAX_USD</span> <span class="k">if</span> <span class="n">cap</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cap</span><span class="p">)</span>
+            <span class="n">_STATE</span><span class="p">[</span><span class="s2">"budget"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Budget</span><span class="p">(</span><span class="n">max_usd</span><span class="o">=</span><span class="n">default_max_usd</span><span class="p">()</span> <span class="k">if</span> <span class="n">cap</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">cap</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">_STATE</span><span class="p">[</span><span class="s2">"budget"</span><span class="p">]</span>
 
 
@@ -1524,7 +1525,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        include: Optional subset of tool names to expose.</span>
 <span class="sd">        name: The MCP server name.</span>
 <span class="sd">        max_usd: The server's cumulative spend cap across every paid tool call, for</span>
-<span class="sd">            its lifetime (default :data:`foley.cost.DEFAULT_MAX_USD`, $1).</span>
+<span class="sd">            its lifetime (default :func:`foley.cost.default_max_usd`: $1, or $3 under</span>
+<span class="sd">            ``$FOLEY_LLM=anthropic``).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A ``fastmcp.FastMCP`` server.</span>
