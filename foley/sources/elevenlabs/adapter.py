@@ -153,7 +153,8 @@ def _is_format_refusal(detail, native_output_format: str, codes) -> bool:
     The documented shape carries a ``code`` (and a legacy ``status``); a match on
     either against ``codes`` is a refusal. Without one, a message that names the
     requested format (``"Requested output format pcm_48000 ... is only allowed for
-    Pro tier and above"``) is too. Anything else (another 403, such as a key missing
+    Pro tier and above"``) is too; a message is read only when the detail carries
+    no code or status at all. Anything else (another 403, such as a key missing
     a permission, or no body at all) is not.
 
     >>> _is_format_refusal({"code": "subscription_required"}, "pcm_48000",
@@ -162,13 +163,19 @@ def _is_format_refusal(detail, native_output_format: str, codes) -> bool:
     >>> _is_format_refusal("Requested output format pcm_48000 (PCM at 48000hz) is "
     ...                    "only allowed for Pro tier and above.", "pcm_48000", [])
     True
-    >>> _is_format_refusal({"code": "missing_permissions", "message": "no"},
+    >>> _is_format_refusal({"code": "missing_permissions", "message": "pcm_48000"},
     ...                    "pcm_48000", ["subscription_required"])
+    False
+    >>> _is_format_refusal({"code": ["subscription_required"]}, "pcm_48000",
+    ...                    ["subscription_required"])
     False
     """
     if isinstance(detail, dict):
-        if {detail.get("code"), detail.get("status")} & set(codes):
+        tags = [detail.get("code"), detail.get("status")]
+        if any(isinstance(t, str) and t in codes for t in tags):
             return True
+        if any(t is not None for t in tags):
+            return False  # a coded error that is not a tier refusal (its message aside)
         detail = detail.get("message")
     return isinstance(detail, str) and native_output_format in detail
 
