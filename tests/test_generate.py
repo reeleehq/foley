@@ -915,3 +915,25 @@ def test_config_import_stays_light(pkg, heavy):
     )
     proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert proc.returncode == 0, proc.stderr
+
+
+@pytest.mark.parametrize(
+    "first_samples",
+    [
+        b"\xff\xff\x00\x00",  # samples -1, 0
+        b"\xff\xfb\x90\x64",  # bytes that read as one MP3 header, with no second frame
+    ],
+)
+def test_elevenlabs_wav_wraps_pcm_that_starts_like_an_mp3_header(first_samples):
+    raw = first_samples + _pcm_s16le(0.5)[4:]
+    transport = FakeTransport(FakeResponse(200, None, raw))
+    clip = _el_adapter(transport).generate("rain", output_format="wav", duration=0.5)
+    assert clip.audio_bytes[:4] == b"RIFF"
+
+
+def test_elevenlabs_wav_passes_a_real_two_frame_mp3_through():
+    frame = b"\xff\xfb\x90\x64" + bytes(417 - 4)  # 128 kbit/s, 44.1 kHz: 417 bytes
+    body = frame * 3
+    transport = FakeTransport(FakeResponse(200, None, body))
+    clip = _el_adapter(transport).generate("rain", output_format="wav", duration=1.0)
+    assert clip.audio_bytes == body
