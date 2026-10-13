@@ -44,20 +44,43 @@ from .config import SOURCE_CONFIG
 _UNSUPPORTED = ("negative_prompt", "steps", "seed")
 
 
-#: Leading bytes of containers that must never be wrapped as raw PCM.
-_CONTAINER_MAGIC = (b"RIFF", b"fLaC", b"OggS")
+#: Leading bytes of containers / encodings that must never be wrapped as raw PCM.
+_CONTAINER_MAGIC = (b"RIFF", b"fLaC", b"OggS", b"ID3", b"\x1f\x8b", b"\xef\xbb\xbf")
+
+
+def _is_mpeg_frame(head: bytes) -> bool:
+    """An MPEG audio frame header (an untagged MP3), not a run of ``0xFF`` PCM bytes."""
+    return (
+        len(head) >= 3
+        and head[0] == 0xFF
+        and head[1] & 0xE0 == 0xE0
+        and head[1] & 0x06 != 0  # a valid layer
+        and head[2] & 0xF0 != 0xF0  # a valid bitrate index (rules out 0xFFFF silence)
+    )
+
+
+def _is_text(head: bytes) -> bool:
+    """Printable UTF-8 (an HTML/JSON error page, in any language)."""
+    try:
+        text = head.decode("utf-8")
+    except UnicodeDecodeError:
+        try:  # the cut may fall inside a multi-byte character
+            text = head[:-3].decode("utf-8")
+        except UnicodeDecodeError:
+            return False
+    return bool(text) and all(c.isprintable() or c in "\t\n\r" for c in text)
 
 
 def _looks_like_raw_pcm(audio: bytes) -> bool:
-    """False for a known container or a text body (an HTML/JSON error page sent as 200).
+    """False for a known container, an untagged MP3, or a text body (an error page).
 
-    Wrapping either as PCM would turn it into a "valid" WAV of noise and hide the
-    error from ingest's decode check.
+    Wrapping any of them as PCM would turn it into a "valid" WAV of noise and hide
+    the problem from ingest's decode check.
     """
     head = audio[:64]
-    if not head or head[:4] in _CONTAINER_MAGIC or head[:3] == b"ID3":
+    if not head or head.startswith(_CONTAINER_MAGIC) or _is_mpeg_frame(head):
         return False
-    return not all(32 <= b < 127 or b in b"\t\n\r" for b in head)
+    return not _is_text(head)
 
 
 class _HTTPStatusError(RuntimeError):
@@ -256,22 +279,20 @@ class ElevenLabsAdapter:
         """Call the endpoint; on a 4xx for a format with a declared fallback, retry once.
 
         Whether PCM needs a higher plan tier for sound effects is unverified, so a
-        client error on ``pcm_*`` is retried with the config's ``fallback_on_4xx``
-        format (a 4xx produces no audio, so nothing is billed twice) and the
-        fallback is recorded in ``notes``. Returns ``(bytes, format actually used)``.
+        plan-tier refusal (``fallback_statuses``: 402/403) on ``pcm_*`` is retried
+        with the config's ``fallback_on_4xx`` format (a refusal produces no audio,
+        so nothing is billed twice) and recorded in ``notes``. Anything else raises. Returns ``(bytes, format actually used)``.
         """
+        spec = self.config["param_map"]["output_format"]
         try:
             return self._invoke(
                 params={"output_format": native_output_format}, body=body
             ), native_output_format
         except _HTTPStatusError as exc:
-            fallbacks = self.config["param_map"]["output_format"].get(
-                "fallback_on_4xx", {}
-            )
-            fallback = fallbacks.get(native_output_format)
-            if fallback is None or not 400 <= exc.status_code < 500:
-                raise
-            if exc.status_code in (401, 429):  # auth / rate limit: not the format
+            fallback = spec.get("fallback_on_4xx", {}).get(native_output_format)
+            if fallback is None or exc.status_code not in spec.get(
+                "fallback_statuses", ()
+            ):
                 raise
             notes.append(
                 f"output_format {native_output_format!r} refused by ElevenLabs "
@@ -288,8 +309,8 @@ class ElevenLabsAdapter:
     ) -> bytes:
         """Give raw ``pcm_*`` bytes a WAV header (16-bit LE); other formats pass through.
 
-        The channel count comes from the config. When a duration was requested and
-        the byte length says the clip is stereo instead, stereo is used and noted.
+        The channel count comes from the config. When a duration was requested, the
+        byte length confirms mono or stereo; otherwise an unverified layout is noted.
         """
         layout = (self.config["param_map"]["output_format"].get("pcm") or {}).get(
             native_output_format
@@ -297,13 +318,23 @@ class ElevenLabsAdapter:
         if layout is None or not _looks_like_raw_pcm(audio):
             return audio  # a container or a text error body: decode decides, never wrap
         rate, channels, width = layout["sample_rate"], layout.get("channels", 1), 2
+        confirmed = False
         if duration_s:
             implied = len(audio) / (rate * width * float(duration_s))
-            if channels == 1 and 1.8 <= implied <= 2.2:
-                channels = 2
-                notes.append(
-                    f"{native_output_format}: byte length implies stereo; wrapped as 2 ch"
-                )
+            if 0.9 <= implied <= 1.1:
+                channels, confirmed = 1, True
+            elif 1.9 <= implied <= 2.1:
+                channels, confirmed = 2, True
+        if not confirmed and not layout.get("verified"):
+            notes.append(
+                f"{native_output_format}: channel layout not documented for ElevenLabs "
+                f"SFX; assumed {channels} ch S16LE"
+            )
+        elif confirmed and channels != layout.get("channels", 1):
+            notes.append(
+                f"{native_output_format}: byte length for the requested duration "
+                f"implies {channels} ch; wrapped as {channels} ch"
+            )
         frame = width * channels
         audio = audio[: len(audio) - len(audio) % frame]  # never a partial frame
         buf = io.BytesIO()

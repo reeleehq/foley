@@ -59,11 +59,17 @@ SOURCE_CONFIG = {
                 "opus": "opus_48000_128",
                 "wav": "pcm_48000",
             },
+            # Retried once with the fallback only on these statuses (a plan-tier
+            # refusal); any other error is raised as is.
             "fallback_on_4xx": {"pcm_48000": "mp3_44100_128"},
-            # Raw PCM layout per native enum: 16-bit little-endian, mono by default.
-            # When a duration was requested the adapter checks the channel count
-            # against the byte length and corrects it (with a note) if it is 2.
-            "pcm": {"pcm_48000": {"sample_rate": 48000, "channels": 1}},
+            "fallback_statuses": [402, 403],
+            # Raw PCM layout per native enum: 16-bit little-endian. The channel count
+            # is not documented for the SFX endpoint: until a live call confirms it,
+            # verified=False and a clip whose layout the byte length cannot confirm
+            # (no duration requested) carries a note saying mono was assumed.
+            "pcm": {
+                "pcm_48000": {"sample_rate": 48000, "channels": 1, "verified": False}
+            },
         },
     },
     "supported_affordances": [

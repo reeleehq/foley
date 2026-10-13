@@ -269,7 +269,44 @@ def test_elevenlabs_wav_detects_stereo_pcm_from_the_requested_duration():
     clip = _el_adapter(transport).generate("rain", output_format="wav", duration=1.0)
     data, sr = sf.read(io.BytesIO(clip.audio_bytes))
     assert data.shape == (48000, 2)
-    assert any("stereo" in n for n in clip.notes)
+    assert any("implies 2 ch" in n for n in clip.notes)
+
+
+def test_elevenlabs_wav_without_a_duration_notes_the_assumed_layout():
+    transport = FakeTransport(FakeResponse(200, None, _pcm_s16le(0.5)))
+    clip = _el_adapter(transport).generate("rain", output_format="wav")
+    assert clip.audio_bytes[:4] == b"RIFF"
+    assert any("assumed 1 ch" in n for n in clip.notes)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"\xff\xfb\x90\x64" + bytes(400),  # an untagged MP3 frame
+        b"ID3\x04" + bytes(400),  # a tagged MP3
+        '{"detail": "quota dépassé — réessayez"}'.encode() * 4,  # non-ASCII JSON
+        b"\xef\xbb\xbf<html><body>error</body></html>" * 3,  # HTML with a BOM
+    ],
+)
+def test_elevenlabs_wav_never_wraps_a_non_pcm_body(body):
+    transport = FakeTransport(FakeResponse(200, None, body))
+    clip = _el_adapter(transport).generate("rain", output_format="wav", duration=1.0)
+    assert clip.audio_bytes == body  # passed through: decode decides, not a WAV of noise
+
+
+def test_elevenlabs_wav_passes_a_returned_container_through():
+    flac = _flac(_mono_tone())
+    transport = FakeTransport(FakeResponse(200, None, flac))
+    clip = _el_adapter(transport).generate("rain", output_format="wav", duration=1.0)
+    assert clip.audio_bytes == flac
+
+
+def test_elevenlabs_wav_trims_a_partial_frame():
+    raw = _pcm_s16le(0.5) + b"\x01"
+    transport = FakeTransport(FakeResponse(200, None, raw))
+    clip = _el_adapter(transport).generate("rain", output_format="wav", duration=0.5)
+    data, _ = sf.read(io.BytesIO(clip.audio_bytes))
+    assert len(data) == 24000
 
 
 class _RefusePcm(FakeTransport):
@@ -298,12 +335,24 @@ def test_elevenlabs_wav_falls_back_to_mp3_on_a_4xx_with_a_note():
     assert gp["output_format"] == "mp3_44100_128"  # what was actually used
 
 
-@pytest.mark.parametrize("status", [401, 429, 500])
+@pytest.mark.parametrize("status", [400, 401, 404, 422, 429, 500])
 def test_elevenlabs_wav_does_not_fall_back_on_auth_rate_or_server_errors(status):
     transport = _RefusePcm(status)
     with pytest.raises(RuntimeError, match=str(status)):
         _el_adapter(transport).generate("rain", output_format="wav")
     assert len(transport.calls) == 1
+
+
+def test_elevenlabs_wav_fallback_that_also_fails_raises():
+    class _RefuseAll(FakeTransport):
+        def __call__(self, method, url, *, params=None, **kw):
+            super().__call__(method, url, params=params, **kw)
+            return FakeResponse(403, {"detail": "no"}, b"")
+
+    transport = _RefuseAll()
+    with pytest.raises(RuntimeError, match="403"):
+        _el_adapter(transport).generate("rain", output_format="wav")
+    assert len(transport.calls) == 2
 
 
 # ---------------------------------------------------------------------------
