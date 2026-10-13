@@ -11,6 +11,12 @@ foley.weave.align
       WORDS_PER_SECOND
       WHISPERX_SAMPLE_RATE
    
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      aligner_name
+   
    .. rubric:: Classes
 
    .. autosummary::

@@ -1,4 +1,4 @@
-> built 2026-10-13 04:53 UTC from 47a6f98 (main) · foley 0.0.33. Details: build_info.json
+> built 2026-10-13 04:56 UTC from 01db4e3 (main) · foley 0.0.34. Details: build_info.json
 
 # index.html.md
 
@@ -37,25 +37,29 @@ candidates = foley.find("She pushed open the heavy oak door; rain hammered outsi
 hits = foley.search("distant thunder rumble", k=10)  # commercial use is the default
 
 # Generate a sound when nothing fits (arioso-style; pluggable backends)
+# needs foley[stable-audio] and the gated stabilityai/stable-audio-open-1.0 weights
+# (accept its license on Hugging Face, set HF_TOKEN); backend="elevenlabs" needs
+# ELEVENLABS_API_KEY and is paid
 clip = foley.generate("a single wooden door creak", backend="stable_audio", duration=3)
 
-# Grow the library — ingest auto-tags, captions, and embeds every file
+# Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
-foley.add_from("freesound", query="ocean waves", license="cc0")
+foley.add_from("freesound", query="ocean waves", license="cc0")  # needs FREESOUND_API_KEY
 
 # Compose: place the sounds under the narration (find → plan → weave)
 timeline = foley.plan(candidates)  # the editable sound-design plan
 result = foley.weave("narration.wav", timeline)  # mastered mix + SDH captions + credits
+result.notes  # how placements were timed, e.g. estimates when foley[align] is absent
 ```
 
 ## How it works — four stages
 
-| Stage      | What it does                                                                                    | Built on                                                   |
-|------------|-------------------------------------------------------------------------------------------------|------------------------------------------------------------|
-| **Source** | your own files · Freesound (CC0) · generate (Stable Audio Open / ElevenLabs)                    | config-driven adapters, per-sound license tracking         |
-| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                       | PANNs · CLAP · EnCLAP · LanceDB (local→cloud via `dol`)    |
-| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                          | CLAP retrieval + LLM decomposition + a verification ladder |
-| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits | forced-alignment · LUFS/EBU-R128                           |
+| Stage      | What it does                                                                                    | Built on                                                                                                                           |
+|------------|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| **Source** | your own files · Freesound (CC0) · generate (Stable Audio Open / ElevenLabs)                    | config-driven adapters, per-sound license tracking                                                                                 |
+| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                       | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
+| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                          | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
+| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
 
 The selection tools publish as an **MCP server** (via `py2mcp`) so the same capabilities
 drive the agent, a CLI, and external hosts.
@@ -122,7 +126,7 @@ lazily, so a bare install stays light. What each adds:
 | `index` / `index-sqlite`                    | the hybrid vector+keyword index (LanceDB / sqlite-vec)             |
 | `freesound` · `stable-audio` · `elevenlabs` | live retrieve / generate sources                                   |
 | `agent` · `local-llm`                       | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint) |
-| `align` · `weave` · `provenance` · `c2pa`   | forced alignment, OTIO/rubberband, watermarking, signed C2PA       |
+| `align` · `weave` · `provenance` · `c2pa`   | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA |
 | `mcp` · `obs`                               | the MCP server · OpenTelemetry export                              |
 
 **Nothing paid runs unless you ask for it.** Having `ANTHROPIC_API_KEY` set does not switch the SELECT rungs to Claude: pass `llm="anthropic"` to `find()` / `score()` or set `FOLEY_LLM=anthropic` (`llm="local"` uses `FOLEY_LLM_BASE_URL`). By default they run the free deterministic fakes, or your local endpoint if one is configured. `with foley.offline():` (or `FOLEY_OFFLINE=1`) blocks every external source and LLM call foley makes, on every surface, raising `foley.runtime.EgressBlocked` (model weights are never downloaded offline: a model not already cached raises `foley.runtime.ModelNotCached`, naming the command to fetch it while online).
@@ -5889,7 +5893,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Which rung of the verification ladder produced a `Verdict`.
 
-### *class* foley.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None)
+### *class* foley.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=<factory>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -5897,6 +5901,11 @@ The output of `weave()` — the v1 Definition-of-Done deliverable.
 
 A mastered mix + an editable, re-renderable timeline + credits + SDH captions + a
 reproducible run-artifact join, plus the fail-safe provenance re-assertion.
+
+#### notes *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)*
+
+What the caller should know about how the mix was made, e.g. that word timings
+are estimates because no forced aligner is installed (#65).
 
 ### foley.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, \*\*affordances)
 
@@ -12099,7 +12108,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix sound', 'netflix chime', 'ta-dum', 'netflix intro', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'netflix intro', 'ta-dum', 'ta dum', 'netflix chime', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -15584,6 +15593,11 @@ else falls back to the fake — the progressive-disclosure rule.
 |-----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`WHISPERX_SAMPLE_RATE`](_autosummary/foley.weave.align.html.md#foley.weave.align.WHISPERX_SAMPLE_RATE) | WhisperX runs alignment at 16 kHz mono (its wav2vec2 CTC model's native rate).                                                                                                                                                                      |
 
+### Functions
+
+| [`aligner_name`](_autosummary/foley.weave.align.html.md#foley.weave.align.aligner_name)(aligner)   | `fake` / `whisperx` for the built-ins, else the class name (run manifest).   |
+|--------------------------------------------------------------------------|------------------------------------------------------------------------------|
+
 ### Classes
 
 | [`FakeAligner`](_autosummary/foley.weave.align.html.md#foley.weave.align.FakeAligner)()                                  | Deterministic, torch-free `Aligner` — evenly spaces the transcript's words.      |
@@ -15638,6 +15652,13 @@ Force-align `audio` to its transcript, returning word-level timestamps.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.weave.align.aligner_name(aligner)
+
+`fake` / `whisperx` for the built-ins, else the class name (run manifest).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 
 # _autosummary/foley.weave.anchor.html.md
@@ -16276,18 +16297,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-13 04:53 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/47a6f98c6cdb1f4513bf8ba2de6199a822f7f351"><code>47a6f98</code></a> on branch <code>main</code>, for **foley 0.0.33** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 04:56 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/01db4e3a1ca1be8d3c82106148e23e4a49b82d3e"><code>01db4e3</code></a> on branch <code>main</code>, for **foley 0.0.34** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.33) is behind the latest release on PyPI (0.0.34): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.34) is behind the latest release on PyPI (0.0.35): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/47a6f98c6cdb1f4513bf8ba2de6199a822f7f351"><code>47a6f98c6cdb1f4513bf8ba2de6199a822f7f351</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/01db4e3a1ca1be8d3c82106148e23e4a49b82d3e"><code>01db4e3a1ca1be8d3c82106148e23e4a49b82d3e</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -16298,9 +16319,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38348522941">38348522941</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38348767081">38348767081</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>47a6f98c6cdb1f4513bf8ba2de6199a822f7f351</code> (in the history of the built commit) |
+| Event commit | <code>01db4e3a1ca1be8d3c82106148e23e4a49b82d3e</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -16325,13 +16346,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.34/">0.0.34</a>, newer than the documented version (0.0.33).
+Latest release: <a href="https://pypi.org/project/foley/0.0.35/">0.0.35</a>, newer than the documented version (0.0.34).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 47a6f98c6cdb1f4513bf8ba2de6199a822f7f351
+git checkout 01db4e3a1ca1be8d3c82106148e23e4a49b82d3e
 pip install "epythet==0.2.13"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

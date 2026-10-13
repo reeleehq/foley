@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="_static/documentation_options.js?v=565bc8c8"></script>
+    <script src="_static/documentation_options.js?v=9dd25805"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -56,7 +56,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.33" />
+  <meta name="docsearch:version" content="0.0.34" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -364,15 +364,19 @@ for what’s next. Follow along in <a class="reference internal" href="#misc/doc
 <span class="n">hits</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">"distant thunder rumble"</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># commercial use is the default</span>
 
 <span class="c1"># Generate a sound when nothing fits (arioso-style; pluggable backends)</span>
+<span class="c1"># needs foley[stable-audio] and the gated stabilityai/stable-audio-open-1.0 weights</span>
+<span class="c1"># (accept its license on Hugging Face, set HF_TOKEN); backend="elevenlabs" needs</span>
+<span class="c1"># ELEVENLABS_API_KEY and is paid</span>
 <span class="n">clip</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">"a single wooden door creak"</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">"stable_audio"</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 
-<span class="c1"># Grow the library — ingest auto-tags, captions, and embeds every file</span>
+<span class="c1"># Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)</span>
 <span class="n">foley</span><span class="o">.</span><span class="n">ingest</span><span class="p">(</span><span class="s2">"~/my_sounds/"</span><span class="p">,</span> <span class="n">license</span><span class="o">=</span><span class="s2">"user-owned"</span><span class="p">)</span>  <span class="c1"># omit it and rights stay unknown</span>
-<span class="n">foley</span><span class="o">.</span><span class="n">add_from</span><span class="p">(</span><span class="s2">"freesound"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">"ocean waves"</span><span class="p">,</span> <span class="n">license</span><span class="o">=</span><span class="s2">"cc0"</span><span class="p">)</span>
+<span class="n">foley</span><span class="o">.</span><span class="n">add_from</span><span class="p">(</span><span class="s2">"freesound"</span><span class="p">,</span> <span class="n">query</span><span class="o">=</span><span class="s2">"ocean waves"</span><span class="p">,</span> <span class="n">license</span><span class="o">=</span><span class="s2">"cc0"</span><span class="p">)</span>  <span class="c1"># needs FREESOUND_API_KEY</span>
 
 <span class="c1"># Compose: place the sounds under the narration (find → plan → weave)</span>
 <span class="n">timeline</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span>  <span class="c1"># the editable sound-design plan</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">weave</span><span class="p">(</span><span class="s2">"narration.wav"</span><span class="p">,</span> <span class="n">timeline</span><span class="p">)</span>  <span class="c1"># mastered mix + SDH captions + credits</span>
+<span class="n">result</span><span class="o">.</span><span class="n">notes</span>  <span class="c1"># how placements were timed, e.g. estimates when foley[align] is absent</span>
 </pre></div>
 </div>
 </section>
@@ -392,7 +396,7 @@ for what’s next. Follow along in <a class="reference internal" href="#misc/doc
 </tr>
 <tr class="row-odd"><td><p><strong>Index</strong></p></td>
 <td><p>probe → tag → caption → embed every sound; hybrid keyword+semantic search</p></td>
-<td><p>PANNs · CLAP · EnCLAP · LanceDB (local→cloud via <code class="docutils literal notranslate"><span class="pre">dol</span></code>)</p></td>
+<td><p>PANNs · CLAP · LanceDB (local→cloud via <code class="docutils literal notranslate"><span class="pre">dol</span></code>); captions come from metadata until a learned captioner is plugged in</p></td>
 </tr>
 <tr class="row-even"><td><p><strong>Select</strong></p></td>
 <td><p>decompose a narrative context → search → verify → generate-or-retrieve</p></td>
@@ -400,7 +404,7 @@ for what’s next. Follow along in <a class="reference internal" href="#misc/doc
 </tr>
 <tr class="row-odd"><td><p><strong>Weave</strong></p></td>
 <td><p>align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits</p></td>
-<td><p>forced-alignment · LUFS/EBU-R128</p></td>
+<td><p>word timing (WhisperX transcription with <code class="docutils literal notranslate"><span class="pre">foley[align]</span></code>; otherwise evenly spaced script words; <code class="docutils literal notranslate"><span class="pre">notes</span></code> says which) · LUFS/EBU-R128</p></td>
 </tr>
 </tbody>
 </table>
@@ -480,7 +484,7 @@ lazily, so a bare install stays light. What each adds:</p>
 <td><p>the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">align</span></code> · <code class="docutils literal notranslate"><span class="pre">weave</span></code> · <code class="docutils literal notranslate"><span class="pre">provenance</span></code> · <code class="docutils literal notranslate"><span class="pre">c2pa</span></code></p></td>
-<td><p>forced alignment, OTIO/rubberband, watermarking, signed C2PA</p></td>
+<td><p>word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mcp</span></code> · <code class="docutils literal notranslate"><span class="pre">obs</span></code></p></td>
 <td><p>the MCP server · OpenTelemetry export</p></td>
@@ -506,7 +510,7 @@ what’s degraded. Full docs: <strong><a class="reference external" href="https:
 </section>
 </section>
 
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-13 04:53 UTC from <a href="https://github.com/reeleehq/foley/commit/47a6f98c6cdb1f4513bf8ba2de6199a822f7f351">47a6f98</a> (main) · foley 0.0.33 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-13 04:56 UTC from <a href="https://github.com/reeleehq/foley/commit/01db4e3a1ca1be8d3c82106148e23e4a49b82d3e">01db4e3</a> (main) · foley 0.0.34 · <a href="about-this-build.html">about this build</a></p>
 
                 </article>
               

@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=565bc8c8"></script>
+    <script src="../_static/documentation_options.js?v=9dd25805"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.33" />
+  <meta name="docsearch:version" content="0.0.34" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -2857,13 +2857,20 @@ the façade may pass; a backend that cannot push filters down MAY ignore it
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.WeaveResult">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">WeaveResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">credits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">captions_vtt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">captions_srt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">master_report</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_manifest_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content_credential</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave.html#WeaveResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.WeaveResult" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">WeaveResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">credits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">captions_vtt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">captions_srt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">master_report</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_manifest_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content_credential</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave.html#WeaveResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.WeaveResult" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>The output of <code class="xref py py-func docutils literal notranslate"><span class="pre">weave()</span></code> — the v1 Definition-of-Done deliverable.</p>
 <p>A mastered mix + an editable, re-renderable timeline + credits + SDH captions + a
 reproducible run-artifact join, plus the fail-safe provenance re-assertion.</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.WeaveResult.notes">
+<span class="sig-name descname"><span class="pre">notes</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a></span><a class="headerlink" href="#foley.WeaveResult.notes" title="Link to this definition">#</a></dt>
+<dd><p>What the caller should know about how the mix was made, e.g. that word timings
+are estimates because no forced aligner is installed (#65).</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -5328,7 +5335,10 @@ escalates to the injected/​default judge for that rung and returns <em>its</em
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.Verdict"><code class="docutils literal notranslate"><span class="pre">Verdict</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.VerifyLevel"><code class="docutils literal notranslate"><span class="pre">VerifyLevel</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.WeaveResult"><code class="docutils literal notranslate"><span class="pre">WeaveResult</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.WeaveResult"><code class="docutils literal notranslate"><span class="pre">WeaveResult</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.WeaveResult.notes"><code class="docutils literal notranslate"><span class="pre">WeaveResult.notes</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.add_from"><code class="docutils literal notranslate"><span class="pre">add_from()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.apply_license_flags"><code class="docutils literal notranslate"><span class="pre">apply_license_flags()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.attribution_line"><code class="docutils literal notranslate"><span class="pre">attribution_line()</span></code></a></li>

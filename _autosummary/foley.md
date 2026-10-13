@@ -1614,7 +1614,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Which rung of the verification ladder produced a `Verdict`.
 
-### *class* foley.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None)
+### *class* foley.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=<factory>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -1622,6 +1622,11 @@ The output of `weave()` — the v1 Definition-of-Done deliverable.
 
 A mastered mix + an editable, re-renderable timeline + credits + SDH captions + a
 reproducible run-artifact join, plus the fail-safe provenance re-assertion.
+
+#### notes *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)*
+
+What the caller should know about how the mix was made, e.g. that word timings
+are estimates because no forced aligner is installed (#65).
 
 ### foley.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, \*\*affordances)
 

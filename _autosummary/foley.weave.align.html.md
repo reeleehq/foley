@@ -24,6 +24,11 @@ else falls back to the fake — the progressive-disclosure rule.
 |-----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`WHISPERX_SAMPLE_RATE`](#foley.weave.align.WHISPERX_SAMPLE_RATE) | WhisperX runs alignment at 16 kHz mono (its wav2vec2 CTC model's native rate).                                                                                                                                                                      |
 
+### Functions
+
+| [`aligner_name`](#foley.weave.align.aligner_name)(aligner)   | `fake` / `whisperx` for the built-ins, else the class name (run manifest).   |
+|--------------------------------------------------------------------------|------------------------------------------------------------------------------|
+
 ### Classes
 
 | [`FakeAligner`](#foley.weave.align.FakeAligner)()                                  | Deterministic, torch-free `Aligner` — evenly spaces the transcript's words.      |
@@ -78,3 +83,10 @@ Force-align `audio` to its transcript, returning word-level timestamps.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.weave.align.aligner_name(aligner)
+
+`fake` / `whisperx` for the built-ins, else the class name (run manifest).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
