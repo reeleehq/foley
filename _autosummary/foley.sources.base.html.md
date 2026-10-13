@@ -45,6 +45,10 @@ so the derived permission flags stay single-sourced.
 |----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`native_adherence`](#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                        |
 | [`resolve_source_key`](#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var.                                                                               |
+| [`using_source_accounts`](#foley.sources.base.using_source_accounts)(\*\*accounts)               | Bind per-request source accounts (a key, and what goes with it) for a `with` block.                                                                |
+| [`bound_source_account`](#foley.sources.base.bound_source_account)(source)                      | The account bound for `source` in this context, or `None` when no key is bound.                                                                    |
+| [`key_fingerprint`](#foley.sources.base.key_fingerprint)(key)                              | A short, one-way id for an API key: tells accounts apart without keeping the key.                                                                  |
+| [`source_account_id`](#foley.sources.base.source_account_id)(config[, api_key])              | Which account a call to the source is made on: `'operator'`, or a key's fingerprint.                                                               |
 | [`bulk_license`](#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])  | Build a bulk-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.                   |
 | [`per_clip_license_meta`](#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])     | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                      |
 | [`license_from_clip_meta`](#foley.sources.base.license_from_clip_meta)(source, spec)              | Build a clip's rights record from [`per_clip_license_meta()`](#foley.sources.base.per_clip_license_meta) fields (fail-closed).                   |
@@ -347,6 +351,17 @@ caching the bytes even for CC0. `redistribute_standalone_ok` (copyright) and
 * **Returns:**
   A populated `LicenseRecord` with its derived flags (+ overrides) applied.
 
+### foley.sources.base.bound_source_account(source)
+
+The account bound for `source` in this context, or `None` when no key is bound.
+
+A key bound without its account (`ocracy.kit.using_credentials(<source>=key)`,
+or a key rebound over the one an account came with) gives `{}`: its plan is
+unknown, and the caller must not fall back to the operator’s.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
 ### foley.sources.base.bulk_license(, source, license_id, rights_verified, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
 
 Build a bulk-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.
@@ -441,6 +456,13 @@ but never flips the flag, so [`foley.keep()`](foley.html.md#foley.keep) still re
   A populated `LicenseRecord` with derived flags applied AND
   `is_ai_generated=True` plus the full generation-provenance block.
 
+### foley.sources.base.key_fingerprint(key)
+
+A short, one-way id for an API key: tells accounts apart without keeping the key.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 ### foley.sources.base.license_from_clip_meta(source, spec)
 
 Build a clip’s rights record from [`per_clip_license_meta()`](#foley.sources.base.per_clip_license_meta) fields (fail-closed).
@@ -523,3 +545,43 @@ the default `rings` — it is opt-in only.
   [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If a name in `corpora` is not registered.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`CorpusAdapter`](#foley.sources.base.CorpusAdapter)]
+
+### foley.sources.base.source_account_id(config, api_key=None)
+
+Which account a call to the source is made on: `'operator'`, or a key’s fingerprint.
+
+The operator’s account is the source’s env key (or no key at all: a cache entry
+can then still be replayed offline, and rotating the operator’s key does not
+orphan the cache). Any other key, given as `api_key` or bound for the request,
+is another account, told apart by [`key_fingerprint()`](#foley.sources.base.key_fingerprint) (#98).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.base.using_source_accounts(\*\*accounts)
+
+Bind per-request source accounts (a key, and what goes with it) for a `with` block.
+
+The key is bound through `ocracy.kit.using_credentials`, so
+[`resolve_source_key()`](#foley.sources.base.resolve_source_key) uses it; the rest of the account (ElevenLabs: its
+`plan`, which decides the licence) is bound **with** that key, and only applies
+while that same key is the one bound (#98):
+
+```default
+with foley.using_source_accounts(
+    elevenlabs={"key": user_key, "plan": "elevenlabs-free-plan"},
+    freesound=user_freesound_key,  # a string is a key alone
+):
+    foley.generate("a door creaks", backend="elevenlabs")
+```
+
+A source given `None` (or an empty key) binds nothing, so an optional request
+header can be passed straight through.
+
+The binding lives in a `ContextVar`: it covers what runs inside the block, in
+this context. Consume a lazy result (`find(stream=True)`) inside the block, and
+run work handed to a thread pool under `contextvars.copy_context()`; outside the
+block the operator’s key and plan apply again.
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For a field an account cannot carry.

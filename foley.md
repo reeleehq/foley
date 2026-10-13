@@ -1,4 +1,4 @@
-> built 2026-10-13 10:57 UTC from b075ee6 (main) · foley 0.0.38. Details: build_info.json
+> built 2026-10-13 11:00 UTC from 648a405 (main) · foley 0.0.39. Details: build_info.json
 
 # index.html.md
 
@@ -4455,6 +4455,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`make_session_store`](_autosummary/foley.html.md#foley.make_session_store)([session_id, name, rootdir])     | Build a per-session JSON store: `Mapping[key -> dict]` under `sessions/{id}/{name}/`.                                                                                          |
 | [`offline`](_autosummary/foley.html.md#foley.offline)([config])                                   | Alias of `offline_scope()` — `with foley.offline(): ...` for local-first runs.                                                                                                 |
 | [`is_offline`](_autosummary/foley.html.md#foley.is_offline)()                                        | Whether an offline runtime scope is currently active.                                                                                                                          |
+| [`using_source_accounts`](_autosummary/foley.html.md#foley.using_source_accounts)(\*\*accounts)                 | Bind per-request source accounts (a key, and what goes with it) for a `with` block.                                                                                            |
 | [`check_requirements`](_autosummary/foley.html.md#foley.check_requirements)(\*[, names, verbose])            | Report which optional foley capabilities are available (`{name: is_available}`).                                                                                               |
 | [`verify_and_setup`](_autosummary/foley.html.md#foley.verify_and_setup)(\*[, names])                       | Return a per-requirement status + guidance report (never runs an installer).                                                                                                   |
 | [`capability_report`](_autosummary/foley.html.md#foley.capability_report)(\*[, runtime])                    | A JSON-safe capability + posture snapshot for the CLI, docs, and the MCP tool.                                                                                                 |
@@ -7532,6 +7533,34 @@ symmetry (FFT interpolation is rate-independent).
 
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+### foley.using_source_accounts(\*\*accounts)
+
+Bind per-request source accounts (a key, and what goes with it) for a `with` block.
+
+The key is bound through `ocracy.kit.using_credentials`, so
+`resolve_source_key()` uses it; the rest of the account (ElevenLabs: its
+`plan`, which decides the licence) is bound **with** that key, and only applies
+while that same key is the one bound (#98):
+
+```default
+with foley.using_source_accounts(
+    elevenlabs={"key": user_key, "plan": "elevenlabs-free-plan"},
+    freesound=user_freesound_key,  # a string is a key alone
+):
+    foley.generate("a door creaks", backend="elevenlabs")
+```
+
+A source given `None` (or an empty key) binds nothing, so an optional request
+header can be passed straight through.
+
+The binding lives in a `ContextVar`: it covers what runs inside the block, in
+this context. Consume a lazy result (`find(stream=True)`) inside the block, and
+run work handed to a thread pool under `contextvars.copy_context()`; outside the
+block the operator’s key and plan apply again.
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For a field an account cannot carry.
 
 ### foley.vector_search(qvec, , vindex, k=10, where=None)
 
@@ -12151,7 +12180,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta-dum', 'netflix intro', 'ta dum', 'netflix sound', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix sound', 'ta-dum', 'tudum', 'netflix intro', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -13033,6 +13062,10 @@ so the derived permission flags stay single-sourced.
 |----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`native_adherence`](_autosummary/foley.sources.base.html.md#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                        |
 | [`resolve_source_key`](_autosummary/foley.sources.base.html.md#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var.                                                                               |
+| [`using_source_accounts`](_autosummary/foley.sources.base.html.md#foley.sources.base.using_source_accounts)(\*\*accounts)               | Bind per-request source accounts (a key, and what goes with it) for a `with` block.                                                                |
+| [`bound_source_account`](_autosummary/foley.sources.base.html.md#foley.sources.base.bound_source_account)(source)                      | The account bound for `source` in this context, or `None` when no key is bound.                                                                    |
+| [`key_fingerprint`](_autosummary/foley.sources.base.html.md#foley.sources.base.key_fingerprint)(key)                              | A short, one-way id for an API key: tells accounts apart without keeping the key.                                                                  |
+| [`source_account_id`](_autosummary/foley.sources.base.html.md#foley.sources.base.source_account_id)(config[, api_key])              | Which account a call to the source is made on: `'operator'`, or a key's fingerprint.                                                               |
 | [`bulk_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])  | Build a bulk-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                   |
 | [`per_clip_license_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])     | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                      |
 | [`license_from_clip_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.license_from_clip_meta)(source, spec)              | Build a clip's rights record from [`per_clip_license_meta()`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta) fields (fail-closed).                   |
@@ -13335,6 +13368,17 @@ caching the bytes even for CC0. `redistribute_standalone_ok` (copyright) and
 * **Returns:**
   A populated `LicenseRecord` with its derived flags (+ overrides) applied.
 
+### foley.sources.base.bound_source_account(source)
+
+The account bound for `source` in this context, or `None` when no key is bound.
+
+A key bound without its account (`ocracy.kit.using_credentials(<source>=key)`,
+or a key rebound over the one an account came with) gives `{}`: its plan is
+unknown, and the caller must not fall back to the operator’s.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
 ### foley.sources.base.bulk_license(, source, license_id, rights_verified, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
 
 Build a bulk-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.
@@ -13429,6 +13473,13 @@ but never flips the flag, so [`foley.keep()`](_autosummary/foley.html.md#foley.k
   A populated `LicenseRecord` with derived flags applied AND
   `is_ai_generated=True` plus the full generation-provenance block.
 
+### foley.sources.base.key_fingerprint(key)
+
+A short, one-way id for an API key: tells accounts apart without keeping the key.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 ### foley.sources.base.license_from_clip_meta(source, spec)
 
 Build a clip’s rights record from [`per_clip_license_meta()`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta) fields (fail-closed).
@@ -13511,6 +13562,46 @@ the default `rings` — it is opt-in only.
   [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If a name in `corpora` is not registered.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`CorpusAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.CorpusAdapter)]
+
+### foley.sources.base.source_account_id(config, api_key=None)
+
+Which account a call to the source is made on: `'operator'`, or a key’s fingerprint.
+
+The operator’s account is the source’s env key (or no key at all: a cache entry
+can then still be replayed offline, and rotating the operator’s key does not
+orphan the cache). Any other key, given as `api_key` or bound for the request,
+is another account, told apart by [`key_fingerprint()`](_autosummary/foley.sources.base.html.md#foley.sources.base.key_fingerprint) (#98).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.base.using_source_accounts(\*\*accounts)
+
+Bind per-request source accounts (a key, and what goes with it) for a `with` block.
+
+The key is bound through `ocracy.kit.using_credentials`, so
+[`resolve_source_key()`](_autosummary/foley.sources.base.html.md#foley.sources.base.resolve_source_key) uses it; the rest of the account (ElevenLabs: its
+`plan`, which decides the licence) is bound **with** that key, and only applies
+while that same key is the one bound (#98):
+
+```default
+with foley.using_source_accounts(
+    elevenlabs={"key": user_key, "plan": "elevenlabs-free-plan"},
+    freesound=user_freesound_key,  # a string is a key alone
+):
+    foley.generate("a door creaks", backend="elevenlabs")
+```
+
+A source given `None` (or an empty key) binds nothing, so an optional request
+header can be passed straight through.
+
+The binding lives in a `ContextVar`: it covers what runs inside the block, in
+this context. Consume a lazy result (`find(stream=True)`) inside the block, and
+run work handed to a thread pool under `contextvars.copy_context()`; outside the
+block the operator’s key and plan apply again.
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For a field an account cannot carry.
 
 
 # _autosummary/foley.sources.bbc_remarc.html.md
@@ -13666,7 +13757,17 @@ ElevenLabs Sound Effects generate adapter (a [`GenerateAdapter`](_autosummary/fo
   * **plan** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The ElevenLabs account plan (`'elevenlabs-paid-plan'` |
     `'elevenlabs-free-plan'`), which decides the generated sound’s licence.
     Defaults to `$FOLEY_ELEVENLABS_PLAN`; with neither, `generate` refuses
-    before calling the API (#56).
+    before calling the API (#56). When the key in use is a per-request one
+    (bound, not passed as `api_key=`), the plan is the one bound with it
+    ([`using_source_accounts()`](_autosummary/foley.sources.base.html.md#foley.sources.base.using_source_accounts)), never this or the
+    env’s (#98).
+
+#### account_id()
+
+The account a call is made on, for the generations cache (`'operator'` or a fingerprint).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 #### *property* api_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
@@ -13703,6 +13804,9 @@ Generate a sound effect for `prompt`; return its bytes + provisional candidate.
 #### *property* plan *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
 The account plan = the generated sound’s `license_id` (fail-closed when unknown).
+
+It follows the key: a bound (per-request) key brings its own plan, and one
+bound without a plan is refused rather than labelled with the operator’s.
 
 #### request_salt()
 
@@ -16354,7 +16458,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-13 10:57 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/b075ee68c15a0f7b3937262b8519f28fd6380a86"><code>b075ee6</code></a> on branch <code>main</code>, for **foley 0.0.38** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 11:00 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/648a40527021dccd954f2eb62bf6ba23162c59c1"><code>648a405</code></a> on branch <code>main</code>, for **foley 0.0.39** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -16363,7 +16467,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/b075ee68c15a0f7b3937262b8519f28fd6380a86"><code>b075ee68c15a0f7b3937262b8519f28fd6380a86</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/648a40527021dccd954f2eb62bf6ba23162c59c1"><code>648a40527021dccd954f2eb62bf6ba23162c59c1</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -16374,9 +16478,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38386747594">38386747594</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38386974880">38386974880</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>b075ee68c15a0f7b3937262b8519f28fd6380a86</code> (in the history of the built commit) |
+| Event commit | <code>648a40527021dccd954f2eb62bf6ba23162c59c1</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -16401,13 +16505,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.38/">0.0.38</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.39/">0.0.39</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout b075ee68c15a0f7b3937262b8519f28fd6380a86
+git checkout 648a40527021dccd954f2eb62bf6ba23162c59c1
 pip install "epythet==0.2.15"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

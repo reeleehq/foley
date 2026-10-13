@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=423071ad"></script>
+    <script src="../_static/documentation_options.js?v=e648f5b4"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.38" />
+  <meta name="docsearch:version" content="0.0.39" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -973,6 +973,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.agent.session</span><span class="w"> </span><span class="kn">import</span> <span class="n">SessionStore</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.requirements</span><span class="w"> </span><span class="kn">import</span> <span class="n">capability_report</span><span class="p">,</span> <span class="n">check_requirements</span><span class="p">,</span> <span class="n">verify_and_setup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">RuntimeConfig</span><span class="p">,</span> <span class="n">is_offline</span><span class="p">,</span> <span class="n">offline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.sources.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">using_source_accounts</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_session_store</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
@@ -1153,6 +1154,7 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"RuntimeConfig"</span><span class="p">,</span>
     <span class="s2">"offline"</span><span class="p">,</span>
     <span class="s2">"is_offline"</span><span class="p">,</span>
+    <span class="s2">"using_source_accounts"</span><span class="p">,</span>
     <span class="s2">"check_requirements"</span><span class="p">,</span>
     <span class="s2">"verify_and_setup"</span><span class="p">,</span>
     <span class="s2">"capability_report"</span><span class="p">,</span>

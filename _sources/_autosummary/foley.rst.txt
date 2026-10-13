@@ -87,6 +87,7 @@
       make_session_store
       offline
       is_offline
+      using_source_accounts
       check_requirements
       verify_and_setup
       capability_report

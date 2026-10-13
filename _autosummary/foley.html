@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=423071ad"></script>
+    <script src="../_static/documentation_options.js?v=e648f5b4"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.38" />
+  <meta name="docsearch:version" content="0.0.39" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -751,31 +751,34 @@ lazy-imported inside the audio/QC functions that need them (install via the
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.is_offline" title="foley.is_offline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_offline</span></code></a>()</p></td>
 <td><p>Whether an offline runtime scope is currently active.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.check_requirements" title="foley.check_requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_requirements</span></code></a>(*[, names, verbose])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.using_source_accounts" title="foley.using_source_accounts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">using_source_accounts</span></code></a>(**accounts)</p></td>
+<td><p>Bind per-request source accounts (a key, and what goes with it) for a <code class="docutils literal notranslate"><span class="pre">with</span></code> block.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.check_requirements" title="foley.check_requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_requirements</span></code></a>(*[, names, verbose])</p></td>
 <td><p>Report which optional foley capabilities are available (<code class="docutils literal notranslate"><span class="pre">{name:</span> <span class="pre">is_available}</span></code>).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.verify_and_setup" title="foley.verify_and_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_and_setup</span></code></a>(*[, names])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.verify_and_setup" title="foley.verify_and_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_and_setup</span></code></a>(*[, names])</p></td>
 <td><p>Return a per-requirement status + guidance report (never runs an installer).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.capability_report" title="foley.capability_report"><code class="xref py py-obj docutils literal notranslate"><span class="pre">capability_report</span></code></a>(*[, runtime])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.capability_report" title="foley.capability_report"><code class="xref py py-obj docutils literal notranslate"><span class="pre">capability_report</span></code></a>(*[, runtime])</p></td>
 <td><p>A JSON-safe capability + posture snapshot for the CLI, docs, and the MCP tool.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.evaluate" title="foley.evaluate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evaluate</span></code></a>(*[, golden, k])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.evaluate" title="foley.evaluate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evaluate</span></code></a>(*[, golden, k])</p></td>
 <td><p>Run the Tier-1 retrieval eval over the golden set (<a class="reference external" href="mailto:nDCG&#37;&#52;&#48;10">nDCG<span>&#64;</span>10</a> / recall / mAP / MRR).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.evaluate_fit" title="foley.evaluate_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evaluate_fit</span></code></a>(*[, golden, sample, level, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.evaluate_fit" title="foley.evaluate_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evaluate_fit</span></code></a>(*[, golden, sample, level, ...])</p></td>
 <td><p>Run the Tier-2 <strong>fit</strong> eval over the golden set — &quot;does the accepted clip fit?&quot; (#10b).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.credits" title="foley.credits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credits</span></code></a>(sounds, *[, title, only_required, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.credits" title="foley.credits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credits</span></code></a>(sounds, *[, title, only_required, ...])</p></td>
 <td><p>Build the TASL attribution <a class="reference internal" href="foley.provenance.html#foley.provenance.Credits" title="foley.provenance.Credits"><code class="xref py py-class docutils literal notranslate"><span class="pre">Credits</span></code></a> for <code class="docutils literal notranslate"><span class="pre">sounds</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.credits_for" title="foley.credits_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credits_for</span></code></a>(sounds, *[, title, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.credits_for" title="foley.credits_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credits_for</span></code></a>(sounds, *[, title, ...])</p></td>
 <td><p>Build the deduplicated <a class="reference internal" href="#foley.Credits" title="foley.Credits"><code class="xref py py-class docutils literal notranslate"><span class="pre">Credits</span></code></a> for the sounds used in a run.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.attribution_line" title="foley.attribution_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">attribution_line</span></code></a>(source, *[, fmt])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.attribution_line" title="foley.attribution_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">attribution_line</span></code></a>(source, *[, fmt])</p></td>
 <td><p>Render one sound's TASL attribution line.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.credit_entry" title="foley.credit_entry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credit_entry</span></code></a>(record, *[, title])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.credit_entry" title="foley.credit_entry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credit_entry</span></code></a>(record, *[, title])</p></td>
 <td><p>Build a <a class="reference internal" href="#foley.CreditEntry" title="foley.CreditEntry"><code class="xref py py-class docutils literal notranslate"><span class="pre">CreditEntry</span></code></a> from a record (title override optional).</p></td>
 </tr>
 </tbody>
@@ -4949,6 +4952,34 @@ symmetry (FFT interpolation is rate-independent).</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.using_source_accounts">
+<span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">using_source_accounts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">accounts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#using_source_accounts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.using_source_accounts" title="Link to this definition">#</a></dt>
+<dd><p>Bind per-request source accounts (a key, and what goes with it) for a <code class="docutils literal notranslate"><span class="pre">with</span></code> block.</p>
+<p>The key is bound through <code class="docutils literal notranslate"><span class="pre">ocracy.kit.using_credentials</span></code>, so
+<code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_source_key()</span></code> uses it; the rest of the account (ElevenLabs: its
+<code class="docutils literal notranslate"><span class="pre">plan</span></code>, which decides the licence) is bound <strong>with</strong> that key, and only applies
+while that same key is the one bound (#98):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">foley</span><span class="o">.</span><span class="n">using_source_accounts</span><span class="p">(</span>
+    <span class="n">elevenlabs</span><span class="o">=</span><span class="p">{</span><span class="s2">"key"</span><span class="p">:</span> <span class="n">user_key</span><span class="p">,</span> <span class="s2">"plan"</span><span class="p">:</span> <span class="s2">"elevenlabs-free-plan"</span><span class="p">},</span>
+    <span class="n">freesound</span><span class="o">=</span><span class="n">user_freesound_key</span><span class="p">,</span>  <span class="c1"># a string is a key alone</span>
+<span class="p">):</span>
+    <span class="n">foley</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">"a door creaks"</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">"elevenlabs"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A source given <code class="docutils literal notranslate"><span class="pre">None</span></code> (or an empty key) binds nothing, so an optional request
+header can be passed straight through.</p>
+<p>The binding lives in a <code class="docutils literal notranslate"><span class="pre">ContextVar</span></code>: it covers what runs inside the block, in
+this context. Consume a lazy result (<code class="docutils literal notranslate"><span class="pre">find(stream=True)</span></code>) inside the block, and
+run work handed to a thread pool under <code class="docutils literal notranslate"><span class="pre">contextvars.copy_context()</span></code>; outside the
+block the operator’s key and plan apply again.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – For a field an account cannot carry.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.vector_search">
 <span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">vector_search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">qvec</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">vindex</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">where</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/search.html#vector_search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.vector_search" title="Link to this definition">#</a></dt>
 <dd><p>Pure audio&lt;-&gt;audio (or clip-&gt;library) vector search — no keyword leg.</p>
@@ -5428,6 +5459,7 @@ escalates to the injected/​default judge for that rung and returns <em>its</em
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.to_working"><code class="docutils literal notranslate"><span class="pre">to_working()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.trim_silence"><code class="docutils literal notranslate"><span class="pre">trim_silence()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.true_peak_dbtp"><code class="docutils literal notranslate"><span class="pre">true_peak_dbtp()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.using_source_accounts"><code class="docutils literal notranslate"><span class="pre">using_source_accounts()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.vector_search"><code class="docutils literal notranslate"><span class="pre">vector_search()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.verify_and_setup"><code class="docutils literal notranslate"><span class="pre">verify_and_setup()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.verify_match"><code class="docutils literal notranslate"><span class="pre">verify_match()</span></code></a></li>

@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=423071ad"></script>
+    <script src="../_static/documentation_options.js?v=e648f5b4"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.38" />
+  <meta name="docsearch:version" content="0.0.39" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -516,6 +516,18 @@ so the derived permission flags stay single-sourced.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.resolve_source_key" title="foley.sources.base.resolve_source_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_source_key</span></code></a>(config[, api_key])</p></td>
 <td><p>A source's API token: <code class="docutils literal notranslate"><span class="pre">api_key</span></code>, else a bound key, else its env var.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.using_source_accounts" title="foley.sources.base.using_source_accounts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">using_source_accounts</span></code></a>(**accounts)</p></td>
+<td><p>Bind per-request source accounts (a key, and what goes with it) for a <code class="docutils literal notranslate"><span class="pre">with</span></code> block.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.bound_source_account" title="foley.sources.base.bound_source_account"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bound_source_account</span></code></a>(source)</p></td>
+<td><p>The account bound for <code class="docutils literal notranslate"><span class="pre">source</span></code> in this context, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when no key is bound.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.key_fingerprint" title="foley.sources.base.key_fingerprint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">key_fingerprint</span></code></a>(key)</p></td>
+<td><p>A short, one-way id for an API key: tells accounts apart without keeping the key.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.source_account_id" title="foley.sources.base.source_account_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">source_account_id</span></code></a>(config[, api_key])</p></td>
+<td><p>Which account a call to the source is made on: <code class="docutils literal notranslate"><span class="pre">'operator'</span></code>, or a key's fingerprint.</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.bulk_license" title="foley.sources.base.bulk_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bulk_license</span></code></a>(*, source, license_id, ...[, ...])</p></td>
 <td><p>Build a bulk-acquisition <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>, flags derived.</p></td>
 </tr>
@@ -931,6 +943,20 @@ by-reference re-fetch handle).</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.base.bound_source_account">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">bound_source_account</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#bound_source_account"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.bound_source_account" title="Link to this definition">#</a></dt>
+<dd><p>The account bound for <code class="docutils literal notranslate"><span class="pre">source</span></code> in this context, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when no key is bound.</p>
+<p>A key bound without its account (<code class="docutils literal notranslate"><span class="pre">ocracy.kit.using_credentials(&lt;source&gt;=key)</span></code>,
+or a key rebound over the one an account came with) gives <code class="docutils literal notranslate"><span class="pre">{}</span></code>: its plan is
+unknown, and the caller must not fall back to the operator’s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.base.bulk_license">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">bulk_license</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">license_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rights_verified</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">license_url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">creator_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribution_text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#bulk_license"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.bulk_license" title="Link to this definition">#</a></dt>
 <dd><p>Build a bulk-acquisition <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>, flags derived.</p>
@@ -1045,6 +1071,17 @@ credits AI-disclosure line render immediately (#9a already reads it).</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.base.key_fingerprint">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">key_fingerprint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#key_fingerprint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.key_fingerprint" title="Link to this definition">#</a></dt>
+<dd><p>A short, one-way id for an API key: tells accounts apart without keeping the key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.base.license_from_clip_meta">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">license_from_clip_meta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spec</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#license_from_clip_meta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.license_from_clip_meta" title="Link to this definition">#</a></dt>
 <dd><p>Build a clip’s rights record from <a class="reference internal" href="#foley.sources.base.per_clip_license_meta" title="foley.sources.base.per_clip_license_meta"><code class="xref py py-func docutils literal notranslate"><span class="pre">per_clip_license_meta()</span></code></a> fields (fail-closed).</p>
@@ -1154,6 +1191,49 @@ the default <code class="docutils literal notranslate"><span class="pre">rings</
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.base.source_account_id">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">source_account_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#source_account_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.source_account_id" title="Link to this definition">#</a></dt>
+<dd><p>Which account a call to the source is made on: <code class="docutils literal notranslate"><span class="pre">'operator'</span></code>, or a key’s fingerprint.</p>
+<p>The operator’s account is the source’s env key (or no key at all: a cache entry
+can then still be replayed offline, and rotating the operator’s key does not
+orphan the cache). Any other key, given as <code class="docutils literal notranslate"><span class="pre">api_key</span></code> or bound for the request,
+is another account, told apart by <a class="reference internal" href="#foley.sources.base.key_fingerprint" title="foley.sources.base.key_fingerprint"><code class="xref py py-func docutils literal notranslate"><span class="pre">key_fingerprint()</span></code></a> (#98).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.base.using_source_accounts">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">using_source_accounts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">accounts</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#using_source_accounts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.using_source_accounts" title="Link to this definition">#</a></dt>
+<dd><p>Bind per-request source accounts (a key, and what goes with it) for a <code class="docutils literal notranslate"><span class="pre">with</span></code> block.</p>
+<p>The key is bound through <code class="docutils literal notranslate"><span class="pre">ocracy.kit.using_credentials</span></code>, so
+<a class="reference internal" href="#foley.sources.base.resolve_source_key" title="foley.sources.base.resolve_source_key"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_source_key()</span></code></a> uses it; the rest of the account (ElevenLabs: its
+<code class="docutils literal notranslate"><span class="pre">plan</span></code>, which decides the licence) is bound <strong>with</strong> that key, and only applies
+while that same key is the one bound (#98):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">foley</span><span class="o">.</span><span class="n">using_source_accounts</span><span class="p">(</span>
+    <span class="n">elevenlabs</span><span class="o">=</span><span class="p">{</span><span class="s2">"key"</span><span class="p">:</span> <span class="n">user_key</span><span class="p">,</span> <span class="s2">"plan"</span><span class="p">:</span> <span class="s2">"elevenlabs-free-plan"</span><span class="p">},</span>
+    <span class="n">freesound</span><span class="o">=</span><span class="n">user_freesound_key</span><span class="p">,</span>  <span class="c1"># a string is a key alone</span>
+<span class="p">):</span>
+    <span class="n">foley</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">"a door creaks"</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">"elevenlabs"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A source given <code class="docutils literal notranslate"><span class="pre">None</span></code> (or an empty key) binds nothing, so an optional request
+header can be passed straight through.</p>
+<p>The binding lives in a <code class="docutils literal notranslate"><span class="pre">ContextVar</span></code>: it covers what runs inside the block, in
+this context. Consume a lazy result (<code class="docutils literal notranslate"><span class="pre">find(stream=True)</span></code>) inside the block, and
+run work handed to a thread pool under <code class="docutils literal notranslate"><span class="pre">contextvars.copy_context()</span></code>; outside the
+block the operator’s key and plan apply again.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – For a field an account cannot carry.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -1244,10 +1324,12 @@ the default <code class="docutils literal notranslate"><span class="pre">rings</
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.api_license"><code class="docutils literal notranslate"><span class="pre">api_license()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.bound_source_account"><code class="docutils literal notranslate"><span class="pre">bound_source_account()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.bulk_license"><code class="docutils literal notranslate"><span class="pre">bulk_license()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.check_prompt_influence"><code class="docutils literal notranslate"><span class="pre">check_prompt_influence()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.corpora_in_rings"><code class="docutils literal notranslate"><span class="pre">corpora_in_rings()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.generated_license"><code class="docutils literal notranslate"><span class="pre">generated_license()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.key_fingerprint"><code class="docutils literal notranslate"><span class="pre">key_fingerprint()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.license_from_clip_meta"><code class="docutils literal notranslate"><span class="pre">license_from_clip_meta()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.native_adherence"><code class="docutils literal notranslate"><span class="pre">native_adherence()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.per_clip_license_meta"><code class="docutils literal notranslate"><span class="pre">per_clip_license_meta()</span></code></a></li>
@@ -1255,6 +1337,8 @@ the default <code class="docutils literal notranslate"><span class="pre">rings</
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.resolve_source_key"><code class="docutils literal notranslate"><span class="pre">resolve_source_key()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.ring_of"><code class="docutils literal notranslate"><span class="pre">ring_of()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.select_corpora"><code class="docutils literal notranslate"><span class="pre">select_corpora()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.source_account_id"><code class="docutils literal notranslate"><span class="pre">source_account_id()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.using_source_accounts"><code class="docutils literal notranslate"><span class="pre">using_source_accounts()</span></code></a></li>
 </ul>
   </nav></div>
 

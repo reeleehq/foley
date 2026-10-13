@@ -139,6 +139,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`make_session_store`](#foley.make_session_store)([session_id, name, rootdir])     | Build a per-session JSON store: `Mapping[key -> dict]` under `sessions/{id}/{name}/`.                                                                                          |
 | [`offline`](#foley.offline)([config])                                   | Alias of `offline_scope()` — `with foley.offline(): ...` for local-first runs.                                                                                                 |
 | [`is_offline`](#foley.is_offline)()                                        | Whether an offline runtime scope is currently active.                                                                                                                          |
+| [`using_source_accounts`](#foley.using_source_accounts)(\*\*accounts)                 | Bind per-request source accounts (a key, and what goes with it) for a `with` block.                                                                                            |
 | [`check_requirements`](#foley.check_requirements)(\*[, names, verbose])            | Report which optional foley capabilities are available (`{name: is_available}`).                                                                                               |
 | [`verify_and_setup`](#foley.verify_and_setup)(\*[, names])                       | Return a per-requirement status + guidance report (never runs an installer).                                                                                                   |
 | [`capability_report`](#foley.capability_report)(\*[, runtime])                    | A JSON-safe capability + posture snapshot for the CLI, docs, and the MCP tool.                                                                                                 |
@@ -3216,6 +3217,34 @@ symmetry (FFT interpolation is rate-independent).
 
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+### foley.using_source_accounts(\*\*accounts)
+
+Bind per-request source accounts (a key, and what goes with it) for a `with` block.
+
+The key is bound through `ocracy.kit.using_credentials`, so
+`resolve_source_key()` uses it; the rest of the account (ElevenLabs: its
+`plan`, which decides the licence) is bound **with** that key, and only applies
+while that same key is the one bound (#98):
+
+```default
+with foley.using_source_accounts(
+    elevenlabs={"key": user_key, "plan": "elevenlabs-free-plan"},
+    freesound=user_freesound_key,  # a string is a key alone
+):
+    foley.generate("a door creaks", backend="elevenlabs")
+```
+
+A source given `None` (or an empty key) binds nothing, so an optional request
+header can be passed straight through.
+
+The binding lives in a `ContextVar`: it covers what runs inside the block, in
+this context. Consume a lazy result (`find(stream=True)`) inside the block, and
+run work handed to a thread pool under `contextvars.copy_context()`; outside the
+block the operator’s key and plan apply again.
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For a field an account cannot carry.
 
 ### foley.vector_search(qvec, , vindex, k=10, where=None)
 

@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=423071ad"></script>
+    <script src="../../../_static/documentation_options.js?v=e648f5b4"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.38" />
+  <meta name="docsearch:version" content="0.0.39" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -751,6 +751,10 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextvars</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextVar</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
 
@@ -764,6 +768,10 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"check_prompt_influence"</span><span class="p">,</span>
     <span class="s2">"native_adherence"</span><span class="p">,</span>
     <span class="s2">"resolve_source_key"</span><span class="p">,</span>
+    <span class="s2">"using_source_accounts"</span><span class="p">,</span>
+    <span class="s2">"bound_source_account"</span><span class="p">,</span>
+    <span class="s2">"key_fingerprint"</span><span class="p">,</span>
+    <span class="s2">"source_account_id"</span><span class="p">,</span>
     <span class="s2">"SourceConfigurationError"</span><span class="p">,</span>
     <span class="s2">"ClipSpec"</span><span class="p">,</span>
     <span class="s2">"CorpusAdapter"</span><span class="p">,</span>
@@ -785,7 +793,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="SourceConfigurationError">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.SourceConfigurationError">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.SourceConfigurationError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SourceConfigurationError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""A source cannot run until the user configures it: a missing key, plan or endpoint.</span>
 
@@ -797,7 +805,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="check_prompt_influence">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.check_prompt_influence">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.check_prompt_influence">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">check_prompt_influence</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Raise ``ValueError`` unless ``value`` is ``None`` or a real number in ``0..1``.</span>
 
@@ -815,7 +823,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="native_adherence">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.native_adherence">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.native_adherence">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">native_adherence</span><span class="p">(</span>
     <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">prompt_influence</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
@@ -865,7 +873,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="resolve_source_key">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.resolve_source_key">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.resolve_source_key">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">resolve_source_key</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A source's API token: ``api_key``, else a bound key, else its env var.</span>
 
@@ -890,8 +898,121 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="c1">#: The account settings bound with a source's key (see :func:`using_source_accounts`).</span>
+<span class="n">_BOUND_ACCOUNTS</span><span class="p">:</span> <span class="s2">"ContextVar[dict]"</span> <span class="o">=</span> <span class="n">ContextVar</span><span class="p">(</span><span class="s2">"foley_source_accounts"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="p">{})</span>
+
+<span class="c1">#: What an account may carry besides its key.</span>
+<span class="n">_ACCOUNT_FIELDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"plan"</span><span class="p">,)</span>
+
+
+<div class="viewcode-block" id="key_fingerprint">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.key_fingerprint">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">key_fingerprint</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A short, one-way id for an API key: tells accounts apart without keeping the key."""</span>
+    <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()[:</span><span class="mi">16</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="using_source_accounts">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.using_source_accounts">[docs]</a>
+<span class="nd">@contextmanager</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">using_source_accounts</span><span class="p">(</span><span class="o">**</span><span class="n">accounts</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Bind per-request source accounts (a key, and what goes with it) for a ``with`` block.</span>
+
+<span class="sd">    The key is bound through ``ocracy.kit.using_credentials``, so</span>
+<span class="sd">    :func:`resolve_source_key` uses it; the rest of the account (ElevenLabs: its</span>
+<span class="sd">    ``plan``, which decides the licence) is bound **with** that key, and only applies</span>
+<span class="sd">    while that same key is the one bound (#98)::</span>
+
+<span class="sd">        with foley.using_source_accounts(</span>
+<span class="sd">            elevenlabs={"key": user_key, "plan": "elevenlabs-free-plan"},</span>
+<span class="sd">            freesound=user_freesound_key,  # a string is a key alone</span>
+<span class="sd">        ):</span>
+<span class="sd">            foley.generate("a door creaks", backend="elevenlabs")</span>
+
+<span class="sd">    A source given ``None`` (or an empty key) binds nothing, so an optional request</span>
+<span class="sd">    header can be passed straight through.</span>
+
+<span class="sd">    The binding lives in a ``ContextVar``: it covers what runs inside the block, in</span>
+<span class="sd">    this context. Consume a lazy result (``find(stream=True)``) inside the block, and</span>
+<span class="sd">    run work handed to a thread pool under ``contextvars.copy_context()``; outside the</span>
+<span class="sd">    block the operator's key and plan apply again.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: For a field an account cannot carry.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">ocracy.kit</span><span class="w"> </span><span class="kn">import</span> <span class="n">using_credentials</span>
+
+    <span class="n">keys</span><span class="p">,</span> <span class="n">settings</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">source</span><span class="p">,</span> <span class="n">account</span> <span class="ow">in</span> <span class="n">accounts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">account</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">account</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">account</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"key"</span><span class="p">:</span> <span class="n">account</span><span class="p">}</span>
+        <span class="n">unknown</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">account</span><span class="p">)</span> <span class="o">-</span> <span class="p">{</span><span class="s2">"key"</span><span class="p">,</span> <span class="o">*</span><span class="n">_ACCOUNT_FIELDS</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">: unknown account field(s) </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">unknown</span><span class="p">)</span><span class="si">}</span><span class="s2">; "</span>
+                <span class="sa">f</span><span class="s2">"an account has a 'key' and optionally </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">_ACCOUNT_FIELDS</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">account</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"key"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">keys</span><span class="p">[</span><span class="n">source</span><span class="p">]</span> <span class="o">=</span> <span class="n">key</span>
+        <span class="n">settings</span><span class="p">[</span><span class="n">source</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="n">account</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">_ACCOUNT_FIELDS</span> <span class="k">if</span> <span class="n">account</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="s2">"key_id"</span><span class="p">:</span> <span class="n">key_fingerprint</span><span class="p">(</span><span class="n">key</span><span class="p">),</span>
+        <span class="p">}</span>
+    <span class="k">with</span> <span class="n">using_credentials</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">_BOUND_ACCOUNTS</span><span class="o">.</span><span class="n">set</span><span class="p">({</span><span class="o">**</span><span class="n">_BOUND_ACCOUNTS</span><span class="o">.</span><span class="n">get</span><span class="p">(),</span> <span class="o">**</span><span class="n">settings</span><span class="p">})</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">yield</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">_BOUND_ACCOUNTS</span><span class="o">.</span><span class="n">reset</span><span class="p">(</span><span class="n">token</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="source_account_id">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.source_account_id">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">source_account_id</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Which account a call to the source is made on: ``'operator'``, or a key's fingerprint.</span>
+
+<span class="sd">    The operator's account is the source's env key (or no key at all: a cache entry</span>
+<span class="sd">    can then still be replayed offline, and rotating the operator's key does not</span>
+<span class="sd">    orphan the cache). Any other key, given as ``api_key`` or bound for the request,</span>
+<span class="sd">    is another account, told apart by :func:`key_fingerprint` (#98).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">ocracy.kit</span><span class="w"> </span><span class="kn">import</span> <span class="n">current_credentials</span>
+
+    <span class="n">env_var</span> <span class="o">=</span> <span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"auth"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"env_var"</span><span class="p">)</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="ow">or</span> <span class="n">current_credentials</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"name"</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span> <span class="ow">or</span> <span class="n">key</span> <span class="o">==</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">env_var</span><span class="p">)</span> <span class="k">if</span> <span class="n">env_var</span> <span class="k">else</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">"operator"</span>
+    <span class="k">return</span> <span class="n">key_fingerprint</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="bound_source_account">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.bound_source_account">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">bound_source_account</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The account bound for ``source`` in this context, or ``None`` when no key is bound.</span>
+
+<span class="sd">    A key bound without its account (``ocracy.kit.using_credentials(&lt;source&gt;=key)``,</span>
+<span class="sd">    or a key rebound over the one an account came with) gives ``{}``: its plan is</span>
+<span class="sd">    unknown, and the caller must not fall back to the operator's.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">ocracy.kit</span><span class="w"> </span><span class="kn">import</span> <span class="n">current_credentials</span>
+
+    <span class="n">key</span> <span class="o">=</span> <span class="n">current_credentials</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">account</span> <span class="o">=</span> <span class="n">_BOUND_ACCOUNTS</span><span class="o">.</span><span class="n">get</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">account</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"key_id"</span><span class="p">)</span> <span class="o">!=</span> <span class="n">key_fingerprint</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">account</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">"key_id"</span><span class="p">}</span></div>
+
+
+
 <div class="viewcode-block" id="ClipSpec">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.ClipSpec">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.ClipSpec">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ClipSpec</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""One clip inside a local bulk corpus, described but not yet ingested.</span>
@@ -914,7 +1035,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="CorpusAdapter">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.CorpusAdapter">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.CorpusAdapter">[docs]</a>
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CorpusAdapter</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""A downloaded bulk corpus presented as an ingestable stream of clips.</span>
@@ -932,21 +1053,21 @@ window.runMermaid = runMermaid;</script>
     <span class="n">default_license_id</span><span class="p">:</span> <span class="nb">str</span>
 
 <div class="viewcode-block" id="CorpusAdapter.corpus_dir">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.CorpusAdapter.corpus_dir">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.CorpusAdapter.corpus_dir">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">corpus_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""The on-disk root for this corpus under ``data_dir`` (``data_dir/name``)."""</span>
         <span class="o">...</span></div>
 
 
 <div class="viewcode-block" id="CorpusAdapter.iter_clips">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.CorpusAdapter.iter_clips">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.CorpusAdapter.iter_clips">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">iter_clips</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">ClipSpec</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""Yield a :class:`ClipSpec` for every ingestable clip under ``root``."""</span>
         <span class="o">...</span></div>
 
 
 <div class="viewcode-block" id="CorpusAdapter.resolve_license">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.CorpusAdapter.resolve_license">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.CorpusAdapter.resolve_license">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">resolve_license</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ClipSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Return the fully-derived rights record for ``spec`` (licensing SSOT)."""</span>
         <span class="o">...</span></div>
@@ -955,7 +1076,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="SourceAdapter">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.SourceAdapter">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.SourceAdapter">[docs]</a>
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SourceAdapter</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""The live/HTTP source contract (report 10 §4.2): ``search`` + ``get`` + ``download``.</span>
@@ -978,21 +1099,21 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    """</span>
 
 <div class="viewcode-block" id="SourceAdapter.search">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.SourceAdapter.search">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.SourceAdapter.search">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[Candidate]"</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Return ranked candidates for ``query`` (license filter pushed native)."""</span>
         <span class="o">...</span></div>
 
 
 <div class="viewcode-block" id="SourceAdapter.get">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.SourceAdapter.get">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.SourceAdapter.get">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"SoundRecord"</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Resolve one source id to a metadata :class:`~foley.base.SoundRecord`."""</span>
         <span class="o">...</span></div>
 
 
 <div class="viewcode-block" id="SourceAdapter.download">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.SourceAdapter.download">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.SourceAdapter.download">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">download</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Return a sound's bytes (honoring ``cache_bytes_ok`` at the storage gate)."""</span>
         <span class="o">...</span></div>
@@ -1001,7 +1122,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="GeneratedClip">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.GeneratedClip">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.GeneratedClip">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">GeneratedClip</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""One freshly-generated sound: its transient bytes + a provisional candidate.</span>
@@ -1049,7 +1170,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="GenerateAdapter">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.GenerateAdapter">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.GenerateAdapter">[docs]</a>
 <span class="nd">@runtime_checkable</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">GenerateAdapter</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""The generation source contract (report 10 §4.2) — a SIBLING of ``SourceAdapter``.</span>
@@ -1074,7 +1195,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
 <div class="viewcode-block" id="GenerateAdapter.generate">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.GenerateAdapter.generate">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.GenerateAdapter.generate">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"GeneratedClip"</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Synthesize a sound for ``prompt``; return its bytes + provisional candidate."""</span>
         <span class="o">...</span></div>
@@ -1123,7 +1244,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="bulk_license">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.bulk_license">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.bulk_license">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">bulk_license</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1172,7 +1293,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="api_license">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.api_license">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.api_license">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">api_license</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1231,7 +1352,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="generated_license">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.generated_license">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.generated_license">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">generated_license</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1328,7 +1449,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="per_clip_license_meta">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.per_clip_license_meta">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.per_clip_license_meta">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">per_clip_license_meta</span><span class="p">(</span>
     <span class="n">license_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="o">*</span><span class="p">,</span>
@@ -1357,7 +1478,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="license_from_clip_meta">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.license_from_clip_meta">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.license_from_clip_meta">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">license_from_clip_meta</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="s2">"ClipSpec"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Build a clip's rights record from :func:`per_clip_license_meta` fields (fail-closed)."""</span>
     <span class="n">meta</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">meta</span>
@@ -1374,7 +1495,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="UniformCorpus">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.UniformCorpus">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.UniformCorpus">[docs]</a>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UniformCorpus</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A bulk corpus where **every** clip carries the same license.</span>
@@ -1395,7 +1516,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">tag_hints_from_path</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
 <div class="viewcode-block" id="UniformCorpus.corpus_dir">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.UniformCorpus.corpus_dir">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.UniformCorpus.corpus_dir">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">corpus_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""``data_dir/&lt;name&gt;`` — the conventional on-disk root for this corpus."""</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
@@ -1404,7 +1525,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="UniformCorpus.iter_clips">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.UniformCorpus.iter_clips">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.UniformCorpus.iter_clips">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">iter_clips</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">ClipSpec</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""Yield one :class:`ClipSpec` per audio file under ``root``.</span>
 
@@ -1427,7 +1548,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="UniformCorpus.resolve_license">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.UniformCorpus.resolve_license">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.UniformCorpus.resolve_license">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">resolve_license</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">ClipSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Stamp the corpus's uniform license (derived via the licensing SSOT)."""</span>
         <span class="k">return</span> <span class="n">bulk_license</span><span class="p">(</span>
@@ -1445,7 +1566,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="register_corpus">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.register_corpus">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.register_corpus">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">register_corpus</span><span class="p">(</span><span class="n">adapter</span><span class="p">:</span> <span class="s2">"CorpusAdapter"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"CorpusAdapter"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Register ``adapter`` in :data:`CORPUS_REGISTRY` (idempotent) and return it.</span>
 
@@ -1461,7 +1582,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="ring_of">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.ring_of">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.ring_of">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">ring_of</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Return the ring of the registered corpus ``name`` (raises ``KeyError``)."""</span>
     <span class="k">return</span> <span class="n">CORPUS_REGISTRY</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">ring</span></div>
@@ -1469,7 +1590,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="corpora_in_rings">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.corpora_in_rings">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.corpora_in_rings">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">corpora_in_rings</span><span class="p">(</span><span class="n">rings</span><span class="p">:</span> <span class="s2">"tuple[int, ...]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[CorpusAdapter]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Registered adapters whose ring is in ``rings`` (sorted by name)."""</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">a</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">CORPUS_REGISTRY</span><span class="o">.</span><span class="n">items</span><span class="p">())</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">ring</span> <span class="ow">in</span> <span class="n">rings</span><span class="p">]</span></div>
@@ -1477,7 +1598,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="select_corpora">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.sources.select_corpora">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.select_corpora">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">select_corpora</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span> <span class="n">rings</span><span class="p">:</span> <span class="s2">"tuple[int, ...]"</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">corpora</span><span class="p">:</span> <span class="s2">"Optional[list[str]]"</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[CorpusAdapter]"</span><span class="p">:</span>

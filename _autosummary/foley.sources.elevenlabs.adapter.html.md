@@ -54,7 +54,17 @@ ElevenLabs Sound Effects generate adapter (a [`GenerateAdapter`](foley.sources.b
   * **plan** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The ElevenLabs account plan (`'elevenlabs-paid-plan'` |
     `'elevenlabs-free-plan'`), which decides the generated sound’s licence.
     Defaults to `$FOLEY_ELEVENLABS_PLAN`; with neither, `generate` refuses
-    before calling the API (#56).
+    before calling the API (#56). When the key in use is a per-request one
+    (bound, not passed as `api_key=`), the plan is the one bound with it
+    ([`using_source_accounts()`](foley.sources.base.html.md#foley.sources.base.using_source_accounts)), never this or the
+    env’s (#98).
+
+#### account_id()
+
+The account a call is made on, for the generations cache (`'operator'` or a fingerprint).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 #### *property* api_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
@@ -91,6 +101,9 @@ Generate a sound effect for `prompt`; return its bytes + provisional candidate.
 #### *property* plan *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
 The account plan = the generated sound’s `license_id` (fail-closed when unknown).
+
+It follows the key: a bound (per-request) key brings its own plan, and one
+bound without a plan is refused rather than labelled with the operator’s.
 
 #### request_salt()
 

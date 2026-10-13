@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=423071ad"></script>
+    <script src="../_static/documentation_options.js?v=e648f5b4"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.38" />
+  <meta name="docsearch:version" content="0.0.39" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -530,10 +530,24 @@ by the registry’s lazy loader (the arioso <code class="docutils literal notran
 <li><p><strong>plan</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – The ElevenLabs account plan (<code class="docutils literal notranslate"><span class="pre">'elevenlabs-paid-plan'</span></code> |
 <code class="docutils literal notranslate"><span class="pre">'elevenlabs-free-plan'</span></code>), which decides the generated sound’s licence.
 Defaults to <code class="docutils literal notranslate"><span class="pre">$FOLEY_ELEVENLABS_PLAN</span></code>; with neither, <code class="docutils literal notranslate"><span class="pre">generate</span></code> refuses
-before calling the API (#56).</p></li>
+before calling the API (#56). When the key in use is a per-request one
+(bound, not passed as <code class="docutils literal notranslate"><span class="pre">api_key=</span></code>), the plan is the one bound with it
+(<a class="reference internal" href="foley.sources.base.html#foley.sources.base.using_source_accounts" title="foley.sources.base.using_source_accounts"><code class="xref py py-func docutils literal notranslate"><span class="pre">using_source_accounts()</span></code></a>), never this or the
+env’s (#98).</p></li>
 </ul>
 </dd>
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.sources.elevenlabs.adapter.ElevenLabsAdapter.account_id">
+<span class="sig-name descname"><span class="pre">account_id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/elevenlabs/adapter.html#ElevenLabsAdapter.account_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.account_id" title="Link to this definition">#</a></dt>
+<dd><p>The account a call is made on, for the generations cache (<code class="docutils literal notranslate"><span class="pre">'operator'</span></code> or a fingerprint).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="foley.sources.elevenlabs.adapter.ElevenLabsAdapter.api_key">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">api_key</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.api_key" title="Link to this definition">#</a></dt>
@@ -581,6 +595,8 @@ the account’s plan refuses PCM. Ingest re-archives to FLAC.</p></li>
 <dt class="sig sig-object py" id="foley.sources.elevenlabs.adapter.ElevenLabsAdapter.plan">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">plan</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.plan" title="Link to this definition">#</a></dt>
 <dd><p>The account plan = the generated sound’s <code class="docutils literal notranslate"><span class="pre">license_id</span></code> (fail-closed when unknown).</p>
+<p>It follows the key: a bound (per-request) key brings its own plan, and one
+bound without a plan is refused rather than labelled with the operator’s.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -647,6 +663,7 @@ the account’s plan refuses PCM. Ingest re-archives to FLAC.</p></li>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.Adapter"><code class="docutils literal notranslate"><span class="pre">Adapter</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter"><code class="docutils literal notranslate"><span class="pre">ElevenLabsAdapter</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.account_id"><code class="docutils literal notranslate"><span class="pre">ElevenLabsAdapter.account_id()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.api_key"><code class="docutils literal notranslate"><span class="pre">ElevenLabsAdapter.api_key</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.generate"><code class="docutils literal notranslate"><span class="pre">ElevenLabsAdapter.generate()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.plan"><code class="docutils literal notranslate"><span class="pre">ElevenLabsAdapter.plan</span></code></a></li>

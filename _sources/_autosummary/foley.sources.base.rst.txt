@@ -17,6 +17,10 @@ foley.sources.base
       check_prompt_influence
       native_adherence
       resolve_source_key
+      using_source_accounts
+      bound_source_account
+      key_fingerprint
+      source_account_id
       bulk_license
       per_clip_license_meta
       license_from_clip_meta
