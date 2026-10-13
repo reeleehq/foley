@@ -287,11 +287,62 @@ def test_stable_audio_param_mapping():
     pipe = FakePipeline()
     _sa_adapter(pipe).generate("a wooden door creak")  # defaults
     kw = pipe.calls[0]
-    assert kw["guidance_scale"] == pytest.approx(1.0 + 0.3 * (15.0 - 1.0))  # 5.2
+    assert kw["guidance_scale"] == 7.0  # the model's own default, passed explicitly
     assert kw["audio_end_in_s"] == 10.0  # NOT the 47.55 max
     assert kw["audio_start_in_s"] == 0.0
     assert kw["num_inference_steps"] == 200
     assert kw["output_type"] == "np"
+
+
+def test_stable_audio_prompt_influence_maps_linearly_onto_cfg():
+    pipe = FakePipeline()
+    _sa_adapter(pipe).generate("creak", prompt_influence=0.3)
+    assert pipe.calls[0]["guidance_scale"] == pytest.approx(1.0 + 0.3 * (15.0 - 1.0))
+
+
+def _distilled_sa_config():
+    """A distilled Stable Audio checkpoint: post-trained for CFG 1 and 8 steps (#70)."""
+    pi = SA_CONFIG["param_map"]["prompt_influence"]
+    return {
+        **SA_CONFIG,
+        "param_map": {
+            **SA_CONFIG["param_map"],
+            "prompt_influence": {**pi, "native_default": 1.0},
+        },
+        "native_defaults": {
+            **SA_CONFIG["native_defaults"],
+            "distilled": True,
+            "num_inference_steps_default": 8,
+        },
+    }
+
+
+def test_distilled_stable_audio_gets_its_native_cfg_by_default():
+    pipe = FakePipeline()
+    clip = StableAudioAdapter(_distilled_sa_config(), pipeline=pipe).generate("creak")
+    assert pipe.calls[0]["guidance_scale"] == 1.0  # not 5.2
+    assert pipe.calls[0]["num_inference_steps"] == 8
+    assert not any("prompt_influence" in n for n in clip.notes)
+
+
+def test_distilled_stable_audio_notes_an_unapplied_prompt_influence():
+    pipe = FakePipeline()
+    adapter = StableAudioAdapter(_distilled_sa_config(), pipeline=pipe)
+    clip = adapter.generate("creak", prompt_influence=0.8)
+    assert pipe.calls[0]["guidance_scale"] == 1.0
+    assert any("prompt_influence=0.8 not applied" in n for n in clip.notes)
+
+
+def test_prompt_influence_outside_unit_range_raises():
+    with pytest.raises(ValueError, match="0..1"):
+        _sa_adapter().generate("creak", prompt_influence=5.2)
+
+
+def test_elevenlabs_omits_prompt_influence_when_none():
+    transport = FakeTransport()
+    clip = _el_adapter(transport).generate("rain")
+    assert "prompt_influence" not in transport.calls[0].json  # the API's own default
+    assert clip.candidate.sound.license.generation_params["prompt_influence"] is None
 
 
 def test_stable_audio_generation_params_record_native_names():

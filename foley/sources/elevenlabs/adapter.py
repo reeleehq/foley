@@ -29,7 +29,12 @@ import os
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
-from ..base import GeneratedClip, SourceConfigurationError, generated_license
+from ..base import (
+    GeneratedClip,
+    SourceConfigurationError,
+    generated_license,
+    native_adherence,
+)
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -120,7 +125,7 @@ class ElevenLabsAdapter:
         prompt: str,
         *,
         duration: Optional[float] = None,
-        prompt_influence: float = 0.3,
+        prompt_influence: Optional[float] = None,
         negative_prompt: Optional[str] = None,
         steps: Optional[int] = None,
         seed: Optional[int] = None,
@@ -135,7 +140,8 @@ class ElevenLabsAdapter:
             duration: Seconds (clamped to the native ``0.5..30`` range). ``None``
                 lets the model auto-determine the length from the prompt.
             prompt_influence: ``0..1`` (identity map to the native field; higher =
-                closer to the prompt, less variety). Default ``0.3``.
+                closer to the prompt, less variety). ``None`` (default) omits it, so
+                the API applies its own default.
             negative_prompt / steps / seed: No ElevenLabs SFX equivalent — a
                 non-default value warns-and-drops (recorded in the clip notes);
                 ``generation_seed`` stays ``None``.
@@ -161,12 +167,10 @@ class ElevenLabsAdapter:
         )
 
         model_id = self.config["native_defaults"]["model_id"]
-        body: dict = {
-            "text": prompt,
-            "model_id": model_id,
-            "prompt_influence": prompt_influence,
-            "loop": bool(loop),
-        }
+        native_influence = native_adherence(self.config, prompt_influence, notes)
+        body: dict = {"text": prompt, "model_id": model_id, "loop": bool(loop)}
+        if native_influence is not None:
+            body["prompt_influence"] = native_influence
         if duration is not None:
             body["duration_seconds"] = self._clamp_duration(duration)
 
@@ -178,7 +182,7 @@ class ElevenLabsAdapter:
         # verbatim in provenance for reproducibility/audit.
         resolved = {
             "model_id": model_id,
-            "prompt_influence": prompt_influence,
+            "prompt_influence": native_influence,
             "loop": bool(loop),
             "output_format": native_output_format,
             "duration_seconds": body.get("duration_seconds"),
