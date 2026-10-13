@@ -49,15 +49,50 @@ _UNSUPPORTED = ("negative_prompt", "steps", "seed")
 _CONTAINER_MAGIC = (b"RIFF", b"fLaC", b"OggS", b"ID3", b"\x1f\x8b", b"\xef\xbb\xbf")
 
 
-def _is_mpeg_frame(head: bytes) -> bool:
-    """An MPEG audio frame header (an untagged MP3), not a run of ``0xFF`` PCM bytes."""
-    return (
-        len(head) >= 3
-        and head[0] == 0xFF
-        and head[1] & 0xE0 == 0xE0
-        and head[1] & 0x06 != 0  # a valid layer
-        and head[2] & 0xF0 != 0xF0  # a valid bitrate index (rules out 0xFFFF silence)
-    )
+#: MPEG audio Layer III tables (ISO 11172-3 / 13818-3): kbit/s by bitrate index, Hz by
+#: sample-rate index, keyed by the version bits (3: MPEG-1, 2: MPEG-2, 0: MPEG-2.5).
+_MP3_KBPS = {
+    3: (0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320),
+    2: (0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160),
+}
+_MP3_KBPS[0] = _MP3_KBPS[2]
+_MP3_HZ = {3: (44100, 48000, 32000), 2: (22050, 24000, 16000), 0: (11025, 12000, 8000)}
+_LAYER_III = 1
+
+
+def _mp3_frame(header: bytes):
+    """``(version, sample_rate, frame_length)`` of an MPEG Layer III frame header at the
+    start of ``header``, or ``None`` if it is not one."""
+    if len(header) < 4 or header[0] != 0xFF or header[1] & 0xE0 != 0xE0:
+        return None
+    version, layer = (header[1] >> 3) & 3, (header[1] >> 1) & 3
+    bitrate_index, rate_index = header[2] >> 4, (header[2] >> 2) & 3
+    if version not in _MP3_HZ or layer != _LAYER_III:
+        return None
+    if bitrate_index in (0, 15) or rate_index == 3:  # free format, bad, reserved
+        return None
+    sample_rate = _MP3_HZ[version][rate_index]
+    coefficient = 144 if version == 3 else 72  # samples per frame / 8
+    padding = (header[2] >> 1) & 1
+    length = coefficient * _MP3_KBPS[version][bitrate_index] * 1000 // sample_rate
+    return version, sample_rate, length + padding
+
+
+def _is_mp3(audio: bytes) -> bool:
+    """An untagged MP3: a Layer III frame header, confirmed by the next frame's header
+    when the body is long enough to hold one.
+
+    A lone header check (``0xFF`` then three set bits) also matches PCM whose first
+    samples are -1 and 0 (``FF FF 00 00``), which then went out without its WAV header.
+    """
+    first = _mp3_frame(audio[:4])
+    if first is None:
+        return False
+    version, sample_rate, length = first
+    if len(audio) < length + 4:
+        return True  # a single frame (or a cut one): the header is all there is
+    second = _mp3_frame(audio[length : length + 4])
+    return second is not None and second[:2] == (version, sample_rate)
 
 
 def _is_text(head: bytes) -> bool:
@@ -79,7 +114,7 @@ def _looks_like_raw_pcm(audio: bytes) -> bool:
     the problem from ingest's decode check.
     """
     head = audio[:64]
-    if not head or head.startswith(_CONTAINER_MAGIC) or _is_mpeg_frame(head):
+    if not head or head.startswith(_CONTAINER_MAGIC) or _is_mp3(audio):
         return False
     return not _is_text(head)
 
