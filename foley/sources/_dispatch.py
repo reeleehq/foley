@@ -18,9 +18,12 @@ the MCP and agent paths, which call it) and :func:`foley.add_from` go through he
    ``SOURCE_CONFIG['pricing']``; :func:`foley.cost.authorize` refuses it before it is
    made if the run's cap would be exceeded or the cost is unknown and not approved.
 4. **Cache** — a paid call is keyed by :func:`request_digest` (backend, model version,
-   prompt, the affordances sent, and the adapter's ``request_salt()``); an identical
-   request is served from the :class:`~foley.stores.GenerationsCache` without calling
-   the provider, and every paid response is written there **before** QC or ingest.
+   prompt, the **native** request the affordances resolve to — :func:`native_request`
+   — and the adapter's ``request_salt()``); an identical request is served from the
+   :class:`~foley.stores.GenerationsCache` without calling the provider, and every
+   paid response is written there **before** QC or ingest. A response the provider
+   served for a different request than asked (a plan-tier format fallback) is kept
+   under the key of the request it actually answers, never under the one asked (#97).
 
 The translator is the fleet's facade kit (``ocracy.kit.make_translator``,
 thorwhalen/ocracy#7): foley's ``supported_affordances`` become an identity
@@ -34,6 +37,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import time
 import warnings
 from dataclasses import dataclass, field
 from typing import Optional
@@ -48,6 +52,7 @@ __all__ = [
     "UnsupportedParameter",
     "translate_affordances",
     "request_digest",
+    "native_request",
     "GenerationPlan",
     "plan_generation",
     "run_generation",
@@ -129,25 +134,78 @@ def translate_affordances(
     return result.kwargs, result.notes
 
 
+#: Part of every cache key. Bumped when the key's shape or meaning changes, so entries
+#: keyed under an older scheme are misses, never replays (2: native request, #97).
+_DIGEST_VERSION = 2
+
+
 def request_digest(
     backend: str, prompt: str, config: dict, affordances: dict, salt=None
 ) -> str:
     """The cache key of a generation request (canonical JSON, SHA-256).
 
     Covers everything that decides the bytes and their licence: the backend, its model
-    version, the prompt, the affordances sent, and the adapter's ``request_salt()``
-    (ElevenLabs: the account plan, which decides the licence).
+    version, the prompt, the **native** request the affordances resolve to (see
+    :func:`native_request`; so ``output_format='wav'`` is keyed as the ``pcm_48000``
+    actually requested, and a change to a source's translation changes the key), and
+    the adapter's ``request_salt()`` (ElevenLabs: the account plan, which decides the
+    licence).
     """
+    return _digest(
+        backend, prompt, config, native_request(config, affordances), salt
+    )
+
+
+def _digest(backend: str, prompt: str, config: dict, native: dict, salt) -> str:
     nd = config.get("native_defaults") or {}
     payload = {
+        "v": _DIGEST_VERSION,
         "backend": backend,
         "model": nd.get("generator_version") or nd.get("model_id"),
         "prompt": prompt,
-        "affordances": _canonical_affordances(config, affordances),
+        "native": native,
         "salt": salt,
     }
     blob = json.dumps(payload, sort_keys=True, default=str, separators=(",", ":"))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def native_request(config: dict, affordances: dict) -> dict:
+    """The native parameters ``affordances`` resolve to, per the source's ``param_map``.
+
+    Each affordance is renamed to its ``native_name``; a ``to_native_map`` token is
+    translated (an unknown token to the source's ``native_defaults`` value, as the
+    adapter does); ``prompt_influence`` goes through
+    :func:`~foley.sources.base.native_adherence`. Defaults are filled first (see
+    :func:`_canonical_affordances`), and a ``None`` (sent as nothing) is left out.
+
+    >>> cfg = {"param_map": {"output_format": {"native_name": "fmt",
+    ...                                         "to_native_map": {"wav": "pcm"}}},
+    ...        "supported_affordances": ["output_format"]}
+    >>> native_request(cfg, {})
+    {'fmt': 'pcm'}
+    """
+    from .base import native_adherence
+
+    param_map = config.get("param_map") or {}
+    native_defaults = config.get("native_defaults") or {}
+    out = {}
+    for name, value in _canonical_affordances(config, affordances).items():
+        spec = param_map.get(name) or {}
+        native_name = spec.get("native_name", name)
+        if name == "prompt_influence" and spec:
+            value = native_adherence(config, value, [])
+        elif "to_native_map" in spec:
+            value = spec["to_native_map"].get(
+                value, native_defaults.get(native_name, value)
+            )
+        if value is not None:
+            out[native_name] = value
+    if "prompt_influence" in param_map and "prompt_influence" not in affordances:
+        default = native_adherence(config, None, [])
+        if default is not None:
+            out.setdefault(param_map["prompt_influence"].get("native_name"), default)
+    return out
 
 
 def _canonical_affordances(config: dict, affordances: dict) -> dict:
@@ -166,11 +224,16 @@ def _canonical_affordances(config: dict, affordances: dict) -> dict:
             out[name] = aff.default
     for name, value in affordances.items():
         out.setdefault(name, value)
-    return {
-        k: (float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else v)
-        for k, v in out.items()
-        if v is not None
-    }
+
+    def canonical(name, v):
+        aff = GENERATION_AFFORDANCES.get(name)
+        if aff is not None and aff.type is bool:
+            return bool(v)  # loop=1 and loop=True are one request (#97 review)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return float(v)
+        return v
+
+    return {k: canonical(k, v) for k, v in out.items() if v is not None}
 
 
 def _is_paid(config: dict) -> bool:
@@ -190,6 +253,8 @@ class GenerationPlan:
     estimate_usd: Optional[float] = None
     request_key: Optional[str] = None  # set for a paid call (the cache key)
     cached: object = None  # a GeneratedClip served from the cache, or None
+    salt: object = None  # the adapter's request_salt() (part of every key)
+    kept_key: Optional[str] = None  # where the response was kept (see run_generation)
 
 
 def plan_generation(
@@ -250,11 +315,12 @@ def plan_generation(
         except SourceConfigurationError:
             require_source_egress(backend, config)  # offline wins over a missing plan
             raise
+        plan.salt = salt
         plan.request_key = request_digest(backend, prompt, config, kept, salt)
         if reuse_cached:
             # A paid sound already on this disk needs no egress and no spend.
             cache = cache if cache is not None else _default_cache()
-            plan.cached = _cached_clip(cache, plan.request_key, plan.notes)
+            plan.cached = _cached_clip(cache, plan.request_key, plan.notes, config)
             if plan.cached is not None:
                 return plan
     require_source_egress(backend, config)
@@ -302,17 +368,72 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
     clip.candidate.cost_estimate_usd = plan.estimate_usd
     if plan.request_key is not None:
         cache = cache if cache is not None else _default_cache()
+        fallback = False
         try:
+            plan.kept_key = _answered_key(plan, clip)
+            fallback = plan.kept_key != plan.request_key
             _store_clip(cache, plan, clip)
         except Exception as exc:  # noqa: BLE001 - never lose paid bytes over a cache write
             clip.notes.append(
                 f"could not keep the paid generation in the cache: {exc!r}"
             )
         else:
+            if fallback:
+                replay_s = _fallback_replay_s(plan.config)
+                clip.notes.append(
+                    "the provider answered a different request than the one asked (a "
+                    "fallback); kept under the key of the request it answers"
+                    + (
+                        f"; the request asked replays it for {replay_s:g} s, then "
+                        "asks the provider again"
+                        if replay_s
+                        else ", so the request asked is not replayed from it"
+                    )
+                )
             clip.notes.append(
-                f"paid generation kept in the generations cache: {plan.request_key}"
+                f"paid generation kept in the generations cache: {plan.kept_key}"
             )
     return clip
+
+
+def _fallback_replay_s(config: dict) -> float:
+    """How long a fallback answers the request that was asked (``0``: never).
+
+    A source's ``generations_cache.fallback_replay_s``. Replaying spares an account
+    whose plan keeps refusing the asked format from paying for every request; the
+    window ends so that an account whose plan changed gets the asked format (#97).
+    """
+    return float((config.get("generations_cache") or {}).get("fallback_replay_s") or 0)
+
+
+def _answered_key(plan: GenerationPlan, clip) -> str:
+    """The key of the request ``clip`` actually answers (#97).
+
+    An adapter records the native parameters it really sent in the licence's
+    ``generation_params``. Where one differs from the planned native request (an
+    ElevenLabs ``pcm_48000`` refused on the plan's tier and served as
+    ``mp3_44100_128``), the response answers that other request, and is keyed as such:
+    the request asked is then a miss, and calls the provider again.
+    """
+    planned = native_request(plan.config, plan.affordances)
+    lic = getattr(getattr(clip.candidate, "sound", None), "license", None)
+    sent_params = getattr(lic, "generation_params", None) or {}
+
+    def same(a, b):
+        numeric = all(
+            isinstance(x, (int, float)) and not isinstance(x, bool) for x in (a, b)
+        )
+        return float(a) == float(b) if numeric else a == b
+
+    sent = {
+        k: sent_params[k]
+        if sent_params.get(k) is not None and not same(sent_params[k], v)
+        else v
+        for k, v in planned.items()
+    }
+    if sent == planned:
+        return plan.request_key
+    return _digest(plan.backend, plan.prompt, plan.config, sent, plan.salt)
 
 
 def record_generation_outcome(plan: GenerationPlan, status: str, *, cache=None) -> None:
@@ -329,10 +450,11 @@ def record_generation_outcome(plan: GenerationPlan, status: str, *, cache=None) 
             return
         status = "error_on_replay"
     cache = cache if cache is not None else _default_cache()
+    key = plan.kept_key or plan.request_key
     try:
-        entry = dict(cache.requests[plan.request_key])
+        entry = dict(cache.requests[key])
         entry["status"] = status
-        cache.requests[plan.request_key] = entry
+        cache.requests[key] = entry
     except Exception:  # noqa: BLE001 - bookkeeping only
         return
 
@@ -344,12 +466,42 @@ def _default_cache():
 
 
 def _store_clip(cache, plan: GenerationPlan, clip) -> None:
+    """Keep the paid bytes and the entry of the request they answer.
+
+    For a fallback (``plan.kept_key`` differs from ``plan.request_key``) the request
+    asked gets a pointer to that entry (see :func:`_fallback_replay_s`), and an
+    entry already kept for the request answered is not overwritten: the pointer then
+    stands for this generation, so its ingest outcome is recorded there.
+    """
     from ..stores import content_key
 
     key = content_key(clip.audio_bytes)
     cache.audio[key] = clip.audio_bytes
+    entry = _clip_entry(plan, clip, key)
+    kept_key = plan.kept_key or plan.request_key
+    if kept_key == plan.request_key:
+        cache.requests[kept_key] = entry
+        return
+    pointer = {"answered_by": kept_key, "at": time.time()}
+    if _replayable(cache, cache.requests.get(kept_key)):
+        plan.kept_key = plan.request_key  # the existing entry is not this generation's
+    else:
+        cache.requests[kept_key] = {**entry, "fallback": True}
+        pointer["content_key"] = key  # the bytes it serves (so evict keeps them)
+    cache.requests[plan.request_key] = pointer
+
+
+def _replayable(cache, entry) -> bool:
+    return bool(
+        entry
+        and entry.get("status") not in _NOT_REPLAYED
+        and entry.get("content_key") in cache.audio
+    )
+
+
+def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
     sound = clip.candidate.sound
-    cache.requests[plan.request_key] = {
+    return {
         "content_key": key,
         "backend": plan.backend,
         "prompt": plan.prompt,
@@ -371,7 +523,7 @@ def _store_clip(cache, plan: GenerationPlan, clip) -> None:
 _NOT_REPLAYED = frozenset({"quarantined", "error_on_replay"})
 
 
-def _cached_clip(cache, request_key: str, notes: list):
+def _cached_clip(cache, request_key: str, notes: list, config: dict):
     """Rebuild the :class:`GeneratedClip` of a cached request, or ``None`` (a miss).
 
     A corrupt or out-of-date entry, or one whose earlier ingest failed, is a miss with
@@ -388,6 +540,24 @@ def _cached_clip(cache, request_key: str, notes: list):
         )
         if not entry:
             return None
+        via_fallback = "answered_by" in entry
+        if via_fallback:
+            if entry.get("status") in _NOT_REPLAYED:
+                return None
+            if time.time() - float(entry.get("at", 0)) >= _fallback_replay_s(config):
+                notes.append(
+                    "this request was last answered by a fallback; asking the "
+                    "provider again"
+                )
+                return None
+            answered_by = entry["answered_by"]
+            entry = cache.requests.get(answered_by)
+            if not entry:
+                return None
+            notes.append(
+                "this request was answered by the provider's fallback; replaying "
+                f"that answer ({answered_by})"
+            )
         if entry.get("status") in _NOT_REPLAYED:
             notes.append(
                 f"the cached result of this request was {entry['status']}; generating anew"
@@ -409,11 +579,15 @@ def _cached_clip(cache, request_key: str, notes: list):
             f"generations cache entry {request_key} unreadable ({exc!r}); ignored"
         )
         return None
+    kept_notes = list(entry.get("notes") or [])
+    if entry.get("fallback") and not via_fallback:
+        # Generated as another request's fallback; this request is the one it answers.
+        kept_notes = [f"when first generated, as a fallback: {n}" for n in kept_notes]
     return GeneratedClip(
         audio_bytes=audio,
         candidate=Candidate(sound=record, origin=CandidateOrigin.generated),
         notes=[
-            *list(entry.get("notes") or []),
+            *kept_notes,
             f"served from the generations cache ({request_key}); no paid call",
         ],
     )
