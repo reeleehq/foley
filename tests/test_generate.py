@@ -937,3 +937,92 @@ def test_elevenlabs_wav_passes_a_real_two_frame_mp3_through():
     transport = FakeTransport(FakeResponse(200, None, body))
     clip = _el_adapter(transport).generate("rain", output_format="wav", duration=1.0)
     assert clip.audio_bytes == body
+
+
+# ---------------------------------------------------------------------------
+# #97 — the generations cache keys on the native request, not the unified tokens
+# ---------------------------------------------------------------------------
+
+
+class _PcmByPlan(FakeTransport):
+    """Serves PCM while ``pcm_allowed``, else refuses it (403); MP3 is always served."""
+
+    def __init__(self, *, pcm_allowed):
+        super().__init__()
+        self.pcm_allowed = pcm_allowed
+
+    def __call__(self, method, url, *, params=None, **kw):
+        super().__call__(method, url, params=params, **kw)
+        if (params or {}).get("output_format", "").startswith("pcm"):
+            if not self.pcm_allowed:
+                return FakeResponse(403, {"detail": "plan"}, b"")
+            return FakeResponse(200, None, _pcm_s16le(1.0))
+        return FakeResponse(200, None, _flac(_mono_tone()))
+
+
+def _formats(transport):
+    return [c.params["output_format"] for c in transport.calls]
+
+
+def test_the_cache_key_is_the_native_request():
+    from foley.sources._dispatch import native_request, request_digest
+
+    assert native_request(EL_CONFIG, {"output_format": "wav"})["output_format"] == (
+        "pcm_48000"
+    )
+    assert native_request(EL_CONFIG, {})["output_format"] == "pcm_48000"  # the default
+    wav = request_digest("elevenlabs", "rain", EL_CONFIG, {"output_format": "wav"})
+    assert wav == request_digest("elevenlabs", "rain", EL_CONFIG, {})
+    assert wav != request_digest("elevenlabs", "rain", EL_CONFIG, {"output_format": "mp3"})
+    # A change to the translation is a change to the key (pre-#96 'wav' meant MP3).
+    remapped = {**EL_CONFIG, "param_map": {
+        **EL_CONFIG["param_map"],
+        "output_format": {**EL_CONFIG["param_map"]["output_format"],
+                          "to_native_map": {"wav": "mp3_44100_128"}},
+    }}
+    assert wav != request_digest("elevenlabs", "rain", remapped, {"output_format": "wav"})
+    # Stable Audio's native default CFG is part of the key when prompt_influence is omitted.
+    assert native_request(SA_CONFIG, {})["guidance_scale"] == 7.0
+
+
+def test_a_fallback_mp3_is_not_replayed_for_wav(library, _in_memory_generations_cache):
+    """#97's acceptance: after a fallback, a 'wav' request on a plan that allows PCM
+    calls the API again instead of replaying the MP3."""
+    transport = _PcmByPlan(pcm_allowed=False)
+    adapter = _el_adapter(transport)
+    first = foley.generate("rain", backend="elevenlabs", adapter=adapter,
+                           library=library, output_format="wav", duration=1)
+    assert _formats(transport) == ["pcm_48000", "mp3_44100_128"]
+    assert any("different request than the one asked" in n for n in first.notes)
+
+    transport.pcm_allowed = True  # the account moved to a tier that allows PCM
+    second = foley.generate("rain", backend="elevenlabs", adapter=adapter,
+                            library=library, output_format="wav", duration=1)
+    assert _formats(transport)[2:] == ["pcm_48000"]  # a real call, not the MP3
+    assert second.sound.license.generation_params["output_format"] == "pcm_48000"
+    assert not any("served from the generations cache" in n for n in second.notes)
+
+    # The fallback MP3 answers an 'mp3' request, so that one is a cache hit; so is
+    # the PCM now kept under the 'wav' key.
+    for fmt in ("mp3", "wav"):
+        hit = foley.generate("rain", backend="elevenlabs", adapter=adapter,
+                             library=library, output_format=fmt, duration=1)
+        assert any("served from the generations cache" in n for n in hit.notes), fmt
+    assert len(transport.calls) == 3
+
+
+def test_a_quarantined_fallback_is_marked_under_the_key_it_was_kept(
+    library, _in_memory_generations_cache, monkeypatch
+):
+    from foley.sources import _dispatch
+
+    transport = _PcmByPlan(pcm_allowed=False)
+    plan = _dispatch.plan_generation("elevenlabs", "rain", adapter=_el_adapter(transport),
+                                     output_format="wav", duration=1)
+    clip = _dispatch.run_generation(plan, _el_adapter(transport))
+    assert plan.kept_key != plan.request_key
+    _dispatch.record_generation_outcome(plan, "quarantined")
+    cache = _in_memory_generations_cache
+    assert cache.requests[plan.kept_key]["status"] == "quarantined"
+    assert plan.request_key not in cache.requests
+    assert clip.audio_bytes
