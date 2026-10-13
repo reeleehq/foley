@@ -82,6 +82,16 @@ SOURCE_CONFIG = {
 Translate unified affordances → native params via `param_map` (like arioso's translation
 layer); warn-and-drop unsupported ones per `on_unsupported_param`.
 
+**Adherence (`prompt_influence`) is per source.** Its unified default is `None`, meaning
+"the model's own default", because native scales differ widely (ElevenLabs 0..1, Stable
+Audio Open CFG 1..15). A generate source that supports it declares, on
+`param_map["prompt_influence"]`, a `coerce` (`{"kind": "identity"}` or
+`{"kind": "linear", "lo": ..., "hi": ...}`) and a `native_default` (the model's value, or
+`None` to send nothing). Map it with `foley.sources.base.native_adherence`. A distilled
+checkpoint (post-trained for CFG 1) sets `native_defaults["distilled"] = True` and its
+`native_default`; a requested value is then noted and not applied. A local pipeline
+whose own default is not the model's must always receive an explicit value.
+
 ## License invariants (do NOT skip — foley output gets published)
 
 1. **Every fetched or generated sound gets a `LicenseRecord`.** Seed it from
@@ -106,6 +116,8 @@ layer); warn-and-drop unsupported ones per `on_unsupported_param`.
       `license` block + `kind`).
 - [ ] `adapter.py` if REST/local logic is non-trivial; else rely on the shared base adapter.
 - [ ] `param_map` covers every affordance the source supports; unsupported → `warn`.
+- [ ] Generate source with `prompt_influence`: `coerce` + `native_default` declared (and
+      `distilled` for a distilled checkpoint).
 - [ ] License flags set correctly, especially `cache_bytes_ok` vs `redistribute_standalone_ok`.
 - [ ] Optional dep in a `foley[<name>]` extra, **lazy-imported** (core stays zero-dep).
 - [ ] Tests: adapter returns valid `Candidate`/`SoundRecord`s; license flags populate;

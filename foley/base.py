@@ -163,7 +163,10 @@ GENERATION_AFFORDANCES: dict[str, Affordance] = {
         "duration", float, "Seconds; None => backend default", stage="generate"
     ),
     "prompt_influence": Affordance(
-        "prompt_influence", float, "0..1 unified guidance", 0.3, "generate"
+        "prompt_influence",
+        float,
+        "0..1 unified adherence; None => the backend's native default",
+        stage="generate",
     ),
     "negative_prompt": Affordance(
         "negative_prompt",

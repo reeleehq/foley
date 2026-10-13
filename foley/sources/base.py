@@ -45,6 +45,8 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from ..base import Candidate, SoundRecord
 
 __all__ = [
+    "check_prompt_influence",
+    "native_adherence",
     "SourceConfigurationError",
     "ClipSpec",
     "CorpusAdapter",
@@ -72,6 +74,68 @@ class SourceConfigurationError(RuntimeError):
     and pull façades let it propagate, and its message names what to set (the env var
     and, for a key, its sign-up URL) (#64).
     """
+
+
+def check_prompt_influence(value) -> None:
+    """Raise ``ValueError`` unless ``value`` is ``None`` or a real number in ``0..1``.
+
+    Called when a generation is planned, before any budget is reserved, and again
+    by :func:`native_adherence`. A ``bool`` or a numeric string is refused rather
+    than coerced: ``True`` would silently mean the maximum.
+    """
+    if value is None:
+        return
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"prompt_influence must be a number in 0..1, got {value!r}")
+    if not 0.0 <= float(value) <= 1.0:
+        raise ValueError(f"prompt_influence must be in 0..1, got {value!r}")
+
+
+def native_adherence(
+    config: dict, prompt_influence: Optional[float], notes: list
+) -> Optional[float]:
+    """Map foley's unified ``prompt_influence`` (0..1) onto a source's native scale.
+
+    The source declares the mapping on ``config["param_map"]["prompt_influence"]``:
+    ``coerce`` (``{"kind": "identity"}`` or ``{"kind": "linear", "lo": ..., "hi": ...}``,
+    0 -> ``lo``, 1 -> ``hi``) and ``native_default`` (the model's own value, or ``None``
+    to send nothing and let the API apply its default). Native scales differ widely
+    (ElevenLabs 0..1, Stable Audio Open's CFG 1..15), so one unified default would be
+    wrong for most of them: ``None`` means "the model's own default".
+
+    A source whose ``native_defaults["distilled"]`` is true was post-trained for its
+    native default (e.g. distilled Stable Audio models expect CFG 1), so a requested
+    ``prompt_influence`` is not applied: the native default is used and ``notes`` says
+    so (#70).
+
+    Raises:
+        ValueError: If ``prompt_influence`` is outside ``0..1``.
+    """
+    spec = (config.get("param_map") or {}).get("prompt_influence") or {}
+    native_default = spec.get("native_default")
+    distilled = (config.get("native_defaults") or {}).get("distilled")
+    if distilled and native_default is None:
+        raise SourceConfigurationError(
+            f"{config['name']}: a distilled source must declare "
+            "param_map['prompt_influence']['native_default'] (the CFG it was "
+            "post-trained for)"
+        )
+    if prompt_influence is None:
+        return native_default
+    check_prompt_influence(prompt_influence)
+    if distilled:
+        notes.append(
+            f"prompt_influence={prompt_influence!r} not applied: {config['name']} is a "
+            f"distilled model, post-trained for its native default ({native_default!r})"
+        )
+        return native_default
+    coerce = spec.get("coerce") or {"kind": "identity"}
+    if coerce["kind"] == "identity":
+        return float(prompt_influence)
+    if coerce["kind"] == "linear":
+        lo, hi = float(coerce["lo"]), float(coerce["hi"])
+        return lo + float(prompt_influence) * (hi - lo)
+    raise ValueError(f"{config['name']}: unknown prompt_influence coerce {coerce!r}")
 
 
 @dataclass

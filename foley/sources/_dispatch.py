@@ -36,6 +36,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES
+from .base import check_prompt_influence
 
 __all__ = [
     "UNSUPPORTED_POLICIES",
@@ -101,6 +102,8 @@ def translate_affordances(
     if on_unsupported is not None and on_unsupported not in UNSUPPORTED_POLICIES:
         raise ValueError(f"on_unsupported must be one of {UNSUPPORTED_POLICIES}")
     vocabulary = GENERATION_AFFORDANCES if vocabulary is None else vocabulary
+    # Validated here, at planning time, so a bad value never reserves budget.
+    check_prompt_influence(affordances.get("prompt_influence"))
     supported = set(config.get("supported_affordances") or ())
     source = config.get("name", "this source")
     kept: dict = {}
@@ -178,8 +181,9 @@ def request_digest(
 def _canonical_affordances(config: dict, affordances: dict) -> dict:
     """``affordances`` with each supported default filled in and numbers as floats.
 
-    So ``duration=2`` and ``duration=2.0``, or an omitted ``prompt_influence`` and its
-    default ``0.3``, are the same request and hit the same cache entry.
+    So ``duration=2`` and ``duration=2.0`` are the same request and hit the same
+    cache entry. An affordance whose default is ``None`` (``prompt_influence``: the
+    backend's native default) is left out when omitted.
     """
     out = {}
     for name in config.get("supported_affordances") or ():

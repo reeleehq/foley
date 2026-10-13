@@ -671,3 +671,17 @@ def test_an_injected_sdk_client_is_used_without_its_retries():
 
     metered_create(Client(), model="claude-opus-4-8", max_tokens=10, messages=[])
     assert seen == {"max_retries": 0}
+
+
+@pytest.mark.parametrize("bad", [5.0, -0.1, True, "0.5"])
+def test_a_bad_prompt_influence_is_refused_before_any_budget_is_reserved(
+    paid_source, library, bad
+):
+    from foley.cost import spend_scope
+
+    adapter = paid_source("sixty", amount=0.60)
+    with spend_scope(Budget(max_usd=1.0)) as budget:
+        with pytest.raises(ValueError, match="prompt_influence"):
+            foley.generate("a door creaks", backend="sixty", library=library,
+                           prompt_influence=bad)
+    assert adapter.calls == 0 and budget.spent_usd == 0

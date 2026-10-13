@@ -39,7 +39,13 @@ SOURCE_CONFIG = {
     "param_map": {
         "prompt": {"native_name": "text", "required": True, "in": "body"},
         "duration": {"native_name": "duration_seconds", "in": "body"},  # None => auto
-        "prompt_influence": {"native_name": "prompt_influence", "in": "body"},  # 0..1
+        # 0..1 on both sides; None -> omitted, so the API applies its own default.
+        "prompt_influence": {
+            "native_name": "prompt_influence",
+            "in": "body",
+            "coerce": {"kind": "identity"},
+            "native_default": None,
+        },
         "loop": {"native_name": "loop", "in": "body"},  # v2 only (v2 is default)
         "output_format": {
             "native_name": "output_format",
