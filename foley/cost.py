@@ -73,6 +73,7 @@ def default_max_usd(llm: Optional[str] = None) -> float:
     chosen = llm or os.environ.get(LLM_ENV_VAR) or None
     return DEFAULT_MAX_USD_BY_LLM.get(chosen, DEFAULT_MAX_USD)
 
+
 #: Set to 1 to approve calls whose cost is unknown, for every run that does not say.
 APPROVE_UNKNOWN_COST_ENV = "FOLEY_APPROVE_UNKNOWN_COST"
 
