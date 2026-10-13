@@ -23,7 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Optional, Union
 
-from ..base import MasterProfile, SoundDesignTimeline, resolve_master
+from ..base import Anchor, MasterProfile, SoundDesignTimeline, resolve_master
 
 # Public WEAVE surface (all import-time dol-only) ----------------------------
 from .align import FakeAligner, WhisperXAligner, _default_aligner
@@ -84,6 +84,9 @@ class WeaveResult:
         None  # C2PA sidecar (ALWAYS present, fail-safe)
     )
     watermark: Optional[dict] = None  # AudioSeal meta iff watermarked, else None
+    #: What the caller should know about how the mix was made, e.g. that word timings
+    #: are estimates because no forced aligner is installed (#65).
+    notes: list = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -477,6 +480,7 @@ def weave(
             cache=cache,
         )
         rendered = result.timeline
+        notes = _alignment_notes(result.alignment, rendered)
         run_id = getattr(getattr(run, "manifest", None), "run_id", None)
         _emit_weave_steps(run, result)
         run.set_plan_ref(
@@ -484,6 +488,7 @@ def weave(
                 "stage": "weave",
                 "n_items": len(rendered.items),
                 "master": rendered.master.to_dict(),
+                "aligner": result.alignment,
                 "run_manifest_ref": run_id,
             }
         )
@@ -513,7 +518,42 @@ def weave(
         run_manifest_ref=run_id,
         content_credential=prov["content_credential"],
         watermark=prov["watermark"],
+        notes=notes,
     )
+
+
+def _alignment_notes(alignment: Optional[str], timeline: SoundDesignTimeline) -> list:
+    """What the caller should know about how the placements were timed (#65).
+
+    Only items anchored to speech (a word, a sentence or a scene) depend on word
+    timings; a mix of absolute onsets needs no note.
+    """
+    anchored = sum(
+        1
+        for it in timeline.items
+        if it.placement is not None and it.placement.anchor is not Anchor.absolute
+    )
+    if not anchored:
+        return []
+    if alignment is None:
+        return [
+            f"no word timings (no transcript given): {anchored} speech-anchored "
+            "item(s) were placed at fallback onsets, not on their words. Pass "
+            "transcript= (or a timeline that carries word_timeline)."
+        ]
+    if alignment == "fake":
+        return [
+            "aligner=fake: no forced aligner is installed, so word timings are evenly "
+            "spaced estimates and word-anchored placements are approximate. Install "
+            "foley[align] (WhisperX) for real alignment."
+        ]
+    if alignment == "whisperx":
+        return [
+            "aligner=whisperx: word timings come from WhisperX's own transcription "
+            "of the narration, not from the given transcript; a word the recogniser "
+            "heard differently lands at a fallback onset."
+        ]
+    return []
 
 
 def _emit_weave_steps(run, result: RenderResult) -> None:
