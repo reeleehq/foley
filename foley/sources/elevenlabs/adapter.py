@@ -120,22 +120,57 @@ def _looks_like_raw_pcm(audio: bytes) -> bool:
 
 
 class _HTTPStatusError(RuntimeError):
-    """A non-200 from ElevenLabs (still a ``RuntimeError``); carries ``status_code``."""
+    """A non-200 from ElevenLabs (still a ``RuntimeError``); carries ``status_code``.
 
-    def __init__(self, status_code: int, message: str):
+    ``detail`` is the body's ``detail`` (a dict in the documented shape, a string in
+    older responses), or ``None`` when the body is not JSON.
+    """
+
+    def __init__(self, status_code: int, message: str, detail=None):
         super().__init__(message)
         self.status_code = status_code
+        self.detail = detail
+
+
+def _detail_of(resp):
+    """The ElevenLabs error ``detail`` of ``resp`` (``None`` when absent; never raises)."""
+    try:
+        body = resp.json()
+    except Exception:
+        return None
+    return body.get("detail", body) if isinstance(body, dict) else body
 
 
 def _safe_detail(resp) -> str:
     """Best-effort extract of an ElevenLabs error ``detail`` (never raises)."""
-    try:
-        body = resp.json()
-    except Exception:
-        return "<no detail>"
-    if isinstance(body, dict):
-        return str(body.get("detail", body))
-    return str(body)
+    detail = _detail_of(resp)
+    return "<no detail>" if detail is None else str(detail)
+
+
+def _is_format_refusal(detail, native_output_format: str, codes) -> bool:
+    """Whether an error ``detail`` says the plan refuses this output format (#100).
+
+    The documented shape carries a ``code`` (and a legacy ``status``); a match on
+    either against ``codes`` is a refusal. Without one, a message that names the
+    requested format (``"Requested output format pcm_48000 ... is only allowed for
+    Pro tier and above"``) is too. Anything else (another 403, such as a key missing
+    a permission, or no body at all) is not.
+
+    >>> _is_format_refusal({"code": "subscription_required"}, "pcm_48000",
+    ...                    ["subscription_required"])
+    True
+    >>> _is_format_refusal("Requested output format pcm_48000 (PCM at 48000hz) is "
+    ...                    "only allowed for Pro tier and above.", "pcm_48000", [])
+    True
+    >>> _is_format_refusal({"code": "missing_permissions", "message": "no"},
+    ...                    "pcm_48000", ["subscription_required"])
+    False
+    """
+    if isinstance(detail, dict):
+        if {detail.get("code"), detail.get("status")} & set(codes):
+            return True
+        detail = detail.get("message")
+    return isinstance(detail, str) and native_output_format in detail
 
 
 class ElevenLabsAdapter:
@@ -307,10 +342,12 @@ class ElevenLabsAdapter:
     ) -> "tuple[bytes, str]":
         """Call the endpoint; on a 4xx for a format with a declared fallback, retry once.
 
-        Whether PCM needs a higher plan tier for sound effects is unverified, so a
-        plan-tier refusal (``fallback_statuses``: 402/403) on ``pcm_*`` is retried
-        with the config's ``fallback_on_4xx`` format (a refusal produces no audio,
-        so nothing is billed twice) and recorded in ``notes``. Anything else raises. Returns ``(bytes, format actually used)``.
+        A plan-tier refusal of the format (a ``fallback_statuses`` status whose
+        error detail is a ``fallback_detail_codes`` code, or names the format; see
+        :func:`_is_format_refusal`) is retried with the config's ``fallback_on_4xx``
+        format (a refusal produces no audio, so nothing is billed twice) and
+        recorded in ``notes``. Anything else raises. Returns ``(bytes, format
+        actually used)``.
         """
         spec = self.config["param_map"]["output_format"]
         try:
@@ -319,8 +356,14 @@ class ElevenLabsAdapter:
             ), native_output_format
         except _HTTPStatusError as exc:
             fallback = spec.get("fallback_on_4xx", {}).get(native_output_format)
-            if fallback is None or exc.status_code not in spec.get(
-                "fallback_statuses", ()
+            if (
+                fallback is None
+                or exc.status_code not in spec.get("fallback_statuses", ())
+                or not _is_format_refusal(
+                    exc.detail,
+                    native_output_format,
+                    spec.get("fallback_detail_codes", ()),
+                )
             ):
                 raise
             notes.append(
@@ -409,6 +452,7 @@ class ElevenLabsAdapter:
                 resp.status_code,
                 f"ElevenLabs {endpoint['method']} {url} -> {resp.status_code}: "
                 f"{_safe_detail(resp)}",
+                detail=_detail_of(resp),
             )
         return resp.content
 

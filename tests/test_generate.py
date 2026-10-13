@@ -309,17 +309,30 @@ def test_elevenlabs_wav_trims_a_partial_frame():
     assert len(data) == 24000
 
 
+#: ElevenLabs' documented error body for a plan-tier refusal of an output format (#100).
+_TIER_REFUSAL = {
+    "detail": {
+        "type": "authorization_error",
+        "code": "subscription_required",
+        "status": "output_format_not_allowed",
+        "message": "Requested output format pcm_48000 is only allowed for Pro tier "
+        "and above.",
+    }
+}
+
+
 class _RefusePcm(FakeTransport):
     """Refuses ``pcm_*`` with ``status``; serves anything else."""
 
-    def __init__(self, status):
+    def __init__(self, status, body=None):
         super().__init__()
         self.status = status
+        self.body = _TIER_REFUSAL if body is None else body
 
     def __call__(self, method, url, *, params=None, **kw):
         resp = super().__call__(method, url, params=params, **kw)
         if (params or {}).get("output_format", "").startswith("pcm"):
-            return FakeResponse(self.status, {"detail": "plan"}, b"")
+            return FakeResponse(self.status, self.body, b"")
         return resp
 
 
@@ -335,10 +348,50 @@ def test_elevenlabs_wav_falls_back_to_mp3_on_a_4xx_with_a_note():
     assert gp["output_format"] == "mp3_44100_128"  # what was actually used
 
 
-@pytest.mark.parametrize("status", [400, 401, 404, 422, 429, 500])
+@pytest.mark.parametrize("status", [400, 401, 402, 404, 422, 429, 500])
 def test_elevenlabs_wav_does_not_fall_back_on_auth_rate_or_server_errors(status):
     transport = _RefusePcm(status)
     with pytest.raises(RuntimeError, match=str(status)):
+        _el_adapter(transport).generate("rain", output_format="wav")
+    assert len(transport.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "detail",
+    [
+        {"code": "subscription_required"},
+        {"status": "output_format_not_allowed", "message": "no"},  # legacy field
+        "Requested output format pcm_48000 (PCM at 48000hz) is only allowed for Pro "
+        "tier and above.",  # an older, string detail naming the format
+    ],
+)
+def test_elevenlabs_wav_falls_back_on_each_documented_refusal_form(detail):
+    transport = _RefusePcm(403, {"detail": detail})
+    clip = _el_adapter(transport).generate("rain", output_format="wav")
+    assert clip.candidate.sound.license.generation_params["output_format"] == (
+        "mp3_44100_128"
+    )
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"detail": {"type": "authorization_error", "code": "missing_permissions",
+                    "message": "This API key lacks sound_generation"}},
+        {"detail": "forbidden"},
+        None,  # not JSON
+    ],
+)
+def test_elevenlabs_wav_does_not_fall_back_on_another_403(body):
+    """#100: a 403 that is not a refusal of the format (or a 402: out of credits)."""
+
+    class _Forbidden(FakeTransport):
+        def __call__(self, method, url, *, params=None, **kw):
+            super().__call__(method, url, params=params, **kw)
+            return FakeResponse(403, body, b"")
+
+    transport = _Forbidden()
+    with pytest.raises(RuntimeError, match="403"):
         _el_adapter(transport).generate("rain", output_format="wav")
     assert len(transport.calls) == 1
 
@@ -347,7 +400,7 @@ def test_elevenlabs_wav_fallback_that_also_fails_raises():
     class _RefuseAll(FakeTransport):
         def __call__(self, method, url, *, params=None, **kw):
             super().__call__(method, url, params=params, **kw)
-            return FakeResponse(403, {"detail": "no"}, b"")
+            return FakeResponse(403, _TIER_REFUSAL, b"")
 
     transport = _RefuseAll()
     with pytest.raises(RuntimeError, match="403"):
@@ -955,7 +1008,7 @@ class _PcmByPlan(FakeTransport):
         super().__call__(method, url, params=params, **kw)
         if (params or {}).get("output_format", "").startswith("pcm"):
             if not self.pcm_allowed:
-                return FakeResponse(403, {"detail": "plan"}, b"")
+                return FakeResponse(403, _TIER_REFUSAL, b"")
             return FakeResponse(200, None, _pcm_s16le(1.0))
         return FakeResponse(200, None, _flac(_mono_tone()))
 

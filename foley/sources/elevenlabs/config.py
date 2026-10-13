@@ -59,10 +59,17 @@ SOURCE_CONFIG = {
                 "opus": "opus_48000_128",
                 "wav": "pcm_48000",
             },
-            # Retried once with the fallback only on these statuses (a plan-tier
-            # refusal); any other error is raised as is.
+            # Retried once with the fallback only for a plan-tier refusal of the
+            # format; any other error is raised as is (#100). ElevenLabs' documented
+            # error body is {"detail": {"type", "code", "message", "status", ...}}: a
+            # tier gate is a 403 authorization_error, code 'subscription_required'
+            # (reported in the field as legacy status 'output_format_not_allowed',
+            # with a message naming the format: "Requested output format pcm_44100
+            # ... is only allowed for Pro tier and above"). A 402 is payment_required
+            # (out of credits), which MP3 would not fix. Live confirmation: #95.
             "fallback_on_4xx": {"pcm_48000": "mp3_44100_128"},
-            "fallback_statuses": [402, 403],
+            "fallback_statuses": [403],
+            "fallback_detail_codes": ["subscription_required", "output_format_not_allowed"],
             # Raw PCM layout per native enum: 16-bit little-endian. The channel count
             # is not documented for the SFX endpoint: until a live call confirms it,
             # verified=False and a clip whose layout the byte length cannot confirm
