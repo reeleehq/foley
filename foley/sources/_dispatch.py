@@ -80,7 +80,9 @@ def _translator(config: dict, vocabulary: dict):
     return make_translator(
         param_map,
         backend=config.get("name", "this source"),
-        on_unsupported="warn" if config.get("on_unsupported_param") == "warn" else "note",
+        on_unsupported="warn"
+        if config.get("on_unsupported_param") == "warn"
+        else "note",
         always_raise=(*meaning, *config.get("meaning_carrying", ())),
         vocabulary={n: aff.default for n, aff in vocabulary.items()},
         stacklevel=_WARN_STACKLEVEL,
@@ -120,7 +122,9 @@ def translate_affordances(
     check_prompt_influence(affordances.get("prompt_influence"))
     duration = affordances.get("duration")
     if duration is not None and not math.isfinite(float(duration)):
-        raise ValueError(f"duration must be a finite number of seconds, got {duration!r}")
+        raise ValueError(
+            f"duration must be a finite number of seconds, got {duration!r}"
+        )
     result = _translator(config, vocabulary)(affordances, on_unsupported=on_unsupported)
     return result.kwargs, result.notes
 

@@ -168,7 +168,9 @@ class Budget:
             CostApprovalRequired: If the cost is unknown and not approved.
             BudgetExceeded: If spend + ``estimate_usd`` would exceed ``max_usd``.
         """
-        if not _known(estimate_usd):  # None, or a NaN/inf estimate: unknown, never summed
+        if not _known(
+            estimate_usd
+        ):  # None, or a NaN/inf estimate: unknown, never summed
             if not self._approves_unknown():
                 raise CostApprovalRequired(
                     f"{what}: its cost is unknown, so it needs approval. Pass "
