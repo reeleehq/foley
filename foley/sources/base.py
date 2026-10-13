@@ -36,6 +36,7 @@ so the derived permission flags stay single-sourced.
 from __future__ import annotations
 
 import hashlib
+import os
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
@@ -54,6 +55,7 @@ __all__ = [
     "using_source_accounts",
     "bound_source_account",
     "key_fingerprint",
+    "source_account_id",
     "SourceConfigurationError",
     "ClipSpec",
     "CorpusAdapter",
@@ -198,6 +200,11 @@ def using_source_accounts(**accounts):
     A source given ``None`` (or an empty key) binds nothing, so an optional request
     header can be passed straight through.
 
+    The binding lives in a ``ContextVar``: it covers what runs inside the block, in
+    this context. Consume a lazy result (``find(stream=True)``) inside the block, and
+    run work handed to a thread pool under ``contextvars.copy_context()``; outside the
+    block the operator's key and plan apply again.
+
     Raises:
         ValueError: For a field an account cannot carry.
     """
@@ -227,6 +234,23 @@ def using_source_accounts(**accounts):
             yield
         finally:
             _BOUND_ACCOUNTS.reset(token)
+
+
+def source_account_id(config: dict, api_key: Optional[str] = None) -> str:
+    """Which account a call to the source is made on: ``'operator'``, or a key's fingerprint.
+
+    The operator's account is the source's env key (or no key at all: a cache entry
+    can then still be replayed offline, and rotating the operator's key does not
+    orphan the cache). Any other key, given as ``api_key`` or bound for the request,
+    is another account, told apart by :func:`key_fingerprint` (#98).
+    """
+    from ocracy.kit import current_credentials
+
+    env_var = (config.get("auth") or {}).get("env_var")
+    key = api_key or current_credentials().get(config["name"])
+    if not key or key == (os.environ.get(env_var) if env_var else None):
+        return "operator"
+    return key_fingerprint(key)
 
 
 def bound_source_account(source: str) -> Optional[dict]:

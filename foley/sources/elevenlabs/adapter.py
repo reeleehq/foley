@@ -38,6 +38,7 @@ from ..base import (
     native_adherence,
     bound_source_account,
     resolve_source_key,
+    source_account_id,
 )
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -192,6 +193,15 @@ class ElevenLabsAdapter:
                     "plan=) is not assumed for another account's key; nothing was "
                     "generated."
                 )
+        elif self._is_other_accounts_key():
+            plan = self._plan  # another account's api_key= brings its own plan=
+            if plan is None:
+                raise SourceConfigurationError(
+                    "api_key= is not the operator's ElevenLabs key, so pass its plan= "
+                    f"too (one of {list(lic_cfg['plans'])}). The operator's plan "
+                    f"(${env_var}) is not assumed for another account's key; nothing "
+                    "was generated."
+                )
         else:
             plan = self._plan if self._plan is not None else os.environ.get(env_var)
         if plan not in lic_cfg["plans"]:
@@ -202,6 +212,19 @@ class ElevenLabsAdapter:
                 "used commercially, so foley does not assume it; nothing was generated."
             )
         return plan
+
+    def _is_other_accounts_key(self) -> bool:
+        """Whether ``api_key=`` is not the operator's: an env key is set and differs.
+
+        With no env key, an ``api_key=`` is how the operator configures foley in code,
+        and the operator's plan (``plan=`` or the env's) applies to it.
+        """
+        env_key = os.environ.get(self.config["auth"]["env_var"])
+        return bool(self._api_key and env_key and self._api_key != env_key)
+
+    def account_id(self) -> str:
+        """The account a call is made on, for the generations cache (``'operator'`` or a fingerprint)."""
+        return source_account_id(self.config, self._api_key)
 
     def request_salt(self) -> str:
         """What besides the request decides the result: the plan (it decides the licence)."""

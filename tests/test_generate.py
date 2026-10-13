@@ -1164,3 +1164,49 @@ def test_a_quarantined_fallback_is_marked_under_the_key_it_was_kept(
     again = _dispatch.plan_generation("elevenlabs", "rain", adapter=_el_adapter(transport),
                                       output_format="wav", duration=1)
     assert again.cached is None
+
+
+def test_an_api_key_of_another_account_needs_its_own_plan(monkeypatch):
+    """#98 review: api_key= that is not the operator's env key brings its own plan=."""
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "operator-key")  # the env plan is paid
+    transport = FakeTransport()
+    with pytest.raises(SourceConfigurationError, match="pass its plan="):
+        ElevenLabsAdapter(api_key="user-key", http=transport).generate("rain")
+    assert transport.calls == []
+    adapter = ElevenLabsAdapter(api_key="user-key", http=transport,
+                                plan="elevenlabs-free-plan")
+    assert adapter.generate("rain").candidate.sound.license.license_id == (
+        "elevenlabs-free-plan"
+    )
+    # The operator's own key passed explicitly keeps the operator's plan.
+    assert ElevenLabsAdapter(api_key="operator-key").plan == "elevenlabs-paid-plan"
+
+
+def test_source_account_ids_tell_the_operator_from_other_accounts(monkeypatch):
+    from foley.sources.base import key_fingerprint, source_account_id
+
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "operator-key")
+    assert source_account_id(EL_CONFIG) == "operator"
+    assert source_account_id(EL_CONFIG, "operator-key") == "operator"
+    assert source_account_id(EL_CONFIG, "user-key") == key_fingerprint("user-key")
+    with foley.using_source_accounts(elevenlabs="user-b"):
+        assert source_account_id(EL_CONFIG) == key_fingerprint("user-b")
+    monkeypatch.delenv("ELEVENLABS_API_KEY")
+    assert source_account_id(EL_CONFIG) == "operator"  # no key needed to say so
+
+
+def test_the_operators_cached_generation_replays_offline_without_a_key(
+    library, monkeypatch
+):
+    """#98 review: the account id needs no key, so a cache hit needs no key either."""
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "operator-key")
+    transport = FakeTransport()
+    adapter = ElevenLabsAdapter(http=transport)
+    foley.generate("rain", backend="elevenlabs", adapter=adapter, library=library,
+                   output_format="mp3", duration=1)
+    monkeypatch.delenv("ELEVENLABS_API_KEY")
+    with foley.offline():
+        hit = foley.generate("rain", backend="elevenlabs", adapter=adapter,
+                             library=library, output_format="mp3", duration=1)
+    assert any("served from the generations cache" in n for n in hit.notes)
+    assert len(transport.calls) == 1

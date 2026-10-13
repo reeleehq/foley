@@ -330,20 +330,19 @@ def plan_generation(
 
 
 def _account_id(adapter, config: dict) -> Optional[str]:
-    """Which provider account pays for (and owns) the call: a fingerprint of its key.
+    """Which provider account pays for (and owns) the call (see ``source_account_id``).
 
     Part of the cache key, so one account's paid generations are never served to
-    another (a per-request key, #98). ``None`` for a source without an API key.
-
-    Raises:
-        SourceConfigurationError: When the source needs a key and none resolves.
+    another (a per-request key, #98). The adapter's ``account_id()`` when it has one
+    (it knows its explicit ``api_key``), else the bound key or the operator's.
+    ``None`` for a source without an API key. Never needs a key to be set.
     """
-    from .base import key_fingerprint
+    from .base import source_account_id
 
     if not (config.get("auth") or {}).get("env_var"):
         return None
-    key = getattr(adapter, "api_key", None)
-    return key_fingerprint(key) if isinstance(key, str) and key else None
+    account_fn = getattr(adapter, "account_id", None)
+    return account_fn() if callable(account_fn) else source_account_id(config)
 
 
 def run_generation(plan: GenerationPlan, adapter, *, cache=None):
