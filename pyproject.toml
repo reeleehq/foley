@@ -44,6 +44,7 @@ authors = [
 ]
 dependencies = [
     "dol", # storage as a Mapping, local->cloud (byte + meta stores)
+    "ocracy>=0.1.12", # ocracy.kit: the fleet's param_map translator + key chain (stdlib-only, no deps)
 ]
 
 [project.license]

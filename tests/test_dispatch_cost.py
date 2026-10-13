@@ -352,6 +352,23 @@ def test_add_from_raises_on_a_missing_key(library, monkeypatch):
     assert "FREESOUND_API_KEY" in str(exc.value) and "http" in str(exc.value)
 
 
+def test_a_per_request_key_reaches_the_source(monkeypatch):
+    """Keys resolve through ocracy's facade kit: explicit, then a bound key, then env."""
+    from ocracy.kit import using_credentials
+
+    from foley.sources.elevenlabs.adapter import ElevenLabsAdapter
+    from foley.sources.freesound.adapter import FreesoundAdapter
+
+    monkeypatch.setenv("FREESOUND_API_KEY", "server-key")
+    fs = FreesoundAdapter(http=lambda *a, **k: pytest.fail("no HTTP"))
+    assert fs.api_key == "server-key"
+    with using_credentials(freesound="user-key", elevenlabs="user-el-key"):
+        assert fs.api_key == "user-key"
+        assert FreesoundAdapter(api_key="explicit").api_key == "explicit"
+        monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
+        assert ElevenLabsAdapter().api_key == "user-el-key"
+
+
 def test_a_backend_failure_is_chained_into_generation_error(library, paid_source):
     adapter = paid_source("flaky", amount=0.01)
 
@@ -685,3 +702,28 @@ def test_a_bad_prompt_influence_is_refused_before_any_budget_is_reserved(
             foley.generate("a door creaks", backend="sixty", library=library,
                            prompt_influence=bad)
     assert adapter.calls == 0 and budget.spent_usd == 0
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+def test_a_non_finite_duration_is_refused_before_any_budget_is_reserved(
+    paid_source, library, bad
+):
+    from foley.cost import spend_scope
+
+    adapter = paid_source("sixty", amount=0.60)
+    with spend_scope(Budget(max_usd=1.0)) as budget:
+        with pytest.raises(ValueError, match="duration"):
+            foley.generate("a door creaks", backend="sixty", library=library,
+                           duration=bad)
+    assert adapter.calls == 0 and budget.spent_usd == 0
+
+
+def test_a_nan_estimate_is_unknown_cost_and_never_poisons_the_budget():
+    budget = Budget(max_usd=0.0)
+    with pytest.raises(CostApprovalRequired):
+        budget.reserve(float("nan"), what="x")
+    approved = Budget(max_usd=0.0, approve_unknown_cost=True)
+    approved.reserve(float("nan"), what="x")
+    assert approved.spent_usd == 0
+    with pytest.raises(BudgetExceeded):
+        approved.check(0.01, what="y")

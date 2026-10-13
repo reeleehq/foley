@@ -787,6 +787,26 @@ def test_facade_undecodable_200_body_is_error_not_crash(library):
     assert exc.value.status == "error"
 
 
+def test_an_empty_api_key_falls_through_to_the_env_var(monkeypatch):
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "env-key")
+    transport = FakeTransport()
+    ElevenLabsAdapter(api_key="", http=transport, plan="elevenlabs-paid-plan").generate(
+        "rain"
+    )
+    assert transport.calls[0].headers["xi-api-key"] == "env-key"
+
+
+def test_a_bound_key_reaches_elevenlabs(monkeypatch):
+    from ocracy.kit import using_credentials
+
+    monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
+    transport = FakeTransport()
+    adapter = ElevenLabsAdapter(http=transport, plan="elevenlabs-paid-plan")
+    with using_credentials(elevenlabs="byo-key"):
+        adapter.generate("rain")
+    assert transport.calls[0].headers["xi-api-key"] == "byo-key"
+
+
 def test_elevenlabs_missing_api_key_is_a_clear_error(monkeypatch):
     monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
     adapter = ElevenLabsAdapter(http=FakeTransport())  # no api_key, no env var
