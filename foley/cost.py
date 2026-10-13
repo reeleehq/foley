@@ -37,11 +37,20 @@ __all__ = [
     "authorize",
     "settle",
     "release",
+    "DEFAULT_MAX_USD_BY_LLM",
     "charge",
 ]
 
 #: The default cumulative cap for one run (a ``find`` / ``score`` / ``generate`` call).
 DEFAULT_MAX_USD: float = 1.0
+
+#: The default cap of a :func:`foley.find` run whose LLM rungs the caller chose to pay
+#: for (``llm=`` or ``$FOLEY_LLM``), keyed by provider. With the defaults (6 events,
+#: ``k=10``, ``verify='listen'``) Claude's upper bound is about $2.52, so the $1 cap
+#: would refuse every such run before its first call; $3 lets it run and still caps
+#: it. A run usually spends far less than its bound (#88). ``Budget(max_usd=...)``
+#: overrides it.
+DEFAULT_MAX_USD_BY_LLM: "dict[str, float]" = {"anthropic": 3.0}
 
 #: Set to 1 to approve calls whose cost is unknown, for every run that does not say.
 APPROVE_UNKNOWN_COST_ENV = "FOLEY_APPROVE_UNKNOWN_COST"

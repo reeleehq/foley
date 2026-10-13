@@ -322,7 +322,9 @@ def find(
         max_refine_loops: Max refine→re-retrieve passes per event (also the default
             :class:`Budget`).
         budget: An explicit :class:`Budget` (overrides ``max_refine_loops``). It is
-            also the run's spend cap: ``Budget(max_usd=...)`` (default $1) bounds
+            also the run's spend cap: ``Budget(max_usd=...)`` (default $1; $3 when
+            ``llm='anthropic'`` or ``$FOLEY_LLM=anthropic``, whose default run is
+            bounded at about $2.52 — :data:`foley.cost.DEFAULT_MAX_USD_BY_LLM`) bounds
             every paid call the run makes — generations and paid LLM rungs —
             cumulatively, and a call of unknown cost needs
             ``Budget(approve_unknown_cost=True)`` (#57).
@@ -383,7 +385,9 @@ def _find_stream(
     from ..cost import check, scoped_iter
 
     use = intended_use_for(intended_use)
-    budget = budget or Budget(max_refine_loops=max_refine_loops)
+    budget = budget or Budget(
+        max_refine_loops=max_refine_loops, max_usd=_default_max_usd(llm)
+    )
 
     def run():
         # Before the first paid call: the whole run's upper bound must fit every
@@ -427,6 +431,21 @@ def _find_stream(
 
     # The budget is in force only while the stream runs, never between items.
     yield from scoped_iter(run, budget)
+
+
+def _default_max_usd(llm: "Optional[str]") -> float:
+    """The cap of a :func:`find` run given no budget: higher for a paid LLM the caller chose.
+
+    The provider is the one named by ``llm=`` or ``$FOLEY_LLM`` (the free default never
+    resolves to a paid one); see :data:`foley.cost.DEFAULT_MAX_USD_BY_LLM` (#88).
+    """
+    import os
+
+    from ..cost import DEFAULT_MAX_USD, DEFAULT_MAX_USD_BY_LLM
+    from .llm import LLM_ENV_VAR
+
+    chosen = llm or os.environ.get(LLM_ENV_VAR) or None
+    return DEFAULT_MAX_USD_BY_LLM.get(chosen, DEFAULT_MAX_USD)
 
 
 def estimate_find_usd(
