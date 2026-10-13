@@ -118,5 +118,9 @@ SOURCE_CONFIG = {
         "seen": "2026-10-03",
     },
     "rate": {"per_min": 60},
+    # A 'wav' request answered by the MP3 fallback replays that MP3 for a day (so an
+    # account whose plan refuses PCM does not pay for every 'wav' request), then asks
+    # for PCM again (so an account that moved to a tier allowing it gets PCM) (#97).
+    "generations_cache": {"fallback_replay_s": 86_400},
     "data_egress": "external",  # for offline/sensitive-narration mode (report 12)
 }

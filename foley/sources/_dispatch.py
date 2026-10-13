@@ -37,6 +37,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import time
 import warnings
 from dataclasses import dataclass, field
 from typing import Optional
@@ -223,11 +224,16 @@ def _canonical_affordances(config: dict, affordances: dict) -> dict:
             out[name] = aff.default
     for name, value in affordances.items():
         out.setdefault(name, value)
-    return {
-        k: (float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else v)
-        for k, v in out.items()
-        if v is not None
-    }
+
+    def canonical(name, v):
+        aff = GENERATION_AFFORDANCES.get(name)
+        if aff is not None and aff.type is bool:
+            return bool(v)  # loop=1 and loop=True are one request (#97 review)
+        if isinstance(v, (int, float)) and not isinstance(v, bool):
+            return float(v)
+        return v
+
+    return {k: canonical(k, v) for k, v in out.items() if v is not None}
 
 
 def _is_paid(config: dict) -> bool:
@@ -314,7 +320,7 @@ def plan_generation(
         if reuse_cached:
             # A paid sound already on this disk needs no egress and no spend.
             cache = cache if cache is not None else _default_cache()
-            plan.cached = _cached_clip(cache, plan.request_key, plan.notes)
+            plan.cached = _cached_clip(cache, plan.request_key, plan.notes, config)
             if plan.cached is not None:
                 return plan
     require_source_egress(backend, config)
@@ -362,24 +368,40 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
     clip.candidate.cost_estimate_usd = plan.estimate_usd
     if plan.request_key is not None:
         cache = cache if cache is not None else _default_cache()
-        plan.kept_key = _answered_key(plan, clip)
-        if plan.kept_key != plan.request_key:
-            clip.notes.append(
-                "the provider answered a different request than the one asked (a "
-                "fallback); kept under the key of the request it answers, so the one "
-                "asked is not replayed from it"
-            )
         try:
+            plan.kept_key = _answered_key(plan, clip)
             _store_clip(cache, plan, clip)
         except Exception as exc:  # noqa: BLE001 - never lose paid bytes over a cache write
             clip.notes.append(
                 f"could not keep the paid generation in the cache: {exc!r}"
             )
         else:
+            if plan.kept_key != plan.request_key:
+                replay_s = _fallback_replay_s(plan.config)
+                clip.notes.append(
+                    "the provider answered a different request than the one asked (a "
+                    "fallback); kept under the key of the request it answers"
+                    + (
+                        f"; the request asked replays it for {replay_s:g} s, then "
+                        "asks the provider again"
+                        if replay_s
+                        else ", so the request asked is not replayed from it"
+                    )
+                )
             clip.notes.append(
                 f"paid generation kept in the generations cache: {plan.kept_key}"
             )
     return clip
+
+
+def _fallback_replay_s(config: dict) -> float:
+    """How long a fallback answers the request that was asked (``0``: never).
+
+    A source's ``generations_cache.fallback_replay_s``. Replaying spares an account
+    whose plan keeps refusing the asked format from paying for every request; the
+    window ends so that an account whose plan changed gets the asked format (#97).
+    """
+    return float((config.get("generations_cache") or {}).get("fallback_replay_s") or 0)
 
 
 def _answered_key(plan: GenerationPlan, clip) -> str:
@@ -442,12 +464,44 @@ def _default_cache():
 
 
 def _store_clip(cache, plan: GenerationPlan, clip) -> None:
+    """Keep the paid bytes and the entry of the request they answer.
+
+    For a fallback (``plan.kept_key`` differs from ``plan.request_key``) the request
+    asked gets a pointer to that entry (see :func:`_fallback_replay_s`), and an
+    entry already kept for the request answered is not overwritten: the pointer then
+    stands for this generation, so its ingest outcome is recorded there.
+    """
     from ..stores import content_key
 
     key = content_key(clip.audio_bytes)
     cache.audio[key] = clip.audio_bytes
+    entry = _clip_entry(plan, clip, key)
+    kept_key = plan.kept_key or plan.request_key
+    if kept_key == plan.request_key:
+        cache.requests[kept_key] = entry
+        return
+    if _replayable(cache, cache.requests.get(kept_key)):
+        plan.kept_key = plan.request_key  # the existing entry is not this generation's
+    else:
+        cache.requests[kept_key] = {**entry, "fallback": True}
+    cache.requests[plan.request_key] = {
+        "answered_by": kept_key,
+        "content_key": key,
+        "at": time.time(),
+    }
+
+
+def _replayable(cache, entry) -> bool:
+    return bool(
+        entry
+        and entry.get("status") not in _NOT_REPLAYED
+        and entry.get("content_key") in cache.audio
+    )
+
+
+def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
     sound = clip.candidate.sound
-    cache.requests[plan.kept_key or plan.request_key] = {
+    return {
         "content_key": key,
         "backend": plan.backend,
         "prompt": plan.prompt,
@@ -469,7 +523,7 @@ def _store_clip(cache, plan: GenerationPlan, clip) -> None:
 _NOT_REPLAYED = frozenset({"quarantined", "error_on_replay"})
 
 
-def _cached_clip(cache, request_key: str, notes: list):
+def _cached_clip(cache, request_key: str, notes: list, config: dict):
     """Rebuild the :class:`GeneratedClip` of a cached request, or ``None`` (a miss).
 
     A corrupt or out-of-date entry, or one whose earlier ingest failed, is a miss with
@@ -486,6 +540,19 @@ def _cached_clip(cache, request_key: str, notes: list):
         )
         if not entry:
             return None
+        via_fallback = "answered_by" in entry
+        if via_fallback:
+            if entry.get("status") in _NOT_REPLAYED:
+                return None
+            if time.time() - float(entry.get("at", 0)) >= _fallback_replay_s(config):
+                notes.append(
+                    "this request was last answered by a fallback; asking the "
+                    "provider again"
+                )
+                return None
+            entry = cache.requests.get(entry["answered_by"])
+            if not entry:
+                return None
         if entry.get("status") in _NOT_REPLAYED:
             notes.append(
                 f"the cached result of this request was {entry['status']}; generating anew"
@@ -507,11 +574,15 @@ def _cached_clip(cache, request_key: str, notes: list):
             f"generations cache entry {request_key} unreadable ({exc!r}); ignored"
         )
         return None
+    kept_notes = list(entry.get("notes") or [])
+    if entry.get("fallback") and not via_fallback:
+        # Generated as another request's fallback; this request is the one it answers.
+        kept_notes = [f"when first generated, as a fallback: {n}" for n in kept_notes]
     return GeneratedClip(
         audio_bytes=audio,
         candidate=Candidate(sound=record, origin=CandidateOrigin.generated),
         notes=[
-            *list(entry.get("notes") or []),
+            *kept_notes,
             f"served from the generations cache ({request_key}); no paid call",
         ],
     )

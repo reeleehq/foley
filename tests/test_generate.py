@@ -985,30 +985,76 @@ def test_the_cache_key_is_the_native_request():
     assert native_request(SA_CONFIG, {})["guidance_scale"] == 7.0
 
 
-def test_a_fallback_mp3_is_not_replayed_for_wav(library, _in_memory_generations_cache):
+def _gen(adapter, library, fmt="wav", **kw):
+    return foley.generate("rain", backend="elevenlabs", adapter=adapter,
+                          library=library, output_format=fmt, duration=1, **kw)
+
+
+def _served(clip):
+    return any("served from the generations cache" in n for n in clip.notes)
+
+
+def test_a_fallback_mp3_is_not_replayed_for_wav(library, monkeypatch):
     """#97's acceptance: after a fallback, a 'wav' request on a plan that allows PCM
-    calls the API again instead of replaying the MP3."""
+    calls the API again instead of replaying the MP3 (once the replay window ends)."""
+    from foley.sources import _dispatch
+
+    clock = [1_000_000.0]
+    monkeypatch.setattr(_dispatch.time, "time", lambda: clock[0])
     transport = _PcmByPlan(pcm_allowed=False)
     adapter = _el_adapter(transport)
-    first = foley.generate("rain", backend="elevenlabs", adapter=adapter,
-                           library=library, output_format="wav", duration=1)
+    first = _gen(adapter, library)
     assert _formats(transport) == ["pcm_48000", "mp3_44100_128"]
     assert any("different request than the one asked" in n for n in first.notes)
 
+    # Inside the window the fallback answers 'wav' (a PCM-refusing plan pays once).
+    replay = _gen(adapter, library)
+    assert _served(replay) and len(transport.calls) == 2
+    assert replay.sound.license.generation_params["output_format"] == "mp3_44100_128"
+
     transport.pcm_allowed = True  # the account moved to a tier that allows PCM
-    second = foley.generate("rain", backend="elevenlabs", adapter=adapter,
-                            library=library, output_format="wav", duration=1)
+    clock[0] += EL_CONFIG["generations_cache"]["fallback_replay_s"]
+    second = _gen(adapter, library)
     assert _formats(transport)[2:] == ["pcm_48000"]  # a real call, not the MP3
     assert second.sound.license.generation_params["output_format"] == "pcm_48000"
-    assert not any("served from the generations cache" in n for n in second.notes)
+    assert not _served(second)
 
-    # The fallback MP3 answers an 'mp3' request, so that one is a cache hit; so is
-    # the PCM now kept under the 'wav' key.
-    for fmt in ("mp3", "wav"):
-        hit = foley.generate("rain", backend="elevenlabs", adapter=adapter,
-                             library=library, output_format=fmt, duration=1)
-        assert any("served from the generations cache" in n for n in hit.notes), fmt
+    # The fallback MP3 answers an 'mp3' request, so that one is a cache hit (its
+    # fallback notes say so); so is the PCM now kept under the 'wav' key.
+    mp3 = _gen(adapter, library, "mp3")
+    assert _served(mp3)
+    assert any(n.startswith("when first generated, as a fallback:") for n in mp3.notes)
+    assert _served(_gen(adapter, library))
     assert len(transport.calls) == 3
+
+
+def test_without_a_replay_window_a_fallback_never_answers_the_request_asked(library):
+    cfg = {**EL_CONFIG, "generations_cache": {"fallback_replay_s": 0}}
+    transport = _PcmByPlan(pcm_allowed=False)
+    adapter = ElevenLabsAdapter(cfg, api_key="k", http=transport,
+                                plan="elevenlabs-paid-plan")
+    _gen(adapter, library)
+    _gen(adapter, library)
+    assert _formats(transport) == ["pcm_48000", "mp3_44100_128"] * 2
+
+
+def test_a_fallback_does_not_overwrite_a_kept_answer(library, _in_memory_generations_cache):
+    transport = _PcmByPlan(pcm_allowed=False)
+    adapter = _el_adapter(transport)
+    _gen(adapter, library, "mp3")
+    (mp3_key,) = _in_memory_generations_cache.requests
+    before = dict(_in_memory_generations_cache.requests[mp3_key])
+    _gen(adapter, library)
+    assert _in_memory_generations_cache.requests[mp3_key] == before
+    assert _served(_gen(adapter, library, "mp3")) and len(transport.calls) == 3
+
+
+def test_loop_spelled_as_an_int_is_the_same_request():
+    from foley.sources._dispatch import request_digest
+
+    assert request_digest("elevenlabs", "rain", EL_CONFIG, {"loop": True}) == (
+        request_digest("elevenlabs", "rain", EL_CONFIG, {"loop": 1})
+    )
 
 
 def test_a_quarantined_fallback_is_marked_under_the_key_it_was_kept(
@@ -1024,5 +1070,9 @@ def test_a_quarantined_fallback_is_marked_under_the_key_it_was_kept(
     _dispatch.record_generation_outcome(plan, "quarantined")
     cache = _in_memory_generations_cache
     assert cache.requests[plan.kept_key]["status"] == "quarantined"
-    assert plan.request_key not in cache.requests
+    assert cache.requests[plan.request_key]["answered_by"] == plan.kept_key
     assert clip.audio_bytes
+    # The pointer's target was quarantined: the request asked is a miss.
+    again = _dispatch.plan_generation("elevenlabs", "rain", adapter=_el_adapter(transport),
+                                      output_format="wav", duration=1)
+    assert again.cached is None
