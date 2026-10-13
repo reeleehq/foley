@@ -260,6 +260,7 @@ from .agent.preview import preview, refine, similar_to
 from .agent.session import SessionStore
 from .requirements import capability_report, check_requirements, verify_and_setup
 from .runtime import RuntimeConfig, is_offline, offline
+from .sources.base import using_source_accounts
 from .stores import make_session_store
 
 __all__ = [
@@ -440,6 +441,7 @@ __all__ = [
     "RuntimeConfig",
     "offline",
     "is_offline",
+    "using_source_accounts",
     "check_requirements",
     "verify_and_setup",
     "capability_report",

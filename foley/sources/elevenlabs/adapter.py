@@ -36,7 +36,9 @@ from ..base import (
     SourceConfigurationError,
     generated_license,
     native_adherence,
+    bound_source_account,
     resolve_source_key,
+    source_account_id,
 )
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -150,7 +152,10 @@ class ElevenLabsAdapter:
         plan: The ElevenLabs account plan (``'elevenlabs-paid-plan'`` |
             ``'elevenlabs-free-plan'``), which decides the generated sound's licence.
             Defaults to ``$FOLEY_ELEVENLABS_PLAN``; with neither, ``generate`` refuses
-            before calling the API (#56).
+            before calling the API (#56). When the key in use is a per-request one
+            (bound, not passed as ``api_key=``), the plan is the one bound with it
+            (:func:`~foley.sources.base.using_source_accounts`), never this or the
+            env's (#98).
     """
 
     def __init__(
@@ -169,10 +174,36 @@ class ElevenLabsAdapter:
 
     @property
     def plan(self) -> str:
-        """The account plan = the generated sound's ``license_id`` (fail-closed when unknown)."""
+        """The account plan = the generated sound's ``license_id`` (fail-closed when unknown).
+
+        It follows the key: a bound (per-request) key brings its own plan, and one
+        bound without a plan is refused rather than labelled with the operator's.
+        """
         lic_cfg = self.config["license"]
         env_var = lic_cfg["plan_env_var"]
-        plan = self._plan if self._plan is not None else os.environ.get(env_var)
+        account = None if self._api_key else bound_source_account(self.name)
+        if account is not None:
+            plan = account.get("plan")
+            if plan is None:
+                raise SourceConfigurationError(
+                    f"An ElevenLabs key is bound for this request without its plan. "
+                    "Bind them together, e.g. foley.using_source_accounts(elevenlabs="
+                    "{'key': ..., 'plan': ...}), with the plan one of "
+                    f"{list(lic_cfg['plans'])}. The operator's plan (${env_var} or "
+                    "plan=) is not assumed for another account's key; nothing was "
+                    "generated."
+                )
+        elif self._is_other_accounts_key():
+            plan = self._plan  # another account's api_key= brings its own plan=
+            if plan is None:
+                raise SourceConfigurationError(
+                    "api_key= is not the operator's ElevenLabs key, so pass its plan= "
+                    f"too (one of {list(lic_cfg['plans'])}). The operator's plan "
+                    f"(${env_var}) is not assumed for another account's key; nothing "
+                    "was generated."
+                )
+        else:
+            plan = self._plan if self._plan is not None else os.environ.get(env_var)
         if plan not in lic_cfg["plans"]:
             got = "unset" if plan is None else repr(plan)
             raise SourceConfigurationError(
@@ -181,6 +212,19 @@ class ElevenLabsAdapter:
                 "used commercially, so foley does not assume it; nothing was generated."
             )
         return plan
+
+    def _is_other_accounts_key(self) -> bool:
+        """Whether ``api_key=`` is not the operator's: an env key is set and differs.
+
+        With no env key, an ``api_key=`` is how the operator configures foley in code,
+        and the operator's plan (``plan=`` or the env's) applies to it.
+        """
+        env_key = os.environ.get(self.config["auth"]["env_var"])
+        return bool(self._api_key and env_key and self._api_key != env_key)
+
+    def account_id(self) -> str:
+        """The account a call is made on, for the generations cache (``'operator'`` or a fingerprint)."""
+        return source_account_id(self.config, self._api_key)
 
     def request_salt(self) -> str:
         """What besides the request decides the result: the plan (it decides the licence)."""

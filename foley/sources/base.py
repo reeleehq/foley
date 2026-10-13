@@ -35,6 +35,10 @@ so the derived permission flags stay single-sourced.
 
 from __future__ import annotations
 
+import hashlib
+import os
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Iterator, Optional, Protocol, runtime_checkable
 
@@ -48,6 +52,10 @@ __all__ = [
     "check_prompt_influence",
     "native_adherence",
     "resolve_source_key",
+    "using_source_accounts",
+    "bound_source_account",
+    "key_fingerprint",
+    "source_account_id",
     "SourceConfigurationError",
     "ClipSpec",
     "CorpusAdapter",
@@ -160,6 +168,107 @@ def resolve_source_key(config: dict, api_key: Optional[str] = None) -> str:
         error=SourceConfigurationError,
         hint="Or pass api_key=.",
     )
+
+
+#: The account settings bound with a source's key (see :func:`using_source_accounts`).
+_BOUND_ACCOUNTS: "ContextVar[dict]" = ContextVar("foley_source_accounts", default={})
+
+#: What an account may carry besides its key.
+_ACCOUNT_FIELDS = ("plan",)
+
+
+def key_fingerprint(key: str) -> str:
+    """A short, one-way id for an API key: tells accounts apart without keeping the key."""
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+
+
+@contextmanager
+def using_source_accounts(**accounts):
+    """Bind per-request source accounts (a key, and what goes with it) for a ``with`` block.
+
+    The key is bound through ``ocracy.kit.using_credentials``, so
+    :func:`resolve_source_key` uses it; the rest of the account (ElevenLabs: its
+    ``plan``, which decides the licence) is bound **with** that key, and only applies
+    while that same key is the one bound (#98)::
+
+        with foley.using_source_accounts(
+            elevenlabs={"key": user_key, "plan": "elevenlabs-free-plan"},
+            freesound=user_freesound_key,  # a string is a key alone
+        ):
+            foley.generate("a door creaks", backend="elevenlabs")
+
+    A source given ``None`` (or an empty key) binds nothing, so an optional request
+    header can be passed straight through.
+
+    The binding lives in a ``ContextVar``: it covers what runs inside the block, in
+    this context. Consume a lazy result (``find(stream=True)``) inside the block, and
+    run work handed to a thread pool under ``contextvars.copy_context()``; outside the
+    block the operator's key and plan apply again.
+
+    Raises:
+        ValueError: For a field an account cannot carry.
+    """
+    from ocracy.kit import using_credentials
+
+    keys, settings = {}, {}
+    for source, account in accounts.items():
+        if isinstance(account, str) or account is None:
+            account = {"key": account}
+        unknown = set(account) - {"key", *_ACCOUNT_FIELDS}
+        if unknown:
+            raise ValueError(
+                f"{source}: unknown account field(s) {sorted(unknown)}; "
+                f"an account has a 'key' and optionally {list(_ACCOUNT_FIELDS)}"
+            )
+        key = account.get("key")
+        if not key:
+            continue
+        keys[source] = key
+        settings[source] = {
+            **{f: account[f] for f in _ACCOUNT_FIELDS if account.get(f) is not None},
+            "key_id": key_fingerprint(key),
+        }
+    with using_credentials(keys):
+        token = _BOUND_ACCOUNTS.set({**_BOUND_ACCOUNTS.get(), **settings})
+        try:
+            yield
+        finally:
+            _BOUND_ACCOUNTS.reset(token)
+
+
+def source_account_id(config: dict, api_key: Optional[str] = None) -> str:
+    """Which account a call to the source is made on: ``'operator'``, or a key's fingerprint.
+
+    The operator's account is the source's env key (or no key at all: a cache entry
+    can then still be replayed offline, and rotating the operator's key does not
+    orphan the cache). Any other key, given as ``api_key`` or bound for the request,
+    is another account, told apart by :func:`key_fingerprint` (#98).
+    """
+    from ocracy.kit import current_credentials
+
+    env_var = (config.get("auth") or {}).get("env_var")
+    key = api_key or current_credentials().get(config["name"])
+    if not key or key == (os.environ.get(env_var) if env_var else None):
+        return "operator"
+    return key_fingerprint(key)
+
+
+def bound_source_account(source: str) -> Optional[dict]:
+    """The account bound for ``source`` in this context, or ``None`` when no key is bound.
+
+    A key bound without its account (``ocracy.kit.using_credentials(<source>=key)``,
+    or a key rebound over the one an account came with) gives ``{}``: its plan is
+    unknown, and the caller must not fall back to the operator's.
+    """
+    from ocracy.kit import current_credentials
+
+    key = current_credentials().get(source)
+    if not key:
+        return None
+    account = _BOUND_ACCOUNTS.get().get(source) or {}
+    if account.get("key_id") != key_fingerprint(key):
+        return {}
+    return {k: v for k, v in account.items() if k != "key_id"}
 
 
 @dataclass
