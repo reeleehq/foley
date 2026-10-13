@@ -69,7 +69,10 @@ SOURCE_CONFIG = {
             # (out of credits), which MP3 would not fix. Live confirmation: #95.
             "fallback_on_4xx": {"pcm_48000": "mp3_44100_128"},
             "fallback_statuses": [403],
-            "fallback_detail_codes": ["subscription_required", "output_format_not_allowed"],
+            "fallback_detail_codes": [
+                "subscription_required",
+                "output_format_not_allowed",
+            ],
             # Raw PCM layout per native enum: 16-bit little-endian. The channel count
             # is not documented for the SFX endpoint: until a live call confirms it,
             # verified=False and a clip whose layout the byte length cannot confirm
