@@ -151,9 +151,7 @@ def request_digest(
     the adapter's ``request_salt()`` (ElevenLabs: the account plan, which decides the
     licence).
     """
-    return _digest(
-        backend, prompt, config, native_request(config, affordances), salt
-    )
+    return _digest(backend, prompt, config, native_request(config, affordances), salt)
 
 
 def _digest(backend: str, prompt: str, config: dict, native: dict, salt) -> str:
