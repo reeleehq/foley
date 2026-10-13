@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=e648f5b4"></script>
+    <script src="../../../../_static/documentation_options.js?v=84bd753f"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.39" />
+  <meta name="docsearch:version" content="0.0.40" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -838,22 +838,64 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_HTTPStatusError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""A non-200 from ElevenLabs (still a ``RuntimeError``); carries ``status_code``."""</span>
+<span class="w">    </span><span class="sd">"""A non-200 from ElevenLabs (still a ``RuntimeError``); carries ``status_code``.</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status_code</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="sd">    ``detail`` is the body's ``detail`` (a dict in the documented shape, a string in</span>
+<span class="sd">    older responses), or ``None`` when the body is not JSON.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status_code</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">detail</span> <span class="o">=</span> <span class="n">detail</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_detail_of</span><span class="p">(</span><span class="n">resp</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The ElevenLabs error ``detail`` of ``resp`` (``None`` when absent; never raises)."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"detail"</span><span class="p">,</span> <span class="n">body</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="n">body</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_safe_detail</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Best-effort extract of an ElevenLabs error ``detail`` (never raises)."""</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">body</span> <span class="o">=</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
-    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">"&lt;no detail&gt;"</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"detail"</span><span class="p">,</span> <span class="n">body</span><span class="p">))</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+    <span class="n">detail</span> <span class="o">=</span> <span class="n">_detail_of</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">"&lt;no detail&gt;"</span> <span class="k">if</span> <span class="n">detail</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">detail</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_format_refusal</span><span class="p">(</span><span class="n">detail</span><span class="p">,</span> <span class="n">native_output_format</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">codes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether an error ``detail`` says the plan refuses this output format (#100).</span>
+
+<span class="sd">    The documented shape carries a ``code`` (and a legacy ``status``); a match on</span>
+<span class="sd">    either against ``codes`` is a refusal. Without one, a message that names the</span>
+<span class="sd">    requested format (``"Requested output format pcm_48000 ... is only allowed for</span>
+<span class="sd">    Pro tier and above"``) is too; a message is read only when the detail carries</span>
+<span class="sd">    no code or status at all. Anything else (another 403, such as a key missing</span>
+<span class="sd">    a permission, or no body at all) is not.</span>
+
+<span class="sd">    &gt;&gt;&gt; _is_format_refusal({"code": "subscription_required"}, "pcm_48000",</span>
+<span class="sd">    ...                    ["subscription_required"])</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; _is_format_refusal("Requested output format pcm_48000 (PCM at 48000hz) is "</span>
+<span class="sd">    ...                    "only allowed for Pro tier and above.", "pcm_48000", [])</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; _is_format_refusal({"code": "missing_permissions", "message": "pcm_48000"},</span>
+<span class="sd">    ...                    "pcm_48000", ["subscription_required"])</span>
+<span class="sd">    False</span>
+<span class="sd">    &gt;&gt;&gt; _is_format_refusal({"code": ["subscription_required"]}, "pcm_48000",</span>
+<span class="sd">    ...                    ["subscription_required"])</span>
+<span class="sd">    False</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">detail</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">tags</span> <span class="o">=</span> <span class="p">[</span><span class="n">detail</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"code"</span><span class="p">),</span> <span class="n">detail</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"status"</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">codes</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># a coded error that is not a tier refusal (its message aside)</span>
+        <span class="n">detail</span> <span class="o">=</span> <span class="n">detail</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">detail</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">native_output_format</span> <span class="ow">in</span> <span class="n">detail</span>
 
 
 <div class="viewcode-block" id="ElevenLabsAdapter">
@@ -1078,10 +1120,12 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[bytes, str]"</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Call the endpoint; on a 4xx for a format with a declared fallback, retry once.</span>
 
-<span class="sd">        Whether PCM needs a higher plan tier for sound effects is unverified, so a</span>
-<span class="sd">        plan-tier refusal (``fallback_statuses``: 402/403) on ``pcm_*`` is retried</span>
-<span class="sd">        with the config's ``fallback_on_4xx`` format (a refusal produces no audio,</span>
-<span class="sd">        so nothing is billed twice) and recorded in ``notes``. Anything else raises. Returns ``(bytes, format actually used)``.</span>
+<span class="sd">        A plan-tier refusal of the format (a ``fallback_statuses`` status whose</span>
+<span class="sd">        error detail is a ``fallback_detail_codes`` code, or names the format; see</span>
+<span class="sd">        :func:`_is_format_refusal`) is retried with the config's ``fallback_on_4xx``</span>
+<span class="sd">        format (a refusal produces no audio, so nothing is billed twice) and</span>
+<span class="sd">        recorded in ``notes``. Anything else raises. Returns ``(bytes, format</span>
+<span class="sd">        actually used)``.</span>
 <span class="sd">        """</span>
         <span class="n">spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"output_format"</span><span class="p">]</span>
         <span class="k">try</span><span class="p">:</span>
@@ -1090,8 +1134,14 @@ window.runMermaid = runMermaid;</script>
             <span class="p">),</span> <span class="n">native_output_format</span>
         <span class="k">except</span> <span class="n">_HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="n">fallback</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fallback_on_4xx"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">native_output_format</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">fallback</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">exc</span><span class="o">.</span><span class="n">status_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
-                <span class="s2">"fallback_statuses"</span><span class="p">,</span> <span class="p">()</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">fallback</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="ow">or</span> <span class="n">exc</span><span class="o">.</span><span class="n">status_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fallback_statuses"</span><span class="p">,</span> <span class="p">())</span>
+                <span class="ow">or</span> <span class="ow">not</span> <span class="n">_is_format_refusal</span><span class="p">(</span>
+                    <span class="n">exc</span><span class="o">.</span><span class="n">detail</span><span class="p">,</span>
+                    <span class="n">native_output_format</span><span class="p">,</span>
+                    <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fallback_detail_codes"</span><span class="p">,</span> <span class="p">()),</span>
+                <span class="p">)</span>
             <span class="p">):</span>
                 <span class="k">raise</span>
             <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -1180,6 +1230,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">resp</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
                 <span class="sa">f</span><span class="s2">"ElevenLabs </span><span class="si">{</span><span class="n">endpoint</span><span class="p">[</span><span class="s1">'method'</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">resp</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">: "</span>
                 <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_safe_detail</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">detail</span><span class="o">=</span><span class="n">_detail_of</span><span class="p">(</span><span class="n">resp</span><span class="p">),</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">content</span></div>
 

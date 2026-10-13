@@ -1,4 +1,4 @@
-> built 2026-10-13 11:00 UTC from 648a405 (main) · foley 0.0.39. Details: build_info.json
+> built 2026-10-13 11:02 UTC from 6580a8e (main) · foley 0.0.40. Details: build_info.json
 
 # index.html.md
 
@@ -12180,7 +12180,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix sound', 'ta-dum', 'tudum', 'netflix intro', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta-dum', 'tudum', 'netflix intro', 'netflix chime', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel jingle', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16458,16 +16458,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-13 11:00 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/648a40527021dccd954f2eb62bf6ba23162c59c1"><code>648a405</code></a> on branch <code>main</code>, for **foley 0.0.39** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 11:02 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/6580a8e48c1cdd995258c3d27797548406834d0a"><code>6580a8e</code></a> on branch <code>main</code>, for **foley 0.0.40** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.40) is behind the latest release on PyPI (0.0.41): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/648a40527021dccd954f2eb62bf6ba23162c59c1"><code>648a40527021dccd954f2eb62bf6ba23162c59c1</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/6580a8e48c1cdd995258c3d27797548406834d0a"><code>6580a8e48c1cdd995258c3d27797548406834d0a</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -16478,9 +16480,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38386974880">38386974880</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38387271825">38387271825</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>648a40527021dccd954f2eb62bf6ba23162c59c1</code> (in the history of the built commit) |
+| Event commit | <code>6580a8e48c1cdd995258c3d27797548406834d0a</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -16505,13 +16507,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.39/">0.0.39</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.41/">0.0.41</a>, newer than the documented version (0.0.40).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 648a40527021dccd954f2eb62bf6ba23162c59c1
+git checkout 6580a8e48c1cdd995258c3d27797548406834d0a
 pip install "epythet==0.2.15"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
