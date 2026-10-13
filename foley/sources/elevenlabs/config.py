@@ -50,12 +50,25 @@ SOURCE_CONFIG = {
         "output_format": {
             "native_name": "output_format",
             "in": "query",  # a URL query param, NOT a body field
-            # coarse foley token -> concrete native enum (no lossless WAV container
-            # in the SFX enum; 'wav' maps to mp3 and ingest re-archives to FLAC).
+            # coarse foley token -> concrete native enum. 'wav' is the lossless
+            # pcm_48000 (raw S16LE; the adapter adds the WAV header). Whether PCM
+            # needs a higher plan tier for SFX is unverified, so on a 4xx the
+            # adapter retries once with fallback_on_4xx and notes it (#71).
             "to_native_map": {
                 "mp3": "mp3_44100_128",
                 "opus": "opus_48000_128",
-                "wav": "mp3_44100_128",
+                "wav": "pcm_48000",
+            },
+            # Retried once with the fallback only on these statuses (a plan-tier
+            # refusal); any other error is raised as is.
+            "fallback_on_4xx": {"pcm_48000": "mp3_44100_128"},
+            "fallback_statuses": [402, 403],
+            # Raw PCM layout per native enum: 16-bit little-endian. The channel count
+            # is not documented for the SFX endpoint: until a live call confirms it,
+            # verified=False and a clip whose layout the byte length cannot confirm
+            # (no duration requested) carries a note saying mono was assumed.
+            "pcm": {
+                "pcm_48000": {"sample_rate": 48000, "channels": 1, "verified": False}
             },
         },
     },
