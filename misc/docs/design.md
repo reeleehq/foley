@@ -138,7 +138,9 @@ foley.add_from("freesound", query="ocean waves", license="cc0")
 
 # Compose: plan the picks into an editable timeline, then render it under the narration
 timeline = foley.plan(candidates)
-result = foley.weave("narration.wav", timeline, transcript="...")  # result.notes says how placements were timed
+result = foley.weave(
+    "narration.wav", timeline, transcript="..."
+)  # result.notes says how placements were timed
 
 # The library itself is a dol Mapping of SoundRecords
 lib = foley.library
