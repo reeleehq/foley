@@ -379,7 +379,7 @@ class ElevenLabsAdapter:
             raise _HTTPStatusError(
                 resp.status_code,
                 f"ElevenLabs {endpoint['method']} {url} -> {resp.status_code}: "
-                f"{_safe_detail(resp)}"
+                f"{_safe_detail(resp)}",
             )
         return resp.content
 
