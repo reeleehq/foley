@@ -30,20 +30,20 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=e39d37f2" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=c5dbc6bb"></script>
+    <script src="../_static/documentation_options.js?v=f2234cd1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,8 +55,9 @@
     <link rel="next" title="foley.index.library" href="foley.index.library.html" />
     <link rel="prev" title="foley.index.indexes" href="foley.index.indexes.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.31" />
+  <meta name="docsearch:version" content="0.0.32" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -557,7 +558,7 @@ module costs only the stdlib.</p>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="foley.index.ingest.AUDIO_EXTS">
-<span class="sig-prename descclassname"><span class="pre">foley.index.ingest.</span></span><span class="sig-name descname"><span class="pre">AUDIO_EXTS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('.wav',</span> <span class="pre">'.flac',</span> <span class="pre">'.aiff',</span> <span class="pre">'.aif',</span> <span class="pre">'.ogg',</span> <span class="pre">'.mp3',</span> <span class="pre">'.opus',</span> <span class="pre">'.m4a')</span></span><a class="headerlink" href="#foley.index.ingest.AUDIO_EXTS" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">foley.index.ingest.</span></span><span class="sig-name descname"><span class="pre">AUDIO_EXTS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('.wav',</span> <span class="pre">'.flac',</span> <span class="pre">'.aiff',</span> <span class="pre">'.aif',</span> <span class="pre">'.ogg',</span> <span class="pre">'.mp3',</span> <span class="pre">'.opus',</span> <span class="pre">'.m4a')</span></span><a class="headerlink" href="#foley.index.ingest.AUDIO_EXTS" title="Link to this definition">#</a></dt>
 <dd><p>Audio file extensions the folder walker ingests.</p>
 </dd></dl>
 
@@ -586,14 +587,14 @@ licence URL / label its source served (kept in <code class="docutils literal not
 <dd><p>Record a per-file error without aborting the run.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="foley.index.ingest.IngestReport.errored">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">errored</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><span class="pre">IngestResult</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.index.ingest.IngestReport.errored" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">errored</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><span class="pre">IngestResult</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.index.ingest.IngestReport.errored" title="Link to this definition">#</a></dt>
 <dd><p>Results that raised during ingest.</p>
 </dd></dl>
 
@@ -606,13 +607,13 @@ chain it (<code class="docutils literal notranslate"><span class="pre">raise</sp
 
 <dl class="py property">
 <dt class="sig sig-object py" id="foley.index.ingest.IngestReport.ingested">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ingested</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><span class="pre">IngestResult</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.index.ingest.IngestReport.ingested" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ingested</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><span class="pre">IngestResult</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.index.ingest.IngestReport.ingested" title="Link to this definition">#</a></dt>
 <dd><p>Results that were added to the library (<code class="docutils literal notranslate"><span class="pre">pass</span></code> or <code class="docutils literal notranslate"><span class="pre">warn</span></code>).</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="foley.index.ingest.IngestReport.quarantined">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">quarantined</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><span class="pre">IngestResult</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.index.ingest.IngestReport.quarantined" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">quarantined</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><span class="pre">IngestResult</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.index.ingest.IngestReport.quarantined" title="Link to this definition">#</a></dt>
 <dd><p>Results rejected by the QC gate.</p>
 </dd></dl>
 
@@ -622,20 +623,20 @@ chain it (<code class="docutils literal notranslate"><span class="pre">raise</sp
 <dd><p>Append one <a class="reference internal" href="#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">IngestResult</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="foley.index.ingest.IngestReport.rights_blocked">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">rights_blocked</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><span class="pre">IngestResult</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.index.ingest.IngestReport.rights_blocked" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">rights_blocked</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><span class="pre">IngestResult</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.index.ingest.IngestReport.rights_blocked" title="Link to this definition">#</a></dt>
 <dd><p>Results refused by the fail-closed AI-training/license rights gate.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="foley.index.ingest.IngestReport.skipped">
-<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">skipped</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><span class="pre">IngestResult</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.index.ingest.IngestReport.skipped" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">skipped</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><span class="pre">IngestResult</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#foley.index.ingest.IngestReport.skipped" title="Link to this definition">#</a></dt>
 <dd><p>Results skipped as content-addressed duplicates.</p>
 </dd></dl>
 
@@ -645,7 +646,7 @@ chain it (<code class="docutils literal notranslate"><span class="pre">raise</sp
 <dd><p>A counts dict for a console/CLI summary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -698,7 +699,7 @@ sets <code class="docutils literal notranslate"><span class="pre">license.c2pa_m
 <code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources.generate.generate()</span></code>). Cheap-ish: it fully decodes <code class="docutils literal notranslate"><span class="pre">src</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -709,7 +710,7 @@ sets <code class="docutils literal notranslate"><span class="pre">license.c2pa_m
 <dd><p>Whether <code class="docutils literal notranslate"><span class="pre">lic</span></code> kept the licence string its source served (re-derivable).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -723,9 +724,9 @@ sets <code class="docutils literal notranslate"><span class="pre">license.c2pa_m
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>path</strong> – A folder (walked) or a single audio file.</p></li>
 <li><p><strong>library</strong> – Target library (default: the process-wide default).</p></li>
-<li><p><strong>recursive</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Recurse into sub-folders.</p></li>
-<li><p><strong>exts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>]</span>) – Audio extensions to ingest.</p></li>
-<li><p><strong>on_error</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – <code class="docutils literal notranslate"><span class="pre">'collect'</span></code> records per-file errors and continues;
+<li><p><strong>recursive</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Recurse into sub-folders.</p></li>
+<li><p><strong>exts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>]</span>) – Audio extensions to ingest.</p></li>
+<li><p><strong>on_error</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – <code class="docutils literal notranslate"><span class="pre">'collect'</span></code> records per-file errors and continues;
 <code class="docutils literal notranslate"><span class="pre">'raise'</span></code> re-raises the first error. Either way an
 <a class="reference internal" href="foley.runtime.html#foley.runtime.EgressBlocked" title="foley.runtime.EgressBlocked"><code class="xref py py-class docutils literal notranslate"><span class="pre">EgressBlocked</span></code></a> (offline, the embedder’s weights not
 cached) raises at once: every file would fail the same way.</p></li>
@@ -752,10 +753,10 @@ flags, …).</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>src</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.BinaryIO" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code></a>]</span>) – A path, <code class="docutils literal notranslate"><span class="pre">bytes</span></code>, or file-like audio source.</p></li>
+<li><p><strong>src</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/os.html#os.PathLike" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.BinaryIO" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">BinaryIO</span></code></a>]</span>) – A path, <code class="docutils literal notranslate"><span class="pre">bytes</span></code>, or file-like audio source.</p></li>
 <li><p><strong>library</strong> – Target <a class="reference internal" href="foley.index.library.html#foley.index.library.SoundLibrary" title="foley.index.library.SoundLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundLibrary</span></code></a> (default: the
 process-wide default library).</p></li>
-<li><p><strong>sound_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Optional canonical id override. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code> → the
+<li><p><strong>sound_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Optional canonical id override. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code> → the
 content-hash of the decoded PCM (the local-ingest identity, used as the
 record <code class="docutils literal notranslate"><span class="pre">id</span></code> and dedup key). A live source adapter passes a short,
 case-stable, source-native id (e.g. <code class="docutils literal notranslate"><span class="pre">'freesound:12345'</span></code>) so dedup keys
@@ -764,12 +765,12 @@ bytes; when it does, the PCM hash is computed only for the (skipped)
 default and is not persisted. Separately, <code class="docutils literal notranslate"><span class="pre">content_sha256</span></code> records the
 hash of the stored FLAC <strong>archive</strong> bytes (set by <code class="docutils literal notranslate"><span class="pre">store_sound</span></code>), which
 is a different byte source from this PCM hash.</p></li>
-<li><p><strong>source_uri</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Optional by-reference fetchable URI override. Defaults to
+<li><p><strong>source_uri</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Optional by-reference fetchable URI override. Defaults to
 <code class="docutils literal notranslate"><span class="pre">None</span></code> → the resolved local path when <code class="docutils literal notranslate"><span class="pre">src</span></code> is path-like. A live
 adapter passes the stable source page URL (e.g.
 <code class="docutils literal notranslate"><span class="pre">'https://freesound.org/s/12345/'</span></code>) that <a class="reference internal" href="foley.stores.html#foley.stores.store_sound" title="foley.stores.store_sound"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.stores.store_sound()</span></code></a>
 requires for a by-reference sound.</p></li>
-<li><p><strong>license</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>]</span>) – Rights record, or a <code class="docutils literal notranslate"><span class="pre">license_id</span></code> string the caller asserts
+<li><p><strong>license</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>]</span>) – Rights record, or a <code class="docutils literal notranslate"><span class="pre">license_id</span></code> string the caller asserts
 (<code class="docutils literal notranslate"><span class="pre">'user-owned'</span></code>), or <code class="docutils literal notranslate"><span class="pre">None</span></code> (default): rights <strong>unknown</strong>, so the clip
 is indexed but <a class="reference internal" href="foley.html#foley.keep" title="foley.keep"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.keep()</span></code></a> refuses it (#55). See
 <a class="reference internal" href="#foley.index.ingest.resolve_ingest_license" title="foley.index.ingest.resolve_ingest_license"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_ingest_license()</span></code></a>.</p></li>
@@ -779,17 +780,17 @@ via <a class="reference internal" href="foley.index.taggers.html#foley.index.tag
 <a class="reference internal" href="foley.index.taggers.html#foley.index.taggers.default_zeroshot_tagger" title="foley.index.taggers.default_zeroshot_tagger"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_zeroshot_tagger()</span></code></a>).</p></li>
 <li><p><strong>captioner</strong> – Optional <a class="reference internal" href="foley.index.protocols.html#foley.index.protocols.Captioner" title="foley.index.protocols.Captioner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Captioner</span></code></a> (default:
 none — the caption stage is off unless one is injected).</p></li>
-<li><p><strong>do_qc</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Run the Tier-0 QC gate.</p></li>
+<li><p><strong>do_qc</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Run the Tier-0 QC gate.</p></li>
 <li><p><strong>min_status</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.qc.html#foley.qc.QCStatus" title="foley.qc.QCStatus"><code class="xref py py-class docutils literal notranslate"><span class="pre">QCStatus</span></code></a></span>) – Admission floor — a QC status worse than this is quarantined
 (default <code class="docutils literal notranslate"><span class="pre">warn</span></code>: only <code class="docutils literal notranslate"><span class="pre">fail</span></code> clips are rejected).</p></li>
-<li><p><strong>do_caption</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Toggle each enrichment stage.</p></li>
+<li><p><strong>do_caption</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Toggle each enrichment stage.</p></li>
 <li><p><strong>thresholds</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.qc.html#foley.qc.QCThresholds" title="foley.qc.QCThresholds"><code class="xref py py-class docutils literal notranslate"><span class="pre">QCThresholds</span></code></a></span>) – QC thresholds.</p></li>
-<li><p><strong>store</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, assemble the record but do not add it to the library
+<li><p><strong>store</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, assemble the record but do not add it to the library
 (probe/QC/enrich only).</p></li>
-<li><p><strong>seed_tags</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>]</span>) – Optional caller-supplied tags (e.g. a corpus’s folder-path
+<li><p><strong>seed_tags</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>]</span>) – Optional caller-supplied tags (e.g. a corpus’s folder-path
 taxonomy) unioned into the record’s <code class="docutils literal notranslate"><span class="pre">tags</span></code> alongside the
 supervised/zero-shot tags — so they feed the BM25 keyword index.</p></li>
-<li><p><strong>allow_ai_training_forbidden</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – The universal fail-closed rights gate. A
+<li><p><strong>allow_ai_training_forbidden</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – The universal fail-closed rights gate. A
 sound whose license has <code class="docutils literal notranslate"><span class="pre">ai_training_ok=False</span></code> (e.g. Sonniss,
 BBC RemArc) is refused with status <code class="docutils literal notranslate"><span class="pre">'rights_blocked'</span></code> <em>before</em> it is
 embedded or stored — CLAP-embedding-and-persisting is itself a form of
@@ -797,7 +798,7 @@ AI training on the corpus. Pass <code class="docutils literal notranslate"><span
 consent and admit it anyway (see <code class="xref py py-func docutils literal notranslate"><span class="pre">foley.bootstrap.bootstrap()</span></code>’s
 <code class="docutils literal notranslate"><span class="pre">accept_ai_restricted</span></code>). Protects every ingest path, not just
 bootstrap.</p></li>
-<li><p><strong>commercial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</span>) – Whether the AI use is for a commercial purpose (decides a
+<li><p><strong>commercial</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</span>) – Whether the AI use is for a commercial purpose (decides a
 <code class="docutils literal notranslate"><span class="pre">nc_open_source_only</span></code> scope, #69). <code class="docutils literal notranslate"><span class="pre">None</span></code> (default) means
 <a class="reference internal" href="foley.licensing.html#foley.licensing.DEFAULT_INTENDED_USE" title="foley.licensing.DEFAULT_INTENDED_USE"><code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_INTENDED_USE</span></code></a>’s (commercial).</p></li>
 </ul>
@@ -821,7 +822,7 @@ duplicate, or rights-blocked.</p>
 the old default never did, which is what tells them apart.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -832,7 +833,7 @@ the old default never did, which is what tells them apart.</p>
 <dd><p>Whether <code class="docutils literal notranslate"><span class="pre">lic</span></code> is an ElevenLabs generation stamped before the plan was explicit (#56).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -847,15 +848,15 @@ bulk-corpus adapters in <a class="reference internal" href="foley.sources.html#m
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>path</strong> – A folder (walked) or a single audio file.</p></li>
-<li><p><strong>recursive</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Recurse into sub-folders.</p></li>
-<li><p><strong>exts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>]</span>) – Audio extensions to include (lowercased suffix match).</p></li>
+<li><p><strong>recursive</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Recurse into sub-folders.</p></li>
+<li><p><strong>exts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>]</span>) – Audio extensions to include (lowercased suffix match).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Yields<span class="colon">:</span></dt>
-<dd class="field-even"><p>Each matching file as a <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pathlib.Path</span></code></a>, in sorted order.</p>
+<dd class="field-even"><p>Each matching file as a <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">pathlib.Path</span></code></a>, in sorted order.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterator" title="(in Python v3.14)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>Path</em></a>]</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterator" title="(in Python v3.15)"><em>Iterator</em></a>[<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><em>Path</em></a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -879,7 +880,7 @@ e.g. <code class="docutils literal notranslate"><span class="pre">'user-owned'</
 </ul>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If a <code class="docutils literal notranslate"><span class="pre">str</span></code> licence id has no <code class="xref py py-data docutils literal notranslate"><span class="pre">LICENSE_FLAGS</span></code> row.</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If a <code class="docutils literal notranslate"><span class="pre">str</span></code> licence id has no <code class="xref py py-data docutils literal notranslate"><span class="pre">LICENSE_FLAGS</span></code> row.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a></span></p>
@@ -911,24 +912,24 @@ which re-stamps already-stored clips from the corpus metadata.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>library</strong> – The <a class="reference internal" href="foley.index.library.html#foley.index.library.SoundLibrary" title="foley.index.library.SoundLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundLibrary</span></code></a> (default: the default one).</p></li>
-<li><p><strong>license</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – The <code class="docutils literal notranslate"><span class="pre">license_id</span></code> to stamp (a <code class="docutils literal notranslate"><span class="pre">LICENSE_FLAGS</span></code> row; default
+<li><p><strong>license</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – The <code class="docutils literal notranslate"><span class="pre">license_id</span></code> to stamp (a <code class="docutils literal notranslate"><span class="pre">LICENSE_FLAGS</span></code> row; default
 <code class="docutils literal notranslate"><span class="pre">'unknown'</span></code>), or <a class="reference internal" href="#foley.index.ingest.FROM_LICENSE_URL" title="foley.index.ingest.FROM_LICENSE_URL"><code class="xref py py-data docutils literal notranslate"><span class="pre">FROM_LICENSE_URL</span></code></a> to re-derive each record from
 its own <code class="docutils literal notranslate"><span class="pre">license_url</span></code>.</p></li>
-<li><p><strong>ids</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span>) – Re-stamp exactly these sound ids (overrides <code class="docutils literal notranslate"><span class="pre">where</span></code> / <code class="docutils literal notranslate"><span class="pre">select</span></code>).</p></li>
+<li><p><strong>ids</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span>) – Re-stamp exactly these sound ids (overrides <code class="docutils literal notranslate"><span class="pre">where</span></code> / <code class="docutils literal notranslate"><span class="pre">select</span></code>).</p></li>
 <li><p><strong>where</strong> – A predicate <code class="docutils literal notranslate"><span class="pre">LicenseRecord</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code> choosing the records (overrides
 <code class="docutils literal notranslate"><span class="pre">select</span></code>).</p></li>
-<li><p><strong>select</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – A <a class="reference internal" href="#foley.index.ingest.LEGACY_SELECTORS" title="foley.index.ingest.LEGACY_SELECTORS"><code class="xref py py-data docutils literal notranslate"><span class="pre">LEGACY_SELECTORS</span></code></a> name (default <code class="docutils literal notranslate"><span class="pre">'legacy-user-owned'</span></code>).</p></li>
-<li><p><strong>apply</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Write the change. <code class="docutils literal notranslate"><span class="pre">False</span></code> (default) only reports what would change.</p></li>
+<li><p><strong>select</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – A <a class="reference internal" href="#foley.index.ingest.LEGACY_SELECTORS" title="foley.index.ingest.LEGACY_SELECTORS"><code class="xref py py-data docutils literal notranslate"><span class="pre">LEGACY_SELECTORS</span></code></a> name (default <code class="docutils literal notranslate"><span class="pre">'legacy-user-owned'</span></code>).</p></li>
+<li><p><strong>apply</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Write the change. <code class="docutils literal notranslate"><span class="pre">False</span></code> (default) only reports what would change.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The ids that were (or, in a dry run, would be) re-stamped.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">license</span></code> or <code class="docutils literal notranslate"><span class="pre">select</span></code> is unknown.</p>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">license</span></code> or <code class="docutils literal notranslate"><span class="pre">select</span></code> is unknown.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1034,8 +1035,8 @@ its own <code class="docutils literal notranslate"><span class="pre">license_url
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1047,7 +1048,7 @@ its own <code class="docutils literal notranslate"><span class="pre">license_url
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
 </p></div>
       
     </div>

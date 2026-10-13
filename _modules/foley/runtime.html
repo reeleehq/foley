@@ -27,20 +27,20 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
-<link href="../../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/epythet.css?v=e39d37f2" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
+  <script defer src="../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
-<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=c5dbc6bb"></script>
+    <script src="../../_static/documentation_options.js?v=f2234cd1"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -408,8 +408,9 @@ window.runMermaid = runMermaid;</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.31" />
+  <meta name="docsearch:version" content="0.0.32" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -844,7 +845,9 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="load_pretrained">
 <a class="viewcode-back" href="../../_autosummary/foley.runtime.html#foley.load_pretrained">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">load_pretrained</span><span class="p">(</span><span class="n">loader</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">how_to_fetch</span><span class="p">:</span> <span class="s2">"str | None"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_pretrained</span><span class="p">(</span>
+    <span class="n">loader</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">how_to_fetch</span><span class="p">:</span> <span class="s2">"str | None"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Call ``loader(model_id, **kwargs)`` — a ``from_pretrained`` — honouring the posture.</span>
 
 <span class="sd">    Online, it is a plain call. Under :func:`offline` it passes</span>
@@ -926,7 +929,9 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="c1">#: Whether outbound connections are blocked in this context (set by :func:`no_download`).</span>
-<span class="n">_DOWNLOADS_BLOCKED</span><span class="p">:</span> <span class="s2">"ContextVar[str | None]"</span> <span class="o">=</span> <span class="n">ContextVar</span><span class="p">(</span><span class="s2">"foley_no_download"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="n">_DOWNLOADS_BLOCKED</span><span class="p">:</span> <span class="s2">"ContextVar[str | None]"</span> <span class="o">=</span> <span class="n">ContextVar</span><span class="p">(</span>
+    <span class="s2">"foley_no_download"</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">)</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">_OfflineBlocked</span><span class="p">(</span><span class="ne">ConnectionRefusedError</span><span class="p">):</span>
@@ -952,7 +957,9 @@ window.runMermaid = runMermaid;</script>
                     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
                         <span class="n">host</span> <span class="o">=</span> <span class="n">host</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
                     <span class="k">if</span> <span class="n">host</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">_outbound</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">host</span><span class="p">)):</span>
-                        <span class="k">raise</span> <span class="n">_OfflineBlocked</span><span class="p">(</span><span class="sa">f</span><span class="s2">"offline: name lookup for </span><span class="si">{</span><span class="n">host</span><span class="si">!r}</span><span class="s2"> blocked"</span><span class="p">)</span>
+                        <span class="k">raise</span> <span class="n">_OfflineBlocked</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">"offline: name lookup for </span><span class="si">{</span><span class="n">host</span><span class="si">!r}</span><span class="s2"> blocked"</span>
+                        <span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">sock</span><span class="p">,</span> <span class="n">address</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
                     <span class="n">host</span> <span class="o">=</span> <span class="n">address</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
@@ -961,7 +968,9 @@ window.runMermaid = runMermaid;</script>
                         <span class="ow">and</span> <span class="n">sock</span><span class="o">.</span><span class="n">family</span> <span class="o">!=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">socket</span><span class="p">,</span> <span class="s2">"AF_UNIX"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                         <span class="ow">and</span> <span class="n">_outbound</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">host</span><span class="p">))</span>
                     <span class="p">):</span>
-                        <span class="k">raise</span> <span class="n">_OfflineBlocked</span><span class="p">(</span><span class="sa">f</span><span class="s2">"offline: connection to </span><span class="si">{</span><span class="n">address</span><span class="si">!r}</span><span class="s2"> blocked"</span><span class="p">)</span>
+                        <span class="k">raise</span> <span class="n">_OfflineBlocked</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">"offline: connection to </span><span class="si">{</span><span class="n">address</span><span class="si">!r}</span><span class="s2"> blocked"</span>
+                        <span class="p">)</span>
             <span class="k">return</span> <span class="n">real</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="n">wrapped</span><span class="o">.</span><span class="n">_foley_gate</span> <span class="o">=</span> <span class="kc">True</span>
@@ -1259,8 +1268,8 @@ window.runMermaid = runMermaid;</script>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
-<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
+  <script defer src="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1272,7 +1281,7 @@ window.runMermaid = runMermaid;</script>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
 </p></div>
       
     </div>

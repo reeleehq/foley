@@ -1,4 +1,4 @@
-> built 2026-10-05 15:30 UTC from b84916b (main) · foley 0.0.31. Details: build_info.json
+> built 2026-10-13 04:46 UTC from 5be1c8f (main) · foley 0.0.32. Details: build_info.json
 
 # index.html.md
 
@@ -2568,7 +2568,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Whether a candidate was retrieved from the index or freshly generated.
 
-### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration': Affordance(name='duration', type=<class 'float'>, description='Seconds; None => backend default', default=None, stage='generate', carries_meaning=False), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description='0..1 unified guidance', default=0.3, stage='generate', carries_meaning=False), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False)}*
+### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration': Affordance(name='duration', type=<class 'float'>, description='Seconds; None => backend default', default=None, stage='generate', carries_meaning=False), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False)}*
 
 Unified generation-stage parameters (generate backends map onto these).
 
@@ -12099,7 +12099,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'netflix intro', 'ta-dum', 'netflix sound', 'ta dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel jingle', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'tudum', 'ta-dum', 'ta dum', 'netflix chime', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel jingle', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -12977,16 +12977,18 @@ so the derived permission flags stay single-sourced.
 
 ### Functions
 
-| [`bulk_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])   | Build a bulk-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                   |
-|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`per_clip_license_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])      | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                      |
-| [`license_from_clip_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.license_from_clip_meta)(source, spec)               | Build a clip's rights record from [`per_clip_license_meta()`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta) fields (fail-closed).                   |
-| [`api_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])    | Build an API-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                   |
-| [`generated_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.generated_license)(\*, source, license_id, ...)     | Build an AI-generated [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped. |
-| [`register_corpus`](_autosummary/foley.sources.base.html.md#foley.sources.base.register_corpus)(adapter)                           | Register `adapter` in [`CORPUS_REGISTRY`](_autosummary/foley.sources.base.html.md#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                 |
-| [`ring_of`](_autosummary/foley.sources.base.html.md#foley.sources.base.ring_of)(name)                                      | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                               |
-| [`corpora_in_rings`](_autosummary/foley.sources.base.html.md#foley.sources.base.corpora_in_rings)(rings)                            | Registered adapters whose ring is in `rings` (sorted by name).                                                                                     |
-| [`select_corpora`](_autosummary/foley.sources.base.html.md#foley.sources.base.select_corpora)(\*[, rings, corpora])               | Resolve the adapters a bootstrap run should touch.                                                                                                 |
+| [`check_prompt_influence`](_autosummary/foley.sources.base.html.md#foley.sources.base.check_prompt_influence)(value)                     | Raise `ValueError` unless `value` is `None` or a real number in `0..1`.                                                                            |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`native_adherence`](_autosummary/foley.sources.base.html.md#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                        |
+| [`bulk_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])  | Build a bulk-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                   |
+| [`per_clip_license_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])     | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                      |
+| [`license_from_clip_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.license_from_clip_meta)(source, spec)              | Build a clip's rights record from [`per_clip_license_meta()`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta) fields (fail-closed).                   |
+| [`api_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])   | Build an API-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                   |
+| [`generated_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.generated_license)(\*, source, license_id, ...)    | Build an AI-generated [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped. |
+| [`register_corpus`](_autosummary/foley.sources.base.html.md#foley.sources.base.register_corpus)(adapter)                          | Register `adapter` in [`CORPUS_REGISTRY`](_autosummary/foley.sources.base.html.md#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                 |
+| [`ring_of`](_autosummary/foley.sources.base.html.md#foley.sources.base.ring_of)(name)                                     | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                               |
+| [`corpora_in_rings`](_autosummary/foley.sources.base.html.md#foley.sources.base.corpora_in_rings)(rings)                           | Registered adapters whose ring is in `rings` (sorted by name).                                                                                     |
+| [`select_corpora`](_autosummary/foley.sources.base.html.md#foley.sources.base.select_corpora)(\*[, rings, corpora])              | Resolve the adapters a bootstrap run should touch.                                                                                                 |
 
 ### Classes
 
@@ -13305,6 +13307,17 @@ signature has no `overrides` (a downloaded corpus is cacheable by-value).
 * **Returns:**
   A populated `LicenseRecord` with its derived flags applied.
 
+### foley.sources.base.check_prompt_influence(value)
+
+Raise `ValueError` unless `value` is `None` or a real number in `0..1`.
+
+Called when a generation is planned, before any budget is reserved, and again
+by [`native_adherence()`](_autosummary/foley.sources.base.html.md#foley.sources.base.native_adherence). A `bool` or a numeric string is refused rather
+than coerced: `True` would silently mean the maximum.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 ### foley.sources.base.corpora_in_rings(rings)
 
 Registered adapters whose ring is in `rings` (sorted by name).
@@ -13369,6 +13382,27 @@ Build a clip’s rights record from [`per_clip_license_meta()`](_autosummary/fol
 
 * **Return type:**
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
+
+### foley.sources.base.native_adherence(config, prompt_influence, notes)
+
+Map foley’s unified `prompt_influence` (0..1) onto a source’s native scale.
+
+The source declares the mapping on `config["param_map"]["prompt_influence"]`:
+`coerce` (`{"kind": "identity"}` or `{"kind": "linear", "lo": ..., "hi": ...}`,
+0 -> `lo`, 1 -> `hi`) and `native_default` (the model’s own value, or `None`
+to send nothing and let the API apply its default). Native scales differ widely
+(ElevenLabs 0..1, Stable Audio Open’s CFG 1..15), so one unified default would be
+wrong for most of them: `None` means “the model’s own default”.
+
+A source whose `native_defaults["distilled"]` is true was post-trained for its
+native default (e.g. distilled Stable Audio models expect CFG 1), so a requested
+`prompt_influence` is not applied: the native default is used and `notes` says
+so (#70).
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `prompt_influence` is outside `0..1`.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### foley.sources.base.per_clip_license_meta(license_url, , creator_name=None, source_url=None)
 
@@ -13572,7 +13606,7 @@ ElevenLabs Sound Effects generate adapter (a [`GenerateAdapter`](_autosummary/fo
 
 The ElevenLabs token (from the constructor or `$ELEVENLABS_API_KEY`).
 
-#### generate(prompt, , duration=None, prompt_influence=0.3, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
+#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
 
 Generate a sound effect for `prompt`; return its bytes + provisional candidate.
 
@@ -13580,8 +13614,9 @@ Generate a sound effect for `prompt`; return its bytes + provisional candidate.
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description (required).
   * **duration** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the native `0.5..30` range). `None`
     lets the model auto-determine the length from the prompt.
-  * **prompt_influence** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – `0..1` (identity map to the native field; higher =
-    closer to the prompt, less variety). Default `0.3`.
+  * **prompt_influence** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – `0..1` (identity map to the native field; higher =
+    closer to the prompt, less variety). `None` (default) omits it, so
+    the API applies its own default.
   * **seed** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – No ElevenLabs SFX equivalent — a
     non-default value warns-and-drops (recorded in the clip notes);
     `generation_seed` stays `None`.
@@ -15095,8 +15130,9 @@ Load-bearing details verified against the diffusers docs + HF model card:
 
 * \*\*The CFG kwarg is `guidance_scale``** (NOT ``cfg_scale`), and it MUST be passed
   explicitly or the pipeline silently uses its own default 7.0. foley maps its
-  unified `prompt_influence` (0..1) onto it via
-  `guidance_scale = 1 + prompt_influence * (cfg_max - 1)` (`cfg_max` configurable).
+  unified `prompt_influence` (0..1) onto it linearly (1..15, declared in the
+  config’s `coerce`); `None` sends the model’s own default, and a distilled
+  checkpoint (`native_defaults["distilled"]`) always gets its native default.
 * \*\*Output is channel-first `(channels, samples)``** — transposed to the
   time-first ``(frames, channels)` foley/soundfile convention before encoding.
 * **The sample rate is read off the pipeline** (`pipe.vae.sampling_rate` = 44100),
@@ -15141,7 +15177,7 @@ Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](_autosummary
     `.device`; production omits it and the real
     `diffusers.StableAudioPipeline` lazy-loads on first generation).
 
-#### generate(prompt, , duration=None, prompt_influence=0.3, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
+#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
 
 Generate a sound for `prompt`; return its bytes + provisional candidate.
 
@@ -15149,9 +15185,10 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description (required).
   * **duration** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the model’s ~47.55 s max). `None` uses a
     sane 10 s default (NOT the 47.55 s maximum).
-  * **prompt_influence** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – `0..1` unified guidance; mapped to the native
-    `guidance_scale` via `1 + prompt_influence * (cfg_max - 1)`.
-    Default `0.3` → `guidance_scale ≈ 5.2`.
+  * **prompt_influence** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – `0..1` unified adherence, mapped linearly onto the
+    native `guidance_scale` (1..15). `None` (default) sends the
+    model’s own default (7.0 for Stable Audio Open 1.0); a distilled
+    checkpoint ignores it with a note.
   * **negative_prompt** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Content to exclude (ignored by the model when guidance
     ≤ 1).
   * **steps** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Diffusion steps (native `num_inference_steps`); default 200.
@@ -16239,40 +16276,40 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-05 15:30 UTC** from commit <a href="https://github.com/thorwhalen/foley/commit/b84916b40bf76f8281d9beeadef2c15bf17f9a97"><code>b84916b</code></a> on branch <code>main</code>, for **foley 0.0.31** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 04:46 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/5be1c8f49f9b388a9fd319c5c533b430e1e80978"><code>5be1c8f</code></a> on branch <code>main</code>, for **foley 0.0.32** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.31) is behind the latest release on PyPI (0.0.32): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.32) is behind the latest release on PyPI (0.0.33): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
-|                     |                                                                                                                                                         |
-|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/foley/commit/b84916b40bf76f8281d9beeadef2c15bf17f9a97"><code>b84916b40bf76f8281d9beeadef2c15bf17f9a97</code></a> |
-| Branch              | <code>main</code>                                                                                                                                       |
-| Tags at this commit | none                                                                                                                                                    |
-| Working tree        | clean                                                                                                                                                   |
-| Remote              | <code>https://github.com/thorwhalen/foley</code>                                                                                                        |
+|                     |                                                                                                                                                       |
+|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/5be1c8f49f9b388a9fd319c5c533b430e1e80978"><code>5be1c8f49f9b388a9fd319c5c533b430e1e80978</code></a> |
+| Branch              | <code>main</code>                                                                                                                                     |
+| Tags at this commit | none                                                                                                                                                  |
+| Working tree        | clean                                                                                                                                                 |
+| Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
 ## Continuous integration
 
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
-| Repository   | <code>thorwhalen/foley</code>                                                              |
-| Run          | <a href="https://github.com/thorwhalen/foley/actions/runs/37333043866">37333043866</a>     |
+| Repository   | <code>reeleehq/foley</code>                                                                |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38347929778">38347929778</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>b84916b40bf76f8281d9beeadef2c15bf17f9a97</code> (in the history of the built commit) |
+| Event commit | <code>5be1c8f49f9b388a9fd319c5c533b430e1e80978</code> (in the history of the built commit) |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.12  |
+| epythet  | 0.2.13  |
 | Sphinx   | 9.1.0   |
 | docutils | 0.22.4  |
-| Python   | 3.12.14 |
+| Python   | 3.12.15 |
 
 ## Configuration as resolved
 
@@ -16288,14 +16325,14 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.32/">0.0.32</a>, newer than the documented version (0.0.31).
+Latest release: <a href="https://pypi.org/project/foley/0.0.33/">0.0.33</a>, newer than the documented version (0.0.32).
 
 ## Reproduce
 
 ```bash
-git clone https://github.com/thorwhalen/foley && cd foley
-git checkout b84916b40bf76f8281d9beeadef2c15bf17f9a97
-pip install "epythet==0.2.12"
+git clone https://github.com/reeleehq/foley && cd foley
+git checkout 5be1c8f49f9b388a9fd319c5c533b430e1e80978
+pip install "epythet==0.2.13"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 

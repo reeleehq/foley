@@ -41,16 +41,18 @@ so the derived permission flags stay single-sourced.
 
 ### Functions
 
-| [`bulk_license`](#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])   | Build a bulk-acquisition [`LicenseRecord`](foley.base.md#foley.base.LicenseRecord), flags derived.                   |
-|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`per_clip_license_meta`](#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])      | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                      |
-| [`license_from_clip_meta`](#foley.sources.base.license_from_clip_meta)(source, spec)               | Build a clip's rights record from [`per_clip_license_meta()`](#foley.sources.base.per_clip_license_meta) fields (fail-closed).                   |
-| [`api_license`](#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])    | Build an API-acquisition [`LicenseRecord`](foley.base.md#foley.base.LicenseRecord), flags derived.                   |
-| [`generated_license`](#foley.sources.base.generated_license)(\*, source, license_id, ...)     | Build an AI-generated [`LicenseRecord`](foley.base.md#foley.base.LicenseRecord), flags derived + provenance stamped. |
-| [`register_corpus`](#foley.sources.base.register_corpus)(adapter)                           | Register `adapter` in [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                 |
-| [`ring_of`](#foley.sources.base.ring_of)(name)                                      | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                               |
-| [`corpora_in_rings`](#foley.sources.base.corpora_in_rings)(rings)                            | Registered adapters whose ring is in `rings` (sorted by name).                                                                                     |
-| [`select_corpora`](#foley.sources.base.select_corpora)(\*[, rings, corpora])               | Resolve the adapters a bootstrap run should touch.                                                                                                 |
+| [`check_prompt_influence`](#foley.sources.base.check_prompt_influence)(value)                     | Raise `ValueError` unless `value` is `None` or a real number in `0..1`.                                                                            |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`native_adherence`](#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                        |
+| [`bulk_license`](#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])  | Build a bulk-acquisition [`LicenseRecord`](foley.base.md#foley.base.LicenseRecord), flags derived.                   |
+| [`per_clip_license_meta`](#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])     | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                      |
+| [`license_from_clip_meta`](#foley.sources.base.license_from_clip_meta)(source, spec)              | Build a clip's rights record from [`per_clip_license_meta()`](#foley.sources.base.per_clip_license_meta) fields (fail-closed).                   |
+| [`api_license`](#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])   | Build an API-acquisition [`LicenseRecord`](foley.base.md#foley.base.LicenseRecord), flags derived.                   |
+| [`generated_license`](#foley.sources.base.generated_license)(\*, source, license_id, ...)    | Build an AI-generated [`LicenseRecord`](foley.base.md#foley.base.LicenseRecord), flags derived + provenance stamped. |
+| [`register_corpus`](#foley.sources.base.register_corpus)(adapter)                          | Register `adapter` in [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                 |
+| [`ring_of`](#foley.sources.base.ring_of)(name)                                     | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                               |
+| [`corpora_in_rings`](#foley.sources.base.corpora_in_rings)(rings)                           | Registered adapters whose ring is in `rings` (sorted by name).                                                                                     |
+| [`select_corpora`](#foley.sources.base.select_corpora)(\*[, rings, corpora])              | Resolve the adapters a bootstrap run should touch.                                                                                                 |
 
 ### Classes
 
@@ -369,6 +371,17 @@ signature has no `overrides` (a downloaded corpus is cacheable by-value).
 * **Returns:**
   A populated `LicenseRecord` with its derived flags applied.
 
+### foley.sources.base.check_prompt_influence(value)
+
+Raise `ValueError` unless `value` is `None` or a real number in `0..1`.
+
+Called when a generation is planned, before any budget is reserved, and again
+by [`native_adherence()`](#foley.sources.base.native_adherence). A `bool` or a numeric string is refused rather
+than coerced: `True` would silently mean the maximum.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 ### foley.sources.base.corpora_in_rings(rings)
 
 Registered adapters whose ring is in `rings` (sorted by name).
@@ -433,6 +446,27 @@ Build a clip’s rights record from [`per_clip_license_meta()`](#foley.sources.b
 
 * **Return type:**
   [`LicenseRecord`](foley.base.md#foley.base.LicenseRecord)
+
+### foley.sources.base.native_adherence(config, prompt_influence, notes)
+
+Map foley’s unified `prompt_influence` (0..1) onto a source’s native scale.
+
+The source declares the mapping on `config["param_map"]["prompt_influence"]`:
+`coerce` (`{"kind": "identity"}` or `{"kind": "linear", "lo": ..., "hi": ...}`,
+0 -> `lo`, 1 -> `hi`) and `native_default` (the model’s own value, or `None`
+to send nothing and let the API apply its default). Native scales differ widely
+(ElevenLabs 0..1, Stable Audio Open’s CFG 1..15), so one unified default would be
+wrong for most of them: `None` means “the model’s own default”.
+
+A source whose `native_defaults["distilled"]` is true was post-trained for its
+native default (e.g. distilled Stable Audio models expect CFG 1), so a requested
+`prompt_influence` is not applied: the native default is used and `notes` says
+so (#70).
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `prompt_influence` is outside `0..1`.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### foley.sources.base.per_clip_license_meta(license_url, , creator_name=None, source_url=None)
 

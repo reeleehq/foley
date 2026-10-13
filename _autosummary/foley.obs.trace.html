@@ -30,20 +30,20 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=e39d37f2" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=c5dbc6bb"></script>
+    <script src="../_static/documentation_options.js?v=f2234cd1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,8 +55,9 @@
     <link rel="next" title="foley.agent" href="foley.agent.html" />
     <link rel="prev" title="foley.obs.run_artifact" href="foley.obs.run_artifact.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.31" />
+  <meta name="docsearch:version" content="0.0.32" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -525,14 +526,14 @@ stability and shift across minor versions. This dict is the single place they ar
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.obs.trace.NoOpSpan">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.obs.trace.</span></span><span class="sig-name descname"><span class="pre">NoOpSpan</span></span><a class="reference internal" href="../_modules/foley/obs/trace.html#NoOpSpan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.trace.NoOpSpan" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>A zero-cost span: every method does nothing; <code class="docutils literal notranslate"><span class="pre">trace_id</span></code> is always <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.obs.trace.NoOpTracer">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.obs.trace.</span></span><span class="sig-name descname"><span class="pre">NoOpTracer</span></span><a class="reference internal" href="../_modules/foley/obs/trace.html#NoOpTracer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.trace.NoOpTracer" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>The default <a class="reference internal" href="#foley.obs.trace.Tracer" title="foley.obs.trace.Tracer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tracer</span></code></a> — yields the shared <code class="xref py py-data docutils literal notranslate"><span class="pre">_NOOP_SPAN</span></code>, zero deps.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="foley.obs.trace.NoOpTracer.start_as_current_span">
@@ -547,7 +548,7 @@ stability and shift across minor versions. This dict is the single place they ar
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.obs.trace.OTelTracer">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.obs.trace.</span></span><span class="sig-name descname"><span class="pre">OTelTracer</span></span><a class="reference internal" href="../_modules/foley/obs/trace.html#OTelTracer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.trace.OTelTracer" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>An OpenTelemetry-backed <a class="reference internal" href="#foley.obs.trace.Tracer" title="foley.obs.trace.Tracer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tracer</span></code></a> (lazy import; requires <code class="docutils literal notranslate"><span class="pre">foley[obs]</span></code>).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="foley.obs.trace.OTelTracer.start_as_current_span">
@@ -562,14 +563,14 @@ stability and shift across minor versions. This dict is the single place they ar
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.obs.trace.Span">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.obs.trace.</span></span><span class="sig-name descname"><span class="pre">Span</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/trace.html#Span"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.trace.Span" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
 <p>The minimal mirror-span surface foley code calls (structural).</p>
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.obs.trace.Tracer">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.obs.trace.</span></span><span class="sig-name descname"><span class="pre">Tracer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/obs/trace.html#Tracer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.obs.trace.Tracer" title="Link to this definition">#</a></dt>
-<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
 <p>Starts mirror spans; the DI seam (default no-op, OTel-backed when present).</p>
 </dd></dl>
 
@@ -579,7 +580,7 @@ stability and shift across minor versions. This dict is the single place they ar
 <dd><p>Return the effective <a class="reference internal" href="#foley.obs.trace.Tracer" title="foley.obs.trace.Tracer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tracer</span></code></a> (OTel-backed when available, else no-op).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>prefer_otel</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – When <code class="docutils literal notranslate"><span class="pre">True</span></code> (default) and <code class="docutils literal notranslate"><span class="pre">opentelemetry</span></code> is importable, return
+<dd class="field-odd"><p><strong>prefer_otel</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – When <code class="docutils literal notranslate"><span class="pre">True</span></code> (default) and <code class="docutils literal notranslate"><span class="pre">opentelemetry</span></code> is importable, return
 an <a class="reference internal" href="#foley.obs.trace.OTelTracer" title="foley.obs.trace.OTelTracer"><code class="xref py py-class docutils literal notranslate"><span class="pre">OTelTracer</span></code></a> (itself a free no-op until the host configures an SDK);
 any construction failure falls back to the no-op. <code class="docutils literal notranslate"><span class="pre">False</span></code> forces the stdlib
 <a class="reference internal" href="#foley.obs.trace.NoOpTracer" title="foley.obs.trace.NoOpTracer"><code class="xref py py-class docutils literal notranslate"><span class="pre">NoOpTracer</span></code></a> — the hermetic-test lever (this dev env may have otel).</p>
@@ -680,8 +681,8 @@ any construction failure falls back to the no-op. <code class="docutils literal 
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -693,7 +694,7 @@ any construction failure falls back to the no-op. <code class="docutils literal 
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
 </p></div>
       
     </div>

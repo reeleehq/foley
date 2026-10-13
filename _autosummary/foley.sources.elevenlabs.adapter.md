@@ -60,7 +60,7 @@ ElevenLabs Sound Effects generate adapter (a [`GenerateAdapter`](foley.sources.b
 
 The ElevenLabs token (from the constructor or `$ELEVENLABS_API_KEY`).
 
-#### generate(prompt, , duration=None, prompt_influence=0.3, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
+#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
 
 Generate a sound effect for `prompt`; return its bytes + provisional candidate.
 
@@ -68,8 +68,9 @@ Generate a sound effect for `prompt`; return its bytes + provisional candidate.
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description (required).
   * **duration** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the native `0.5..30` range). `None`
     lets the model auto-determine the length from the prompt.
-  * **prompt_influence** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – `0..1` (identity map to the native field; higher =
-    closer to the prompt, less variety). Default `0.3`.
+  * **prompt_influence** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – `0..1` (identity map to the native field; higher =
+    closer to the prompt, less variety). `None` (default) omits it, so
+    the API applies its own default.
   * **seed** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – No ElevenLabs SFX equivalent — a
     non-default value warns-and-drops (recorded in the clip notes);
     `generation_seed` stays `None`.

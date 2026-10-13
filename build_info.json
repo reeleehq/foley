@@ -1,39 +1,39 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-05T15:30:05Z",
+  "built_at": "2026-10-13T04:46:29Z",
   "package": {
     "name": "foley",
-    "version": "0.0.31",
+    "version": "0.0.32",
     "display_name": "foley",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "b84916b40bf76f8281d9beeadef2c15bf17f9a97",
-    "short_commit": "b84916b",
+    "commit": "5be1c8f49f9b388a9fd319c5c533b430e1e80978",
+    "short_commit": "5be1c8f",
     "branch": "main",
     "tags": [],
     "dirty": false,
-    "remote_url": "https://github.com/thorwhalen/foley",
-    "commit_url": "https://github.com/thorwhalen/foley/commit/b84916b40bf76f8281d9beeadef2c15bf17f9a97",
+    "remote_url": "https://github.com/reeleehq/foley",
+    "commit_url": "https://github.com/reeleehq/foley/commit/5be1c8f49f9b388a9fd319c5c533b430e1e80978",
     "error": null
   },
   "ci": {
     "provider": "github",
-    "repository": "thorwhalen/foley",
-    "sha": "b84916b40bf76f8281d9beeadef2c15bf17f9a97",
+    "repository": "reeleehq/foley",
+    "sha": "5be1c8f49f9b388a9fd319c5c533b430e1e80978",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "37333043866",
-    "run_url": "https://github.com/thorwhalen/foley/actions/runs/37333043866",
+    "run_id": "38347929778",
+    "run_url": "https://github.com/reeleehq/foley/actions/runs/38347929778",
     "server_url": "https://github.com"
   },
   "tools": {
-    "epythet": "0.2.12",
+    "epythet": "0.2.13",
     "sphinx": "9.1.0",
     "docutils": "0.22.4",
-    "python": "3.12.14"
+    "python": "3.12.15"
   },
   "config": {
     "theme": "auto",
@@ -56,20 +56,20 @@
   },
   "site": {
     "modules_documented": 81,
-    "objects_documented": 1205
+    "objects_documented": 1207
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.32",
+    "latest": "0.0.33",
     "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/thorwhalen/foley && cd foley\ngit checkout b84916b40bf76f8281d9beeadef2c15bf17f9a97\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 5be1c8f49f9b388a9fd319c5c533b430e1e80978\npip install \"epythet==0.2.13\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": false,
     "notes": [
-      "The documented version (0.0.31) is behind the latest release on PyPI (0.0.32): `pip install foley` gives newer code than these docs describe."
+      "The documented version (0.0.32) is behind the latest release on PyPI (0.0.33): `pip install foley` gives newer code than these docs describe."
     ]
   }
 }
