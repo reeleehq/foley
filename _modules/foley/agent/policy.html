@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=39aadc1c"></script>
+    <script src="../../../_static/documentation_options.js?v=0e525676"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.35" />
+  <meta name="docsearch:version" content="0.0.36" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -907,7 +907,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            CostApprovalRequired: If the cost is unknown and not approved.</span>
 <span class="sd">            BudgetExceeded: If spend + ``estimate_usd`` would exceed ``max_usd``.</span>
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">_known</span><span class="p">(</span><span class="n">estimate_usd</span><span class="p">):</span>  <span class="c1"># None, or a NaN/inf estimate: unknown, never summed</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_known</span><span class="p">(</span>
+            <span class="n">estimate_usd</span>
+        <span class="p">):</span>  <span class="c1"># None, or a NaN/inf estimate: unknown, never summed</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_approves_unknown</span><span class="p">():</span>
                 <span class="k">raise</span> <span class="n">CostApprovalRequired</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">: its cost is unknown, so it needs approval. Pass "</span>

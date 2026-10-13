@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=39aadc1c"></script>
+    <script src="../../../../_static/documentation_options.js?v=0e525676"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.35" />
+  <meta name="docsearch:version" content="0.0.36" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -765,15 +765,50 @@ window.runMermaid = runMermaid;</script>
 <span class="n">_CONTAINER_MAGIC</span> <span class="o">=</span> <span class="p">(</span><span class="sa">b</span><span class="s2">"RIFF"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"fLaC"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"OggS"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"ID3"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"</span><span class="se">\x1f\x8b</span><span class="s2">"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"</span><span class="se">\xef\xbb\xbf</span><span class="s2">"</span><span class="p">)</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_is_mpeg_frame</span><span class="p">(</span><span class="n">head</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""An MPEG audio frame header (an untagged MP3), not a run of ``0xFF`` PCM bytes."""</span>
-    <span class="k">return</span> <span class="p">(</span>
-        <span class="nb">len</span><span class="p">(</span><span class="n">head</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span>
-        <span class="ow">and</span> <span class="n">head</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xFF</span>
-        <span class="ow">and</span> <span class="n">head</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0xE0</span> <span class="o">==</span> <span class="mh">0xE0</span>
-        <span class="ow">and</span> <span class="n">head</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0x06</span> <span class="o">!=</span> <span class="mi">0</span>  <span class="c1"># a valid layer</span>
-        <span class="ow">and</span> <span class="n">head</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0xF0</span> <span class="o">!=</span> <span class="mh">0xF0</span>  <span class="c1"># a valid bitrate index (rules out 0xFFFF silence)</span>
-    <span class="p">)</span>
+<span class="c1">#: MPEG audio Layer III tables (ISO 11172-3 / 13818-3): kbit/s by bitrate index, Hz by</span>
+<span class="c1">#: sample-rate index, keyed by the version bits (3: MPEG-1, 2: MPEG-2, 0: MPEG-2.5).</span>
+<span class="n">_MP3_KBPS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mi">3</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">112</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">160</span><span class="p">,</span> <span class="mi">192</span><span class="p">,</span> <span class="mi">224</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">320</span><span class="p">),</span>
+    <span class="mi">2</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">48</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">96</span><span class="p">,</span> <span class="mi">112</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">144</span><span class="p">,</span> <span class="mi">160</span><span class="p">),</span>
+<span class="p">}</span>
+<span class="n">_MP3_KBPS</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">_MP3_KBPS</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">_MP3_HZ</span> <span class="o">=</span> <span class="p">{</span><span class="mi">3</span><span class="p">:</span> <span class="p">(</span><span class="mi">44100</span><span class="p">,</span> <span class="mi">48000</span><span class="p">,</span> <span class="mi">32000</span><span class="p">),</span> <span class="mi">2</span><span class="p">:</span> <span class="p">(</span><span class="mi">22050</span><span class="p">,</span> <span class="mi">24000</span><span class="p">,</span> <span class="mi">16000</span><span class="p">),</span> <span class="mi">0</span><span class="p">:</span> <span class="p">(</span><span class="mi">11025</span><span class="p">,</span> <span class="mi">12000</span><span class="p">,</span> <span class="mi">8000</span><span class="p">)}</span>
+<span class="n">_LAYER_III</span> <span class="o">=</span> <span class="mi">1</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_mp3_frame</span><span class="p">(</span><span class="n">header</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""``(version, sample_rate, frame_length)`` of an MPEG Layer III frame header at the</span>
+<span class="sd">    start of ``header``, or ``None`` if it is not one."""</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">header</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="ow">or</span> <span class="n">header</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mh">0xFF</span> <span class="ow">or</span> <span class="n">header</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0xE0</span> <span class="o">!=</span> <span class="mh">0xE0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">version</span><span class="p">,</span> <span class="n">layer</span> <span class="o">=</span> <span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;&gt;</span> <span class="mi">3</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">3</span>
+    <span class="n">bitrate_index</span><span class="p">,</span> <span class="n">rate_index</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">,</span> <span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">3</span>
+    <span class="k">if</span> <span class="n">version</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_MP3_HZ</span> <span class="ow">or</span> <span class="n">layer</span> <span class="o">!=</span> <span class="n">_LAYER_III</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">bitrate_index</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span> <span class="ow">or</span> <span class="n">rate_index</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>  <span class="c1"># free format, bad, reserved</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">sample_rate</span> <span class="o">=</span> <span class="n">_MP3_HZ</span><span class="p">[</span><span class="n">version</span><span class="p">][</span><span class="n">rate_index</span><span class="p">]</span>
+    <span class="n">coefficient</span> <span class="o">=</span> <span class="mi">144</span> <span class="k">if</span> <span class="n">version</span> <span class="o">==</span> <span class="mi">3</span> <span class="k">else</span> <span class="mi">72</span>  <span class="c1"># samples per frame / 8</span>
+    <span class="n">padding</span> <span class="o">=</span> <span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">1</span>
+    <span class="n">length</span> <span class="o">=</span> <span class="n">coefficient</span> <span class="o">*</span> <span class="n">_MP3_KBPS</span><span class="p">[</span><span class="n">version</span><span class="p">][</span><span class="n">bitrate_index</span><span class="p">]</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">//</span> <span class="n">sample_rate</span>
+    <span class="k">return</span> <span class="n">version</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">length</span> <span class="o">+</span> <span class="n">padding</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_mp3</span><span class="p">(</span><span class="n">audio</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""An untagged MP3: a Layer III frame header, confirmed by the next frame's header</span>
+<span class="sd">    when the body is long enough to hold one.</span>
+
+<span class="sd">    A lone header check (``0xFF`` then three set bits) also matches PCM whose first</span>
+<span class="sd">    samples are -1 and 0 (``FF FF 00 00``), which then went out without its WAV header.</span>
+<span class="sd">    """</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="n">_mp3_frame</span><span class="p">(</span><span class="n">audio</span><span class="p">[:</span><span class="mi">4</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">first</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">version</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">first</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">length</span> <span class="o">+</span> <span class="mi">4</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># a single frame (or a cut one): the header is all there is</span>
+    <span class="n">second</span> <span class="o">=</span> <span class="n">_mp3_frame</span><span class="p">(</span><span class="n">audio</span><span class="p">[</span><span class="n">length</span> <span class="p">:</span> <span class="n">length</span> <span class="o">+</span> <span class="mi">4</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">second</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">second</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="n">version</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_is_text</span><span class="p">(</span><span class="n">head</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -795,7 +830,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    the problem from ingest's decode check.</span>
 <span class="sd">    """</span>
     <span class="n">head</span> <span class="o">=</span> <span class="n">audio</span><span class="p">[:</span><span class="mi">64</span><span class="p">]</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">head</span> <span class="ow">or</span> <span class="n">head</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">_CONTAINER_MAGIC</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_is_mpeg_frame</span><span class="p">(</span><span class="n">head</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">head</span> <span class="ow">or</span> <span class="n">head</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">_CONTAINER_MAGIC</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_is_mp3</span><span class="p">(</span><span class="n">audio</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="k">return</span> <span class="ow">not</span> <span class="n">_is_text</span><span class="p">(</span><span class="n">head</span><span class="p">)</span>
 
