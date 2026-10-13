@@ -48,6 +48,7 @@ from foley.sources.base import (  # noqa: E402
     GenerateAdapter,
     GeneratedClip,
     SourceAdapter,
+    SourceConfigurationError,
     generated_license,
 )
 from foley.sources.elevenlabs import SOURCE_CONFIG as EL_CONFIG  # noqa: E402
@@ -797,14 +798,97 @@ def test_an_empty_api_key_falls_through_to_the_env_var(monkeypatch):
 
 
 def test_a_bound_key_reaches_elevenlabs(monkeypatch):
-    from ocracy.kit import using_credentials
-
     monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
     transport = FakeTransport()
     adapter = ElevenLabsAdapter(http=transport, plan="elevenlabs-paid-plan")
-    with using_credentials(elevenlabs="byo-key"):
+    with foley.using_source_accounts(
+        elevenlabs={"key": "byo-key", "plan": "elevenlabs-paid-plan"}
+    ):
         adapter.generate("rain")
     assert transport.calls[0].headers["xi-api-key"] == "byo-key"
+
+
+# ---------------------------------------------------------------------------
+# #98 — a per-request key brings its own plan, and its own cache partition
+# ---------------------------------------------------------------------------
+
+
+def test_a_bound_key_is_licensed_under_its_own_plan(monkeypatch):
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "operator-key")  # the env plan is paid
+    adapter = ElevenLabsAdapter(http=FakeTransport(), plan="elevenlabs-paid-plan")
+    with foley.using_source_accounts(
+        elevenlabs={"key": "user-key", "plan": "elevenlabs-free-plan"}
+    ):
+        lic = adapter.generate("rain").candidate.sound.license
+    assert lic.license_id == "elevenlabs-free-plan" and lic.attribution_text
+    assert adapter.generate("rain").candidate.sound.license.license_id == (
+        "elevenlabs-paid-plan"  # outside the block: the operator's account again
+    )
+
+
+def test_a_key_bound_without_its_plan_is_refused_before_any_call(monkeypatch):
+    from ocracy.kit import using_credentials
+
+    transport = FakeTransport()
+    adapter = ElevenLabsAdapter(http=transport, plan="elevenlabs-paid-plan")
+    with using_credentials(elevenlabs="user-key"):
+        with pytest.raises(SourceConfigurationError, match="without its plan"):
+            adapter.generate("rain")
+    # A key rebound over the one an account was bound with does not inherit its plan.
+    with foley.using_source_accounts(
+        elevenlabs={"key": "user-key", "plan": "elevenlabs-paid-plan"}
+    ):
+        with using_credentials(elevenlabs="someone-else"):
+            with pytest.raises(SourceConfigurationError, match="without its plan"):
+                adapter.generate("rain")
+    assert transport.calls == []
+    # An explicit api_key= is the caller's own: the bound account does not apply.
+    with using_credentials(elevenlabs="user-key"):
+        ElevenLabsAdapter(api_key="mine", http=transport,
+                          plan="elevenlabs-paid-plan").generate("rain")
+    assert transport.calls[0].headers["xi-api-key"] == "mine"
+
+
+def test_the_generations_cache_is_not_shared_across_keys(library, monkeypatch):
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "operator-key")
+    transport = FakeTransport()
+    adapter = ElevenLabsAdapter(http=transport)  # the env plan: paid
+
+    def gen():
+        return foley.generate("rain", backend="elevenlabs", adapter=adapter,
+                              library=library, output_format="mp3", duration=1)
+
+    gen()
+    paid = {"plan": "elevenlabs-paid-plan"}
+    with foley.using_source_accounts(elevenlabs={"key": "user-a", **paid}):
+        gen()
+        assert any("served from the generations cache" in n for n in gen().notes)
+    with foley.using_source_accounts(elevenlabs={"key": "user-b", **paid}):
+        gen()
+    assert [c.headers["xi-api-key"] for c in transport.calls] == [
+        "operator-key", "user-a", "user-b",
+    ]
+
+
+def test_using_source_accounts_validates_and_passes_none_through():
+    from ocracy.kit import current_credentials
+
+    with pytest.raises(ValueError, match="unknown account field"):
+        with foley.using_source_accounts(elevenlabs={"key": "k", "tier": "pro"}):
+            pass
+    with foley.using_source_accounts(elevenlabs=None, freesound="fs-key"):
+        assert current_credentials() == {"freesound": "fs-key"}
+
+
+def test_check_requirements_sees_a_bound_key(monkeypatch):
+    monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
+    assert foley.check_requirements(names=("ELEVENLABS_API_KEY",)) == {
+        "ELEVENLABS_API_KEY": False
+    }
+    with foley.using_source_accounts(elevenlabs="user-key"):
+        assert foley.check_requirements(names=("ELEVENLABS_API_KEY",)) == {
+            "ELEVENLABS_API_KEY": True
+        }
 
 
 def test_elevenlabs_missing_api_key_is_a_clear_error(monkeypatch):

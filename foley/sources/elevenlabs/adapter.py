@@ -36,6 +36,7 @@ from ..base import (
     SourceConfigurationError,
     generated_license,
     native_adherence,
+    bound_source_account,
     resolve_source_key,
 )
 from ..http import Transport, requests_transport
@@ -150,7 +151,10 @@ class ElevenLabsAdapter:
         plan: The ElevenLabs account plan (``'elevenlabs-paid-plan'`` |
             ``'elevenlabs-free-plan'``), which decides the generated sound's licence.
             Defaults to ``$FOLEY_ELEVENLABS_PLAN``; with neither, ``generate`` refuses
-            before calling the API (#56).
+            before calling the API (#56). When the key in use is a per-request one
+            (bound, not passed as ``api_key=``), the plan is the one bound with it
+            (:func:`~foley.sources.base.using_source_accounts`), never this or the
+            env's (#98).
     """
 
     def __init__(
@@ -169,10 +173,27 @@ class ElevenLabsAdapter:
 
     @property
     def plan(self) -> str:
-        """The account plan = the generated sound's ``license_id`` (fail-closed when unknown)."""
+        """The account plan = the generated sound's ``license_id`` (fail-closed when unknown).
+
+        It follows the key: a bound (per-request) key brings its own plan, and one
+        bound without a plan is refused rather than labelled with the operator's.
+        """
         lic_cfg = self.config["license"]
         env_var = lic_cfg["plan_env_var"]
-        plan = self._plan if self._plan is not None else os.environ.get(env_var)
+        account = None if self._api_key else bound_source_account(self.name)
+        if account is not None:
+            plan = account.get("plan")
+            if plan is None:
+                raise SourceConfigurationError(
+                    f"An ElevenLabs key is bound for this request without its plan. "
+                    "Bind them together, e.g. foley.using_source_accounts(elevenlabs="
+                    "{'key': ..., 'plan': ...}), with the plan one of "
+                    f"{list(lic_cfg['plans'])}. The operator's plan (${env_var} or "
+                    "plan=) is not assumed for another account's key; nothing was "
+                    "generated."
+                )
+        else:
+            plan = self._plan if self._plan is not None else os.environ.get(env_var)
         if plan not in lic_cfg["plans"]:
             got = "unset" if plan is None else repr(plan)
             raise SourceConfigurationError(

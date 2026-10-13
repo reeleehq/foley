@@ -19,7 +19,8 @@ the MCP and agent paths, which call it) and :func:`foley.add_from` go through he
    made if the run's cap would be exceeded or the cost is unknown and not approved.
 4. **Cache** — a paid call is keyed by :func:`request_digest` (backend, model version,
    prompt, the **native** request the affordances resolve to — :func:`native_request`
-   — and the adapter's ``request_salt()``); an identical request is served from the
+   — the adapter's ``request_salt()``, and a fingerprint of the account's key, so the
+   cache is never shared across keys); an identical request is served from the
    :class:`~foley.stores.GenerationsCache` without calling the provider, and every
    paid response is written there **before** QC or ingest. A response the provider
    served for a different request than asked (a plan-tier format fallback) is kept
@@ -310,6 +311,7 @@ def plan_generation(
         salt_fn = getattr(adapter, "request_salt", None)
         try:
             salt = salt_fn() if callable(salt_fn) else None
+            salt = {"adapter": salt, "account": _account_id(adapter, config)}
         except SourceConfigurationError:
             require_source_egress(backend, config)  # offline wins over a missing plan
             raise
@@ -325,6 +327,23 @@ def plan_generation(
     if _is_paid(config):
         authorize(plan.estimate_usd, what=f"generate via {backend!r}")
     return plan
+
+
+def _account_id(adapter, config: dict) -> Optional[str]:
+    """Which provider account pays for (and owns) the call: a fingerprint of its key.
+
+    Part of the cache key, so one account's paid generations are never served to
+    another (a per-request key, #98). ``None`` for a source without an API key.
+
+    Raises:
+        SourceConfigurationError: When the source needs a key and none resolves.
+    """
+    from .base import key_fingerprint
+
+    if not (config.get("auth") or {}).get("env_var"):
+        return None
+    key = getattr(adapter, "api_key", None)
+    return key_fingerprint(key) if isinstance(key, str) and key else None
 
 
 def run_generation(plan: GenerationPlan, adapter, *, cache=None):

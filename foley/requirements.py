@@ -45,9 +45,28 @@ _IMPORTABLE_REQUIREMENTS = {
 #: How each ``probe`` kind checks availability.
 _PROBES = {
     "binary": lambda name: shutil.which(name) is not None,
-    "env": lambda name: bool(os.environ.get(name)),
+    "env": lambda name: bool(os.environ.get(name)) or _key_is_bound(name),
     "importable": lambda name: importlib.util.find_spec(name) is not None,
 }
+
+
+def _key_is_bound(env_var: str) -> bool:
+    """Whether a source whose key lives in ``env_var`` has a per-request key bound (#98).
+
+    A server binds a user's key with :func:`foley.using_source_accounts` (or
+    ``ocracy.kit.using_credentials``); the source is then configured for that request
+    even though the env var is unset.
+    """
+    from ocracy.kit import current_credentials
+
+    from .sources.registry import SOURCE_REGISTRY
+
+    bound = current_credentials()
+    return any(
+        bound.get(name)
+        for name, entry in SOURCE_REGISTRY.items()
+        if (entry["config"].get("auth") or {}).get("env_var") == env_var
+    )
 
 
 def _derive_key_requirements() -> "dict[str, Requirement]":
