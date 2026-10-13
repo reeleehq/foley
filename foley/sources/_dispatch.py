@@ -368,15 +368,17 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
     clip.candidate.cost_estimate_usd = plan.estimate_usd
     if plan.request_key is not None:
         cache = cache if cache is not None else _default_cache()
+        fallback = False
         try:
             plan.kept_key = _answered_key(plan, clip)
+            fallback = plan.kept_key != plan.request_key
             _store_clip(cache, plan, clip)
         except Exception as exc:  # noqa: BLE001 - never lose paid bytes over a cache write
             clip.notes.append(
                 f"could not keep the paid generation in the cache: {exc!r}"
             )
         else:
-            if plan.kept_key != plan.request_key:
+            if fallback:
                 replay_s = _fallback_replay_s(plan.config)
                 clip.notes.append(
                     "the provider answered a different request than the one asked (a "
@@ -480,15 +482,13 @@ def _store_clip(cache, plan: GenerationPlan, clip) -> None:
     if kept_key == plan.request_key:
         cache.requests[kept_key] = entry
         return
+    pointer = {"answered_by": kept_key, "at": time.time()}
     if _replayable(cache, cache.requests.get(kept_key)):
         plan.kept_key = plan.request_key  # the existing entry is not this generation's
     else:
         cache.requests[kept_key] = {**entry, "fallback": True}
-    cache.requests[plan.request_key] = {
-        "answered_by": kept_key,
-        "content_key": key,
-        "at": time.time(),
-    }
+        pointer["content_key"] = key  # the bytes it serves (so evict keeps them)
+    cache.requests[plan.request_key] = pointer
 
 
 def _replayable(cache, entry) -> bool:
@@ -550,9 +550,14 @@ def _cached_clip(cache, request_key: str, notes: list, config: dict):
                     "provider again"
                 )
                 return None
-            entry = cache.requests.get(entry["answered_by"])
+            answered_by = entry["answered_by"]
+            entry = cache.requests.get(answered_by)
             if not entry:
                 return None
+            notes.append(
+                "this request was answered by the provider's fallback; replaying "
+                f"that answer ({answered_by})"
+            )
         if entry.get("status") in _NOT_REPLAYED:
             notes.append(
                 f"the cached result of this request was {entry['status']}; generating anew"

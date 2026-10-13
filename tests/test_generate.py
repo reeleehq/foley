@@ -1044,9 +1044,13 @@ def test_a_fallback_does_not_overwrite_a_kept_answer(library, _in_memory_generat
     _gen(adapter, library, "mp3")
     (mp3_key,) = _in_memory_generations_cache.requests
     before = dict(_in_memory_generations_cache.requests[mp3_key])
-    _gen(adapter, library)
+    paid = _gen(adapter, library)
+    assert any("different request than the one asked" in n for n in paid.notes)
     assert _in_memory_generations_cache.requests[mp3_key] == before
     assert _served(_gen(adapter, library, "mp3")) and len(transport.calls) == 3
+    replay = _gen(adapter, library)
+    assert any("answered by the provider's fallback" in n for n in replay.notes)
+    assert len(transport.calls) == 3
 
 
 def test_loop_spelled_as_an_int_is_the_same_request():
