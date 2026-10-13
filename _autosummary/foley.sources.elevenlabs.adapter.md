@@ -76,9 +76,9 @@ Generate a sound effect for `prompt`; return its bytes + provisional candidate.
     `generation_seed` stays `None`.
   * **loop** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Produce a seamless-loopable clip (native `loop`; v2 default).
   * **output_format** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – Coarse foley token (`wav` | `opus` | `mp3`)
-    translated to the native enum; `wav` falls back to MP3 (the SFX
-    endpoint has no lossless container) and is re-archived to FLAC by
-    ingest.
+    translated to the native enum; `wav` is the lossless `pcm_48000`
+    wrapped in a WAV header here, falling back to MP3 (with a note) if
+    the account’s plan refuses PCM. Ingest re-archives to FLAC.
   * **\*\*kw** – Extra/unknown affordances (warn-and-dropped).
 * **Return type:**
   [`GeneratedClip`](foley.sources.base.md#foley.sources.base.GeneratedClip)

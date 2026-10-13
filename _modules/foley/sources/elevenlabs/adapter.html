@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=f2234cd1"></script>
+    <script src="../../../../_static/documentation_options.js?v=565bc8c8"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.32" />
+  <meta name="docsearch:version" content="0.0.33" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -741,7 +741,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">wave</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">...base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Candidate</span><span class="p">,</span> <span class="n">CandidateOrigin</span><span class="p">,</span> <span class="n">SoundRecord</span>
@@ -756,6 +758,53 @@ window.runMermaid = runMermaid;</script>
 
 <span class="c1">#: Unified affordances with no ElevenLabs SFX equivalent (warn-and-drop).</span>
 <span class="n">_UNSUPPORTED</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"negative_prompt"</span><span class="p">,</span> <span class="s2">"steps"</span><span class="p">,</span> <span class="s2">"seed"</span><span class="p">)</span>
+
+
+<span class="c1">#: Leading bytes of containers / encodings that must never be wrapped as raw PCM.</span>
+<span class="n">_CONTAINER_MAGIC</span> <span class="o">=</span> <span class="p">(</span><span class="sa">b</span><span class="s2">"RIFF"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"fLaC"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"OggS"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"ID3"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"</span><span class="se">\x1f\x8b</span><span class="s2">"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"</span><span class="se">\xef\xbb\xbf</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_mpeg_frame</span><span class="p">(</span><span class="n">head</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""An MPEG audio frame header (an untagged MP3), not a run of ``0xFF`` PCM bytes."""</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">head</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">3</span>
+        <span class="ow">and</span> <span class="n">head</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mh">0xFF</span>
+        <span class="ow">and</span> <span class="n">head</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0xE0</span> <span class="o">==</span> <span class="mh">0xE0</span>
+        <span class="ow">and</span> <span class="n">head</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0x06</span> <span class="o">!=</span> <span class="mi">0</span>  <span class="c1"># a valid layer</span>
+        <span class="ow">and</span> <span class="n">head</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0xF0</span> <span class="o">!=</span> <span class="mh">0xF0</span>  <span class="c1"># a valid bitrate index (rules out 0xFFFF silence)</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_text</span><span class="p">(</span><span class="n">head</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Printable UTF-8 (an HTML/JSON error page, in any language)."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">head</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>  <span class="c1"># the cut may fall inside a multi-byte character</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">head</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">isprintable</span><span class="p">()</span> <span class="ow">or</span> <span class="n">c</span> <span class="ow">in</span> <span class="s2">"</span><span class="se">\t\n\r</span><span class="s2">"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">text</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_looks_like_raw_pcm</span><span class="p">(</span><span class="n">audio</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""False for a known container, an untagged MP3, or a text body (an error page).</span>
+
+<span class="sd">    Wrapping any of them as PCM would turn it into a "valid" WAV of noise and hide</span>
+<span class="sd">    the problem from ingest's decode check.</span>
+<span class="sd">    """</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">audio</span><span class="p">[:</span><span class="mi">64</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">head</span> <span class="ow">or</span> <span class="n">head</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">_CONTAINER_MAGIC</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_is_mpeg_frame</span><span class="p">(</span><span class="n">head</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">_is_text</span><span class="p">(</span><span class="n">head</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_HTTPStatusError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A non-200 from ElevenLabs (still a ``RuntimeError``); carries ``status_code``."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status_code</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status_code</span> <span class="o">=</span> <span class="n">status_code</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_safe_detail</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -870,9 +919,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">                ``generation_seed`` stays ``None``.</span>
 <span class="sd">            loop: Produce a seamless-loopable clip (native ``loop``; v2 default).</span>
 <span class="sd">            output_format: Coarse foley token (``wav`` | ``opus`` | ``mp3``)</span>
-<span class="sd">                translated to the native enum; ``wav`` falls back to MP3 (the SFX</span>
-<span class="sd">                endpoint has no lossless container) and is re-archived to FLAC by</span>
-<span class="sd">                ingest.</span>
+<span class="sd">                translated to the native enum; ``wav`` is the lossless ``pcm_48000``</span>
+<span class="sd">                wrapped in a WAV header here, falling back to MP3 (with a note) if</span>
+<span class="sd">                the account's plan refuses PCM. Ingest re-archives to FLAC.</span>
 <span class="sd">            **kw: Extra/unknown affordances (warn-and-dropped).</span>
 
 <span class="sd">        Returns:</span>
@@ -897,8 +946,11 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">duration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">body</span><span class="p">[</span><span class="s2">"duration_seconds"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clamp_duration</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span>
 
-        <span class="n">audio_bytes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invoke</span><span class="p">(</span>
-            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"output_format"</span><span class="p">:</span> <span class="n">native_output_format</span><span class="p">},</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span>
+        <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">native_output_format</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invoke_with_fallback</span><span class="p">(</span>
+            <span class="n">native_output_format</span><span class="p">,</span> <span class="n">body</span><span class="p">,</span> <span class="n">notes</span>
+        <span class="p">)</span>
+        <span class="n">audio_bytes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_wrap_pcm</span><span class="p">(</span>
+            <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">native_output_format</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_seconds"</span><span class="p">),</span> <span class="n">notes</span>
         <span class="p">)</span>
 
         <span class="c1"># The RESOLVED native params (guards against passing unified names) — recorded</span>
@@ -943,12 +995,79 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">"output_format </span><span class="si">{</span><span class="n">output_format</span><span class="si">!r}</span><span class="s2"> not offered by ElevenLabs SFX; "</span>
                 <span class="sa">f</span><span class="s2">"using </span><span class="si">{</span><span class="n">native</span><span class="si">!r}</span><span class="s2">"</span>
             <span class="p">)</span>
-        <span class="k">elif</span> <span class="n">output_format</span> <span class="o">==</span> <span class="s2">"wav"</span><span class="p">:</span>
-            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">"ElevenLabs SFX has no lossless WAV container; requested as "</span>
-                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">native</span><span class="si">!r}</span><span class="s2"> (re-archived to FLAC on ingest)"</span>
-            <span class="p">)</span>
         <span class="k">return</span> <span class="n">native</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_invoke_with_fallback</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">native_output_format</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[bytes, str]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Call the endpoint; on a 4xx for a format with a declared fallback, retry once.</span>
+
+<span class="sd">        Whether PCM needs a higher plan tier for sound effects is unverified, so a</span>
+<span class="sd">        plan-tier refusal (``fallback_statuses``: 402/403) on ``pcm_*`` is retried</span>
+<span class="sd">        with the config's ``fallback_on_4xx`` format (a refusal produces no audio,</span>
+<span class="sd">        so nothing is billed twice) and recorded in ``notes``. Anything else raises. Returns ``(bytes, format actually used)``.</span>
+<span class="sd">        """</span>
+        <span class="n">spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"output_format"</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invoke</span><span class="p">(</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"output_format"</span><span class="p">:</span> <span class="n">native_output_format</span><span class="p">},</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span>
+            <span class="p">),</span> <span class="n">native_output_format</span>
+        <span class="k">except</span> <span class="n">_HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">fallback</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fallback_on_4xx"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">native_output_format</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fallback</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">exc</span><span class="o">.</span><span class="n">status_code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">"fallback_statuses"</span><span class="p">,</span> <span class="p">()</span>
+            <span class="p">):</span>
+                <span class="k">raise</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"output_format </span><span class="si">{</span><span class="n">native_output_format</span><span class="si">!r}</span><span class="s2"> refused by ElevenLabs "</span>
+                <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">exc</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">); fell back to </span><span class="si">{</span><span class="n">fallback</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invoke</span><span class="p">(</span><span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"output_format"</span><span class="p">:</span> <span class="n">fallback</span><span class="p">},</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">),</span> <span class="n">fallback</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_wrap_pcm</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">audio</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="n">native_output_format</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">duration_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+        <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Give raw ``pcm_*`` bytes a WAV header (16-bit LE); other formats pass through.</span>
+
+<span class="sd">        The channel count comes from the config. When a duration was requested, the</span>
+<span class="sd">        byte length confirms mono or stereo; otherwise an unverified layout is noted.</span>
+<span class="sd">        """</span>
+        <span class="n">layout</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"output_format"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pcm"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="n">native_output_format</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">layout</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">_looks_like_raw_pcm</span><span class="p">(</span><span class="n">audio</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">audio</span>  <span class="c1"># a container or a text error body: decode decides, never wrap</span>
+        <span class="n">rate</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="n">layout</span><span class="p">[</span><span class="s2">"sample_rate"</span><span class="p">],</span> <span class="n">layout</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"channels"</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">2</span>
+        <span class="n">confirmed</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">duration_s</span><span class="p">:</span>
+            <span class="n">implied</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">rate</span> <span class="o">*</span> <span class="n">width</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">duration_s</span><span class="p">))</span>
+            <span class="k">if</span> <span class="mf">0.9</span> <span class="o">&lt;=</span> <span class="n">implied</span> <span class="o">&lt;=</span> <span class="mf">1.1</span><span class="p">:</span>
+                <span class="n">channels</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="mf">1.9</span> <span class="o">&lt;=</span> <span class="n">implied</span> <span class="o">&lt;=</span> <span class="mf">2.1</span><span class="p">:</span>
+                <span class="n">channels</span><span class="p">,</span> <span class="n">confirmed</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">confirmed</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">layout</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"verified"</span><span class="p">):</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">native_output_format</span><span class="si">}</span><span class="s2">: channel layout not documented for ElevenLabs "</span>
+                <span class="sa">f</span><span class="s2">"SFX; assumed </span><span class="si">{</span><span class="n">channels</span><span class="si">}</span><span class="s2"> ch S16LE"</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">confirmed</span> <span class="ow">and</span> <span class="n">channels</span> <span class="o">!=</span> <span class="n">layout</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"channels"</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">native_output_format</span><span class="si">}</span><span class="s2">: byte length for the requested duration "</span>
+                <span class="sa">f</span><span class="s2">"implies </span><span class="si">{</span><span class="n">channels</span><span class="si">}</span><span class="s2"> ch; wrapped as </span><span class="si">{</span><span class="n">channels</span><span class="si">}</span><span class="s2"> ch"</span>
+            <span class="p">)</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="n">width</span> <span class="o">*</span> <span class="n">channels</span>
+        <span class="n">audio</span> <span class="o">=</span> <span class="n">audio</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span> <span class="o">%</span> <span class="n">frame</span><span class="p">]</span>  <span class="c1"># never a partial frame</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
+        <span class="k">with</span> <span class="n">wave</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="s2">"wb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">w</span><span class="p">:</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">setnchannels</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">setsampwidth</span><span class="p">(</span><span class="n">width</span><span class="p">)</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">setframerate</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">writeframes</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">buf</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_warn_unsupported</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="o">**</span><span class="n">passed</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Record a note for each unsupported affordance passed with a non-default value."""</span>
@@ -981,7 +1100,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">endpoint</span><span class="p">[</span><span class="s2">"method"</span><span class="p">],</span> <span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">body</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">resp</span><span class="o">.</span><span class="n">status_code</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="k">raise</span> <span class="n">_HTTPStatusError</span><span class="p">(</span>
+                <span class="n">resp</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
                 <span class="sa">f</span><span class="s2">"ElevenLabs </span><span class="si">{</span><span class="n">endpoint</span><span class="p">[</span><span class="s1">'method'</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">resp</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">: "</span>
                 <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_safe_detail</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
