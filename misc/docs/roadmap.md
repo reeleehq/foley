@@ -21,7 +21,7 @@ end early.
 - [x] `SoundLibrary` façade over injected `dol` stores (blobs + metadata) — local-first
 - [x] `Embedder` protocol + CLAP default (`laion/larger_clap_general`)
 - [x] LanceDB `vindex`+`kindex`; hybrid search + RRF (`search.py`); sqlite-vec fallback
-- [x] Ingestion pipeline (`ingest.py`): probe → PANNs tag → CLAP zero-shot → caption → embed. **No learned captioner ships:** the `Captioner` protocol is in place, and the default captions from metadata. EnCLAP / Qwen2-Audio captioning is still open.
+- [x] Ingestion pipeline (`ingest.py`): probe → PANNs tag → CLAP zero-shot → caption → embed. **No learned captioner ships:** the `Captioner` protocol is in place, but `foley.ingest()` runs no caption stage by default. The bootstrap, pull and generate paths caption from metadata (`MetadataCaptioner`). EnCLAP / Qwen2-Audio captioning is still open.
 - [x] UCS + AudioSet taxonomy tables (`taxonomy/`)
 - [x] `foley.ingest(folder)` and `foley.search(query)` working end to end
 - [x] Seed corpus: FSD50K (CC0/CC-BY) as a starter library
@@ -65,7 +65,7 @@ generating when the library has no match.
 
 *Researched in report 06.*
 
-- [ ] Forced-alignment of narration → word timestamps. **Partly done:** WhisperX is used when installed (`foley[align]`). Without it, the default `FakeAligner` spaces words evenly, and `WeaveResult.notes` and the run manifest (`aligner: fake`) say so. More real aligners: #43.
+- [ ] Forced-alignment of narration → word timestamps. **Partly done:** WhisperX is used when installed (`foley[align]`). It aligns its own transcription of the narration, not the given script. Without it, the default `FakeAligner` spaces the script's words evenly. In every case, `WeaveResult.notes` and the run manifest (`aligner`) say which was used. A script-aware forced aligner: #43.
 - [x] Ducking/side-chain + stereo/distance placement + crossfades
 - [x] LUFS/EBU-R128 mastering to platform targets
 - [x] Editable, re-renderable **sound-design timeline** data model

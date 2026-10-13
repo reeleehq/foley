@@ -1,11 +1,11 @@
 # foley — Design
 
-**Status: design-stage.** This is the readable map of the architecture. The
+**Status: built (v1 shipped; see the [roadmap](roadmap.md) for what is still open).** This is the readable map of the architecture. The
 **authoritative, fully-detailed synthesis** (all 12 research reports reconciled into
 component diagram, data models, façade API, adapter/protocol contracts, module tree,
 dependency graph, and the epic/subtask plan) lives in
 [`research/10-facade-architecture.md`](research/10-facade-architecture.md) — read that
-for depth. Nothing here is built yet; it is the plan the code will follow.
+for depth. Where the code differs from this map, the code and the roadmap win.
 
 > **Key reconciliation from report 10:** `redistribute_standalone_ok` (a copyright
 > flag) and `cache_bytes_ok` (a TOS/operational flag) are **distinct** — e.g. Freesound
@@ -35,7 +35,7 @@ rather than generation, with generation as one of several sources.
   │ Freesound (CC0)  │→ │ → tag → caption  │→ │ → search (hybrid)│→ │ → duck → place   │
   │ generate (SFX AI)│  │ → embed (CLAP)   │  │ → verify → decide│  │ → master (LUFS)  │
   └──────────────────┘  └──────────────────┘  └──────────────────┘  └──────────────────┘
-     sources/               index/                 agent/                weave/  (future)
+     sources/               index/                 agent/                weave/         
 ```
 
 ### 1. SOURCE — where sounds come from  *(report 01, 02)*
@@ -66,7 +66,7 @@ A bring-your-own library becomes searchable via an ingestion pipeline of
 
 ```
 probe → (optional) segment/separate → supervised tag → zero-shot tag → caption → embed → SoundRecord
-        PANNs SED / FUSS               PANNs CNN14        CLAP vs UCS     EnCLAP      CLAP 512-d
+        PANNs SED / FUSS               PANNs CNN14        CLAP vs UCS     (pluggable) CLAP 512-d
 ```
 
 - **Embedding: CLAP** (`laion/larger_clap_general`, 512-d, Apache-2.0) — one joint
@@ -136,8 +136,9 @@ clip = foley.generate("a single wooden door creak", backend="stable_audio", dura
 foley.ingest("~/my_sounds/")  # a folder (dol store)
 foley.add_from("freesound", query="ocean waves", license="cc0")
 
-# Compose (future): render the sound design onto a narration audio/track
-foley.weave(narration_audio, candidates)
+# Compose: plan the picks into an editable timeline, then render it under the narration
+timeline = foley.plan(candidates)
+result = foley.weave("narration.wav", timeline, transcript="...")  # result.notes says how placements were timed
 
 # The library itself is a dol Mapping of SoundRecords
 lib = foley.library
@@ -149,12 +150,12 @@ lib = foley.library
 foley/
     __init__.py        # façade: find(), search(), generate(), ingest(), weave()
     base.py            # Sound, Candidate, SoundRecord, LicenseRecord, AFFORDANCES
-    registry.py        # adapter auto-discovery + lazy loading
     sources/           # source adapters (config.py + adapter.py each)
+        registry.py    #   adapter auto-discovery + lazy loading
         freesound/     #   retrieve (CC0-filtered) — the anchor
         stable_audio/  #   generate (local, default)
         elevenlabs/    #   generate (hosted, default)
-        ...            #   epidemic/storyblocks/… as stubs
+        ...            #   bulk corpora (FSD50K, Clotho, BBC REMArc, Sonniss, FoleySet); no pro-API stubs yet
     index/
         ingest.py      # probe → tag → caption → embed → SoundRecord
         taggers.py     # PANNs / CLAP-zero-shot / captioner (protocol-based)
@@ -168,7 +169,7 @@ foley/
         policy.py      # generate-vs-retrieve decide()
         tools.py       # tool functions
         mcp.py         # py2mcp server
-    weave/             # (future) alignment, ducking, mastering
+    weave/             # alignment, anchoring, ducking, mixing, mastering, render
 ```
 
 **Optional-extras plan:** `foley[freesound]`, `foley[stable-audio]`, `foley[elevenlabs]`,

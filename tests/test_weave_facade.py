@@ -118,6 +118,39 @@ def test_a_real_aligner_adds_no_approximation_note():
     assert r.notes == []
 
 
+def test_a_weave_without_a_transcript_says_anchored_items_fell_back():
+    with foley.obs.run("session") as run:
+        r = _weave(library=_Lib(), aligner=None, transcript=None)
+        assert run.manifest.plan_ref.get("aligner") is None
+    assert any("no word timings" in n and "1 speech-anchored" in n for n in r.notes)
+
+
+def test_a_timeline_that_carries_word_timings_needs_no_note():
+    from dataclasses import replace
+
+    tl = replace(_tl(), word_timeline=[{"word": "door", "start": 0.5, "end": 0.8}])
+    with foley.obs.run("session") as run:
+        r = foley.weave(_voice(), tl, library=_Lib(), aligner=None)
+        assert run.manifest.plan_ref.get("aligner") == "cached"
+    assert r.notes == []
+
+
+def test_absolute_onsets_need_no_alignment_note():
+    from dataclasses import replace
+
+    tl = _tl()
+    tl = replace(tl, items=[replace(it, onset=None) for it in tl.items])
+    r = foley.weave(_voice(), tl, library=_Lib(), aligner=None, transcript=None)
+    assert r.notes == []
+
+
+def test_the_mcp_projection_carries_the_notes():
+    from foley.agent.mcp import _weave_result_row
+
+    r = _weave(library=_Lib(), aligner=None, transcript=None)
+    assert _weave_result_row(r)["notes"] == r.notes != []
+
+
 def test_no_watermark_and_no_ai_disclosure_for_clean_mix():
     r = _weave(library=_Lib(ai=False))
     assert r.watermark is None  # nothing AI in the mix -> no watermark

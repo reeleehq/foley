@@ -164,6 +164,15 @@ def _whisperx_available() -> bool:
     return importlib.util.find_spec("whisperx") is not None
 
 
+def aligner_name(aligner) -> str:
+    """``fake`` / ``whisperx`` for the built-ins, else the class name (run manifest)."""
+    if isinstance(aligner, FakeAligner):
+        return "fake"
+    if isinstance(aligner, WhisperXAligner):
+        return "whisperx"
+    return type(aligner).__name__
+
+
 def _default_aligner() -> "Aligner":
     """The zero-config aligner: :class:`WhisperXAligner` when installed, else the fake."""
     return WhisperXAligner() if _whisperx_available() else FakeAligner()

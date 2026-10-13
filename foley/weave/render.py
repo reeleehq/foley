@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional
 
 from ..base import Layer, SoundDesignTimeline
-from .align import _default_aligner
+from .align import _default_aligner, aligner_name
 from .master import MasterReport, master
 from .mix import (
     LAYER_GAIN_DB,
@@ -77,6 +77,10 @@ class RenderResult:
     )
     master_report: MasterReport
     buses: dict = field(default_factory=dict)  # runtime-only {Layer: pre-duck bus}
+    #: Where the word timings came from: ``"cached"`` (the timeline already had them),
+    #: the aligner that produced them (``"fake"``, ``"whisperx"``, a class name), or
+    #: ``None`` when nothing was aligned (no transcript).
+    alignment: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -231,10 +235,11 @@ def render(
     n = int(voice_mono.shape[0])
 
     wt = list(timeline.word_timeline)
+    alignment = "cached" if wt else None
     if not wt and transcript:
-        wt = (aligner or _default_aligner()).word_timeline(
-            voice_mono, sr, transcript=transcript
-        )
+        used = aligner if aligner is not None else _default_aligner()
+        wt = used.word_timeline(voice_mono, sr, transcript=transcript)
+        alignment = aligner_name(used)
     tl = hydrate(timeline, wt)
 
     # group enabled non-voice items by layer, then render (or reuse) each bus
@@ -278,6 +283,7 @@ def render(
         timeline=tl,
         master_report=report,
         buses=buses,
+        alignment=alignment,
     )
 
 
