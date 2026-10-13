@@ -255,9 +255,9 @@ class GenerationsCache:
     * :attr:`audio` — ``content_key -> bytes``: every paid response, written **before**
       QC or ingest, so a quarantined or undecodable generation is still retrievable.
     * :attr:`requests` — ``request digest -> dict``: the canonical request (backend,
-      prompt, the affordances sent, the model version) mapped to the content key plus
-      the licence and notes it was generated under. An identical request is served from
-      here instead of calling the provider again.
+      prompt, the native request it resolves to, the model version) mapped to the
+      content key plus the licence and notes it was generated under. An identical
+      request is served from here instead of calling the provider again.
     """
 
     audio: MutableMapping[str, bytes]
