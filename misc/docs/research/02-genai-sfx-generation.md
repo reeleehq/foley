@@ -302,7 +302,7 @@ class SfxGenerationBackend(Protocol):
         prompt: str,
         *,
         duration: Optional[float] = None,  # seconds; None => backend default/auto
-        prompt_influence: float = 0.3,  # 0..1 unified "guidance"
+        prompt_influence: Optional[float] = None,  # 0..1 unified "guidance"; None => native default (foley#70)
         negative_prompt: Optional[str] = None,
         seed: Optional[int] = None,
         steps: Optional[int] = None,

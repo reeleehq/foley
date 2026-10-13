@@ -45,6 +45,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from ..base import Candidate, SoundRecord
 
 __all__ = [
+    "check_prompt_influence",
     "native_adherence",
     "SourceConfigurationError",
     "ClipSpec",
@@ -75,6 +76,21 @@ class SourceConfigurationError(RuntimeError):
     """
 
 
+def check_prompt_influence(value) -> None:
+    """Raise ``ValueError`` unless ``value`` is ``None`` or a real number in ``0..1``.
+
+    Called when a generation is planned, before any budget is reserved, and again
+    by :func:`native_adherence`. A ``bool`` or a numeric string is refused rather
+    than coerced: ``True`` would silently mean the maximum.
+    """
+    if value is None:
+        return
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"prompt_influence must be a number in 0..1, got {value!r}")
+    if not 0.0 <= float(value) <= 1.0:
+        raise ValueError(f"prompt_influence must be in 0..1, got {value!r}")
+
+
 def native_adherence(
     config: dict, prompt_influence: Optional[float], notes: list
 ) -> Optional[float]:
@@ -97,11 +113,17 @@ def native_adherence(
     """
     spec = (config.get("param_map") or {}).get("prompt_influence") or {}
     native_default = spec.get("native_default")
+    distilled = (config.get("native_defaults") or {}).get("distilled")
+    if distilled and native_default is None:
+        raise SourceConfigurationError(
+            f"{config['name']}: a distilled source must declare "
+            "param_map['prompt_influence']['native_default'] (the CFG it was "
+            "post-trained for)"
+        )
     if prompt_influence is None:
         return native_default
-    if not 0.0 <= float(prompt_influence) <= 1.0:
-        raise ValueError(f"prompt_influence must be in 0..1, got {prompt_influence!r}")
-    if (config.get("native_defaults") or {}).get("distilled"):
+    check_prompt_influence(prompt_influence)
+    if distilled:
         notes.append(
             f"prompt_influence={prompt_influence!r} not applied: {config['name']} is a "
             f"distilled model, post-trained for its native default ({native_default!r})"

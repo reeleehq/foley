@@ -433,8 +433,8 @@ GENERATION_AFFORDANCES = {  # for generate (translated per backend; report 02 §
     "duration": Affordance(
         "duration", float, "Seconds; None ⇒ backend default", stage="generate"
     ),
-    "prompt_influence": Affordance(
-        "prompt_influence", float, "0..1 unified guidance", 0.3, "generate"
+    "prompt_influence": Affordance(  # None => the backend's native default (#70)
+        "prompt_influence", float, "0..1 unified adherence", stage="generate"
     ),
     "negative_prompt": Affordance(
         "negative_prompt", str, "Content to exclude", stage="generate"

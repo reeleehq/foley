@@ -338,6 +338,16 @@ def test_prompt_influence_outside_unit_range_raises():
         _sa_adapter().generate("creak", prompt_influence=5.2)
 
 
+def test_a_distilled_source_without_a_native_default_is_a_config_error():
+    cfg = _distilled_sa_config()
+    cfg["param_map"]["prompt_influence"] = {
+        **cfg["param_map"]["prompt_influence"],
+        "native_default": None,
+    }
+    with pytest.raises(RuntimeError, match="native_default"):
+        StableAudioAdapter(cfg, pipeline=FakePipeline()).generate("creak")
+
+
 def test_elevenlabs_omits_prompt_influence_when_none():
     transport = FakeTransport()
     clip = _el_adapter(transport).generate("rain")

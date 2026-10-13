@@ -35,7 +35,12 @@ from __future__ import annotations
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
-from ..base import GeneratedClip, generated_license, native_adherence
+from ..base import (
+    GeneratedClip,
+    SourceConfigurationError,
+    generated_license,
+    native_adherence,
+)
 from .config import SOURCE_CONFIG
 
 
@@ -130,6 +135,11 @@ class StableAudioAdapter:
         # provenance never carries the unified names — the guard against arioso's
         # confirmed cfg_scale mislabel + dropped-guidance bug).
         guidance_scale = native_adherence(self.config, prompt_influence, notes)
+        if guidance_scale is None:  # never let the pipeline pick its own CFG
+            raise SourceConfigurationError(
+                f"{self.name}: param_map['prompt_influence'] needs a native_default "
+                "(the guidance_scale to send when none is asked for)"
+            )
         audio_end_in_s = min(
             duration if duration is not None else nd["duration_default_s"],
             nd["duration_max_s"],
