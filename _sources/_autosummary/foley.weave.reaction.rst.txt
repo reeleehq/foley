@@ -1,0 +1,29 @@
+foley.weave.reaction
+====================
+
+.. automodule:: foley.weave.reaction
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      REACTIONS
+      REPEAT_PEAK
+      HUSH_AFTER_S
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      hush_plan
+      reaction_cue
+      reaction_plan
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Reaction
+      ReactionCue
+   

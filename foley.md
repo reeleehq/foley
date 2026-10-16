@@ -1,4 +1,4 @@
-> built 2026-10-13 11:02 UTC from 6580a8e (main) · foley 0.0.40. Details: build_info.json
+> built 2026-10-16 01:23 UTC from e157a1c (main) · foley 0.0.41. Details: build_info.json
 
 # index.html.md
 
@@ -12180,7 +12180,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta-dum', 'tudum', 'netflix intro', 'netflix chime', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel jingle', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix sound', 'tudum', 'netflix intro', 'netflix chime', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel jingle', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16260,6 +16260,135 @@ overlay (fast preview / DSP-free fallback). `item` is already anchor-resolved
 `float32` working arrays at `sample_rate`.
 
 
+# _autosummary/foley.weave.reaction.html.md
+
+# foley.weave.reaction
+
+Audience-reaction timing — a crowd answers an event, it does not coincide with it.
+
+The mistake this module exists to prevent: syncing a cheer, laugh or applause clip to the
+*instant of the on-screen event*. A real audience needs time to see, recognise and react,
+so the reaction must start **after** the event has become legible, then swell, then decay.
+Placing it on the event reads as a laugh track pasted on the cut; placing it after reads
+as a room reacting.
+
+Pure and stdlib-only. The numbers are working craft defaults (see [`REACTIONS`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.REACTIONS)), not
+measurements: published latency data for audience laughter/applause is thin, and the
+figures here are the conventional sound-editing ones (a beat of recognition, a swell of a
+second or so, a tail that thins out). Tune them per scene with `latency=`.
+
+Rules encoded here (each is one keyword or field):
+
+* **Legibility, not occurrence.** `legible_at` is when the audience can *see* the event
+  (an entrance when the figure is mostly on screen, a reveal when the new face has settled),
+  and the latency is added to that, never to the start of the motion.
+* **Rise, then fall.** A reaction has an attack (`rise_s`) to `peak` and a `decay_s`
+  tail; `gain_points` returns the envelope as `(t, gain)` breakpoints.
+* **Second waves are smaller.** A repeat of the same reaction peaks lower
+  ([`REPEAT_PEAK`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.REPEAT_PEAK)), so cheers “die down” and bump again rather than climb forever.
+* **Cut a crowd with a hush.** [`hush_plan()`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.hush_plan) places a “shh” after the applause has run
+  its course and ducks the applause under it, so the characters can sleep.
+
+### Module Attributes
+
+| [`REACTIONS`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.REACTIONS)    | Working defaults per reaction kind (seconds).                                                                                                            |
+|---------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`REPEAT_PEAK`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.REPEAT_PEAK)  | Peak multiplier for each successive repeat of the same kind in one scene.                                                                                |
+| [`HUSH_AFTER_S`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.HUSH_AFTER_S) | Seconds the applause is allowed to run at full before a hush, and how long the hush takes to bring the room down (the applause is ducked, not hard-cut). |
+
+### Functions
+
+| [`hush_plan`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.hush_plan)(applause, \*[, after])                   | Where a "shh" goes to quiet `applause`, and the applause cue ducked to match.   |
+|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| [`reaction_cue`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.reaction_cue)(kind, legible_at, \*[, latency, ...]) | Place a `kind` response to an event that became legible at `legible_at`.        |
+| [`reaction_plan`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.reaction_plan)(events, \*[, table])                 | Place `[(kind, legible_at), ...]`, shrinking repeats of a kind automatically.   |
+
+### Classes
+
+| [`Reaction`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.Reaction)(latency_s, rise_s, decay_s[, peak])   | How one kind of crowd response is shaped, relative to the event that triggers it.   |
+|-------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| [`ReactionCue`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.ReactionCue)(kind, event_t, onset, peak_t, ...) | One placed crowd response (times are shot-local seconds).                           |
+
+### foley.weave.reaction.HUSH_AFTER_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 1.2*
+
+Seconds the applause is allowed to run at full before a hush, and how long the hush
+takes to bring the room down (the applause is ducked, not hard-cut).
+
+### foley.weave.reaction.REACTIONS *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Reaction](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.Reaction)]* *= {'applause': Reaction(latency_s=0.55, rise_s=1.1, decay_s=2.5, peak=0.9), 'cheer': Reaction(latency_s=0.5, rise_s=0.9, decay_s=3.0, peak=1.0), 'gasp': Reaction(latency_s=0.2, rise_s=0.15, decay_s=0.6, peak=0.7), 'laugh': Reaction(latency_s=0.6, rise_s=0.5, decay_s=1.8, peak=0.9), 'whistle': Reaction(latency_s=0.45, rise_s=0.05, decay_s=0.5, peak=0.8)}*
+
+Working defaults per reaction kind (seconds). Overridable per call.
+
+### foley.weave.reaction.REPEAT_PEAK *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.65*
+
+Peak multiplier for each successive repeat of the same kind in one scene.
+
+### *class* foley.weave.reaction.Reaction(latency_s, rise_s, decay_s, peak=1.0)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+How one kind of crowd response is shaped, relative to the event that triggers it.
+
+### *class* foley.weave.reaction.ReactionCue(kind, event_t, onset, peak_t, end, peak)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One placed crowd response (times are shot-local seconds).
+
+#### gain_points()
+
+Envelope breakpoints `(t, gain)`: silence -> peak -> silence.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
+### foley.weave.reaction.hush_plan(applause, , after=None)
+
+Where a “shh” goes to quiet `applause`, and the applause cue ducked to match.
+
+Returns `(shh_onset, ducked_applause)`. The hush lands `HUSH_AFTER_S` after the
+applause peak (or at `after`), and the applause fades out over `HUSH_DUCK_S` from
+then, so the crowd is *answering* the hush rather than being cut.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`ReactionCue`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.ReactionCue)]
+
+```pycon
+>>> t, a = hush_plan(reaction_cue("applause", 8.0))
+>>> a.end > t
+True
+```
+
+### foley.weave.reaction.reaction_cue(kind, legible_at, , latency=None, repeat=0, table={'applause': Reaction(latency_s=0.55, rise_s=1.1, decay_s=2.5, peak=0.9), 'cheer': Reaction(latency_s=0.5, rise_s=0.9, decay_s=3.0, peak=1.0), 'gasp': Reaction(latency_s=0.2, rise_s=0.15, decay_s=0.6, peak=0.7), 'laugh': Reaction(latency_s=0.6, rise_s=0.5, decay_s=1.8, peak=0.9), 'whistle': Reaction(latency_s=0.45, rise_s=0.05, decay_s=0.5, peak=0.8)})
+
+Place a `kind` response to an event that became legible at `legible_at`.
+
+`repeat` is how many earlier responses of this kind the scene already had; each one
+scales the peak by [`REPEAT_PEAK`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.REPEAT_PEAK).
+
+* **Return type:**
+  [`ReactionCue`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.ReactionCue)
+
+```pycon
+>>> c = reaction_cue("cheer", 1.0)
+>>> c.onset > c.event_t
+True
+>>> reaction_cue("cheer", 6.0, repeat=1).peak < reaction_cue("cheer", 1.0).peak
+True
+```
+
+### foley.weave.reaction.reaction_plan(events, , table={'applause': Reaction(latency_s=0.55, rise_s=1.1, decay_s=2.5, peak=0.9), 'cheer': Reaction(latency_s=0.5, rise_s=0.9, decay_s=3.0, peak=1.0), 'gasp': Reaction(latency_s=0.2, rise_s=0.15, decay_s=0.6, peak=0.7), 'laugh': Reaction(latency_s=0.6, rise_s=0.5, decay_s=1.8, peak=0.9), 'whistle': Reaction(latency_s=0.45, rise_s=0.05, decay_s=0.5, peak=0.8)})
+
+Place `[(kind, legible_at), ...]`, shrinking repeats of a kind automatically.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`ReactionCue`](_autosummary/foley.weave.reaction.html.md#foley.weave.reaction.ReactionCue)]
+
+```pycon
+>>> [c.kind for c in reaction_plan([("cheer", 1.0), ("laugh", 4.0), ("cheer", 6.0)])]
+['cheer', 'laugh', 'cheer']
+```
+
+
 # _autosummary/foley.weave.requirements.html.md
 
 # foley.weave.requirements
@@ -16458,18 +16587,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-13 11:02 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/6580a8e48c1cdd995258c3d27797548406834d0a"><code>6580a8e</code></a> on branch <code>main</code>, for **foley 0.0.40** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-16 01:23 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/e157a1cc037f2453ea186c3e0570bc3adede0dd8"><code>e157a1c</code></a> on branch <code>main</code>, for **foley 0.0.41** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.40) is behind the latest release on PyPI (0.0.41): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.41) is behind the latest release on PyPI (0.0.42): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/6580a8e48c1cdd995258c3d27797548406834d0a"><code>6580a8e48c1cdd995258c3d27797548406834d0a</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/e157a1cc037f2453ea186c3e0570bc3adede0dd8"><code>e157a1cc037f2453ea186c3e0570bc3adede0dd8</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -16480,15 +16609,15 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38387271825">38387271825</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/38834647970">38834647970</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>6580a8e48c1cdd995258c3d27797548406834d0a</code> (in the history of the built commit) |
+| Event commit | <code>e157a1cc037f2453ea186c3e0570bc3adede0dd8</code> (in the history of the built commit) |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.15  |
+| epythet  | 0.2.17  |
 | Sphinx   | 9.1.0   |
 | docutils | 0.22.4  |
 | Python   | 3.12.15 |
@@ -16507,14 +16636,14 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.41/">0.0.41</a>, newer than the documented version (0.0.40).
+Latest release: <a href="https://pypi.org/project/foley/0.0.42/">0.0.42</a>, newer than the documented version (0.0.41).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 6580a8e48c1cdd995258c3d27797548406834d0a
-pip install "epythet==0.2.15"
+git checkout e157a1cc037f2453ea186c3e0570bc3adede0dd8
+pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 

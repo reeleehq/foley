@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="alternate" type="text/markdown" href="foley.weave.reaction.html.md">
+<link rel="describedby" href="../llms.txt" type="text/markdown">
+<link rel="alternate" type="text/markdown" href="foley.weave.reaction.html.md">
+<link rel="describedby" href="llms.txt">
+    <title>foley.weave.reaction &#8212; foley</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=e39d37f2" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../_static/documentation_options.js?v=20c5f126"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/foley.weave.reaction';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.41" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">foley</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">foley.weave.reaction</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-foley.weave.reaction">
+<span id="foley-weave-reaction"></span><h1>foley.weave.reaction<a class="headerlink" href="#module-foley.weave.reaction" title="Link to this heading">#</a></h1>
+<p>Audience-reaction timing — a crowd answers an event, it does not coincide with it.</p>
+<p>The mistake this module exists to prevent: syncing a cheer, laugh or applause clip to the
+<em>instant of the on-screen event</em>. A real audience needs time to see, recognise and react,
+so the reaction must start <strong>after</strong> the event has become legible, then swell, then decay.
+Placing it on the event reads as a laugh track pasted on the cut; placing it after reads
+as a room reacting.</p>
+<p>Pure and stdlib-only. The numbers are working craft defaults (see <a class="reference internal" href="#foley.weave.reaction.REACTIONS" title="foley.weave.reaction.REACTIONS"><code class="xref py py-data docutils literal notranslate"><span class="pre">REACTIONS</span></code></a>), not
+measurements: published latency data for audience laughter/applause is thin, and the
+figures here are the conventional sound-editing ones (a beat of recognition, a swell of a
+second or so, a tail that thins out). Tune them per scene with <code class="docutils literal notranslate"><span class="pre">latency=</span></code>.</p>
+<p>Rules encoded here (each is one keyword or field):</p>
+<ul class="simple">
+<li><p><strong>Legibility, not occurrence.</strong> <code class="docutils literal notranslate"><span class="pre">legible_at</span></code> is when the audience can <em>see</em> the event
+(an entrance when the figure is mostly on screen, a reveal when the new face has settled),
+and the latency is added to that, never to the start of the motion.</p></li>
+<li><p><strong>Rise, then fall.</strong> A reaction has an attack (<code class="docutils literal notranslate"><span class="pre">rise_s</span></code>) to <code class="docutils literal notranslate"><span class="pre">peak</span></code> and a <code class="docutils literal notranslate"><span class="pre">decay_s</span></code>
+tail; <code class="docutils literal notranslate"><span class="pre">gain_points</span></code> returns the envelope as <code class="docutils literal notranslate"><span class="pre">(t,</span> <span class="pre">gain)</span></code> breakpoints.</p></li>
+<li><p><strong>Second waves are smaller.</strong> A repeat of the same reaction peaks lower
+(<a class="reference internal" href="#foley.weave.reaction.REPEAT_PEAK" title="foley.weave.reaction.REPEAT_PEAK"><code class="xref py py-data docutils literal notranslate"><span class="pre">REPEAT_PEAK</span></code></a>), so cheers “die down” and bump again rather than climb forever.</p></li>
+<li><p><strong>Cut a crowd with a hush.</strong> <a class="reference internal" href="#foley.weave.reaction.hush_plan" title="foley.weave.reaction.hush_plan"><code class="xref py py-func docutils literal notranslate"><span class="pre">hush_plan()</span></code></a> places a “shh” after the applause has run
+its course and ducks the applause under it, so the characters can sleep.</p></li>
+</ul>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.reaction.REACTIONS" title="foley.weave.reaction.REACTIONS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REACTIONS</span></code></a></p></td>
+<td><p>Working defaults per reaction kind (seconds).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.reaction.REPEAT_PEAK" title="foley.weave.reaction.REPEAT_PEAK"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REPEAT_PEAK</span></code></a></p></td>
+<td><p>Peak multiplier for each successive repeat of the same kind in one scene.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.reaction.HUSH_AFTER_S" title="foley.weave.reaction.HUSH_AFTER_S"><code class="xref py py-obj docutils literal notranslate"><span class="pre">HUSH_AFTER_S</span></code></a></p></td>
+<td><p>Seconds the applause is allowed to run at full before a hush, and how long the hush takes to bring the room down (the applause is ducked, not hard-cut).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.reaction.hush_plan" title="foley.weave.reaction.hush_plan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hush_plan</span></code></a>(applause, *[, after])</p></td>
+<td><p>Where a &quot;shh&quot; goes to quiet <code class="docutils literal notranslate"><span class="pre">applause</span></code>, and the applause cue ducked to match.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.reaction.reaction_cue" title="foley.weave.reaction.reaction_cue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reaction_cue</span></code></a>(kind, legible_at, *[, latency, ...])</p></td>
+<td><p>Place a <code class="docutils literal notranslate"><span class="pre">kind</span></code> response to an event that became legible at <code class="docutils literal notranslate"><span class="pre">legible_at</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.reaction.reaction_plan" title="foley.weave.reaction.reaction_plan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reaction_plan</span></code></a>(events, *[, table])</p></td>
+<td><p>Place <code class="docutils literal notranslate"><span class="pre">[(kind,</span> <span class="pre">legible_at),</span> <span class="pre">...]</span></code>, shrinking repeats of a kind automatically.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.reaction.Reaction" title="foley.weave.reaction.Reaction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Reaction</span></code></a>(latency_s, rise_s, decay_s[, peak])</p></td>
+<td><p>How one kind of crowd response is shaped, relative to the event that triggers it.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.reaction.ReactionCue" title="foley.weave.reaction.ReactionCue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ReactionCue</span></code></a>(kind, event_t, onset, peak_t, ...)</p></td>
+<td><p>One placed crowd response (times are shot-local seconds).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.reaction.HUSH_AFTER_S">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.reaction.</span></span><span class="sig-name descname"><span class="pre">HUSH_AFTER_S</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.2</span></span><a class="headerlink" href="#foley.weave.reaction.HUSH_AFTER_S" title="Link to this definition">#</a></dt>
+<dd><p>Seconds the applause is allowed to run at full before a hush, and how long the hush
+takes to bring the room down (the applause is ducked, not hard-cut).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.reaction.REACTIONS">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.reaction.</span></span><span class="sig-name descname"><span class="pre">REACTIONS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#foley.weave.reaction.Reaction" title="foley.weave.reaction.Reaction"><span class="pre">Reaction</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'applause':</span> <span class="pre">Reaction(latency_s=0.55,</span> <span class="pre">rise_s=1.1,</span> <span class="pre">decay_s=2.5,</span> <span class="pre">peak=0.9),</span> <span class="pre">'cheer':</span> <span class="pre">Reaction(latency_s=0.5,</span> <span class="pre">rise_s=0.9,</span> <span class="pre">decay_s=3.0,</span> <span class="pre">peak=1.0),</span> <span class="pre">'gasp':</span> <span class="pre">Reaction(latency_s=0.2,</span> <span class="pre">rise_s=0.15,</span> <span class="pre">decay_s=0.6,</span> <span class="pre">peak=0.7),</span> <span class="pre">'laugh':</span> <span class="pre">Reaction(latency_s=0.6,</span> <span class="pre">rise_s=0.5,</span> <span class="pre">decay_s=1.8,</span> <span class="pre">peak=0.9),</span> <span class="pre">'whistle':</span> <span class="pre">Reaction(latency_s=0.45,</span> <span class="pre">rise_s=0.05,</span> <span class="pre">decay_s=0.5,</span> <span class="pre">peak=0.8)}</span></span><a class="headerlink" href="#foley.weave.reaction.REACTIONS" title="Link to this definition">#</a></dt>
+<dd><p>Working defaults per reaction kind (seconds). Overridable per call.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.reaction.REPEAT_PEAK">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.reaction.</span></span><span class="sig-name descname"><span class="pre">REPEAT_PEAK</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.65</span></span><a class="headerlink" href="#foley.weave.reaction.REPEAT_PEAK" title="Link to this definition">#</a></dt>
+<dd><p>Peak multiplier for each successive repeat of the same kind in one scene.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.reaction.Reaction">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.reaction.</span></span><span class="sig-name descname"><span class="pre">Reaction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">latency_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rise_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">decay_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/reaction.html#Reaction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.reaction.Reaction" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>How one kind of crowd response is shaped, relative to the event that triggers it.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.reaction.ReactionCue">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.reaction.</span></span><span class="sig-name descname"><span class="pre">ReactionCue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">event_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">onset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/reaction.html#ReactionCue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.reaction.ReactionCue" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One placed crowd response (times are shot-local seconds).</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.weave.reaction.ReactionCue.gain_points">
+<span class="sig-name descname"><span class="pre">gain_points</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/reaction.html#ReactionCue.gain_points"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.reaction.ReactionCue.gain_points" title="Link to this definition">#</a></dt>
+<dd><p>Envelope breakpoints <code class="docutils literal notranslate"><span class="pre">(t,</span> <span class="pre">gain)</span></code>: silence -&gt; peak -&gt; silence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.reaction.hush_plan">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.reaction.</span></span><span class="sig-name descname"><span class="pre">hush_plan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">applause</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/reaction.html#hush_plan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.reaction.hush_plan" title="Link to this definition">#</a></dt>
+<dd><p>Where a “shh” goes to quiet <code class="docutils literal notranslate"><span class="pre">applause</span></code>, and the applause cue ducked to match.</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">(shh_onset,</span> <span class="pre">ducked_applause)</span></code>. The hush lands <code class="docutils literal notranslate"><span class="pre">HUSH_AFTER_S</span></code> after the
+applause peak (or at <code class="docutils literal notranslate"><span class="pre">after</span></code>), and the applause fades out over <code class="docutils literal notranslate"><span class="pre">HUSH_DUCK_S</span></code> from
+then, so the crowd is <em>answering</em> the hush rather than being cut.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference internal" href="#foley.weave.reaction.ReactionCue" title="foley.weave.reaction.ReactionCue"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReactionCue</span></code></a>]</span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="n">hush_plan</span><span class="p">(</span><span class="n">reaction_cue</span><span class="p">(</span><span class="s2">"applause"</span><span class="p">,</span> <span class="mf">8.0</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">end</span> <span class="o">&gt;</span> <span class="n">t</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.reaction.reaction_cue">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.reaction.</span></span><span class="sig-name descname"><span class="pre">reaction_cue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">legible_at</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">latency</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repeat</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'applause':</span> <span class="pre">Reaction(latency_s=0.55,</span> <span class="pre">rise_s=1.1,</span> <span class="pre">decay_s=2.5,</span> <span class="pre">peak=0.9),</span> <span class="pre">'cheer':</span> <span class="pre">Reaction(latency_s=0.5,</span> <span class="pre">rise_s=0.9,</span> <span class="pre">decay_s=3.0,</span> <span class="pre">peak=1.0),</span> <span class="pre">'gasp':</span> <span class="pre">Reaction(latency_s=0.2,</span> <span class="pre">rise_s=0.15,</span> <span class="pre">decay_s=0.6,</span> <span class="pre">peak=0.7),</span> <span class="pre">'laugh':</span> <span class="pre">Reaction(latency_s=0.6,</span> <span class="pre">rise_s=0.5,</span> <span class="pre">decay_s=1.8,</span> <span class="pre">peak=0.9),</span> <span class="pre">'whistle':</span> <span class="pre">Reaction(latency_s=0.45,</span> <span class="pre">rise_s=0.05,</span> <span class="pre">decay_s=0.5,</span> <span class="pre">peak=0.8)}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/reaction.html#reaction_cue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.reaction.reaction_cue" title="Link to this definition">#</a></dt>
+<dd><p>Place a <code class="docutils literal notranslate"><span class="pre">kind</span></code> response to an event that became legible at <code class="docutils literal notranslate"><span class="pre">legible_at</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">repeat</span></code> is how many earlier responses of this kind the scene already had; each one
+scales the peak by <a class="reference internal" href="#foley.weave.reaction.REPEAT_PEAK" title="foley.weave.reaction.REPEAT_PEAK"><code class="xref py py-data docutils literal notranslate"><span class="pre">REPEAT_PEAK</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#foley.weave.reaction.ReactionCue" title="foley.weave.reaction.ReactionCue"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReactionCue</span></code></a></span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">reaction_cue</span><span class="p">(</span><span class="s2">"cheer"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span><span class="o">.</span><span class="n">onset</span> <span class="o">&gt;</span> <span class="n">c</span><span class="o">.</span><span class="n">event_t</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">reaction_cue</span><span class="p">(</span><span class="s2">"cheer"</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">peak</span> <span class="o">&lt;</span> <span class="n">reaction_cue</span><span class="p">(</span><span class="s2">"cheer"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span><span class="o">.</span><span class="n">peak</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.reaction.reaction_plan">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.reaction.</span></span><span class="sig-name descname"><span class="pre">reaction_plan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">events</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">table</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'applause':</span> <span class="pre">Reaction(latency_s=0.55,</span> <span class="pre">rise_s=1.1,</span> <span class="pre">decay_s=2.5,</span> <span class="pre">peak=0.9),</span> <span class="pre">'cheer':</span> <span class="pre">Reaction(latency_s=0.5,</span> <span class="pre">rise_s=0.9,</span> <span class="pre">decay_s=3.0,</span> <span class="pre">peak=1.0),</span> <span class="pre">'gasp':</span> <span class="pre">Reaction(latency_s=0.2,</span> <span class="pre">rise_s=0.15,</span> <span class="pre">decay_s=0.6,</span> <span class="pre">peak=0.7),</span> <span class="pre">'laugh':</span> <span class="pre">Reaction(latency_s=0.6,</span> <span class="pre">rise_s=0.5,</span> <span class="pre">decay_s=1.8,</span> <span class="pre">peak=0.9),</span> <span class="pre">'whistle':</span> <span class="pre">Reaction(latency_s=0.45,</span> <span class="pre">rise_s=0.05,</span> <span class="pre">decay_s=0.5,</span> <span class="pre">peak=0.8)}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/reaction.html#reaction_plan"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.reaction.reaction_plan" title="Link to this definition">#</a></dt>
+<dd><p>Place <code class="docutils literal notranslate"><span class="pre">[(kind,</span> <span class="pre">legible_at),</span> <span class="pre">...]</span></code>, shrinking repeats of a kind automatically.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="#foley.weave.reaction.ReactionCue" title="foley.weave.reaction.ReactionCue"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReactionCue</span></code></a>]</span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">kind</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">reaction_plan</span><span class="p">([(</span><span class="s2">"cheer"</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="p">(</span><span class="s2">"laugh"</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">),</span> <span class="p">(</span><span class="s2">"cheer"</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">)])]</span>
+<span class="go">['cheer', 'laugh', 'cheer']</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.reaction.HUSH_AFTER_S"><code class="docutils literal notranslate"><span class="pre">HUSH_AFTER_S</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.reaction.REACTIONS"><code class="docutils literal notranslate"><span class="pre">REACTIONS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.reaction.REPEAT_PEAK"><code class="docutils literal notranslate"><span class="pre">REPEAT_PEAK</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.reaction.Reaction"><code class="docutils literal notranslate"><span class="pre">Reaction</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.reaction.ReactionCue"><code class="docutils literal notranslate"><span class="pre">ReactionCue</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.reaction.ReactionCue.gain_points"><code class="docutils literal notranslate"><span class="pre">ReactionCue.gain_points()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.reaction.hush_plan"><code class="docutils literal notranslate"><span class="pre">hush_plan()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.reaction.reaction_cue"><code class="docutils literal notranslate"><span class="pre">reaction_cue()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.reaction.reaction_plan"><code class="docutils literal notranslate"><span class="pre">reaction_plan()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/_autosummary/foley.weave.reaction.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

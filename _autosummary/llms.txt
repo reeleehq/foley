@@ -84,6 +84,7 @@
 - [foley.weave.master](foley.weave.master.html.md): Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).
 - [foley.weave.mix](foley.weave.mix.html.md): Pure-numpy mixing DSP — making a clip sit under the voice (report 06 §3).
 - [foley.weave.protocols](foley.weave.protocols.html.md): The structural DI seams of the WEAVE stage — &#96;Aligner&#96; / &#96;ApplyStrategy&#96;.
+- [foley.weave.reaction](foley.weave.reaction.html.md): Audience-reaction timing — a crowd answers an event, it does not coincide with it.
 - [foley.weave.requirements](foley.weave.requirements.html.md): System-dependency onboarding for WEAVE’s optional upgrade paths (accompy-style).
 - [foley.weave.timeline](foley.weave.timeline.html.md): The sound-design timeline as an editable document — hydrate, edit, caption.
 
