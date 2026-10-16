@@ -44,9 +44,13 @@ class Reaction:
 REACTIONS: Mapping[str, Reaction] = {
     "gasp": Reaction(0.20, 0.15, 0.6, 0.7),
     "whistle": Reaction(0.45, 0.05, 0.5, 0.8),
-    "cheer": Reaction(0.50, 0.9, 3.0, 1.0),  # surprised-and-glad: fast swell, slow thinning
+    "cheer": Reaction(
+        0.50, 0.9, 3.0, 1.0
+    ),  # surprised-and-glad: fast swell, slow thinning
     "laugh": Reaction(0.60, 0.5, 1.8, 0.9),  # needs the gag to land; shortest swell
-    "applause": Reaction(0.55, 1.1, 2.5, 0.9),  # claps ripple in: never full density at once
+    "applause": Reaction(
+        0.55, 1.1, 2.5, 0.9
+    ),  # claps ripple in: never full density at once
 }
 
 #: Peak multiplier for each successive repeat of the same kind in one scene.
