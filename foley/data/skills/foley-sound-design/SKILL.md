@@ -73,6 +73,17 @@ timeline dicts, store keys) — audio is referenced by a byte-store key, never i
 - **Loudness.** Pick a master profile for the delivery target: `podcast` (-16 LUFS), `streaming`
   (-14), `broadcast_ebu` (-23). The mix is loudness-normalized + true-peak-limited.
 
+## Audience reactions: the crowd answers, it does not coincide
+
+A cheer, laugh or applause synced to the *instant* of the on-screen event sounds like a track pasted on the cut. Place it with `foley.weave.reaction` (`reaction_cue`, `reaction_plan`, `hush_plan`):
+
+- **Time it from when the event is legible, not when it starts.** An entrance is legible when the figure is mostly in frame; a reveal when the new face has settled. Then add the latency: gasp ~0.2 s, whistle ~0.45, cheer ~0.5, applause ~0.55, laugh ~0.6 (the gag has to land first). These are craft defaults, not measurements: published latency data is thin, so tune by ear with `latency=`.
+- **Shape it: attack, peak, tail.** Claps ripple in (about 1 s) and never start at full density; a cheer swells fast and thins slowly; laughter swells shortest.
+- **Repeats are smaller.** A second cheer is ~0.65x the first: the crowd "dies down" and bumps again, it does not climb.
+- **Ask for the right kind.** Cheers (voices, surprise and delight) are not applause (claps); a clapping clip is not a cheer. Say which you want.
+- **Silence needs a cause.** To quiet a crowd, place a "shh" after the applause has peaked (`hush_plan`) and fade the applause out under it over ~0.7 s, rather than cutting it.
+- **Trim the clip's own lead-in.** A stock clip's audible onset is not its file start; trim silence first or the latency is wrong by the lead-in.
+
 ## Licensing is load-bearing (foley's output gets published)
 
 - Only `license_ok` candidates are ever placed — the gate is **fail-closed** (unknown license →
