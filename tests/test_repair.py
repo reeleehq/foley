@@ -24,10 +24,12 @@ from foley.repair import (  # noqa: E402
     DEFAULT_REPAIR_CEILING_DBTP,
     DEFAULT_REPAIR_FADE_S,
     DEFAULT_REPAIR_MAX_CLIPPED_RATIO,
+    DEFAULT_REPAIR_MAX_CLIPPED_RUN,
     FIX_FADE,
     FIX_LIMIT,
     RepairResult,
     repair,
+    repair_bytes,
     suggested_fixes,
     unrepairable,
 )
@@ -140,8 +142,12 @@ def test_the_production_case_is_quarantined_by_qc_and_cleared_by_repair():
 
 
 def test_repair_applies_only_the_fixes_the_report_names():
-    # clipping only: a sine starts at zero, so no edge click => no fade
-    x = _with_run(_sine(amp=0.5), run=6)
+    # clipping only: a burst padded with silence has quiet edges => no fade. (An
+    # unpadded integer-cycle sine would not do: once the plateau is the peak, its last
+    # sample sits above -40 dB rel-peak and QC asks for a fade too.)
+    pad = np.zeros(int(0.1 * SR), dtype=np.float32)
+    x = _with_run(np.concatenate([pad, _sine(amp=0.5), pad]), run=6)
+    assert not run_qc(x, SR).needs_edge_fade
     result = repair(x, SR)
     assert result.repaired and len(result.applied) == 1
     assert result.applied[0].startswith("true peak attenuated")
@@ -187,9 +193,77 @@ def test_repair_refuses_heavy_clipping_as_distortion_not_a_run_over_the_gate():
     assert "distortion" in unrepairable(before)
     result = repair(heavy, SR)
     assert not result.repaired and "distortion" in result.reason
-    # ... unless the caller widens the bound on purpose
-    widened = repair(heavy, SR, max_clipped_ratio=0.1)
+    # ... unless the caller widens both bounds on purpose
+    widened = repair(heavy, SR, max_clipped_ratio=0.1, max_clipped_run=10**6)
     assert widened.repaired and widened.cleared()
+
+
+def test_a_long_clip_cannot_hide_a_long_flat_top_under_a_small_ratio():
+    # The reviewer's probe: in a long clip a 50 ms plateau is a tiny ratio. The run
+    # bound catches it; a run just over the gate in the same clip is still repaired.
+    long_sine = _sine(10.0, amp=0.5)
+    plateau = _with_run(long_sine, run=400)  # 8 ms flat top; 400 / 480 000 = 0.083 %
+    before = run_qc(plateau, SR)
+    assert before.status is QCStatus.fail
+    assert before.clipped_ratio <= DEFAULT_REPAIR_MAX_CLIPPED_RATIO  # the ratio alone would pass
+    assert before.clipped_max_run > DEFAULT_REPAIR_MAX_CLIPPED_RUN
+    assert unrepairable(before).startswith("flat top of 400 samples")
+    assert not repair(plateau, SR).repaired
+
+    short_run = _with_run(long_sine, run=40)  # < 1 ms: fails by the run prong only
+    before = run_qc(short_run, SR)
+    assert before.status is QCStatus.fail and before.clipped_ratio <= TH.clip_reject_ratio
+    result = repair(short_run, SR)
+    assert result.repaired and result.cleared() and result.after.clipped_max_run == 0
+    assert DEFAULT_REPAIR_MAX_CLIPPED_RUN == 5 * TH.clip_reject_run
+
+
+def test_the_trigger_floor_can_cover_clips_qc_admits_with_a_warning():
+    clicky = _cosine(amp=0.95)  # edge click + over-ceiling peak, no clipping: WARN
+    before = run_qc(clicky, SR)
+    assert before.status is QCStatus.warn and before.needs_edge_fade
+    assert not repair(clicky, SR).repaired  # the default acts on a quarantine only
+    result = repair(clicky, SR, min_status=QCStatus.pass_)
+    assert result.repaired and result.min_status is QCStatus.pass_
+    assert [a.split(" ")[0] for a in result.applied] == ["fade", "true"]
+    assert result.after.needs_edge_fade is False
+    assert result.after.true_peak_dbtp <= TH.true_peak_max_dbtp
+    assert result.cleared(QCStatus.warn)  # admitted (a gapless tone still warns on SNR)
+
+
+def test_note_says_what_was_done_or_why_nothing_was():
+    assert repair(_sine(amp=0.5), SR).note() is None  # admitted, untouched: silence
+    done = repair(just_over_the_gate(), SR).note()
+    assert done.startswith("repaired before QC admission: fade 20 ms")
+    assert "QC was fail: hard clipping" in done
+    skipped = repair(np.zeros(SR, dtype=np.float32), SR).note()
+    assert skipped.startswith("repair skipped (not repairable: near-silent); QC fail:")
+    res = RepairResult(samples=np.zeros(1), sample_rate=SR, before=run_qc(just_over_the_gate(), SR))
+    res.applied.append("looked at it")
+    res.after = res.before
+    assert res.note().startswith("repair tried (looked at it) but QC still fail:")
+    assert res.note().endswith("kept the clip as received")
+
+
+def test_repair_bytes_round_trips_an_encoded_clip():
+    sf = pytest.importorskip("soundfile")
+    import io
+
+    from foley.audio import encode
+
+    raw = encode(just_over_the_gate(), SR)
+    fixed, result = repair_bytes(raw)
+    assert result.repaired and result.cleared() and fixed is not raw
+    arr, sr = sf.read(io.BytesIO(fixed))
+    assert sr == SR and float(np.abs(arr).max()) < TH.clip_full_scale
+    assert run_qc(arr.astype(np.float32), SR).status is not QCStatus.fail
+    # an admitted clip comes back as the same object, with nothing to say
+    clean = encode(_sine(amp=0.5), SR)
+    same, result = repair_bytes(clean)
+    assert same is clean and not result.repaired and result.note() is None
+    # a policy that does not clear the floor keeps the bytes as received
+    unfixed, result = repair_bytes(raw, policy=lambda s, r, *, report: RepairResult(s, r, report))
+    assert unfixed is raw and not result.repaired
 
 
 def test_repair_knobs_are_keyword_arguments_with_named_defaults():
@@ -198,3 +272,4 @@ def test_repair_knobs_are_keyword_arguments_with_named_defaults():
     assert "50 ms" in result.applied[0] and "-3 dBTP" in result.applied[1]
     assert result.after.true_peak_dbtp <= -3.0 + 1e-6
     assert DEFAULT_REPAIR_MAX_CLIPPED_RATIO == pytest.approx(10 * TH.clip_reject_ratio)
+    assert not repair(x, SR, max_clipped_run=1).repaired  # a tighter run bound refuses it

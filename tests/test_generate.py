@@ -1407,6 +1407,47 @@ def test_a_repaired_generation_replays_from_the_cache_to_the_same_sound(library)
     assert second.cost_actual_usd == 0.0
 
 
+def test_a_policy_may_also_declick_clips_qc_admits(library):
+    """An edge click alone is a warning (admitted as is); a lowered trigger fixes it too."""
+    import functools
+
+    from foley.qc import QCStatus
+    from foley.repair import repair as repair_clip
+
+    t = np.arange(WORKING_SR) / WORKING_SR
+    clicky = encode((0.95 * np.cos(2 * np.pi * 1000.0 * t)).astype(np.float32), WORKING_SR)
+    as_is = foley.generate("click", backend="elevenlabs", library=library, duration=1,
+                           adapter=_faulty_el_adapter(clicky), provenance_store={})
+    assert as_is.sound.qc["needs_edge_fade"] is True and as_is.sound.license.transformations == []
+    declick = functools.partial(repair_clip, min_status=QCStatus.pass_)
+    fixed = foley.generate("click", backend="elevenlabs", library=library, duration=1,
+                           adapter=_faulty_el_adapter(clicky), provenance_store={},
+                           repair=declick, reuse_cached=False)
+    assert fixed.sound.qc["needs_edge_fade"] is False
+    assert any(t.startswith("fade") for t in fixed.sound.license.transformations)
+    assert any("QC was warn: edge click" in n for n in fixed.notes)
+    assert fixed.sound.id != as_is.sound.id and len(library) == 2  # a different clip
+
+
+def test_the_44k1_provider_path_is_repaired_the_same_way(library):
+    """ElevenLabs serves 44.1 kHz; QC measures the 48 kHz working array. A flat top long
+    enough to survive the resample is a quarantine the repair clears."""
+    from foley.audio import WORKING_SAMPLE_RATE, to_working
+    from foley.qc import QCStatus, run_qc
+
+    t = np.arange(SR) / SR
+    x = (0.9 * np.cos(2 * np.pi * 1000.0 * t)).astype(np.float32)
+    x[SR // 2 : SR // 2 + 48] = 1.0  # ~1.1 ms at 44.1 kHz
+    before = run_qc(to_working(x, SR), WORKING_SAMPLE_RATE)
+    if before.status is not QCStatus.fail:  # the resampler hid it: not this test's case
+        pytest.skip("the 44.1 -> 48 kHz resample hid the flat top from the clipping gate")
+    cand = foley.generate("bite", backend="elevenlabs", library=library, duration=1,
+                          adapter=_faulty_el_adapter(encode(x, SR)), provenance_store={})
+    assert any(n.startswith("repaired before QC admission") for n in cand.notes)
+    assert cand.sound.qc["status"] is not QCStatus.fail and cand.sound.qc["clipped_ratio"] == 0.0
+    assert cand.sound.source_sample_rate == SR  # the repaired clip keeps the native rate
+
+
 def test_a_clean_generation_is_untouched_by_the_default_repair(library):
     cand = foley.generate("rain", backend="elevenlabs", library=library,
                           adapter=_el_adapter(), duration=1, provenance_store={})

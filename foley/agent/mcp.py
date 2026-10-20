@@ -375,7 +375,13 @@ def foley_generate(
     commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
     session: str = "default",
 ) -> dict:
-    """Generate a sound from a text prompt (local backends only when offline)."""
+    """Generate a sound from a text prompt (local backends only when offline).
+
+    A clip QC would quarantine for a clipped run just over the gate is repaired and
+    stored (the repair is in the result's notes). A refused generation's dict carries
+    ``cache_key``: where its paid bytes are in the generations cache
+    (``foley.generations.get(cache_key)``, on the host — bytes never travel over MCP).
+    """
     from ..runtime import EXTERNAL, EgressBlocked
     from ..sources.registry import source_egress
 

@@ -719,15 +719,18 @@ def generate(
             (default ``True``): a paid sound is never paid for twice (#59).
         budget: A :class:`Budget` for this call (default: the active run's, else a
             fresh one — a $1 cap; an unknown cost needs approval) (#57).
-        repair: What to do with a generation QC would quarantine for a fault a fade
-            and a true-peak attenuation fix — a clipped run just over the gate, an edge
-            click, an over-ceiling peak (#107). ``True`` (default) applies the report's
-            own fixes (:func:`foley.repair.repair`), checks again and stores the
-            repaired clip, recording the repair on the candidate's ``notes`` and in the
-            licence's ``transformations``; ``False`` quarantines as before; a callable
-            with :func:`foley.repair.repair`'s signature replaces the policy (an
-            ffmpeg one, say). Unrepairable faults (silence, NaN, too short, heavy
+        repair: What to do with a generation QC would quarantine for a clipped run
+            just over the gate (#107). ``True`` (default) applies the report's own
+            fixes (:func:`foley.repair.repair`: a 20 ms fade and a true-peak
+            attenuation, which also clear the edge click and the over-ceiling peak such
+            a clip carries), checks again and stores the repaired clip, recording the
+            repair on the candidate's ``notes`` and in the licence's
+            ``transformations``; unrepairable faults (silence, NaN, too short, heavy
             clipping) are still quarantined, with the reason in the error's report.
+            ``False`` quarantines as before; a callable with
+            :func:`foley.repair.repair`'s signature replaces the policy (an ffmpeg one;
+            ``functools.partial(foley.repair.repair, min_status=QCStatus.pass_)`` also
+            declicks clips QC admits with a warning, which are otherwise stored as is).
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`GENERATION_AFFORDANCES`).
@@ -927,6 +930,9 @@ def __getattr__(name: str):
     if name == "library":
         return default_library()
     if name == "generations":
+        # A fresh handle each access (cheap: two dol stores over one on-disk cache);
+        # hold it in a variable for repeated use. Resolved through the dispatch path
+        # so an injected default (a test's in-memory cache) is the one you read.
         from .sources._dispatch import _default_cache
 
         return _default_cache()

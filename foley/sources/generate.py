@@ -42,7 +42,7 @@ from typing import Optional
 
 from ..base import Candidate, CandidateOrigin
 from ..index.ingest import IngestReport, IngestResult, ingest_one
-from ..qc import DEFAULT_MIN_STATUS, is_below
+from ..qc import DEFAULT_MIN_STATUS
 from ._dispatch import plan_generation, record_generation_outcome, run_generation
 from ..runtime import EgressBlocked
 from .base import SourceConfigurationError
@@ -199,16 +199,19 @@ def _generate(
         reuse_cached: Serve an identical paid request from the generations cache
             instead of paying again (default ``True``; #59).
         generations_cache: A :class:`~foley.stores.GenerationsCache` (default: local).
-        repair: What to do with a generation QC would quarantine for a fault a fade
-            and a true-peak attenuation fix — a clipped run just over the gate, an
-            edge click, an over-ceiling peak (#107). ``True`` (default) applies the
-            report's own fixes (:func:`foley.repair.repair`), QCs the result again
-            and ingests the repaired clip, recording the repair on the result's
-            ``notes`` and the licence's ``transformations``; ``False`` quarantines
+        repair: What to do with a generation QC would quarantine for a clipped run
+            just over the gate (#107). ``True`` (default) applies the report's own
+            fixes (:func:`foley.repair.repair`: a 20 ms fade and a true-peak
+            attenuation, which also clear the edge click and the over-ceiling peak
+            such a clip carries), QCs the result again and ingests the repaired clip,
+            recording the repair on the result's ``notes`` and the licence's
+            ``transformations``; unrepairable faults (silence, NaN, too short, heavy
+            clipping) still quarantine, with the reason noted. ``False`` quarantines
             as before; a callable with :func:`foley.repair.repair`'s signature
-            replaces the policy. The repair runs before the watermark and the id, so
-            the stored bytes, the content-hash id and the credential all describe
-            the repaired clip; the generations cache keeps the bytes as received.
+            replaces the policy. A clip QC admits with a warning is stored as is. The
+            repair runs before the watermark and the id, so the stored bytes, the
+            content-hash id and the credential all describe the repaired clip; the
+            generations cache keeps the bytes as received.
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`foley.base.GENERATION_AFFORDANCES`).
@@ -493,51 +496,31 @@ def generate(*args, **kwargs) -> IngestReport:
 def _manifest_value(value):
     """A run-manifest (JSON) rendering of a façade parameter: a callable by its name."""
     if callable(value):
-        return getattr(value, "__qualname__", None) or repr(value)
+        name = getattr(value, "__qualname__", None)
+        module = getattr(value, "__module__", None)
+        return f"{module}.{name}" if name and module else (name or repr(value))
     return value
 
 
 def _repaired_bytes(audio_bytes: bytes, lic, notes: list, *, repair) -> bytes:
     """The bytes ingest will see: repaired when QC would quarantine them and the repair
-    clears them (re-encoded in the FLAC archive form), else unchanged (#107).
+    clears them (:func:`foley.repair.repair_bytes`), else unchanged (#107).
 
-    ``repair`` is ``True`` (the default policy, :func:`foley.repair.repair`) or a
-    callable with its signature returning a :class:`~foley.repair.RepairResult`. What
-    was done — or why nothing was — goes on ``notes``; each applied fix is also
-    appended to ``lic.transformations`` (the record's provenance: the credit then
-    reads "(modified)" and the content credential carries an edit action). QC is
-    computed here exactly as ingest computes it, so a clip the gate admits as is
-    costs one decode and nothing else.
+    ``repair`` is ``True`` (the default policy) or a callable with
+    :func:`foley.repair.repair`'s signature. What was done — or why nothing was — goes
+    on ``notes``; each applied fix is also appended to ``lic.transformations`` (the
+    record's provenance: the credit then reads "(modified)" and the content credential
+    carries an edit action).
     """
-    from ..audio import WORKING_SAMPLE_RATE, encode, load, to_working
-    from ..qc import run_qc
-    from ..repair import repair as default_repair
+    from ..repair import repair_bytes
 
-    fn = default_repair if repair is True else repair
-    wav, sr = load(audio_bytes)
-    before = run_qc(to_working(wav, sr), WORKING_SAMPLE_RATE)
-    if not is_below(before.status, DEFAULT_MIN_STATUS):
-        return audio_bytes  # admitted as is: nothing to repair, nothing to say
-    result = fn(wav, sr, report=before)
-    faults = "; ".join(before.notes)
-    if not result.repaired:
-        notes.append(
-            f"repair skipped ({result.reason}); QC {before.status.value}: {faults}"
-        )
-        return audio_bytes
-    applied = "; ".join(result.applied)
-    if not result.cleared(DEFAULT_MIN_STATUS):
-        after = result.after.status.value if result.after else "unknown"
-        still = "; ".join(result.after.notes) if result.after else ""
-        notes.append(
-            f"repair tried ({applied}) but QC still {after}: {still}; kept the bytes as received"
-        )
-        return audio_bytes
-    notes.append(
-        f"repaired before QC admission: {applied}; QC was {before.status.value}: {faults}"
-    )
-    lic.transformations.extend(result.applied)
-    return encode(result.samples, sr)
+    fixed, result = repair_bytes(audio_bytes, policy=repair, admit=DEFAULT_MIN_STATUS)
+    note = result.note(DEFAULT_MIN_STATUS)
+    if note:
+        notes.append(note)
+    if fixed is not audio_bytes:  # repaired and cleared: the clip is now a derivative
+        lic.transformations.extend(result.applied)
+    return fixed
 
 
 def _metadata_captioner(prompt: str):

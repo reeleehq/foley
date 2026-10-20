@@ -480,6 +480,8 @@ class Candidate(SerializableMixin):
     #: ``generate(store=False)`` preview (the archive bytes the library would have
     #: stored). A plain class attribute, NOT a dataclass field, so it is never
     #: serialized: ``to_dict``/``to_json`` stay byte-free (cf. ``IngestReport.exception``).
+    #: ``copy``/``deepcopy``/``pickle`` keep it; ``dataclasses.replace`` and a
+    #: ``from_dict`` round trip drop it.
     audio_bytes = None
 
 

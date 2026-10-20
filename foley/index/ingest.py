@@ -82,7 +82,10 @@ class IngestResult(SerializableMixin):
     ``record`` is present only when the clip was ingested. ``cache_key`` is set by
     :func:`foley.generate` to the key its paid bytes were kept under in the generations
     cache (``foley.generations.get(cache_key)``), whatever the outcome — a quarantined
-    generation is retrievable, since it was billed either way (#107).
+    generation is retrievable, since it was billed either way (#107). It is the
+    content key of the provider's bytes as received (their sha256) — not ``id`` (the
+    decoded-PCM hash) nor ``record.content_sha256`` (the stored FLAC archive's), and
+    not the request digest the notes name (which also resolves through ``get``).
     """
 
     id: str

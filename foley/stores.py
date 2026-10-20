@@ -271,7 +271,9 @@ class GenerationsCache:
         generation kept in the generations cache: <key>``) is resolved through its
         entry, following a fallback pointer. The bytes are the provider's response as
         received — before any watermark or repair — so a quarantined generation comes
-        back exactly as it was paid for.
+        back exactly as it was paid for; :func:`foley.repair.repair_bytes` applies the
+        same fixes ``generate`` would, and :func:`foley.index.ingest.ingest_one`
+        (with the entry's ``license``) takes the result into a library.
 
         Raises:
             KeyError: If neither store knows ``key``.
@@ -318,7 +320,8 @@ class GenerationsCache:
         (``'quarantined'`` for a clip QC refused, absent while none has run). A
         fallback's alias entry is skipped (the request it answers is listed); an
         unreadable entry is skipped too. Numbers compare as floats (``duration=1``
-        matches ``1.0``).
+        matches ``1.0``). Entries kept by a foley before 0.0.43 carry no timestamp
+        and come last, in listing order.
         """
         hits = []
         for key in list(self.requests):
