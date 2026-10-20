@@ -85,14 +85,14 @@ Returns `(shh_onset, ducked_applause)`. The hush lands `HUSH_AFTER_S` after the
 applause peak (or at `after`), and the applause fades out over `HUSH_DUCK_S` from
 then, so the crowd is *answering* the hush rather than being cut.
 
-* **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`ReactionCue`](#foley.weave.reaction.ReactionCue)]
-
 ```pycon
 >>> t, a = hush_plan(reaction_cue("applause", 8.0))
 >>> a.end > t
 True
 ```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`ReactionCue`](#foley.weave.reaction.ReactionCue)]
 
 ### foley.weave.reaction.reaction_cue(kind, legible_at, , latency=None, repeat=0, table={'applause': Reaction(latency_s=0.55, rise_s=1.1, decay_s=2.5, peak=0.9), 'cheer': Reaction(latency_s=0.5, rise_s=0.9, decay_s=3.0, peak=1.0), 'gasp': Reaction(latency_s=0.2, rise_s=0.15, decay_s=0.6, peak=0.7), 'laugh': Reaction(latency_s=0.6, rise_s=0.5, decay_s=1.8, peak=0.9), 'whistle': Reaction(latency_s=0.45, rise_s=0.05, decay_s=0.5, peak=0.8)})
 
@@ -100,9 +100,6 @@ Place a `kind` response to an event that became legible at `legible_at`.
 
 `repeat` is how many earlier responses of this kind the scene already had; each one
 scales the peak by [`REPEAT_PEAK`](#foley.weave.reaction.REPEAT_PEAK).
-
-* **Return type:**
-  [`ReactionCue`](#foley.weave.reaction.ReactionCue)
 
 ```pycon
 >>> c = reaction_cue("cheer", 1.0)
@@ -112,14 +109,17 @@ True
 True
 ```
 
+* **Return type:**
+  [`ReactionCue`](#foley.weave.reaction.ReactionCue)
+
 ### foley.weave.reaction.reaction_plan(events, , table={'applause': Reaction(latency_s=0.55, rise_s=1.1, decay_s=2.5, peak=0.9), 'cheer': Reaction(latency_s=0.5, rise_s=0.9, decay_s=3.0, peak=1.0), 'gasp': Reaction(latency_s=0.2, rise_s=0.15, decay_s=0.6, peak=0.7), 'laugh': Reaction(latency_s=0.6, rise_s=0.5, decay_s=1.8, peak=0.9), 'whistle': Reaction(latency_s=0.45, rise_s=0.05, decay_s=0.5, peak=0.8)})
 
 Place `[(kind, legible_at), ...]`, shrinking repeats of a kind automatically.
-
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`ReactionCue`](#foley.weave.reaction.ReactionCue)]
 
 ```pycon
 >>> [c.kind for c in reaction_plan([("cheer", 1.0), ("laugh", 4.0), ("cheer", 6.0)])]
 ['cheer', 'laugh', 'cheer']
 ```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`ReactionCue`](#foley.weave.reaction.ReactionCue)]

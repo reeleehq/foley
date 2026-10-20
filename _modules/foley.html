@@ -31,6 +31,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=e39d37f2" />
   
@@ -40,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=20c5f126"></script>
+    <script src="../_static/documentation_options.js?v=173d7b4c"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.41" />
+  <meta name="docsearch:version" content="0.0.42" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -838,15 +839,23 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.stores</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DEFAULT_AUDIO_DIR</span><span class="p">,</span>
+    <span class="n">DEFAULT_GENERATIONS_DIR</span><span class="p">,</span>
     <span class="n">DEFAULT_META_DIR</span><span class="p">,</span>
     <span class="n">DEFAULT_RUN_DIR</span><span class="p">,</span>
     <span class="n">FOLEY_DATA_DIR</span><span class="p">,</span>
+    <span class="n">GenerationsCache</span><span class="p">,</span>
     <span class="n">content_key</span><span class="p">,</span>
     <span class="n">make_byte_store</span><span class="p">,</span>
+    <span class="n">make_generations_store</span><span class="p">,</span>
     <span class="n">make_meta_store</span><span class="p">,</span>
     <span class="n">make_run_store</span><span class="p">,</span>
     <span class="n">store_sound</span><span class="p">,</span>
 <span class="p">)</span>
+
+<span class="c1"># --- repair: the QC-driven fixes generate() applies before quarantining (#107) ----</span>
+<span class="c1"># stdlib-only at import (numpy loads inside repair.repair); ``foley.repair.repair`` is</span>
+<span class="c1"># the default of ``generate(repair=...)``.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">repair</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">index</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.index</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">CLAP_SAMPLE_RATE</span><span class="p">,</span>
@@ -1028,6 +1037,13 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"DEFAULT_AUDIO_DIR"</span><span class="p">,</span>
     <span class="s2">"DEFAULT_META_DIR"</span><span class="p">,</span>
     <span class="s2">"DEFAULT_RUN_DIR"</span><span class="p">,</span>
+    <span class="c1"># --- stores: the paid-generations cache (#59, #107) ------------------------</span>
+    <span class="s2">"generations"</span><span class="p">,</span>
+    <span class="s2">"GenerationsCache"</span><span class="p">,</span>
+    <span class="s2">"make_generations_store"</span><span class="p">,</span>
+    <span class="s2">"DEFAULT_GENERATIONS_DIR"</span><span class="p">,</span>
+    <span class="c1"># --- repair: QC-driven fixes before quarantine (#107) -----------------------</span>
+    <span class="s2">"repair"</span><span class="p">,</span>
     <span class="c1"># --- qc: Tier-0 deterministic audio QC -----------------------------------</span>
     <span class="s2">"QCStatus"</span><span class="p">,</span>
     <span class="s2">"QCThresholds"</span><span class="p">,</span>
@@ -1391,6 +1407,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">on_unsupported</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">reuse_cached</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">budget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">repair</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Generate a sound effect for ``prompt`` and add it to the library (by-value).</span>
@@ -1411,7 +1428,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            needs ``foley[stable-audio]``) or ``"elevenlabs"`` (hosted;</span>
 <span class="sd">            ``foley[elevenlabs]`` + ``$ELEVENLABS_API_KEY``).</span>
 <span class="sd">        library: Target library (default: the process-wide default library).</span>
-<span class="sd">        store: If ``False``, synthesize + enrich a preview without adding it.</span>
+<span class="sd">        store: If ``False``, synthesize + QC a preview without adding it: the returned</span>
+<span class="sd">            candidate's ``audio_bytes`` carries the clip (the archive bytes the library</span>
+<span class="sd">            would have stored), and enrichment that needs an absent extra</span>
+<span class="sd">            (``foley[clap]``) is skipped with a note instead of failing after the paid</span>
+<span class="sd">            call (#107).</span>
 <span class="sd">        adapter: Optional pre-built adapter (the DI seam; production omits it and the</span>
 <span class="sd">            registry lazily builds one).</span>
 <span class="sd">        watermark: ``True`` require an AudioSeal watermark, ``False`` never, ``None``</span>
@@ -1429,6 +1450,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            (default ``True``): a paid sound is never paid for twice (#59).</span>
 <span class="sd">        budget: A :class:`Budget` for this call (default: the active run's, else a</span>
 <span class="sd">            fresh one — a $1 cap; an unknown cost needs approval) (#57).</span>
+<span class="sd">        repair: What to do with a generation QC would quarantine for a clipped run</span>
+<span class="sd">            just over the gate (#107). ``True`` (default) applies the report's own</span>
+<span class="sd">            fixes (:func:`foley.repair.repair`: a 20 ms fade and a true-peak</span>
+<span class="sd">            attenuation, which also clear the edge click and the over-ceiling peak such</span>
+<span class="sd">            a clip carries), checks again and stores the repaired clip, recording the</span>
+<span class="sd">            repair on the candidate's ``notes`` and in the licence's</span>
+<span class="sd">            ``transformations``; unrepairable faults (silence, NaN, too short, heavy</span>
+<span class="sd">            clipping) are still quarantined, with the reason in the error's report.</span>
+<span class="sd">            ``False`` quarantines as before; a callable with</span>
+<span class="sd">            :func:`foley.repair.repair`'s signature replaces the policy (an ffmpeg one;</span>
+<span class="sd">            ``functools.partial(foley.repair.repair, min_status=QCStatus.pass_)`` also</span>
+<span class="sd">            declicks clips QC admits with a warning, which are otherwise stored as is).</span>
 <span class="sd">        **affordances: Unified generation affordances (``duration``,</span>
 <span class="sd">            ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,</span>
 <span class="sd">            ``output_format`` — see :data:`GENERATION_AFFORDANCES`).</span>
@@ -1446,7 +1479,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        GenerationError: If the backend yields no stored sound (QC-quarantined,</span>
 <span class="sd">            rights-blocked, or a synthesis/ingest error). The message carries the root</span>
 <span class="sd">            cause and the exception is chained to it; it also carries the full</span>
-<span class="sd">            ``report`` and terminal ``status`` so callers can react distinctly.</span>
+<span class="sd">            ``report`` and terminal ``status`` so callers can react distinctly, and</span>
+<span class="sd">            ``cache_key`` — where the paid bytes are in the generations cache</span>
+<span class="sd">            (``foley.generations.get(err.cache_key)``), since they were billed either</span>
+<span class="sd">            way (#107).</span>
 <span class="sd">        SourceConfigurationError: If the backend is not configured (a missing key or</span>
 <span class="sd">            plan) — the message names the env var and where to get the key.</span>
 <span class="sd">        UnsupportedParameter: For a meaning-carrying parameter the backend cannot</span>
@@ -1471,6 +1507,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">provenance_store</span><span class="o">=</span><span class="n">provenance_store</span><span class="p">,</span>
             <span class="n">on_unsupported</span><span class="o">=</span><span class="n">on_unsupported</span><span class="p">,</span>
             <span class="n">reuse_cached</span><span class="o">=</span><span class="n">reuse_cached</span><span class="p">,</span>
+            <span class="n">repair</span><span class="o">=</span><span class="n">repair</span><span class="p">,</span>
             <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span>
@@ -1492,15 +1529,17 @@ window.runMermaid = runMermaid;</script>
         <span class="sa">f</span><span class="s2">"generation via </span><span class="si">{</span><span class="n">backend</span><span class="si">!r}</span><span class="s2"> yielded no stored sound (</span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">cause</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span>
         <span class="n">status</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+        <span class="n">cache_key</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">cache_key</span><span class="p">,</span>
     <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">report.exception</span></div>
 
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_with_call_facts</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Copy a generation's notes and cost from its ingest result onto the candidate."""</span>
+<span class="w">    </span><span class="sd">"""Copy a generation's notes, cost and (for a preview) bytes from its ingest result."""</span>
     <span class="n">candidate</span><span class="o">.</span><span class="n">notes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">notes</span><span class="p">)</span>
     <span class="n">candidate</span><span class="o">.</span><span class="n">cost_estimate_usd</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">cost_estimate_usd</span>
     <span class="n">candidate</span><span class="o">.</span><span class="n">cost_actual_usd</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">cost_actual_usd</span>
+    <span class="n">candidate</span><span class="o">.</span><span class="n">audio_bytes</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">audio_bytes</span>  <span class="c1"># set only by store=False (#107)</span>
     <span class="k">return</span> <span class="n">candidate</span>
 
 
@@ -1615,15 +1654,26 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Lazily expose ``foley.library`` + the #9b disclosure helpers.</span>
+<span class="w">    </span><span class="sd">"""Lazily expose ``foley.library``, ``foley.generations`` + the #9b disclosure helpers.</span>
 
 <span class="sd">    ``library`` is kept lazy so ``import foley`` never constructs the CLAP model or</span>
-<span class="sd">    the index; the disclosure helpers are lazy so the (stdlib-only)</span>
+<span class="sd">    the index; ``generations`` — the paid-generations cache, a</span>
+<span class="sd">    :class:`~foley.stores.GenerationsCache` (``foley.generations.get(key)`` /</span>
+<span class="sd">    ``.find(prompt, ...)``, #107) — is resolved through the dispatch path's default so</span>
+<span class="sd">    a cache injected there (a test's in-memory one) is the one you read; the</span>
+<span class="sd">    disclosure helpers are lazy so the (stdlib-only)</span>
 <span class="sd">    :mod:`foley.provenance.disclosure` module is not imported until first use,</span>
 <span class="sd">    keeping the eager ``import foley`` graph minimal.</span>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"library"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">default_library</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"generations"</span><span class="p">:</span>
+        <span class="c1"># A fresh handle each access (cheap: two dol stores over one on-disk cache);</span>
+        <span class="c1"># hold it in a variable for repeated use. Resolved through the dispatch path</span>
+        <span class="c1"># so an injected default (a test's in-memory cache) is the one you read.</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.sources._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">_default_cache</span>
+
+        <span class="k">return</span> <span class="n">_default_cache</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"art50_checklist"</span><span class="p">,</span> <span class="s2">"scan_prompt"</span><span class="p">,</span> <span class="s2">"build_content_credential"</span><span class="p">):</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">.provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">disclosure</span>
 

@@ -121,15 +121,15 @@ The cap of a run given no budget: higher when the caller chose a paid LLM.
 The provider is the one named by `llm` or, failing that, `$FOLEY_LLM` (the
 free default never resolves to a paid one); see [`DEFAULT_MAX_USD_BY_LLM`](#foley.cost.DEFAULT_MAX_USD_BY_LLM).
 
-* **Return type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
-
 ```pycon
 >>> default_max_usd("fake")
 1.0
 >>> default_max_usd("anthropic")
 3.0
 ```
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### foley.cost.estimate_call(config, \*\*affordances)
 

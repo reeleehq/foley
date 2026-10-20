@@ -160,7 +160,7 @@ Hybrid (CLAP vector ⊕ BM25) search for a text query.
 Search by a reference audio clip (audio<->audio via CLAP).
 
 * **Parameters:**
-  * **clip** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A working array, or a path/bytes/file decodable by
+  * **clip** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A working array, or a path/bytes/file decodable by
     [`foley.audio.load()`](foley.audio.html.md#foley.audio.load).
   * **sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Sample rate when `clip` is already a working array.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Number of results.

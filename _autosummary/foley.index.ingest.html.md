@@ -65,7 +65,7 @@ licence URL / label its source served (kept in `license_url`).
 * **Type:**
   `restamp_rights(license=FROM_LICENSE_URL)`
 
-### *class* foley.index.ingest.IngestReport(root, results=<factory>, notes=<factory>)
+### *class* foley.index.ingest.IngestReport(root, results=list(), notes=list())
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -117,7 +117,7 @@ A counts dict for a console/CLI summary.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* foley.index.ingest.IngestResult(id, status, record=None, qc=None, notes=<factory>, error=None, cost_estimate_usd=None, cost_actual_usd=None)
+### *class* foley.index.ingest.IngestResult(id, status, record=None, qc=None, notes=list(), error=None, cost_estimate_usd=None, cost_actual_usd=None, cache_key=None)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -128,7 +128,22 @@ not added), `'skipped_dup'` (content already in the library),
 `'rights_blocked'` (license forbids AI training / embedding, refused before
 embed — see [`ingest_one()`](#foley.index.ingest.ingest_one)), `'skipped_license'` (dropped by a
 bootstrap commercial-use / fail-closed license filter), or `'error'`.
-`record` is present only when the clip was ingested.
+`record` is present only when the clip was ingested. `cache_key` is set by
+[`foley.generate()`](foley.html.md#foley.generate) to the key its paid bytes were kept under in the generations
+cache (`foley.generations.get(cache_key)`), whatever the outcome — a quarantined
+generation is retrievable, since it was billed either way (#107). It is the
+content key of the provider’s bytes as received (their sha256) — not `id` (the
+decoded-PCM hash) nor `record.content_sha256` (the stored FLAC archive’s), and
+not the request digest the notes name (which also resolves through `get`).
+
+#### audio_bytes *= None*
+
+what the
+library would have served. A plain attribute, never serialized (like
+`IngestReport.exception`), so `to_dict`/`to_json` stay byte-free.
+
+* **Type:**
+  The archive bytes of a clip assembled but not stored (`store=False`)
 
 ### foley.index.ingest.LEGACY_SELECTORS *= {'has-license-url': <function has_license_url>, 'legacy-elevenlabs': <function is_legacy_elevenlabs>, 'legacy-user-owned': <function is_legacy_default_user_owned>}*
 
@@ -193,7 +208,7 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
 `SoundRecord` -> `SoundLibrary.add()`.
 
 * **Parameters:**
-  * **src** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A path, `bytes`, or file-like audio source.
+  * **src** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A path, `bytes`, or file-like audio source.
   * **library** – Target [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
     process-wide default library).
   * **sound_id** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional canonical id override. Defaults to `None` → the
@@ -226,7 +241,11 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
   * **do_caption** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Toggle each enrichment stage.
   * **thresholds** ([`QCThresholds`](foley.qc.html.md#foley.qc.QCThresholds)) – QC thresholds.
   * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, assemble the record but do not add it to the library
-    (probe/QC/enrich only).
+    (probe/QC/enrich only — a preview). The result’s `audio_bytes` then
+    carries the archive bytes the library would have stored, and an
+    enrichment stage whose optional extra is absent (the `foley[clap]`
+    embedder) is skipped with a note rather than failing: a preview is never
+    indexed, so it never needs the vector (#107).
   * **seed_tags** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]) – Optional caller-supplied tags (e.g. a corpus’s folder-path
     taxonomy) unioned into the record’s `tags` alongside the
     supervised/zero-shot tags — so they feed the BM25 keyword index.
@@ -277,7 +296,7 @@ bulk-corpus adapters in [`foley.sources`](foley.sources.html.md#module-foley.sou
   * **recursive** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Recurse into sub-folders.
   * **exts** ([`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]) – Audio extensions to include (lowercased suffix match).
 * **Yields:**
-  Each matching file as a [`pathlib.Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path), in sorted order.
+  [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path) – Each matching file as a [`pathlib.Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path), in sorted order.
 * **Return type:**
   [*Iterator*](https://docs.python.org/3/library/typing.html#typing.Iterator)[[*Path*](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]
 

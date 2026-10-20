@@ -118,6 +118,15 @@ Two `dol` mappings:
   content key plus the licence and notes it was generated under. An identical
   request is served from here instead of calling the provider again.
 
+#### entry(request_key)
+
+The request entry kept under `request_key` (a fallback pointer is followed).
+
+* **Raises:**
+  [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If `request_key` (or the entry it points at) is unknown.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 #### evict(request_key, , keep_audio=False)
 
 Forget a cached request (so the next identical one generates anew).
@@ -128,6 +137,41 @@ Forget a cached request (so the next identical one generates anew).
     request still points at them).
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### find(prompt=None, , backend=None, \*\*affordances)
+
+The kept generations matching `prompt` / `backend` / affordances, newest first.
+
+The way back to a paid clip whose key was not kept, e.g.
+`foley.generations.find("a crisp apple bite", backend="elevenlabs", duration=1)`.
+Each item is `(request_key, entry)`: `entry["content_key"]` (or [`get()`](#foley.stores.GenerationsCache.get)
+with either key) gives the bytes, `entry["status"]` how its ingest ended
+(`'quarantined'` for a clip QC refused, absent while none has run). A
+fallback’s alias entry is skipped (the request it answers is listed); an
+unreadable entry is skipped too. Numbers compare as floats (`duration=1`
+matches `1.0`). Entries kept by a foley before 0.0.43 carry no timestamp
+and come last, in listing order.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]
+
+#### get(key)
+
+The bytes of a kept generation, by content key or by request key (#107).
+
+A content key (`GenerationError.cache_key` / `IngestResult.cache_key`) reads
+the bytes directly; a request key (the digest a result’s notes name: `paid
+generation kept in the generations cache: <key>`) is resolved through its
+entry, following a fallback pointer. The bytes are the provider’s response as
+received — before any watermark or repair — so a quarantined generation comes
+back exactly as it was paid for; [`foley.repair.repair_bytes()`](foley.repair.html.md#foley.repair.repair_bytes) applies the
+same fixes `generate` would, and [`foley.index.ingest.ingest_one()`](foley.index.ingest.html.md#foley.index.ingest.ingest_one)
+(with the entry’s `license`) takes the result into a library.
+
+* **Raises:**
+  [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If neither store knows `key`.
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
 
 ### foley.stores.HASH_ALGO *= 'sha256'*
 
@@ -168,7 +212,7 @@ it directly to [`store_sound()`](#foley.stores.store_sound) instead of calling t
 `store_sound` gate treats `sounds` as an opaque `MutableMapping`.
 
 * **Parameters:**
-  **rootdir** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the blobs (created if missing).
+  **rootdir** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the blobs (created if missing).
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
 * **Returns:**
@@ -179,7 +223,7 @@ it directly to [`store_sound()`](#foley.stores.store_sound) instead of calling t
 Build the paid-generations cache (local files by default; any `dol` pair works).
 
 * **Parameters:**
-  **rootdir** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory holding `audio/` (bytes) and `requests/` (JSON).
+  **rootdir** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory holding `audio/` (bytes) and `requests/` (JSON).
 * **Return type:**
   [`GenerationsCache`](#foley.stores.GenerationsCache)
 * **Returns:**
@@ -196,7 +240,7 @@ bare `sound_id` (invariant #3 — the id is escaped at this boundary so an
 externally-derived id can never escape `rootdir` or collide via `/`/`..`).
 
 * **Parameters:**
-  **rootdir** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the metadata JSON files (created if missing).
+  **rootdir** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the metadata JSON files (created if missing).
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord)]
 * **Returns:**
@@ -215,7 +259,7 @@ C2PA-shaped assertion dict written next to each generated clip; a
 default; swap in any `dol` Mapping to move sidecars to the cloud.
 
 * **Parameters:**
-  **rootdir** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the credential JSON files (created if missing).
+  **rootdir** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the credential JSON files (created if missing).
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Returns:**
@@ -232,7 +276,7 @@ exposing bare `run_id` keys; values are plain dicts ((de)serialized by
 `dol.JsonFiles`). Local by default; swap in any `dol` Mapping for the cloud.
 
 * **Parameters:**
-  **rootdir** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the run JSON files (created if missing).
+  **rootdir** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the run JSON files (created if missing).
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Returns:**
@@ -252,7 +296,7 @@ Mapping for the cloud.
   * **session_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The session namespace (default `'default'`).
   * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The store namespace within the session (`candidates` / `picks` /
     `rejects`).
-  * **rootdir** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – Root sessions directory (default: [`DEFAULT_SESSION_DIR`](#foley.stores.DEFAULT_SESSION_DIR)).
+  * **rootdir** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – Root sessions directory (default: [`DEFAULT_SESSION_DIR`](#foley.stores.DEFAULT_SESSION_DIR)).
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Returns:**

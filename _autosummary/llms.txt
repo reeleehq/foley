@@ -6,6 +6,7 @@
 ## Pages in this subsection
 
 - [foley](foley.html.md): foley — a retrieval-first façade for sound effects.
+- [foley.repair](foley.repair.html.md): Repair instead of quarantine: the fixes a Tier-0 QC report suggests, applied and re-checked (#107).
 - [foley.audio](foley.audio.html.md): Audio I/O and DSP primitives for foley.
 - [foley.index](foley.index.html.md): foley INDEX stage — make every sound findable by keyword &#42;and&#42; meaning.
 - [foley.index.taxonomy](foley.index.taxonomy.html.md): UCS + AudioSet taxonomy: the &#96;tags -&gt; UCS CatID&#96; resolver for foley.
@@ -38,7 +39,15 @@
 - [foley.agent.session](foley.agent.session.html.md): Session-scoped audition state — cached candidates, picks, and rejects (#12).
 - [foley.agent.tools](foley.agent.tools.html.md): The SELECT orchestration: &#96;find()&#96; / &#96;plan()&#96; + the small pure tool wrappers.
 - [foley.agent.verify](foley.agent.verify.html.md): &#96;verify_match&#96; — the retrieve→verify ladder (clap → listen → judge) + &#96;Judge&#96; impls.
-- [foley.weave](foley.weave.html.md): Page content
+- [foley.weave](foley.weave.html.md): WEAVE — the compositor façade: narration + timeline → a finished, editable mix.
+- [foley.weave.align](foley.weave.align.html.md): Forced-alignment adapters — the &#96;Aligner&#96; seam’s fake default + WhisperX real impl.
+- [foley.weave.anchor](foley.weave.anchor.html.md): Symbolic-anchor → sample-onset heuristics — the SELECT→WEAVE timing bridge (report 06 §2.4).
+- [foley.weave.master](foley.weave.master.html.md): Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).
+- [foley.weave.mix](foley.weave.mix.html.md): Pure-numpy mixing DSP — making a clip sit under the voice (report 06 §3).
+- [foley.weave.protocols](foley.weave.protocols.html.md): The structural DI seams of the WEAVE stage — &#96;Aligner&#96; / &#96;ApplyStrategy&#96;.
+- [foley.weave.reaction](foley.weave.reaction.html.md): Audience-reaction timing — a crowd answers an event, it does not coincide with it.
+- [foley.weave.requirements](foley.weave.requirements.html.md): System-dependency onboarding for WEAVE’s optional upgrade paths (accompy-style).
+- [foley.weave.timeline](foley.weave.timeline.html.md): The sound-design timeline as an editable document — hydrate, edit, caption.
 - [foley.eval](foley.eval.html.md): Tier-1 retrieval evaluation — metrics, a frozen golden set, and the nDCG gate.
 - [foley.eval.baseline](foley.eval.baseline.html.md): The committed nDCG baseline — the PR gate’s SSOT + staleness stamps.
 - [foley.eval.embedder](foley.eval.embedder.html.md): A deterministic, numpy-only text embedder for the retrieval eval gate.
@@ -79,14 +88,6 @@
 - [foley.sources.stable_audio.adapter](foley.sources.stable_audio.adapter.html.md): Stable Audio Open 1.0 generate adapter — local &#96;diffusers&#96; inference.
 - [foley.sources.stable_audio.config](foley.sources.stable_audio.config.html.md): &#96;SOURCE_CONFIG&#96; for the local Stable Audio Open 1.0 generator (report 02 · 07 · 10 §4.1).
 - [foley.stores](foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
-- [foley.weave.align](foley.weave.align.html.md): Forced-alignment adapters — the &#96;Aligner&#96; seam’s fake default + WhisperX real impl.
-- [foley.weave.anchor](foley.weave.anchor.html.md): Symbolic-anchor → sample-onset heuristics — the SELECT→WEAVE timing bridge (report 06 §2.4).
-- [foley.weave.master](foley.weave.master.html.md): Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).
-- [foley.weave.mix](foley.weave.mix.html.md): Pure-numpy mixing DSP — making a clip sit under the voice (report 06 §3).
-- [foley.weave.protocols](foley.weave.protocols.html.md): The structural DI seams of the WEAVE stage — &#96;Aligner&#96; / &#96;ApplyStrategy&#96;.
-- [foley.weave.reaction](foley.weave.reaction.html.md): Audience-reaction timing — a crowd answers an event, it does not coincide with it.
-- [foley.weave.requirements](foley.weave.requirements.html.md): System-dependency onboarding for WEAVE’s optional upgrade paths (accompy-style).
-- [foley.weave.timeline](foley.weave.timeline.html.md): The sound-design timeline as an editable document — hydrate, edit, caption.
 
 ## Optional
 

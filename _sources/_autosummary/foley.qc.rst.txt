@@ -9,6 +9,8 @@ foley.qc
    .. autosummary::
    
       LUFS_MIN_BLOCK_S
+      QC_STATUS_RANK
+      DEFAULT_MIN_STATUS
       DEFAULT_QC_THRESHOLDS
    
    .. rubric:: Functions
@@ -20,6 +22,7 @@ foley.qc
       duration_s
       estimate_snr
       has_nan_inf
+      is_below
       is_silent
       measure_lufs
       needs_edge_fade

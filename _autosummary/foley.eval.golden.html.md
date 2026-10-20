@@ -38,7 +38,7 @@ gate therefore does NOT exercise `ingest_one` (that path is covered by
 | [`GoldenItem`](#foley.eval.golden.GoldenItem)(id, context, expected_events, ...)   | One frozen `(context → expected sounds)` judgment (report 08 §1.3).   |
 |--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
 
-### *class* foley.eval.golden.GoldenItem(id, context, expected_events, answer_clip_ids, grade, negatives=<factory>, labeler='llm+human', schema_version=1)
+### *class* foley.eval.golden.GoldenItem(id, context, expected_events, answer_clip_ids, grade, negatives=list(), labeler='llm+human', schema_version=1)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -48,34 +48,58 @@ One frozen `(context → expected sounds)` judgment (report 08 §1.3).
 
 Unique item id (e.g. `gld_0001`).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### context
 
 The narrative paragraph (the future SELECT input).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 #### expected_events
 
 One or more `{query, ucs_catid, layer, diegetic,
 salience, ...}` dicts; `query` is the string fed to `search`.
 
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
 #### answer_clip_ids
 
 `{ucs_catid: [clip_id, ...]}` — the acceptable clips.
+
+* **Type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 #### grade
 
 `{clip_id: grade}` (2 ideal / 1 acceptable / 0 wrong).
 
+* **Type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 #### negatives
 
 Free-text distractors (unused by scoring; documentation).
+
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
 
 #### labeler
 
 Provenance of the labels (`llm+human` etc.).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### schema_version
 
 The GoldenItem schema version.
+
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 ### foley.eval.golden.RING0_CORPUS_PATH *= PosixPath('/home/runner/work/foley/foley/foley/data/golden/corpus.json')*
 

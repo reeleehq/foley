@@ -72,6 +72,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`make_meta_store`](#foley.make_meta_store)([rootdir])                          | Build the metadata store: `Mapping[sound_id -> SoundRecord]` (JSON files).                                                                                                     |
 | [`make_run_store`](#foley.make_run_store)([rootdir])                           | Build the run-artifact store: `Mapping[run_id -> RunManifest dict]` (JSON files).                                                                                              |
 | [`store_sound`](#foley.store_sound)(record[, data, cache_bytes_ok])         | Persist a sound, choosing by-value vs by-reference from `cache_bytes_ok`.                                                                                                      |
+| [`make_generations_store`](#foley.make_generations_store)([rootdir])                   | Build the paid-generations cache (local files by default; any `dol` pair works).                                                                                               |
 | [`run_qc`](#foley.run_qc)(samples, sample_rate, \*[, thresholds])      | Run every Tier-0 check and fold the results into a [`QCReport`](#foley.QCReport).                                                                  |
 | [`has_nan_inf`](#foley.has_nan_inf)(samples)                                | Return `True` if any sample is `NaN` or `Inf` (corrupt-clip guard).                                                                                                            |
 | [`duration_s`](#foley.duration_s)(samples, sample_rate)                    | Clip duration in seconds: `frames / sample_rate`.                                                                                                                              |
@@ -175,6 +176,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`MasterProfile`](#foley.MasterProfile)([target_lufs, true_peak_db, lra])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                       |
 | [`LicenseFlags`](#foley.LicenseFlags)([commercial_ok, ...])                | The eight derivable flags for one `license_id` (the table row type).                                                                 |
 | [`LicenseMeta`](#foley.LicenseMeta)(display_name[, url])                  | Human-facing display metadata for one `license_id` (name + canonical URL).                                                           |
+| [`GenerationsCache`](#foley.GenerationsCache)(audio, requests)                 | Where paid generations are kept, so a paid response is never lost or paid twice (#59).                                               |
 | [`QCStatus`](#foley.QCStatus)(\*values)                                | Overall verdict for a clip (subclasses `str` so it is JSON-safe).                                                                    |
 | [`QCThresholds`](#foley.QCThresholds)([clip_full_scale, ...])              | All Tier-0 QC defaults (report 08 §3 table), each an explicit field.                                                                 |
 | [`QCReport`](#foley.QCReport)(duration_s, sample_rate, channels, ...)  | Per-clip Tier-0 QC result.                                                                                                           |
@@ -199,7 +201,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`Judge`](#foley.Judge)(\*args, \*\*kwargs)                         | One rung of the verify ladder: does this candidate match this event? (report 10 §4.2).                                               |
 | [`Budget`](#foley.Budget)([max_refine_loops, max_generations, ...])  | Bounded-cost accounting: per-event loop counts, and a cumulative dollar cap (#57).                                                   |
 | [`Decision`](#foley.Decision)(action[, candidate, reason])             | The tiny result of [`decide()`](#foley.decide); `reason` feeds the refine hint + the audit Step.       |
-| [`WeaveResult`](#foley.WeaveResult)(audio, sr, timeline, credits, ...)    | The output of `weave()` — the v1 Definition-of-Done deliverable.                                                                     |
+| [`WeaveResult`](#foley.WeaveResult)(audio, sr, timeline, credits, ...)    | The output of [`weave()`](foley.weave.html.md#module-foley.weave) — the v1 Definition-of-Done deliverable.   |
 | [`ScoreResult`](#foley.ScoreResult)(timeline, events[, weave])            | The output of [`score()`](#foley.score) — the editable plan + per-event rationale (+ mix when woven). |
 | [`ScoredEvent`](#foley.ScoredEvent)(segment, query, sound_id, ...)        | One chosen sound placed for a narration event (a JSON-friendly rationale row).                                                       |
 | [`SessionStore`](#foley.SessionStore)([session_id, candidates, ...])       | Three namespaced stores for one audition session (candidates / picks / rejects).                                                     |
@@ -231,27 +233,45 @@ Descriptor for a unified parameter affordance (arioso analog).
 
 Canonical parameter name used at the façade level.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### type
 
 Expected Python type.
+
+* **Type:**
+  [`type`](#foley.Affordance.type)
 
 #### description
 
 Human-readable description.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### default
 
 Default value (`None` = no default / required).
 
+* **Type:**
+  [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
+
 #### stage
 
 `'query'` (search/find/filter) or `'generate'`.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 #### carries_meaning
 
 Dropping it would change what the caller gets (a seed they
 will rely on to reproduce, content they asked to exclude), so a backend
 that cannot honour it raises instead of dropping it (#53).
+
+* **Type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ### *class* foley.Anchor(\*values)
 
@@ -263,7 +283,7 @@ How a WEAVE `Placement` binds its symbolic time to the narration (report 06 §2.
 `word_timeline` — `word` to a trigger word’s onset, `sentence` across a
 sentence span, `scene`/`paragraph` to a boundary’s first spoken word.
 
-### *class* foley.Budget(max_refine_loops=1, max_generations=1, allow_generate=True, max_usd=1.0, approve_unknown_cost=None, \_refines=0, \_gens=0, \_spent_usd=0.0, \_unknown_calls=0, \_lock=<factory>)
+### *class* foley.Budget(max_refine_loops=1, max_generations=1, allow_generate=True, max_usd=1.0, approve_unknown_cost=None, \_refines=0, \_gens=0, \_spent_usd=0.0, \_unknown_calls=0, \_lock=allocate_lock())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -362,7 +382,7 @@ Charge one refine loop.
 
 Dollars charged so far this run (calls of unknown cost count as 0 here).
 
-### *class* foley.Candidate(sound, origin=CandidateOrigin.retrieved, event=None, clap_score=None, bm25_score=None, rrf_score=None, rerank_score=None, verdict=None, license_ok=None, preview_uri=None, notes=<factory>, cost_estimate_usd=None, cost_actual_usd=None)
+### *class* foley.Candidate(sound, origin=CandidateOrigin.retrieved, event=None, clap_score=None, bm25_score=None, rrf_score=None, rerank_score=None, verdict=None, license_ok=None, preview_uri=None, notes=list(), cost_estimate_usd=None, cost_actual_usd=None)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -371,6 +391,15 @@ A ranked, license-checked, (optionally) verified sound for one SoundEvent.
 Retrieval and generation return the SAME shape; only `origin` differs.
 Nested `sound` / `event` / `verdict` dataclasses are decoded generically
 by `_decode()` — no per-field code needed.
+
+#### audio_bytes *= None*
+
+The clip’s bytes when foley holds them nowhere it can serve them from — a
+`generate(store=False)` preview (the archive bytes the library would have
+stored). A plain class attribute, NOT a dataclass field, so it is never
+serialized: `to_dict`/`to_json` stay byte-free (cf. `IngestReport.exception`).
+`copy`/`deepcopy`/`pickle` keep it; `dataclasses.replace` and a
+`from_dict` round trip drop it.
 
 ### *class* foley.CandidateOrigin(\*values)
 
@@ -395,7 +424,7 @@ Return a one-sentence caption for the clip.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
-### *class* foley.CatIdResolution(catid=None, category=None, subcategory=None, source=None, confidence=0.0, matched_terms=<factory>)
+### *class* foley.CatIdResolution(catid=None, category=None, subcategory=None, source=None, confidence=0.0, matched_terms=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -561,9 +590,15 @@ libraries stay coherent (each [`SoundRecord`](foley.base.html.md#foley.base.Soun
 
 The checkpoint id (e.g. `'laion/larger_clap_general'`).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### dim
 
 The embedding dimensionality (e.g. `512`).
+
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 #### embed_audio(wav, sr)
 
@@ -583,7 +618,7 @@ Embed one audio clip.
 Embed one or more query strings.
 
 * **Parameters:**
-  **text** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – A single string or a list of strings.
+  **text** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – A single string or a list of strings.
 * **Return type:**
   `ndarray`
 * **Returns:**
@@ -605,21 +640,33 @@ so the façade can stamp them onto a [`Candidate`](foley.base.html.md#foley.base
 
 The sound id.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### rrf_score
 
 The fused RRF score (`None` for a pure-vector search).
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 #### clap_score
 
 Cosine similarity from the vector ranker (`None` if the id
 appeared only in the keyword list).
 
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
 #### bm25_score
 
 BM25 score from the keyword ranker (`None` if the id
 appeared only in the vector list).
 
-### *exception* foley.GenerationError(message, , report, status)
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### *exception* foley.GenerationError(message, , report, status, cache_key=None)
 
 Bases: [`RuntimeError`](https://docs.python.org/3/builtins/exceptions.html#RuntimeError)
 
@@ -640,7 +687,84 @@ The [`IngestReport`](foley.index.ingest.html.md#foley.index.ingest.IngestReport)
 The terminal [`IngestResult`](foley.index.ingest.html.md#foley.index.ingest.IngestResult) status
 (`'quarantined'` | `'rights_blocked'` | `'error'` | …).
 
-### *class* foley.IngestReport(root, results=<factory>, notes=<factory>)
+#### cache_key
+
+The key the paid bytes were kept under in the generations cache
+(`foley.generations.get(cache_key)`), or `None` when nothing was kept
+(a free backend, a refusal before synthesis, a failed cache write). A
+quarantined generation is retrievable: it was billed either way (#107).
+
+### *class* foley.GenerationsCache(audio, requests)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Where paid generations are kept, so a paid response is never lost or paid twice (#59).
+
+Two `dol` mappings:
+
+* [`audio`](foley.audio.html.md#module-foley.audio) — `content_key -> bytes`: every paid response, written **before**
+  QC or ingest, so a quarantined or undecodable generation is still retrievable.
+* `requests` — `request digest -> dict`: the canonical request (backend,
+  prompt, the native request it resolves to, the model version) mapped to the
+  content key plus the licence and notes it was generated under. An identical
+  request is served from here instead of calling the provider again.
+
+#### entry(request_key)
+
+The request entry kept under `request_key` (a fallback pointer is followed).
+
+* **Raises:**
+  [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If `request_key` (or the entry it points at) is unknown.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### evict(request_key, , keep_audio=False)
+
+Forget a cached request (so the next identical one generates anew).
+
+* **Parameters:**
+  * **request_key** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The request digest (noted on the result that cached it).
+  * **keep_audio** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Keep the bytes (default: delete them too, unless another
+    request still points at them).
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### find(prompt=None, , backend=None, \*\*affordances)
+
+The kept generations matching `prompt` / `backend` / affordances, newest first.
+
+The way back to a paid clip whose key was not kept, e.g.
+`foley.generations.find("a crisp apple bite", backend="elevenlabs", duration=1)`.
+Each item is `(request_key, entry)`: `entry["content_key"]` (or [`get()`](#foley.GenerationsCache.get)
+with either key) gives the bytes, `entry["status"]` how its ingest ended
+(`'quarantined'` for a clip QC refused, absent while none has run). A
+fallback’s alias entry is skipped (the request it answers is listed); an
+unreadable entry is skipped too. Numbers compare as floats (`duration=1`
+matches `1.0`). Entries kept by a foley before 0.0.43 carry no timestamp
+and come last, in listing order.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]
+
+#### get(key)
+
+The bytes of a kept generation, by content key or by request key (#107).
+
+A content key (`GenerationError.cache_key` / `IngestResult.cache_key`) reads
+the bytes directly; a request key (the digest a result’s notes name: `paid
+generation kept in the generations cache: <key>`) is resolved through its
+entry, following a fallback pointer. The bytes are the provider’s response as
+received — before any watermark or repair — so a quarantined generation comes
+back exactly as it was paid for; [`foley.repair.repair_bytes()`](foley.repair.html.md#foley.repair.repair_bytes) applies the
+same fixes `generate` would, and [`foley.index.ingest.ingest_one()`](foley.index.ingest.html.md#foley.index.ingest.ingest_one)
+(with the entry’s `license`) takes the result into a library.
+
+* **Raises:**
+  [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If neither store knows `key`.
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### *class* foley.IngestReport(root, results=list(), notes=list())
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -692,7 +816,7 @@ A counts dict for a console/CLI summary.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* foley.IngestResult(id, status, record=None, qc=None, notes=<factory>, error=None, cost_estimate_usd=None, cost_actual_usd=None)
+### *class* foley.IngestResult(id, status, record=None, qc=None, notes=list(), error=None, cost_estimate_usd=None, cost_actual_usd=None, cache_key=None)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -703,7 +827,22 @@ not added), `'skipped_dup'` (content already in the library),
 `'rights_blocked'` (license forbids AI training / embedding, refused before
 embed — see [`ingest_one()`](#foley.ingest_one)), `'skipped_license'` (dropped by a
 bootstrap commercial-use / fail-closed license filter), or `'error'`.
-`record` is present only when the clip was ingested.
+`record` is present only when the clip was ingested. `cache_key` is set by
+[`foley.generate()`](#foley.generate) to the key its paid bytes were kept under in the generations
+cache (`foley.generations.get(cache_key)`), whatever the outcome — a quarantined
+generation is retrievable, since it was billed either way (#107). It is the
+content key of the provider’s bytes as received (their sha256) — not `id` (the
+decoded-PCM hash) nor `record.content_sha256` (the stored FLAC archive’s), and
+not the request digest the notes name (which also resolves through `get`).
+
+#### audio_bytes *= None*
+
+what the
+library would have served. A plain attribute, never serialized (like
+`IngestReport.exception`), so `to_dict`/`to_json` stay byte-free.
+
+* **Type:**
+  The archive bytes of a clip assembled but not stored (`store=False`)
 
 ### *class* foley.IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False)
 
@@ -848,7 +987,7 @@ the *permission* row consulted by [`keep()`](#foley.keep), `LicenseMeta` holds t
 license authority; a record’s own `license_name` / `license_url` (when a
 source populated them) take precedence over this default.
 
-### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=<factory>, is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_seed=None, generation_params=<factory>, watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
+### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -963,7 +1102,7 @@ Every field is a no-op at its default, so a sparse item (no `processing`)
 renders untouched; the mixer departs from dry/centered/full-level only when a
 field is set.
 
-### *class* foley.QCReport(duration_s, sample_rate, channels, clipped_ratio, clipped_max_run, dc_offset, rms_dbfs, is_silent, needs_edge_fade, has_nan_inf, true_peak_dbtp=None, snr_db=None, loudness_lufs=None, status=QCStatus.pass_, notes=<factory>)
+### *class* foley.QCReport(duration_s, sample_rate, channels, clipped_ratio, clipped_max_run, dc_offset, rms_dbfs, is_silent, needs_edge_fade, has_nan_inf, true_peak_dbtp=None, snr_db=None, loudness_lufs=None, status=QCStatus.pass_, notes=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -1008,7 +1147,7 @@ Bases: [`SafetyRefusal`](foley.sources.html.md#foley.sources.SafetyRefusal)
 
 A [`SafetyRefusal`](#foley.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1).
 
-### *class* foley.RunManifest(run_id, op, created_at=None, foley_version=None, inputs=<factory>, params=<factory>, spans=<factory>, steps=<factory>, ingest_report=None, result_ids=<factory>, candidate_scores=<factory>, credits_ref=None, disclosure_refs=<factory>, seeds=<factory>, plan_ref=None, trace_ref=None, status='ok', error=None, schema_version=1)
+### *class* foley.RunManifest(run_id, op, created_at=None, foley_version=None, inputs=dict(), params=dict(), spans=list(), steps=list(), ingest_report=None, result_ids=list(), candidate_scores=list(), credits_ref=None, disclosure_refs=dict(), seeds=dict(), plan_ref=None, trace_ref=None, status='ok', error=None, schema_version=1)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -1243,7 +1382,7 @@ The rejected sound ids.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### *class* foley.SoundDesignTimeline(items=<factory>, run_manifest_ref=None, transcript_ref=None, schema_version=1, narration_ref=None, word_timeline=<factory>, master=<factory>)
+### *class* foley.SoundDesignTimeline(items=list(), run_manifest_ref=None, transcript_ref=None, schema_version=1, narration_ref=None, word_timeline=list(), master=MasterProfile())
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -1258,7 +1397,7 @@ this data + the library, so editing any field and re-rendering reproduces exactl
 change. `run_manifest_ref` == `foley.obs.RunManifest.run_id` (the reserved #8
 `plan_ref` join).
 
-### *class* foley.SoundEvent(query, layer=Layer.sfx_fg, diegetic=True, salience=Salience.medium, onset=None, loop=False, ucs_catid=None, audioset=<factory>, era_place=None)
+### *class* foley.SoundEvent(query, layer=Layer.sfx_fg, diegetic=True, salience=Salience.medium, onset=None, loop=False, ucs_catid=None, audioset=list(), era_place=None)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -1391,7 +1530,7 @@ Hybrid (CLAP vector ⊕ BM25) search for a text query.
 Search by a reference audio clip (audio<->audio via CLAP).
 
 * **Parameters:**
-  * **clip** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A working array, or a path/bytes/file decodable by
+  * **clip** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A working array, or a path/bytes/file decodable by
     [`foley.audio.load()`](foley.audio.html.md#foley.audio.load).
   * **sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Sample rate when `clip` is already a working array.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Number of results.
@@ -1436,7 +1575,7 @@ caption): the bytes and the CLAP vector stay as they are.
 
 The vector index.
 
-### *class* foley.SoundRecord(id, content_sha256=None, hash_algo='sha256', uri=None, storage_mode=StorageMode.by_reference, archive_format=None, source_sample_rate=None, source_bit_depth=None, license=<factory>, caption=None, tags=<factory>, ucs_category=None, ucs_subcategory=None, audioset_labels=<factory>, duration_s=None, sample_rate=None, channels=None, loudness_lufs=None, format=None, qc=None, embedding_model=None, embedding_dim=None, embedding_ref=None, named_cue=None, schema_version=1)
+### *class* foley.SoundRecord(id, content_sha256=None, hash_algo='sha256', uri=None, storage_mode=StorageMode.by_reference, archive_format=None, source_sample_rate=None, source_bit_depth=None, license=<factory>, caption=None, tags=list(), ucs_category=None, ucs_subcategory=None, audioset_labels=list(), duration_s=None, sample_rate=None, channels=None, loudness_lufs=None, format=None, qc=None, embedding_model=None, embedding_dim=None, embedding_ref=None, named_cue=None, schema_version=1)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -1445,7 +1584,7 @@ Canonical SSOT per sound.
 Audio bytes + CLAP vector live in SEPARATE stores keyed by the same id; this
 record holds a content-hash `uri`, never raw bytes.
 
-### *class* foley.SpanRecord(name, span_id, parent_id=None, kind=None, start_ms=None, duration_ms=None, status='ok', attributes=<factory>, events=<factory>, error=None)
+### *class* foley.SpanRecord(name, span_id, parent_id=None, kind=None, start_ms=None, duration_ms=None, status='ok', attributes=dict(), events=list(), error=None)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -1615,11 +1754,11 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Which rung of the verification ladder produced a `Verdict`.
 
-### *class* foley.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=<factory>)
+### *class* foley.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
-The output of `weave()` — the v1 Definition-of-Done deliverable.
+The output of [`weave()`](foley.weave.html.md#module-foley.weave) — the v1 Definition-of-Done deliverable.
 
 A mastered mix + an editable, re-renderable timeline + credits + SDH captions + a
 reproducible run-artifact join, plus the fail-safe provenance re-assertion.
@@ -1690,7 +1829,7 @@ otherwise the line is synthesized from Title/Author/Source/License, with a
 `(modified)` notice and an AI-disclosure segment appended as applicable.
 
 * **Parameters:**
-  * **source** (`Union`[[`CreditEntry`](foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry), [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – A [`CreditEntry`](#foley.CreditEntry), or any credit input (coerced first).
+  * **source** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`CreditEntry`](foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry), [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – A [`CreditEntry`](#foley.CreditEntry), or any credit input (coerced first).
   * **fmt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `'markdown'` (hyperlinked list-item body) or `'plain'` (text with
     URLs in parentheses).
 * **Return type:**
@@ -1815,7 +1954,7 @@ Every field is read straight off the [`LicenseRecord`](foley.base.html.md#foley.
 never re-derived); `modified` reflects a non-empty `transformations` list.
 
 * **Parameters:**
-  * **record** (`Union`[[`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate),
+  * **record** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate),
     or [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord).
   * **title** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Explicit title override (else resolved from caption/tags/…).
 * **Return type:**
@@ -1846,7 +1985,7 @@ document) / `.manifest` (a JSON-serializable dict) on the result.
 Build the deduplicated [`Credits`](#foley.Credits) for the sounds used in a run.
 
 * **Parameters:**
-  * **sounds** ([`Iterable`](https://docs.python.org/3/library/typing.html#typing.Iterable)[`Union`[[`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]]) – An iterable of records / candidates / license records.
+  * **sounds** ([`Iterable`](https://docs.python.org/3/library/typing.html#typing.Iterable)[[`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]]) – An iterable of records / candidates / license records.
   * **title** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The credits heading (also carried in the manifest).
   * **only_required** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Keep only entries whose license *requires* attribution
     (drops CC0 / user-owned courtesy credits). Default `False` credits
@@ -2189,7 +2328,7 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
     [`foley.licensing.DEFAULT_INTENDED_USE`](foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) — commercial publishing;
     NC / SA material is refused unless you pass a different intent).
   * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – Generation backend for the fallback (`'auto'` → `foley.generate`’s default).
-  * **verify** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`VerifyLevel`](foley.base.html.md#foley.base.VerifyLevel)]) – The max verify rung — `'clap'` | `'listen'` | `'judge'`.
+  * **verify** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`VerifyLevel`](foley.base.html.md#foley.base.VerifyLevel)]) – The max verify rung — `'clap'` | `'listen'` | `'judge'`.
   * **stream** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `True`, return a generator yielding one [`Candidate`](#foley.Candidate) per
     resolved event; else return the collected `list`.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Retrieval shortlist depth per query.
@@ -2213,7 +2352,7 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
     then falls back to the free default (a configured local endpoint, else the
     deterministic fake). A key being present never opts in to paid calls.
 * **Return type:**
-  `Union`[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)], [`Iterator`](https://docs.python.org/3/library/typing.html#typing.Iterator)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]]
+  [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)], [`Iterator`](https://docs.python.org/3/library/typing.html#typing.Iterator)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]]
 * **Returns:**
   `list[Candidate]` (`stream=False`) or an `Iterator[Candidate]`
   (`stream=True`) — one verified, license-clean candidate per resolved event.
@@ -2240,7 +2379,7 @@ RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
 
   FusedHit\`s, each carrying its raw component scores.
 
-### foley.generate(prompt, , backend='stable_audio', library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, \*\*affordances)
+### foley.generate(prompt, , backend='stable_audio', library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, \*\*affordances)
 
 Generate a sound effect for `prompt` and add it to the library (by-value).
 
@@ -2260,7 +2399,11 @@ training uses).
     needs `foley[stable-audio]`) or `"elevenlabs"` (hosted;
     `foley[elevenlabs]` + `$ELEVENLABS_API_KEY`).
   * **library** – Target library (default: the process-wide default library).
-  * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, synthesize + enrich a preview without adding it.
+  * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, synthesize + QC a preview without adding it: the returned
+    candidate’s `audio_bytes` carries the clip (the archive bytes the library
+    would have stored), and enrichment that needs an absent extra
+    (`foley[clap]`) is skipped with a note instead of failing after the paid
+    call (#107).
   * **adapter** – Optional pre-built adapter (the DI seam; production omits it and the
     registry lazily builds one).
   * **watermark** – `True` require an AudioSeal watermark, `False` never, `None`
@@ -2278,6 +2421,18 @@ training uses).
     (default `True`): a paid sound is never paid for twice (#59).
   * **budget** – A [`Budget`](#foley.Budget) for this call (default: the active run’s, else a
     fresh one — a $1 cap; an unknown cost needs approval) (#57).
+  * **repair** – What to do with a generation QC would quarantine for a clipped run
+    just over the gate (#107). `True` (default) applies the report’s own
+    fixes ([`foley.repair.repair()`](foley.repair.html.md#foley.repair.repair): a 20 ms fade and a true-peak
+    attenuation, which also clear the edge click and the over-ceiling peak such
+    a clip carries), checks again and stores the repaired clip, recording the
+    repair on the candidate’s `notes` and in the licence’s
+    `transformations`; unrepairable faults (silence, NaN, too short, heavy
+    clipping) are still quarantined, with the reason in the error’s report.
+    `False` quarantines as before; a callable with
+    [`foley.repair.repair()`](foley.repair.html.md#foley.repair.repair)’s signature replaces the policy (an ffmpeg one;
+    `functools.partial(foley.repair.repair, min_status=QCStatus.pass_)` also
+    declicks clips QC admits with a warning, which are otherwise stored as is).
   * **\*\*affordances** – Unified generation affordances (`duration`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see `GENERATION_AFFORDANCES`).
@@ -2293,7 +2448,10 @@ training uses).
   * [**GenerationError**](#foley.GenerationError) – If the backend yields no stored sound (QC-quarantined,
         rights-blocked, or a synthesis/ingest error). The message carries the root
         cause and the exception is chained to it; it also carries the full
-        `report` and terminal `status` so callers can react distinctly.
+        `report` and terminal `status` so callers can react distinctly, and
+        `cache_key` — where the paid bytes are in the generations cache
+        (`foley.generations.get(err.cache_key)`), since they were billed either
+        way (#107).
   * [**SourceConfigurationError**](foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If the backend is not configured (a missing key or
         plan) — the message names the env var and where to get the key.
   * **UnsupportedParameter** – For a meaning-carrying parameter the backend cannot
@@ -2386,7 +2544,7 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
 `SoundRecord` -> [`SoundLibrary.add()`](#foley.SoundLibrary.add).
 
 * **Parameters:**
-  * **src** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A path, `bytes`, or file-like audio source.
+  * **src** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A path, `bytes`, or file-like audio source.
   * **library** – Target [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
     process-wide default library).
   * **sound_id** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional canonical id override. Defaults to `None` → the
@@ -2419,7 +2577,11 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
   * **do_caption** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Toggle each enrichment stage.
   * **thresholds** ([`QCThresholds`](foley.qc.html.md#foley.qc.QCThresholds)) – QC thresholds.
   * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, assemble the record but do not add it to the library
-    (probe/QC/enrich only).
+    (probe/QC/enrich only — a preview). The result’s `audio_bytes` then
+    carries the archive bytes the library would have stored, and an
+    enrichment stage whose optional extra is absent (the `foley[clap]`
+    embedder) is skipped with a note rather than failing: a preview is never
+    indexed, so it never needs the vector (#107).
   * **seed_tags** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]) – Optional caller-supplied tags (e.g. a corpus’s folder-path
     taxonomy) unioned into the record’s `tags` alongside the
     supervised/zero-shot tags — so they feed the BM25 keyword index.
@@ -2573,7 +2735,7 @@ Decode audio into a float working array.
 `BytesIO` so nothing touches disk), or any binary file-like object.
 
 * **Parameters:**
-  * **src** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – Path, raw bytes, or file-like object to decode.
+  * **src** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – Path, raw bytes, or file-like object to decode.
   * **target_sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – If given, resample the decoded audio to this rate (via
     [`resample()`](#foley.resample)); otherwise the native rate is returned.
   * **mono** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `True`, down-mix multichannel audio to mono.
@@ -2630,11 +2792,22 @@ it directly to [`store_sound()`](#foley.store_sound) instead of calling this fac
 `store_sound` gate treats `sounds` as an opaque `MutableMapping`.
 
 * **Parameters:**
-  **rootdir** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the blobs (created if missing).
+  **rootdir** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the blobs (created if missing).
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
 * **Returns:**
   A `MutableMapping[str, bytes]` keyed by [`content_key()`](#foley.content_key).
+
+### foley.make_generations_store(rootdir=PosixPath('/home/runner/.local/share/foley/generations'))
+
+Build the paid-generations cache (local files by default; any `dol` pair works).
+
+* **Parameters:**
+  **rootdir** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory holding `audio/` (bytes) and `requests/` (JSON).
+* **Return type:**
+  [`GenerationsCache`](foley.stores.html.md#foley.stores.GenerationsCache)
+* **Returns:**
+  A [`GenerationsCache`](#foley.GenerationsCache).
 
 ### foley.make_http_app(, auth, path='/mcp', json_response=False, library=None, runtime=None, byte_store=None, include=None, name='foley')
 
@@ -2668,7 +2841,7 @@ bare `sound_id` (invariant #3 — the id is escaped at this boundary so an
 externally-derived id can never escape `rootdir` or collide via `/`/`..`).
 
 * **Parameters:**
-  **rootdir** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the metadata JSON files (created if missing).
+  **rootdir** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the metadata JSON files (created if missing).
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord)]
 * **Returns:**
@@ -2685,7 +2858,7 @@ exposing bare `run_id` keys; values are plain dicts ((de)serialized by
 `dol.JsonFiles`). Local by default; swap in any `dol` Mapping for the cloud.
 
 * **Parameters:**
-  **rootdir** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the run JSON files (created if missing).
+  **rootdir** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Directory that holds the run JSON files (created if missing).
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Returns:**
@@ -2705,7 +2878,7 @@ Mapping for the cloud.
   * **session_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The session namespace (default `'default'`).
   * **name** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The store namespace within the session (`candidates` / `picks` /
     `rejects`).
-  * **rootdir** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – Root sessions directory (default: `DEFAULT_SESSION_DIR`).
+  * **rootdir** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – Root sessions directory (default: `DEFAULT_SESSION_DIR`).
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Returns:**
@@ -2916,7 +3089,7 @@ Resolve inputs to a best UCS CatID by the staged precedence.
 Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.
 
 * **Parameters:**
-  **master** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`MasterProfile`](foley.base.html.md#foley.base.MasterProfile), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A `MASTER_PROFILES` key (e.g. `'podcast'`), an explicit
+  **master** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`MasterProfile`](foley.base.html.md#foley.base.MasterProfile), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A `MASTER_PROFILES` key (e.g. `'podcast'`), an explicit
   [`MasterProfile`](#foley.MasterProfile), or `None` (-> the podcast default).
 * **Return type:**
   [`MasterProfile`](foley.base.html.md#foley.base.MasterProfile)
@@ -2999,7 +3172,7 @@ Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).
   * **samples** (`ndarray`) – The working array to write (shape `(frames,)` or
     `(frames, channels)`).
   * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
-  * **dst** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – Destination path or writable binary file-like object.
+  * **dst** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – Destination path or writable binary file-like object.
   * **fmt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – Container/codec name (case-insensitive; passed to libsndfile).
   * **subtype** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – Sample subtype (e.g. `PCM_24`, `PCM_16`, `FLOAT`).
 * **Return type:**
@@ -3044,7 +3217,7 @@ editable [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeli
     (`max_usd`) across every segment’s paid calls (#57). Default: $1, or $3
     when `llm` (or `$FOLEY_LLM`) is `'anthropic'`
     ([`foley.cost.default_max_usd()`](foley.cost.html.md#foley.cost.default_max_usd), #88).
-  * **\*\*weave_kwargs** – Forwarded to `foley.weave()` (e.g. `sign_cert`, `watermark`).
+  * **\*\*weave_kwargs** – Forwarded to [`foley.weave()`](foley.weave.html.md#module-foley.weave) (e.g. `sign_cert`, `watermark`).
 * **Return type:**
   [`ScoreResult`](#foley.ScoreResult)
 * **Returns:**
@@ -3305,12 +3478,13 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 
 ### Modules
 
-| [`audio`](foley.audio.html.md#module-foley.audio)               | Audio I/O and DSP primitives for foley.                                                                                                              |
+| [`repair`](foley.repair.html.md#module-foley.repair)             | Repair instead of quarantine: the fixes a Tier-0 QC report suggests, applied and re-checked (#107).                                                  |
 |-----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`audio`](foley.audio.html.md#module-foley.audio)               | Audio I/O and DSP primitives for foley.                                                                                                              |
 | [`index`](foley.index.html.md#module-foley.index)               | foley INDEX stage — make every sound findable by keyword *and* meaning.                                                                              |
 | [`obs`](foley.obs.html.md#module-foley.obs)                   | Observability & the reproducible run-artifact for foley (#11).                                                                                       |
 | [`agent`](foley.agent.html.md#module-foley.agent)               | The SELECT stage — the search-agent that finds the right sound for a context (#7).                                                                   |
-| `weave`                                                                                 |                                                                                                                                                      |
+| [`weave`](foley.weave.html.md#module-foley.weave)               | WEAVE — the compositor façade: narration + timeline → a finished, editable mix.                                                                      |
 | [`eval`](foley.eval.html.md#module-foley.eval)                 | Tier-1 retrieval evaluation — metrics, a frozen golden set, and the nDCG gate.                                                                       |
 | [`provenance`](foley.provenance.html.md#module-foley.provenance)     | Provenance layer for foley — attribution/credits (and, later, disclosure).                                                                           |
 | [`agent_kit`](foley.agent_kit.html.md#module-foley.agent_kit)       | Install foley's shipped agent kit — the consumer skill + Claude slash command + subagent.                                                            |

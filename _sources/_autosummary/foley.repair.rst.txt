@@ -1,0 +1,31 @@
+foley.repair
+============
+
+.. automodule:: foley.repair
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DEFAULT_REPAIR_FADE_S
+      DEFAULT_REPAIR_CEILING_DBTP
+      DEFAULT_REPAIR_MAX_CLIPPED_RATIO
+      DEFAULT_REPAIR_MAX_CLIPPED_RUN
+      FIX_FADE
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      repair
+      repair_bytes
+      suggested_fixes
+      unrepairable
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      RepairResult
+   

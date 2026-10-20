@@ -34,6 +34,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=e39d37f2" />
   
@@ -43,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=20c5f126"></script>
+    <script src="../_static/documentation_options.js?v=173d7b4c"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.41" />
+  <meta name="docsearch:version" content="0.0.42" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -319,6 +320,7 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="foley.html">foley</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="foley.repair.html">foley.repair</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.audio.html">foley.audio</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="foley.index.html">foley.index</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.taxonomy.html">foley.index.taxonomy</a></li>
@@ -352,7 +354,17 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.agent.verify.html">foley.agent.verify</a></li>
 </ul>
 </details></li>
-<li class="toctree-l2"><a class="reference internal" href="foley.weave.html">foley.weave</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.weave.html">foley.weave</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.align.html">foley.weave.align</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.anchor.html">foley.weave.anchor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.master.html">foley.weave.master</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.mix.html">foley.weave.mix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.protocols.html">foley.weave.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.reaction.html">foley.weave.reaction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.requirements.html">foley.weave.requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.timeline.html">foley.weave.timeline</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="foley.eval.html">foley.eval</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.baseline.html">foley.eval.baseline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.embedder.html">foley.eval.embedder</a></li>
@@ -489,6 +501,12 @@ numpy-only.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.qc.LUFS_MIN_BLOCK_S" title="foley.qc.LUFS_MIN_BLOCK_S"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LUFS_MIN_BLOCK_S</span></code></a></p></td>
 <td><p>BS.1770 integrated-loudness gating block = 400 ms; a clip shorter than one block cannot be measured (<code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code> raises), so <a class="reference internal" href="#foley.qc.measure_lufs" title="foley.qc.measure_lufs"><code class="xref py py-func docutils literal notranslate"><span class="pre">measure_lufs()</span></code></a> returns <code class="docutils literal notranslate"><span class="pre">None</span></code> for it.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.qc.QC_STATUS_RANK" title="foley.qc.QC_STATUS_RANK"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QC_STATUS_RANK</span></code></a></p></td>
+<td><p>the SSOT for &quot;is this clip below the floor?&quot; — <a class="reference internal" href="#foley.qc.is_below" title="foley.qc.is_below"><code class="xref py py-func docutils literal notranslate"><span class="pre">is_below()</span></code></a>, the ingest gate's <code class="docutils literal notranslate"><span class="pre">min_status</span></code> and <a class="reference internal" href="foley.repair.html#module-foley.repair" title="foley.repair"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.repair</span></code></a> all read it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.qc.DEFAULT_MIN_STATUS" title="foley.qc.DEFAULT_MIN_STATUS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_MIN_STATUS</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">warn</span></code> clips are stored (their notes travel with the record); only <code class="docutils literal notranslate"><span class="pre">fail</span></code> clips are quarantined.</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.qc.DEFAULT_QC_THRESHOLDS" title="foley.qc.DEFAULT_QC_THRESHOLDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DEFAULT_QC_THRESHOLDS</span></code></a></p></td>
 <td><p>The shipped default thresholds; the default for every keyword below.</p></td>
 </tr>
@@ -513,19 +531,22 @@ numpy-only.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.qc.has_nan_inf" title="foley.qc.has_nan_inf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">has_nan_inf</span></code></a>(samples)</p></td>
 <td><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> if any sample is <code class="docutils literal notranslate"><span class="pre">NaN</span></code> or <code class="docutils literal notranslate"><span class="pre">Inf</span></code> (corrupt-clip guard).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.qc.is_silent" title="foley.qc.is_silent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_silent</span></code></a>(samples, *[, rms_floor_dbfs])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.qc.is_below" title="foley.qc.is_below"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_below</span></code></a>(status[, min_status])</p></td>
+<td><p>True when <code class="docutils literal notranslate"><span class="pre">status</span></code> is worse than the admission floor <code class="docutils literal notranslate"><span class="pre">min_status</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.qc.is_silent" title="foley.qc.is_silent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_silent</span></code></a>(samples, *[, rms_floor_dbfs])</p></td>
 <td><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> when whole-clip RMS falls below <code class="docutils literal notranslate"><span class="pre">rms_floor_dbfs</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.qc.measure_lufs" title="foley.qc.measure_lufs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">measure_lufs</span></code></a>(samples, sample_rate, *[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.qc.measure_lufs" title="foley.qc.measure_lufs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">measure_lufs</span></code></a>(samples, sample_rate, *[, ...])</p></td>
 <td><p>Integrated loudness (LUFS, ITU-R BS.1770-4) via <code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code> (lazy).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.qc.needs_edge_fade" title="foley.qc.needs_edge_fade"><code class="xref py py-obj docutils literal notranslate"><span class="pre">needs_edge_fade</span></code></a>(samples, *[, rel_peak_dbfs])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.qc.needs_edge_fade" title="foley.qc.needs_edge_fade"><code class="xref py py-obj docutils literal notranslate"><span class="pre">needs_edge_fade</span></code></a>(samples, *[, rel_peak_dbfs])</p></td>
 <td><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> when the first or last sample sits above <code class="docutils literal notranslate"><span class="pre">rel_peak_dbfs</span></code> relative to the clip peak — i.e. a nonzero boundary that clicks under narration and needs a short fade.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.qc.run_qc" title="foley.qc.run_qc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_qc</span></code></a>(samples, sample_rate, *[, thresholds])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.qc.run_qc" title="foley.qc.run_qc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_qc</span></code></a>(samples, sample_rate, *[, thresholds])</p></td>
 <td><p>Run every Tier-0 check and fold the results into a <a class="reference internal" href="#foley.qc.QCReport" title="foley.qc.QCReport"><code class="xref py py-class docutils literal notranslate"><span class="pre">QCReport</span></code></a>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.qc.true_peak_dbtp" title="foley.qc.true_peak_dbtp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">true_peak_dbtp</span></code></a>(samples, sample_rate, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.qc.true_peak_dbtp" title="foley.qc.true_peak_dbtp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">true_peak_dbtp</span></code></a>(samples, sample_rate, *[, ...])</p></td>
 <td><p>Inter-sample true-peak level in dBTP.</p></td>
 </tr>
 </tbody>
@@ -547,6 +568,18 @@ numpy-only.</p>
 </table>
 </div>
 <dl class="py data">
+<dt class="sig sig-object py" id="foley.qc.DEFAULT_MIN_STATUS">
+<span class="sig-prename descclassname"><span class="pre">foley.qc.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_MIN_STATUS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#foley.qc.QCStatus" title="foley.qc.QCStatus"><span class="pre">QCStatus</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">QCStatus.warn</span></span><a class="headerlink" href="#foley.qc.DEFAULT_MIN_STATUS" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">warn</span></code> clips are
+stored (their notes travel with the record); only <code class="docutils literal notranslate"><span class="pre">fail</span></code> clips are quarantined.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The admission floor foley’s ingest uses unless told otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
 <dt class="sig sig-object py" id="foley.qc.DEFAULT_QC_THRESHOLDS">
 <span class="sig-prename descclassname"><span class="pre">foley.qc.</span></span><span class="sig-name descname"><span class="pre">DEFAULT_QC_THRESHOLDS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">QCThresholds(clip_full_scale=0.999,</span> <span class="pre">clip_min_run=3,</span> <span class="pre">clip_reject_ratio=0.0001,</span> <span class="pre">clip_reject_run=10,</span> <span class="pre">true_peak_max_dbtp=-1.0,</span> <span class="pre">true_peak_oversample=4,</span> <span class="pre">dc_offset_fail=0.01,</span> <span class="pre">dc_offset_warn=0.001,</span> <span class="pre">silence_rms_dbfs=-60.0,</span> <span class="pre">snr_clean_db=20.0,</span> <span class="pre">snr_quiet_percentile=10.0,</span> <span class="pre">snr_frame_s=0.025,</span> <span class="pre">snr_hop_s=0.01,</span> <span class="pre">edge_rel_peak_dbfs=-40.0,</span> <span class="pre">edge_fade_s=0.01,</span> <span class="pre">lufs_gate_floor=-70.0,</span> <span class="pre">lufs_outlier_lu=6.0,</span> <span class="pre">duration_min_s=0.1,</span> <span class="pre">deliver_min_sample_rate=44100)</span></span><a class="headerlink" href="#foley.qc.DEFAULT_QC_THRESHOLDS" title="Link to this definition">#</a></dt>
 <dd><p>The shipped default thresholds; the default for every keyword below.</p>
@@ -563,7 +596,7 @@ tunable QC policy threshold, hence a module constant rather than a field.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.qc.QCReport">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.qc.</span></span><span class="sig-name descname"><span class="pre">QCReport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">duration_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clipped_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clipped_max_run</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rms_dbfs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_silent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">needs_edge_fade</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_nan_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true_peak_dbtp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snr_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loudness_lufs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">QCStatus.pass_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/qc.html#QCReport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.qc.QCReport" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.qc.</span></span><span class="sig-name descname"><span class="pre">QCReport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">duration_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clipped_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clipped_max_run</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dc_offset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rms_dbfs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_silent</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">needs_edge_fade</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">has_nan_inf</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true_peak_dbtp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">snr_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loudness_lufs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">QCStatus.pass_</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/qc.html#QCReport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.qc.QCReport" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Per-clip Tier-0 QC result.</p>
 <p>Mirrors the fields the <code class="docutils literal notranslate"><span class="pre">SoundRecord</span></code> schema already carries
@@ -605,6 +638,19 @@ field.</p>
 <p>Grouped by check. Pass a customized instance to <a class="reference internal" href="#foley.qc.run_qc" title="foley.qc.run_qc"><code class="xref py py-func docutils literal notranslate"><span class="pre">run_qc()</span></code></a> (or the
 per-check keyword arguments) to override any threshold without editing code.</p>
 <dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.qc.QC_STATUS_RANK">
+<span class="sig-prename descclassname"><span class="pre">foley.qc.</span></span><span class="sig-name descname"><span class="pre">QC_STATUS_RANK</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'fail':</span> <span class="pre">0,</span> <span class="pre">'pass':</span> <span class="pre">2,</span> <span class="pre">'warn':</span> <span class="pre">1}</span></span><a class="headerlink" href="#foley.qc.QC_STATUS_RANK" title="Link to this definition">#</a></dt>
+<dd><p>the SSOT for
+“is this clip below the floor?” — <a class="reference internal" href="#foley.qc.is_below" title="foley.qc.is_below"><code class="xref py py-func docutils literal notranslate"><span class="pre">is_below()</span></code></a>, the ingest gate’s <code class="docutils literal notranslate"><span class="pre">min_status</span></code>
+and <a class="reference internal" href="foley.repair.html#module-foley.repair" title="foley.repair"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.repair</span></code></a> all read it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Admission ordering of <a class="reference internal" href="#foley.qc.QCStatus" title="foley.qc.QCStatus"><code class="xref py py-class docutils literal notranslate"><span class="pre">QCStatus</span></code></a> values (worse -&gt; better)</p>
+</dd>
 </dl>
 </dd></dl>
 
@@ -685,6 +731,23 @@ an exactly-zero floor returns <code class="docutils literal notranslate"><span c
 <dt class="sig sig-object py" id="foley.qc.has_nan_inf">
 <span class="sig-prename descclassname"><span class="pre">foley.qc.</span></span><span class="sig-name descname"><span class="pre">has_nan_inf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/qc.html#has_nan_inf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.qc.has_nan_inf" title="Link to this definition">#</a></dt>
 <dd><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> if any sample is <code class="docutils literal notranslate"><span class="pre">NaN</span></code> or <code class="docutils literal notranslate"><span class="pre">Inf</span></code> (corrupt-clip guard).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.qc.is_below">
+<span class="sig-prename descclassname"><span class="pre">foley.qc.</span></span><span class="sig-name descname"><span class="pre">is_below</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">status</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_status</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">QCStatus.warn</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/qc.html#is_below"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.qc.is_below" title="Link to this definition">#</a></dt>
+<dd><p>True when <code class="docutils literal notranslate"><span class="pre">status</span></code> is worse than the admission floor <code class="docutils literal notranslate"><span class="pre">min_status</span></code>.</p>
+<p>Accepts <a class="reference internal" href="#foley.qc.QCStatus" title="foley.qc.QCStatus"><code class="xref py py-class docutils literal notranslate"><span class="pre">QCStatus</span></code></a> members or their string values; an unknown value ranks
+as <code class="docutils literal notranslate"><span class="pre">fail</span></code> (fail-closed).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_below</span><span class="p">(</span><span class="n">QCStatus</span><span class="o">.</span><span class="n">fail</span><span class="p">,</span> <span class="n">QCStatus</span><span class="o">.</span><span class="n">warn</span><span class="p">),</span> <span class="n">is_below</span><span class="p">(</span><span class="s2">"warn"</span><span class="p">,</span> <span class="s2">"warn"</span><span class="p">)</span>
+<span class="go">(True, False)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
@@ -833,6 +896,7 @@ symmetry (FFT interpolation is rate-independent).</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.DEFAULT_MIN_STATUS"><code class="docutils literal notranslate"><span class="pre">DEFAULT_MIN_STATUS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.DEFAULT_QC_THRESHOLDS"><code class="docutils literal notranslate"><span class="pre">DEFAULT_QC_THRESHOLDS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.LUFS_MIN_BLOCK_S"><code class="docutils literal notranslate"><span class="pre">LUFS_MIN_BLOCK_S</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.QCReport"><code class="docutils literal notranslate"><span class="pre">QCReport</span></code></a><ul class="nav section-nav flex-column">
@@ -841,11 +905,13 @@ symmetry (FFT interpolation is rate-independent).</p>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.QCStatus"><code class="docutils literal notranslate"><span class="pre">QCStatus</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.QCThresholds"><code class="docutils literal notranslate"><span class="pre">QCThresholds</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.QC_STATUS_RANK"><code class="docutils literal notranslate"><span class="pre">QC_STATUS_RANK</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.dc_offset"><code class="docutils literal notranslate"><span class="pre">dc_offset()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.detect_clipping"><code class="docutils literal notranslate"><span class="pre">detect_clipping()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.duration_s"><code class="docutils literal notranslate"><span class="pre">duration_s()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.estimate_snr"><code class="docutils literal notranslate"><span class="pre">estimate_snr()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.has_nan_inf"><code class="docutils literal notranslate"><span class="pre">has_nan_inf()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.is_below"><code class="docutils literal notranslate"><span class="pre">is_below()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.is_silent"><code class="docutils literal notranslate"><span class="pre">is_silent()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.measure_lufs"><code class="docutils literal notranslate"><span class="pre">measure_lufs()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.qc.needs_edge_fade"><code class="docutils literal notranslate"><span class="pre">needs_edge_fade()</span></code></a></li>

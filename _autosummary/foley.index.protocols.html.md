@@ -64,9 +64,15 @@ libraries stay coherent (each [`SoundRecord`](foley.base.html.md#foley.base.Soun
 
 The checkpoint id (e.g. `'laion/larger_clap_general'`).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### dim
 
 The embedding dimensionality (e.g. `512`).
+
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 #### embed_audio(wav, sr)
 
@@ -86,7 +92,7 @@ Embed one audio clip.
 Embed one or more query strings.
 
 * **Parameters:**
-  **text** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – A single string or a list of strings.
+  **text** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – A single string or a list of strings.
 * **Return type:**
   `ndarray`
 * **Returns:**

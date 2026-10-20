@@ -5,7 +5,7 @@ The MCP surface — foley’s façade as agent-callable tools (py2mcp, #12, repo
 Exposes the SELECT→preview→WEAVE loop to an LLM agent (or any MCP client) as a set of
 **JSON-safe** tools built with `py2mcp` (`mk_mcp_server` over stdio). The single rule:
 tools take/return only JSON (ids, scores, license summaries, timeline dicts, store keys) —
-**never** a [`Candidate`](foley.base.html.md#foley.base.Candidate), a [`WeaveResult`](foley.html.md#foley.WeaveResult), or numpy
+**never** a [`Candidate`](foley.base.html.md#foley.base.Candidate), a [`WeaveResult`](foley.weave.html.md#foley.weave.WeaveResult), or numpy
 audio. Heavy objects stay server-side; audio is referenced by a byte-store key.
 
 The tool functions are thin wrappers over the existing façade (a single seam, three
@@ -101,6 +101,11 @@ rehydrate them by id. Returns compact candidate rows.
 ### foley.agent.mcp.foley_generate(prompt, backend='stable_audio', commercial_ok=True, session='default')
 
 Generate a sound from a text prompt (local backends only when offline).
+
+A clip QC would quarantine for a clipped run just over the gate is repaired and
+stored (the repair is in the result’s notes). A refused generation’s dict carries
+`cache_key`: where its paid bytes are in the generations cache
+(`foley.generations.get(cache_key)`, on the host — bytes never travel over MCP).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

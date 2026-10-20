@@ -31,6 +31,7 @@
 <link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../_static/epythet.css?v=e39d37f2" />
   
@@ -40,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=20c5f126"></script>
+    <script src="../../../_static/documentation_options.js?v=173d7b4c"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.41" />
+  <meta name="docsearch:version" content="0.0.42" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -758,6 +759,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Candidate</span><span class="p">,</span> <span class="n">CandidateOrigin</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..index.ingest</span><span class="w"> </span><span class="kn">import</span> <span class="n">IngestReport</span><span class="p">,</span> <span class="n">IngestResult</span><span class="p">,</span> <span class="n">ingest_one</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_MIN_STATUS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">plan_generation</span><span class="p">,</span> <span class="n">record_generation_outcome</span><span class="p">,</span> <span class="n">run_generation</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">EgressBlocked</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SourceConfigurationError</span>
@@ -783,12 +785,24 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        report: The :class:`~foley.index.ingest.IngestReport` from the run.</span>
 <span class="sd">        status: The terminal :class:`~foley.index.ingest.IngestResult` status</span>
 <span class="sd">            (``'quarantined'`` | ``'rights_blocked'`` | ``'error'`` | …).</span>
+<span class="sd">        cache_key: The key the paid bytes were kept under in the generations cache</span>
+<span class="sd">            (``foley.generations.get(cache_key)``), or ``None`` when nothing was kept</span>
+<span class="sd">            (a free backend, a refusal before synthesis, a failed cache write). A</span>
+<span class="sd">            quarantined generation is retrievable: it was billed either way (#107).</span>
 <span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">report</span><span class="p">:</span> <span class="n">IngestReport</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">report</span><span class="p">:</span> <span class="n">IngestReport</span><span class="p">,</span>
+        <span class="n">status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">cache_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">report</span> <span class="o">=</span> <span class="n">report</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cache_key</span> <span class="o">=</span> <span class="n">cache_key</span></div>
 
 
 
@@ -860,6 +874,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">on_unsupported</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">reuse_cached</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">generations_cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">repair</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IngestReport</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Generate a sound via ``backend`` and ingest it (by-value) into ``library``.</span>
@@ -893,7 +908,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        library: Target :class:`~foley.index.library.SoundLibrary` (default: the</span>
 <span class="sd">            process-wide default library).</span>
 <span class="sd">        store: If ``False``, synthesize + enrich but do not add to the library</span>
-<span class="sd">            (probe/QC/embed only — a preview; no content-credential sidecar).</span>
+<span class="sd">            (probe/QC/embed only — a preview; no content-credential sidecar). The</span>
+<span class="sd">            result's ``audio_bytes`` carries the clip, and an enrichment stage whose</span>
+<span class="sd">            optional extra is absent (``foley[clap]``) is skipped with a note rather</span>
+<span class="sd">            than failing after the paid call (#107).</span>
 <span class="sd">        adapter: An optional pre-built adapter (the dependency-injection seam — a</span>
 <span class="sd">            test passes a fake-transport / fake-pipeline adapter; production omits</span>
 <span class="sd">            it and the registry lazily builds one).</span>
@@ -913,6 +931,19 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        reuse_cached: Serve an identical paid request from the generations cache</span>
 <span class="sd">            instead of paying again (default ``True``; #59).</span>
 <span class="sd">        generations_cache: A :class:`~foley.stores.GenerationsCache` (default: local).</span>
+<span class="sd">        repair: What to do with a generation QC would quarantine for a clipped run</span>
+<span class="sd">            just over the gate (#107). ``True`` (default) applies the report's own</span>
+<span class="sd">            fixes (:func:`foley.repair.repair`: a 20 ms fade and a true-peak</span>
+<span class="sd">            attenuation, which also clear the edge click and the over-ceiling peak</span>
+<span class="sd">            such a clip carries), QCs the result again and ingests the repaired clip,</span>
+<span class="sd">            recording the repair on the result's ``notes`` and the licence's</span>
+<span class="sd">            ``transformations``; unrepairable faults (silence, NaN, too short, heavy</span>
+<span class="sd">            clipping) still quarantine, with the reason noted. ``False`` quarantines</span>
+<span class="sd">            as before; a callable with :func:`foley.repair.repair`'s signature</span>
+<span class="sd">            replaces the policy. A clip QC admits with a warning is stored as is. The</span>
+<span class="sd">            repair runs before the watermark and the id, so the stored bytes, the</span>
+<span class="sd">            content-hash id and the credential all describe the repaired clip; the</span>
+<span class="sd">            generations cache keeps the bytes as received.</span>
 <span class="sd">        **affordances: Unified generation affordances (``duration``,</span>
 <span class="sd">            ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,</span>
 <span class="sd">            ``output_format`` — see :data:`foley.base.GENERATION_AFFORDANCES`).</span>
@@ -921,7 +952,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        An :class:`~foley.index.ingest.IngestReport` — inspect ``.ingested`` for the</span>
 <span class="sd">        stored record (``storage_mode == by_value``) and ``.summary()`` for counts.</span>
 <span class="sd">        A backend or ingest failure is recorded as a single ``error`` result, never</span>
-<span class="sd">        raised (``add_from``-symmetric resilience).</span>
+<span class="sd">        raised (``add_from``-symmetric resilience). Every result of a paid call</span>
+<span class="sd">        carries ``cache_key``: where its bytes are in the generations cache.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        SafetyRefusal: If the prompt trips a safety gate and ``on_flagged='refuse'``.</span>
@@ -1016,27 +1048,36 @@ window.runMermaid = runMermaid;</script>
             <span class="sa">f</span><span class="s2">"safety: proceeded in warn mode; flagged </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">scan</span><span class="o">.</span><span class="n">trademark_hits</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">scan</span><span class="o">.</span><span class="n">voice_hits</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
-    <span class="c1"># Watermark BEFORE ingest so the stored bytes carry the mark AND the content-hash</span>
-    <span class="c1"># id hashes the watermarked PCM. Graceful degrade: a watermark failure never</span>
-    <span class="c1"># fails the generation (the mark is descriptive provenance, not a license gate).</span>
+    <span class="c1"># One try guards everything that decodes the bytes — the repair, the</span>
+    <span class="c1"># content-credential sidecar (which decodes to pre-compute the id) and the ingest —</span>
+    <span class="c1"># so an undecodable response (a hosted API returning HTTP 200 with a non-audio</span>
+    <span class="c1"># body) is recorded as an error, not a crash.</span>
     <span class="n">audio_bytes</span> <span class="o">=</span> <span class="n">clip</span><span class="o">.</span><span class="n">audio_bytes</span>
-    <span class="k">if</span> <span class="n">wm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">wres</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">clip</span><span class="o">.</span><span class="n">audio_bytes</span><span class="p">)</span>
-            <span class="n">audio_bytes</span> <span class="o">=</span> <span class="n">wres</span><span class="o">.</span><span class="n">audio_bytes</span>
-            <span class="n">lic</span><span class="o">.</span><span class="n">watermark</span> <span class="o">=</span> <span class="n">wres</span><span class="o">.</span><span class="n">meta</span>
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - any embed failure degrades gracefully</span>
-            <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"watermarking skipped: </span><span class="si">{</span><span class="n">exc</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">watermark</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"watermarking skipped: foley[provenance] not installed"</span><span class="p">)</span>
-
-    <span class="c1"># One try guards BOTH the content-credential sidecar (which decodes the bytes to</span>
-    <span class="c1"># pre-compute the id) AND the ingest — so an undecodable response (a hosted API</span>
-    <span class="c1"># returning HTTP 200 with a non-audio body) is recorded as an error, not a crash.</span>
     <span class="n">sound_id</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">pstore</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">credential</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Repair BEFORE the watermark and the id (#107): a clip QC would quarantine for</span>
+        <span class="c1"># a trivially repairable fault gets the report's own fixes, so the stored</span>
+        <span class="c1"># bytes, the content-hash id and the credential all describe the repaired clip</span>
+        <span class="c1"># (the generations cache already holds the bytes as received).</span>
+        <span class="k">if</span> <span class="n">repair</span><span class="p">:</span>
+            <span class="n">audio_bytes</span> <span class="o">=</span> <span class="n">_repaired_bytes</span><span class="p">(</span><span class="n">audio_bytes</span><span class="p">,</span> <span class="n">lic</span><span class="p">,</span> <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">,</span> <span class="n">repair</span><span class="o">=</span><span class="n">repair</span><span class="p">)</span>
+
+        <span class="c1"># Watermark BEFORE ingest so the stored bytes carry the mark AND the</span>
+        <span class="c1"># content-hash id hashes the watermarked PCM. Graceful degrade: a watermark</span>
+        <span class="c1"># failure never fails the generation (the mark is descriptive provenance, not</span>
+        <span class="c1"># a license gate).</span>
+        <span class="k">if</span> <span class="n">wm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">wres</span> <span class="o">=</span> <span class="n">wm</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span><span class="n">audio_bytes</span><span class="p">)</span>
+                <span class="n">audio_bytes</span> <span class="o">=</span> <span class="n">wres</span><span class="o">.</span><span class="n">audio_bytes</span>
+                <span class="n">lic</span><span class="o">.</span><span class="n">watermark</span> <span class="o">=</span> <span class="n">wres</span><span class="o">.</span><span class="n">meta</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - any embed failure degrades</span>
+                <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"watermarking skipped: </span><span class="si">{</span><span class="n">exc</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">watermark</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"watermarking skipped: foley[provenance] not installed"</span><span class="p">)</span>
+
         <span class="c1"># Content-credential prep (stdlib). Single-pass: pre-compute the content-hash</span>
         <span class="c1"># id from the (watermarked) bytes so the sidecar key and license.c2pa_manifest_ref</span>
         <span class="c1"># match the id ingest_one re-mints — no meta re-store. The sidecar is WRITTEN</span>
@@ -1076,12 +1117,14 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">status</span><span class="o">=</span><span class="s2">"error"</span><span class="p">,</span>
                 <span class="n">error</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">notes</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">),</span>  <span class="c1"># incl. the generations-cache key: bytes kept</span>
+                <span class="n">cache_key</span><span class="o">=</span><span class="n">plan</span><span class="o">.</span><span class="n">content_key</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">)</span>
         <span class="n">report</span><span class="o">.</span><span class="n">exception</span> <span class="o">=</span> <span class="n">exc</span>
         <span class="n">record_generation_outcome</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">generations_cache</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">report</span>
 
+    <span class="n">res</span><span class="o">.</span><span class="n">cache_key</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">content_key</span>  <span class="c1"># where the paid bytes are, whatever the outcome</span>
     <span class="n">record_generation_outcome</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">generations_cache</span><span class="p">)</span>
 
     <span class="c1"># Write the content-credential sidecar ONLY for a freshly stored clip — a</span>
@@ -1119,6 +1162,7 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"on_unsupported"</span><span class="p">,</span>
         <span class="s2">"reuse_cached"</span><span class="p">,</span>
         <span class="s2">"generations_cache"</span><span class="p">,</span>
+        <span class="s2">"repair"</span><span class="p">,</span>
     <span class="p">}</span>
 <span class="p">)</span>
 
@@ -1144,7 +1188,11 @@ window.runMermaid = runMermaid;</script>
     <span class="n">affordances</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_GENERATE_KNOWN</span> <span class="ow">and</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">"prompt"</span>
     <span class="p">}</span>
-    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"store"</span><span class="p">,</span> <span class="s2">"on_flagged"</span><span class="p">,</span> <span class="s2">"watermark"</span><span class="p">)</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="n">_manifest_value</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"store"</span><span class="p">,</span> <span class="s2">"on_flagged"</span><span class="p">,</span> <span class="s2">"watermark"</span><span class="p">,</span> <span class="s2">"repair"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">kwargs</span>
+    <span class="p">}</span>
     <span class="k">with</span> <span class="n">facade_run</span><span class="p">(</span>
         <span class="s2">"generate"</span><span class="p">,</span>
         <span class="n">inputs</span><span class="o">=</span><span class="p">{</span><span class="s2">"prompt"</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span> <span class="s2">"backend"</span><span class="p">:</span> <span class="n">backend</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">},</span>
@@ -1178,6 +1226,36 @@ window.runMermaid = runMermaid;</script>
         <span class="n">run</span><span class="o">.</span><span class="n">set_ingest_report</span><span class="p">(</span><span class="n">ingest_digest</span><span class="p">(</span><span class="n">report</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">report</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_manifest_value</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A run-manifest (JSON) rendering of a façade parameter: a callable by its name."""</span>
+    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">"__qualname__"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">module</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">"__module__"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">and</span> <span class="n">module</span> <span class="k">else</span> <span class="p">(</span><span class="n">name</span> <span class="ow">or</span> <span class="nb">repr</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">value</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_repaired_bytes</span><span class="p">(</span><span class="n">audio_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">lic</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">repair</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The bytes ingest will see: repaired when QC would quarantine them and the repair</span>
+<span class="sd">    clears them (:func:`foley.repair.repair_bytes`), else unchanged (#107).</span>
+
+<span class="sd">    ``repair`` is ``True`` (the default policy) or a callable with</span>
+<span class="sd">    :func:`foley.repair.repair`'s signature. What was done — or why nothing was — goes</span>
+<span class="sd">    on ``notes``; each applied fix is also appended to ``lic.transformations`` (the</span>
+<span class="sd">    record's provenance: the credit then reads "(modified)" and the content credential</span>
+<span class="sd">    carries an edit action).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..repair</span><span class="w"> </span><span class="kn">import</span> <span class="n">repair_bytes</span>
+
+    <span class="n">fixed</span><span class="p">,</span> <span class="n">result</span> <span class="o">=</span> <span class="n">repair_bytes</span><span class="p">(</span><span class="n">audio_bytes</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">repair</span><span class="p">,</span> <span class="n">admit</span><span class="o">=</span><span class="n">DEFAULT_MIN_STATUS</span><span class="p">)</span>
+    <span class="n">note</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">note</span><span class="p">(</span><span class="n">DEFAULT_MIN_STATUS</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">note</span><span class="p">:</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">note</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fixed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">audio_bytes</span><span class="p">:</span>  <span class="c1"># repaired and cleared: the clip is now a derivative</span>
+        <span class="n">lic</span><span class="o">.</span><span class="n">transformations</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">applied</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fixed</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_metadata_captioner</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>

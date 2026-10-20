@@ -34,6 +34,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=e39d37f2" />
   
@@ -43,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=20c5f126"></script>
+    <script src="../_static/documentation_options.js?v=173d7b4c"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -52,12 +53,12 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="foley.eval" href="foley.eval.html" />
+    <link rel="next" title="foley.weave.align" href="foley.weave.align.html" />
     <link rel="prev" title="foley.agent.verify" href="foley.agent.verify.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.41" />
+  <meta name="docsearch:version" content="0.0.42" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -319,6 +320,7 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="foley.html">foley</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="foley.repair.html">foley.repair</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.audio.html">foley.audio</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="foley.index.html">foley.index</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.taxonomy.html">foley.index.taxonomy</a></li>
@@ -352,7 +354,17 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.agent.verify.html">foley.agent.verify</a></li>
 </ul>
 </details></li>
-<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">foley.weave</a></li>
+<li class="toctree-l2 current active has-children"><a aria-current="page" class="current reference internal" href="#">foley.weave</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.align.html">foley.weave.align</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.anchor.html">foley.weave.anchor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.master.html">foley.weave.master</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.mix.html">foley.weave.mix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.protocols.html">foley.weave.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.reaction.html">foley.weave.reaction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.requirements.html">foley.weave.requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.timeline.html">foley.weave.timeline</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="foley.eval.html">foley.eval</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.baseline.html">foley.eval.baseline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.embedder.html">foley.eval.embedder</a></li>
@@ -458,11 +470,690 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="foley-weave">
-<h1>foley.weave<a class="headerlink" href="#foley-weave" title="Link to this heading">#</a></h1>
+  <section id="module-foley.weave">
+<span id="foley-weave"></span><h1>foley.weave<a class="headerlink" href="#module-foley.weave" title="Link to this heading">#</a></h1>
+<p>WEAVE — the compositor façade: narration + timeline → a finished, editable mix.</p>
+<p><code class="docutils literal notranslate"><span class="pre">weave()</span></code> is the headline WEAVE entrypoint (report 06 §7, issue #8): it resolves the
+master profile, binds the narration, opens a <code class="docutils literal notranslate"><span class="pre">foley.obs.run('weave')</span></code> scope, and
+drives the PURE <code class="xref py py-func docutils literal notranslate"><span class="pre">render()</span></code> pipeline
+(<strong>align → anchor → mix → master → render</strong>), then wraps the result with credits, SDH
+captions, and a <strong>fail-safe provenance re-assertion</strong> over the mastered mix. It returns
+a <a class="reference internal" href="#foley.weave.WeaveResult" title="foley.weave.WeaveResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">WeaveResult</span></code></a>: the mastered audio, the hydrated re-renderable
+<a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a> (the reproducible seed), a
+<a class="reference internal" href="foley.provenance.html#foley.provenance.Credits" title="foley.provenance.Credits"><code class="xref py py-class docutils literal notranslate"><span class="pre">Credits</span></code></a>, WebVTT + SRT SDH captions, the master report, and
+the run-artifact join.</p>
+<p>Discipline (mirrors the rest of foley): the whole package is import-time dol-only
+(numpy / pyloudnorm / whisperx / opentimelineio / audioseal / c2pa are all
+function-local), the aligner and per-item strategy are injectable DI seams with
+deterministic defaults, and provenance re-assertion never raises — the C2PA
+content-credential sidecar is always emitted; the AudioSeal watermark and the (deferred)
+signed + embedded C2PA manifest are best-effort no-ops when their extras/cert are absent.</p>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.NARRATION_REF" title="foley.weave.NARRATION_REF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NARRATION_REF</span></code></a></p></td>
+<td><p>The synthetic library key WEAVE binds raw narration audio under (when the caller passes audio rather than a ref already in the library).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.weave" title="foley.weave.weave"><code class="xref py py-obj docutils literal notranslate"><span class="pre">weave</span></code></a>(narration, timeline, *[, master, ...])</p></td>
+<td><p>Weave the chosen sounds under <code class="docutils literal notranslate"><span class="pre">narration</span></code> into a mastered, editable mix.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.render" title="foley.weave.render"><code class="xref py py-obj docutils literal notranslate"><span class="pre">render</span></code></a>(timeline, library, *[, sr, ...])</p></td>
+<td><p>Render <code class="docutils literal notranslate"><span class="pre">timeline</span></code> against <code class="docutils literal notranslate"><span class="pre">library</span></code> into a mastered mix (PURE, deterministic).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.hydrate" title="foley.weave.hydrate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">hydrate</span></code></a>(timeline[, word_timeline])</p></td>
+<td><p>Resolve every item's anchor + fill processing/id, returning a NEW timeline.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.parse_symbolic_anchor" title="foley.weave.parse_symbolic_anchor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_symbolic_anchor</span></code></a>(onset, *[, layer, loop])</p></td>
+<td><p>Parse SELECT's sparse symbolic <code class="docutils literal notranslate"><span class="pre">onset</span></code> string into a resolved-later <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.resolve_anchor" title="foley.weave.resolve_anchor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_anchor</span></code></a>(placement, word_timeline, *)</p></td>
+<td><p>Resolve a <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code> to a concrete <code class="docutils literal notranslate"><span class="pre">(onset_seconds,</span> <span class="pre">duration_seconds)</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.swap_clip" title="foley.weave.swap_clip"><code class="xref py py-obj docutils literal notranslate"><span class="pre">swap_clip</span></code></a>(timeline, item_id, new_clip_ref)</p></td>
+<td><p>Swap an item's clip (keeping its placement/processing) — a NEW timeline.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.nudge" title="foley.weave.nudge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nudge</span></code></a>(timeline, item_id, delta_s)</p></td>
+<td><p>Shift an item's resolved onset by <code class="docutils literal notranslate"><span class="pre">delta_s</span></code> seconds — a NEW timeline.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.set_gain" title="foley.weave.set_gain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_gain</span></code></a>(timeline, item_id, gain_db)</p></td>
+<td><p>Set an item's processing gain (dB, voice-relative) — a NEW timeline.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.toggle" title="foley.weave.toggle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">toggle</span></code></a>(timeline, item_id, enabled)</p></td>
+<td><p>Non-destructively mute/unmute an item — a NEW timeline.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.set_master" title="foley.weave.set_master"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_master</span></code></a>(timeline, master)</p></td>
+<td><p>Set the timeline's master profile (name or <a class="reference internal" href="#foley.weave.MasterProfile" title="foley.weave.MasterProfile"><code class="xref py py-class docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>) — a NEW timeline.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.to_webvtt" title="foley.weave.to_webvtt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_webvtt</span></code></a>(timeline, *[, window_s])</p></td>
+<td><p>Render the timeline's SFX cues as a WebVTT SDH caption file (report 06 / issue #8).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.to_srt" title="foley.weave.to_srt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_srt</span></code></a>(timeline, *[, window_s])</p></td>
+<td><p>Render the timeline's SFX cues as an SRT SDH caption file (report 06 / issue #8).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.to_edl" title="foley.weave.to_edl"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_edl</span></code></a>(timeline, *[, title])</p></td>
+<td><p>Export <code class="docutils literal notranslate"><span class="pre">timeline</span></code> as a pure-stdlib CMX3600 EDL (deterministic, pinned ids).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.to_otio" title="foley.weave.to_otio"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_otio</span></code></a>(timeline, *[, rate])</p></td>
+<td><p>Export <code class="docutils literal notranslate"><span class="pre">timeline</span></code> as an OpenTimelineIO JSON string (lazy <code class="docutils literal notranslate"><span class="pre">foley[weave]</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.export" title="foley.weave.export"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export</span></code></a>(timeline, *[, fmt])</p></td>
+<td><p>Export <code class="docutils literal notranslate"><span class="pre">timeline</span></code> as <code class="docutils literal notranslate"><span class="pre">(format,</span> <span class="pre">text)</span></code> — OTIO when available, else EDL.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.reassert_provenance" title="foley.weave.reassert_provenance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reassert_provenance</span></code></a>(audio, sample_rate, ...)</p></td>
+<td><p>Re-assert provenance over the mastered mix — watermark + C2PA sidecar (fail-safe).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.check_requirements" title="foley.weave.check_requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_requirements</span></code></a>(*[, names, verbose])</p></td>
+<td><p>Report which optional WEAVE system binaries are available (<code class="docutils literal notranslate"><span class="pre">shutil.which</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.verify_and_setup" title="foley.weave.verify_and_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_and_setup</span></code></a>(*[, names])</p></td>
+<td><p>Check the optional system deps and return a per-dep status + guidance report.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.WeaveResult" title="foley.weave.WeaveResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WeaveResult</span></code></a>(audio, sr, timeline, credits, ...)</p></td>
+<td><p>The output of <a class="reference internal" href="#foley.weave.weave" title="foley.weave.weave"><code class="xref py py-func docutils literal notranslate"><span class="pre">weave()</span></code></a> — the v1 Definition-of-Done deliverable.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.RenderResult" title="foley.weave.RenderResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RenderResult</span></code></a>(audio, sr, timeline, master_report)</p></td>
+<td><p>The output of <a class="reference internal" href="#foley.weave.render" title="foley.weave.render"><code class="xref py py-func docutils literal notranslate"><span class="pre">render()</span></code></a>: the mastered mix + the hydrated (re-renderable) timeline.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.RenderCache" title="foley.weave.RenderCache"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RenderCache</span></code></a></p></td>
+<td><p>Per-layer render memo (<code class="docutils literal notranslate"><span class="pre">bus_hash</span> <span class="pre">-&gt;</span> <span class="pre">stereo</span> <span class="pre">bus</span> <span class="pre">array</span></code>) for incremental re-render.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.FullRender" title="foley.weave.FullRender"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FullRender</span></code></a>()</p></td>
+<td><p>Default <a class="reference internal" href="#foley.weave.ApplyStrategy" title="foley.weave.ApplyStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplyStrategy</span></code></a> — the full per-item DSP chain (report 06 §3-4).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.PlaceOnly" title="foley.weave.PlaceOnly"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PlaceOnly</span></code></a>()</p></td>
+<td><p>Dry <a class="reference internal" href="#foley.weave.ApplyStrategy" title="foley.weave.ApplyStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplyStrategy</span></code></a> — declicked placement, no gain/pan/distance/reverb.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.Aligner" title="foley.weave.Aligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Aligner</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Narration audio + its transcript → word-level timestamps (forced alignment).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.ApplyStrategy" title="foley.weave.ApplyStrategy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ApplyStrategy</span></code></a>(*args, **kwargs)</p></td>
+<td><p>How ONE hydrated item's clip is placed onto its layer bus (report 10 §4.2).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.FakeAligner" title="foley.weave.FakeAligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FakeAligner</span></code></a>()</p></td>
+<td><p>Deterministic, torch-free <a class="reference internal" href="#foley.weave.Aligner" title="foley.weave.Aligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code></a> — evenly spaces the transcript's words.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.WhisperXAligner" title="foley.weave.WhisperXAligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WhisperXAligner</span></code></a>(*[, model_size, device, ...])</p></td>
+<td><p>The real ≈±50 ms <a class="reference internal" href="#foley.weave.Aligner" title="foley.weave.Aligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code></a> (<code class="docutils literal notranslate"><span class="pre">foley[align]</span></code>) — faster-whisper ASR + wav2vec2 CTC.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.MasterProfile" title="foley.weave.MasterProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>([target_lufs, true_peak_db, lra])</p></td>
+<td><p>Loudness master target — the delivery spec as data, not code (report 06 §5.2).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.MasterReport" title="foley.weave.MasterReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MasterReport</span></code></a>(target_lufs, input_lufs, ...)</p></td>
+<td><p>What the master stage did — a JSON-serialisable audit row for the run-artifact.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.Aligner">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">Aligner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/protocols.html#Aligner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.Aligner" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>Narration audio + its transcript → word-level timestamps (forced alignment).</p>
+<p>Returns a <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code>: a list of <code class="docutils literal notranslate"><span class="pre">{'word':</span> <span class="pre">str,</span> <span class="pre">'start':</span> <span class="pre">float,</span> <span class="pre">'end':</span>
+<span class="pre">float}</span></code> dicts (seconds), the raw material the anchor heuristics (report 06
+§2.4) turn into sample onsets. The default is the deterministic,
+torch-free <a class="reference internal" href="foley.weave.align.html#foley.weave.align.FakeAligner" title="foley.weave.align.FakeAligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">FakeAligner</span></code></a> (evenly spaces the
+transcript’s words across the clip); <a class="reference internal" href="foley.weave.align.html#foley.weave.align.WhisperXAligner" title="foley.weave.align.WhisperXAligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">WhisperXAligner</span></code></a>
+is the real ≈±50 ms impl behind <code class="docutils literal notranslate"><span class="pre">foley[align]</span></code>.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.ApplyStrategy">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">ApplyStrategy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/protocols.html#ApplyStrategy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.ApplyStrategy" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>How ONE hydrated item’s clip is placed onto its layer bus (report 10 §4.2).</p>
+<p>The seam that lets the render swap placement policy without touching the
+render loop: the default <a class="reference internal" href="#foley.weave.FullRender" title="foley.weave.render.FullRender"><code class="xref py py-class docutils literal notranslate"><span class="pre">FullRender</span></code></a> applies the
+full per-item DSP chain (fit-duration → gain/pan/distance/reverb → declick →
+overlay), while <a class="reference internal" href="#foley.weave.PlaceOnly" title="foley.weave.render.PlaceOnly"><code class="xref py py-class docutils literal notranslate"><span class="pre">PlaceOnly</span></code></a> does a dry declicked
+overlay (fast preview / DSP-free fallback). <code class="docutils literal notranslate"><span class="pre">item</span></code> is already anchor-resolved
+(<code class="docutils literal notranslate"><span class="pre">item.placement.onset</span></code> is in seconds); <code class="docutils literal notranslate"><span class="pre">bus</span></code> and <code class="docutils literal notranslate"><span class="pre">clip</span></code> are stereo
+<code class="docutils literal notranslate"><span class="pre">float32</span></code> working arrays at <code class="docutils literal notranslate"><span class="pre">sample_rate</span></code>.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.FakeAligner">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">FakeAligner</span></span><a class="reference internal" href="../_modules/foley/weave/align.html#FakeAligner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.FakeAligner" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Deterministic, torch-free <a class="reference internal" href="#foley.weave.Aligner" title="foley.weave.Aligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code></a> — evenly spaces the transcript’s words.</p>
+<p>The hermetic default: given a transcript, it returns one <code class="docutils literal notranslate"><span class="pre">{'word','start','end'}</span></code>
+per whitespace token, spread uniformly across the clip’s duration (or at
+<code class="xref py py-data docutils literal notranslate"><span class="pre">WORDS_PER_SECOND</span></code> when the audio is empty). No transcript → an empty
+<code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> (the render then falls back to absolute anchors).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.weave.FakeAligner.word_timeline">
+<span class="sig-name descname"><span class="pre">word_timeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">transcript</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">language</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'en'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/align.html#FakeAligner.word_timeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.FakeAligner.word_timeline" title="Link to this definition">#</a></dt>
+<dd><p>Return an evenly-spaced word timeline for <code class="docutils literal notranslate"><span class="pre">transcript</span></code> over <code class="docutils literal notranslate"><span class="pre">audio</span></code>’s duration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.FullRender">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">FullRender</span></span><a class="reference internal" href="../_modules/foley/weave/render.html#FullRender"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.FullRender" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Default <a class="reference internal" href="#foley.weave.ApplyStrategy" title="foley.weave.ApplyStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplyStrategy</span></code></a> — the full per-item DSP chain (report 06 §3-4).</p>
+<p><code class="docutils literal notranslate"><span class="pre">fit-duration</span></code> (loop/trim) → distance → reverb send → constant-power pan →
+declick → gain (base layer level + item <code class="docutils literal notranslate"><span class="pre">gain_db</span></code>) → overlay at the resolved
+onset.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.MasterProfile">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">MasterProfile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_lufs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-16.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true_peak_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#MasterProfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.MasterProfile" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="foley.base.html#foley.base.SerializableMixin" title="foley.base.SerializableMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">SerializableMixin</span></code></a></p>
+<p>Loudness master target — the delivery spec as data, not code (report 06 §5.2).</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.MasterReport">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">MasterReport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_lufs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_lufs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_lufs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true_peak_dbtp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true_peak_ceiling_db</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_db</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limited</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/master.html#MasterReport"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.MasterReport" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>What the master stage did — a JSON-serialisable audit row for the run-artifact.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.weave.MasterReport.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/master.html#MasterReport.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.MasterReport.to_dict" title="Link to this definition">#</a></dt>
+<dd><p>Return the plain-dict form (for <code class="docutils literal notranslate"><span class="pre">WeaveResult.master_report</span></code> / obs).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.NARRATION_REF">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">NARRATION_REF</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'__foley_narration__'</span></span><a class="headerlink" href="#foley.weave.NARRATION_REF" title="Link to this definition">#</a></dt>
+<dd><p>The synthetic library key WEAVE binds raw narration audio under (when the caller
+passes audio rather than a ref already in the library).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.PlaceOnly">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">PlaceOnly</span></span><a class="reference internal" href="../_modules/foley/weave/render.html#PlaceOnly"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.PlaceOnly" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Dry <a class="reference internal" href="#foley.weave.ApplyStrategy" title="foley.weave.ApplyStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplyStrategy</span></code></a> — declicked placement, no gain/pan/distance/reverb.</p>
+<p>The fast preview / DSP-free fallback path: fit-duration → declick → overlay at the
+resolved onset, at unity gain.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.RenderCache">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">RenderCache</span></span><a class="reference internal" href="../_modules/foley/weave/render.html#RenderCache"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.RenderCache" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></p>
+<p>Per-layer render memo (<code class="docutils literal notranslate"><span class="pre">bus_hash</span> <span class="pre">-&gt;</span> <span class="pre">stereo</span> <span class="pre">bus</span> <span class="pre">array</span></code>) for incremental re-render.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.RenderResult">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">RenderResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">master_report</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buses</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">dict()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alignment</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/render.html#RenderResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.RenderResult" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>The output of <a class="reference internal" href="#foley.weave.render" title="foley.weave.render"><code class="xref py py-func docutils literal notranslate"><span class="pre">render()</span></code></a>: the mastered mix + the hydrated (re-renderable) timeline.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.weave.RenderResult.alignment">
+<span class="sig-name descname"><span class="pre">alignment</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#foley.weave.RenderResult.alignment" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">&quot;cached&quot;</span></code> (the timeline already had them),
+the aligner that produced them (<code class="docutils literal notranslate"><span class="pre">&quot;fake&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;whisperx&quot;</span></code>, a class name), or
+<code class="docutils literal notranslate"><span class="pre">None</span></code> when nothing was aligned (no transcript).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Where the word timings came from</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.WeaveResult">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">WeaveResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">credits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">captions_vtt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">captions_srt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">master_report</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_manifest_ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">content_credential</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave.html#WeaveResult"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.WeaveResult" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>The output of <a class="reference internal" href="#foley.weave.weave" title="foley.weave.weave"><code class="xref py py-func docutils literal notranslate"><span class="pre">weave()</span></code></a> — the v1 Definition-of-Done deliverable.</p>
+<p>A mastered mix + an editable, re-renderable timeline + credits + SDH captions + a
+reproducible run-artifact join, plus the fail-safe provenance re-assertion.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.weave.WeaveResult.notes">
+<span class="sig-name descname"><span class="pre">notes</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><span class="pre">list</span></a></span><a class="headerlink" href="#foley.weave.WeaveResult.notes" title="Link to this definition">#</a></dt>
+<dd><p>What the caller should know about how the mix was made, e.g. that word timings
+are estimates because no forced aligner is installed (#65).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.WhisperXAligner">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">WhisperXAligner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'small'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">16</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/align.html#WhisperXAligner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.WhisperXAligner" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>The real ≈±50 ms <a class="reference internal" href="#foley.weave.Aligner" title="foley.weave.Aligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code></a> (<code class="docutils literal notranslate"><span class="pre">foley[align]</span></code>) — faster-whisper ASR + wav2vec2 CTC.</p>
+<p>Lazy-imports <code class="docutils literal notranslate"><span class="pre">whisperx</span></code> inside <a class="reference internal" href="#foley.weave.WhisperXAligner.word_timeline" title="foley.weave.WhisperXAligner.word_timeline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">word_timeline()</span></code></a> so <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">foley.weave</span></code>
+stays dol-only. Transcribes (if no transcript) then force-aligns at 16 kHz mono.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_size</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – faster-whisper model name (<code class="docutils literal notranslate"><span class="pre">tiny</span></code>/<code class="docutils literal notranslate"><span class="pre">base</span></code>/<code class="docutils literal notranslate"><span class="pre">small</span></code>/…).</p></li>
+<li><p><strong>device</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – <code class="docutils literal notranslate"><span class="pre">'cpu'</span></code> or <code class="docutils literal notranslate"><span class="pre">'cuda'</span></code>.</p></li>
+<li><p><strong>batch_size</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Transcription batch size.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.weave.WhisperXAligner.word_timeline">
+<span class="sig-name descname"><span class="pre">word_timeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">transcript</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">language</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'en'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/align.html#WhisperXAligner.word_timeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.WhisperXAligner.word_timeline" title="Link to this definition">#</a></dt>
+<dd><p>Force-align <code class="docutils literal notranslate"><span class="pre">audio</span></code> to its transcript, returning word-level timestamps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.check_requirements">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">check_requirements</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/requirements.html#check_requirements"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.check_requirements" title="Link to this definition">#</a></dt>
+<dd><p>Report which optional WEAVE system binaries are available (<code class="docutils literal notranslate"><span class="pre">shutil.which</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>names</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>] | <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span>) – Which requirements to check (default: all of <code class="xref py py-data docutils literal notranslate"><span class="pre">REQUIREMENTS</span></code>).</p></li>
+<li><p><strong>verbose</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, print an install hint for each missing binary.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">{name:</span> <span class="pre">is_available}</span></code>. All-absent is fine — WEAVE degrades to its
+in-process path; the report just tells the user what each binary would unlock.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.export">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">export</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/render.html#export"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.export" title="Link to this definition">#</a></dt>
+<dd><p>Export <code class="docutils literal notranslate"><span class="pre">timeline</span></code> as <code class="docutils literal notranslate"><span class="pre">(format,</span> <span class="pre">text)</span></code> — OTIO when available, else EDL.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeline</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a></span>) – The timeline to export.</p></li>
+<li><p><strong>fmt</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – <code class="docutils literal notranslate"><span class="pre">'auto'</span></code> (OTIO if installed, else EDL), <code class="docutils literal notranslate"><span class="pre">'otio'</span></code>, or <code class="docutils literal notranslate"><span class="pre">'edl'</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(format_name,</span> <span class="pre">serialized_text)</span></code> — export always succeeds (EDL is the
+dependency-free fallback).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.hydrate">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">hydrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">word_timeline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/timeline.html#hydrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.hydrate" title="Link to this definition">#</a></dt>
+<dd><p>Resolve every item’s anchor + fill processing/id, returning a NEW timeline.</p>
+<p>Idempotent: an item that already carries a <a class="reference internal" href="foley.base.html#foley.base.Placement" title="foley.base.Placement"><code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code></a> keeps
+its symbolic anchor (a hand edit is never clobbered) but is re-resolved against
+<code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> so a re-recorded/re-aligned narration re-flows the SFX
+(report 06 §6.1). <code class="docutils literal notranslate"><span class="pre">processing</span></code> falls back to the sparse <code class="docutils literal notranslate"><span class="pre">gain</span></code> and <code class="docutils literal notranslate"><span class="pre">id</span></code> to a
+stable content hash. The resolved <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> is cached on the returned
+timeline (the reproducible seed).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeline</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a></span>) – The (sparse or partially-resolved) timeline.</p></li>
+<li><p><strong>word_timeline</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>]</span>) – The forced alignment; defaults to <code class="docutils literal notranslate"><span class="pre">timeline.word_timeline</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A hydrated copy with resolved placements, filled processing, stable ids.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.nudge">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">nudge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delta_s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/timeline.html#nudge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.nudge" title="Link to this definition">#</a></dt>
+<dd><p>Shift an item’s resolved onset by <code class="docutils literal notranslate"><span class="pre">delta_s</span></code> seconds — a NEW timeline.</p>
+<p>Resolves the item’s anchor against the timeline’s <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> first, then shifts
+the resolved onset and pins the anchor to <code class="docutils literal notranslate"><span class="pre">absolute</span></code> so the manual offset survives a
+re-hydrate. This means nudging a still-symbolic (not-yet-hydrated) item on a timeline
+that carries alignment shifts from the item’s <em>true</em> resolved onset, not from 0. On a
+pre-alignment timeline with no <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> a word/sentence anchor is genuinely
+unresolvable, so there the shift is relative to 0 — hydrate/weave first for such items.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.parse_symbolic_anchor">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">parse_symbolic_anchor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">onset</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Layer.sfx_fg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/anchor.html#parse_symbolic_anchor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.parse_symbolic_anchor" title="Link to this definition">#</a></dt>
+<dd><p>Parse SELECT’s sparse symbolic <code class="docutils literal notranslate"><span class="pre">onset</span></code> string into a resolved-later <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code>.</p>
+<p>The anchor <em>type</em> follows the item’s role (report 06 §2.4): beds
+(<code class="docutils literal notranslate"><span class="pre">loop</span></code> / <code class="docutils literal notranslate"><span class="pre">ambience</span></code> / <code class="docutils literal notranslate"><span class="pre">music</span></code>) span a <strong>sentence</strong>, stingers land on a
+<strong>scene</strong> boundary, and everything else is a <strong>word</strong> anchor; the <code class="docutils literal notranslate"><span class="pre">ref</span></code> is the
+quoted phrase the sound lands on. A <code class="docutils literal notranslate"><span class="pre">None</span></code> onset means “no cue”: beds span from
+the start, one-shots sit at <code class="docutils literal notranslate"><span class="pre">absolute</span></code> 0. A bare number (defensive — SELECT is
+told never to emit one) is read as an absolute offset in seconds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>onset</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – The symbolic anchor string (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;on</span> <span class="pre">'pushed</span> <span class="pre">open'&quot;</span></code>) or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>layer</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.Layer" title="foley.base.Layer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Layer</span></code></a></span>) – The item’s mix layer (selects span/boundary vs word anchoring).</p></li>
+<li><p><strong>loop</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Whether the item is a looping bed (span-anchored).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.Placement" title="foley.base.Placement"><code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code> whose <code class="docutils literal notranslate"><span class="pre">onset</span></code> (seconds) is resolved later by
+<a class="reference internal" href="#foley.weave.resolve_anchor" title="foley.weave.resolve_anchor"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_anchor()</span></code></a> against the <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.reassert_provenance">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">reassert_provenance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">records</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">asset_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermarker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sign_cert</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance_store</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave.html#reassert_provenance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.reassert_provenance" title="Link to this definition">#</a></dt>
+<dd><p>Re-assert provenance over the mastered mix — watermark + C2PA sidecar (fail-safe).</p>
+<p>Watermarks the final mix when it carries AI-generated audio (or when
+<code class="docutils literal notranslate"><span class="pre">watermark=True</span></code>), always writes a mix-level C2PA content-credential sidecar,
+and best-effort signs+embeds it. Never raises: any failure degrades to
+sidecar-only, so weaving is never blocked by provenance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{'audio',</span> <span class="pre">'watermark',</span> <span class="pre">'content_credential'}</span></code> — <code class="docutils literal notranslate"><span class="pre">audio</span></code> is the
+(possibly watermarked) mix, <code class="docutils literal notranslate"><span class="pre">watermark</span></code> the AudioSeal meta or <code class="docutils literal notranslate"><span class="pre">None</span></code>,
+<code class="docutils literal notranslate"><span class="pre">content_credential</span></code> the sidecar dict (always present unless credential
+construction itself failed).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.render">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">render</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transcript</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aligner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/render.html#render"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.render" title="Link to this definition">#</a></dt>
+<dd><p>Render <code class="docutils literal notranslate"><span class="pre">timeline</span></code> against <code class="docutils literal notranslate"><span class="pre">library</span></code> into a mastered mix (PURE, deterministic).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeline</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a></span>) – The sound-design timeline (sparse or hydrated). <code class="docutils literal notranslate"><span class="pre">narration_ref</span></code>
+must resolve in <code class="docutils literal notranslate"><span class="pre">library</span></code>; <code class="docutils literal notranslate"><span class="pre">master</span></code> carries the loudness target.</p></li>
+<li><p><strong>library</strong> – A <a class="reference internal" href="foley.index.html#foley.index.SoundLibrary" title="foley.index.SoundLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">foley.index.SoundLibrary</span></code></a> (or a mapping of ref → audio).</p></li>
+<li><p><strong>sr</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Working/render sample rate in Hz.</p></li>
+<li><p><strong>transcript</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Narration transcript for alignment when <code class="docutils literal notranslate"><span class="pre">timeline.word_timeline</span></code>
+is empty (else alignment is skipped — the cached timeline is the seed).</p></li>
+<li><p><strong>aligner</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="foley.weave.protocols.html#foley.weave.protocols.Aligner" title="foley.weave.protocols.Aligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code></a>]</span>) – The <a class="reference internal" href="foley.weave.protocols.html#foley.weave.protocols.Aligner" title="foley.weave.protocols.Aligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code></a> (default: WhisperX if
+<code class="docutils literal notranslate"><span class="pre">foley[align]</span></code> installed, else the deterministic fake).</p></li>
+<li><p><strong>apply_strategy</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="foley.weave.protocols.html#foley.weave.protocols.ApplyStrategy" title="foley.weave.protocols.ApplyStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplyStrategy</span></code></a>]</span>) – The per-item <a class="reference internal" href="foley.weave.protocols.html#foley.weave.protocols.ApplyStrategy" title="foley.weave.protocols.ApplyStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplyStrategy</span></code></a>
+(default <a class="reference internal" href="#foley.weave.FullRender" title="foley.weave.FullRender"><code class="xref py py-class docutils literal notranslate"><span class="pre">FullRender</span></code></a>).</p></li>
+<li><p><strong>cache</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#foley.weave.RenderCache" title="foley.weave.render.RenderCache"><code class="xref py py-class docutils literal notranslate"><span class="pre">RenderCache</span></code></a>]</span>) – An optional <a class="reference internal" href="#foley.weave.RenderCache" title="foley.weave.RenderCache"><code class="xref py py-class docutils literal notranslate"><span class="pre">RenderCache</span></code></a> for byte-identical incremental
+re-render (only changed layers recompute).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#foley.weave.RenderResult" title="foley.weave.render.RenderResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">RenderResult</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A <a class="reference internal" href="#foley.weave.RenderResult" title="foley.weave.RenderResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">RenderResult</span></code></a> — the mastered stereo mix, the hydrated timeline (with
+<code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> cached), and the <a class="reference internal" href="foley.weave.master.html#foley.weave.master.MasterReport" title="foley.weave.master.MasterReport"><code class="xref py py-class docutils literal notranslate"><span class="pre">MasterReport</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.resolve_anchor">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">resolve_anchor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">placement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">word_timeline</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">snap_pauses</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/anchor.html#resolve_anchor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.resolve_anchor" title="Link to this definition">#</a></dt>
+<dd><p>Resolve a <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code> to a concrete <code class="docutils literal notranslate"><span class="pre">(onset_seconds,</span> <span class="pre">duration_seconds)</span></code>.</p>
+<p>Dispatches on <code class="docutils literal notranslate"><span class="pre">placement.anchor</span></code> (report 06 §2.4): <code class="docutils literal notranslate"><span class="pre">absolute</span></code> uses the
+stored offset; <code class="docutils literal notranslate"><span class="pre">word</span></code> fires on the trigger word; <code class="docutils literal notranslate"><span class="pre">sentence</span></code> spans its
+sentence (filling <code class="docutils literal notranslate"><span class="pre">duration</span></code> when unset — beds loop to fill it); <code class="docutils literal notranslate"><span class="pre">scene</span></code> /
+<code class="docutils literal notranslate"><span class="pre">paragraph</span></code> land on the boundary. <code class="docutils literal notranslate"><span class="pre">pre_roll</span></code> is then subtracted (clamped at
+0), and — when <code class="docutils literal notranslate"><span class="pre">snap_pauses</span></code> — the onset snaps to the nearest inter-word gap.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>placement</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.Placement" title="foley.base.Placement"><code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code></a></span>) – The symbolic placement to resolve.</p></li>
+<li><p><strong>word_timeline</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span>) – The forced-aligned <code class="docutils literal notranslate"><span class="pre">[{'word','start','end'},</span> <span class="pre">...]</span></code>.</p></li>
+<li><p><strong>snap_pauses</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, snap the resolved onset to the nearest pause.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(onset_seconds,</span> <span class="pre">duration_seconds_or_None)</span></code>. <code class="docutils literal notranslate"><span class="pre">duration</span></code> is filled only
+for a span anchor whose <code class="docutils literal notranslate"><span class="pre">placement.duration</span></code> was unset.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.set_gain">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">set_gain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gain_db</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/timeline.html#set_gain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.set_gain" title="Link to this definition">#</a></dt>
+<dd><p>Set an item’s processing gain (dB, voice-relative) — a NEW timeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.set_master">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">set_master</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">master</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/timeline.html#set_master"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.set_master" title="Link to this definition">#</a></dt>
+<dd><p>Set the timeline’s master profile (name or <a class="reference internal" href="#foley.weave.MasterProfile" title="foley.weave.MasterProfile"><code class="xref py py-class docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>) — a NEW timeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.swap_clip">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">swap_clip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_clip_ref</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/timeline.html#swap_clip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.swap_clip" title="Link to this definition">#</a></dt>
+<dd><p>Swap an item’s clip (keeping its placement/processing) — a NEW timeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.to_edl">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">to_edl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'foley</span> <span class="pre">SFX'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/render.html#to_edl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.to_edl" title="Link to this definition">#</a></dt>
+<dd><p>Export <code class="docutils literal notranslate"><span class="pre">timeline</span></code> as a pure-stdlib CMX3600 EDL (deterministic, pinned ids).</p>
+<p>A lightweight interchange for DAWs; each enabled, placed item is one event with
+its clip name as the source comment. Always available (no dependency).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.to_otio">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">to_otio</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/render.html#to_otio"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.to_otio" title="Link to this definition">#</a></dt>
+<dd><p>Export <code class="docutils literal notranslate"><span class="pre">timeline</span></code> as an OpenTimelineIO JSON string (lazy <code class="docutils literal notranslate"><span class="pre">foley[weave]</span></code>).</p>
+<p>One or more <strong>parallel</strong> tracks per non-voice layer: each enabled, placed item is a
+clip with an external media reference (by clip_ref), positioned at its resolved onset
+via a leading gap. Because a single OTIO track is sequential, two same-layer clips that
+overlap (or fall within a one-shot’s nominal window) would otherwise be pushed late —
+so overlapping clips spill onto sibling sub-tracks, keeping every clip at its true
+onset. Non-destructive, minimal-viable fidelity (tracks/clips/onsets; effects/markers
+are a later slice).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.15)"><strong>RuntimeError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">opentimelineio</span></code> is not installed.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.to_srt">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">to_srt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/timeline.html#to_srt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.to_srt" title="Link to this definition">#</a></dt>
+<dd><p>Render the timeline’s SFX cues as an SRT SDH caption file (report 06 / issue #8).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.to_webvtt">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">to_webvtt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/timeline.html#to_webvtt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.to_webvtt" title="Link to this definition">#</a></dt>
+<dd><p>Render the timeline’s SFX cues as a WebVTT SDH caption file (report 06 / issue #8).</p>
+<p>Each enabled, placed item becomes one <code class="docutils literal notranslate"><span class="pre">[bracketed]</span></code> cue at its resolved onset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.toggle">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">toggle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enabled</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/timeline.html#toggle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.toggle" title="Link to this definition">#</a></dt>
+<dd><p>Non-destructively mute/unmute an item — a NEW timeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.verify_and_setup">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">verify_and_setup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/requirements.html#verify_and_setup"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.verify_and_setup" title="Link to this definition">#</a></dt>
+<dd><p>Check the optional system deps and return a per-dep status + guidance report.</p>
+<p>Does <strong>not</strong> run installers (system-binary installs need the user’s consent and
+sudo). Surfaces the exact per-platform command so the user can opt in.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">{name:</span> <span class="pre">{'available':</span> <span class="pre">bool,</span> <span class="pre">'purpose':</span> <span class="pre">str,</span> <span class="pre">'install':</span> <span class="pre">str,</span> <span class="pre">'url':</span> <span class="pre">str}}</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.weave">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">weave</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">narration</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeline</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">master</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'podcast'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transcript</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">aligner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">apply_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">48000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermarker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sign_cert</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">export_captions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance_store</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave.html#weave"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.weave" title="Link to this definition">#</a></dt>
+<dd><p>Weave the chosen sounds under <code class="docutils literal notranslate"><span class="pre">narration</span></code> into a mastered, editable mix.</p>
+<p>The headline WEAVE façade (v1 DoD): <code class="docutils literal notranslate"><span class="pre">foley.weave(narration,</span> <span class="pre">timeline)</span></code> →
+align → anchor → mix → master → render, plus credits, SDH captions, and a
+reproducible run-artifact. Works out of the box with deterministic defaults
+(a fake aligner + pure-numpy DSP + in-process mastering); every model / seam is
+an optional keyword.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>narration</strong> – The voice audio — a path / bytes / file-like / working ndarray, or
+a ref already keyed in <code class="docutils literal notranslate"><span class="pre">library</span></code>.</p></li>
+<li><p><strong>timeline</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a></span>) – The (sparse) <a class="reference internal" href="foley.base.html#foley.base.SoundDesignTimeline" title="foley.base.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a> from
+<a class="reference internal" href="foley.html#foley.plan" title="foley.plan"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.plan()</span></code></a>; WEAVE resolves anchors and fills processing.</p></li>
+<li><p><strong>master</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference internal" href="foley.base.html#foley.base.MasterProfile" title="foley.base.MasterProfile"><code class="xref py py-class docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>]</span>) – A <a class="reference internal" href="foley.base.html#foley.base.MASTER_PROFILES" title="foley.base.MASTER_PROFILES"><code class="xref py py-data docutils literal notranslate"><span class="pre">MASTER_PROFILES</span></code></a> name (<code class="docutils literal notranslate"><span class="pre">'podcast'</span></code> default) or a
+<a class="reference internal" href="foley.base.html#foley.base.MasterProfile" title="foley.base.MasterProfile"><code class="xref py py-class docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>.</p></li>
+<li><p><strong>library</strong> – The <a class="reference internal" href="foley.index.html#foley.index.SoundLibrary" title="foley.index.SoundLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">foley.index.SoundLibrary</span></code></a> (or a mapping) holding the clips.</p></li>
+<li><p><strong>transcript</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – The narration transcript, for forced alignment (skipped when the
+timeline already carries a <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code>).</p></li>
+<li><p><strong>aligner</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="foley.weave.protocols.html#foley.weave.protocols.Aligner" title="foley.weave.protocols.Aligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code></a>]</span>) – The forced-alignment seam (default: WhisperX if installed, else fake).</p></li>
+<li><p><strong>apply_strategy</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="foley.weave.protocols.html#foley.weave.protocols.ApplyStrategy" title="foley.weave.protocols.ApplyStrategy"><code class="xref py py-class docutils literal notranslate"><span class="pre">ApplyStrategy</span></code></a>]</span>) – The per-item placement seam (default <a class="reference internal" href="#foley.weave.FullRender" title="foley.weave.FullRender"><code class="xref py py-class docutils literal notranslate"><span class="pre">FullRender</span></code></a>).</p></li>
+<li><p><strong>sr</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Working/render sample rate in Hz.</p></li>
+<li><p><strong>cache</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#foley.weave.RenderCache" title="foley.weave.render.RenderCache"><code class="xref py py-class docutils literal notranslate"><span class="pre">RenderCache</span></code></a>]</span>) – An optional <a class="reference internal" href="#foley.weave.RenderCache" title="foley.weave.RenderCache"><code class="xref py py-class docutils literal notranslate"><span class="pre">RenderCache</span></code></a> for incremental re-render.</p></li>
+<li><p><strong>watermark</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]</span>) – <code class="docutils literal notranslate"><span class="pre">True</span></code> force a watermark, <code class="docutils literal notranslate"><span class="pre">False</span></code> never, <code class="docutils literal notranslate"><span class="pre">None</span></code> (default) auto —
+watermark iff the mix contains AI-generated audio and AudioSeal is installed.</p></li>
+<li><p><strong>watermarker</strong> – An injected watermarker (the DI seam; tests pass a fake).</p></li>
+<li><p><strong>sign_cert</strong> – A signing cert for the (deferred) signed+embedded C2PA path.</p></li>
+<li><p><strong>export_captions</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), emit WebVTT + SRT SDH captions.</p></li>
+<li><p><strong>provenance_store</strong> – An optional <code class="docutils literal notranslate"><span class="pre">MutableMapping</span></code> to persist the C2PA sidecar.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#foley.weave.WeaveResult" title="foley.weave.WeaveResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">WeaveResult</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A <a class="reference internal" href="#foley.weave.WeaveResult" title="foley.weave.WeaveResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">WeaveResult</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <p class="rubric">Modules</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.weave.align.html#module-foley.weave.align" title="foley.weave.align"><code class="xref py py-obj docutils literal notranslate"><span class="pre">align</span></code></a></p></td>
+<td><p>Forced-alignment adapters — the <code class="docutils literal notranslate"><span class="pre">Aligner</span></code> seam's fake default + WhisperX real impl.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.weave.anchor.html#module-foley.weave.anchor" title="foley.weave.anchor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">anchor</span></code></a></p></td>
+<td><p>Symbolic-anchor → sample-onset heuristics — the SELECT→WEAVE timing bridge (report 06 §2.4).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.weave.master.html#module-foley.weave.master" title="foley.weave.master"><code class="xref py py-obj docutils literal notranslate"><span class="pre">master</span></code></a></p></td>
+<td><p>Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.weave.mix.html#module-foley.weave.mix" title="foley.weave.mix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mix</span></code></a></p></td>
+<td><p>Pure-numpy mixing DSP — making a clip sit under the voice (report 06 §3).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.weave.protocols.html#module-foley.weave.protocols" title="foley.weave.protocols"><code class="xref py py-obj docutils literal notranslate"><span class="pre">protocols</span></code></a></p></td>
+<td><p>The structural DI seams of the WEAVE stage — <code class="docutils literal notranslate"><span class="pre">Aligner</span></code> / <code class="docutils literal notranslate"><span class="pre">ApplyStrategy</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.weave.reaction.html#module-foley.weave.reaction" title="foley.weave.reaction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reaction</span></code></a></p></td>
+<td><p>Audience-reaction timing — a crowd answers an event, it does not coincide with it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.weave.requirements.html#module-foley.weave.requirements" title="foley.weave.requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requirements</span></code></a></p></td>
+<td><p>System-dependency onboarding for WEAVE's optional upgrade paths (accompy-style).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.weave.timeline.html#module-foley.weave.timeline" title="foley.weave.timeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">timeline</span></code></a></p></td>
+<td><p>The sound-design timeline as an editable document — hydrate, edit, caption.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -488,11 +1179,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="foley.eval.html"
+       href="foley.weave.align.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">foley.eval</p>
+        <p class="prev-next-title">foley.weave.align</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -506,6 +1197,62 @@
                 <dialog id="pst-secondary-sidebar-modal"></dialog>
                 <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.Aligner"><code class="docutils literal notranslate"><span class="pre">Aligner</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.ApplyStrategy"><code class="docutils literal notranslate"><span class="pre">ApplyStrategy</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.FakeAligner"><code class="docutils literal notranslate"><span class="pre">FakeAligner</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.FakeAligner.word_timeline"><code class="docutils literal notranslate"><span class="pre">FakeAligner.word_timeline()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.FullRender"><code class="docutils literal notranslate"><span class="pre">FullRender</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.MasterProfile"><code class="docutils literal notranslate"><span class="pre">MasterProfile</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.MasterReport"><code class="docutils literal notranslate"><span class="pre">MasterReport</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.MasterReport.to_dict"><code class="docutils literal notranslate"><span class="pre">MasterReport.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.NARRATION_REF"><code class="docutils literal notranslate"><span class="pre">NARRATION_REF</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.PlaceOnly"><code class="docutils literal notranslate"><span class="pre">PlaceOnly</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.RenderCache"><code class="docutils literal notranslate"><span class="pre">RenderCache</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.RenderResult"><code class="docutils literal notranslate"><span class="pre">RenderResult</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.RenderResult.alignment"><code class="docutils literal notranslate"><span class="pre">RenderResult.alignment</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.WeaveResult"><code class="docutils literal notranslate"><span class="pre">WeaveResult</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.WeaveResult.notes"><code class="docutils literal notranslate"><span class="pre">WeaveResult.notes</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.WhisperXAligner"><code class="docutils literal notranslate"><span class="pre">WhisperXAligner</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.WhisperXAligner.word_timeline"><code class="docutils literal notranslate"><span class="pre">WhisperXAligner.word_timeline()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.check_requirements"><code class="docutils literal notranslate"><span class="pre">check_requirements()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.export"><code class="docutils literal notranslate"><span class="pre">export()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.hydrate"><code class="docutils literal notranslate"><span class="pre">hydrate()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.nudge"><code class="docutils literal notranslate"><span class="pre">nudge()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.parse_symbolic_anchor"><code class="docutils literal notranslate"><span class="pre">parse_symbolic_anchor()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.reassert_provenance"><code class="docutils literal notranslate"><span class="pre">reassert_provenance()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.render"><code class="docutils literal notranslate"><span class="pre">render()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.resolve_anchor"><code class="docutils literal notranslate"><span class="pre">resolve_anchor()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.set_gain"><code class="docutils literal notranslate"><span class="pre">set_gain()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.set_master"><code class="docutils literal notranslate"><span class="pre">set_master()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.swap_clip"><code class="docutils literal notranslate"><span class="pre">swap_clip()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.to_edl"><code class="docutils literal notranslate"><span class="pre">to_edl()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.to_otio"><code class="docutils literal notranslate"><span class="pre">to_otio()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.to_srt"><code class="docutils literal notranslate"><span class="pre">to_srt()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.to_webvtt"><code class="docutils literal notranslate"><span class="pre">to_webvtt()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.toggle"><code class="docutils literal notranslate"><span class="pre">toggle()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.verify_and_setup"><code class="docutils literal notranslate"><span class="pre">verify_and_setup()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.weave"><code class="docutils literal notranslate"><span class="pre">weave()</span></code></a></li>
+</ul>
+  </nav></div>
 
   <div class="sidebar-secondary-item">
 

@@ -29,9 +29,11 @@ sound_record.qc = report.to_dict()   # becomes filterable metadata
 
 ### Module Attributes
 
-| [`LUFS_MIN_BLOCK_S`](#foley.qc.LUFS_MIN_BLOCK_S)      | BS.1770 integrated-loudness gating block = 400 ms; a clip shorter than one block cannot be measured (`pyloudnorm` raises), so [`measure_lufs()`](#foley.qc.measure_lufs) returns `None` for it.   |
-|------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`DEFAULT_QC_THRESHOLDS`](#foley.qc.DEFAULT_QC_THRESHOLDS) | The shipped default thresholds; the default for every keyword below.                                                                                                                                                   |
+| [`LUFS_MIN_BLOCK_S`](#foley.qc.LUFS_MIN_BLOCK_S)      | BS.1770 integrated-loudness gating block = 400 ms; a clip shorter than one block cannot be measured (`pyloudnorm` raises), so [`measure_lufs()`](#foley.qc.measure_lufs) returns `None` for it.                          |
+|------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`QC_STATUS_RANK`](#foley.qc.QC_STATUS_RANK)        | the SSOT for "is this clip below the floor?" — [`is_below()`](#foley.qc.is_below), the ingest gate's `min_status` and [`foley.repair`](foley.repair.html.md#module-foley.repair) all read it. |
+| [`DEFAULT_MIN_STATUS`](#foley.qc.DEFAULT_MIN_STATUS)    | `warn` clips are stored (their notes travel with the record); only `fail` clips are quarantined.                                                                                                                                              |
+| [`DEFAULT_QC_THRESHOLDS`](#foley.qc.DEFAULT_QC_THRESHOLDS) | The shipped default thresholds; the default for every keyword below.                                                                                                                                                                          |
 
 ### Functions
 
@@ -41,6 +43,7 @@ sound_record.qc = report.to_dict()   # becomes filterable metadata
 | [`duration_s`](#foley.qc.duration_s)(samples, sample_rate)                | Clip duration in seconds: `frames / sample_rate`.                                                                                                                              |
 | [`estimate_snr`](#foley.qc.estimate_snr)(samples, sample_rate, \*[, ...])   | Estimate SNR in dB (advisory — a busy-street SFX legitimately scores low).                                                                                                     |
 | [`has_nan_inf`](#foley.qc.has_nan_inf)(samples)                            | Return `True` if any sample is `NaN` or `Inf` (corrupt-clip guard).                                                                                                            |
+| [`is_below`](#foley.qc.is_below)(status[, min_status])                  | True when `status` is worse than the admission floor `min_status`.                                                                                                             |
 | [`is_silent`](#foley.qc.is_silent)(samples, \*[, rms_floor_dbfs])        | Return `True` when whole-clip RMS falls below `rms_floor_dbfs`.                                                                                                                |
 | [`measure_lufs`](#foley.qc.measure_lufs)(samples, sample_rate, \*[, ...])   | Integrated loudness (LUFS, ITU-R BS.1770-4) via `pyloudnorm` (lazy).                                                                                                           |
 | [`needs_edge_fade`](#foley.qc.needs_edge_fade)(samples, \*[, rel_peak_dbfs])   | Return `True` when the first or last sample sits above `rel_peak_dbfs` relative to the clip peak — i.e. a nonzero boundary that clicks under narration and needs a short fade. |
@@ -54,6 +57,14 @@ sound_record.qc = report.to_dict()   # becomes filterable metadata
 | [`QCStatus`](#foley.qc.QCStatus)(\*values)                                 | Overall verdict for a clip (subclasses `str` so it is JSON-safe).    |
 | [`QCThresholds`](#foley.qc.QCThresholds)([clip_full_scale, ...])               | All Tier-0 QC defaults (report 08 §3 table), each an explicit field. |
 
+### foley.qc.DEFAULT_MIN_STATUS *: [QCStatus](#foley.qc.QCStatus)* *= QCStatus.warn*
+
+`warn` clips are
+stored (their notes travel with the record); only `fail` clips are quarantined.
+
+* **Type:**
+  The admission floor foley’s ingest uses unless told otherwise
+
 ### foley.qc.DEFAULT_QC_THRESHOLDS *= QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)*
 
 The shipped default thresholds; the default for every keyword below.
@@ -65,7 +76,7 @@ block cannot be measured (`pyloudnorm` raises), so [`measure_lufs()`](#foley.qc.
 returns `None` for it. This is a fixed property of the algorithm, not a
 tunable QC policy threshold, hence a module constant rather than a field.
 
-### *class* foley.qc.QCReport(duration_s, sample_rate, channels, clipped_ratio, clipped_max_run, dc_offset, rms_dbfs, is_silent, needs_edge_fade, has_nan_inf, true_peak_dbtp=None, snr_db=None, loudness_lufs=None, status=QCStatus.pass_, notes=<factory>)
+### *class* foley.qc.QCReport(duration_s, sample_rate, channels, clipped_ratio, clipped_max_run, dc_offset, rms_dbfs, is_silent, needs_edge_fade, has_nan_inf, true_peak_dbtp=None, snr_db=None, loudness_lufs=None, status=QCStatus.pass_, notes=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -103,6 +114,15 @@ All Tier-0 QC defaults (report 08 §3 table), each an explicit field.
 
 Grouped by check. Pass a customized instance to [`run_qc()`](#foley.qc.run_qc) (or the
 per-check keyword arguments) to override any threshold without editing code.
+
+### foley.qc.QC_STATUS_RANK *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)* *= {'fail': 0, 'pass': 2, 'warn': 1}*
+
+the SSOT for
+“is this clip below the floor?” — [`is_below()`](#foley.qc.is_below), the ingest gate’s `min_status`
+and [`foley.repair`](foley.repair.html.md#module-foley.repair) all read it.
+
+* **Type:**
+  Admission ordering of [`QCStatus`](#foley.qc.QCStatus) values (worse -> better)
 
 ### foley.qc.dc_offset(samples)
 
@@ -158,6 +178,21 @@ an exactly-zero floor returns `inf` and a silent clip returns `-inf`.
 ### foley.qc.has_nan_inf(samples)
 
 Return `True` if any sample is `NaN` or `Inf` (corrupt-clip guard).
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.qc.is_below(status, min_status=QCStatus.warn)
+
+True when `status` is worse than the admission floor `min_status`.
+
+Accepts [`QCStatus`](#foley.qc.QCStatus) members or their string values; an unknown value ranks
+as `fail` (fail-closed).
+
+```pycon
+>>> is_below(QCStatus.fail, QCStatus.warn), is_below("warn", "warn")
+(True, False)
+```
 
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)

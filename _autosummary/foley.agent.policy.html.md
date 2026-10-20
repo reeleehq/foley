@@ -30,7 +30,7 @@ run away. This module is stdlib-only (imports only [`foley.base`](foley.base.htm
 | [`DecideAction`](#foley.agent.policy.DecideAction)(\*values)                             | What [`decide()`](#foley.agent.policy.decide) chose for one event (the single branch's outcomes).             |
 | [`Decision`](#foley.agent.policy.Decision)(action[, candidate, reason])              | The tiny result of [`decide()`](#foley.agent.policy.decide); `reason` feeds the refine hint + the audit Step. |
 
-### *class* foley.agent.policy.Budget(max_refine_loops=1, max_generations=1, allow_generate=True, max_usd=1.0, approve_unknown_cost=None, \_refines=0, \_gens=0, \_spent_usd=0.0, \_unknown_calls=0, \_lock=<factory>)
+### *class* foley.agent.policy.Budget(max_refine_loops=1, max_generations=1, allow_generate=True, max_usd=1.0, approve_unknown_cost=None, \_refines=0, \_gens=0, \_spent_usd=0.0, \_unknown_calls=0, \_lock=allocate_lock())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 

@@ -32,7 +32,7 @@ fields later (token usage, cost, timings for #7) is schema-safe with no
 | [`SpanRecord`](#foley.obs.run_artifact.SpanRecord)(name, span_id[, parent_id, kind, ...]) | One node of the run's span tree (the trace half of the artifact).                    |
 | [`Step`](#foley.obs.run_artifact.Step)(kind[, seq, event_index, span_id, ...])      | One SELECT-stage step of a `find()` run (the plan half of the artifact, #7).         |
 
-### *class* foley.obs.run_artifact.RunManifest(run_id, op, created_at=None, foley_version=None, inputs=<factory>, params=<factory>, spans=<factory>, steps=<factory>, ingest_report=None, result_ids=<factory>, candidate_scores=<factory>, credits_ref=None, disclosure_refs=<factory>, seeds=<factory>, plan_ref=None, trace_ref=None, status='ok', error=None, schema_version=1)
+### *class* foley.obs.run_artifact.RunManifest(run_id, op, created_at=None, foley_version=None, inputs=dict(), params=dict(), spans=list(), steps=list(), ingest_report=None, result_ids=list(), candidate_scores=list(), credits_ref=None, disclosure_refs=dict(), seeds=dict(), plan_ref=None, trace_ref=None, status='ok', error=None, schema_version=1)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -43,7 +43,7 @@ Sensitive prompt/query text lives redacted (see [`foley.obs.redact`](foley.obs.r
 clips are held by reference (`SoundRecord` id) so the manifest stays light and a
 trace can be replayed against a fresh index.
 
-### *class* foley.obs.run_artifact.SpanRecord(name, span_id, parent_id=None, kind=None, start_ms=None, duration_ms=None, status='ok', attributes=<factory>, events=<factory>, error=None)
+### *class* foley.obs.run_artifact.SpanRecord(name, span_id, parent_id=None, kind=None, start_ms=None, duration_ms=None, status='ok', attributes=dict(), events=list(), error=None)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -52,7 +52,7 @@ One node of the run’s span tree (the trace half of the artifact).
 Built by the recorder from its own clock + id-factory, independent of any tracer,
 so the tree is complete even when the OTel mirror is a total no-op.
 
-### *class* foley.obs.run_artifact.Step(kind, seq=None, event_index=None, span_id=None, status='ok', detail=<factory>)
+### *class* foley.obs.run_artifact.Step(kind, seq=None, event_index=None, span_id=None, status='ok', detail=dict())
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 

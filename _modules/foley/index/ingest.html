@@ -31,6 +31,7 @@
 <link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../_static/epythet.css?v=e39d37f2" />
   
@@ -40,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=20c5f126"></script>
+    <script src="../../../_static/documentation_options.js?v=173d7b4c"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.41" />
+  <meta name="docsearch:version" content="0.0.42" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -753,7 +754,14 @@ window.runMermaid = runMermaid;</script>
     <span class="n">ai_use_permitted</span><span class="p">,</span>
     <span class="n">apply_license_flags</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..qc</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_QC_THRESHOLDS</span><span class="p">,</span> <span class="n">QCStatus</span><span class="p">,</span> <span class="n">QCThresholds</span><span class="p">,</span> <span class="n">run_qc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..qc</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DEFAULT_MIN_STATUS</span><span class="p">,</span>
+    <span class="n">DEFAULT_QC_THRESHOLDS</span><span class="p">,</span>
+    <span class="n">QCStatus</span><span class="p">,</span>
+    <span class="n">QCThresholds</span><span class="p">,</span>
+    <span class="n">is_below</span><span class="p">,</span>
+    <span class="n">run_qc</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">content_key</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.taxonomy</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_catid</span>
 
@@ -774,10 +782,6 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">".m4a"</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1">#: QC status ordering (worse -&gt; better) for the admission gate.</span>
-<span class="n">_QC_RANK</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"fail"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"warn"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"pass"</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
-
-
 <span class="c1"># ---------------------------------------------------------------------------</span>
 <span class="c1"># result / report types</span>
 <span class="c1"># ---------------------------------------------------------------------------</span>
@@ -794,7 +798,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ``'rights_blocked'`` (license forbids AI training / embedding, refused before</span>
 <span class="sd">    embed — see :func:`ingest_one`), ``'skipped_license'`` (dropped by a</span>
 <span class="sd">    bootstrap commercial-use / fail-closed license filter), or ``'error'``.</span>
-<span class="sd">    ``record`` is present only when the clip was ingested.</span>
+<span class="sd">    ``record`` is present only when the clip was ingested. ``cache_key`` is set by</span>
+<span class="sd">    :func:`foley.generate` to the key its paid bytes were kept under in the generations</span>
+<span class="sd">    cache (``foley.generations.get(cache_key)``), whatever the outcome — a quarantined</span>
+<span class="sd">    generation is retrievable, since it was billed either way (#107). It is the</span>
+<span class="sd">    content key of the provider's bytes as received (their sha256) — not ``id`` (the</span>
+<span class="sd">    decoded-PCM hash) nor ``record.content_sha256`` (the stored FLAC archive's), and</span>
+<span class="sd">    not the request digest the notes name (which also resolves through ``get``).</span>
 <span class="sd">    """</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
@@ -804,7 +814,13 @@ window.runMermaid = runMermaid;</script>
     <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
     <span class="n">error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">cost_estimate_usd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># a paid generation's estimate (#57)</span>
-    <span class="n">cost_actual_usd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># None = unknown; 0.0 = served from cache</span></div>
+    <span class="n">cost_actual_usd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># None = unknown; 0.0 = served from cache</span>
+    <span class="n">cache_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># the generations-cache key of the raw bytes (#107)</span>
+
+    <span class="c1">#: The archive bytes of a clip assembled but not stored (``store=False``): what the</span>
+    <span class="c1">#: library would have served. A plain attribute, never serialized (like</span>
+    <span class="c1">#: ``IngestReport.exception``), so ``to_dict``/``to_json`` stay byte-free.</span>
+    <span class="n">audio_bytes</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 
@@ -938,7 +954,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_below</span><span class="p">(</span><span class="n">status</span><span class="p">:</span> <span class="n">QCStatus</span><span class="p">,</span> <span class="n">min_status</span><span class="p">:</span> <span class="n">QCStatus</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""True if ``status`` is worse than the admission floor ``min_status``."""</span>
-    <span class="k">return</span> <span class="n">_QC_RANK</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">_QC_RANK</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">min_status</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">is_below</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">min_status</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_src_name</span><span class="p">(</span><span class="n">src</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -1069,7 +1085,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">zeroshot_tagger</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">captioner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">do_qc</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">min_status</span><span class="p">:</span> <span class="n">QCStatus</span> <span class="o">=</span> <span class="n">QCStatus</span><span class="o">.</span><span class="n">warn</span><span class="p">,</span>
+    <span class="n">min_status</span><span class="p">:</span> <span class="n">QCStatus</span> <span class="o">=</span> <span class="n">DEFAULT_MIN_STATUS</span><span class="p">,</span>
     <span class="n">do_supervised</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">do_zeroshot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">do_caption</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -1119,7 +1135,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        do_supervised / do_zeroshot / do_caption: Toggle each enrichment stage.</span>
 <span class="sd">        thresholds: QC thresholds.</span>
 <span class="sd">        store: If ``False``, assemble the record but do not add it to the library</span>
-<span class="sd">            (probe/QC/enrich only).</span>
+<span class="sd">            (probe/QC/enrich only — a preview). The result's ``audio_bytes`` then</span>
+<span class="sd">            carries the archive bytes the library would have stored, and an</span>
+<span class="sd">            enrichment stage whose optional extra is absent (the ``foley[clap]``</span>
+<span class="sd">            embedder) is skipped with a note rather than failing: a preview is never</span>
+<span class="sd">            indexed, so it never needs the vector (#107).</span>
 <span class="sd">        seed_tags: Optional caller-supplied tags (e.g. a corpus's folder-path</span>
 <span class="sd">            taxonomy) unioned into the record's ``tags`` alongside the</span>
 <span class="sd">            supervised/zero-shot tags — so they feed the BM25 keyword index.</span>
@@ -1207,8 +1227,17 @@ window.runMermaid = runMermaid;</script>
             <span class="p">],</span>
         <span class="p">)</span>
 
-    <span class="c1"># Stage 5a — embed once (the retrieval vector; reused for zero-shot tagging)</span>
-    <span class="n">audio_vec</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">embedder</span><span class="o">.</span><span class="n">embed_audio</span><span class="p">(</span><span class="n">work</span><span class="p">,</span> <span class="n">WORKING_SAMPLE_RATE</span><span class="p">)</span>
+    <span class="c1"># Stage 5a — embed once (the retrieval vector; reused for zero-shot tagging).</span>
+    <span class="c1"># A stored clip needs the vector, so a missing foley[clap] raises as before; a</span>
+    <span class="c1"># preview (store=False) is never indexed, so it degrades with a note instead of</span>
+    <span class="c1"># failing after a paid generation (#107).</span>
+    <span class="n">audio_vec</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">audio_vec</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">embedder</span><span class="o">.</span><span class="n">embed_audio</span><span class="p">(</span><span class="n">work</span><span class="p">,</span> <span class="n">WORKING_SAMPLE_RATE</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">store</span><span class="p">:</span>
+            <span class="k">raise</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"embedding skipped (a preview is not indexed): </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="c1"># Stage 2 — supervised AudioSet tags (optional, graceful)</span>
     <span class="n">audioset_labels</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
@@ -1219,7 +1248,9 @@ window.runMermaid = runMermaid;</script>
     <span class="c1"># The default tagger is bound to the LIBRARY's embedder so the audio vector</span>
     <span class="c1"># and the label prompts live in the same joint space.</span>
     <span class="n">zeroshot_tags</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">if</span> <span class="n">do_zeroshot</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">do_zeroshot</span> <span class="ow">and</span> <span class="n">audio_vec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"zero-shot tagging skipped: no embedding to score"</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">do_zeroshot</span><span class="p">:</span>
         <span class="n">zeroshot_tags</span> <span class="o">=</span> <span class="n">_run_zeroshot</span><span class="p">(</span>
             <span class="n">zeroshot_tagger</span><span class="p">,</span> <span class="n">probe</span><span class="p">,</span> <span class="n">audio_vec</span><span class="p">,</span> <span class="n">notes</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">lib</span><span class="o">.</span><span class="n">embedder</span>
         <span class="p">)</span>
@@ -1271,7 +1302,12 @@ window.runMermaid = runMermaid;</script>
         <span class="n">lib</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">archive</span><span class="p">,</span> <span class="n">vector</span><span class="o">=</span><span class="n">audio_vec</span><span class="p">)</span>
 
     <span class="n">status</span> <span class="o">=</span> <span class="n">qc_report</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">value</span> <span class="k">if</span> <span class="n">qc_report</span> <span class="k">else</span> <span class="s2">"pass"</span>
-    <span class="k">return</span> <span class="n">IngestResult</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">sid</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">,</span> <span class="n">record</span><span class="o">=</span><span class="n">record</span><span class="p">,</span> <span class="n">qc</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">qc</span><span class="p">,</span> <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">IngestResult</span><span class="p">(</span>
+        <span class="nb">id</span><span class="o">=</span><span class="n">sid</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">,</span> <span class="n">record</span><span class="o">=</span><span class="n">record</span><span class="p">,</span> <span class="n">qc</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">qc</span><span class="p">,</span> <span class="n">notes</span><span class="o">=</span><span class="n">notes</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">store</span><span class="p">:</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">audio_bytes</span> <span class="o">=</span> <span class="n">archive</span>  <span class="c1"># a preview carries what would have been stored</span>
+    <span class="k">return</span> <span class="n">result</span>
 
 
 <div class="viewcode-block" id="ingest_one">

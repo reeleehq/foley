@@ -38,17 +38,18 @@ a file-like object).
 
 ### Functions
 
-| [`encode`](#foley.audio.encode)(samples, sample_rate, \*[, fmt, subtype])   | Encode `samples` fully in memory and return the container bytes.      |
-|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| [`ensure_channels`](#foley.audio.ensure_channels)(samples, \*, channels)             | Coerce `samples` to exactly `channels` channels.                      |
-| [`fade`](#foley.audio.fade)(samples, sample_rate, \*[, fade_in_s, ...])   | Apply in/out gain ramps to `samples` (a short declick by default).    |
-| [`load`](#foley.audio.load)(src, \*[, target_sr, mono, dtype])            | Decode audio into a float working array.                              |
-| [`loudness_normalize`](#foley.audio.loudness_normalize)(samples, sample_rate, \*)       | Loudness-normalize to `target_lufs`, then keep it peak-safe.          |
-| [`resample`](#foley.audio.resample)(samples, sample_rate, \*[, ...])          | Resample `samples` to `target_sr` (a no-op when already there).       |
-| [`save`](#foley.audio.save)(samples, sample_rate, dst, \*[, fmt, ...])    | Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive). |
-| [`to_mono`](#foley.audio.to_mono)(samples)                                   | Down-mix to mono by averaging channels; 1-D input passes through.     |
-| [`to_working`](#foley.audio.to_working)(samples, sample_rate, \*[, mono, ...])  | Produce the canonical CLAP/QC working array from an arbitrary clip.   |
-| [`trim_silence`](#foley.audio.trim_silence)(samples, sample_rate, \*[, top_db])   | Strip leading/trailing silence, returning the clip and its kept span. |
+| [`encode`](#foley.audio.encode)(samples, sample_rate, \*[, fmt, subtype])   | Encode `samples` fully in memory and return the container bytes.                     |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`ensure_channels`](#foley.audio.ensure_channels)(samples, \*, channels)             | Coerce `samples` to exactly `channels` channels.                                     |
+| [`fade`](#foley.audio.fade)(samples, sample_rate, \*[, fade_in_s, ...])   | Apply in/out gain ramps to `samples` (a short declick by default).                   |
+| [`limit_true_peak`](#foley.audio.limit_true_peak)(samples, sample_rate, \*[, ...])   | Attenuate `samples` so their inter-sample true peak sits at or below `ceiling_dbtp`. |
+| [`load`](#foley.audio.load)(src, \*[, target_sr, mono, dtype])            | Decode audio into a float working array.                                             |
+| [`loudness_normalize`](#foley.audio.loudness_normalize)(samples, sample_rate, \*)       | Loudness-normalize to `target_lufs`, then keep it peak-safe.                         |
+| [`resample`](#foley.audio.resample)(samples, sample_rate, \*[, ...])          | Resample `samples` to `target_sr` (a no-op when already there).                      |
+| [`save`](#foley.audio.save)(samples, sample_rate, dst, \*[, fmt, ...])    | Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).                |
+| [`to_mono`](#foley.audio.to_mono)(samples)                                   | Down-mix to mono by averaging channels; 1-D input passes through.                    |
+| [`to_working`](#foley.audio.to_working)(samples, sample_rate, \*[, mono, ...])  | Produce the canonical CLAP/QC working array from an arbitrary clip.                  |
+| [`trim_silence`](#foley.audio.trim_silence)(samples, sample_rate, \*[, top_db])   | Strip leading/trailing silence, returning the clip and its kept span.                |
 
 ### foley.audio.AudioSource
 
@@ -119,6 +120,31 @@ out-ramps never overlap on tiny inputs.
 
 Lazy dependency: `numpy`.
 
+### foley.audio.limit_true_peak(samples, sample_rate, , ceiling_dbtp=-1.0, oversample=None)
+
+Attenuate `samples` so their inter-sample true peak sits at or below `ceiling_dbtp`.
+
+A **static** gain — the whole clip is turned down by one factor, never boosted —
+which is transparent and exactly what a Tier-0 range fault needs: after it, a
+flat-topped run or an over-ceiling peak is no longer at full scale. It is not a
+dynamic look-ahead limiter (the shared leveler of foley#91 is), so the distortion
+of a heavily clipped clip stays in the waveform; that is why [`foley.repair`](foley.repair.html.md#module-foley.repair)
+applies it only to a clip just over the clipping gate.
+
+* **Parameters:**
+  * **samples** (`ndarray`) – Working array (mono or multichannel).
+  * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz (passed to the true-peak measurement).
+  * **ceiling_dbtp** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The true-peak ceiling in dBTP (default: foley’s -1 dBTP).
+  * **oversample** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Oversampling factor for the true-peak estimate (default: the
+    QC table’s `true_peak_oversample`).
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+* **Returns:**
+  `(attenuated, gain_db)`. `gain_db` is `0.0` — and `samples` comes back
+  as is — when the clip is already under the ceiling or is silent.
+
+Lazy dependency: `numpy` (via [`foley.qc.true_peak_dbtp()`](foley.qc.html.md#foley.qc.true_peak_dbtp)).
+
 ### foley.audio.load(src, , target_sr=None, mono=False, dtype='float32')
 
 Decode audio into a float working array.
@@ -127,7 +153,7 @@ Decode audio into a float working array.
 `BytesIO` so nothing touches disk), or any binary file-like object.
 
 * **Parameters:**
-  * **src** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – Path, raw bytes, or file-like object to decode.
+  * **src** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – Path, raw bytes, or file-like object to decode.
   * **target_sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – If given, resample the decoded audio to this rate (via
     [`resample()`](#foley.audio.resample)); otherwise the native rate is returned.
   * **mono** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `True`, down-mix multichannel audio to mono.
@@ -199,7 +225,7 @@ Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).
   * **samples** (`ndarray`) – The working array to write (shape `(frames,)` or
     `(frames, channels)`).
   * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
-  * **dst** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – Destination path or writable binary file-like object.
+  * **dst** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – Destination path or writable binary file-like object.
   * **fmt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – Container/codec name (case-insensitive; passed to libsndfile).
   * **subtype** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – Sample subtype (e.g. `PCM_24`, `PCM_16`, `FLOAT`).
 * **Return type:**

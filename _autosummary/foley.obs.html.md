@@ -121,7 +121,7 @@ sensitive value a caller stuffed past the record-time layer.
 
 Redact `value` iff `key` is a sensitive field and `value` is a string.
 
-### *class* foley.obs.RunManifest(run_id, op, created_at=None, foley_version=None, inputs=<factory>, params=<factory>, spans=<factory>, steps=<factory>, ingest_report=None, result_ids=<factory>, candidate_scores=<factory>, credits_ref=None, disclosure_refs=<factory>, seeds=<factory>, plan_ref=None, trace_ref=None, status='ok', error=None, schema_version=1)
+### *class* foley.obs.RunManifest(run_id, op, created_at=None, foley_version=None, inputs=dict(), params=dict(), spans=list(), steps=list(), ingest_report=None, result_ids=list(), candidate_scores=list(), credits_ref=None, disclosure_refs=dict(), seeds=dict(), plan_ref=None, trace_ref=None, status='ok', error=None, schema_version=1)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -168,7 +168,7 @@ Fill the reserved #8 `plan_ref` slot (a light join dict — no text).
 
 Open a span: append a [`SpanRecord`](#foley.obs.SpanRecord) (from our own clock/ids) + mirror it.
 
-### *class* foley.obs.SpanRecord(name, span_id, parent_id=None, kind=None, start_ms=None, duration_ms=None, status='ok', attributes=<factory>, events=<factory>, error=None)
+### *class* foley.obs.SpanRecord(name, span_id, parent_id=None, kind=None, start_ms=None, duration_ms=None, status='ok', attributes=dict(), events=list(), error=None)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -177,7 +177,7 @@ One node of the run’s span tree (the trace half of the artifact).
 Built by the recorder from its own clock + id-factory, independent of any tracer,
 so the tree is complete even when the OTel mirror is a total no-op.
 
-### *class* foley.obs.Step(kind, seq=None, event_index=None, span_id=None, status='ok', detail=<factory>)
+### *class* foley.obs.Step(kind, seq=None, event_index=None, span_id=None, status='ok', detail=dict())
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 

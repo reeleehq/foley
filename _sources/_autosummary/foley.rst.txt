@@ -20,6 +20,7 @@
       make_meta_store
       make_run_store
       store_sound
+      make_generations_store
       run_qc
       has_nan_inf
       duration_s
@@ -124,6 +125,7 @@
       MasterProfile
       LicenseFlags
       LicenseMeta
+      GenerationsCache
       QCStatus
       QCThresholds
       QCReport
@@ -171,6 +173,7 @@
    :toctree:
    :recursive:
 
+   repair
    audio
    index
    obs

@@ -16,7 +16,7 @@ faceting and browse”, the CLAP vector does the heavy retrieval).
 | [`UcsRow`](#foley.index.taxonomy.model.UcsRow)(catid, category, subcategory[, ...]) | One Universal Category System entry.                                     |
 | [`UcsTable`](#foley.index.taxonomy.model.UcsTable)([by_catid, order, \_ci_index])     | A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym. |
 
-### *class* foley.index.taxonomy.model.AudioSetUcsMap(by_name=<factory>, by_mid=<factory>)
+### *class* foley.index.taxonomy.model.AudioSetUcsMap(by_name=dict(), by_mid=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -33,7 +33,7 @@ Map one AudioSet label (a MID or a name) to a UCS CatID (or `None`).
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### *class* foley.index.taxonomy.model.CatIdResolution(catid=None, category=None, subcategory=None, source=None, confidence=0.0, matched_terms=<factory>)
+### *class* foley.index.taxonomy.model.CatIdResolution(catid=None, category=None, subcategory=None, source=None, confidence=0.0, matched_terms=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -56,7 +56,7 @@ subcategory)` is always a table lookup, never a string split (report
 seed table; verify it against the UCS master before treating it as
 authoritative.
 
-### *class* foley.index.taxonomy.model.UcsTable(by_catid=<factory>, order=<factory>, \_ci_index=<factory>)
+### *class* foley.index.taxonomy.model.UcsTable(by_catid=dict(), order=list(), \_ci_index=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -66,9 +66,15 @@ A loaded UCS lookup: by CatID (exact + case-insensitive) and by synonym.
 
 `CatID -> UcsRow` (case-sensitive primary key).
 
+* **Type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`UcsRow`](#foley.index.taxonomy.model.UcsRow)]
+
 #### order
 
 The CatIDs in stable insertion order (deterministic tie-breaking).
+
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 #### get(catid)
 

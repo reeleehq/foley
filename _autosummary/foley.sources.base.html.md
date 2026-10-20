@@ -78,7 +78,7 @@ so the derived permission flags stay single-sourced.
 
 Registry of concrete bulk-corpus adapters, keyed by `adapter.name`.
 
-### *class* foley.sources.base.ClipSpec(path, source_id, meta=<factory>)
+### *class* foley.sources.base.ClipSpec(path, source_id, meta=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -88,11 +88,17 @@ One clip inside a local bulk corpus, described but not yet ingested.
 
 Absolute path to the audio file on disk.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### source_id
 
 The corpus-native id (e.g. an FSD50K `fname`); used only for
 reporting/provenance — the stored `SoundRecord.id` is still the
 content hash minted by the ingest pipeline.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 #### meta
 
@@ -100,6 +106,9 @@ Free-form per-clip metadata the adapter carries to
 [`CorpusAdapter.resolve_license()`](#foley.sources.base.CorpusAdapter.resolve_license) and (optionally) to caption/tag
 hints — e.g. `{"license_id", "creator_name", "source_url",
 "caption", "tag_hints"}`.
+
+* **Type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### *class* foley.sources.base.CorpusAdapter(\*args, \*\*kwargs)
 
@@ -179,7 +188,7 @@ Synthesize a sound for `prompt`; return its bytes + provisional candidate.
 
 Registry / façade key — `'stable_audio'` | `'elevenlabs'` | …
 
-### *class* foley.sources.base.GeneratedClip(audio_bytes, candidate, notes=<factory>)
+### *class* foley.sources.base.GeneratedClip(audio_bytes, candidate, notes=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -212,12 +221,18 @@ here and is never serialized — a `SoundRecord` holds a `uri`, never bytes.
 The generated audio as encoded container bytes (WAV/FLAC/…),
 transient and in-memory only — consumed once by the ingest pipeline.
 
+* **Type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
 #### candidate
 
 The report-10 [`Candidate`](foley.base.html.md#foley.base.Candidate)
 (`origin=CandidateOrigin.generated`) carrying the authoritative
 [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) (`is_ai_generated=True` + the
 generation-provenance block) plus the prompt caption + seed tags.
+
+* **Type:**
+  [`Candidate`](foley.base.html.md#foley.base.Candidate)
 
 #### notes
 
@@ -226,6 +241,9 @@ output-format fallbacks, …). The
 `foley.sources.generate.generate()` façade folds these into the
 stored [`IngestResult`](foley.index.ingest.html.md#foley.index.ingest.IngestResult)‘s `notes` so they
 surface in the run report.
+
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
 
 ### *class* foley.sources.base.SourceAdapter(\*args, \*\*kwargs)
 

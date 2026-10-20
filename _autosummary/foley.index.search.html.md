@@ -63,19 +63,31 @@ so the façade can stamp them onto a [`Candidate`](foley.base.html.md#foley.base
 
 The sound id.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### rrf_score
 
 The fused RRF score (`None` for a pure-vector search).
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 #### clap_score
 
 Cosine similarity from the vector ranker (`None` if the id
 appeared only in the keyword list).
 
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
 #### bm25_score
 
 BM25 score from the keyword ranker (`None` if the id
 appeared only in the vector list).
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### foley.index.search.RRF_K *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 60*
 

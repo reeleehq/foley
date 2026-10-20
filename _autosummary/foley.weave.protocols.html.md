@@ -5,7 +5,7 @@ The structural DI seams of the WEAVE stage — `Aligner` / `ApplyStrategy`.
 Two `@runtime_checkable` [`typing.Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)s (PEP 544), each a
 behaviour-free, open-closed contract that every implementation (the deterministic
 fake *and* the heavy real impl) satisfies. They are dependency-injected into
-`foley.weave.render()` / `foley.weave.weave()` by keyword
+[`foley.weave.render()`](foley.weave.html.md#foley.weave.render) / [`foley.weave.weave()`](foley.weave.html.md#foley.weave.weave) by keyword
 (`aligner=` / `apply_strategy=`), defaulting to a hermetic fake / pure-numpy
 impl when the heavy extra (`foley[align]`) is absent — mirroring
 [`foley.agent.protocols`](foley.agent.protocols.html.md#module-foley.agent.protocols) exactly.
@@ -40,9 +40,9 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 How ONE hydrated item’s clip is placed onto its layer bus (report 10 §4.2).
 
 The seam that lets the render swap placement policy without touching the
-render loop: the default `FullRender` applies the
+render loop: the default [`FullRender`](foley.weave.html.md#foley.weave.FullRender) applies the
 full per-item DSP chain (fit-duration → gain/pan/distance/reverb → declick →
-overlay), while `PlaceOnly` does a dry declicked
+overlay), while [`PlaceOnly`](foley.weave.html.md#foley.weave.PlaceOnly) does a dry declicked
 overlay (fast preview / DSP-free fallback). `item` is already anchor-resolved
 (`item.placement.onset` is in seconds); `bus` and `clip` are stereo
 `float32` working arrays at `sample_rate`.

@@ -71,7 +71,7 @@ Return a one-sentence caption for the clip.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
-### *class* foley.index.CatIdResolution(catid=None, category=None, subcategory=None, source=None, confidence=0.0, matched_terms=<factory>)
+### *class* foley.index.CatIdResolution(catid=None, category=None, subcategory=None, source=None, confidence=0.0, matched_terms=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -201,9 +201,15 @@ libraries stay coherent (each [`SoundRecord`](foley.base.html.md#foley.base.Soun
 
 The checkpoint id (e.g. `'laion/larger_clap_general'`).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### dim
 
 The embedding dimensionality (e.g. `512`).
+
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 #### embed_audio(wav, sr)
 
@@ -223,7 +229,7 @@ Embed one audio clip.
 Embed one or more query strings.
 
 * **Parameters:**
-  **text** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – A single string or a list of strings.
+  **text** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – A single string or a list of strings.
 * **Return type:**
   `ndarray`
 * **Returns:**
@@ -245,21 +251,33 @@ so the façade can stamp them onto a [`Candidate`](foley.base.html.md#foley.base
 
 The sound id.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### rrf_score
 
 The fused RRF score (`None` for a pure-vector search).
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 #### clap_score
 
 Cosine similarity from the vector ranker (`None` if the id
 appeared only in the keyword list).
 
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
 #### bm25_score
 
 BM25 score from the keyword ranker (`None` if the id
 appeared only in the vector list).
 
-### *class* foley.index.IngestReport(root, results=<factory>, notes=<factory>)
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### *class* foley.index.IngestReport(root, results=list(), notes=list())
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -311,7 +329,7 @@ A counts dict for a console/CLI summary.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* foley.index.IngestResult(id, status, record=None, qc=None, notes=<factory>, error=None, cost_estimate_usd=None, cost_actual_usd=None)
+### *class* foley.index.IngestResult(id, status, record=None, qc=None, notes=list(), error=None, cost_estimate_usd=None, cost_actual_usd=None, cache_key=None)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -322,7 +340,22 @@ not added), `'skipped_dup'` (content already in the library),
 `'rights_blocked'` (license forbids AI training / embedding, refused before
 embed — see [`ingest_one()`](#foley.index.ingest_one)), `'skipped_license'` (dropped by a
 bootstrap commercial-use / fail-closed license filter), or `'error'`.
-`record` is present only when the clip was ingested.
+`record` is present only when the clip was ingested. `cache_key` is set by
+[`foley.generate()`](foley.html.md#foley.generate) to the key its paid bytes were kept under in the generations
+cache (`foley.generations.get(cache_key)`), whatever the outcome — a quarantined
+generation is retrievable, since it was billed either way (#107). It is the
+content key of the provider’s bytes as received (their sha256) — not `id` (the
+decoded-PCM hash) nor `record.content_sha256` (the stored FLAC archive’s), and
+not the request digest the notes name (which also resolves through `get`).
+
+#### audio_bytes *= None*
+
+what the
+library would have served. A plain attribute, never serialized (like
+`IngestReport.exception`), so `to_dict`/`to_json` stay byte-free.
+
+* **Type:**
+  The archive bytes of a clip assembled but not stored (`store=False`)
 
 ### *class* foley.index.KeywordIndex(\*args, \*\*kwargs)
 
@@ -626,7 +659,7 @@ Hybrid (CLAP vector ⊕ BM25) search for a text query.
 Search by a reference audio clip (audio<->audio via CLAP).
 
 * **Parameters:**
-  * **clip** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A working array, or a path/bytes/file decodable by
+  * **clip** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A working array, or a path/bytes/file decodable by
     [`foley.audio.load()`](foley.audio.html.md#foley.audio.load).
   * **sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Sample rate when `clip` is already a working array.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Number of results.
@@ -923,7 +956,7 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
 `SoundRecord` -> [`SoundLibrary.add()`](#foley.index.SoundLibrary.add).
 
 * **Parameters:**
-  * **src** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A path, `bytes`, or file-like audio source.
+  * **src** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)]) – A path, `bytes`, or file-like audio source.
   * **library** – Target [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
     process-wide default library).
   * **sound_id** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional canonical id override. Defaults to `None` → the
@@ -956,7 +989,11 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
   * **do_caption** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Toggle each enrichment stage.
   * **thresholds** ([`QCThresholds`](foley.qc.html.md#foley.qc.QCThresholds)) – QC thresholds.
   * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, assemble the record but do not add it to the library
-    (probe/QC/enrich only).
+    (probe/QC/enrich only — a preview). The result’s `audio_bytes` then
+    carries the archive bytes the library would have stored, and an
+    enrichment stage whose optional extra is absent (the `foley[clap]`
+    embedder) is skipped with a note rather than failing: a preview is never
+    indexed, so it never needs the vector (#107).
   * **seed_tags** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]) – Optional caller-supplied tags (e.g. a corpus’s folder-path
     taxonomy) unioned into the record’s `tags` alongside the
     supervised/zero-shot tags — so they feed the BM25 keyword index.

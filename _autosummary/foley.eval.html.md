@@ -83,7 +83,7 @@ Mandatory provenance for a FAD/KAD score — it is meaningless without it.
 FAD/KAD are not comparable across embeddings/toolkits/versions, so a bare number is
 uninterpretable; this stamp makes the basis of comparison legible.
 
-### *class* foley.eval.FitReport(per_item=<factory>, fit_precision=0.0, fit_recall=0.0, fit_f1=0.0, fit_score=0.0, auto_accept_rate=0.0, n_accepted=0, n_confirmed=0, strata=<factory>, calibration=None, fidelity=<factory>, judge_model='', embedder_model_id='', seed=0, k=10, schema_version=1)
+### *class* foley.eval.FitReport(per_item=dict(), fit_precision=0.0, fit_recall=0.0, fit_f1=0.0, fit_score=0.0, auto_accept_rate=0.0, n_accepted=0, n_confirmed=0, strata=dict(), calibration=None, fidelity=dict(), judge_model='', embedder_model_id='', seed=0, k=10, schema_version=1)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -115,7 +115,7 @@ floor, so this is always `True`; only the nightly/pre-release runner sets one.
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
-### *class* foley.eval.GoldenItem(id, context, expected_events, answer_clip_ids, grade, negatives=<factory>, labeler='llm+human', schema_version=1)
+### *class* foley.eval.GoldenItem(id, context, expected_events, answer_clip_ids, grade, negatives=list(), labeler='llm+human', schema_version=1)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -125,34 +125,58 @@ One frozen `(context → expected sounds)` judgment (report 08 §1.3).
 
 Unique item id (e.g. `gld_0001`).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### context
 
 The narrative paragraph (the future SELECT input).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 #### expected_events
 
 One or more `{query, ucs_catid, layer, diegetic,
 salience, ...}` dicts; `query` is the string fed to `search`.
 
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
 #### answer_clip_ids
 
 `{ucs_catid: [clip_id, ...]}` — the acceptable clips.
+
+* **Type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 #### grade
 
 `{clip_id: grade}` (2 ideal / 1 acceptable / 0 wrong).
 
+* **Type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 #### negatives
 
 Free-text distractors (unused by scoring; documentation).
+
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
 
 #### labeler
 
 Provenance of the labels (`llm+human` etc.).
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### schema_version
 
 The GoldenItem schema version.
+
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 ### *class* foley.eval.HashingBowEmbedder(, dim=64)
 
@@ -169,7 +193,7 @@ offline retrieval regression; real retrieval uses CLAP.
 
 Embed `text` (or a list of texts) -> a `(n, dim)` float32 array.
 
-### *class* foley.eval.RetrievalReport(per_query=<factory>, mean=<factory>, ranks=<factory>, k=10)
+### *class* foley.eval.RetrievalReport(per_query=dict(), mean=dict(), ranks=dict(), k=10)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 

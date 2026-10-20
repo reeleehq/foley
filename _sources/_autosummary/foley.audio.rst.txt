@@ -17,6 +17,7 @@ foley.audio
       encode
       ensure_channels
       fade
+      limit_true_peak
       load
       loudness_normalize
       resample

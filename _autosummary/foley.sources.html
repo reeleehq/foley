@@ -34,6 +34,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=e39d37f2" />
   
@@ -43,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=20c5f126"></script>
+    <script src="../_static/documentation_options.js?v=173d7b4c"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.41" />
+  <meta name="docsearch:version" content="0.0.42" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -319,6 +320,7 @@
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="foley.html">foley</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="foley.repair.html">foley.repair</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.audio.html">foley.audio</a></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="foley.index.html">foley.index</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.taxonomy.html">foley.index.taxonomy</a></li>
@@ -352,7 +354,17 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.agent.verify.html">foley.agent.verify</a></li>
 </ul>
 </details></li>
-<li class="toctree-l2"><a class="reference internal" href="foley.weave.html">foley.weave</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.weave.html">foley.weave</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.align.html">foley.weave.align</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.anchor.html">foley.weave.anchor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.master.html">foley.weave.master</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.mix.html">foley.weave.mix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.protocols.html">foley.weave.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.reaction.html">foley.weave.reaction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.requirements.html">foley.weave.requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.timeline.html">foley.weave.timeline</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2 has-children"><a class="reference internal" href="foley.eval.html">foley.eval</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.baseline.html">foley.eval.baseline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.embedder.html">foley.eval.embedder</a></li>
@@ -569,7 +581,7 @@ registers every adapter in <code class="xref py py-data docutils literal notrans
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.sources.ClipSpec">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.</span></span><span class="sig-name descname"><span class="pre">ClipSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#ClipSpec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.ClipSpec" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.</span></span><span class="sig-name descname"><span class="pre">ClipSpec</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">dict()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#ClipSpec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.ClipSpec" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>One clip inside a local bulk corpus, described but not yet ingested.</p>
 <dl class="field-list simple">
@@ -578,6 +590,11 @@ registers every adapter in <code class="xref py py-data docutils literal notrans
 <dt class="sig sig-object py" id="foley.sources.ClipSpec.path">
 <span class="sig-name descname"><span class="pre">path</span></span><a class="headerlink" href="#foley.sources.ClipSpec.path" title="Link to this definition">#</a></dt>
 <dd><p>Absolute path to the audio file on disk.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py attribute">
@@ -586,6 +603,11 @@ registers every adapter in <code class="xref py py-data docutils literal notrans
 <dd><p>The corpus-native id (e.g. an FSD50K <code class="docutils literal notranslate"><span class="pre">fname</span></code>); used only for
 reporting/provenance — the stored <code class="docutils literal notranslate"><span class="pre">SoundRecord.id</span></code> is still the
 content hash minted by the ingest pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py attribute">
@@ -595,6 +617,11 @@ content hash minted by the ingest pipeline.</p>
 <a class="reference internal" href="#foley.sources.CorpusAdapter.resolve_license" title="foley.sources.CorpusAdapter.resolve_license"><code class="xref py py-meth docutils literal notranslate"><span class="pre">CorpusAdapter.resolve_license()</span></code></a> and (optionally) to caption/tag
 hints — e.g. <code class="docutils literal notranslate"><span class="pre">{&quot;license_id&quot;,</span> <span class="pre">&quot;creator_name&quot;,</span> <span class="pre">&quot;source_url&quot;,</span>
 <span class="pre">&quot;caption&quot;,</span> <span class="pre">&quot;tag_hints&quot;}</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -784,7 +811,7 @@ warning-and-dropping unsupported ones), builds the audio + a generated
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.sources.GeneratedClip">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.</span></span><span class="sig-name descname"><span class="pre">GeneratedClip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio_bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#GeneratedClip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.GeneratedClip" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.</span></span><span class="sig-name descname"><span class="pre">GeneratedClip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio_bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">candidate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">list()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#GeneratedClip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.GeneratedClip" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>One freshly-generated sound: its transient bytes + a provisional candidate.</p>
 <p>The return type of a <a class="reference internal" href="#foley.sources.GenerateAdapter" title="foley.sources.GenerateAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenerateAdapter</span></code></a>’s <code class="docutils literal notranslate"><span class="pre">generate</span></code> — the envelope
@@ -814,6 +841,11 @@ here and is never serialized — a <code class="docutils literal notranslate"><s
 <span class="sig-name descname"><span class="pre">audio_bytes</span></span><a class="headerlink" href="#foley.sources.GeneratedClip.audio_bytes" title="Link to this definition">#</a></dt>
 <dd><p>The generated audio as encoded container bytes (WAV/FLAC/…),
 transient and in-memory only — consumed once by the ingest pipeline.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a></span></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py attribute">
@@ -823,6 +855,11 @@ transient and in-memory only — consumed once by the ingest pipeline.</p>
 (<code class="docutils literal notranslate"><span class="pre">origin=CandidateOrigin.generated</span></code>) carrying the authoritative
 <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a> (<code class="docutils literal notranslate"><span class="pre">is_ai_generated=True</span></code> + the
 generation-provenance block) plus the prompt caption + seed tags.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.Candidate" title="foley.base.Candidate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Candidate</span></code></a></span></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py attribute">
@@ -833,13 +870,18 @@ output-format fallbacks, …). The
 <code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources.generate.generate()</span></code> façade folds these into the
 stored <a class="reference internal" href="foley.index.ingest.html#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">IngestResult</span></code></a>‘s <code class="docutils literal notranslate"><span class="pre">notes</span></code> so they
 surface in the run report.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a></span></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="foley.sources.GenerationError">
-<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.</span></span><span class="sig-name descname"><span class="pre">GenerationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">report</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/generate.html#GenerationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.GenerationError" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.</span></span><span class="sig-name descname"><span class="pre">GenerationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">report</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">status</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/generate.html#GenerationError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.GenerationError" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></a></p>
 <p>Raised by <a class="reference internal" href="foley.html#foley.generate" title="foley.generate"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.generate()</span></code></a> when a backend yields no stored sound.</p>
 <p>Carries the full <a class="reference internal" href="foley.index.ingest.html#foley.index.ingest.IngestReport" title="foley.index.ingest.IngestReport"><code class="xref py py-class docutils literal notranslate"><span class="pre">IngestReport</span></code></a> and the terminal
@@ -860,6 +902,15 @@ report; only the public <a class="reference internal" href="foley.html#foley.gen
 <span class="sig-name descname"><span class="pre">status</span></span><a class="headerlink" href="#foley.sources.GenerationError.status" title="Link to this definition">#</a></dt>
 <dd><p>The terminal <a class="reference internal" href="foley.index.ingest.html#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">IngestResult</span></code></a> status
 (<code class="docutils literal notranslate"><span class="pre">'quarantined'</span></code> | <code class="docutils literal notranslate"><span class="pre">'rights_blocked'</span></code> | <code class="docutils literal notranslate"><span class="pre">'error'</span></code> | …).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.sources.GenerationError.cache_key">
+<span class="sig-name descname"><span class="pre">cache_key</span></span><a class="headerlink" href="#foley.sources.GenerationError.cache_key" title="Link to this definition">#</a></dt>
+<dd><p>The key the paid bytes were kept under in the generations cache
+(<code class="docutils literal notranslate"><span class="pre">foley.generations.get(cache_key)</span></code>), or <code class="docutils literal notranslate"><span class="pre">None</span></code> when nothing was kept
+(a free backend, a refusal before synthesis, a failed cache write). A
+quarantined generation is retrievable: it was billed either way (#107).</p>
 </dd></dl>
 
 </dd></dl>
@@ -1172,7 +1223,7 @@ an already-registered name (e.g. a test double) is never overwritten.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.generate">
-<span class="sig-prename descclassname"><span class="pre">foley.sources.</span></span><span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stable_audio'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adapter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_flagged</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'refuse'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermarker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance_store</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_unsupported</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reuse_cached</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generations_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">affordances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/generate.html#generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.generate" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">foley.sources.</span></span><span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'stable_audio'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adapter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermark</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_flagged</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'refuse'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">watermarker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provenance_store</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_unsupported</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reuse_cached</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generations_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repair</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">affordances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/generate.html#generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.generate" title="Link to this definition">#</a></dt>
 <dd><p>Generate a sound via <code class="docutils literal notranslate"><span class="pre">backend</span></code> and ingest it (by-value) into <code class="docutils literal notranslate"><span class="pre">library</span></code>.</p>
 <p>Progressive disclosure: <code class="docutils literal notranslate"><span class="pre">generate(&quot;a</span> <span class="pre">single</span> <span class="pre">wooden</span> <span class="pre">door</span> <span class="pre">creak&quot;)</span></code> works out of
 the box (the local Stable Audio Open backend, into the process-wide default
@@ -1204,7 +1255,10 @@ local) | <code class="docutils literal notranslate"><span class="pre">'elevenlab
 <li><p><strong>library</strong> – Target <a class="reference internal" href="foley.index.library.html#foley.index.library.SoundLibrary" title="foley.index.library.SoundLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundLibrary</span></code></a> (default: the
 process-wide default library).</p></li>
 <li><p><strong>store</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, synthesize + enrich but do not add to the library
-(probe/QC/embed only — a preview; no content-credential sidecar).</p></li>
+(probe/QC/embed only — a preview; no content-credential sidecar). The
+result’s <code class="docutils literal notranslate"><span class="pre">audio_bytes</span></code> carries the clip, and an enrichment stage whose
+optional extra is absent (<code class="docutils literal notranslate"><span class="pre">foley[clap]</span></code>) is skipped with a note rather
+than failing after the paid call (#107).</p></li>
 <li><p><strong>adapter</strong> – An optional pre-built adapter (the dependency-injection seam — a
 test passes a fake-transport / fake-pipeline adapter; production omits
 it and the registry lazily builds one).</p></li>
@@ -1224,6 +1278,19 @@ with a note. See <code class="xref py py-func docutils literal notranslate"><spa
 <li><p><strong>reuse_cached</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Serve an identical paid request from the generations cache
 instead of paying again (default <code class="docutils literal notranslate"><span class="pre">True</span></code>; #59).</p></li>
 <li><p><strong>generations_cache</strong> – A <a class="reference internal" href="foley.stores.html#foley.stores.GenerationsCache" title="foley.stores.GenerationsCache"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenerationsCache</span></code></a> (default: local).</p></li>
+<li><p><strong>repair</strong> – What to do with a generation QC would quarantine for a clipped run
+just over the gate (#107). <code class="docutils literal notranslate"><span class="pre">True</span></code> (default) applies the report’s own
+fixes (<a class="reference internal" href="foley.repair.html#foley.repair.repair" title="foley.repair.repair"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.repair.repair()</span></code></a>: a 20 ms fade and a true-peak
+attenuation, which also clear the edge click and the over-ceiling peak
+such a clip carries), QCs the result again and ingests the repaired clip,
+recording the repair on the result’s <code class="docutils literal notranslate"><span class="pre">notes</span></code> and the licence’s
+<code class="docutils literal notranslate"><span class="pre">transformations</span></code>; unrepairable faults (silence, NaN, too short, heavy
+clipping) still quarantine, with the reason noted. <code class="docutils literal notranslate"><span class="pre">False</span></code> quarantines
+as before; a callable with <a class="reference internal" href="foley.repair.html#foley.repair.repair" title="foley.repair.repair"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.repair.repair()</span></code></a>’s signature
+replaces the policy. A clip QC admits with a warning is stored as is. The
+repair runs before the watermark and the id, so the stored bytes, the
+content-hash id and the credential all describe the repaired clip; the
+generations cache keeps the bytes as received.</p></li>
 <li><p><strong>**affordances</strong> – Unified generation affordances (<code class="docutils literal notranslate"><span class="pre">duration</span></code>,
 <code class="docutils literal notranslate"><span class="pre">prompt_influence</span></code>, <code class="docutils literal notranslate"><span class="pre">negative_prompt</span></code>, <code class="docutils literal notranslate"><span class="pre">steps</span></code>, <code class="docutils literal notranslate"><span class="pre">seed</span></code>, <code class="docutils literal notranslate"><span class="pre">loop</span></code>,
 <code class="docutils literal notranslate"><span class="pre">output_format</span></code> — see <a class="reference internal" href="foley.base.html#foley.base.GENERATION_AFFORDANCES" title="foley.base.GENERATION_AFFORDANCES"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.base.GENERATION_AFFORDANCES</span></code></a>).</p></li>
@@ -1236,7 +1303,8 @@ instead of paying again (default <code class="docutils literal notranslate"><spa
 <dd class="field-odd"><p>An <a class="reference internal" href="foley.index.ingest.html#foley.index.ingest.IngestReport" title="foley.index.ingest.IngestReport"><code class="xref py py-class docutils literal notranslate"><span class="pre">IngestReport</span></code></a> — inspect <code class="docutils literal notranslate"><span class="pre">.ingested</span></code> for the
 stored record (<code class="docutils literal notranslate"><span class="pre">storage_mode</span> <span class="pre">==</span> <span class="pre">by_value</span></code>) and <code class="docutils literal notranslate"><span class="pre">.summary()</span></code> for counts.
 A backend or ingest failure is recorded as a single <code class="docutils literal notranslate"><span class="pre">error</span></code> result, never
-raised (<code class="docutils literal notranslate"><span class="pre">add_from</span></code>-symmetric resilience).</p>
+raised (<code class="docutils literal notranslate"><span class="pre">add_from</span></code>-symmetric resilience). Every result of a paid call
+carries <code class="docutils literal notranslate"><span class="pre">cache_key</span></code>: where its bytes are in the generations cache.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
@@ -1378,7 +1446,7 @@ importable <code class="docutils literal notranslate"><span class="pre">foley.so
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1546,6 +1614,7 @@ the default <code class="docutils literal notranslate"><span class="pre">rings</
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.GenerationError"><code class="docutils literal notranslate"><span class="pre">GenerationError</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.GenerationError.report"><code class="docutils literal notranslate"><span class="pre">GenerationError.report</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.GenerationError.status"><code class="docutils literal notranslate"><span class="pre">GenerationError.status</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.GenerationError.cache_key"><code class="docutils literal notranslate"><span class="pre">GenerationError.cache_key</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.RecognizableVoiceRefusal"><code class="docutils literal notranslate"><span class="pre">RecognizableVoiceRefusal</span></code></a></li>

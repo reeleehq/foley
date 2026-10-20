@@ -8,6 +8,7 @@
 - [foley](index.html.md): Find (or generate) the &#42;&#42;right sound effect for a moment of narration&#42;&#42; — and weave it in.
 - [API reference](api.html.md): | &#96;foley&#96;   | foley — a retrieval-first façade for sound effects.   |
 - [foley](_autosummary/foley.html.md): foley — a retrieval-first façade for sound effects.
+- [foley.repair](_autosummary/foley.repair.html.md): Repair instead of quarantine: the fixes a Tier-0 QC report suggests, applied and re-checked (#107).
 - [foley.audio](_autosummary/foley.audio.html.md): Audio I/O and DSP primitives for foley.
 - [foley.index](_autosummary/foley.index.html.md): foley INDEX stage — make every sound findable by keyword &#42;and&#42; meaning.
 - [foley.index.taxonomy](_autosummary/foley.index.taxonomy.html.md): UCS + AudioSet taxonomy: the &#96;tags -&gt; UCS CatID&#96; resolver for foley.
@@ -40,7 +41,15 @@
 - [foley.agent.session](_autosummary/foley.agent.session.html.md): Session-scoped audition state — cached candidates, picks, and rejects (#12).
 - [foley.agent.tools](_autosummary/foley.agent.tools.html.md): The SELECT orchestration: &#96;find()&#96; / &#96;plan()&#96; + the small pure tool wrappers.
 - [foley.agent.verify](_autosummary/foley.agent.verify.html.md): &#96;verify_match&#96; — the retrieve→verify ladder (clap → listen → judge) + &#96;Judge&#96; impls.
-- [foley.weave](_autosummary/foley.weave.html.md): Page content
+- [foley.weave](_autosummary/foley.weave.html.md): WEAVE — the compositor façade: narration + timeline → a finished, editable mix.
+- [foley.weave.align](_autosummary/foley.weave.align.html.md): Forced-alignment adapters — the &#96;Aligner&#96; seam’s fake default + WhisperX real impl.
+- [foley.weave.anchor](_autosummary/foley.weave.anchor.html.md): Symbolic-anchor → sample-onset heuristics — the SELECT→WEAVE timing bridge (report 06 §2.4).
+- [foley.weave.master](_autosummary/foley.weave.master.html.md): Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).
+- [foley.weave.mix](_autosummary/foley.weave.mix.html.md): Pure-numpy mixing DSP — making a clip sit under the voice (report 06 §3).
+- [foley.weave.protocols](_autosummary/foley.weave.protocols.html.md): The structural DI seams of the WEAVE stage — &#96;Aligner&#96; / &#96;ApplyStrategy&#96;.
+- [foley.weave.reaction](_autosummary/foley.weave.reaction.html.md): Audience-reaction timing — a crowd answers an event, it does not coincide with it.
+- [foley.weave.requirements](_autosummary/foley.weave.requirements.html.md): System-dependency onboarding for WEAVE’s optional upgrade paths (accompy-style).
+- [foley.weave.timeline](_autosummary/foley.weave.timeline.html.md): The sound-design timeline as an editable document — hydrate, edit, caption.
 - [foley.eval](_autosummary/foley.eval.html.md): Tier-1 retrieval evaluation — metrics, a frozen golden set, and the nDCG gate.
 - [foley.eval.baseline](_autosummary/foley.eval.baseline.html.md): The committed nDCG baseline — the PR gate’s SSOT + staleness stamps.
 - [foley.eval.embedder](_autosummary/foley.eval.embedder.html.md): A deterministic, numpy-only text embedder for the retrieval eval gate.
@@ -82,15 +91,7 @@
 - [foley.sources.stable_audio.config](_autosummary/foley.sources.stable_audio.config.html.md): &#96;SOURCE_CONFIG&#96; for the local Stable Audio Open 1.0 generator (report 02 · 07 · 10 §4.1).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [foley.weave.align](_autosummary/foley.weave.align.html.md): Forced-alignment adapters — the &#96;Aligner&#96; seam’s fake default + WhisperX real impl.
-- [foley.weave.anchor](_autosummary/foley.weave.anchor.html.md): Symbolic-anchor → sample-onset heuristics — the SELECT→WEAVE timing bridge (report 06 §2.4).
-- [foley.weave.master](_autosummary/foley.weave.master.html.md): Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).
-- [foley.weave.mix](_autosummary/foley.weave.mix.html.md): Pure-numpy mixing DSP — making a clip sit under the voice (report 06 §3).
-- [foley.weave.protocols](_autosummary/foley.weave.protocols.html.md): The structural DI seams of the WEAVE stage — &#96;Aligner&#96; / &#96;ApplyStrategy&#96;.
-- [foley.weave.reaction](_autosummary/foley.weave.reaction.html.md): Audience-reaction timing — a crowd answers an event, it does not coincide with it.
-- [foley.weave.requirements](_autosummary/foley.weave.requirements.html.md): System-dependency onboarding for WEAVE’s optional upgrade paths (accompy-style).
-- [foley.weave.timeline](_autosummary/foley.weave.timeline.html.md): The sound-design timeline as an editable document — hydrate, edit, caption.
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-16 01:23 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-20 23:57 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

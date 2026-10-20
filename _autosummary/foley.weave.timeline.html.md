@@ -2,7 +2,7 @@
 
 The sound-design timeline as an editable document — hydrate, edit, caption.
 
-The timeline is the SSOT and the reproducible seed; `foley.weave.render()` is a
+The timeline is the SSOT and the reproducible seed; [`foley.weave.render()`](foley.weave.html.md#foley.weave.render) is a
 pure projection of it. This module owns the *document* operations, all pure and
 stdlib-only (no numpy, no I/O):
 

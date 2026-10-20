@@ -33,7 +33,7 @@ fail-closed license gate (`verify_match` asserts `candidate.license_ok` is `True
 | [`FitReport`](#foley.eval.fit.FitReport)([per_item, fit_precision, ...])   | Tier-2 fit metrics over a stratified golden sample (JSON-friendly, mirrors `RetrievalReport`).   |
 |----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
 
-### *class* foley.eval.fit.FitReport(per_item=<factory>, fit_precision=0.0, fit_recall=0.0, fit_f1=0.0, fit_score=0.0, auto_accept_rate=0.0, n_accepted=0, n_confirmed=0, strata=<factory>, calibration=None, fidelity=<factory>, judge_model='', embedder_model_id='', seed=0, k=10, schema_version=1)
+### *class* foley.eval.fit.FitReport(per_item=dict(), fit_precision=0.0, fit_recall=0.0, fit_f1=0.0, fit_score=0.0, auto_accept_rate=0.0, n_accepted=0, n_confirmed=0, strata=dict(), calibration=None, fidelity=dict(), judge_model='', embedder_model_id='', seed=0, k=10, schema_version=1)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 

@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="alternate" type="text/markdown" href="render.html.md">
+<link rel="describedby" href="../../../llms.txt" type="text/markdown">
+    <title>foley.weave.render &#8212; foley</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_autodoc_typehints.css?v=057ac668" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/epythet.css?v=e39d37f2" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../../_static/documentation_options.js?v=173d7b4c"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=fd10adb8"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = "pre.mermaid {\n    /* Same as .mermaid-container > pre */\n    display: block;\n    width: 100%;\n}\n\npre.mermaid > svg {\n    /* Same as .mermaid-container > pre > svg */\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}";
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = ".mermaid-container {\n    position: relative;\n    display: flex;\n    flex-direction: row;\n    width: 100%;\n}\n\n.mermaid-container > pre {\n    display: block;\n    width: 100%;\n}\n\n.mermaid-container > pre > svg {\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}\n\n.mermaid-fullscreen-btn {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.3);\n    border-radius: 4px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.2s;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n    font-size: 14px;\n    line-height: 1;\n    padding: 0;\n    color: #333;\n}\n\n.mermaid-fullscreen-btn:hover {\n    opacity: 100% !important;\n    background: rgba(255, 255, 255, 1);\n    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-btn.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.3);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-btn.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal {\n    display: none;\n    position: fixed !important;\n    top: 0 !important;\n    left: 0 !important;\n    width: 95vw;\n    height: 100vh;\n    background: rgba(255, 255, 255, 0.98);\n    z-index: 9999;\n    padding: 20px;\n    overflow: auto;\n}\n\n.mermaid-fullscreen-modal.dark-theme {\n    background: rgba(0, 0, 0, 0.98);\n}\n\n.mermaid-fullscreen-modal.active {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen {\n    position: relative;\n    width: 95vw;\n    height: 90vh;\n    max-width: 95vw;\n    max-height: 90vh;\n    background: white;\n    border-radius: 8px;\n    padding: 20px;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);\n    overflow: auto;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen.dark-theme {\n    background: #1a1a1a;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);\n}\n\n.mermaid-container-fullscreen pre.mermaid {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen .mermaid svg {\n    height: 100% !important;\n    width: 100% !important;\n    cursor: grab;\n}\n\n.mermaid-fullscreen-close {\n    position: fixed !important;\n    top: 20px !important;\n    right: 20px !important;\n    width: 40px;\n    height: 40px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.2);\n    border-radius: 50%;\n    cursor: pointer;\n    z-index: 10000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n    transition: all 0.2s;\n    font-size: 24px;\n    line-height: 1;\n    color: #333;\n}\n\n.mermaid-fullscreen-close:hover {\n    background: white;\n    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-close.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.2);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-close.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal .mermaid-fullscreen-btn {\n    display: none !important;\n}";
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+let _lazyObserver = null;
+let _renderQueue = Promise.resolve();
+let closeModal = () => {};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeModal();
+    }
+});
+
+// Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
+// so this is safe to call both for the initial batch and for diagrams that
+// render lazily once they become visible.
+const addZoomToSvgs = (svgs) => {
+    svgs.each(function() {
+        if (this.getAttribute('data-zoom-applied') === 'true') return;
+        var svg = d3.select(this);
+        svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+        var inner = svg.select("g");
+        var zoom = d3.zoom().on("zoom", function(event) {
+            inner.attr("transform", event.transform);
+        });
+        svg.call(zoom);
+        this.setAttribute('data-zoom-applied', 'true');
+    });
+};
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        // Disconnect any previous lazy rendering observer
+        if (_lazyObserver) {
+            _lazyObserver.disconnect();
+            _lazyObserver = null;
+        }
+
+        all_mermaids.forEach((el) => {
+            el.removeAttribute('data-mermaid-deferred');
+            el.removeAttribute('data-mermaid-render-failed');
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+
+        // Separate visible and hidden elements. Mermaid's layout engine measures
+        // text dimensions via the DOM, which fails for elements hidden by a parent
+        // (e.g., Reveal.js non-active slides, sphinx-design unopened tabs),
+        // producing broken SVGs. Render visible elements now, defer hidden ones.
+        const visible = [];
+        const hidden = [];
+        all_mermaids.forEach((el) => {
+            // offsetParent is null for display:none ancestors.
+            // getClientRects().length > 0 catches position:fixed elements
+            // (which also have null offsetParent but are still visible).
+            if (el.offsetParent !== null || el.getClientRects().length > 0) {
+                visible.push(el);
+            } else {
+                hidden.push(el);
+                el.setAttribute('data-mermaid-deferred', 'true');
+            }
+        });
+
+        if (visible.length > 0) {
+            try {
+                await mermaid.run({ nodes: visible });
+            } catch (e) {
+                console.error("Mermaid rendering failed:", e);
+            }
+        }
+
+        // Lazily render hidden elements when they become visible.
+        // Uses a promise chain (_renderQueue) to serialize rendering,
+        // since IntersectionObserver may report multiple entries at once
+        // and mermaid.run() is not safe to call concurrently.
+        if (hidden.length > 0) {
+            if (typeof IntersectionObserver === 'undefined') {
+                console.warn("IntersectionObserver not available; hidden mermaid diagrams will not render.");
+            } else {
+                _renderQueue = Promise.resolve();
+                _lazyObserver = new IntersectionObserver((entries) => {
+                    for (const entry of entries) {
+                        if (entry.isIntersecting && entry.target.getAttribute("data-processed") !== "true") {
+                            _lazyObserver.unobserve(entry.target);
+                            const el = entry.target;
+                            _renderQueue = _renderQueue.then(async () => {
+                                try {
+                                    await mermaid.run({ nodes: [el] });
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    // Apply zoom to the now-rendered diagram, matching
+                                    // the decoration visible diagrams receive.
+                                    if (false) {
+                                        addZoomToSvgs(d3.selectAll("").select(function() {
+                                            return this.querySelector("svg");
+                                        }));
+                                    }
+                                } catch (e) {
+                                    console.error("Mermaid deferred rendering failed:", e);
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    el.setAttribute('data-mermaid-render-failed', 'true');
+                                }
+                            });
+                        }
+                    }
+                });
+                hidden.forEach((el) => _lazyObserver.observe(el));
+            }
+        }
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    // Exclude deferred (hidden) and render-failed elements from completion checks
+    const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
+    const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
+
+    if (false) {
+        const mermaids_to_add_zoom = 0 === -1 ? mermaids_active.length : 0;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("").select(function() {
+                return this.querySelector("svg");
+            });
+            // Wait until every active (visible) diagram has rendered. Deferred
+            // diagrams are excluded, so a fixed d3_node_count that counts a
+            // hidden diagram no longer loops forever waiting for its SVG.
+            if(mermaids_active.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            }
+            addZoomToSvgs(svgs);
+        }
+    } else if(mermaids_active.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if (!true) return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = "\u26f6";
+        fullscreenBtn.style.opacity = "50%";
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scrollX, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.display = 'block';
+
+                if (false) {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+
+
+const load = async () => {
+    initStyles();
+
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...{"startOnLoad": false},
+                ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...{"startOnLoad": false},
+    ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/foley/weave/render';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.42" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">foley</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../foley.html" class="nav-link">foley</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../weave.html" class="nav-link">foley.weave</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">foley.weave.render</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for foley.weave.render</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""The render — a PURE, deterministic projection of the timeline into audio (report 06 §6.4).</span>
+
+<span class="sd">``render(timeline, library)`` is a pure function of ``(narration, timeline, library,</span>
+<span class="sd">master)``: it aligns (once, cached), resolves each item's anchor, mixes each layer</span>
+<span class="sd">bus (per-item DSP via the :class:`~foley.weave.protocols.ApplyStrategy` seam), ducks</span>
+<span class="sd">the ambience/music beds under speech, sums the buses, and masters to the timeline's</span>
+<span class="sd">:class:`~foley.base.MasterProfile`. Re-running after an edit reproduces exactly that</span>
+<span class="sd">change and nothing else.</span>
+
+<span class="sd">An opt-in :class:`RenderCache` memoises each layer's *pre-duck* bus by a content hash</span>
+<span class="sd">of its items, so an incremental re-render recomputes only the changed layer(s) yet is</span>
+<span class="sd">**byte-identical** to a full render (ducking and mastering are always recomputed</span>
+<span class="sd">deterministically). The two shipped :class:`ApplyStrategy` impls are</span>
+<span class="sd">:class:`FullRender` (default, full DSP) and :class:`PlaceOnly` (dry declicked</span>
+<span class="sd">placement); ``diff-preview`` / ``transition`` are reserved behind the same seam.</span>
+
+<span class="sd">This module also owns the timeline **export adapters**: a pure-stdlib CMX3600</span>
+<span class="sd">:func:`to_edl` (always available) and a lazy :func:`to_otio` (``foley[weave]``);</span>
+<span class="sd">:func:`export` prefers OTIO and falls back to EDL so export always succeeds.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Layer</span><span class="p">,</span> <span class="n">SoundDesignTimeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.align</span><span class="w"> </span><span class="kn">import</span> <span class="n">_default_aligner</span><span class="p">,</span> <span class="n">aligner_name</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.master</span><span class="w"> </span><span class="kn">import</span> <span class="n">MasterReport</span><span class="p">,</span> <span class="n">master</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.mix</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">LAYER_GAIN_DB</span><span class="p">,</span>
+    <span class="n">apply_distance</span><span class="p">,</span>
+    <span class="n">constant_power_pan</span><span class="p">,</span>
+    <span class="n">db_to_lin</span><span class="p">,</span>
+    <span class="n">declick</span><span class="p">,</span>
+    <span class="n">fit_duration</span><span class="p">,</span>
+    <span class="n">overlay</span><span class="p">,</span>
+    <span class="n">reverb_send</span><span class="p">,</span>
+    <span class="n">speech_duck_gain</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.timeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">hydrate</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndarray</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimelineItem</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aligner</span><span class="p">,</span> <span class="n">ApplyStrategy</span>
+
+<span class="c1">#: The non-voice layers the render mixes, in sum order (voice is the 0 dB anchor).</span>
+<span class="n">RENDER_LAYERS</span><span class="p">:</span> <span class="s2">"tuple[Layer, ...]"</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">Layer</span><span class="o">.</span><span class="n">sfx_fg</span><span class="p">,</span>
+    <span class="n">Layer</span><span class="o">.</span><span class="n">ambience</span><span class="p">,</span>
+    <span class="n">Layer</span><span class="o">.</span><span class="n">stinger</span><span class="p">,</span>
+    <span class="n">Layer</span><span class="o">.</span><span class="n">music</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="c1">#: Layers ducked under speech (report 06 §3.2).</span>
+<span class="n">DUCKED_LAYERS</span><span class="p">:</span> <span class="s2">"tuple[Layer, ...]"</span> <span class="o">=</span> <span class="p">(</span><span class="n">Layer</span><span class="o">.</span><span class="n">ambience</span><span class="p">,</span> <span class="n">Layer</span><span class="o">.</span><span class="n">music</span><span class="p">)</span>
+<span class="c1">#: Nominal clip length (seconds) used for EDL source-out when a clip's true length</span>
+<span class="c1">#: is unknown at export time.</span>
+<span class="n">EDL_NOMINAL_CLIP_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="n">EDL_FPS</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">25</span>  <span class="c1"># EBU frame rate for CMX3600 timecodes</span>
+
+
+<div class="viewcode-block" id="RenderCache">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.html#foley.weave.RenderCache">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">RenderCache</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Per-layer render memo (``bus_hash -&gt; stereo bus array``) for incremental re-render."""</span></div>
+
+
+
+<div class="viewcode-block" id="RenderResult">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.html#foley.weave.RenderResult">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RenderResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The output of :func:`render`: the mastered mix + the hydrated (re-renderable) timeline."""</span>
+
+    <span class="n">audio</span><span class="p">:</span> <span class="s2">"ndarray"</span>  <span class="c1"># mastered stereo (frames, 2) float32</span>
+    <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">timeline</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">SoundDesignTimeline</span>  <span class="c1"># hydrated, word_timeline cached (the reproducible seed)</span>
+    <span class="p">)</span>
+    <span class="n">master_report</span><span class="p">:</span> <span class="n">MasterReport</span>
+    <span class="n">buses</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>  <span class="c1"># runtime-only {Layer: pre-duck bus}</span>
+    <span class="c1">#: Where the word timings came from: ``"cached"`` (the timeline already had them),</span>
+    <span class="c1">#: the aligner that produced them (``"fake"``, ``"whisperx"``, a class name), or</span>
+    <span class="c1">#: ``None`` when nothing was aligned (no transcript).</span>
+    <span class="n">alignment</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># ApplyStrategy implementations (the per-item placement seam, report 10 §4.2)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="FullRender">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.html#foley.weave.FullRender">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FullRender</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Default :class:`ApplyStrategy` — the full per-item DSP chain (report 06 §3-4).</span>
+
+<span class="sd">    ``fit-duration`` (loop/trim) → distance → reverb send → constant-power pan →</span>
+<span class="sd">    declick → gain (base layer level + item ``gain_db``) → overlay at the resolved</span>
+<span class="sd">    onset.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="s2">"TimelineItem"</span><span class="p">,</span> <span class="n">bus</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">clip</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">processing</span>
+        <span class="n">pl</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">placement</span>
+        <span class="n">clip</span> <span class="o">=</span> <span class="n">fit_duration</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+        <span class="n">clip</span> <span class="o">=</span> <span class="n">apply_distance</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span>
+        <span class="n">clip</span> <span class="o">=</span> <span class="n">reverb_send</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">reverb_send</span><span class="p">)</span>
+        <span class="n">stereo</span> <span class="o">=</span> <span class="n">constant_power_pan</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">pan</span><span class="p">)</span>
+        <span class="n">stereo</span> <span class="o">=</span> <span class="n">declick</span><span class="p">(</span><span class="n">stereo</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">fade_in</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">fade_in</span><span class="p">,</span> <span class="n">fade_out</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">fade_out</span><span class="p">)</span>
+        <span class="n">gain</span> <span class="o">=</span> <span class="n">db_to_lin</span><span class="p">(</span><span class="n">LAYER_GAIN_DB</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">layer</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">gain_db</span><span class="p">)</span>
+        <span class="n">stereo</span> <span class="o">=</span> <span class="n">stereo</span> <span class="o">*</span> <span class="n">gain</span>
+        <span class="k">return</span> <span class="n">overlay</span><span class="p">(</span><span class="n">bus</span><span class="p">,</span> <span class="n">stereo</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">onset</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="PlaceOnly">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.html#foley.weave.PlaceOnly">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PlaceOnly</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Dry :class:`ApplyStrategy` — declicked placement, no gain/pan/distance/reverb.</span>
+
+<span class="sd">    The fast preview / DSP-free fallback path: fit-duration → declick → overlay at the</span>
+<span class="sd">    resolved onset, at unity gain.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="s2">"TimelineItem"</span><span class="p">,</span> <span class="n">bus</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">clip</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+        <span class="n">pl</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">placement</span>
+        <span class="n">clip</span> <span class="o">=</span> <span class="n">fit_duration</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+        <span class="n">clip</span> <span class="o">=</span> <span class="n">declick</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">overlay</span><span class="p">(</span><span class="n">bus</span><span class="p">,</span> <span class="n">clip</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">onset</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">))</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># render()</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">load_clip_mono</span><span class="p">(</span><span class="n">library</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Load ``ref`` from ``library`` as a mono working array at ``sr``.</span>
+
+<span class="sd">    Accepts a :class:`foley.index.SoundLibrary` (via ``.array``) or a plain mapping</span>
+<span class="sd">    yielding an ndarray, raw bytes, or a ``(samples, orig_sr)`` tuple — so the render</span>
+<span class="sd">    is testable with a trivial dict library. Shared by :func:`render` and the WEAVE</span>
+<span class="sd">    façade's narration-binding view, so it carries no underscore.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">WORKING_SAMPLE_RATE</span><span class="p">,</span> <span class="n">load</span><span class="p">,</span> <span class="n">to_working</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">library</span><span class="p">,</span> <span class="s2">"array"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">library</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span> <span class="n">mono</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">library</span><span class="p">[</span><span class="n">ref</span><span class="p">]</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="n">WORKING_SAMPLE_RATE</span> <span class="k">if</span> <span class="n">sr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sr</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">samples</span><span class="p">,</span> <span class="n">orig</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="k">return</span> <span class="n">to_working</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">orig</span><span class="p">,</span> <span class="n">mono</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">target_sr</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">)):</span>
+        <span class="n">samples</span><span class="p">,</span> <span class="n">orig</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">to_working</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">orig</span><span class="p">,</span> <span class="n">mono</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">target_sr</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">to_working</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">mono</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">target_sr</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>  <span class="c1"># assume array at sr</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_silence</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A stereo ``(n, 2)`` float32 silence bus."""</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"float32"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_speech_spans</span><span class="p">(</span><span class="n">word_timeline</span><span class="p">:</span> <span class="s2">"list[dict]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[tuple[float, float]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Speech spans ``[(start, end), ...]`` for ducking, from the word timeline."""</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"start"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)),</span> <span class="nb">float</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"end"</span><span class="p">,</span> <span class="n">w</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"start"</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))))</span>
+        <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">word_timeline</span>
+    <span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bus_hash</span><span class="p">(</span><span class="n">items</span><span class="p">:</span> <span class="s2">"list[TimelineItem]"</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">strategy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A stable content hash of a layer's items (for :class:`RenderCache`).</span>
+
+<span class="sd">    Covers everything that affects the *pre-duck* bus: the strategy, sample rate,</span>
+<span class="sd">    bus length, and each item's clip + resolved placement + processing.</span>
+<span class="sd">    """</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">type</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">sr</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+    <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+        <span class="n">pl</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">placement</span><span class="p">,</span> <span class="n">it</span><span class="o">.</span><span class="n">processing</span>
+        <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"|"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">(</span>
+                    <span class="n">it</span><span class="o">.</span><span class="n">clip_ref</span><span class="p">,</span>
+                    <span class="n">it</span><span class="o">.</span><span class="n">layer</span><span class="p">,</span>
+                    <span class="n">pl</span><span class="o">.</span><span class="n">onset</span><span class="p">,</span>
+                    <span class="n">pl</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span>
+                    <span class="n">pl</span><span class="o">.</span><span class="n">loop</span><span class="p">,</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">gain_db</span><span class="p">,</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">pan</span><span class="p">,</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">distance</span><span class="p">,</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">reverb_send</span><span class="p">,</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">fade_in</span><span class="p">,</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">fade_out</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha1</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">))</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="render">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.html#foley.weave.render">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span>
+    <span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span>
+    <span class="n">library</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">48_000</span><span class="p">,</span>
+    <span class="n">transcript</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">aligner</span><span class="p">:</span> <span class="s2">"Optional[Aligner]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">apply_strategy</span><span class="p">:</span> <span class="s2">"Optional[ApplyStrategy]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RenderCache</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RenderResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Render ``timeline`` against ``library`` into a mastered mix (PURE, deterministic).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        timeline: The sound-design timeline (sparse or hydrated). ``narration_ref``</span>
+<span class="sd">            must resolve in ``library``; ``master`` carries the loudness target.</span>
+<span class="sd">        library: A :class:`foley.index.SoundLibrary` (or a mapping of ref → audio).</span>
+<span class="sd">        sr: Working/render sample rate in Hz.</span>
+<span class="sd">        transcript: Narration transcript for alignment when ``timeline.word_timeline``</span>
+<span class="sd">            is empty (else alignment is skipped — the cached timeline is the seed).</span>
+<span class="sd">        aligner: The :class:`~foley.weave.protocols.Aligner` (default: WhisperX if</span>
+<span class="sd">            ``foley[align]`` installed, else the deterministic fake).</span>
+<span class="sd">        apply_strategy: The per-item :class:`~foley.weave.protocols.ApplyStrategy`</span>
+<span class="sd">            (default :class:`FullRender`).</span>
+<span class="sd">        cache: An optional :class:`RenderCache` for byte-identical incremental</span>
+<span class="sd">            re-render (only changed layers recompute).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A :class:`RenderResult` — the mastered stereo mix, the hydrated timeline (with</span>
+<span class="sd">        ``word_timeline`` cached), and the :class:`~foley.weave.master.MasterReport`.</span>
+<span class="sd">    """</span>
+    <span class="n">strategy</span> <span class="o">=</span> <span class="n">apply_strategy</span> <span class="ow">or</span> <span class="n">FullRender</span><span class="p">()</span>
+    <span class="n">voice_mono</span> <span class="o">=</span> <span class="n">load_clip_mono</span><span class="p">(</span><span class="n">library</span><span class="p">,</span> <span class="n">timeline</span><span class="o">.</span><span class="n">narration_ref</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">voice_mono</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">wt</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">timeline</span><span class="o">.</span><span class="n">word_timeline</span><span class="p">)</span>
+    <span class="n">alignment</span> <span class="o">=</span> <span class="s2">"cached"</span> <span class="k">if</span> <span class="n">wt</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">wt</span> <span class="ow">and</span> <span class="n">transcript</span><span class="p">:</span>
+        <span class="n">used</span> <span class="o">=</span> <span class="n">aligner</span> <span class="k">if</span> <span class="n">aligner</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_default_aligner</span><span class="p">()</span>
+        <span class="n">wt</span> <span class="o">=</span> <span class="n">used</span><span class="o">.</span><span class="n">word_timeline</span><span class="p">(</span><span class="n">voice_mono</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">transcript</span><span class="o">=</span><span class="n">transcript</span><span class="p">)</span>
+        <span class="n">alignment</span> <span class="o">=</span> <span class="n">aligner_name</span><span class="p">(</span><span class="n">used</span><span class="p">)</span>
+    <span class="n">tl</span> <span class="o">=</span> <span class="n">hydrate</span><span class="p">(</span><span class="n">timeline</span><span class="p">,</span> <span class="n">wt</span><span class="p">)</span>
+
+    <span class="c1"># group enabled non-voice items by layer, then render (or reuse) each bus</span>
+    <span class="n">by_layer</span><span class="p">:</span> <span class="s2">"dict[Layer, list[TimelineItem]]"</span> <span class="o">=</span> <span class="p">{</span><span class="n">layer</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">RENDER_LAYERS</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">tl</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">it</span><span class="o">.</span><span class="n">enabled</span> <span class="ow">and</span> <span class="n">it</span><span class="o">.</span><span class="n">layer</span> <span class="ow">in</span> <span class="n">by_layer</span><span class="p">:</span>
+            <span class="n">by_layer</span><span class="p">[</span><span class="n">it</span><span class="o">.</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+
+    <span class="n">buses</span><span class="p">:</span> <span class="s2">"dict[Layer, ndarray]"</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">RENDER_LAYERS</span><span class="p">:</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="n">by_layer</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">_bus_hash</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">strategy</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">cache</span><span class="p">:</span>
+            <span class="n">buses</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span> <span class="o">=</span> <span class="n">cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="k">continue</span>
+        <span class="n">bus</span> <span class="o">=</span> <span class="n">_silence</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+            <span class="n">clip</span> <span class="o">=</span> <span class="n">load_clip_mono</span><span class="p">(</span><span class="n">library</span><span class="p">,</span> <span class="n">it</span><span class="o">.</span><span class="n">clip_ref</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">)</span>
+            <span class="n">bus</span> <span class="o">=</span> <span class="n">strategy</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">bus</span><span class="p">,</span> <span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="o">=</span><span class="n">sr</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">bus</span>
+        <span class="n">buses</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span> <span class="o">=</span> <span class="n">bus</span>
+
+    <span class="c1"># duck the beds under speech (post-cache, so always recomputed → byte-identical)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensure_channels</span>
+
+    <span class="n">mix</span> <span class="o">=</span> <span class="n">ensure_channels</span><span class="p">(</span><span class="n">voice_mono</span><span class="p">,</span> <span class="n">channels</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">duck_env</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">RENDER_LAYERS</span><span class="p">:</span>
+        <span class="n">bus</span> <span class="o">=</span> <span class="n">buses</span><span class="p">[</span><span class="n">layer</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">DUCKED_LAYERS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">duck_env</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">duck_env</span> <span class="o">=</span> <span class="n">speech_duck_gain</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">_speech_spans</span><span class="p">(</span><span class="n">wt</span><span class="p">))</span>
+            <span class="n">bus</span> <span class="o">=</span> <span class="n">bus</span> <span class="o">*</span> <span class="n">duck_env</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">mix</span> <span class="o">=</span> <span class="n">mix</span> <span class="o">+</span> <span class="n">bus</span>
+
+    <span class="n">mastered</span><span class="p">,</span> <span class="n">report</span> <span class="o">=</span> <span class="n">master</span><span class="p">(</span><span class="n">mix</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">tl</span><span class="o">.</span><span class="n">master</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">RenderResult</span><span class="p">(</span>
+        <span class="n">audio</span><span class="o">=</span><span class="n">mastered</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span>
+        <span class="n">timeline</span><span class="o">=</span><span class="n">tl</span><span class="p">,</span>
+        <span class="n">master_report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span>
+        <span class="n">buses</span><span class="o">=</span><span class="n">buses</span><span class="p">,</span>
+        <span class="n">alignment</span><span class="o">=</span><span class="n">alignment</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Export adapters — CMX3600 EDL (pure) + OTIO (lazy foley[weave])</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_tc</span><span class="p">(</span><span class="n">seconds</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">EDL_FPS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Format ``seconds`` as an ``HH:MM:SS:FF`` CMX3600 timecode."""</span>
+    <span class="n">seconds</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">seconds</span><span class="p">)</span>
+    <span class="n">total_frames</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">seconds</span> <span class="o">*</span> <span class="n">fps</span><span class="p">))</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">total_frames</span> <span class="o">%</span> <span class="n">fps</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">total_frames</span> <span class="o">//</span> <span class="n">fps</span>
+    <span class="n">h</span><span class="p">,</span> <span class="n">rem</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="mi">3600</span><span class="p">)</span>
+    <span class="n">m</span><span class="p">,</span> <span class="n">sec</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">rem</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">h</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">m</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">sec</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">frames</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">"</span>
+
+
+<div class="viewcode-block" id="to_edl">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.html#foley.weave.to_edl">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_edl</span><span class="p">(</span><span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"foley SFX"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Export ``timeline`` as a pure-stdlib CMX3600 EDL (deterministic, pinned ids).</span>
+
+<span class="sd">    A lightweight interchange for DAWs; each enabled, placed item is one event with</span>
+<span class="sd">    its clip name as the source comment. Always available (no dependency).</span>
+<span class="sd">    """</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"TITLE: </span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"FCM: NON-DROP FRAME"</span><span class="p">,</span> <span class="s2">""</span><span class="p">]</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">placed</span> <span class="o">=</span> <span class="p">[</span><span class="n">it</span> <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">timeline</span><span class="o">.</span><span class="n">items</span> <span class="k">if</span> <span class="n">it</span><span class="o">.</span><span class="n">enabled</span> <span class="ow">and</span> <span class="n">it</span><span class="o">.</span><span class="n">placement</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">placed</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">it</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">it</span><span class="o">.</span><span class="n">placement</span><span class="o">.</span><span class="n">onset</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">placed</span><span class="p">:</span>
+        <span class="n">event</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">onset</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">it</span><span class="o">.</span><span class="n">placement</span><span class="o">.</span><span class="n">onset</span><span class="p">)</span>
+        <span class="n">dur</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">it</span><span class="o">.</span><span class="n">placement</span><span class="o">.</span><span class="n">duration</span> <span class="ow">or</span> <span class="n">EDL_NOMINAL_CLIP_S</span><span class="p">)</span>
+        <span class="n">rec_in</span><span class="p">,</span> <span class="n">rec_out</span> <span class="o">=</span> <span class="n">_tc</span><span class="p">(</span><span class="n">onset</span><span class="p">),</span> <span class="n">_tc</span><span class="p">(</span><span class="n">onset</span> <span class="o">+</span> <span class="n">dur</span><span class="p">)</span>
+        <span class="n">src_out</span> <span class="o">=</span> <span class="n">_tc</span><span class="p">(</span><span class="n">dur</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">event</span><span class="si">:</span><span class="s2">03d</span><span class="si">}</span><span class="s2">  AX       AA     C        "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_tc</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">src_out</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">rec_in</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">rec_out</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"* FROM CLIP NAME: </span><span class="si">{</span><span class="n">it</span><span class="o">.</span><span class="n">clip_ref</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_opentimelineio_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""True iff ``opentimelineio`` (the ``foley[weave]`` extra) is importable."""</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
+
+    <span class="k">return</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="s2">"opentimelineio"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="to_otio">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.html#foley.weave.to_otio">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_otio</span><span class="p">(</span><span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">rate</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">EDL_FPS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Export ``timeline`` as an OpenTimelineIO JSON string (lazy ``foley[weave]``).</span>
+
+<span class="sd">    One or more **parallel** tracks per non-voice layer: each enabled, placed item is a</span>
+<span class="sd">    clip with an external media reference (by clip_ref), positioned at its resolved onset</span>
+<span class="sd">    via a leading gap. Because a single OTIO track is sequential, two same-layer clips that</span>
+<span class="sd">    overlap (or fall within a one-shot's nominal window) would otherwise be pushed late —</span>
+<span class="sd">    so overlapping clips spill onto sibling sub-tracks, keeping every clip at its true</span>
+<span class="sd">    onset. Non-destructive, minimal-viable fidelity (tracks/clips/onsets; effects/markers</span>
+<span class="sd">    are a later slice).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        RuntimeError: If ``opentimelineio`` is not installed.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_opentimelineio_available</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="s2">"OTIO export needs the 'foley[weave]' extra (opentimelineio); "</span>
+            <span class="s2">"use to_edl() for the dependency-free CMX3600 export."</span>
+        <span class="p">)</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">opentimelineio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">otio</span>  <span class="c1"># lazy: foley[weave]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_gap</span><span class="p">(</span><span class="n">seconds</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">otio</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">Gap</span><span class="p">(</span>
+            <span class="n">source_range</span><span class="o">=</span><span class="n">otio</span><span class="o">.</span><span class="n">opentime</span><span class="o">.</span><span class="n">TimeRange</span><span class="p">(</span>
+                <span class="n">otio</span><span class="o">.</span><span class="n">opentime</span><span class="o">.</span><span class="n">RationalTime</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="p">),</span>
+                <span class="n">otio</span><span class="o">.</span><span class="n">opentime</span><span class="o">.</span><span class="n">RationalTime</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">seconds</span> <span class="o">*</span> <span class="n">rate</span><span class="p">),</span> <span class="n">rate</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clip</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">dur</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">otio</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">Clip</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">it</span><span class="o">.</span><span class="n">clip_ref</span><span class="p">,</span>
+            <span class="n">media_reference</span><span class="o">=</span><span class="n">otio</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">ExternalReference</span><span class="p">(</span><span class="n">target_url</span><span class="o">=</span><span class="n">it</span><span class="o">.</span><span class="n">clip_ref</span><span class="p">),</span>
+            <span class="n">source_range</span><span class="o">=</span><span class="n">otio</span><span class="o">.</span><span class="n">opentime</span><span class="o">.</span><span class="n">TimeRange</span><span class="p">(</span>
+                <span class="n">otio</span><span class="o">.</span><span class="n">opentime</span><span class="o">.</span><span class="n">RationalTime</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">rate</span><span class="p">),</span>
+                <span class="n">otio</span><span class="o">.</span><span class="n">opentime</span><span class="o">.</span><span class="n">RationalTime</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">dur</span> <span class="o">*</span> <span class="n">rate</span><span class="p">),</span> <span class="n">rate</span><span class="p">),</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="n">tl</span> <span class="o">=</span> <span class="n">otio</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">Timeline</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"foley SFX"</span><span class="p">)</span>
+    <span class="n">by_layer</span><span class="p">:</span> <span class="s2">"dict[Layer, list[TimelineItem]]"</span> <span class="o">=</span> <span class="p">{</span><span class="n">layer</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">RENDER_LAYERS</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">timeline</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">it</span><span class="o">.</span><span class="n">enabled</span> <span class="ow">and</span> <span class="n">it</span><span class="o">.</span><span class="n">placement</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">it</span><span class="o">.</span><span class="n">layer</span> <span class="ow">in</span> <span class="n">by_layer</span><span class="p">:</span>
+            <span class="n">by_layer</span><span class="p">[</span><span class="n">it</span><span class="o">.</span><span class="n">layer</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">it</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="n">RENDER_LAYERS</span><span class="p">:</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">by_layer</span><span class="p">[</span><span class="n">layer</span><span class="p">],</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">it</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">it</span><span class="o">.</span><span class="n">placement</span><span class="o">.</span><span class="n">onset</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">items</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="c1"># Greedily pack clips into parallel sub-tracks so no two overlap on one track</span>
+        <span class="c1"># (a single OTIO Track is sequential — an overlapping clip would be pushed late).</span>
+        <span class="c1"># Each clip lands at its TRUE onset via a leading gap; a clip that would overlap</span>
+        <span class="c1"># every existing sub-track spills onto a new one.</span>
+        <span class="n">subtracks</span><span class="p">:</span> <span class="s2">"list[list]"</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># each entry: [track, playhead_seconds]</span>
+        <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+            <span class="n">onset</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">it</span><span class="o">.</span><span class="n">placement</span><span class="o">.</span><span class="n">onset</span><span class="p">)</span>
+            <span class="n">dur</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">it</span><span class="o">.</span><span class="n">placement</span><span class="o">.</span><span class="n">duration</span> <span class="ow">or</span> <span class="n">EDL_NOMINAL_CLIP_S</span><span class="p">)</span>
+            <span class="n">slot</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">subtracks</span> <span class="k">if</span> <span class="n">onset</span> <span class="o">&gt;=</span> <span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mf">1e-9</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">slot</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">layer</span><span class="o">.</span><span class="n">value</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">subtracks</span>
+                    <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">layer</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">subtracks</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">)"</span>
+                <span class="p">)</span>
+                <span class="n">slot</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">otio</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">Track</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">otio</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">TrackKind</span><span class="o">.</span><span class="n">Audio</span><span class="p">),</span>
+                    <span class="mf">0.0</span><span class="p">,</span>
+                <span class="p">]</span>
+                <span class="n">subtracks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">slot</span><span class="p">)</span>
+            <span class="n">track</span><span class="p">,</span> <span class="n">playhead</span> <span class="o">=</span> <span class="n">slot</span>
+            <span class="k">if</span> <span class="n">onset</span> <span class="o">&gt;</span> <span class="n">playhead</span><span class="p">:</span>
+                <span class="n">track</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_gap</span><span class="p">(</span><span class="n">onset</span> <span class="o">-</span> <span class="n">playhead</span><span class="p">))</span>
+            <span class="n">track</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_clip</span><span class="p">(</span><span class="n">it</span><span class="p">,</span> <span class="n">dur</span><span class="p">))</span>
+            <span class="n">slot</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">onset</span> <span class="o">+</span> <span class="n">dur</span>
+        <span class="k">for</span> <span class="n">track</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">subtracks</span><span class="p">:</span>
+            <span class="n">tl</span><span class="o">.</span><span class="n">tracks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">track</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">otio</span><span class="o">.</span><span class="n">adapters</span><span class="o">.</span><span class="n">write_to_string</span><span class="p">(</span><span class="n">tl</span><span class="p">,</span> <span class="s2">"otio_json"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="export">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.html#foley.weave.export">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">export</span><span class="p">(</span><span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"auto"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Export ``timeline`` as ``(format, text)`` — OTIO when available, else EDL.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        timeline: The timeline to export.</span>
+<span class="sd">        fmt: ``'auto'`` (OTIO if installed, else EDL), ``'otio'``, or ``'edl'``.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``(format_name, serialized_text)`` — export always succeeds (EDL is the</span>
+<span class="sd">        dependency-free fallback).</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s2">"edl"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"edl"</span><span class="p">,</span> <span class="n">to_edl</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s2">"otio"</span> <span class="ow">or</span> <span class="p">(</span><span class="n">fmt</span> <span class="o">==</span> <span class="s2">"auto"</span> <span class="ow">and</span> <span class="n">_opentimelineio_available</span><span class="p">()):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"otio"</span><span class="p">,</span> <span class="n">to_otio</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s2">"otio"</span><span class="p">:</span>
+                <span class="k">raise</span>
+    <span class="k">return</span> <span class="s2">"edl"</span><span class="p">,</span> <span class="n">to_edl</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

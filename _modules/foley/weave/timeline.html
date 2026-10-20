@@ -31,6 +31,7 @@
 <link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../_static/epythet.css?v=e39d37f2" />
   
@@ -40,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=20c5f126"></script>
+    <script src="../../../_static/documentation_options.js?v=173d7b4c"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.41" />
+  <meta name="docsearch:version" content="0.0.42" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -771,7 +772,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="hydrate">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.timeline.hydrate">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.hydrate">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">hydrate</span><span class="p">(</span>
     <span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="n">word_timeline</span><span class="p">:</span> <span class="s2">"Optional[list]"</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SoundDesignTimeline</span><span class="p">:</span>
@@ -838,7 +839,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="swap_clip">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.timeline.swap_clip">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.swap_clip">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">swap_clip</span><span class="p">(</span>
     <span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">new_clip_ref</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SoundDesignTimeline</span><span class="p">:</span>
@@ -848,7 +849,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="nudge">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.timeline.nudge">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.nudge">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">nudge</span><span class="p">(</span>
     <span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">delta_s</span><span class="p">:</span> <span class="nb">float</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SoundDesignTimeline</span><span class="p">:</span>
@@ -884,7 +885,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="set_gain">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.timeline.set_gain">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.set_gain">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">set_gain</span><span class="p">(</span>
     <span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">gain_db</span><span class="p">:</span> <span class="nb">float</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SoundDesignTimeline</span><span class="p">:</span>
@@ -901,7 +902,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="toggle">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.timeline.toggle">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.toggle">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">toggle</span><span class="p">(</span>
     <span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SoundDesignTimeline</span><span class="p">:</span>
@@ -911,7 +912,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="set_master">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.timeline.set_master">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.set_master">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">set_master</span><span class="p">(</span><span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="n">master</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SoundDesignTimeline</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Set the timeline's master profile (name or :class:`MasterProfile`) — a NEW timeline."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_master</span>
@@ -969,7 +970,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="to_webvtt">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.timeline.to_webvtt">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.to_webvtt">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">to_webvtt</span><span class="p">(</span>
     <span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">window_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DISPLAY_WINDOW_S</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -987,7 +988,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="to_srt">
-<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.timeline.to_srt">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.timeline.html#foley.weave.to_srt">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">to_srt</span><span class="p">(</span><span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">window_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DISPLAY_WINDOW_S</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Render the timeline's SFX cues as an SRT SDH caption file (report 06 / issue #8)."""</span>
     <span class="n">blocks</span><span class="p">:</span> <span class="s2">"list[str]"</span> <span class="o">=</span> <span class="p">[]</span>

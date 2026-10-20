@@ -52,7 +52,7 @@ Three adapter kinds share the one ingest pipeline: the narrow **bulk-corpus**
 | [`TrademarkRefusal`](#foley.sources.TrademarkRefusal)(message, \*, hits, report)      | A [`SafetyRefusal`](#foley.sources.SafetyRefusal) for a prompt naming a trademarked audio logo (report 07 §7.2).          |
 | [`RecognizableVoiceRefusal`](#foley.sources.RecognizableVoiceRefusal)(message, \*, hits, ...) | A [`SafetyRefusal`](#foley.sources.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1). |
 
-### *class* foley.sources.ClipSpec(path, source_id, meta=<factory>)
+### *class* foley.sources.ClipSpec(path, source_id, meta=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -62,11 +62,17 @@ One clip inside a local bulk corpus, described but not yet ingested.
 
 Absolute path to the audio file on disk.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### source_id
 
 The corpus-native id (e.g. an FSD50K `fname`); used only for
 reporting/provenance — the stored `SoundRecord.id` is still the
 content hash minted by the ingest pipeline.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 #### meta
 
@@ -74,6 +80,9 @@ Free-form per-clip metadata the adapter carries to
 [`CorpusAdapter.resolve_license()`](#foley.sources.CorpusAdapter.resolve_license) and (optionally) to caption/tag
 hints — e.g. `{"license_id", "creator_name", "source_url",
 "caption", "tag_hints"}`.
+
+* **Type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### *class* foley.sources.ClothoEvalCorpus(name, ring, default_license_id, source, rights_verified=True, tag_hints_from_path=False, include_captions=False)
 
@@ -208,7 +217,7 @@ Synthesize a sound for `prompt`; return its bytes + provisional candidate.
 
 Registry / façade key — `'stable_audio'` | `'elevenlabs'` | …
 
-### *class* foley.sources.GeneratedClip(audio_bytes, candidate, notes=<factory>)
+### *class* foley.sources.GeneratedClip(audio_bytes, candidate, notes=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -241,12 +250,18 @@ here and is never serialized — a `SoundRecord` holds a `uri`, never bytes.
 The generated audio as encoded container bytes (WAV/FLAC/…),
 transient and in-memory only — consumed once by the ingest pipeline.
 
+* **Type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
 #### candidate
 
 The report-10 [`Candidate`](foley.base.html.md#foley.base.Candidate)
 (`origin=CandidateOrigin.generated`) carrying the authoritative
 [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) (`is_ai_generated=True` + the
 generation-provenance block) plus the prompt caption + seed tags.
+
+* **Type:**
+  [`Candidate`](foley.base.html.md#foley.base.Candidate)
 
 #### notes
 
@@ -256,7 +271,10 @@ output-format fallbacks, …). The
 stored [`IngestResult`](foley.index.ingest.html.md#foley.index.ingest.IngestResult)‘s `notes` so they
 surface in the run report.
 
-### *exception* foley.sources.GenerationError(message, , report, status)
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+### *exception* foley.sources.GenerationError(message, , report, status, cache_key=None)
 
 Bases: [`RuntimeError`](https://docs.python.org/3/builtins/exceptions.html#RuntimeError)
 
@@ -276,6 +294,13 @@ The [`IngestReport`](foley.index.ingest.html.md#foley.index.ingest.IngestReport)
 
 The terminal [`IngestResult`](foley.index.ingest.html.md#foley.index.ingest.IngestResult) status
 (`'quarantined'` | `'rights_blocked'` | `'error'` | …).
+
+#### cache_key
+
+The key the paid bytes were kept under in the generations cache
+(`foley.generations.get(cache_key)`), or `None` when nothing was kept
+(a free backend, a refusal before synthesis, a failed cache write). A
+quarantined generation is retrievable: it was billed either way (#107).
 
 ### *exception* foley.sources.RecognizableVoiceRefusal(message, , hits, report)
 
@@ -517,7 +542,7 @@ an already-registered name (e.g. a test double) is never overwritten.
 * **Returns:**
   The list of discovered source names.
 
-### foley.sources.generate(prompt, , backend='stable_audio', library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, \*\*affordances)
+### foley.sources.generate(prompt, , backend='stable_audio', library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -550,7 +575,10 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
   * **library** – Target [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
     process-wide default library).
   * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, synthesize + enrich but do not add to the library
-    (probe/QC/embed only — a preview; no content-credential sidecar).
+    (probe/QC/embed only — a preview; no content-credential sidecar). The
+    result’s `audio_bytes` carries the clip, and an enrichment stage whose
+    optional extra is absent (`foley[clap]`) is skipped with a note rather
+    than failing after the paid call (#107).
   * **adapter** – An optional pre-built adapter (the dependency-injection seam — a
     test passes a fake-transport / fake-pipeline adapter; production omits
     it and the registry lazily builds one).
@@ -570,6 +598,19 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
   * **reuse_cached** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Serve an identical paid request from the generations cache
     instead of paying again (default `True`; #59).
   * **generations_cache** – A [`GenerationsCache`](foley.stores.html.md#foley.stores.GenerationsCache) (default: local).
+  * **repair** – What to do with a generation QC would quarantine for a clipped run
+    just over the gate (#107). `True` (default) applies the report’s own
+    fixes ([`foley.repair.repair()`](foley.repair.html.md#foley.repair.repair): a 20 ms fade and a true-peak
+    attenuation, which also clear the edge click and the over-ceiling peak
+    such a clip carries), QCs the result again and ingests the repaired clip,
+    recording the repair on the result’s `notes` and the licence’s
+    `transformations`; unrepairable faults (silence, NaN, too short, heavy
+    clipping) still quarantine, with the reason noted. `False` quarantines
+    as before; a callable with [`foley.repair.repair()`](foley.repair.html.md#foley.repair.repair)’s signature
+    replaces the policy. A clip QC admits with a warning is stored as is. The
+    repair runs before the watermark and the id, so the stored bytes, the
+    content-hash id and the credential all describe the repaired clip; the
+    generations cache keeps the bytes as received.
   * **\*\*affordances** – Unified generation affordances (`duration`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see [`foley.base.GENERATION_AFFORDANCES`](foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).
@@ -579,7 +620,8 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
   An [`IngestReport`](foley.index.ingest.html.md#foley.index.ingest.IngestReport) — inspect `.ingested` for the
   stored record (`storage_mode == by_value`) and `.summary()` for counts.
   A backend or ingest failure is recorded as a single `error` result, never
-  raised (`add_from`-symmetric resilience).
+  raised (`add_from`-symmetric resilience). Every result of a paid call
+  carries `cache_key`: where its bytes are in the generations cache.
 * **Raises:**
   * [**SafetyRefusal**](#foley.sources.SafetyRefusal) – If the prompt trips a safety gate and `on_flagged='refuse'`.
   * [**WatermarkUnavailable**](foley.provenance.disclosure.html.md#foley.provenance.disclosure.WatermarkUnavailable) – If `watermark=True` but `foley[provenance]` is absent.

@@ -48,7 +48,7 @@ so a run has **no score ties** and its ranking reproduces `search()`’s
 
 The metrics reported by [`evaluate_run()`](#foley.eval.retrieval.evaluate_run) ([nDCG@10](mailto:nDCG@10) is the sole PR gate).
 
-### *class* foley.eval.retrieval.RetrievalReport(per_query=<factory>, mean=<factory>, ranks=<factory>, k=10)
+### *class* foley.eval.retrieval.RetrievalReport(per_query=dict(), mean=dict(), ranks=dict(), k=10)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 

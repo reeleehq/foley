@@ -70,27 +70,45 @@ Descriptor for a unified parameter affordance (arioso analog).
 
 Canonical parameter name used at the façade level.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### type
 
 Expected Python type.
+
+* **Type:**
+  [`type`](#foley.base.Affordance.type)
 
 #### description
 
 Human-readable description.
 
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 #### default
 
 Default value (`None` = no default / required).
 
+* **Type:**
+  [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
+
 #### stage
 
 `'query'` (search/find/filter) or `'generate'`.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 #### carries_meaning
 
 Dropping it would change what the caller gets (a seed they
 will rely on to reproduce, content they asked to exclude), so a backend
 that cannot honour it raises instead of dropping it (#53).
+
+* **Type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ### *class* foley.base.Anchor(\*values)
 
@@ -102,7 +120,7 @@ How a WEAVE `Placement` binds its symbolic time to the narration (report 06 §2.
 `word_timeline` — `word` to a trigger word’s onset, `sentence` across a
 sentence span, `scene`/`paragraph` to a boundary’s first spoken word.
 
-### *class* foley.base.Candidate(sound, origin=CandidateOrigin.retrieved, event=None, clap_score=None, bm25_score=None, rrf_score=None, rerank_score=None, verdict=None, license_ok=None, preview_uri=None, notes=<factory>, cost_estimate_usd=None, cost_actual_usd=None)
+### *class* foley.base.Candidate(sound, origin=CandidateOrigin.retrieved, event=None, clap_score=None, bm25_score=None, rrf_score=None, rerank_score=None, verdict=None, license_ok=None, preview_uri=None, notes=list(), cost_estimate_usd=None, cost_actual_usd=None)
 
 Bases: [`SerializableMixin`](#foley.base.SerializableMixin)
 
@@ -111,6 +129,15 @@ A ranked, license-checked, (optionally) verified sound for one SoundEvent.
 Retrieval and generation return the SAME shape; only `origin` differs.
 Nested `sound` / `event` / `verdict` dataclasses are decoded generically
 by `_decode()` — no per-field code needed.
+
+#### audio_bytes *= None*
+
+The clip’s bytes when foley holds them nowhere it can serve them from — a
+`generate(store=False)` preview (the archive bytes the library would have
+stored). A plain class attribute, NOT a dataclass field, so it is never
+serialized: `to_dict`/`to_json` stay byte-free (cf. `IngestReport.exception`).
+`copy`/`deepcopy`/`pickle` keep it; `dataclasses.replace` and a
+`from_dict` round trip drop it.
 
 ### *class* foley.base.CandidateOrigin(\*values)
 
@@ -134,7 +161,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Mix layer (shared by `SoundEvent` now and `TimelineItem` later).
 
-### *class* foley.base.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=<factory>, is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_seed=None, generation_params=<factory>, watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
+### *class* foley.base.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
 
 Bases: [`SerializableMixin`](#foley.base.SerializableMixin)
 
@@ -242,7 +269,7 @@ Return a JSON string (str-enums serialize to their `.value`).
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
-### *class* foley.base.SoundDesignTimeline(items=<factory>, run_manifest_ref=None, transcript_ref=None, schema_version=1, narration_ref=None, word_timeline=<factory>, master=<factory>)
+### *class* foley.base.SoundDesignTimeline(items=list(), run_manifest_ref=None, transcript_ref=None, schema_version=1, narration_ref=None, word_timeline=list(), master=MasterProfile())
 
 Bases: [`SerializableMixin`](#foley.base.SerializableMixin)
 
@@ -257,13 +284,13 @@ this data + the library, so editing any field and re-rendering reproduces exactl
 change. `run_manifest_ref` == `foley.obs.RunManifest.run_id` (the reserved #8
 `plan_ref` join).
 
-### *class* foley.base.SoundEvent(query, layer=Layer.sfx_fg, diegetic=True, salience=Salience.medium, onset=None, loop=False, ucs_catid=None, audioset=<factory>, era_place=None)
+### *class* foley.base.SoundEvent(query, layer=Layer.sfx_fg, diegetic=True, salience=Salience.medium, onset=None, loop=False, ucs_catid=None, audioset=list(), era_place=None)
 
 Bases: [`SerializableMixin`](#foley.base.SerializableMixin)
 
 One salient, physically-audible event decomposed from a passage.
 
-### *class* foley.base.SoundRecord(id, content_sha256=None, hash_algo='sha256', uri=None, storage_mode=StorageMode.by_reference, archive_format=None, source_sample_rate=None, source_bit_depth=None, license=<factory>, caption=None, tags=<factory>, ucs_category=None, ucs_subcategory=None, audioset_labels=<factory>, duration_s=None, sample_rate=None, channels=None, loudness_lufs=None, format=None, qc=None, embedding_model=None, embedding_dim=None, embedding_ref=None, named_cue=None, schema_version=1)
+### *class* foley.base.SoundRecord(id, content_sha256=None, hash_algo='sha256', uri=None, storage_mode=StorageMode.by_reference, archive_format=None, source_sample_rate=None, source_bit_depth=None, license=<factory>, caption=None, tags=list(), ucs_category=None, ucs_subcategory=None, audioset_labels=list(), duration_s=None, sample_rate=None, channels=None, loudness_lufs=None, format=None, qc=None, embedding_model=None, embedding_dim=None, embedding_ref=None, named_cue=None, schema_version=1)
 
 Bases: [`SerializableMixin`](#foley.base.SerializableMixin)
 
@@ -308,7 +335,7 @@ Which rung of the verification ladder produced a `Verdict`.
 Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.
 
 * **Parameters:**
-  **master** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`MasterProfile`](#foley.base.MasterProfile), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A [`MASTER_PROFILES`](#foley.base.MASTER_PROFILES) key (e.g. `'podcast'`), an explicit
+  **master** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`MasterProfile`](#foley.base.MasterProfile), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A [`MASTER_PROFILES`](#foley.base.MASTER_PROFILES) key (e.g. `'podcast'`), an explicit
   [`MasterProfile`](#foley.base.MasterProfile), or `None` (-> the podcast default).
 * **Return type:**
   [`MasterProfile`](#foley.base.MasterProfile)
