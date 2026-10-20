@@ -356,6 +356,31 @@ def test_a_quarantined_generation_keeps_its_bytes(library, paid_source,
                for key in cache.requests)
 
 
+def test_a_refused_generation_names_its_kept_bytes_on_every_surface(
+    library, paid_source, _in_memory_generations_cache
+):
+    """#107: the error, the result and the MCP tool all carry the cache key."""
+    from foley.agent import mcp
+
+    paid_source("silent3", amount=0.05, silent=True)
+    with pytest.raises(foley.GenerationError) as exc:
+        foley.generate("a door creaks", backend="silent3", library=library)
+    (entry,) = _in_memory_generations_cache.requests.values()
+    assert exc.value.cache_key == entry["content_key"]
+    assert exc.value.report.results[0].cache_key == exc.value.cache_key
+    assert foley.generations.get(exc.value.cache_key) == _in_memory_generations_cache.audio[
+        entry["content_key"]
+    ]
+    mcp._configure(library=library)
+    mcp._STATE["budget"] = None
+    try:
+        out = mcp.foley_generate("a door creaks", backend="silent3")
+    finally:
+        mcp._STATE["budget"] = None
+    assert out["ok"] is False and out["status"] == "quarantined"
+    assert foley.generations.get(out["cache_key"])
+
+
 # ---------------------------------------------------------------------------
 # #64 — the root cause reaches the caller
 # ---------------------------------------------------------------------------

@@ -418,6 +418,8 @@ def foley_generate(
             "status": getattr(exc, "status", None),
             "error": str(exc),
             "backend": backend,
+            # The paid bytes, when kept: foley.generations.get(cache_key) (#107).
+            "cache_key": getattr(exc, "cache_key", None),
         }
     from ..licensing import keep
 

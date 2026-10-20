@@ -42,6 +42,7 @@ from typing import Optional
 
 from ..base import Candidate, CandidateOrigin
 from ..index.ingest import IngestReport, IngestResult, ingest_one
+from ..qc import DEFAULT_MIN_STATUS, is_below
 from ._dispatch import plan_generation, record_generation_outcome, run_generation
 from ..runtime import EgressBlocked
 from .base import SourceConfigurationError
@@ -65,12 +66,24 @@ class GenerationError(RuntimeError):
         report: The :class:`~foley.index.ingest.IngestReport` from the run.
         status: The terminal :class:`~foley.index.ingest.IngestResult` status
             (``'quarantined'`` | ``'rights_blocked'`` | ``'error'`` | …).
+        cache_key: The key the paid bytes were kept under in the generations cache
+            (``foley.generations.get(cache_key)``), or ``None`` when nothing was kept
+            (a free backend, a refusal before synthesis, a failed cache write). A
+            quarantined generation is retrievable: it was billed either way (#107).
     """
 
-    def __init__(self, message: str, *, report: IngestReport, status: Optional[str]):
+    def __init__(
+        self,
+        message: str,
+        *,
+        report: IngestReport,
+        status: Optional[str],
+        cache_key: Optional[str] = None,
+    ):
         super().__init__(message)
         self.report = report
         self.status = status
+        self.cache_key = cache_key
 
 
 class SafetyRefusal(GenerationError):
@@ -129,6 +142,7 @@ def _generate(
     on_unsupported: Optional[str] = None,
     reuse_cached: bool = True,
     generations_cache=None,
+    repair=True,
     **affordances,
 ) -> IngestReport:
     """Generate a sound via ``backend`` and ingest it (by-value) into ``library``.
@@ -162,7 +176,10 @@ def _generate(
         library: Target :class:`~foley.index.library.SoundLibrary` (default: the
             process-wide default library).
         store: If ``False``, synthesize + enrich but do not add to the library
-            (probe/QC/embed only — a preview; no content-credential sidecar).
+            (probe/QC/embed only — a preview; no content-credential sidecar). The
+            result's ``audio_bytes`` carries the clip, and an enrichment stage whose
+            optional extra is absent (``foley[clap]``) is skipped with a note rather
+            than failing after the paid call (#107).
         adapter: An optional pre-built adapter (the dependency-injection seam — a
             test passes a fake-transport / fake-pipeline adapter; production omits
             it and the registry lazily builds one).
@@ -182,6 +199,16 @@ def _generate(
         reuse_cached: Serve an identical paid request from the generations cache
             instead of paying again (default ``True``; #59).
         generations_cache: A :class:`~foley.stores.GenerationsCache` (default: local).
+        repair: What to do with a generation QC would quarantine for a fault a fade
+            and a true-peak attenuation fix — a clipped run just over the gate, an
+            edge click, an over-ceiling peak (#107). ``True`` (default) applies the
+            report's own fixes (:func:`foley.repair.repair`), QCs the result again
+            and ingests the repaired clip, recording the repair on the result's
+            ``notes`` and the licence's ``transformations``; ``False`` quarantines
+            as before; a callable with :func:`foley.repair.repair`'s signature
+            replaces the policy. The repair runs before the watermark and the id, so
+            the stored bytes, the content-hash id and the credential all describe
+            the repaired clip; the generations cache keeps the bytes as received.
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`foley.base.GENERATION_AFFORDANCES`).
@@ -190,7 +217,8 @@ def _generate(
         An :class:`~foley.index.ingest.IngestReport` — inspect ``.ingested`` for the
         stored record (``storage_mode == by_value``) and ``.summary()`` for counts.
         A backend or ingest failure is recorded as a single ``error`` result, never
-        raised (``add_from``-symmetric resilience).
+        raised (``add_from``-symmetric resilience). Every result of a paid call
+        carries ``cache_key``: where its bytes are in the generations cache.
 
     Raises:
         SafetyRefusal: If the prompt trips a safety gate and ``on_flagged='refuse'``.
@@ -285,27 +313,36 @@ def _generate(
             f"safety: proceeded in warn mode; flagged {list(scan.trademark_hits + scan.voice_hits)}"
         )
 
-    # Watermark BEFORE ingest so the stored bytes carry the mark AND the content-hash
-    # id hashes the watermarked PCM. Graceful degrade: a watermark failure never
-    # fails the generation (the mark is descriptive provenance, not a license gate).
+    # One try guards everything that decodes the bytes — the repair, the
+    # content-credential sidecar (which decodes to pre-compute the id) and the ingest —
+    # so an undecodable response (a hosted API returning HTTP 200 with a non-audio
+    # body) is recorded as an error, not a crash.
     audio_bytes = clip.audio_bytes
-    if wm is not None:
-        try:
-            wres = wm.embed(clip.audio_bytes)
-            audio_bytes = wres.audio_bytes
-            lic.watermark = wres.meta
-        except Exception as exc:  # noqa: BLE001 - any embed failure degrades gracefully
-            clip.notes.append(f"watermarking skipped: {exc!r}")
-    elif watermark is None:
-        clip.notes.append("watermarking skipped: foley[provenance] not installed")
-
-    # One try guards BOTH the content-credential sidecar (which decodes the bytes to
-    # pre-compute the id) AND the ingest — so an undecodable response (a hosted API
-    # returning HTTP 200 with a non-audio body) is recorded as an error, not a crash.
     sound_id = None
     pstore = None
     credential = None
     try:
+        # Repair BEFORE the watermark and the id (#107): a clip QC would quarantine for
+        # a trivially repairable fault gets the report's own fixes, so the stored
+        # bytes, the content-hash id and the credential all describe the repaired clip
+        # (the generations cache already holds the bytes as received).
+        if repair:
+            audio_bytes = _repaired_bytes(audio_bytes, lic, clip.notes, repair=repair)
+
+        # Watermark BEFORE ingest so the stored bytes carry the mark AND the
+        # content-hash id hashes the watermarked PCM. Graceful degrade: a watermark
+        # failure never fails the generation (the mark is descriptive provenance, not
+        # a license gate).
+        if wm is not None:
+            try:
+                wres = wm.embed(audio_bytes)
+                audio_bytes = wres.audio_bytes
+                lic.watermark = wres.meta
+            except Exception as exc:  # noqa: BLE001 - any embed failure degrades
+                clip.notes.append(f"watermarking skipped: {exc!r}")
+        elif watermark is None:
+            clip.notes.append("watermarking skipped: foley[provenance] not installed")
+
         # Content-credential prep (stdlib). Single-pass: pre-compute the content-hash
         # id from the (watermarked) bytes so the sidecar key and license.c2pa_manifest_ref
         # match the id ingest_one re-mints — no meta re-store. The sidecar is WRITTEN
@@ -345,12 +382,14 @@ def _generate(
                 status="error",
                 error=f"{type(exc).__name__}: {exc}",
                 notes=list(clip.notes),  # incl. the generations-cache key: bytes kept
+                cache_key=plan.content_key,
             )
         )
         report.exception = exc
         record_generation_outcome(plan, "error", cache=generations_cache)
         return report
 
+    res.cache_key = plan.content_key  # where the paid bytes are, whatever the outcome
     record_generation_outcome(plan, res.status, cache=generations_cache)
 
     # Write the content-credential sidecar ONLY for a freshly stored clip — a
@@ -388,6 +427,7 @@ _GENERATE_KNOWN = frozenset(
         "on_unsupported",
         "reuse_cached",
         "generations_cache",
+        "repair",
     }
 )
 
@@ -411,7 +451,11 @@ def generate(*args, **kwargs) -> IngestReport:
     affordances = {
         k: v for k, v in kwargs.items() if k not in _GENERATE_KNOWN and k != "prompt"
     }
-    params = {k: kwargs[k] for k in ("store", "on_flagged", "watermark") if k in kwargs}
+    params = {
+        k: _manifest_value(kwargs[k])
+        for k in ("store", "on_flagged", "watermark", "repair")
+        if k in kwargs
+    }
     with facade_run(
         "generate",
         inputs={"prompt": prompt, "backend": backend, **affordances},
@@ -444,6 +488,56 @@ def generate(*args, **kwargs) -> IngestReport:
             )
         run.set_ingest_report(ingest_digest(report))
         return report
+
+
+def _manifest_value(value):
+    """A run-manifest (JSON) rendering of a façade parameter: a callable by its name."""
+    if callable(value):
+        return getattr(value, "__qualname__", None) or repr(value)
+    return value
+
+
+def _repaired_bytes(audio_bytes: bytes, lic, notes: list, *, repair) -> bytes:
+    """The bytes ingest will see: repaired when QC would quarantine them and the repair
+    clears them (re-encoded in the FLAC archive form), else unchanged (#107).
+
+    ``repair`` is ``True`` (the default policy, :func:`foley.repair.repair`) or a
+    callable with its signature returning a :class:`~foley.repair.RepairResult`. What
+    was done — or why nothing was — goes on ``notes``; each applied fix is also
+    appended to ``lic.transformations`` (the record's provenance: the credit then
+    reads "(modified)" and the content credential carries an edit action). QC is
+    computed here exactly as ingest computes it, so a clip the gate admits as is
+    costs one decode and nothing else.
+    """
+    from ..audio import WORKING_SAMPLE_RATE, encode, load, to_working
+    from ..qc import run_qc
+    from ..repair import repair as default_repair
+
+    fn = default_repair if repair is True else repair
+    wav, sr = load(audio_bytes)
+    before = run_qc(to_working(wav, sr), WORKING_SAMPLE_RATE)
+    if not is_below(before.status, DEFAULT_MIN_STATUS):
+        return audio_bytes  # admitted as is: nothing to repair, nothing to say
+    result = fn(wav, sr, report=before)
+    faults = "; ".join(before.notes)
+    if not result.repaired:
+        notes.append(
+            f"repair skipped ({result.reason}); QC {before.status.value}: {faults}"
+        )
+        return audio_bytes
+    applied = "; ".join(result.applied)
+    if not result.cleared(DEFAULT_MIN_STATUS):
+        after = result.after.status.value if result.after else "unknown"
+        still = "; ".join(result.after.notes) if result.after else ""
+        notes.append(
+            f"repair tried ({applied}) but QC still {after}: {still}; kept the bytes as received"
+        )
+        return audio_bytes
+    notes.append(
+        f"repaired before QC admission: {applied}; QC was {before.status.value}: {faults}"
+    )
+    lic.transformations.extend(result.applied)
+    return encode(result.samples, sr)
 
 
 def _metadata_captioner(prompt: str):

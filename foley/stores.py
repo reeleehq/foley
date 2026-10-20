@@ -263,6 +263,84 @@ class GenerationsCache:
     audio: MutableMapping[str, bytes]
     requests: MutableMapping[str, dict]
 
+    def get(self, key: str) -> bytes:
+        """The bytes of a kept generation, by content key or by request key (#107).
+
+        A content key (``GenerationError.cache_key`` / ``IngestResult.cache_key``) reads
+        the bytes directly; a request key (the digest a result's notes name: ``paid
+        generation kept in the generations cache: <key>``) is resolved through its
+        entry, following a fallback pointer. The bytes are the provider's response as
+        received — before any watermark or repair — so a quarantined generation comes
+        back exactly as it was paid for.
+
+        Raises:
+            KeyError: If neither store knows ``key``.
+        """
+        if key in self.audio:
+            return self.audio[key]
+        entry = self.entry(key)
+        content = entry.get("content_key")
+        if content is None or content not in self.audio:
+            raise KeyError(f"generation {key!r} has no bytes in the cache")
+        return self.audio[content]
+
+    def entry(self, request_key: str) -> dict:
+        """The request entry kept under ``request_key`` (a fallback pointer is followed).
+
+        Raises:
+            KeyError: If ``request_key`` (or the entry it points at) is unknown.
+        """
+        entry = self.requests[request_key]
+        if not isinstance(entry, dict):
+            raise KeyError(f"generation {request_key!r} has an unreadable entry")
+        target = entry.get("answered_by")
+        if target:
+            entry = self.requests[target]
+            if not isinstance(entry, dict):
+                raise KeyError(
+                    f"generation {request_key!r} points at an unreadable entry"
+                )
+        return entry
+
+    def find(
+        self,
+        prompt: Optional[str] = None,
+        *,
+        backend: Optional[str] = None,
+        **affordances,
+    ) -> "list[tuple[str, dict]]":
+        """The kept generations matching ``prompt`` / ``backend`` / affordances, newest first.
+
+        The way back to a paid clip whose key was not kept, e.g.
+        ``foley.generations.find("a crisp apple bite", backend="elevenlabs", duration=1)``.
+        Each item is ``(request_key, entry)``: ``entry["content_key"]`` (or :meth:`get`
+        with either key) gives the bytes, ``entry["status"]`` how its ingest ended
+        (``'quarantined'`` for a clip QC refused, absent while none has run). A
+        fallback's alias entry is skipped (the request it answers is listed); an
+        unreadable entry is skipped too. Numbers compare as floats (``duration=1``
+        matches ``1.0``).
+        """
+        hits = []
+        for key in list(self.requests):
+            try:
+                entry = self.requests[key]
+            except Exception:  # noqa: BLE001 - a bad entry is skipped, not a crash
+                continue
+            if not isinstance(entry, dict) or "answered_by" in entry:
+                continue
+            if "content_key" not in entry:
+                continue
+            if backend is not None and entry.get("backend") != backend:
+                continue
+            if prompt is not None and entry.get("prompt") != prompt:
+                continue
+            kept = entry.get("affordances") or {}
+            if any(not _same_value(kept.get(k), v) for k, v in affordances.items()):
+                continue
+            hits.append((key, entry))
+        hits.sort(key=lambda kv: float(kv[1].get("at") or 0), reverse=True)
+        return hits
+
     def evict(self, request_key: str, *, keep_audio: bool = False) -> None:
         """Forget a cached request (so the next identical one generates anew).
 
@@ -278,6 +356,14 @@ class GenerationsCache:
         still_used = any(e.get("content_key") == key for e in self.requests.values())
         if key and not still_used and key in self.audio:
             del self.audio[key]
+
+
+def _same_value(a, b) -> bool:
+    """``a == b``, with numbers (not bools) compared as floats."""
+    numeric = all(
+        isinstance(x, (int, float)) and not isinstance(x, bool) for x in (a, b)
+    )
+    return float(a) == float(b) if numeric else a == b
 
 
 def make_generations_store(

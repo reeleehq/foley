@@ -51,6 +51,36 @@ class QCStatus(str, Enum):
     fail = "fail"
 
 
+#: Admission ordering of :class:`QCStatus` values (worse -> better): the SSOT for
+#: "is this clip below the floor?" — :func:`is_below`, the ingest gate's ``min_status``
+#: and :mod:`foley.repair` all read it.
+QC_STATUS_RANK: dict = {
+    QCStatus.fail.value: 0,
+    QCStatus.warn.value: 1,
+    QCStatus.pass_.value: 2,
+}
+
+#: The admission floor foley's ingest uses unless told otherwise: ``warn`` clips are
+#: stored (their notes travel with the record); only ``fail`` clips are quarantined.
+DEFAULT_MIN_STATUS: QCStatus = QCStatus.warn
+
+
+def is_below(status, min_status=DEFAULT_MIN_STATUS) -> bool:
+    """True when ``status`` is worse than the admission floor ``min_status``.
+
+    Accepts :class:`QCStatus` members or their string values; an unknown value ranks
+    as ``fail`` (fail-closed).
+
+    >>> is_below(QCStatus.fail, QCStatus.warn), is_below("warn", "warn")
+    (True, False)
+    """
+
+    def rank(value) -> int:
+        return QC_STATUS_RANK.get(getattr(value, "value", value), 0)
+
+    return rank(status) < rank(min_status)
+
+
 @dataclass(frozen=True)
 class QCThresholds:
     """All Tier-0 QC defaults (report 08 §3 table), each an explicit field.

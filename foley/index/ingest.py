@@ -37,7 +37,14 @@ from ..licensing import (
     ai_use_permitted,
     apply_license_flags,
 )
-from ..qc import DEFAULT_QC_THRESHOLDS, QCStatus, QCThresholds, run_qc
+from ..qc import (
+    DEFAULT_MIN_STATUS,
+    DEFAULT_QC_THRESHOLDS,
+    QCStatus,
+    QCThresholds,
+    is_below,
+    run_qc,
+)
 from ..stores import content_key
 from .taxonomy import resolve_catid
 
@@ -58,10 +65,6 @@ AUDIO_EXTS: tuple[str, ...] = (
     ".m4a",
 )
 
-#: QC status ordering (worse -> better) for the admission gate.
-_QC_RANK = {"fail": 0, "warn": 1, "pass": 2}
-
-
 # ---------------------------------------------------------------------------
 # result / report types
 # ---------------------------------------------------------------------------
@@ -76,7 +79,10 @@ class IngestResult(SerializableMixin):
     ``'rights_blocked'`` (license forbids AI training / embedding, refused before
     embed — see :func:`ingest_one`), ``'skipped_license'`` (dropped by a
     bootstrap commercial-use / fail-closed license filter), or ``'error'``.
-    ``record`` is present only when the clip was ingested.
+    ``record`` is present only when the clip was ingested. ``cache_key`` is set by
+    :func:`foley.generate` to the key its paid bytes were kept under in the generations
+    cache (``foley.generations.get(cache_key)``), whatever the outcome — a quarantined
+    generation is retrievable, since it was billed either way (#107).
     """
 
     id: str
@@ -87,6 +93,12 @@ class IngestResult(SerializableMixin):
     error: Optional[str] = None
     cost_estimate_usd: Optional[float] = None  # a paid generation's estimate (#57)
     cost_actual_usd: Optional[float] = None  # None = unknown; 0.0 = served from cache
+    cache_key: Optional[str] = None  # the generations-cache key of the raw bytes (#107)
+
+    #: The archive bytes of a clip assembled but not stored (``store=False``): what the
+    #: library would have served. A plain attribute, never serialized (like
+    #: ``IngestReport.exception``), so ``to_dict``/``to_json`` stay byte-free.
+    audio_bytes = None
 
 
 @dataclass
@@ -207,7 +219,7 @@ def _probe(src: "AudioSource") -> _Probe:
 
 def _below(status: QCStatus, min_status: QCStatus) -> bool:
     """True if ``status`` is worse than the admission floor ``min_status``."""
-    return _QC_RANK.get(status.value, 0) < _QC_RANK.get(min_status.value, 0)
+    return is_below(status, min_status)
 
 
 def _src_name(src) -> Optional[str]:
@@ -332,7 +344,7 @@ def _ingest_one(
     zeroshot_tagger=None,
     captioner=None,
     do_qc: bool = True,
-    min_status: QCStatus = QCStatus.warn,
+    min_status: QCStatus = DEFAULT_MIN_STATUS,
     do_supervised: bool = True,
     do_zeroshot: bool = True,
     do_caption: bool = True,
@@ -382,7 +394,11 @@ def _ingest_one(
         do_supervised / do_zeroshot / do_caption: Toggle each enrichment stage.
         thresholds: QC thresholds.
         store: If ``False``, assemble the record but do not add it to the library
-            (probe/QC/enrich only).
+            (probe/QC/enrich only — a preview). The result's ``audio_bytes`` then
+            carries the archive bytes the library would have stored, and an
+            enrichment stage whose optional extra is absent (the ``foley[clap]``
+            embedder) is skipped with a note rather than failing: a preview is never
+            indexed, so it never needs the vector (#107).
         seed_tags: Optional caller-supplied tags (e.g. a corpus's folder-path
             taxonomy) unioned into the record's ``tags`` alongside the
             supervised/zero-shot tags — so they feed the BM25 keyword index.
@@ -470,8 +486,17 @@ def _ingest_one(
             ],
         )
 
-    # Stage 5a — embed once (the retrieval vector; reused for zero-shot tagging)
-    audio_vec = lib.embedder.embed_audio(work, WORKING_SAMPLE_RATE)
+    # Stage 5a — embed once (the retrieval vector; reused for zero-shot tagging).
+    # A stored clip needs the vector, so a missing foley[clap] raises as before; a
+    # preview (store=False) is never indexed, so it degrades with a note instead of
+    # failing after a paid generation (#107).
+    audio_vec = None
+    try:
+        audio_vec = lib.embedder.embed_audio(work, WORKING_SAMPLE_RATE)
+    except ImportError as exc:
+        if store:
+            raise
+        notes.append(f"embedding skipped (a preview is not indexed): {exc}")
 
     # Stage 2 — supervised AudioSet tags (optional, graceful)
     audioset_labels: list = []
@@ -482,7 +507,9 @@ def _ingest_one(
     # The default tagger is bound to the LIBRARY's embedder so the audio vector
     # and the label prompts live in the same joint space.
     zeroshot_tags: list = []
-    if do_zeroshot:
+    if do_zeroshot and audio_vec is None:
+        notes.append("zero-shot tagging skipped: no embedding to score")
+    elif do_zeroshot:
         zeroshot_tags = _run_zeroshot(
             zeroshot_tagger, probe, audio_vec, notes, embedder=lib.embedder
         )
@@ -534,7 +561,12 @@ def _ingest_one(
         lib.add(record, data=archive, vector=audio_vec)
 
     status = qc_report.status.value if qc_report else "pass"
-    return IngestResult(id=sid, status=status, record=record, qc=record.qc, notes=notes)
+    result = IngestResult(
+        id=sid, status=status, record=record, qc=record.qc, notes=notes
+    )
+    if not store:
+        result.audio_bytes = archive  # a preview carries what would have been stored
+    return result
 
 
 @functools.wraps(_ingest_one)
