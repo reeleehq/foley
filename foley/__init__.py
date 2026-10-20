@@ -125,15 +125,23 @@ from .qc import (
 )
 from .stores import (
     DEFAULT_AUDIO_DIR,
+    DEFAULT_GENERATIONS_DIR,
     DEFAULT_META_DIR,
     DEFAULT_RUN_DIR,
     FOLEY_DATA_DIR,
+    GenerationsCache,
     content_key,
     make_byte_store,
+    make_generations_store,
     make_meta_store,
     make_run_store,
     store_sound,
 )
+
+# --- repair: the QC-driven fixes generate() applies before quarantining (#107) ----
+# stdlib-only at import (numpy loads inside repair.repair); ``foley.repair.repair`` is
+# the default of ``generate(repair=...)``.
+from . import repair
 from . import index
 from .index import (
     CLAP_SAMPLE_RATE,
@@ -315,6 +323,13 @@ __all__ = [
     "DEFAULT_AUDIO_DIR",
     "DEFAULT_META_DIR",
     "DEFAULT_RUN_DIR",
+    # --- stores: the paid-generations cache (#59, #107) ------------------------
+    "generations",
+    "GenerationsCache",
+    "make_generations_store",
+    "DEFAULT_GENERATIONS_DIR",
+    # --- repair: QC-driven fixes before quarantine (#107) -----------------------
+    "repair",
     # --- qc: Tier-0 deterministic audio QC -----------------------------------
     "QCStatus",
     "QCThresholds",
@@ -661,6 +676,7 @@ def generate(
     on_unsupported=None,
     reuse_cached: bool = True,
     budget=None,
+    repair=True,
     **affordances,
 ):
     """Generate a sound effect for ``prompt`` and add it to the library (by-value).
@@ -681,7 +697,11 @@ def generate(
             needs ``foley[stable-audio]``) or ``"elevenlabs"`` (hosted;
             ``foley[elevenlabs]`` + ``$ELEVENLABS_API_KEY``).
         library: Target library (default: the process-wide default library).
-        store: If ``False``, synthesize + enrich a preview without adding it.
+        store: If ``False``, synthesize + QC a preview without adding it: the returned
+            candidate's ``audio_bytes`` carries the clip (the archive bytes the library
+            would have stored), and enrichment that needs an absent extra
+            (``foley[clap]``) is skipped with a note instead of failing after the paid
+            call (#107).
         adapter: Optional pre-built adapter (the DI seam; production omits it and the
             registry lazily builds one).
         watermark: ``True`` require an AudioSeal watermark, ``False`` never, ``None``
@@ -699,6 +719,18 @@ def generate(
             (default ``True``): a paid sound is never paid for twice (#59).
         budget: A :class:`Budget` for this call (default: the active run's, else a
             fresh one — a $1 cap; an unknown cost needs approval) (#57).
+        repair: What to do with a generation QC would quarantine for a clipped run
+            just over the gate (#107). ``True`` (default) applies the report's own
+            fixes (:func:`foley.repair.repair`: a 20 ms fade and a true-peak
+            attenuation, which also clear the edge click and the over-ceiling peak such
+            a clip carries), checks again and stores the repaired clip, recording the
+            repair on the candidate's ``notes`` and in the licence's
+            ``transformations``; unrepairable faults (silence, NaN, too short, heavy
+            clipping) are still quarantined, with the reason in the error's report.
+            ``False`` quarantines as before; a callable with
+            :func:`foley.repair.repair`'s signature replaces the policy (an ffmpeg one;
+            ``functools.partial(foley.repair.repair, min_status=QCStatus.pass_)`` also
+            declicks clips QC admits with a warning, which are otherwise stored as is).
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`GENERATION_AFFORDANCES`).
@@ -716,7 +748,10 @@ def generate(
         GenerationError: If the backend yields no stored sound (QC-quarantined,
             rights-blocked, or a synthesis/ingest error). The message carries the root
             cause and the exception is chained to it; it also carries the full
-            ``report`` and terminal ``status`` so callers can react distinctly.
+            ``report`` and terminal ``status`` so callers can react distinctly, and
+            ``cache_key`` — where the paid bytes are in the generations cache
+            (``foley.generations.get(err.cache_key)``), since they were billed either
+            way (#107).
         SourceConfigurationError: If the backend is not configured (a missing key or
             plan) — the message names the env var and where to get the key.
         UnsupportedParameter: For a meaning-carrying parameter the backend cannot
@@ -741,6 +776,7 @@ def generate(
             provenance_store=provenance_store,
             on_unsupported=on_unsupported,
             reuse_cached=reuse_cached,
+            repair=repair,
             **affordances,
         )
     results = report.results
@@ -762,14 +798,16 @@ def generate(
         f"generation via {backend!r} yielded no stored sound ({res.status}): {cause}",
         report=report,
         status=res.status,
+        cache_key=res.cache_key,
     ) from report.exception
 
 
 def _with_call_facts(candidate, result):
-    """Copy a generation's notes and cost from its ingest result onto the candidate."""
+    """Copy a generation's notes, cost and (for a preview) bytes from its ingest result."""
     candidate.notes = list(result.notes)
     candidate.cost_estimate_usd = result.cost_estimate_usd
     candidate.cost_actual_usd = result.cost_actual_usd
+    candidate.audio_bytes = result.audio_bytes  # set only by store=False (#107)
     return candidate
 
 
@@ -878,15 +916,26 @@ def estimate(verb: str, **kwargs):
 
 
 def __getattr__(name: str):
-    """Lazily expose ``foley.library`` + the #9b disclosure helpers.
+    """Lazily expose ``foley.library``, ``foley.generations`` + the #9b disclosure helpers.
 
     ``library`` is kept lazy so ``import foley`` never constructs the CLAP model or
-    the index; the disclosure helpers are lazy so the (stdlib-only)
+    the index; ``generations`` — the paid-generations cache, a
+    :class:`~foley.stores.GenerationsCache` (``foley.generations.get(key)`` /
+    ``.find(prompt, ...)``, #107) — is resolved through the dispatch path's default so
+    a cache injected there (a test's in-memory one) is the one you read; the
+    disclosure helpers are lazy so the (stdlib-only)
     :mod:`foley.provenance.disclosure` module is not imported until first use,
     keeping the eager ``import foley`` graph minimal.
     """
     if name == "library":
         return default_library()
+    if name == "generations":
+        # A fresh handle each access (cheap: two dol stores over one on-disk cache);
+        # hold it in a variable for repeated use. Resolved through the dispatch path
+        # so an injected default (a test's in-memory cache) is the one you read.
+        from .sources._dispatch import _default_cache
+
+        return _default_cache()
     if name in ("art50_checklist", "scan_prompt", "build_content_credential"):
         from .provenance import disclosure
 

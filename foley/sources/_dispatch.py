@@ -254,6 +254,7 @@ class GenerationPlan:
     cached: object = None  # a GeneratedClip served from the cache, or None
     salt: object = None  # the adapter's request_salt() (part of every key)
     kept_key: Optional[str] = None  # where the response was kept (see run_generation)
+    content_key: Optional[str] = None  # the kept bytes' key in cache.audio (#107)
 
 
 def plan_generation(
@@ -322,6 +323,9 @@ def plan_generation(
             cache = cache if cache is not None else _default_cache()
             plan.cached = _cached_clip(cache, plan.request_key, plan.notes, config)
             if plan.cached is not None:
+                from ..stores import content_key
+
+                plan.content_key = content_key(plan.cached.audio_bytes)
                 return plan
     require_source_egress(backend, config)
     if _is_paid(config):
@@ -493,6 +497,7 @@ def _store_clip(cache, plan: GenerationPlan, clip) -> None:
 
     key = content_key(clip.audio_bytes)
     cache.audio[key] = clip.audio_bytes
+    plan.content_key = key  # the bytes are kept from here on, whatever follows
     entry = _clip_entry(plan, clip, key)
     kept_key = plan.kept_key or plan.request_key
     if kept_key == plan.request_key:
@@ -527,6 +532,7 @@ def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
         "tags": list(sound.tags or []),
         "notes": [n for n in clip.notes if n not in plan.notes],  # the adapter's own
         "estimate_usd": plan.estimate_usd,
+        "at": time.time(),  # so GenerationsCache.find lists newest first
     }
 
 

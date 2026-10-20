@@ -526,10 +526,21 @@ def build_content_credential(
     created_action: dict = {"action": "c2pa.created", "digitalSourceType": source_type}
     if software_agent:
         created_action["softwareAgent"] = software_agent
+    # Each transformation the licence records (a repair before admission, #107; a
+    # trim) is an edit of the same asset, so the credential says the kept bytes were
+    # edited after creation — the machine-readable twin of the "(modified)" credit.
+    actions = [created_action] + [
+        {
+            "action": "c2pa.edited",
+            "softwareAgent": {"name": "foley"},
+            "parameters": {"description": str(t)},
+        }
+        for t in (lic.transformations or [])
+    ]
 
     ai_use = "notAllowed" if not lic.ai_training_ok else "allowed"
     assertions = [
-        {"label": "c2pa.actions", "data": {"actions": [created_action]}},
+        {"label": "c2pa.actions", "data": {"actions": actions}},
         {
             "label": "cawg.training-mining",
             "data": {

@@ -476,6 +476,14 @@ class Candidate(SerializableMixin):
     cost_estimate_usd: Optional[float] = None
     cost_actual_usd: Optional[float] = None
 
+    #: The clip's bytes when foley holds them nowhere it can serve them from — a
+    #: ``generate(store=False)`` preview (the archive bytes the library would have
+    #: stored). A plain class attribute, NOT a dataclass field, so it is never
+    #: serialized: ``to_dict``/``to_json`` stay byte-free (cf. ``IngestReport.exception``).
+    #: ``copy``/``deepcopy``/``pickle`` keep it; ``dataclasses.replace`` and a
+    #: ``from_dict`` round trip drop it.
+    audio_bytes = None
+
 
 # ---------------------------------------------------------------------------
 # IntendedUse — the caller's rights intent

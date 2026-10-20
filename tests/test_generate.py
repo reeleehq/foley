@@ -1263,3 +1263,238 @@ def test_the_operators_cached_generation_replays_offline_without_a_key(
                              library=library, output_format="mp3", duration=1)
     assert any("served from the generations cache" in n for n in hit.notes)
     assert len(transport.calls) == 1
+
+
+# ---------------------------------------------------------------------------
+# #107 — repair instead of quarantine; a preview needs no extras; the bytes are kept
+# ---------------------------------------------------------------------------
+
+WORKING_SR = 48_000
+
+
+def _just_over_the_gate_flac():
+    """The production's apple bite, at the working rate: a one-shot starting at its
+    peak (edge click) with a flat-topped run putting the clipped ratio just over the
+    0.01 % gate (true peak over the ceiling too). QC quarantines it as received."""
+    from foley.qc import DEFAULT_QC_THRESHOLDS as TH
+
+    t = np.arange(WORKING_SR) / WORKING_SR
+    x = (0.9 * np.cos(2 * np.pi * 1000.0 * t)).astype(np.float32)
+    run = int(TH.clip_reject_ratio * WORKING_SR) + 2  # 6 samples: >= min_run, < reject_run
+    x[WORKING_SR // 2 : WORKING_SR // 2 + run] = 1.0
+    return encode(x, WORKING_SR)
+
+
+def _faulty_el_adapter(raw=None):
+    raw = _just_over_the_gate_flac() if raw is None else raw
+    return _el_adapter(FakeTransport(FakeResponse(200, None, raw)))
+
+
+def _no_clap_library(fake_embedder):
+    """A library whose embedder needs an absent extra (the bare-install case)."""
+
+    class NoClap(type(fake_embedder)):
+        def embed_audio(self, wav, sr):
+            raise ImportError("No module named 'torch'")  # what ClapEmbedder raises
+
+    idx = MemoryIndex(dim=fake_embedder.dim)
+    return SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=NoClap())
+
+
+def test_public_generate_repairs_a_trivially_faulty_generation(library):
+    from foley.qc import DEFAULT_QC_THRESHOLDS as TH
+
+    pstore: dict = {}
+    cand = foley.generate(
+        "a single crisp bite into a fresh apple", backend="elevenlabs", library=library,
+        adapter=_faulty_el_adapter(), duration=1, provenance_store=pstore,
+    )
+    # stored, by-value, with a clean QC block: the repaired clip is what the library holds
+    assert cand.sound.storage_mode == StorageMode.by_value and len(library) == 1
+    assert cand.sound.qc["status"] in ("pass", "warn")
+    assert cand.sound.qc["clipped_ratio"] == 0.0 and cand.sound.qc["needs_edge_fade"] is False
+    assert cand.sound.qc["true_peak_dbtp"] <= TH.true_peak_max_dbtp
+    arr, _ = sf.read(io.BytesIO(library.audio(cand.sound.id)))
+    assert float(np.abs(arr).max()) < TH.clip_full_scale
+    # the repair is on the notes and in the provenance (licence + content credential)
+    (note,) = [n for n in cand.notes if n.startswith("repaired before QC admission")]
+    assert "fade 20 ms" in note and "true peak attenuated" in note and "QC was fail" in note
+    assert "hard clipping" in note  # the fault it fixed, in QC's own words
+    tf = cand.sound.license.transformations
+    assert len(tf) == 2 and tf[0].startswith("fade") and tf[1].startswith("true peak")
+    actions = pstore[cand.sound.id]["manifest"]["assertions"][0]["data"]["actions"]
+    assert actions[0]["action"] == "c2pa.created"
+    assert [a["action"] for a in actions[1:]] == ["c2pa.edited", "c2pa.edited"]
+    assert actions[1]["parameters"]["description"] == tf[0]
+    assert cand.audio_bytes is None  # stored: the library serves it
+
+
+def test_repair_false_keeps_todays_quarantine_and_names_the_kept_bytes(library):
+    raw = _just_over_the_gate_flac()
+    with pytest.raises(foley.GenerationError) as exc:
+        foley.generate("apple bite", backend="elevenlabs", library=library,
+                       adapter=_faulty_el_adapter(raw), duration=1, repair=False)
+    assert exc.value.status == "quarantined" and len(library) == 0
+    assert not any("repair" in n for r in exc.value.report.results for n in r.notes)
+    assert exc.value.cache_key and foley.generations.get(exc.value.cache_key) == raw
+
+
+def test_an_unrepairable_generation_is_still_quarantined_with_the_reason(library):
+    with pytest.raises(foley.GenerationError) as exc:
+        foley.generate("hush", backend="elevenlabs", library=library,
+                       adapter=_silent_elevenlabs_adapter(), duration=1)
+    assert exc.value.status == "quarantined"
+    (res,) = exc.value.report.results
+    assert any(n.startswith("repair skipped (not repairable: near-silent)") for n in res.notes)
+    assert res.cache_key == exc.value.cache_key and res.cache_key
+
+
+def test_heavy_clipping_is_distortion_and_is_not_repaired(library):
+    t = np.arange(WORKING_SR) / WORKING_SR
+    x = (0.5 * np.sin(2 * np.pi * 1000.0 * t)).astype(np.float32)
+    x[1000 : 1000 + WORKING_SR // 20] = 1.0  # 5 % flat-topped
+    with pytest.raises(foley.GenerationError) as exc:
+        foley.generate("bang", backend="elevenlabs", library=library,
+                       adapter=_faulty_el_adapter(encode(x, WORKING_SR)), duration=1)
+    assert exc.value.status == "quarantined"
+    (res,) = exc.value.report.results
+    assert any("distortion, not a run just over the gate" in n for n in res.notes)
+
+
+def test_a_custom_repair_callable_is_the_seam(library):
+    from foley.qc import QCStatus
+    from foley.repair import repair as default_repair
+
+    seen = []
+
+    def ffmpeg_like(samples, sample_rate, *, report=None, **kw):
+        seen.append((report.status, sample_rate))
+        return default_repair(samples, sample_rate, report=report, fade_s=0.015, **kw)
+
+    cand = foley.generate("apple bite", backend="elevenlabs", library=library,
+                          adapter=_faulty_el_adapter(), duration=1, repair=ffmpeg_like,
+                          provenance_store={})
+    assert seen == [(QCStatus.fail, WORKING_SR)]
+    assert any("fade 15 ms" in t for t in cand.sound.license.transformations)
+
+
+def test_a_custom_repair_that_does_not_clear_qc_keeps_the_bytes_as_received(library):
+    from foley.repair import RepairResult
+
+    def no_op(samples, sample_rate, *, report=None, **kw):
+        res = RepairResult(samples=samples, sample_rate=sample_rate, before=report)
+        res.applied.append("looked at it")
+        res.after = report  # still the failing report
+        return res
+
+    with pytest.raises(foley.GenerationError) as exc:
+        foley.generate("apple bite", backend="elevenlabs", library=library,
+                       adapter=_faulty_el_adapter(), duration=1, repair=no_op)
+    (res,) = exc.value.report.results
+    assert res.status == "quarantined"
+    assert any(n.startswith("repair tried (looked at it) but QC still fail") for n in res.notes)
+
+
+def test_a_repaired_generation_replays_from_the_cache_to_the_same_sound(library):
+    transport = FakeTransport(FakeResponse(200, None, _just_over_the_gate_flac()))
+    adapter = _el_adapter(transport)
+    first = foley.generate("apple bite", backend="elevenlabs", library=library,
+                           adapter=adapter, duration=1, provenance_store={})
+    second = foley.generate("apple bite", backend="elevenlabs", library=library,
+                            adapter=adapter, duration=1, provenance_store={})
+    assert len(transport.calls) == 1  # the raw bytes replay; the repair is deterministic
+    assert _served(second) and second.sound.id == first.sound.id and len(library) == 1
+    assert second.cost_actual_usd == 0.0
+
+
+def test_a_policy_may_also_declick_clips_qc_admits(library):
+    """An edge click alone is a warning (admitted as is); a lowered trigger fixes it too."""
+    import functools
+
+    from foley.qc import QCStatus
+    from foley.repair import repair as repair_clip
+
+    t = np.arange(WORKING_SR) / WORKING_SR
+    clicky = encode((0.95 * np.cos(2 * np.pi * 1000.0 * t)).astype(np.float32), WORKING_SR)
+    as_is = foley.generate("click", backend="elevenlabs", library=library, duration=1,
+                           adapter=_faulty_el_adapter(clicky), provenance_store={})
+    assert as_is.sound.qc["needs_edge_fade"] is True and as_is.sound.license.transformations == []
+    declick = functools.partial(repair_clip, min_status=QCStatus.pass_)
+    fixed = foley.generate("click", backend="elevenlabs", library=library, duration=1,
+                           adapter=_faulty_el_adapter(clicky), provenance_store={},
+                           repair=declick, reuse_cached=False)
+    assert fixed.sound.qc["needs_edge_fade"] is False
+    assert any(t.startswith("fade") for t in fixed.sound.license.transformations)
+    assert any("QC was warn: edge click" in n for n in fixed.notes)
+    assert fixed.sound.id != as_is.sound.id and len(library) == 2  # a different clip
+
+
+def test_the_44k1_provider_path_is_repaired_the_same_way(library):
+    """ElevenLabs serves 44.1 kHz; QC measures the 48 kHz working array. A flat top long
+    enough to survive the resample is a quarantine the repair clears."""
+    from foley.audio import WORKING_SAMPLE_RATE, to_working
+    from foley.qc import QCStatus, run_qc
+
+    t = np.arange(SR) / SR
+    x = (0.9 * np.cos(2 * np.pi * 1000.0 * t)).astype(np.float32)
+    x[SR // 2 : SR // 2 + 48] = 1.0  # ~1.1 ms at 44.1 kHz
+    before = run_qc(to_working(x, SR), WORKING_SAMPLE_RATE)
+    if before.status is not QCStatus.fail:  # the resampler hid it: not this test's case
+        pytest.skip("the 44.1 -> 48 kHz resample hid the flat top from the clipping gate")
+    cand = foley.generate("bite", backend="elevenlabs", library=library, duration=1,
+                          adapter=_faulty_el_adapter(encode(x, SR)), provenance_store={})
+    assert any(n.startswith("repaired before QC admission") for n in cand.notes)
+    assert cand.sound.qc["status"] is not QCStatus.fail and cand.sound.qc["clipped_ratio"] == 0.0
+    assert cand.sound.source_sample_rate == SR  # the repaired clip keeps the native rate
+
+
+def test_a_clean_generation_is_untouched_by_the_default_repair(library):
+    cand = foley.generate("rain", backend="elevenlabs", library=library,
+                          adapter=_el_adapter(), duration=1, provenance_store={})
+    assert cand.sound.license.transformations == []
+    assert not any("repair" in n for n in cand.notes)
+
+
+def test_store_false_previews_without_the_clap_extra_and_carries_the_bytes(fake_embedder):
+    lib = _no_clap_library(fake_embedder)
+    cand = foley.generate("rain", backend="elevenlabs", library=lib, adapter=_el_adapter(),
+                          duration=1, store=False, provenance_store={})
+    assert isinstance(cand, Candidate) and cand.origin == CandidateOrigin.generated
+    assert len(lib) == 0 and len(lib.sounds) == 0  # a preview, not a library entry
+    assert isinstance(cand.audio_bytes, bytes) and cand.audio_bytes
+    arr, sr = sf.read(io.BytesIO(cand.audio_bytes))  # decodable: the archive form
+    assert len(arr) > 0 and sr == SR
+    assert any(n.startswith("embedding skipped (a preview is not indexed)") for n in cand.notes)
+    assert any(n.startswith("zero-shot tagging skipped") for n in cand.notes)
+    assert cand.sound.qc and cand.sound.caption == "rain"
+    assert "audio_bytes" not in cand.to_json()  # the bytes never leak into a record
+
+
+def test_store_true_without_the_clap_extra_is_an_error_that_keeps_the_bytes(fake_embedder):
+    raw = _flac(_mono_tone())
+    lib = _no_clap_library(fake_embedder)
+    with pytest.raises(foley.GenerationError) as exc:
+        foley.generate("rain", backend="elevenlabs", library=lib, duration=1,
+                       adapter=_el_adapter(FakeTransport(FakeResponse(200, None, raw))))
+    assert exc.value.status == "error" and "torch" in str(exc.value)
+    assert foley.generations.get(exc.value.cache_key) == raw
+
+
+def test_a_quarantined_generations_bytes_are_one_get_away(library, _in_memory_generations_cache):
+    raw = _flac(_silent())
+    adapter = _el_adapter(FakeTransport(FakeResponse(200, None, raw)))
+    with pytest.raises(foley.GenerationError) as exc:
+        foley.generate("hush", backend="elevenlabs", library=library, adapter=adapter,
+                       duration=1)
+    key = exc.value.cache_key
+    assert key and foley.generations is not None
+    assert foley.generations.get(key) == raw  # as received: before any watermark or repair
+    ((request_key, entry),) = foley.generations.find("hush", backend="elevenlabs", duration=1)
+    assert entry["content_key"] == key and entry["status"] == "quarantined"
+    assert foley.generations.get(request_key) == raw  # by the note's request key too
+    assert any(request_key in n for n in exc.value.report.results[0].notes)
+    assert foley.generations.find("hush", duration=2) == []
+    with pytest.raises(KeyError):
+        foley.generations.get("not-a-key")
+    assert foley.generations.audio is _in_memory_generations_cache.audio  # test-isolated
+
