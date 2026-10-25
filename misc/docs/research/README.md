@@ -1,7 +1,7 @@
 # foley — research
 
 This folder is foley's research home (same convention as `arioso`'s `misc/docs/`).
-Sixteen cited reports (13–16 are the October 2026 update) + a prompt library, all following the conventions below.
+Seventeen cited reports (13–17 are the October 2026 update) + a prompt library, all following the conventions below.
 
 ## Start here
 
@@ -34,6 +34,7 @@ Sixteen cited reports (13–16 are the October 2026 update) + a prompt library, 
 | 14 | [`14-source-targets-2026-10.md`](14-source-targets-2026-10.md) | Oct 2026 delta: search/library/corpus targets, clients and MCP servers, search + licence + industry jargon |
 | 15 | [`15-facade-audit-2026-10.md`](15-facade-audit-2026-10.md) | Facade audit of v0.0.26 against a 15-item checklist; the hand-off to `an`'s sounds store |
 | 16 | [`16-facade-interface-2026-10.md`](16-facade-interface-2026-10.md) | **Revised interface (Oct 2026)**: common verbs + canonical vocabulary, escape hatches, capability honesty, issue map. Read after 10 |
+| 17 | [`17-genai-sfx-update-2026-10-25.md`](17-genai-sfx-update-2026-10-25.md) | 2026-10-25 check of 13: Mirelo SFX 2.0, ElevenLabs WAV, SA3 CPU build and first SFX evaluation, Sony Woosh, fal ToS correction, the 26-model comparison table, and the first real clips through foley's fal backends |
 
 ## Conventions
 

@@ -107,6 +107,13 @@ LICENSE_FLAGS: dict[str, LicenseFlags] = {
     "Stability-Community": LicenseFlags(
         True, True, False, True, True, False, False, 1_000_000
     ),
+    # A partner model resold by fal (ElevenLabs, Sonilo): whether the vendor's plan
+    # rules reach a fal-routed call is undocumented, and both vendors' free tiers are
+    # non-commercial. So: usable in a derivative, never commercially, no standalone
+    # redistribution, until the terms are confirmed (#77). Narrowing, never widening.
+    "fal-partner-unverified": LicenseFlags(
+        False, True, False, True, True, False, False, None
+    ),
     "MIT": LicenseFlags(True, True, True, True, True, True, True, None),
     # The user's own local content (default for `foley.ingest`): full rights and
     # cacheable => stored by-value. The natural contrast to a Freesound-API pull:
@@ -342,6 +349,11 @@ LICENSE_META: dict[str, LicenseMeta] = {
     "Stability-Community": LicenseMeta(
         "Stability AI Community License",
         "https://stability.ai/community-license-agreement",
+    ),
+    "fal-partner-unverified": LicenseMeta(
+        "fal.ai partner model (vendor terms for fal-routed calls unverified: "
+        "treated as non-commercial)",
+        "https://fal.ai/legal/terms-of-service",
     ),
     "MIT": LicenseMeta("MIT License", "https://opensource.org/license/mit"),
     "user-owned": LicenseMeta("User-owned / original work", None),

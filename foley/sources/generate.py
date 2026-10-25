@@ -48,6 +48,59 @@ from ..runtime import EgressBlocked
 from .base import SourceConfigurationError
 from .registry import get_source
 
+#: The backend :func:`foley.generate` uses when none is named (free, local).
+DEFAULT_GENERATE_BACKEND = "stable_audio"
+
+#: Env var naming the default backend instead (e.g. ``fal_stable_audio_3`` on a host
+#: with no GPU). Naming a paid backend here is the operator asking for it.
+GENERATE_BACKEND_ENV = "FOLEY_GENERATE_BACKEND"
+
+
+def default_generate_backend() -> str:
+    """The generate backend used when none is named: ``$FOLEY_GENERATE_BACKEND``, else
+    :data:`DEFAULT_GENERATE_BACKEND` (the local Stable Audio Open)."""
+    import os
+
+    return os.environ.get(GENERATE_BACKEND_ENV) or DEFAULT_GENERATE_BACKEND
+
+
+def generation_rights_refusal(backend: str, intended_use) -> Optional[str]:
+    """Why ``backend``'s output could not serve ``intended_use``, or ``None`` if it can.
+
+    Decided from the licence row the backend generates under, **before** anything is
+    paid for: a paid clip the licence gate would refuse afterwards (a non-commercial
+    model under the default commercial intent) is money spent on a sound nobody can
+    use. A backend whose licence depends on the account (ElevenLabs direct: its
+    plan) has no fixed row, is not judged here, and is gated after generation as
+    before.
+    """
+    from ..licensing import keep
+    from .base import generated_license
+    from .registry import SOURCE_REGISTRY, discover_sources
+
+    discover_sources()
+    entry = SOURCE_REGISTRY.get(backend)
+    lic_cfg = (entry or {}).get("config", {}).get("license") or {}
+    license_id = lic_cfg.get("default_license_id")
+    if license_id is None:
+        return None
+    probe = generated_license(
+        source=backend,
+        license_id=license_id,
+        generator_model=backend,
+        generation_prompt="",
+        attribution_text=lic_cfg.get("attribution_text"),
+    )
+    if keep(probe, intended_use):
+        return None
+    return (
+        f"{backend!r} generates under {license_id!r}, which this use does not allow "
+        f"(commercial={intended_use.commercial}); nothing was generated. Pick a backend "
+        "whose licence fits (fal_stable_audio_3 is commercial under $1M revenue), or "
+        "declare a non-commercial use (commercial_ok=False)."
+    )
+
+
 #: The consent note stamped on a stored generation whose license forbids AI
 #: training (mirrors :func:`foley.bootstrap.bootstrap`'s Ring-2 acknowledgement).
 _CONSENT_NOTE = "AI-training restriction acknowledged by operator (consent recorded)"
@@ -131,7 +184,7 @@ def candidate_of(result: IngestResult) -> Candidate:
 def _generate(
     prompt: str,
     *,
-    backend: str = "stable_audio",
+    backend: Optional[str] = None,
     library=None,
     store: bool = True,
     adapter=None,
@@ -171,8 +224,11 @@ def _generate(
 
     Args:
         prompt: The natural-language sound description.
-        backend: A registered generate-source name (``'stable_audio'`` (default,
-            local) | ``'elevenlabs'`` (hosted)).
+        backend: A registered generate-source name. ``None`` (default):
+            :func:`default_generate_backend` (``$FOLEY_GENERATE_BACKEND``, else the
+            local ``'stable_audio'``). Hosted: ``'elevenlabs'``, and the fal
+            endpoints ``'fal_stable_audio_3'`` | ``'fal_elevenlabs'`` |
+            ``'fal_sonilo'`` | ``'fal_mmaudio'`` (``foley[fal]`` + ``$FAL_KEY``).
         library: Target :class:`~foley.index.library.SoundLibrary` (default: the
             process-wide default library).
         store: If ``False``, synthesize + enrich but do not add to the library
@@ -229,6 +285,8 @@ def _generate(
     """
     from ..index.library import default_library
     from ..provenance import disclosure  # stdlib top-level; heavy deps lazy inside
+
+    backend = backend or default_generate_backend()
 
     if on_flagged not in ("refuse", "warn"):
         raise ValueError(f"on_flagged must be 'refuse' or 'warn', got {on_flagged!r}")
@@ -450,7 +508,7 @@ def generate(*args, **kwargs) -> IngestReport:
     from ..obs.run_artifact import ingest_digest
 
     prompt = args[0] if args else kwargs.get("prompt")
-    backend = kwargs.get("backend", "stable_audio")
+    backend = kwargs.get("backend") or default_generate_backend()
     affordances = {
         k: v for k, v in kwargs.items() if k not in _GENERATE_KNOWN and k != "prompt"
     }

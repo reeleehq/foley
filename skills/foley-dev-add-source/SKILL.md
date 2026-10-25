@@ -12,9 +12,9 @@ A **source** is anywhere foley gets a sound. Two kinds, one contract:
 - **retrieve** — fetch existing sounds from a library/API. Anchor: **Freesound** (CC0
   subset). Others (BBC, Epidemic, Storyblocks, Pond5, Pro Sound Effects) are mostly
   partner-gated → ship as stubs. See `misc/docs/research/01-sfx-source-apis.md`.
-- **generate** — synthesize a sound (the arioso analog). Defaults: **Stable Audio Open**
-  (local) + **ElevenLabs Sound Effects** (hosted). See
-  `misc/docs/research/02-genai-sfx-generation.md`.
+- **generate** — synthesize a sound (the arioso analog). Local: **Stable Audio Open**;
+  hosted: **ElevenLabs Sound Effects**, and the fal endpoints (Stable Audio 3 first). See
+  `misc/docs/research/02-genai-sfx-generation.md`, `13-…` and `17-genai-sfx-update-2026-10-25.md`.
 
 The pattern mirrors [`arioso`](https://github.com/thorwhalen/arioso)'s
 `arioso/platforms/<name>/` (a `config.py` declaring `PLATFORM_CONFIG` + an optional
@@ -31,6 +31,37 @@ foley/sources/<name>/
 
 The source is auto-discovered by `registry.py`; third parties can also
 `register_source(name, config, adapter)` at runtime.
+
+### One package, several sources: `SOURCE_CONFIGS` (aggregators such as fal)
+
+When one transport serves many models (fal, Replicate), each model is its own source,
+because each has its own params, price and licence, but they share one adapter class.
+`config.py` then declares `SOURCE_CONFIGS` (a tuple of configs) instead of, or as well as,
+`SOURCE_CONFIG`; discovery registers each, and each gets its own adapter instance built
+from its own config. The model: `foley/sources/fal/` (`fal_stable_audio_3`,
+`fal_stable_audio_3_medium`, `fal_mirelo`, `fal_elevenlabs`, `fal_sonilo`, `fal_mmaudio`).
+
+- **Transport through the fleet's client, not a raw SDK.** fal goes through `falaw`
+  (`cached_call_fal` + `materialize_asset`) behind an injected `runner=` seam. Skip the
+  client's own cache *read* (`refresh=True`): replay is foley's generations cache's job,
+  and a second replay layer would make `reuse_cached=False` replay silently.
+- **Build the payload with `foley.sources._dispatch.native_request`**, the function that
+  keys the generations cache, then add the prompt, `native_defaults["duration_default_s"]`
+  when no duration is asked (and say so in a note), and `native_defaults["fixed_arguments"]`
+  (e.g. `enable_prompt_expansion=False`, so the recorded prompt is the one used; or
+  `num_samples=1` where the endpoint bills per sample).
+- **Read the schema, do not guess it:** `https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=<id>`
+  gives the native names, ranges and the output shape (`audio` as a dict or a list).
+- **Record what the endpoint reports**: the seed it used (`native_defaults["seed_field"]`,
+  a list for per-sample seeds), and a rewritten prompt as a note.
+- **An aggregator's licence label is not the model's licence.** fal labels MMAudio
+  "commercial" while its weights are CC BY-NC; fal's terms disclaim fal's own rights and
+  defer to the model owner. A partner model whose terms for gateway calls are undocumented
+  gets the `fal-partner-unverified` row (non-commercial) until they are confirmed.
+- **Price:** `per_call` or `per_second`; a temporary intro price is recorded at the later
+  rate, so the estimate never under-quotes.
+- **Tests:** a replay runner that answers only the requests it was given; a miss raises,
+  never falls through to the network. One live test, behind `FOLEY_LIVE_API_TESTS=1` and the key.
 
 ## `SOURCE_CONFIG` (the declaration)
 

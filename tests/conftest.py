@@ -76,6 +76,7 @@ _FOLEY_POSTURE_ENV = (
     "FOLEY_OFFLINE",
     "FOLEY_ELEVENLABS_PLAN",
     "FOLEY_APPROVE_UNKNOWN_COST",
+    "FOLEY_GENERATE_BACKEND",
 )
 
 #: Marker for the (few) tests that trip the network guard on purpose.
@@ -120,6 +121,8 @@ def _isolate_from_paid_apis(monkeypatch, request, _provider_key_env_vars):
     attempt. Tests that trip the guard on purpose carry ``@pytest.mark.network_trip_expected``.
     """
     if live_api_tests_enabled():
+        # Live tests may use real keys, but never the shell's choice of default backend.
+        monkeypatch.delenv("FOLEY_GENERATE_BACKEND", raising=False)
         yield
         return
     import socket

@@ -96,9 +96,10 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
 
     * ``'free'`` (local inference, a free API tier) → ``0.0``;
     * ``'per_call'`` → ``amount_usd``;
-    * ``'per_second'`` → ``amount_usd`` × the requested ``duration``, or × the backend's
-      ``native_defaults['duration_max_s']`` when the duration is left to the backend
-      (an upper bound), else ``None``.
+    * ``'per_second'`` → ``amount_usd`` × the requested ``duration``; when none is
+      requested, × the ``native_defaults['duration_default_s']`` the adapter sends in
+      its place, else × ``native_defaults['duration_max_s']`` (the duration is left to
+      the backend: an upper bound), else ``None``.
 
     Args:
         config: A ``SOURCE_CONFIG``.
@@ -118,7 +119,10 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
     if unit == "per_second":
         seconds = affordances.get("duration")
         if seconds is None:
-            seconds = (config.get("native_defaults") or {}).get("duration_max_s")
+            # What the adapter sends when no duration is asked (its declared default),
+            # else the backend's maximum: an upper bound, never zero.
+            nd = config.get("native_defaults") or {}
+            seconds = nd.get("duration_default_s") or nd.get("duration_max_s")
         return None if seconds is None else float(amount) * float(seconds)
     return None
 

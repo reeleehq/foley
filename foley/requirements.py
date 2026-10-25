@@ -86,7 +86,11 @@ def _derive_key_requirements() -> "dict[str, Requirement]":
             continue
         reqs[env_var] = Requirement(
             name=env_var,
-            purpose=f"the {name} source adapter (foley[{name}])",
+            purpose=(
+                f"the {auth['extra']} sources (foley[{auth['extra']}])"
+                if auth.get("extra")
+                else f"the {name} source adapter (foley[{name}])"
+            ),
             url=auth.get("apply_url", ""),
             install={},
             probe="env",
@@ -106,7 +110,7 @@ def build_requirements() -> "dict[str, Requirement]":
 
 
 #: Credential env vars that are aliases of a listed key (same provider, other auth form).
-_KEY_ALIASES = ("ANTHROPIC_AUTH_TOKEN",)
+_KEY_ALIASES = ("ANTHROPIC_AUTH_TOKEN", "FAL_API_KEY")  # FAL_API_KEY: falaw reads it too
 
 
 def provider_key_env_vars() -> "tuple[str, ...]":

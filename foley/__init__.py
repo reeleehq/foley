@@ -665,7 +665,7 @@ def _warn_if_hidden(hidden) -> None:
 def generate(
     prompt: str,
     *,
-    backend: str = "stable_audio",
+    backend: "str | None" = None,
     library=None,
     store: bool = True,
     adapter=None,
@@ -693,9 +693,13 @@ def generate(
 
     Args:
         prompt: The natural-language sound description.
-        backend: A registered generate source — ``"stable_audio"`` (default, local;
-            needs ``foley[stable-audio]``) or ``"elevenlabs"`` (hosted;
-            ``foley[elevenlabs]`` + ``$ELEVENLABS_API_KEY``).
+        backend: A registered generate source. ``None`` (default) is
+            ``$FOLEY_GENERATE_BACKEND``, else ``"stable_audio"`` (local; needs
+            ``foley[stable-audio]``). Hosted: ``"elevenlabs"`` (``foley[elevenlabs]`` +
+            ``$ELEVENLABS_API_KEY``) and the fal endpoints ``"fal_stable_audio_3"``
+            (Stable Audio 3 Small-SFX, commercial under $1M revenue),
+            ``"fal_elevenlabs"``, ``"fal_sonilo"`` and ``"fal_mmaudio"`` (non-commercial)
+            (``foley[fal]`` + ``$FAL_KEY``).
         library: Target library (default: the process-wide default library).
         store: If ``False``, synthesize + QC a preview without adding it: the returned
             candidate's ``audio_bytes`` carries the clip (the archive bytes the library
@@ -762,7 +766,10 @@ def generate(
             not on this machine.
     """
     from .cost import spend_scope
+    from .sources.generate import default_generate_backend
 
+    if backend in (None, "", "auto"):
+        backend = default_generate_backend()
     with spend_scope(budget):
         report = _generate_backend(
             prompt,
@@ -896,7 +903,11 @@ def estimate(verb: str, **kwargs):
             _get(name)
         return estimate_call(SOURCE_REGISTRY[name]["config"])
     if verb == "generate":
-        backend = kwargs.pop("backend", None) or "stable_audio"
+        from .sources.generate import default_generate_backend
+
+        backend = kwargs.pop("backend", None)
+        if backend in (None, "", "auto"):
+            backend = default_generate_backend()
         return estimate_generation(backend, **kwargs)
     if verb in ("find", "score"):
         keys = ("max_events", "backend", "llm", "k", "verify", "max_refine_loops")
