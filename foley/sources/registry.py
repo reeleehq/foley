@@ -37,7 +37,8 @@ def discover_sources() -> "list[str]":
 
     A valid live source is a sub-package of :mod:`foley.sources` (``ispkg`` and
     not ``_``-prefixed) whose ``config.py`` defines a ``SOURCE_CONFIG`` dict with a
-    ``name``. Flat modules (bulk-corpus adapters + helpers) are skipped, so this
+    ``name`` (or a ``SOURCE_CONFIGS`` sequence of them: several sources sharing one
+    adapter class, see :func:`_declared_configs`). Flat modules (bulk-corpus adapters + helpers) are skipped, so this
     never cross-captures the corpus adapters. Only ``config.py`` is imported here
     (stdlib-cheap); the adapter loads lazily in :func:`get_source`. Idempotent —
     an already-registered name (e.g. a test double) is never overwritten.
@@ -55,14 +56,30 @@ def discover_sources() -> "list[str]":
             config_module = importlib.import_module(f"foley.sources.{modname}.config")
         except ImportError:
             continue  # a package without an importable config.py is not a source
-        config = getattr(config_module, "SOURCE_CONFIG", None)
-        if isinstance(config, dict) and config.get("name"):
+        for config in _declared_configs(config_module):
             name = config["name"]
             _SOURCE_REGISTRY.setdefault(
                 name, {"config": config, "adapter": None, "module": modname}
             )
             discovered.append(name)
     return discovered
+
+
+def _declared_configs(config_module) -> "list[dict]":
+    """The source configs a ``config.py`` declares: ``SOURCE_CONFIG`` and/or ``SOURCE_CONFIGS``.
+
+    ``SOURCE_CONFIGS`` (a sequence) lets one package declare several sources that
+    share one adapter class: :mod:`foley.sources.fal` declares one source per fal
+    endpoint, because each endpoint has its own params, price and licence, while the
+    transport (falaw) is the same. Each source still gets its own adapter instance,
+    built from its own config.
+    """
+    configs = []
+    single = getattr(config_module, "SOURCE_CONFIG", None)
+    if single is not None:
+        configs.append(single)
+    configs.extend(getattr(config_module, "SOURCE_CONFIGS", None) or ())
+    return [c for c in configs if isinstance(c, dict) and c.get("name")]
 
 
 def register_source(name: str, config: dict, adapter=None) -> None:

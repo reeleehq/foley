@@ -48,6 +48,22 @@ from ..runtime import EgressBlocked
 from .base import SourceConfigurationError
 from .registry import get_source
 
+#: The backend :func:`foley.generate` uses when none is named (free, local).
+DEFAULT_GENERATE_BACKEND = "stable_audio"
+
+#: Env var naming the default backend instead (e.g. ``fal_stable_audio_3`` on a host
+#: with no GPU). Naming a paid backend here is the operator asking for it.
+GENERATE_BACKEND_ENV = "FOLEY_GENERATE_BACKEND"
+
+
+def default_generate_backend() -> str:
+    """The generate backend used when none is named: ``$FOLEY_GENERATE_BACKEND``, else
+    :data:`DEFAULT_GENERATE_BACKEND` (the local Stable Audio Open)."""
+    import os
+
+    return os.environ.get(GENERATE_BACKEND_ENV) or DEFAULT_GENERATE_BACKEND
+
+
 #: The consent note stamped on a stored generation whose license forbids AI
 #: training (mirrors :func:`foley.bootstrap.bootstrap`'s Ring-2 acknowledgement).
 _CONSENT_NOTE = "AI-training restriction acknowledged by operator (consent recorded)"
@@ -131,7 +147,7 @@ def candidate_of(result: IngestResult) -> Candidate:
 def _generate(
     prompt: str,
     *,
-    backend: str = "stable_audio",
+    backend: Optional[str] = None,
     library=None,
     store: bool = True,
     adapter=None,
@@ -171,8 +187,11 @@ def _generate(
 
     Args:
         prompt: The natural-language sound description.
-        backend: A registered generate-source name (``'stable_audio'`` (default,
-            local) | ``'elevenlabs'`` (hosted)).
+        backend: A registered generate-source name. ``None`` (default):
+            :func:`default_generate_backend` (``$FOLEY_GENERATE_BACKEND``, else the
+            local ``'stable_audio'``). Hosted: ``'elevenlabs'``, and the fal
+            endpoints ``'fal_stable_audio_3'`` | ``'fal_elevenlabs'`` |
+            ``'fal_sonilo'`` | ``'fal_mmaudio'`` (``foley[fal]`` + ``$FAL_KEY``).
         library: Target :class:`~foley.index.library.SoundLibrary` (default: the
             process-wide default library).
         store: If ``False``, synthesize + enrich but do not add to the library
@@ -229,6 +248,8 @@ def _generate(
     """
     from ..index.library import default_library
     from ..provenance import disclosure  # stdlib top-level; heavy deps lazy inside
+
+    backend = backend or default_generate_backend()
 
     if on_flagged not in ("refuse", "warn"):
         raise ValueError(f"on_flagged must be 'refuse' or 'warn', got {on_flagged!r}")
@@ -450,7 +471,7 @@ def generate(*args, **kwargs) -> IngestReport:
     from ..obs.run_artifact import ingest_digest
 
     prompt = args[0] if args else kwargs.get("prompt")
-    backend = kwargs.get("backend", "stable_audio")
+    backend = kwargs.get("backend") or default_generate_backend()
     affordances = {
         k: v for k, v in kwargs.items() if k not in _GENERATE_KNOWN and k != "prompt"
     }

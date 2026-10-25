@@ -380,7 +380,7 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
         release(reserved)
         raise SourceConfigurationError(
             f"{plan.backend!r} needs an optional dependency that is not installed "
-            f"({exc.name or exc}): pip install 'foley[{plan.backend.replace('_', '-')}]'"
+            f"({exc.name or exc}): pip install 'foley[{_extra_of(plan)}]'"
         ) from exc
     # Any other failure keeps the reservation: the request may have been sent and
     # billed (a read timeout after the server accepted it).
@@ -414,6 +414,12 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
                 f"paid generation kept in the generations cache: {plan.kept_key}"
             )
     return clip
+
+
+def _extra_of(plan: GenerationPlan) -> str:
+    """The ``foley[...]`` extra a source needs: its ``auth['extra']``, else its name."""
+    extra = ((plan.config or {}).get("auth") or {}).get("extra")
+    return extra or plan.backend.replace("_", "-")
 
 
 def _fallback_replay_s(config: dict) -> float:

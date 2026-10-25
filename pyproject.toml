@@ -114,6 +114,12 @@ freesound = [
 elevenlabs = [
     "requests",
 ]
+# fal-hosted generators (#73): Stable Audio 3 Small-SFX, ElevenLabs, Sonilo, MMAudio,
+# executed through falaw (imported lazily inside foley.sources.fal.adapter ONLY).
+# Deliberately NOT in [tool.wads.ci.install] — the adapter tests inject a fake runner.
+fal = [
+    "falaw",
+]
 # Local Stable Audio Open 1.0 generator (#6) — diffusers StableAudioPipeline. Heavy
 # ML stack, lazy-imported inside foley.sources.stable_audio.adapter ONLY, so
 # `import foley` + source discovery stay dol-only. Deliberately NOT in

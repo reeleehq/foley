@@ -55,12 +55,38 @@ weaves into a mastered mix. This is the stable contract downstream packages (`br
 | fold picks → timeline | `foley.plan(cands)` | `foley_plan` |
 | edit (non-destructive) | `foley.weave.timeline.*` | `foley_swap_clip` / `foley_set_gain` / `foley_nudge` / `foley_toggle` / `foley_set_master` |
 | render | `foley.weave(narration, timeline)` | `foley_weave` |
-| generate when nothing fits | `foley.generate(prompt)` | `foley_generate` |
+| generate when nothing fits | `foley.generate(prompt, backend=...)` (see below) | `foley_generate` |
 | what's the workflow / what's installed | — | `foley_guide` / `foley_capabilities` / `foley_status` |
 
 **MCP is JSON-in / JSON-out**: tools take/return only JSON (ids, scores, license summaries,
 timeline dicts, store keys) — audio is referenced by a byte-store key, never inlined. Call
 `foley_guide` first if unsure.
+
+## Generating a sound from a text description
+
+Retrieval comes first: `foley.find` / `foley.score` search the library and generate only when nothing verified fits (pass `backend=` to choose what the fallback uses). When you already know nothing will fit (a specific foley moment for a film), generate directly:
+
+```python
+clip = foley.generate(
+    "a single page of an old paper book being turned, crisp paper rustle, close-up",
+    backend="fal_stable_audio_3", duration=1.5,
+)
+```
+
+| backend | what it is | licence foley records | price (fal, 2026-10-25) |
+|---|---|---|---|
+| `fal_stable_audio_3` | Stable Audio 3 Small-SFX: the default pick, seeded, takes `negative_prompt` | Stability Community: commercial under US $1M revenue | $0.0206 per clip (to 120 s) |
+| `fal_stable_audio_3_medium` | Stable Audio 3 Medium: better on hard prompts | Stability Community | $0.0376 per clip |
+| `fal_elevenlabs` | ElevenLabs SFX v2 via fal: strong on human non-speech (sighs, breaths), `loop` | `fal-partner-unverified` (non-commercial until confirmed) | $0.002/s, ≤ 22 s |
+| `fal_sonilo` | Sonilo v1.1 via fal | `fal-partner-unverified` | $0.0018/s |
+| `fal_mirelo` | Mirelo SFX 2.0 via fal, to 600 s | `fal-partner-unverified` | $0.015/s (0.010 until 2026-12-13) |
+| `fal_mmaudio` | MMAudio via fal | CC BY-NC 4.0 (attribution) | $0.001/s |
+| `stable_audio` | Stable Audio Open 1.0, local (GPU, gated weights) | Stability Community | free |
+| `elevenlabs` | ElevenLabs direct (`$FOLEY_ELEVENLABS_PLAN` decides the licence) | the account's plan | $0.002/s |
+
+All `fal_*` backends need `foley[fal]` and `$FAL_KEY`. `$FOLEY_GENERATE_BACKEND` sets the default for `generate`, `find`'s fallback and `foley_generate` (unset: the local `stable_audio`). Every call is priced before it is made (`foley.estimate("generate", backend=..., duration=...)`), capped by the run's `Budget`, and kept in the generations cache: an identical request replays for free, `reuse_cached=False` pays for a fresh take. The licence, prompt, native request and the seed the model used are on `clip.sound.license`.
+
+Prompt craft that worked: name the material and the action ("leather shoes on old wooden floorboards"), the count ("four clear footsteps", "a single page"), the space ("quiet indoor room, dry"), and the mic ("close-up"). Ask for the length the moment needs (1.5 s for a page turn, 8 s for a clock bed). Generate two or three backends for a sound and pick by ear. Never synthesize an effect from oscillators and noise when a model or a recording can give a real one.
 
 ## Taste heuristics
 

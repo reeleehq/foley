@@ -371,11 +371,14 @@ def foley_list_picks(session: str = "default") -> list:
 
 def foley_generate(
     prompt: str,
-    backend: str = "stable_audio",
+    backend: str = "auto",
     commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
     session: str = "default",
 ) -> dict:
     """Generate a sound from a text prompt (local backends only when offline).
+
+    ``backend='auto'`` is the host's default (``$FOLEY_GENERATE_BACKEND``, else the local
+    Stable Audio Open); name one to choose (``fal_stable_audio_3``, ``elevenlabs``, ...).
 
     A clip QC would quarantine for a clipped run just over the gate is repaired and
     stored (the repair is in the result's notes). A refused generation's dict carries
@@ -383,8 +386,11 @@ def foley_generate(
     (``foley.generations.get(cache_key)``, on the host — bytes never travel over MCP).
     """
     from ..runtime import EXTERNAL, EgressBlocked
+    from ..sources.generate import default_generate_backend
     from ..sources.registry import source_egress
 
+    if backend in ("auto", "", None):
+        backend = default_generate_backend()
     # The bound server runtime may differ from the call's context (a server built with
     # runtime= but not run under offline_scope), so check it here too; undeclared
     # egress counts as external (fail-closed), as in the registry.

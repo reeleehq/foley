@@ -460,7 +460,9 @@ def estimate_find_usd(
     provider = resolve_llm(llm)
     per_gen = 0.0
     if max_generations:
-        name = "stable_audio" if backend == "auto" else backend
+        from ..sources.generate import default_generate_backend
+
+        name = default_generate_backend() if backend == "auto" else backend
         per_gen = estimate_generation(name)
     calls = {
         "decomposer": 0 if injected.get("decomposer") else 1,

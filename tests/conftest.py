@@ -76,6 +76,7 @@ _FOLEY_POSTURE_ENV = (
     "FOLEY_OFFLINE",
     "FOLEY_ELEVENLABS_PLAN",
     "FOLEY_APPROVE_UNKNOWN_COST",
+    "FOLEY_GENERATE_BACKEND",
 )
 
 #: Marker for the (few) tests that trip the network guard on purpose.
