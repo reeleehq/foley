@@ -38,7 +38,9 @@ clip = foley.generate("a single wooden door creak", backend="stable_audio", dura
 
 # No GPU? The fal-hosted backends (foley[fal] + FAL_KEY; paid, priced before the call):
 # Stable Audio 3 Small-SFX at $0.0206 a clip, commercial use under $1M revenue
-clip = foley.generate("a single wooden door creak", backend="fal_stable_audio_3", duration=3)
+clip = foley.generate(
+    "a single wooden door creak", backend="fal_stable_audio_3", duration=3
+)
 
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown

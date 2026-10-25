@@ -110,7 +110,10 @@ def build_requirements() -> "dict[str, Requirement]":
 
 
 #: Credential env vars that are aliases of a listed key (same provider, other auth form).
-_KEY_ALIASES = ("ANTHROPIC_AUTH_TOKEN", "FAL_API_KEY")  # FAL_API_KEY: falaw reads it too
+_KEY_ALIASES = (
+    "ANTHROPIC_AUTH_TOKEN",
+    "FAL_API_KEY",
+)  # FAL_API_KEY: falaw reads it too
 
 
 def provider_key_env_vars() -> "tuple[str, ...]":

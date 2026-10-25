@@ -218,7 +218,9 @@ SOURCE_CONFIGS = (
         api={"endpoint_id": "fal-ai/elevenlabs/sound-effects/v2"},
         param_map={
             "prompt": {"native_name": "text", "required": True},
-            "duration": {"native_name": "duration_seconds"},  # None => the model decides
+            "duration": {
+                "native_name": "duration_seconds"
+            },  # None => the model decides
             "prompt_influence": {
                 "native_name": "prompt_influence",
                 "coerce": {"kind": "identity"},

@@ -69,7 +69,8 @@ Retrieval comes first: `foley.find` / `foley.score` search the library and gener
 ```python
 clip = foley.generate(
     "a single page of an old paper book being turned, crisp paper rustle, close-up",
-    backend="fal_stable_audio_3", duration=1.5,
+    backend="fal_stable_audio_3",
+    duration=1.5,
 )
 ```
 
