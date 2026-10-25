@@ -766,7 +766,10 @@ def generate(
             not on this machine.
     """
     from .cost import spend_scope
+    from .sources.generate import default_generate_backend
 
+    if backend in (None, "", "auto"):
+        backend = default_generate_backend()
     with spend_scope(budget):
         report = _generate_backend(
             prompt,
@@ -902,7 +905,9 @@ def estimate(verb: str, **kwargs):
     if verb == "generate":
         from .sources.generate import default_generate_backend
 
-        backend = kwargs.pop("backend", None) or default_generate_backend()
+        backend = kwargs.pop("backend", None)
+        if backend in (None, "", "auto"):
+            backend = default_generate_backend()
         return estimate_generation(backend, **kwargs)
     if verb in ("find", "score"):
         keys = ("max_events", "backend", "llm", "k", "verify", "max_refine_loops")

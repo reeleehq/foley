@@ -118,7 +118,7 @@ elevenlabs = [
 # executed through falaw (imported lazily inside foley.sources.fal.adapter ONLY).
 # Deliberately NOT in [tool.wads.ci.install] — the adapter tests inject a fake runner.
 fal = [
-    "falaw",
+    "falaw[fal]",  # falaw's [fal] extra brings fal-client, the network client
 ]
 # Local Stable Audio Open 1.0 generator (#6) — diffusers StableAudioPipeline. Heavy
 # ML stack, lazy-imported inside foley.sources.stable_audio.adapter ONLY, so

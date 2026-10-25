@@ -64,6 +64,43 @@ def default_generate_backend() -> str:
     return os.environ.get(GENERATE_BACKEND_ENV) or DEFAULT_GENERATE_BACKEND
 
 
+def generation_rights_refusal(backend: str, intended_use) -> Optional[str]:
+    """Why ``backend``'s output could not serve ``intended_use``, or ``None`` if it can.
+
+    Decided from the licence row the backend generates under, **before** anything is
+    paid for: a paid clip the licence gate would refuse afterwards (a non-commercial
+    model under the default commercial intent) is money spent on a sound nobody can
+    use. A backend whose licence depends on the account (ElevenLabs direct: its
+    plan) has no fixed row, is not judged here, and is gated after generation as
+    before.
+    """
+    from ..licensing import keep
+    from .base import generated_license
+    from .registry import SOURCE_REGISTRY, discover_sources
+
+    discover_sources()
+    entry = SOURCE_REGISTRY.get(backend)
+    lic_cfg = (entry or {}).get("config", {}).get("license") or {}
+    license_id = lic_cfg.get("default_license_id")
+    if license_id is None:
+        return None
+    probe = generated_license(
+        source=backend,
+        license_id=license_id,
+        generator_model=backend,
+        generation_prompt="",
+        attribution_text=lic_cfg.get("attribution_text"),
+    )
+    if keep(probe, intended_use):
+        return None
+    return (
+        f"{backend!r} generates under {license_id!r}, which this use does not allow "
+        f"(commercial={intended_use.commercial}); nothing was generated. Pick a backend "
+        "whose licence fits (fal_stable_audio_3 is commercial under $1M revenue), or "
+        "declare a non-commercial use (commercial_ok=False)."
+    )
+
+
 #: The consent note stamped on a stored generation whose license forbids AI
 #: training (mirrors :func:`foley.bootstrap.bootstrap`'s Ring-2 acknowledgement).
 _CONSENT_NOTE = "AI-training restriction acknowledged by operator (consent recorded)"

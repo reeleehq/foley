@@ -412,7 +412,13 @@ def foley_generate(
     from ..sources.base import SourceConfigurationError
 
     from ..cost import spend_scope
+    from ..sources.generate import generation_rights_refusal
 
+    refusal = generation_rights_refusal(
+        backend, intended_use_for(commercial_ok=commercial_ok)
+    )
+    if refusal is not None:
+        return {"ok": False, "status": "refused", "error": refusal, "backend": backend}
     try:
         with spend_scope(_server_budget()):
             cand = generate(prompt, backend=backend, library=_lib())

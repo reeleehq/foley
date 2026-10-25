@@ -86,7 +86,11 @@ def _derive_key_requirements() -> "dict[str, Requirement]":
             continue
         reqs[env_var] = Requirement(
             name=env_var,
-            purpose=f"the {name} source adapter (foley[{auth.get('extra', name)}])",
+            purpose=(
+                f"the {auth['extra']} sources (foley[{auth['extra']}])"
+                if auth.get("extra")
+                else f"the {name} source adapter (foley[{name}])"
+            ),
             url=auth.get("apply_url", ""),
             install={},
             probe="env",

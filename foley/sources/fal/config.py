@@ -31,14 +31,17 @@ Licences (the per-sound record is fail-closed, so each row says only what is kno
   **not** commercially, until the terms are confirmed (foley#77). Narrowing, never widening.
 
 Pricing is fal's (``unit``/``amount_usd`` as in :func:`foley.cost.estimate_call`), with the
-date it was read. ``per_second`` with no requested duration is priced at the endpoint's
-maximum (an upper bound), never at zero.
+date it was read. ``per_second`` with no requested duration is priced at the
+``duration_default_s`` the adapter sends in its place (or the endpoint's maximum, an upper
+bound, when it declares none), never at zero.
 """
 
 from __future__ import annotations
 
+import copy
+
 #: fal's documented pricing and model pages (read 2026-10-25).
-_FAL_PRICING_SOURCE = "fal model pages / pricing API"
+_FAL_PRICING_SOURCE = "fal pricing API (GET /v1/models/pricing?endpoint_id=...)"
 _SEEN = "2026-10-25"
 
 #: What every fal source shares: the key, the extra, the transport, the egress class.
@@ -134,7 +137,7 @@ SOURCE_CONFIGS = (
         display_name="Stable Audio 3 Medium (fal)",
         website="https://fal.ai/models/fal-ai/stable-audio-3/medium/text-to-audio",
         api={"endpoint_id": "fal-ai/stable-audio-3/medium/text-to-audio"},
-        param_map=None,  # filled from Small-SFX below: the two schemas are identical
+        param_map=None,  # copied from Small-SFX below: the two schemas are identical
         supported_affordances=None,
         unsupported_affordances=["loop"],
         native_defaults={
@@ -272,6 +275,7 @@ SOURCE_CONFIGS = (
                 "to_native_map": {"wav": "wav", "flac": "flac", "mp3": "mp3"},
             },
         },
+        # No sample-count knob: one clip per call (checked live: `audios` held one).
         supported_affordances=["prompt", "duration", "output_format"],
         unsupported_affordances=[
             "prompt_influence",
@@ -352,7 +356,7 @@ SOURCE_CONFIGS = (
 
 _SMALL = SOURCE_CONFIGS[0]
 _MEDIUM = SOURCE_CONFIGS[1]
-_MEDIUM["param_map"] = _SMALL["param_map"]
+_MEDIUM["param_map"] = copy.deepcopy(_SMALL["param_map"])
 _MEDIUM["supported_affordances"] = list(_SMALL["supported_affordances"])
 
 #: The fal source names, in the order above (the first is the recommended one).

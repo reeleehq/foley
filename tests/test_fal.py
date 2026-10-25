@@ -142,7 +142,9 @@ def test_mirelo_asks_for_one_sample_and_reads_the_seed_list(library):
 
 
 def test_sa3_medium_shares_the_small_schema():
-    assert CONFIGS["fal_stable_audio_3_medium"]["param_map"] is CONFIGS["fal_stable_audio_3"]["param_map"]
+    medium, small = CONFIGS["fal_stable_audio_3_medium"], CONFIGS["fal_stable_audio_3"]
+    assert medium["param_map"] == small["param_map"]
+    assert medium["param_map"] is not small["param_map"]  # a copy: no cross-source leaks
     assert foley.estimate("generate", backend="fal_stable_audio_3_medium") == pytest.approx(0.0376)
 
 
@@ -325,3 +327,74 @@ def test_live_sa3_small_sfx_generates_a_decodable_clip(library):
     )
     assert cand.sound.duration_s == pytest.approx(2.0, abs=0.2)
     assert cand.sound.license.license_id == "Stability-Community"
+
+
+# ---------------------------------------------------------------------------
+# review fixes: keys, cache key, rights before paying, integers
+# ---------------------------------------------------------------------------
+
+
+def test_one_fal_binding_covers_every_fal_source(monkeypatch):
+    from ocracy.kit import using_credentials
+
+    monkeypatch.setenv("FAL_KEY", "OPERATOR")
+    adapter = FalAdapter(CONFIGS["fal_sonilo"], runner=ReplayRunner())
+    assert adapter.api_key == "OPERATOR" and adapter.account_id() == "operator"
+    with using_credentials({"fal": "USER"}):
+        assert adapter.api_key == "USER"
+        assert adapter.account_id() != "operator"  # the user's own cache partition
+
+
+def test_fal_api_key_alone_is_enough(monkeypatch):
+    monkeypatch.delenv("FAL_KEY", raising=False)
+    monkeypatch.setenv("FAL_API_KEY", "K2")
+    assert FalAdapter(CONFIGS["fal_sonilo"]).api_key == "K2"
+
+
+def test_the_cache_key_covers_what_the_payload_adds(library):
+    from foley.sources._dispatch import plan_generation
+
+    a, _ = _adapter()
+    changed = dict(CONFIGS["fal_stable_audio_3"])
+    changed["native_defaults"] = dict(changed["native_defaults"], duration_default_s=3.0)
+    b = FalAdapter(changed, api_key="fal-test-key", runner=ReplayRunner())
+    key_a = plan_generation("fal_stable_audio_3", "x", adapter=a, reuse_cached=False).request_key
+    key_b = plan_generation("fal_stable_audio_3", "x", adapter=b, config=changed,
+                            reuse_cached=False).request_key
+    assert key_a != key_b
+
+
+def test_seed_and_steps_go_out_as_ints_and_the_seed_is_recorded(library):
+    adapter, runner = _adapter("fal_mmaudio", runner=ReplayRunner(default=(_wav(), {"audio": {"url": "u"}})))
+    rec = generate_backend("x", backend="fal_mmaudio", library=library, adapter=adapter,
+                           seed=42, steps=10).ingested[0].record
+    sent = runner.calls[0][1]
+    assert sent["seed"] == 42 and isinstance(sent["seed"], int)
+    assert isinstance(sent["num_steps"], int)
+    assert rec.license.generation_seed == 42
+
+
+@pytest.mark.parametrize("name, refused", [("fal_stable_audio_3", False), ("fal_sonilo", True),
+                                           ("fal_mmaudio", True), ("elevenlabs", False)])
+def test_rights_are_checked_before_paying(name, refused):
+    from foley.licensing import intended_use_for
+    from foley.sources.generate import generation_rights_refusal
+
+    reason = generation_rights_refusal(name, intended_use_for())  # commercial default
+    assert (reason is not None) is refused
+    assert generation_rights_refusal(name, intended_use_for(commercial_ok=False)) is None
+
+
+def test_mcp_generate_refuses_a_noncommercial_backend_for_free(monkeypatch):
+    pytest.importorskip("py2mcp", reason="mcp extra")
+    from foley.agent import mcp
+
+    called = []
+    monkeypatch.setattr(foley, "generate", lambda *a, **k: called.append(1))
+    out = mcp.foley_generate("a sigh", backend="fal_sonilo")
+    assert out["ok"] is False and out["status"] == "refused" and not called
+
+
+def test_auto_is_accepted_by_generate_and_estimate(monkeypatch):
+    monkeypatch.setenv("FOLEY_GENERATE_BACKEND", "fal_sonilo")
+    assert foley.estimate("generate", backend="auto", duration=1) == pytest.approx(0.0018)
