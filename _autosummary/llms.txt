@@ -74,6 +74,9 @@
 - [foley.sources.elevenlabs](foley.sources.elevenlabs.html.md): ElevenLabs Sound Effects generate source (hosted; #6).
 - [foley.sources.elevenlabs.adapter](foley.sources.elevenlabs.adapter.html.md): ElevenLabs Sound Effects generate adapter — hosted Text-to-SFX v2 over HTTP.
 - [foley.sources.elevenlabs.config](foley.sources.elevenlabs.config.html.md): &#96;SOURCE_CONFIG&#96; for the ElevenLabs Sound Effects generator (report 02 · 07 · 10 §4.1).
+- [foley.sources.fal](foley.sources.fal.html.md): fal-hosted generate sources, executed through &#96;falaw&#96; (#73).
+- [foley.sources.fal.adapter](foley.sources.fal.adapter.html.md): The fal generate adapter — one class for every fal-hosted SFX endpoint, run through &#96;falaw&#96;.
+- [foley.sources.fal.config](foley.sources.fal.config.html.md): &#96;SOURCE_CONFIGS&#96; for the fal-hosted text-to-SFX endpoints, executed through &#96;falaw&#96; (#73).
 - [foley.sources.foleyset](foley.sources.foleyset.html.md): FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).
 - [foley.sources.freesound](foley.sources.freesound.html.md): Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (&#96;foley&#91;freesound&#93;&#96;).
 - [foley.sources.freesound.adapter](foley.sources.freesound.adapter.html.md): Freesound APIv2 retrieve adapter — CC0 sounds, stored strictly by-reference.

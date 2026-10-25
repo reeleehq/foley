@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=173d7b4c"></script>
+    <script src="../../../_static/documentation_options.js?v=b345ff55"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.42" />
+  <meta name="docsearch:version" content="0.0.43" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -756,7 +756,8 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    A valid live source is a sub-package of :mod:`foley.sources` (``ispkg`` and</span>
 <span class="sd">    not ``_``-prefixed) whose ``config.py`` defines a ``SOURCE_CONFIG`` dict with a</span>
-<span class="sd">    ``name``. Flat modules (bulk-corpus adapters + helpers) are skipped, so this</span>
+<span class="sd">    ``name`` (or a ``SOURCE_CONFIGS`` sequence of them: several sources sharing one</span>
+<span class="sd">    adapter class, see :func:`_declared_configs`). Flat modules (bulk-corpus adapters + helpers) are skipped, so this</span>
 <span class="sd">    never cross-captures the corpus adapters. Only ``config.py`` is imported here</span>
 <span class="sd">    (stdlib-cheap); the adapter loads lazily in :func:`get_source`. Idempotent —</span>
 <span class="sd">    an already-registered name (e.g. a test double) is never overwritten.</span>
@@ -774,8 +775,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">config_module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="sa">f</span><span class="s2">"foley.sources.</span><span class="si">{</span><span class="n">modname</span><span class="si">}</span><span class="s2">.config"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="k">continue</span>  <span class="c1"># a package without an importable config.py is not a source</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">config_module</span><span class="p">,</span> <span class="s2">"SOURCE_CONFIG"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">config</span> <span class="ow">in</span> <span class="n">_declared_configs</span><span class="p">(</span><span class="n">config_module</span><span class="p">):</span>
             <span class="n">name</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
             <span class="n">_SOURCE_REGISTRY</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span>
                 <span class="n">name</span><span class="p">,</span> <span class="p">{</span><span class="s2">"config"</span><span class="p">:</span> <span class="n">config</span><span class="p">,</span> <span class="s2">"adapter"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"module"</span><span class="p">:</span> <span class="n">modname</span><span class="p">}</span>
@@ -783,6 +783,23 @@ window.runMermaid = runMermaid;</script>
             <span class="n">discovered</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">discovered</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_declared_configs</span><span class="p">(</span><span class="n">config_module</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[dict]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The source configs a ``config.py`` declares: ``SOURCE_CONFIG`` and/or ``SOURCE_CONFIGS``.</span>
+
+<span class="sd">    ``SOURCE_CONFIGS`` (a sequence) lets one package declare several sources that</span>
+<span class="sd">    share one adapter class: :mod:`foley.sources.fal` declares one source per fal</span>
+<span class="sd">    endpoint, because each endpoint has its own params, price and licence, while the</span>
+<span class="sd">    transport (falaw) is the same. Each source still gets its own adapter instance,</span>
+<span class="sd">    built from its own config.</span>
+<span class="sd">    """</span>
+    <span class="n">configs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">single</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">config_module</span><span class="p">,</span> <span class="s2">"SOURCE_CONFIG"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">single</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">configs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">single</span><span class="p">)</span>
+    <span class="n">configs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">config_module</span><span class="p">,</span> <span class="s2">"SOURCE_CONFIGS"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">())</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">configs</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)]</span>
 
 
 <div class="viewcode-block" id="register_source">

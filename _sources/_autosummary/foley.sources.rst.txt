@@ -55,6 +55,7 @@ foley.sources
    bbc_remarc
    clotho
    elevenlabs
+   fal
    foleyset
    freesound
    fsd50k

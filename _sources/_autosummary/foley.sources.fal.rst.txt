@@ -1,0 +1,21 @@
+foley.sources.fal
+=================
+
+.. automodule:: foley.sources.fal
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      FalAdapter
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   adapter
+   config

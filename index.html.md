@@ -38,6 +38,10 @@ hits = foley.search("distant thunder rumble", k=10)  # commercial use is the def
 # ELEVENLABS_API_KEY and is paid
 clip = foley.generate("a single wooden door creak", backend="stable_audio", duration=3)
 
+# No GPU? The fal-hosted backends (foley[fal] + FAL_KEY; paid, priced before the call):
+# Stable Audio 3 Small-SFX at $0.0206 a clip, commercial use under $1M revenue
+clip = foley.generate("a single wooden door creak", backend="fal_stable_audio_3", duration=3)
+
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
 foley.add_from(
@@ -52,12 +56,12 @@ result.notes  # how placements were timed, e.g. estimates when foley[align] is a
 
 ## How it works — four stages
 
-| Stage      | What it does                                                                                    | Built on                                                                                                                           |
-|------------|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| **Source** | your own files · Freesound (CC0) · generate (Stable Audio Open / ElevenLabs)                    | config-driven adapters, per-sound license tracking                                                                                 |
-| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                       | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
-| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                          | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
-| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
+| Stage      | What it does                                                                                                                                | Built on                                                                                                                           |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| **Source** | your own files · Freesound (CC0) · generate (Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking                                                                                 |
+| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                                                                   | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
+| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                                                                      | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
+| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits                                             | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
 
 The selection tools publish as an **MCP server** (via `py2mcp`) so the same capabilities
 drive the agent, a CLI, and external hosts.
@@ -117,15 +121,15 @@ foley agent-install                       # drop the agent kit into ./.claude (s
 foley is **zero-dep at its core** and grows by capability via optional extras — each imported
 lazily, so a bare install stays light. What each adds:
 
-| Extra                                       | Adds                                                               |
-|---------------------------------------------|--------------------------------------------------------------------|
-| `audio`                                     | numpy/soundfile DSP + LUFS mastering                               |
-| `clap`                                      | the CLAP text↔audio retrieval engine                               |
-| `index` / `index-sqlite`                    | the hybrid vector+keyword index (LanceDB / sqlite-vec)             |
-| `freesound` · `stable-audio` · `elevenlabs` | live retrieve / generate sources                                   |
-| `agent` · `local-llm`                       | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint) |
-| `align` · `weave` · `provenance` · `c2pa`   | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA |
-| `mcp` · `obs`                               | the MCP server · OpenTelemetry export                              |
+| Extra                                               | Adds                                                                                |
+|-----------------------------------------------------|-------------------------------------------------------------------------------------|
+| `audio`                                             | numpy/soundfile DSP + LUFS mastering                                                |
+| `clap`                                              | the CLAP text↔audio retrieval engine                                                |
+| `index` / `index-sqlite`                            | the hybrid vector+keyword index (LanceDB / sqlite-vec)                              |
+| `freesound` · `stable-audio` · `elevenlabs` · `fal` | live retrieve / generate sources (`fal`: the fal-hosted generators through `falaw`) |
+| `agent` · `local-llm`                               | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint)                  |
+| `align` · `weave` · `provenance` · `c2pa`           | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA                  |
+| `mcp` · `obs`                                       | the MCP server · OpenTelemetry export                                               |
 
 **Nothing paid runs unless you ask for it.** Having `ANTHROPIC_API_KEY` set does not switch the SELECT rungs to Claude: pass `llm="anthropic"` to `find()` / `score()` or set `FOLEY_LLM=anthropic` (`llm="local"` uses `FOLEY_LLM_BASE_URL`). By default they run the free deterministic fakes, or your local endpoint if one is configured. `with foley.offline():` (or `FOLEY_OFFLINE=1`) blocks every external source and LLM call foley makes, on every surface, raising `foley.runtime.EgressBlocked` (model weights are never downloaded offline: a model not already cached raises `foley.runtime.ModelNotCached`, naming the command to fetch it while online).
 

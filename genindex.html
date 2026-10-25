@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="_static/documentation_options.js?v=173d7b4c"></script>
+    <script src="_static/documentation_options.js?v=b345ff55"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.42" />
+  <meta name="docsearch:version" content="0.0.43" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -718,7 +718,11 @@ window.runMermaid = runMermaid;</script>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/foley.sources.elevenlabs.adapter.html#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.account_id">account_id() (foley.sources.elevenlabs.adapter.ElevenLabsAdapter method)</a>
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.FalAdapter.account_id">(foley.sources.fal.adapter.FalAdapter method)</a>
 </li>
+      </ul></li>
       <li><a href="_autosummary/foley.html#foley.AcquisitionMethod">AcquisitionMethod (class in foley)</a>
 
       <ul>
@@ -730,6 +734,8 @@ window.runMermaid = runMermaid;</script>
       <li><a href="_autosummary/foley.sources.elevenlabs.adapter.html#foley.sources.elevenlabs.adapter.Adapter">Adapter (in module foley.sources.elevenlabs.adapter)</a>
 
       <ul>
+        <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.Adapter">(in module foley.sources.fal.adapter)</a>
+</li>
         <li><a href="_autosummary/foley.sources.freesound.adapter.html#foley.sources.freesound.adapter.Adapter">(in module foley.sources.freesound.adapter)</a>
 </li>
         <li><a href="_autosummary/foley.sources.stable_audio.adapter.html#foley.sources.stable_audio.adapter.Adapter">(in module foley.sources.stable_audio.adapter)</a>
@@ -840,6 +846,8 @@ window.runMermaid = runMermaid;</script>
       <li><a href="_autosummary/foley.sources.elevenlabs.adapter.html#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.api_key">api_key (foley.sources.elevenlabs.adapter.ElevenLabsAdapter property)</a>
 
       <ul>
+        <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.FalAdapter.api_key">(foley.sources.fal.adapter.FalAdapter property)</a>
+</li>
         <li><a href="_autosummary/foley.sources.freesound.adapter.html#foley.sources.freesound.adapter.FreesoundAdapter.api_key">(foley.sources.freesound.adapter.FreesoundAdapter property)</a>
 </li>
       </ul></li>
@@ -910,6 +918,8 @@ window.runMermaid = runMermaid;</script>
 </li>
       </ul></li>
       <li><a href="_autosummary/foley.index.ingest.html#foley.index.ingest.AUDIO_EXTS">AUDIO_EXTS (in module foley.index.ingest)</a>
+</li>
+      <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.audio_url">audio_url() (in module foley.sources.fal.adapter)</a>
 </li>
       <li><a href="_autosummary/foley.agent.html#foley.agent.AudioLMJudge">AudioLMJudge (class in foley.agent)</a>
 
@@ -1837,6 +1847,16 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.weave.align.html#foley.weave.align.FakeAligner">(class in foley.weave.align)</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.FAL_CREDENTIAL">FAL_CREDENTIAL (in module foley.sources.fal.adapter)</a>
+</li>
+      <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.FAL_KEY_ENV_VARS">FAL_KEY_ENV_VARS (in module foley.sources.fal.adapter)</a>
+</li>
+      <li><a href="_autosummary/foley.sources.fal.config.html#foley.sources.fal.config.FAL_SOURCES">FAL_SOURCES (in module foley.sources.fal.config)</a>
+</li>
+      <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.FalAdapter">FalAdapter (class in foley.sources.fal.adapter)</a>
+</li>
+      <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.falaw_runner">falaw_runner() (in module foley.sources.fal.adapter)</a>
+</li>
       <li><a href="_autosummary/foley.eval.html#foley.eval.FidelityResult">FidelityResult (class in foley.eval)</a>
 
       <ul>
@@ -2221,8 +2241,6 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.obs.trace.html#module-foley.obs.trace">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     foley.provenance
 
@@ -2230,6 +2248,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.provenance.html#module-foley.provenance">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     foley.provenance.credits
 
@@ -2319,6 +2339,27 @@ window.runMermaid = runMermaid;</script>
 
       <ul>
         <li><a href="_autosummary/foley.sources.elevenlabs.config.html#module-foley.sources.elevenlabs.config">module</a>
+</li>
+      </ul></li>
+      <li>
+    foley.sources.fal
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.fal.html#module-foley.sources.fal">module</a>
+</li>
+      </ul></li>
+      <li>
+    foley.sources.fal.adapter
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.fal.adapter.html#module-foley.sources.fal.adapter">module</a>
+</li>
+      </ul></li>
+      <li>
+    foley.sources.fal.config
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.fal.config.html#module-foley.sources.fal.config">module</a>
 </li>
       </ul></li>
       <li>
@@ -2631,6 +2672,8 @@ window.runMermaid = runMermaid;</script>
       <ul>
         <li><a href="_autosummary/foley.sources.elevenlabs.adapter.html#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.generate">(foley.sources.elevenlabs.adapter.ElevenLabsAdapter method)</a>
 </li>
+        <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.FalAdapter.generate">(foley.sources.fal.adapter.FalAdapter method)</a>
+</li>
         <li><a href="_autosummary/foley.sources.html#foley.sources.GenerateAdapter.generate">(foley.sources.GenerateAdapter method)</a>
 </li>
         <li><a href="_autosummary/foley.sources.stable_audio.adapter.html#foley.sources.stable_audio.adapter.StableAudioAdapter.generate">(foley.sources.stable_audio.adapter.StableAudioAdapter method)</a>
@@ -2674,14 +2717,14 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="_autosummary/foley.html#foley.GenerationError">GenerationError</a>, <a href="_autosummary/foley.sources.html#foley.sources.GenerationError">[1]</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/foley.html#foley.GenerationsCache">GenerationsCache (class in foley)</a>
 
       <ul>
         <li><a href="_autosummary/foley.stores.html#foley.stores.GenerationsCache">(class in foley.stores)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/foley.html#foley.GenerationsCache.get">get() (foley.GenerationsCache method)</a>
 
       <ul>
@@ -3524,6 +3567,12 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="_autosummary/foley.sources.elevenlabs.config.html#module-foley.sources.elevenlabs.config">foley.sources.elevenlabs.config</a>
 </li>
+        <li><a href="_autosummary/foley.sources.fal.html#module-foley.sources.fal">foley.sources.fal</a>
+</li>
+        <li><a href="_autosummary/foley.sources.fal.adapter.html#module-foley.sources.fal.adapter">foley.sources.fal.adapter</a>
+</li>
+        <li><a href="_autosummary/foley.sources.fal.config.html#module-foley.sources.fal.config">foley.sources.fal.config</a>
+</li>
         <li><a href="_autosummary/foley.sources.foleyset.html#module-foley.sources.foleyset">foley.sources.foleyset</a>
 </li>
         <li><a href="_autosummary/foley.sources.freesound.html#module-foley.sources.freesound">foley.sources.freesound</a>
@@ -3605,6 +3654,8 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="_autosummary/foley.sources.base.html#foley.sources.base.native_adherence">native_adherence() (in module foley.sources.base)</a>
 </li>
+      <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.FalAdapter.native_arguments">native_arguments() (foley.sources.fal.adapter.FalAdapter method)</a>
+</li>
       <li><a href="_autosummary/foley.eval.html#foley.eval.ndcg_at_k">ndcg_at_k() (in module foley.eval)</a>
 
       <ul>
@@ -3617,14 +3668,14 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.qc.html#foley.qc.needs_edge_fade">(in module foley.qc)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/foley.eval.golden.html#foley.eval.golden.GoldenItem.negatives">negatives (foley.eval.golden.GoldenItem attribute)</a>
 
       <ul>
         <li><a href="_autosummary/foley.eval.html#foley.eval.GoldenItem.negatives">(foley.eval.GoldenItem attribute)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/foley.runtime.html#foley.runtime.no_download">no_download() (in module foley.runtime)</a>
 </li>
       <li><a href="_autosummary/foley.obs.trace.html#foley.obs.trace.NoOpSpan">NoOpSpan (class in foley.obs.trace)</a>
@@ -4052,7 +4103,11 @@ window.runMermaid = runMermaid;</script>
 </li>
       </ul></li>
       <li><a href="_autosummary/foley.sources.elevenlabs.adapter.html#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.request_salt">request_salt() (foley.sources.elevenlabs.adapter.ElevenLabsAdapter method)</a>
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.FalAdapter.request_salt">(foley.sources.fal.adapter.FalAdapter method)</a>
 </li>
+      </ul></li>
       <li><a href="_autosummary/foley.sources.http.html#foley.sources.http.requests_transport">requests_transport() (in module foley.sources.http)</a>
 </li>
       <li><a href="_autosummary/foley.runtime.html#foley.runtime.require_egress">require_egress() (in module foley.runtime)</a>
@@ -4255,6 +4310,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.obs.run_artifact.html#foley.obs.run_artifact.RunManifest">(class in foley.obs.run_artifact)</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.Runner">Runner (in module foley.sources.fal.adapter)</a>
+</li>
       <li><a href="_autosummary/foley.obs.html#foley.obs.RunRecorder">RunRecorder (class in foley.obs)</a>
 
       <ul>

@@ -1,4 +1,4 @@
-> built 2026-10-20 23:57 UTC from 704749c (main) · foley 0.0.42. Details: build_info.json
+> built 2026-10-25 06:37 UTC from 9d143a4 (main) · foley 0.0.43. Details: build_info.json
 
 # index.html.md
 
@@ -42,6 +42,10 @@ hits = foley.search("distant thunder rumble", k=10)  # commercial use is the def
 # ELEVENLABS_API_KEY and is paid
 clip = foley.generate("a single wooden door creak", backend="stable_audio", duration=3)
 
+# No GPU? The fal-hosted backends (foley[fal] + FAL_KEY; paid, priced before the call):
+# Stable Audio 3 Small-SFX at $0.0206 a clip, commercial use under $1M revenue
+clip = foley.generate("a single wooden door creak", backend="fal_stable_audio_3", duration=3)
+
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
 foley.add_from(
@@ -56,12 +60,12 @@ result.notes  # how placements were timed, e.g. estimates when foley[align] is a
 
 ## How it works — four stages
 
-| Stage      | What it does                                                                                    | Built on                                                                                                                           |
-|------------|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| **Source** | your own files · Freesound (CC0) · generate (Stable Audio Open / ElevenLabs)                    | config-driven adapters, per-sound license tracking                                                                                 |
-| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                       | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
-| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                          | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
-| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
+| Stage      | What it does                                                                                                                                | Built on                                                                                                                           |
+|------------|---------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| **Source** | your own files · Freesound (CC0) · generate (Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking                                                                                 |
+| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                                                                   | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
+| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                                                                      | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
+| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits                                             | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
 
 The selection tools publish as an **MCP server** (via `py2mcp`) so the same capabilities
 drive the agent, a CLI, and external hosts.
@@ -121,15 +125,15 @@ foley agent-install                       # drop the agent kit into ./.claude (s
 foley is **zero-dep at its core** and grows by capability via optional extras — each imported
 lazily, so a bare install stays light. What each adds:
 
-| Extra                                       | Adds                                                               |
-|---------------------------------------------|--------------------------------------------------------------------|
-| `audio`                                     | numpy/soundfile DSP + LUFS mastering                               |
-| `clap`                                      | the CLAP text↔audio retrieval engine                               |
-| `index` / `index-sqlite`                    | the hybrid vector+keyword index (LanceDB / sqlite-vec)             |
-| `freesound` · `stable-audio` · `elevenlabs` | live retrieve / generate sources                                   |
-| `agent` · `local-llm`                       | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint) |
-| `align` · `weave` · `provenance` · `c2pa`   | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA |
-| `mcp` · `obs`                               | the MCP server · OpenTelemetry export                              |
+| Extra                                               | Adds                                                                                |
+|-----------------------------------------------------|-------------------------------------------------------------------------------------|
+| `audio`                                             | numpy/soundfile DSP + LUFS mastering                                                |
+| `clap`                                              | the CLAP text↔audio retrieval engine                                                |
+| `index` / `index-sqlite`                            | the hybrid vector+keyword index (LanceDB / sqlite-vec)                              |
+| `freesound` · `stable-audio` · `elevenlabs` · `fal` | live retrieve / generate sources (`fal`: the fal-hosted generators through `falaw`) |
+| `agent` · `local-llm`                               | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint)                  |
+| `align` · `weave` · `provenance` · `c2pa`           | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA                  |
+| `mcp` · `obs`                                       | the MCP server · OpenTelemetry export                                               |
 
 **Nothing paid runs unless you ask for it.** Having `ANTHROPIC_API_KEY` set does not switch the SELECT rungs to Claude: pass `llm="anthropic"` to `find()` / `score()` or set `FOLEY_LLM=anthropic` (`llm="local"` uses `FOLEY_LLM_BASE_URL`). By default they run the free deterministic fakes, or your local endpoint if one is configured. `with foley.offline():` (or `FOLEY_OFFLINE=1`) blocks every external source and LLM call foley makes, on every surface, raising `foley.runtime.EgressBlocked` (model weights are never downloaded offline: a model not already cached raises `foley.runtime.ModelNotCached`, naming the command to fetch it while online).
 
@@ -1150,9 +1154,12 @@ rehydrate them by id. Returns compact candidate rows.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
 
-### foley.agent.mcp.foley_generate(prompt, backend='stable_audio', commercial_ok=True, session='default')
+### foley.agent.mcp.foley_generate(prompt, backend='auto', commercial_ok=True, session='default')
 
 Generate a sound from a text prompt (local backends only when offline).
+
+`backend='auto'` is the host’s default (`$FOLEY_GENERATE_BACKEND`, else the local
+Stable Audio Open); name one to choose (`fal_stable_audio_3`, `elevenlabs`, …).
 
 A clip QC would quarantine for a clipped run just over the gate is repaired and
 stored (the repair is in the result’s notes). A refused generation’s dict carries
@@ -3023,9 +3030,10 @@ The USD cost of one call to the source `config` declares, or `None` if unknown.
 
 * `'free'` (local inference, a free API tier) → `0.0`;
 * `'per_call'` → `amount_usd`;
-* `'per_second'` → `amount_usd` × the requested `duration`, or × the backend’s
-  `native_defaults['duration_max_s']` when the duration is left to the backend
-  (an upper bound), else `None`.
+* `'per_second'` → `amount_usd` × the requested `duration`; when none is
+  requested, × the `native_defaults['duration_default_s']` the adapter sends in
+  its place, else × `native_defaults['duration_max_s']` (the duration is left to
+  the backend: an upper bound), else `None`.
 
 * **Parameters:**
   * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG`.
@@ -6803,7 +6811,7 @@ RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
 
   FusedHit\`s, each carrying its raw component scores.
 
-### foley.generate(prompt, , backend='stable_audio', library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, \*\*affordances)
+### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, \*\*affordances)
 
 Generate a sound effect for `prompt` and add it to the library (by-value).
 
@@ -6819,9 +6827,13 @@ training uses).
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description.
-  * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A registered generate source — `"stable_audio"` (default, local;
-    needs `foley[stable-audio]`) or `"elevenlabs"` (hosted;
-    `foley[elevenlabs]` + `$ELEVENLABS_API_KEY`).
+  * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – A registered generate source. `None` (default) is
+    `$FOLEY_GENERATE_BACKEND`, else `"stable_audio"` (local; needs
+    `foley[stable-audio]`). Hosted: `"elevenlabs"` (`foley[elevenlabs]` +
+    `$ELEVENLABS_API_KEY`) and the fal endpoints `"fal_stable_audio_3"`
+    (Stable Audio 3 Small-SFX, commercial under $1M revenue),
+    `"fal_elevenlabs"`, `"fal_sonilo"` and `"fal_mmaudio"` (non-commercial)
+    (`foley[fal]` + `$FAL_KEY`).
   * **library** – Target library (default: the process-wide default library).
   * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, synthesize + QC a preview without adding it: the returned
     candidate’s `audio_bytes` carries the clip (the archive bytes the library
@@ -9551,7 +9563,7 @@ module costs only the stdlib.
 |----------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
 | [`IngestResult`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestResult)(id, status[, record, qc, ...]) | The outcome of ingesting one clip.                              |
 
-### foley.index.ingest.ASSERTABLE_LICENSE_IDS *= frozenset({'CC-BY-2.0', 'CC-BY-2.5', 'CC-BY-3.0', 'CC-BY-4.0', 'CC-BY-NC-2.0', 'CC-BY-NC-2.5', 'CC-BY-NC-3.0', 'CC-BY-NC-4.0', 'CC-Sampling+-1.0', 'CC0-1.0', 'MIT', 'Pixabay-Content', 'RemArc', 'Sonniss-GDC', 'Stability-Community', 'elevenlabs-free-plan', 'elevenlabs-paid-plan', 'user-owned'})*
+### foley.index.ingest.ASSERTABLE_LICENSE_IDS *= frozenset({'CC-BY-2.0', 'CC-BY-2.5', 'CC-BY-3.0', 'CC-BY-4.0', 'CC-BY-NC-2.0', 'CC-BY-NC-2.5', 'CC-BY-NC-3.0', 'CC-BY-NC-4.0', 'CC-Sampling+-1.0', 'CC0-1.0', 'MIT', 'Pixabay-Content', 'RemArc', 'Sonniss-GDC', 'Stability-Community', 'elevenlabs-free-plan', 'elevenlabs-paid-plan', 'fal-partner-unverified', 'user-owned'})*
 
 The ids a caller may assert on ingest / restamp (`foley ingest --license`).
 
@@ -11234,7 +11246,7 @@ Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.
 `None` as the override leaves the CC row’s flag alone. An unlisted value fails
 closed (see [`ai_scope_from_gen_ai_preference()`](_autosummary/foley.licensing.html.md#foley.licensing.ai_scope_from_gen_ai_preference)).
 
-### foley.licensing.LICENSE_FLAGS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseFlags](_autosummary/foley.licensing.html.md#foley.licensing.LicenseFlags)]* *= {'CC-BY-2.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-2.5': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-3.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-4.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.5': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-3.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-4.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-Sampling+-1.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC0-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'ElevenLabs-SFX': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'MIT': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'PDM-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'Pixabay-Content': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'RemArc': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'Sonniss-GDC': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'Stability-Community': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=1000000), 'elevenlabs-free-plan': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'elevenlabs-paid-plan': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'unknown': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'user-owned': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None)}*
+### foley.licensing.LICENSE_FLAGS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseFlags](_autosummary/foley.licensing.html.md#foley.licensing.LicenseFlags)]* *= {'CC-BY-2.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-2.5': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-3.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-4.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.5': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-3.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-4.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-Sampling+-1.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC0-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'ElevenLabs-SFX': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'MIT': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'PDM-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'Pixabay-Content': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'RemArc': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'Sonniss-GDC': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'Stability-Community': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=1000000), 'elevenlabs-free-plan': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'elevenlabs-paid-plan': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'fal-partner-unverified': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'unknown': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'user-owned': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None)}*
 
 `license_id` -> default flag set (report 07 §8.1 seed table).
 
@@ -11248,7 +11260,7 @@ ai_training, requires_attribution, revenue_cap_usd
 * **Type:**
   SSOT
 
-### foley.licensing.LICENSE_META *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseMeta](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta)]* *= {'CC-BY-2.0': LicenseMeta(display_name='CC BY 2.0', url='https://creativecommons.org/licenses/by/2.0/'), 'CC-BY-2.5': LicenseMeta(display_name='CC BY 2.5', url='https://creativecommons.org/licenses/by/2.5/'), 'CC-BY-3.0': LicenseMeta(display_name='CC BY 3.0', url='https://creativecommons.org/licenses/by/3.0/'), 'CC-BY-4.0': LicenseMeta(display_name='CC BY 4.0', url='https://creativecommons.org/licenses/by/4.0/'), 'CC-BY-NC-2.0': LicenseMeta(display_name='CC BY-NC 2.0', url='https://creativecommons.org/licenses/by-nc/2.0/'), 'CC-BY-NC-2.5': LicenseMeta(display_name='CC BY-NC 2.5', url='https://creativecommons.org/licenses/by-nc/2.5/'), 'CC-BY-NC-3.0': LicenseMeta(display_name='CC BY-NC 3.0', url='https://creativecommons.org/licenses/by-nc/3.0/'), 'CC-BY-NC-4.0': LicenseMeta(display_name='CC BY-NC 4.0', url='https://creativecommons.org/licenses/by-nc/4.0/'), 'CC-Sampling+-1.0': LicenseMeta(display_name='CC Sampling+ 1.0', url='https://creativecommons.org/licenses/sampling+/1.0/'), 'CC0-1.0': LicenseMeta(display_name='CC0 1.0 Universal (Public Domain Dedication)', url='https://creativecommons.org/publicdomain/zero/1.0/'), 'ElevenLabs-SFX': LicenseMeta(display_name='ElevenLabs Sound Effects Terms (legacy: paid plan assumed)', url='https://elevenlabs.io/terms-of-use'), 'MIT': LicenseMeta(display_name='MIT License', url='https://opensource.org/license/mit'), 'PDM-1.0': LicenseMeta(display_name='Public Domain Mark 1.0 (unverified claim)', url='https://creativecommons.org/publicdomain/mark/1.0/'), 'Pixabay-Content': LicenseMeta(display_name='Pixabay Content License', url='https://pixabay.com/service/license-summary/'), 'RemArc': LicenseMeta(display_name='BBC RemArc Licence', url='https://sound-effects.bbcrewind.co.uk/licensing'), 'Sonniss-GDC': LicenseMeta(display_name='Sonniss GDC Game Audio Bundle License', url='https://sonniss.com/gdc-bundle-license'), 'Stability-Community': LicenseMeta(display_name='Stability AI Community License', url='https://stability.ai/community-license-agreement'), 'elevenlabs-free-plan': LicenseMeta(display_name='ElevenLabs Terms (free plan: non-commercial, attribution required)', url='https://elevenlabs.io/terms-of-use'), 'elevenlabs-paid-plan': LicenseMeta(display_name='ElevenLabs Terms (paid plan)', url='https://elevenlabs.io/terms-of-use'), 'unknown': LicenseMeta(display_name='Unknown / unverified license', url=None), 'user-owned': LicenseMeta(display_name='User-owned / original work', url=None)}*
+### foley.licensing.LICENSE_META *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseMeta](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta)]* *= {'CC-BY-2.0': LicenseMeta(display_name='CC BY 2.0', url='https://creativecommons.org/licenses/by/2.0/'), 'CC-BY-2.5': LicenseMeta(display_name='CC BY 2.5', url='https://creativecommons.org/licenses/by/2.5/'), 'CC-BY-3.0': LicenseMeta(display_name='CC BY 3.0', url='https://creativecommons.org/licenses/by/3.0/'), 'CC-BY-4.0': LicenseMeta(display_name='CC BY 4.0', url='https://creativecommons.org/licenses/by/4.0/'), 'CC-BY-NC-2.0': LicenseMeta(display_name='CC BY-NC 2.0', url='https://creativecommons.org/licenses/by-nc/2.0/'), 'CC-BY-NC-2.5': LicenseMeta(display_name='CC BY-NC 2.5', url='https://creativecommons.org/licenses/by-nc/2.5/'), 'CC-BY-NC-3.0': LicenseMeta(display_name='CC BY-NC 3.0', url='https://creativecommons.org/licenses/by-nc/3.0/'), 'CC-BY-NC-4.0': LicenseMeta(display_name='CC BY-NC 4.0', url='https://creativecommons.org/licenses/by-nc/4.0/'), 'CC-Sampling+-1.0': LicenseMeta(display_name='CC Sampling+ 1.0', url='https://creativecommons.org/licenses/sampling+/1.0/'), 'CC0-1.0': LicenseMeta(display_name='CC0 1.0 Universal (Public Domain Dedication)', url='https://creativecommons.org/publicdomain/zero/1.0/'), 'ElevenLabs-SFX': LicenseMeta(display_name='ElevenLabs Sound Effects Terms (legacy: paid plan assumed)', url='https://elevenlabs.io/terms-of-use'), 'MIT': LicenseMeta(display_name='MIT License', url='https://opensource.org/license/mit'), 'PDM-1.0': LicenseMeta(display_name='Public Domain Mark 1.0 (unverified claim)', url='https://creativecommons.org/publicdomain/mark/1.0/'), 'Pixabay-Content': LicenseMeta(display_name='Pixabay Content License', url='https://pixabay.com/service/license-summary/'), 'RemArc': LicenseMeta(display_name='BBC RemArc Licence', url='https://sound-effects.bbcrewind.co.uk/licensing'), 'Sonniss-GDC': LicenseMeta(display_name='Sonniss GDC Game Audio Bundle License', url='https://sonniss.com/gdc-bundle-license'), 'Stability-Community': LicenseMeta(display_name='Stability AI Community License', url='https://stability.ai/community-license-agreement'), 'elevenlabs-free-plan': LicenseMeta(display_name='ElevenLabs Terms (free plan: non-commercial, attribution required)', url='https://elevenlabs.io/terms-of-use'), 'elevenlabs-paid-plan': LicenseMeta(display_name='ElevenLabs Terms (paid plan)', url='https://elevenlabs.io/terms-of-use'), 'fal-partner-unverified': LicenseMeta(display_name='fal.ai partner model (vendor terms for fal-routed calls unverified: treated as non-commercial)', url='https://fal.ai/legal/terms-of-service'), 'unknown': LicenseMeta(display_name='Unknown / unverified license', url=None), 'user-owned': LicenseMeta(display_name='User-owned / original work', url=None)}*
 
 `license_id` -> display name + canonical URL (one row per
 [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) key). Used only for human-readable credits; never for
@@ -12548,7 +12560,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'netflix chime', 'ta-dum', 'netflix intro', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel jingle', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix chime', 'tudum', 'netflix intro', 'ta dum', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -14507,6 +14519,239 @@ at `import foley` or during discovery — via the module `__getattr__` below.
 | [`config`](_autosummary/foley.sources.elevenlabs.config.html.md#module-foley.sources.elevenlabs.config)     | `SOURCE_CONFIG` for the ElevenLabs Sound Effects generator (report 02 · 07 · 10 §4.1). |
 
 
+# _autosummary/foley.sources.fal.adapter.html.md
+
+# foley.sources.fal.adapter
+
+The fal generate adapter — one class for every fal-hosted SFX endpoint, run through `falaw`.
+
+Each fal source (`fal_stable_audio_3`, `fal_elevenlabs`, `fal_sonilo`,
+`fal_mmaudio`; see [`foley.sources.fal.config`](_autosummary/foley.sources.fal.config.html.md#module-foley.sources.fal.config)) gets its own instance of
+[`FalAdapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAdapter), built from its own config. The adapter:
+
+1. builds the native request from the already-translated affordances with the same
+   `foley.sources._dispatch.native_request()` that keys the generations cache, so
+   > the request sent and the request cached cannot drift, then adds the prompt, the
+   > endpoint’s default duration when none was asked for, and its `fixed_arguments`;
+2. calls the endpoint through the injected `runner` (default [`falaw_runner()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner):
+   `falaw.cached_call_fal` + `falaw.materialize_asset`, under the key foley
+   resolved). The runner always asks falaw to skip its cache *read*: replaying a paid
+   request is foley’s generations cache’s job (`reuse_cached=`), and a second replay
+   layer underneath would turn `reuse_cached=False` into a silent replay;
+3. returns a [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip) whose licence comes from the
+   config’s licence row (fail-closed), with the native request, the seed the endpoint
+   reports having used, and the fal endpoint id recorded as provenance.
+
+No storage access here (the façade ingests). The `runner` seam is how tests stay
+offline: they pass a fake that returns canned bytes, and a call the fake does not know
+is an error, never a fall-through to the network.
+
+### Module Attributes
+
+| [`FAL_CREDENTIAL`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FAL_CREDENTIAL)   | The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).      |
+|-------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| [`FAL_KEY_ENV_VARS`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FAL_KEY_ENV_VARS) | The env vars falaw reads a fal key from, in order.                                    |
+| [`Runner`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.Runner)           | `runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`. |
+| [`Adapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.Adapter)          | Registry convention (arioso): the loader imports `adapter.Adapter`.                   |
+
+### Functions
+
+| [`audio_url`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.audio_url)(response[, field])                      | The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...]}`.   |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| [`falaw_runner`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner)(endpoint_id, arguments, \*, api_key) | Call a fal endpoint through falaw and return `(audio bytes, raw response)`.            |
+
+### Classes
+
+| [`Adapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.Adapter)                                         | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                    |
+|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| [`FalAdapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAdapter)(config, \*[, api_key, runner, http]) | A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+
+### foley.sources.fal.adapter.Adapter
+
+Registry convention (arioso): the loader imports `adapter.Adapter`.
+
+### foley.sources.fal.adapter.FAL_CREDENTIAL *= 'fal'*
+
+The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).
+
+### foley.sources.fal.adapter.FAL_KEY_ENV_VARS *= ('FAL_KEY', 'FAL_API_KEY')*
+
+The env vars falaw reads a fal key from, in order.
+
+### *class* foley.sources.fal.adapter.FalAdapter(config, , api_key=None, runner=None, http=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)).
+
+* **Parameters:**
+  * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – This source’s config (one of `SOURCE_CONFIGS`),
+    passed positionally by the registry’s lazy loader.
+  * **api_key** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The fal key. Defaults to a key bound for this source
+    (`foley.using_source_accounts(<source>=key)`), else one bound for fal
+    itself (`falaw.using_fal_credentials(key)`, or `fal=` in
+    `ocracy.kit.using_credentials`: one binding covers every fal source),
+    else `$FAL_KEY`, else `$FAL_API_KEY`.
+  * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]]) – The transport seam (default [`falaw_runner()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
+  * **http** – Accepted and ignored: the registry passes a resilient HTTP transport to
+    external sources, but this adapter’s transport is falaw (which retries and
+    classifies errors itself).
+
+#### account_id()
+
+The account a call is made on, for the generations cache (`'operator'` or a fingerprint).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### *property* api_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The fal key (see the class docstring for the order); raises if none.
+
+#### generate(prompt, \*\*affordances)
+
+Generate a sound for `prompt` on this source’s fal endpoint.
+
+`affordances` are the canonical ones the dispatch layer kept (translated,
+clamped, noted); see `foley.sources._dispatch.plan_generation()`.
+
+* **Raises:**
+  [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If no fal key is available (before any call).
+* **Return type:**
+  [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip)
+
+#### native_arguments(prompt, \*\*affordances)
+
+The exact payload this adapter sends for `prompt` and translated `affordances`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### request_salt()
+
+What the payload carries beyond the native request: part of the cache key.
+
+The default duration and the fixed arguments are sent but are not
+affordances, so a change to either must not replay a clip made without it.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.sources.fal.adapter.Runner
+
+`runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`.
+
+alias of `Callable`[[…], `tuple[bytes, dict]`]
+
+### foley.sources.fal.adapter.audio_url(response, field='audio')
+
+The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...]}`.
+
+```pycon
+>>> audio_url({"audio": {"url": "https://x/a.wav"}})
+'https://x/a.wav'
+>>> audio_url({"audio": [{"url": "https://x/b.wav"}]})
+'https://x/b.wav'
+>>> audio_url({"audio_file": {"url": "https://x/c.wav"}}, "audio_file")
+'https://x/c.wav'
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.fal.adapter.falaw_runner(endpoint_id, arguments, , api_key, audio_field='audio')
+
+Call a fal endpoint through falaw and return `(audio bytes, raw response)`.
+
+`refresh=True` skips falaw’s cache read and keeps its write (see the module
+docstring: foley’s generations cache owns replay). The audio is downloaded by
+`falaw.materialize_asset`, which content-addresses it in falaw’s store.
+
+* **Raises:**
+  * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – For a refusal before anything was billed (the fal
+        client is not installed, the key is refused, the account has no funds, an
+        argument cannot be sent), so the run’s budget reservation is released.
+  * [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If the response carries no audio URL.
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+
+# _autosummary/foley.sources.fal.config.html.md
+
+# foley.sources.fal.config
+
+`SOURCE_CONFIGS` for the fal-hosted text-to-SFX endpoints, executed through `falaw` (#73).
+
+One package, several sources: each fal endpoint is its own foley source (its own params,
+price and licence), and they all share one adapter class
+([`FalAdapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAdapter)) and one transport (`falaw`, the fleet’s
+fal client: content-addressed cache, typed errors, credentials). The registry reads
+`SOURCE_CONFIGS` (see `foley.sources.registry._declared_configs()`).
+
+Stdlib-only and declarative, so discovery stays cheap. The native parameter names, ranges
+and output shapes below were read from each endpoint’s OpenAPI schema
+(`https://fal.ai/api/openapi/queue/openapi.json?endpoint_id=<id>`) and checked with one
+live call each on 2026-10-25. Evidence and the comparison with the other models:
+`misc/docs/research/13-generation-targets-2026-10.md` and
+`17-genai-sfx-update-2026-10-25.md`.
+
+Licences (the per-sound record is fail-closed, so each row says only what is known):
+
+* `fal_stable_audio_3` (and `fal_stable_audio_3_medium`) — Stable Audio 3 weights are under the Stability AI
+  Community License (commercial use free under US $1M annual revenue, no use of outputs
+  to train competing foundation models; Stability’s licence gives the user the output;
+  fal’s terms only disclaim fal’s own rights in it). Its text encoder (T5Gemma) also
+  carries Gemma terms, which bind the model, not the audio it outputs. Row:
+  `Stability-Community` (the $1M cap flows from the row and [`foley.keep()`](_autosummary/foley.html.md#foley.keep) enforces it).
+* `fal_mmaudio` — MMAudio weights are CC BY-NC 4.0, whatever fal’s `commercial` label
+  says. Row: `CC-BY-NC-4.0` with the MMAudio credit, so [`foley.keep()`](_autosummary/foley.html.md#foley.keep) refuses it for
+  commercial use and credits render the attribution.
+* `fal_elevenlabs`, `fal_sonilo`, `fal_mirelo` — partner models resold by fal. Whether the vendor’s
+  plan rules (ElevenLabs and Sonilo free tiers are non-commercial) apply to a fal-routed
+  call is not documented (Sonilo’s own page now allows commercial use of API output,
+  but not specifically for calls billed through fal). Row: `fal-partner-unverified` — usable in a derivative,
+  **not** commercially, until the terms are confirmed (foley#77). Narrowing, never widening.
+
+Pricing is fal’s (`unit`/`amount_usd` as in [`foley.cost.estimate_call()`](_autosummary/foley.cost.html.md#foley.cost.estimate_call)), with the
+date it was read. `per_second` with no requested duration is priced at the
+`duration_default_s` the adapter sends in its place (or the endpoint’s maximum, an upper
+bound, when it declares none), never at zero.
+
+### Module Attributes
+
+| [`FAL_SOURCES`](_autosummary/foley.sources.fal.config.html.md#foley.sources.fal.config.FAL_SOURCES)   | The fal source names, in the order above (the first is the recommended one).   |
+|----------------------------------------------------------------|--------------------------------------------------------------------------------|
+
+### foley.sources.fal.config.FAL_SOURCES *= ('fal_stable_audio_3', 'fal_stable_audio_3_medium', 'fal_mirelo', 'fal_elevenlabs', 'fal_sonilo', 'fal_mmaudio')*
+
+The fal source names, in the order above (the first is the recommended one).
+
+
+# _autosummary/foley.sources.fal.html.md
+
+# foley.sources.fal
+
+fal-hosted generate sources, executed through `falaw` (#73).
+
+Declares `SOURCE_CONFIGS` — one foley source per fal
+text-to-SFX endpoint (`fal_stable_audio_3`, `fal_stable_audio_3_medium`,
+`fal_mirelo`, `fal_elevenlabs`, `fal_sonilo`, `fal_mmaudio`) — auto-discovered by [`foley.sources.registry.discover_sources()`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.discover_sources).
+The shared [`FalAdapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAdapter) and `falaw` (the
+`foley[fal]` extra) load on first use, never at `import foley`.
+
+### Classes
+
+| `Adapter`                                         |                                                                                                                                        |
+|---------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| `FalAdapter`(config, \*[, api_key, runner, http]) | A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+
+### Modules
+
+| [`adapter`](_autosummary/foley.sources.fal.adapter.html.md#module-foley.sources.fal.adapter)   | The fal generate adapter — one class for every fal-hosted SFX endpoint, run through `falaw`.   |
+|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| [`config`](_autosummary/foley.sources.fal.config.html.md#module-foley.sources.fal.config)     | `SOURCE_CONFIGS` for the fal-hosted text-to-SFX endpoints, executed through `falaw` (#73).     |
+
+
 # _autosummary/foley.sources.foleyset.html.md
 
 # foley.sources.foleyset
@@ -15302,7 +15547,8 @@ Scan [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) 
 
 A valid live source is a sub-package of [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) (`ispkg` and
 not `_`-prefixed) whose `config.py` defines a `SOURCE_CONFIG` dict with a
-`name`. Flat modules (bulk-corpus adapters + helpers) are skipped, so this
+`name` (or a `SOURCE_CONFIGS` sequence of them: several sources sharing one
+adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters + helpers) are skipped, so this
 never cross-captures the corpus adapters. Only `config.py` is imported here
 (stdlib-cheap); the adapter loads lazily in [`get_source()`](_autosummary/foley.sources.html.md#foley.sources.get_source). Idempotent —
 an already-registered name (e.g. a test double) is never overwritten.
@@ -15312,7 +15558,7 @@ an already-registered name (e.g. a test double) is never overwritten.
 * **Returns:**
   The list of discovered source names.
 
-### foley.sources.generate(prompt, , backend='stable_audio', library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -15340,8 +15586,11 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description.
-  * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A registered generate-source name (`'stable_audio'` (default,
-    local) | `'elevenlabs'` (hosted)).
+  * **backend** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A registered generate-source name. `None` (default):
+    `default_generate_backend()` (`$FOLEY_GENERATE_BACKEND`, else the
+    local `'stable_audio'`). Hosted: `'elevenlabs'`, and the fal
+    endpoints `'fal_stable_audio_3'` | `'fal_elevenlabs'` |
+    `'fal_sonilo'` | `'fal_mmaudio'` (`foley[fal]` + `$FAL_KEY`).
   * **library** – Target [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
     process-wide default library).
   * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, synthesize + enrich but do not add to the library
@@ -15529,6 +15778,7 @@ the default `rings` — it is opt-in only.
 | [`bbc_remarc`](_autosummary/foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)     | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                               |
 | [`clotho`](_autosummary/foley.sources.clotho.html.md#module-foley.sources.clotho)             | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.              |
 | [`elevenlabs`](_autosummary/foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)     | ElevenLabs Sound Effects generate source (hosted; #6).                                    |
+| [`fal`](_autosummary/foley.sources.fal.html.md#module-foley.sources.fal)                   | fal-hosted generate sources, executed through `falaw` (#73).                              |
 | [`foleyset`](_autosummary/foley.sources.foleyset.html.md#module-foley.sources.foleyset)         | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                 |
 | [`freesound`](_autosummary/foley.sources.freesound.html.md#module-foley.sources.freesound)       | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).   |
 | [`fsd50k`](_autosummary/foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)             | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                           |
@@ -15759,7 +16009,8 @@ Scan [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) 
 
 A valid live source is a sub-package of [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) (`ispkg` and
 not `_`-prefixed) whose `config.py` defines a `SOURCE_CONFIG` dict with a
-`name`. Flat modules (bulk-corpus adapters + helpers) are skipped, so this
+`name` (or a `SOURCE_CONFIGS` sequence of them: several sources sharing one
+adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters + helpers) are skipped, so this
 never cross-captures the corpus adapters. Only `config.py` is imported here
 (stdlib-cheap); the adapter loads lazily in [`get_source()`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.get_source). Idempotent —
 an already-registered name (e.g. a test double) is never overwritten.
@@ -17787,18 +18038,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-20 23:57 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/704749c7311015628c0de6d929c9006e6572e91c"><code>704749c</code></a> on branch <code>main</code>, for **foley 0.0.42** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-25 06:37 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/9d143a4689e9f41a3140d9af470639b9f7cd239f"><code>9d143a4</code></a> on branch <code>main</code>, for **foley 0.0.43** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.42) is behind the latest release on PyPI (0.0.43): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/704749c7311015628c0de6d929c9006e6572e91c"><code>704749c7311015628c0de6d929c9006e6572e91c</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/9d143a4689e9f41a3140d9af470639b9f7cd239f"><code>9d143a4689e9f41a3140d9af470639b9f7cd239f</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -17809,9 +18058,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/39518052865">39518052865</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40169625299">40169625299</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>704749c7311015628c0de6d929c9006e6572e91c</code> (in the history of the built commit) |
+| Event commit | <code>9d143a4689e9f41a3140d9af470639b9f7cd239f</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -17836,13 +18085,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.43/">0.0.43</a>, newer than the documented version (0.0.42).
+Latest release: <a href="https://pypi.org/project/foley/0.0.43/">0.0.43</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 704749c7311015628c0de6d929c9006e6572e91c
+git checkout 9d143a4689e9f41a3140d9af470639b9f7cd239f
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

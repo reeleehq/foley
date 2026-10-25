@@ -76,6 +76,9 @@
 - [foley.sources.elevenlabs](_autosummary/foley.sources.elevenlabs.html.md): ElevenLabs Sound Effects generate source (hosted; #6).
 - [foley.sources.elevenlabs.adapter](_autosummary/foley.sources.elevenlabs.adapter.html.md): ElevenLabs Sound Effects generate adapter — hosted Text-to-SFX v2 over HTTP.
 - [foley.sources.elevenlabs.config](_autosummary/foley.sources.elevenlabs.config.html.md): &#96;SOURCE_CONFIG&#96; for the ElevenLabs Sound Effects generator (report 02 · 07 · 10 §4.1).
+- [foley.sources.fal](_autosummary/foley.sources.fal.html.md): fal-hosted generate sources, executed through &#96;falaw&#96; (#73).
+- [foley.sources.fal.adapter](_autosummary/foley.sources.fal.adapter.html.md): The fal generate adapter — one class for every fal-hosted SFX endpoint, run through &#96;falaw&#96;.
+- [foley.sources.fal.config](_autosummary/foley.sources.fal.config.html.md): &#96;SOURCE_CONFIGS&#96; for the fal-hosted text-to-SFX endpoints, executed through &#96;falaw&#96; (#73).
 - [foley.sources.foleyset](_autosummary/foley.sources.foleyset.html.md): FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).
 - [foley.sources.freesound](_autosummary/foley.sources.freesound.html.md): Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (&#96;foley&#91;freesound&#93;&#96;).
 - [foley.sources.freesound.adapter](_autosummary/foley.sources.freesound.adapter.html.md): Freesound APIv2 retrieve adapter — CC0 sounds, stored strictly by-reference.
@@ -91,7 +94,7 @@
 - [foley.sources.stable_audio.config](_autosummary/foley.sources.stable_audio.config.html.md): &#96;SOURCE_CONFIG&#96; for the local Stable Audio Open 1.0 generator (report 02 · 07 · 10 §4.1).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-20 23:57 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-25 06:37 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

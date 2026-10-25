@@ -1,0 +1,153 @@
+# foley.sources.fal.adapter
+
+The fal generate adapter — one class for every fal-hosted SFX endpoint, run through `falaw`.
+
+Each fal source (`fal_stable_audio_3`, `fal_elevenlabs`, `fal_sonilo`,
+`fal_mmaudio`; see [`foley.sources.fal.config`](foley.sources.fal.config.html.md#module-foley.sources.fal.config)) gets its own instance of
+[`FalAdapter`](#foley.sources.fal.adapter.FalAdapter), built from its own config. The adapter:
+
+1. builds the native request from the already-translated affordances with the same
+   `foley.sources._dispatch.native_request()` that keys the generations cache, so
+   > the request sent and the request cached cannot drift, then adds the prompt, the
+   > endpoint’s default duration when none was asked for, and its `fixed_arguments`;
+2. calls the endpoint through the injected `runner` (default [`falaw_runner()`](#foley.sources.fal.adapter.falaw_runner):
+   `falaw.cached_call_fal` + `falaw.materialize_asset`, under the key foley
+   resolved). The runner always asks falaw to skip its cache *read*: replaying a paid
+   request is foley’s generations cache’s job (`reuse_cached=`), and a second replay
+   layer underneath would turn `reuse_cached=False` into a silent replay;
+3. returns a [`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip) whose licence comes from the
+   config’s licence row (fail-closed), with the native request, the seed the endpoint
+   reports having used, and the fal endpoint id recorded as provenance.
+
+No storage access here (the façade ingests). The `runner` seam is how tests stay
+offline: they pass a fake that returns canned bytes, and a call the fake does not know
+is an error, never a fall-through to the network.
+
+### Module Attributes
+
+| [`FAL_CREDENTIAL`](#foley.sources.fal.adapter.FAL_CREDENTIAL)   | The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).      |
+|-------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| [`FAL_KEY_ENV_VARS`](#foley.sources.fal.adapter.FAL_KEY_ENV_VARS) | The env vars falaw reads a fal key from, in order.                                    |
+| [`Runner`](#foley.sources.fal.adapter.Runner)           | `runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`. |
+| [`Adapter`](#foley.sources.fal.adapter.Adapter)          | Registry convention (arioso): the loader imports `adapter.Adapter`.                   |
+
+### Functions
+
+| [`audio_url`](#foley.sources.fal.adapter.audio_url)(response[, field])                      | The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...]}`.   |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| [`falaw_runner`](#foley.sources.fal.adapter.falaw_runner)(endpoint_id, arguments, \*, api_key) | Call a fal endpoint through falaw and return `(audio bytes, raw response)`.            |
+
+### Classes
+
+| [`Adapter`](#foley.sources.fal.adapter.Adapter)                                         | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                    |
+|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| [`FalAdapter`](#foley.sources.fal.adapter.FalAdapter)(config, \*[, api_key, runner, http]) | A fal-hosted generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+
+### foley.sources.fal.adapter.Adapter
+
+Registry convention (arioso): the loader imports `adapter.Adapter`.
+
+### foley.sources.fal.adapter.FAL_CREDENTIAL *= 'fal'*
+
+The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).
+
+### foley.sources.fal.adapter.FAL_KEY_ENV_VARS *= ('FAL_KEY', 'FAL_API_KEY')*
+
+The env vars falaw reads a fal key from, in order.
+
+### *class* foley.sources.fal.adapter.FalAdapter(config, , api_key=None, runner=None, http=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A fal-hosted generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#foley.sources.base.GenerateAdapter)).
+
+* **Parameters:**
+  * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – This source’s config (one of `SOURCE_CONFIGS`),
+    passed positionally by the registry’s lazy loader.
+  * **api_key** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The fal key. Defaults to a key bound for this source
+    (`foley.using_source_accounts(<source>=key)`), else one bound for fal
+    itself (`falaw.using_fal_credentials(key)`, or `fal=` in
+    `ocracy.kit.using_credentials`: one binding covers every fal source),
+    else `$FAL_KEY`, else `$FAL_API_KEY`.
+  * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]]) – The transport seam (default [`falaw_runner()`](#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
+  * **http** – Accepted and ignored: the registry passes a resilient HTTP transport to
+    external sources, but this adapter’s transport is falaw (which retries and
+    classifies errors itself).
+
+#### account_id()
+
+The account a call is made on, for the generations cache (`'operator'` or a fingerprint).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### *property* api_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The fal key (see the class docstring for the order); raises if none.
+
+#### generate(prompt, \*\*affordances)
+
+Generate a sound for `prompt` on this source’s fal endpoint.
+
+`affordances` are the canonical ones the dispatch layer kept (translated,
+clamped, noted); see `foley.sources._dispatch.plan_generation()`.
+
+* **Raises:**
+  [**SourceConfigurationError**](foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If no fal key is available (before any call).
+* **Return type:**
+  [`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip)
+
+#### native_arguments(prompt, \*\*affordances)
+
+The exact payload this adapter sends for `prompt` and translated `affordances`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### request_salt()
+
+What the payload carries beyond the native request: part of the cache key.
+
+The default duration and the fixed arguments are sent but are not
+affordances, so a change to either must not replay a clip made without it.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.sources.fal.adapter.Runner
+
+`runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`.
+
+alias of `Callable`[[…], `tuple[bytes, dict]`]
+
+### foley.sources.fal.adapter.audio_url(response, field='audio')
+
+The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...]}`.
+
+```pycon
+>>> audio_url({"audio": {"url": "https://x/a.wav"}})
+'https://x/a.wav'
+>>> audio_url({"audio": [{"url": "https://x/b.wav"}]})
+'https://x/b.wav'
+>>> audio_url({"audio_file": {"url": "https://x/c.wav"}}, "audio_file")
+'https://x/c.wav'
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.fal.adapter.falaw_runner(endpoint_id, arguments, , api_key, audio_field='audio')
+
+Call a fal endpoint through falaw and return `(audio bytes, raw response)`.
+
+`refresh=True` skips falaw’s cache read and keeps its write (see the module
+docstring: foley’s generations cache owns replay). The audio is downloaded by
+`falaw.materialize_asset`, which content-addresses it in falaw’s store.
+
+* **Raises:**
+  * [**SourceConfigurationError**](foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – For a refusal before anything was billed (the fal
+        client is not installed, the key is refused, the account has no funds, an
+        argument cannot be sent), so the run’s budget reservation is released.
+  * [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If the response carries no audio URL.
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]

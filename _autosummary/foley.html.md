@@ -2379,7 +2379,7 @@ RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
 
   FusedHit\`s, each carrying its raw component scores.
 
-### foley.generate(prompt, , backend='stable_audio', library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, \*\*affordances)
+### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, \*\*affordances)
 
 Generate a sound effect for `prompt` and add it to the library (by-value).
 
@@ -2395,9 +2395,13 @@ training uses).
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description.
-  * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A registered generate source — `"stable_audio"` (default, local;
-    needs `foley[stable-audio]`) or `"elevenlabs"` (hosted;
-    `foley[elevenlabs]` + `$ELEVENLABS_API_KEY`).
+  * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – A registered generate source. `None` (default) is
+    `$FOLEY_GENERATE_BACKEND`, else `"stable_audio"` (local; needs
+    `foley[stable-audio]`). Hosted: `"elevenlabs"` (`foley[elevenlabs]` +
+    `$ELEVENLABS_API_KEY`) and the fal endpoints `"fal_stable_audio_3"`
+    (Stable Audio 3 Small-SFX, commercial under $1M revenue),
+    `"fal_elevenlabs"`, `"fal_sonilo"` and `"fal_mmaudio"` (non-commercial)
+    (`foley[fal]` + `$FAL_KEY`).
   * **library** – Target library (default: the process-wide default library).
   * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, synthesize + QC a preview without adding it: the returned
     candidate’s `audio_bytes` carries the clip (the archive bytes the library

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=173d7b4c"></script>
+    <script src="../_static/documentation_options.js?v=b345ff55"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.42" />
+  <meta name="docsearch:version" content="0.0.43" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -393,6 +393,7 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.bbc_remarc.html">foley.sources.bbc_remarc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.clotho.html">foley.sources.clotho</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.elevenlabs.html">foley.sources.elevenlabs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.fal.html">foley.sources.fal</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.foleyset.html">foley.sources.foleyset</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.freesound.html">foley.sources.freesound</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.fsd50k.html">foley.sources.fsd50k</a></li>
@@ -541,7 +542,8 @@ modules (<code class="docutils literal notranslate"><span class="pre">fsd50k.py<
 <dd><p>Scan <a class="reference internal" href="foley.sources.html#module-foley.sources" title="foley.sources"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.sources</span></code></a> sub-packages for a <code class="docutils literal notranslate"><span class="pre">SOURCE_CONFIG</span></code> and register them.</p>
 <p>A valid live source is a sub-package of <a class="reference internal" href="foley.sources.html#module-foley.sources" title="foley.sources"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.sources</span></code></a> (<code class="docutils literal notranslate"><span class="pre">ispkg</span></code> and
 not <code class="docutils literal notranslate"><span class="pre">_</span></code>-prefixed) whose <code class="docutils literal notranslate"><span class="pre">config.py</span></code> defines a <code class="docutils literal notranslate"><span class="pre">SOURCE_CONFIG</span></code> dict with a
-<code class="docutils literal notranslate"><span class="pre">name</span></code>. Flat modules (bulk-corpus adapters + helpers) are skipped, so this
+<code class="docutils literal notranslate"><span class="pre">name</span></code> (or a <code class="docutils literal notranslate"><span class="pre">SOURCE_CONFIGS</span></code> sequence of them: several sources sharing one
+adapter class, see <code class="xref py py-func docutils literal notranslate"><span class="pre">_declared_configs()</span></code>). Flat modules (bulk-corpus adapters + helpers) are skipped, so this
 never cross-captures the corpus adapters. Only <code class="docutils literal notranslate"><span class="pre">config.py</span></code> is imported here
 (stdlib-cheap); the adapter loads lazily in <a class="reference internal" href="#foley.sources.registry.get_source" title="foley.sources.registry.get_source"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_source()</span></code></a>. Idempotent —
 an already-registered name (e.g. a test double) is never overwritten.</p>

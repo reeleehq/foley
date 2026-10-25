@@ -1,0 +1,12 @@
+foley.sources.fal.config
+========================
+
+.. automodule:: foley.sources.fal.config
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      FAL_SOURCES
+   

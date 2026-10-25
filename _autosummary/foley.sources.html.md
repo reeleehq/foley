@@ -532,7 +532,8 @@ Scan [`foley.sources`](#module-foley.sources) sub-packages for a `SOURCE_CONFIG`
 
 A valid live source is a sub-package of [`foley.sources`](#module-foley.sources) (`ispkg` and
 not `_`-prefixed) whose `config.py` defines a `SOURCE_CONFIG` dict with a
-`name`. Flat modules (bulk-corpus adapters + helpers) are skipped, so this
+`name` (or a `SOURCE_CONFIGS` sequence of them: several sources sharing one
+adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters + helpers) are skipped, so this
 never cross-captures the corpus adapters. Only `config.py` is imported here
 (stdlib-cheap); the adapter loads lazily in [`get_source()`](#foley.sources.get_source). Idempotent —
 an already-registered name (e.g. a test double) is never overwritten.
@@ -542,7 +543,7 @@ an already-registered name (e.g. a test double) is never overwritten.
 * **Returns:**
   The list of discovered source names.
 
-### foley.sources.generate(prompt, , backend='stable_audio', library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -570,8 +571,11 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description.
-  * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A registered generate-source name (`'stable_audio'` (default,
-    local) | `'elevenlabs'` (hosted)).
+  * **backend** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A registered generate-source name. `None` (default):
+    `default_generate_backend()` (`$FOLEY_GENERATE_BACKEND`, else the
+    local `'stable_audio'`). Hosted: `'elevenlabs'`, and the fal
+    endpoints `'fal_stable_audio_3'` | `'fal_elevenlabs'` |
+    `'fal_sonilo'` | `'fal_mmaudio'` (`foley[fal]` + `$FAL_KEY`).
   * **library** – Target [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
     process-wide default library).
   * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, synthesize + enrich but do not add to the library
@@ -759,6 +763,7 @@ the default `rings` — it is opt-in only.
 | [`bbc_remarc`](foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)     | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                               |
 | [`clotho`](foley.sources.clotho.html.md#module-foley.sources.clotho)             | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.              |
 | [`elevenlabs`](foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)     | ElevenLabs Sound Effects generate source (hosted; #6).                                    |
+| [`fal`](foley.sources.fal.html.md#module-foley.sources.fal)                   | fal-hosted generate sources, executed through `falaw` (#73).                              |
 | [`foleyset`](foley.sources.foleyset.html.md#module-foley.sources.foleyset)         | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                 |
 | [`freesound`](foley.sources.freesound.html.md#module-foley.sources.freesound)       | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).   |
 | [`fsd50k`](foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)             | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                           |

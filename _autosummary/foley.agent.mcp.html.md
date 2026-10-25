@@ -98,9 +98,12 @@ rehydrate them by id. Returns compact candidate rows.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
 
-### foley.agent.mcp.foley_generate(prompt, backend='stable_audio', commercial_ok=True, session='default')
+### foley.agent.mcp.foley_generate(prompt, backend='auto', commercial_ok=True, session='default')
 
 Generate a sound from a text prompt (local backends only when offline).
+
+`backend='auto'` is the host’s default (`$FOLEY_GENERATE_BACKEND`, else the local
+Stable Audio Open); name one to choose (`fal_stable_audio_3`, `elevenlabs`, …).
 
 A clip QC would quarantine for a clipped run just over the gate is repaired and
 stored (the repair is in the result’s notes). A refused generation’s dict carries

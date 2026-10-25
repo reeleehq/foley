@@ -1,0 +1,29 @@
+foley.sources.fal.adapter
+=========================
+
+.. automodule:: foley.sources.fal.adapter
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      FAL_CREDENTIAL
+      FAL_KEY_ENV_VARS
+      Runner
+      Adapter
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      audio_url
+      falaw_runner
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      FalAdapter
+   

@@ -47,7 +47,8 @@ Scan [`foley.sources`](foley.sources.html.md#module-foley.sources) sub-packages 
 
 A valid live source is a sub-package of [`foley.sources`](foley.sources.html.md#module-foley.sources) (`ispkg` and
 not `_`-prefixed) whose `config.py` defines a `SOURCE_CONFIG` dict with a
-`name`. Flat modules (bulk-corpus adapters + helpers) are skipped, so this
+`name` (or a `SOURCE_CONFIGS` sequence of them: several sources sharing one
+adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters + helpers) are skipped, so this
 never cross-captures the corpus adapters. Only `config.py` is imported here
 (stdlib-cheap); the adapter loads lazily in [`get_source()`](#foley.sources.registry.get_source). Idempotent —
 an already-registered name (e.g. a test double) is never overwritten.

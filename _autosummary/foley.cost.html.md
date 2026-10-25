@@ -139,9 +139,10 @@ The USD cost of one call to the source `config` declares, or `None` if unknown.
 
 * `'free'` (local inference, a free API tier) → `0.0`;
 * `'per_call'` → `amount_usd`;
-* `'per_second'` → `amount_usd` × the requested `duration`, or × the backend’s
-  `native_defaults['duration_max_s']` when the duration is left to the backend
-  (an upper bound), else `None`.
+* `'per_second'` → `amount_usd` × the requested `duration`; when none is
+  requested, × the `native_defaults['duration_default_s']` the adapter sends in
+  its place, else × `native_defaults['duration_max_s']` (the duration is left to
+  the backend: an upper bound), else `None`.
 
 * **Parameters:**
   * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG`.
