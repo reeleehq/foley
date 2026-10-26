@@ -28,6 +28,7 @@ import datetime
 from dataclasses import dataclass
 from typing import Callable, Optional, Union
 
+
 @dataclass(frozen=True)
 class _AlgSpec:
     """What an algorithm needs: the key family, its curve (EC), its hash (none for Ed25519)."""
@@ -95,7 +96,9 @@ def _callback_for(key, alg: str) -> "Callable[[bytes], bytes]":
         pss = padding.PSS(mgf=padding.MGF1(digest), salt_length=digest.digest_size)
         return lambda data: key.sign(data, pss, digest)
     if key.curve.name != getattr(ec, spec.curve_name).name:
-        raise ValueError(f"alg={alg!r} needs a {spec.curve_name} key, got {key.curve.name}")
+        raise ValueError(
+            f"alg={alg!r} needs a {spec.curve_name} key, got {key.curve.name}"
+        )
 
     def sign_ecdsa(data: bytes) -> bytes:
         r, s = decode_dss_signature(key.sign(data, ec.ECDSA(digest)))
@@ -112,7 +115,9 @@ def _check_chain_matches_key(cert_chain_pem: str, key) -> None:
     try:
         certs = x509.load_pem_x509_certificates(cert_chain_pem.encode("ascii"))
     except ValueError as exc:
-        raise ValueError(f"cert_chain_pem is not a PEM certificate chain: {exc}") from exc
+        raise ValueError(
+            f"cert_chain_pem is not a PEM certificate chain: {exc}"
+        ) from exc
 
     def public_der(public_key) -> bytes:
         return public_key.public_bytes(Encoding.DER, PublicFormat.SubjectPublicKeyInfo)
@@ -158,7 +163,9 @@ def make_c2pa_signer(
         ) from exc
 
     key_bytes = (
-        private_key_pem.encode("ascii") if isinstance(private_key_pem, str) else private_key_pem
+        private_key_pem.encode("ascii")
+        if isinstance(private_key_pem, str)
+        else private_key_pem
     )
     key = load_pem_private_key(
         key_bytes,
@@ -193,6 +200,7 @@ def make_self_signed_c2pa_certs(
     now = datetime.datetime.now(datetime.timezone.utc)
     not_before = now - datetime.timedelta(days=SELF_SIGNED_BACKDATE_DAYS)
     not_after = now + datetime.timedelta(days=valid_days)
+
     def _key_usage(**on) -> "x509.KeyUsage":
         flags = dict.fromkeys(
             (
@@ -230,7 +238,8 @@ def make_self_signed_c2pa_certs(
             .not_valid_before(not_before)
             .not_valid_after(not_after)
             .add_extension(
-                x509.SubjectKeyIdentifier.from_public_key(key.public_key()), critical=False
+                x509.SubjectKeyIdentifier.from_public_key(key.public_key()),
+                critical=False,
             )
         )
         for extension, critical in extensions:
@@ -256,7 +265,10 @@ def make_self_signed_c2pa_certs(
         (x509.BasicConstraints(ca=False, path_length=None), True),
         (_key_usage(digital_signature=True), True),
         (x509.ExtendedKeyUsage([ExtendedKeyUsageOID.EMAIL_PROTECTION]), True),
-        (x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()), False),
+        (
+            x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()),
+            False,
+        ),
     )
     pem = serialization.Encoding.PEM
     chain = ee.public_bytes(pem) + ca.public_bytes(pem)
