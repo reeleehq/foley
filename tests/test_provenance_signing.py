@@ -22,9 +22,6 @@ from foley.provenance.signing import SIGNING_ALGORITHMS, _callback_for  # noqa: 
 
 SR = 48_000
 
-#: Validation codes about the signature / signing credential (not the manifest content).
-_SIGNER_CODES = ("claimSignature", "signingCredential")
-
 
 def _key_pem(key, fmt=serialization.PrivateFormat.PKCS8) -> str:
     return key.private_bytes(
@@ -38,25 +35,31 @@ def _ca_of(chain: str) -> str:
     return marker + chain.split(marker)[2]
 
 
-def _sign_and_check(signer, trust_anchor: str):
-    """Embed a manifest with ``signer`` and read it back against ``trust_anchor``.
-
-    Returns the validation failure codes. A signer with a garbage signature still embeds
-    a manifest, so only these codes tell a real signature apart. (The mix's own action
-    assertion can raise ``assertion.action.ingredientMismatch``: that is the manifest
-    content, not the signer, so the checks look at the signature and credential codes.)
-    """
-    from foley import weave
+def _rec(i=1):
     from foley.base import LicenseRecord, SoundRecord
 
-    rec = SoundRecord(
-        id="s1",
-        caption="rain",
+    return SoundRecord(
+        id=f"s{i}",
+        caption=f"rain {i}",
         tags=["rain"],
         license=LicenseRecord(source="user", license_id="CC0-1.0", commercial_ok=True),
     )
+
+
+def _sign_and_check(signer, trust_anchor: str, records=None):
+    """Embed a mix manifest over ``records`` with ``signer``; read it back against ``trust_anchor``.
+
+    Returns ALL validation failure codes (signature, credential AND manifest content). A
+    signer with a garbage signature still embeds a manifest, so only these codes tell a
+    real signature apart.
+    """
+    from foley import weave
+
     cred = weave._build_mix_credential(
-        [rec], asset_id="mix1", ai_disclosed=False, watermark_meta=None
+        [_rec()] if records is None else records,
+        asset_id="mix1",
+        ai_disclosed=False,
+        watermark_meta=None,
     )
     store: dict = {}
     audio = (0.1 * np.random.default_rng(0).standard_normal(SR // 2)).astype("float32")
@@ -75,8 +78,38 @@ def _sign_and_check(signer, trust_anchor: str):
             "audio/wav", io.BytesIO(store["mix1.c2pa.wav"]), context=context
         ).json()
     )
-    codes = [f["code"] for f in report.get("validation_status") or []]
-    return [c for c in codes if c.startswith(_SIGNER_CODES)]
+    return [f["code"] for f in report.get("validation_status") or []]
+
+
+@pytest.mark.parametrize("n_ingredients", [0, 1, 3])
+def test_a_signed_mix_validates_with_no_failure_codes(n_ingredients):
+    """#134: every ``c2pa.placed`` references a declared ingredient, so nothing fails."""
+    chain, key = make_self_signed_c2pa_certs()
+    records = [_rec(i) for i in range(n_ingredients)]
+    assert _sign_and_check(make_c2pa_signer(chain, key), _ca_of(chain), records) == []
+
+
+def test_an_ingredient_whose_credential_fails_is_neither_declared_nor_placed():
+    from foley import weave
+
+    cred = weave._build_mix_credential(
+        [_rec(1), object(), _rec(2)],
+        asset_id="mix1",
+        ai_disclosed=False,
+        watermark_meta=None,
+    )
+    ingredients = cred["manifest"]["ingredients"]
+    (actions,) = [
+        a["data"]["actions"]
+        for a in cred["manifest"]["assertions"]
+        if a["label"] == "c2pa.actions"
+    ]
+    placed = [a["parameters"]["ingredientIds"] for a in actions[1:]]
+    assert placed == [[i["instance_id"]] for i in ingredients]
+    assert [i["asset_ref"] for i in ingredients] == ["s1", "s2"]
+    chain, key = make_self_signed_c2pa_certs()
+    signer = make_c2pa_signer(chain, key)
+    assert _sign_and_check(signer, _ca_of(chain), [_rec(1), object(), _rec(2)]) == []
 
 
 def test_self_signed_certs_make_a_signer_whose_signature_validates():
@@ -368,21 +401,14 @@ def test_a_failed_signing_is_logged_not_silent(caplog):
     from cryptography.x509.oid import ExtendedKeyUsageOID
 
     from foley import weave
-    from foley.base import LicenseRecord, SoundRecord
 
     key = ec.generate_private_key(ec.SECP256R1())
     chain, _ = _chain_for(key, eku_oids=[ExtendedKeyUsageOID.SERVER_AUTH])
     signer = c2pa.Signer.from_callback(
         _callback_for(key, "es256"), c2pa.C2paSigningAlg.ES256, chain, None
     )
-    rec = SoundRecord(
-        id="s1",
-        caption="rain",
-        tags=["rain"],
-        license=LicenseRecord(source="user", license_id="CC0-1.0", commercial_ok=True),
-    )
     cred = weave._build_mix_credential(
-        [rec], asset_id="mix1", ai_disclosed=False, watermark_meta=None
+        [_rec()], asset_id="mix1", ai_disclosed=False, watermark_meta=None
     )
     with caplog.at_level("WARNING", logger="foley.weave"):
         assert not weave._sign_and_embed(
