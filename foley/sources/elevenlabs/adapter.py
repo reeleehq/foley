@@ -36,7 +36,9 @@ from ..base import (
     GeneratedClip,
     SourceConfigurationError,
     generated_license,
+    merge_provider_params,
     native_adherence,
+    recorded_params,
     bound_source_account,
     operator_env_key,
     resolve_source_key,
@@ -302,6 +304,7 @@ class ElevenLabsAdapter:
         seed: Optional[int] = None,
         loop: bool = False,
         output_format: str = "wav",
+        provider_params: Optional[dict] = None,
         **kw,
     ) -> GeneratedClip:
         """Generate a sound effect for ``prompt``; return its bytes + provisional candidate.
@@ -321,11 +324,16 @@ class ElevenLabsAdapter:
                 translated to the native enum; ``wav`` is the lossless ``pcm_48000``
                 wrapped in a WAV header here, falling back to MP3 (with a note) if
                 the account's plan refuses PCM. Ingest re-archives to FLAC.
+            provider_params: Native request fields merged over the translated ones
+                (#61): JSON body fields, except ``output_format``, which replaces the
+                native format sent as the URL query param. Recorded in
+                ``generation_params``.
             **kw: Extra/unknown affordances (warn-and-dropped).
 
         Returns:
             A :class:`~foley.sources.base.GeneratedClip` (``origin=generated``,
-            ``license_id`` = the account plan, ``is_ai_generated=True``).
+            ``license_id`` = the account plan, ``is_ai_generated=True``), its ``raw``
+            the response's status code and headers.
 
         Raises:
             RuntimeError: If the plan is unknown (before any API call).
@@ -344,23 +352,29 @@ class ElevenLabsAdapter:
             body["prompt_influence"] = native_influence
         if duration is not None:
             body["duration_seconds"] = self._clamp_duration(duration)
+        body = merge_provider_params(
+            body, provider_params, policy=self.config.get("provider_params")
+        )
+        native_output_format = body.pop("output_format", native_output_format)
 
-        audio_bytes, native_output_format = self._invoke_with_fallback(
+        resp, native_output_format = self._invoke_with_fallback(
             native_output_format, body, notes
         )
         audio_bytes = self._wrap_pcm(
-            audio_bytes, native_output_format, body.get("duration_seconds"), notes
+            resp.content, native_output_format, body.get("duration_seconds"), notes
         )
 
         # The RESOLVED native params (guards against passing unified names) — recorded
         # verbatim in provenance for reproducibility/audit.
-        resolved = {
-            "model_id": model_id,
-            "prompt_influence": native_influence,
-            "loop": bool(loop),
-            "output_format": native_output_format,
-            "duration_seconds": body.get("duration_seconds"),
-        }
+        resolved = recorded_params(
+            {
+                "prompt_influence": None,  # recorded even when not sent
+                "duration_seconds": None,
+                **{k: v for k, v in body.items() if k != "text"},
+                "output_format": native_output_format,
+            },
+            provider_params,
+        )
         lic = generated_license(
             source=self.name,
             license_id=license_id,
@@ -382,7 +396,12 @@ class ElevenLabsAdapter:
         candidate.cost_actual_usd = actual_call_cost(
             self.config, duration=body.get("duration_seconds")
         )
-        return GeneratedClip(audio_bytes=audio_bytes, candidate=candidate, notes=notes)
+        return GeneratedClip(
+            audio_bytes=audio_bytes,
+            candidate=candidate,
+            notes=notes,
+            raw=_response_meta(resp),
+        )
 
     # -- helpers ------------------------------------------------------------
 
@@ -398,16 +417,14 @@ class ElevenLabsAdapter:
             )
         return native
 
-    def _invoke_with_fallback(
-        self, native_output_format: str, body: dict, notes: list
-    ) -> "tuple[bytes, str]":
+    def _invoke_with_fallback(self, native_output_format: str, body: dict, notes: list):
         """Call the endpoint; on a 4xx for a format with a declared fallback, retry once.
 
         A plan-tier refusal of the format (a ``fallback_statuses`` status whose
         error detail is a ``fallback_detail_codes`` code, or names the format; see
         :func:`_is_format_refusal`) is retried with the config's ``fallback_on_4xx``
         format (a refusal produces no audio, so nothing is billed twice) and
-        recorded in ``notes``. Anything else raises. Returns ``(bytes, format
+        recorded in ``notes``. Anything else raises. Returns ``(response, format
         actually used)``.
         """
         spec = self.config["param_map"]["output_format"]
@@ -497,13 +514,27 @@ class ElevenLabsAdapter:
         hi = self.config["native_defaults"]["duration_max_s"]
         return max(lo, min(float(duration), hi))
 
-    def _invoke(self, *, params: dict, body: dict, notes: list) -> bytes:
-        """POST to the SFX endpoint and return the raw audio bytes (never JSON).
+    def _invoke(self, *, params: dict, body: dict, notes: list):
+        """:meth:`invoke_native`, with the credits the account was charged (the
+        ``api.credits_header`` response header, when present) recorded in ``notes``."""
+        resp = self.invoke_native(params=params, body=body)
+        credits = _header(resp, self.config["api"].get("credits_header"))
+        if credits is not None:
+            notes.append(f"ElevenLabs charged {credits} credits for this call")
+        return resp
 
-        ``output_format`` is a URL query param (``params``); the rest is the JSON
-        ``body``. A non-200 raises ``RuntimeError`` with the best-effort ``detail``.
-        The credits the account was charged (the ``api.credits_header`` response
-        header, when the response carries it) are recorded in ``notes``.
+    def invoke_native(self, *, params: dict, body: dict):
+        """POST native ``params`` (URL query) and ``body`` (JSON) to the SFX endpoint.
+
+        The public entry below foley's translation (#61): returns the transport's
+        response as is (``.content`` holds the audio bytes, ``.headers`` the
+        metadata). No plan/licence check and no dispatch-layer gate (cost
+        authorization, egress, the generations cache) runs here: a caller of this
+        method owns them, and pays for the call.
+
+        Raises:
+            RuntimeError: On a non-200 (an ``unbilled`` error carrying
+                ``status_code`` and the best-effort ``detail``).
         """
         endpoint = self.config["api"]["generate_endpoint"]
         url = self.config["api"]["base_url"] + endpoint["path"]
@@ -519,10 +550,13 @@ class ElevenLabsAdapter:
                 f"{_safe_detail(resp)}",
                 detail=_detail_of(resp),
             )
-        credits = _header(resp, self.config["api"].get("credits_header"))
-        if credits is not None:
-            notes.append(f"ElevenLabs charged {credits} credits for this call")
-        return resp.content
+        return resp
+
+
+def _response_meta(resp) -> dict:
+    """What an ElevenLabs response carries besides the audio: its status and headers."""
+    headers = getattr(resp, "headers", None) or {}
+    return {"status_code": resp.status_code, "headers": dict(headers)}
 
 
 def _header(resp, name: Optional[str]) -> Optional[str]:

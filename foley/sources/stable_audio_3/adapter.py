@@ -33,7 +33,9 @@ from ..base import (
     GeneratedClip,
     SourceConfigurationError,
     generated_license,
+    merge_provider_params,
     native_adherence,
+    recorded_params,
     unsupported_notes,
 )
 from .config import SOURCE_CONFIG
@@ -98,6 +100,10 @@ def setup_hint(config: Optional[dict] = None) -> str:
     )
 
 
+#: The flags foley itself sets and records (they must win over any abbreviation).
+_CORE_FLAGS = frozenset({"seconds", "steps", "cfg", "seed"})
+
+
 class StableAudio3Adapter:
     """Local Stable Audio 3 Small-SFX adapter (a :class:`~foley.sources.base.GenerateAdapter`).
 
@@ -130,6 +136,7 @@ class StableAudio3Adapter:
         seed: Optional[int] = None,
         loop: bool = False,
         output_format: str = "wav",
+        provider_params: Optional[dict] = None,
         **kw,
     ) -> GeneratedClip:
         """Generate a sound for ``prompt`` on the CPU; return its bytes + provisional candidate.
@@ -137,6 +144,10 @@ class StableAudio3Adapter:
         ``duration`` is clamped to the model's 1..120 s (default 10 s); the model renders
         whole latent frames, so the clip may differ from it by a few milliseconds.
         ``seed=None`` draws a random seed, recorded in the clip's provenance.
+        ``provider_params`` (#61) are native script flags merged over the translated
+        ones (``seconds``, ``steps``, ``cfg``, ``seed``; any other key is passed as
+        ``--<key> <value>``) and recorded in ``generation_params``; the config's
+        ``provider_params`` policy refuses the prompt, output path and model flags.
         """
         nd = self.config["native_defaults"]
         notes = unsupported_notes(
@@ -162,7 +173,11 @@ class StableAudio3Adapter:
             "cfg": cfg,
             "seed": seed,
         }
-        audio_bytes = self._render(prompt, native)
+        native = merge_provider_params(
+            native, provider_params, policy=self.config.get("provider_params")
+        )
+        native["seed"] = int(native["seed"])  # what is sent is what is recorded
+        audio_bytes = self.invoke_native(prompt, native)
 
         lic = generated_license(
             source=self.name,
@@ -170,8 +185,10 @@ class StableAudio3Adapter:
             generator_model=nd["generator_version"],
             generator_version=nd["generator_version"],
             generation_prompt=prompt,
-            generation_seed=seed,
-            generation_params=dict(native, model_id=nd["model_id"], dit=nd["dit"]),
+            generation_seed=native["seed"],  # the seed sent (a provider seed wins)
+            generation_params=recorded_params(
+                dict(native, model_id=nd["model_id"], dit=nd["dit"]), provider_params
+            ),
         )
         record = SoundRecord(id=f"{self.name}:pending", license=lic, caption=prompt)
         candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
@@ -195,22 +212,30 @@ class StableAudio3Adapter:
         self, tflite: Path, prompt: str, native: dict, out: Path
     ) -> "list[str]":
         nd = self.config["native_defaults"]
-        cmd = [
-            str(_venv_python(tflite)),
-            str(tflite / "scripts" / "sa3_tflite.py"),
+        cmd = [str(_venv_python(tflite)), str(tflite / "scripts" / "sa3_tflite.py")]
+        # Provider-only flags first, then foley's own: argparse keeps the last value
+        # and accepts abbreviations, so no extra key (``--see``, ``--ou``) can
+        # override what foley sends and records.
+        ordered = sorted(native, key=lambda k: k in _CORE_FLAGS)
+        for key in ordered:
+            cmd += [f"--{key}", str(native[key])]
+        cmd += [
             "--dit", nd["dit"],
             "--decoder", nd["decoder"],
             f"--prompt={prompt}",  # '=' form: a prompt starting with '-' is not a flag
-            "--seconds", str(native["seconds"]),
-            "--steps", str(native["steps"]),
-            "--cfg", str(native["cfg"]),
-            "--seed", str(native["seed"]),
             "--out", str(out),
         ]  # fmt: skip
         return cmd
 
-    def _render(self, prompt: str, native: dict) -> bytes:
-        """Run the script into a temp file and return the WAV bytes it wrote."""
+    def invoke_native(self, prompt: str, native: dict) -> bytes:
+        """Run the script with native flags into a temp file; return the WAV bytes it wrote.
+
+        The public entry below foley's translation (#61): each ``native`` key (the
+        script's ``seconds`` / ``steps`` / ``cfg`` / ``seed``, or any other flag) becomes
+        a ``--<key> <value>`` flag, followed by foley's own ``--dit`` / ``--decoder`` /
+        ``--prompt`` / ``--out``. No licence record is built and no dispatch-layer check
+        runs (cost, egress): a caller owns those.
+        """
         from ...runtime import EXTERNAL, ModelNotCached, current_runtime
 
         tflite = self._tflite_dir()

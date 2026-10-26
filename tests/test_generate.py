@@ -1509,3 +1509,203 @@ def test_a_quarantined_generations_bytes_are_one_get_away(library, _in_memory_ge
         foley.generations.get("not-a-key")
     assert foley.generations.audio is _in_memory_generations_cache.audio  # test-isolated
 
+
+
+# ---------------------------------------------------------------------------
+# (#61) provider_params, raw, invoke_native
+# ---------------------------------------------------------------------------
+
+
+def test_elevenlabs_provider_params_override_translated_and_are_recorded():
+    transport = FakeTransport()
+    extra = {"prompt_influence": 0.9, "seed_hint": 7, "output_format": "mp3_44100_192"}
+    clip = _el_adapter(transport).generate(
+        "rain", prompt_influence=0.2, provider_params=extra
+    )
+    call = transport.calls[0]
+    assert call.json["prompt_influence"] == 0.9  # the provider param wins
+    assert call.json["seed_hint"] == 7
+    assert call.params["output_format"] == "mp3_44100_192"  # still a query param
+    assert "output_format" not in call.json
+    gp = clip.candidate.sound.license.generation_params
+    assert gp["prompt_influence"] == 0.9 and gp["seed_hint"] == 7
+    assert gp["output_format"] == "mp3_44100_192"
+    assert gp["provider_params"] == extra
+    assert not any("seed_hint" in n for n in clip.notes)  # not an "unknown" drop
+
+
+def test_stable_audio_provider_params_override_translated_and_are_recorded():
+    pipeline = FakePipeline()
+    clip = _sa_adapter(pipeline).generate(
+        "creak", steps=80, provider_params={"num_inference_steps": 50, "eta": 0.1}
+    )
+    assert pipeline.calls[0]["num_inference_steps"] == 50
+    assert pipeline.calls[0]["eta"] == 0.1
+    gp = clip.candidate.sound.license.generation_params
+    assert gp["num_inference_steps"] == 50
+    assert gp["provider_params"] == {"num_inference_steps": 50, "eta": 0.1}
+
+
+def test_generation_params_unchanged_without_provider_params():
+    gp = _sa_adapter().generate("creak").candidate.sound.license.generation_params
+    assert "provider_params" not in gp
+
+
+def test_elevenlabs_clip_raw_is_the_response_metadata():
+    resp = FakeResponse(200, None, _flac(_mono_tone()))
+    resp.headers = {"request-id": "abc", "character-cost": "12"}
+    clip = _el_adapter(FakeTransport(resp)).generate("rain", output_format="mp3")
+    assert clip.raw == {"status_code": 200, "headers": resp.headers}
+
+
+def test_elevenlabs_invoke_native_returns_the_response():
+    transport = FakeTransport()
+    resp = _el_adapter(transport).invoke_native(
+        params={"output_format": "mp3_44100_128"}, body={"text": "rain", "foo": 1}
+    )
+    assert resp.status_code == 200 and resp.content
+    assert transport.calls[0].json == {"text": "rain", "foo": 1}
+
+
+def test_stable_audio_invoke_native_runs_the_pipeline_with_native_kwargs():
+    pipeline = FakePipeline()
+    audio, sr = _sa_adapter(pipeline).invoke_native("creak", native={"guidance_scale": 3.0})
+    assert sr == SR and audio
+    assert pipeline.calls[0]["guidance_scale"] == 3.0
+
+
+def test_request_digest_keys_provider_params_only_when_given():
+    import hashlib
+    import json
+
+    from foley.sources._dispatch import native_request, request_digest
+
+    plain = request_digest("elevenlabs", "rain", EL_CONFIG, {})
+    nd = EL_CONFIG["native_defaults"]
+    legacy = {  # the key's shape before #61: calls without provider_params keep it
+        "v": 2,
+        "backend": "elevenlabs",
+        "model": nd.get("generator_version") or nd.get("model_id"),
+        "prompt": "rain",
+        "native": native_request(EL_CONFIG, {}),
+        "salt": None,
+    }
+    blob = json.dumps(legacy, sort_keys=True, default=str, separators=(",", ":"))
+    assert plain == hashlib.sha256(blob.encode()).hexdigest()
+    assert plain == request_digest("elevenlabs", "rain", EL_CONFIG, {}, provider_params={})
+    a = request_digest("elevenlabs", "rain", EL_CONFIG, {}, provider_params={"x": 1})
+    b = request_digest("elevenlabs", "rain", EL_CONFIG, {}, provider_params={"x": 2})
+    assert len({plain, a, b}) == 3
+
+
+def test_public_generate_threads_provider_params_cache_and_raw(library):
+    resp = FakeResponse(200, None, _flac(_mono_tone()))
+    resp.headers = {"request-id": "abc"}
+    transport = FakeTransport(resp)
+    adapter = _el_adapter(transport)
+
+    def gen(**pp):
+        return _gen(adapter, library, "mp3", provider_params=pp or None)
+
+    first = gen(prompt_influence=0.9)
+    assert transport.calls[0].json["prompt_influence"] == 0.9
+    assert first.raw == {"status_code": 200, "headers": {"request-id": "abc"}}
+    assert first.sound.license.generation_params["provider_params"] == {
+        "prompt_influence": 0.9
+    }
+    assert not any("different request" in n for n in first.notes)  # not a fallback
+    assert _served(gen(prompt_influence=0.9)) and len(transport.calls) == 1
+    gen(prompt_influence=0.8)  # another provider param: a cache miss, a new call
+    assert len(transport.calls) == 2
+    gen()  # none: its own key
+    assert len(transport.calls) == 3
+
+
+def test_public_generate_rejects_non_mapping_provider_params(library):
+    with pytest.raises(TypeError, match="provider_params"):
+        _gen(_el_adapter(), library, provider_params=["x"])
+
+
+@pytest.mark.parametrize("key", ["duration_seconds", "model_id"])
+def test_a_provider_duration_or_model_cannot_under_reserve_the_budget(library, key):
+    """ElevenLabs is priced per second from foley's duration: a provider one raises
+    before the reservation, so the budget can never be charged less than the call."""
+    from foley.agent.policy import Budget
+
+    transport = FakeTransport()
+    budget = Budget(max_usd=1.0)
+    with pytest.raises(ValueError, match="price"):
+        _gen(_el_adapter(transport), library, provider_params={key: 30}, budget=budget)
+    assert transport.calls == [] and budget.spent_usd == 0.0
+
+
+def test_reserved_generator_keys_raise_before_any_call(library):
+    transport = FakeTransport()
+    with pytest.raises(ValueError, match="provider_params\\['text'\\] is reserved"):
+        _gen(_el_adapter(transport), library, provider_params={"text": "a gunshot"})
+    assert transport.calls == []
+    pipeline = FakePipeline()
+    for key in ("prompt", "prompt_embeds", "seed", "latents", "output_type"):
+        with pytest.raises(ValueError, match=f"provider_params\\[{key!r}\\] is reserved"):
+            _sa_adapter(pipeline).generate("creak", provider_params={key: 1})
+    assert pipeline.calls == []
+
+
+def test_provider_params_keys_must_be_str(library):
+    transport = FakeTransport()
+    with pytest.raises(TypeError, match="keys must be str"):
+        _gen(_el_adapter(transport), library, provider_params={("a",): 1})
+    assert transport.calls == []
+
+
+def test_a_multi_backend_generate_takes_provider_params_per_backend():
+    from foley.sources.generate import provider_params_by_backend
+
+    for backend in (None, "auto", ["elevenlabs", "stable_audio"]):
+        with pytest.raises(ValueError, match="per backend"):
+            foley.generate("rain", backend=backend, provider_params={"steps": 8})
+    order = ("elevenlabs", "stable_audio")
+    nested = {"stable_audio": {"num_inference_steps": 50}, "elevenlabs": {"loop": True}}
+    assert provider_params_by_backend(nested, order, per_backend=True) == nested
+    with pytest.raises(ValueError, match="only for backends in the order"):
+        provider_params_by_backend({"fal_mirelo": {}}, order, per_backend=True)
+    with pytest.raises(ValueError, match="reserved"):  # each backend's own policy
+        provider_params_by_backend(
+            {"stable_audio": {"prompt": "x"}}, order, per_backend=True
+        )
+
+
+def test_each_backend_tried_gets_only_its_own_provider_params(monkeypatch):
+    import importlib
+
+    generate_module = importlib.import_module("foley.sources.generate")
+    seen = []
+
+    def fake_generate(prompt, *, backend, provider_params=None, **kw):
+        seen.append((backend, provider_params))
+        raise SourceConfigurationError(f"{backend}: not configured")
+
+    monkeypatch.setattr(generate_module, "generate", fake_generate)
+    monkeypatch.setattr(generate_module, "backend_has_key", lambda name: True)
+    monkeypatch.setattr(generate_module, "generation_rights_refusal", lambda *a: None)
+    with pytest.raises(SourceConfigurationError):
+        generate_module.generate_in_order(
+            "rain",
+            ("elevenlabs", "stable_audio"),
+            provider_params={"stable_audio": {"num_inference_steps": 50}},
+        )
+    assert seen == [("elevenlabs", None), ("stable_audio", {"num_inference_steps": 50})]
+
+
+def test_a_fallback_with_provider_params_is_keyed_so_it_can_be_served(library):
+    """The fallback MP3 is keyed as the native request that asks for it, with the
+    provider params beside it: asking for that request is a cache hit."""
+    transport = _PcmByPlan(pcm_allowed=False)
+    adapter = _el_adapter(transport)
+    pp = {"prompt_influence": 0.9}
+    first = _gen(adapter, library, provider_params=pp)  # wav -> refused -> mp3
+    assert any("different request than the one asked" in n for n in first.notes)
+    assert _formats(transport) == ["pcm_48000", "mp3_44100_128"]
+    mp3 = _gen(adapter, library, "mp3", provider_params=pp)
+    assert _served(mp3) and len(transport.calls) == 2
+    assert not _served(_gen(adapter, library, "mp3", provider_params={"prompt_influence": 0.5}))

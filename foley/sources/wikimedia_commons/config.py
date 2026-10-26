@@ -54,6 +54,16 @@ SOURCE_CONFIG = {
         # The narrower set a request for CC0 only (the façade's default) keeps.
         "cc0_license_ids": ["CC0-1.0"],
     },
+    # What a caller's ``provider_params`` (#61) may not do: the search text (with
+    # its audio filter) and the API shape the licence check parses are foley's.
+    "provider_params": {
+        "append": {},
+        "reserved": [
+            "action", "format", "generator", "gsrsearch", "gsrnamespace",
+            "prop", "iiprop", "pageids", "titles",
+        ],
+        "priced": [],
+    },
     "pricing": {
         "unit": "free",
         "amount_usd": 0.0,

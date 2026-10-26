@@ -455,3 +455,63 @@ def test_a_paid_source_keeps_its_narrow_retry_unless_it_sets_its_own():
     assert (
         t("GET", "https://x/a").status_code == 502
     )  # 502 stays unretried for a paid source
+
+
+def test_provider_params_reach_each_keyless_search_and_keep_the_licence_checks():
+    """#61: native params pass through; the per-item licence re-check still applies."""
+    ov, http = _openverse()
+    ids = [c.sound.id for c in ov.search("door", provider_params={"category": "sound_effect"})]
+    assert http.calls[0]["params"]["category"] == "sound_effect"
+    assert ids == ["openverse:a"]  # still CC0 only
+
+    ia, http = _ia()
+    ia.search("door", provider_params={"q": "year:[2000 TO 2010]", "sort[]": "date"})
+    p = http.calls[0]["params"]
+    assert p["q"].startswith("(door) AND mediatype:audio")  # ANDed, never replaced
+    assert p["q"].endswith(" AND (year:[2000 TO 2010])") and p["sort[]"] == "date"
+
+    wc, http = _commons()
+    wc.search("door", provider_params={"gsrsort": "create_timestamp_desc"})
+    assert http.calls[0]["params"]["gsrsort"] == "create_timestamp_desc"
+    data = wc.invoke_native(list="search", srsearch="door")
+    assert data == {"query": {"pages": COMMONS_PAGES}}  # the parsed JSON, as is
+    assert http.calls[-1]["params"] == {
+        "action": "query", "format": "json", "list": "search", "srsearch": "door"
+    }
+
+
+def test_an_or_in_the_ia_q_stays_inside_the_and_clause():
+    ia, http = _ia()
+    ia.search("door", provider_params={"q": "year:2000 OR mediatype:*"})
+    q = http.calls[0]["params"]["q"]
+    assert q.startswith("(door) AND mediatype:audio AND ")
+    assert q.endswith(" AND (year:2000 OR mediatype:*)")  # grouped: cannot widen
+    with pytest.raises(ValueError, match="unbalanced"):
+        ia.search("door", provider_params={"q": "x) OR (mediatype:*"})
+
+
+@pytest.mark.parametrize(
+    "make, key",
+    [
+        (_ia, "fl[]"),
+        (_openverse, "q"),
+        (_openverse, "license"),
+        (_commons, "gsrsearch"),
+        (_commons, "iiprop"),
+        (_commons, "action"),
+    ],
+)
+def test_reserved_keyless_params_raise_before_any_request(make, key):
+    ad, http = make()
+    import re
+
+    with pytest.raises(ValueError, match=re.escape(f"provider_params[{key!r}] is reserved")):
+        ad.search("door", provider_params={key: "x"})
+    assert http.calls == []
+
+
+def test_openverse_excluded_sources_can_only_grow():
+    ov, http = _openverse()
+    ov.search("door", provider_params={"excluded_source": "wikimedia_audio"})
+    excluded = http.calls[0]["params"]["excluded_source"].split(",")
+    assert excluded[-1] == "wikimedia_audio" and "freesound" in excluded

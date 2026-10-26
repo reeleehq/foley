@@ -87,6 +87,17 @@ SOURCE_CONFIG = {
         "cache_bytes_ok": True,
     },
     "commercial_ok": True,  # generate guardrail (revenue-capped; enforced by keep())
+    # What a caller's ``provider_params`` (#61) may not do: the prompt (and its
+    # embeddings), the seed (its generator / latents) and the output type are
+    # foley's, so provenance records what was actually run.
+    "provider_params": {
+        "append": {},
+        "reserved": [
+            "prompt", "prompt_embeds", "negative_prompt_embeds", "seed",
+            "generator", "latents", "output_type",
+        ],
+        "priced": [],
+    },
     "pricing": {
         "unit": "free",
         "amount_usd": 0.0,

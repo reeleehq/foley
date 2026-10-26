@@ -17,7 +17,7 @@ from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
 from .._keyless import get_bytes, get_json, license_for_item, raw_id
-from ..base import api_license
+from ..base import api_license, merge_provider_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -62,7 +62,13 @@ class OpenverseAdapter:
         )
 
     def search(
-        self, query: str, *, license: Optional[str] = "cc0", k: int = 15, **kw
+        self,
+        query: str,
+        *,
+        license: Optional[str] = "cc0",
+        k: int = 15,
+        provider_params: Optional[dict] = None,
+        **kw,
     ) -> "list[Candidate]":
         """Search Openverse audio for ``query``; return licence-checked candidates.
 
@@ -70,6 +76,8 @@ class OpenverseAdapter:
             license: ``'cc0'`` (default) asks for CC0 only; anything else asks for CC0,
                 CC-BY and public-domain-mark rows.
             k: Max rows (anonymous limit 20).
+            provider_params: Native search params merged over the translated ones
+                (#61); the per-item licence check still applies.
         """
         api = self.config["api"]
         filters = api["license_filter"]
@@ -85,15 +93,26 @@ class OpenverseAdapter:
         ]
         if excluded:
             params["excluded_source"] = ",".join(excluded)
+        params = merge_provider_params(
+            params, provider_params, policy=self.config.get("provider_params")
+        )
         wanted = self.config["license"]["cc0_license_ids"] if license == "cc0" else None
         out = []
-        for row in self._get_json(api["search_endpoint"]["path"], params).get(
+        for row in self.invoke_native(api["search_endpoint"]["path"], **params).get(
             "results", []
         ):
             cand = self._candidate(row, only=wanted)
             if cand is not None:
                 out.append(cand)
         return out
+
+    def invoke_native(self, path: str, **params) -> dict:
+        """GET an Openverse API ``path`` with native ``params``; return the parsed JSON (#61).
+
+        It bypasses the licence filter and the per-item licence check that
+        :meth:`search` applies: the caller owns licence gating for what comes back.
+        """
+        return self._get_json(path, params)
 
     def get(self, source_id: str) -> SoundRecord:
         """Resolve one row id (a UUID) to its record.

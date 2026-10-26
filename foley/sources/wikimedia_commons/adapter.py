@@ -24,7 +24,7 @@ from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
 from .._keyless import get_bytes, get_json, license_for_item, raw_id, strip_html
-from ..base import api_license
+from ..base import api_license, merge_provider_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -67,7 +67,12 @@ class WikimediaCommonsAdapter:
     def _headers(self) -> dict:
         return {"User-Agent": self.config["api"]["user_agent"]}
 
-    def _query(self, **params) -> dict:
+    def invoke_native(self, **params) -> dict:
+        """Call the MediaWiki ``action=query`` API with native ``params``; return its JSON (#61).
+
+        It bypasses the licence filter and the per-item licence check that
+        :meth:`search` applies: the caller owns licence gating for what comes back.
+        """
         api = self.config["api"]
         return get_json(
             self._http,
@@ -80,7 +85,13 @@ class WikimediaCommonsAdapter:
     # -- SourceAdapter surface ----------------------------------------------
 
     def search(
-        self, query: str, *, license: Optional[str] = "cc0", k: int = 15, **kw
+        self,
+        query: str,
+        *,
+        license: Optional[str] = "cc0",
+        k: int = 15,
+        provider_params: Optional[dict] = None,
+        **kw,
     ) -> "list[Candidate]":
         """Search Commons audio for ``query``; return licence-checked candidates.
 
@@ -88,15 +99,20 @@ class WikimediaCommonsAdapter:
             license: ``'cc0'`` (default) keeps CC0 files only; anything else (``None``,
                 ``'cc-by'``) also keeps CC-BY and the unverified public-domain claims.
             k: Max files requested (the API's limit is 50).
+            provider_params: Native search params merged over the translated ones
+                (#61); the per-item licence check still applies.
         """
         api = self.config["api"]
-        data = self._query(
+        params = dict(
             generator="search",
             gsrnamespace=api["namespace_file"],
             gsrsearch=query + api["search_suffix"],
             gsrlimit=min(int(k), api["max_page_size"]),
             prop="imageinfo",
             iiprop=_IMAGEINFO,
+        )
+        data = self.invoke_native(
+            **merge_provider_params(params, provider_params, policy=self.config.get("provider_params"))
         )
         pages = sorted(
             ((data.get("query") or {}).get("pages") or {}).values(),
@@ -118,7 +134,9 @@ class WikimediaCommonsAdapter:
         """
         rid = raw_id(_PREFIX, source_id)
         pages = (
-            self._query(pageids=rid, prop="imageinfo", iiprop=_IMAGEINFO).get("query")
+            self.invoke_native(pageids=rid, prop="imageinfo", iiprop=_IMAGEINFO).get(
+                "query"
+            )
             or {}
         ).get("pages") or {}
         cand = self._candidate(pages.get(rid) or {}, only=None)

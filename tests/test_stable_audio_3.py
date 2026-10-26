@@ -179,3 +179,68 @@ def test_unsupported_notes_are_shared_and_config_driven():
     notes = unsupported_notes(SAO, loop=True, output_format="mp3", bogus=1, none=None)
     assert len(notes) == 3 and "Stable Audio Open" in notes[0]
     assert unsupported_notes(SAO, output_format="wav") == []  # the config's own format
+
+
+def test_provider_params_override_flags_and_add_new_ones(home):
+    """#61: a provider param replaces a translated flag; an unknown one is passed on."""
+    run = FakeRunner()
+    clip = StableAudio3Adapter(runner=run, home=home).generate(
+        "x", seed=7, provider_params={"steps": 12, "seed": 9, "sampler": "dpm"}
+    )
+    cmd = run.calls[0]["cmd"]
+    assert _arg(cmd, "--steps") == "12" and _arg(cmd, "--seed") == "9"
+    assert _arg(cmd, "--sampler") == "dpm"
+    lic = clip.candidate.sound.license
+    assert lic.generation_seed == 9
+    assert lic.generation_params["provider_params"] == {
+        "steps": 12, "seed": 9, "sampler": "dpm"
+    }
+
+
+@pytest.mark.parametrize("key", ["out", "prompt", "dit", "decoder", "model"])
+def test_reserved_script_flags_raise(home, key):
+    run = FakeRunner()
+    with pytest.raises(ValueError, match=f"provider_params\\[{key!r}\\] is reserved"):
+        StableAudio3Adapter(runner=run, home=home).generate(
+            "x", provider_params={key: "/tmp/elsewhere.wav"}
+        )
+    assert run.calls == []
+
+
+def test_foley_flags_come_last_so_an_abbreviation_cannot_override_them(home):
+    run = FakeRunner()
+    StableAudio3Adapter(runner=run, home=home).generate(
+        "x", provider_params={"ou": "/tmp/elsewhere.wav", "di": "lg"}
+    )
+    cmd = run.calls[0]["cmd"]
+    assert cmd.index("--ou") < cmd.index("--out") and cmd.index("--di") < cmd.index("--dit")
+    assert _arg(cmd, "--out") != "/tmp/elsewhere.wav"  # argparse keeps the last
+
+
+def test_the_recorded_seed_is_the_seed_sent(home):
+    run = FakeRunner()
+    clip = StableAudio3Adapter(runner=run, home=home).generate(
+        "x", seed=7, provider_params={"seed": 9.0}
+    )
+    assert _arg(run.calls[0]["cmd"], "--seed") == "9"
+    assert clip.candidate.sound.license.generation_seed == 9
+
+
+def test_invoke_native_runs_the_script_with_native_flags(home):
+    run = FakeRunner()
+    audio = StableAudio3Adapter(runner=run, home=home).invoke_native(
+        "x", {"seconds": 2, "steps": 4, "cfg": 1.0, "seed": 3}
+    )
+    assert load(audio)[1] == SR
+    assert _arg(run.calls[0]["cmd"], "--steps") == "4"
+
+
+def test_provider_flag_abbreviations_cannot_override_core_flags(tmp_path):
+    from foley.sources.stable_audio_3 import adapter as sa3
+
+    a = sa3.Adapter()
+    cmd = a._command(
+        tmp_path, "p", {"see": 7, "seconds": 2.0, "steps": 8, "cfg": 1.0, "seed": 3}, tmp_path / "o.wav"
+    )
+    assert cmd.index("--see") < cmd.index("--seed")
+    assert cmd[cmd.index("--seed") + 1] == "3"

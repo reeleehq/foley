@@ -684,6 +684,7 @@ def generate(
     level=None,
     check_prompt: bool = True,
     intended_use=None,
+    provider_params=None,
     **affordances,
 ):
     """Generate a sound effect for ``prompt`` and add it to the library (by-value).
@@ -768,6 +769,17 @@ def generate(
             walked (default: commercial): a backend whose licence cannot serve it is
             skipped before anything is paid for. A single named backend is used as
             asked (its licence is gated downstream by :func:`keep`).
+        provider_params: Vendor-native params foley has no unified affordance for
+            (#61). For a named ``backend``, a flat dict, e.g.
+            ``{"num_inference_steps": 50}``; when the call may try several backends
+            (``backend`` unnamed, ``'auto'`` or a list), per backend, e.g.
+            ``{"stable_audio": {"num_inference_steps": 50}}`` (a flat dict raises),
+            and each backend gets only its own. Merged by the backend over its
+            translated native params (a provider param wins), recorded in the
+            licence's ``generation_params``, and part of the generations-cache key.
+            A key the backend's config ``provider_params`` policy reserves (the
+            prompt, an output path) or prices (``duration``, the model) raises
+            ``ValueError`` before anything is paid for: use the unified argument.
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`GENERATION_AFFORDANCES`).
@@ -804,6 +816,7 @@ def generate(
         generate_backend_order,
         generate_in_order,
         paid_generation_opted_in,
+        provider_params_by_backend,
     )
 
     paid_ok = True  # a named backend or order is the caller asking for it
@@ -824,6 +837,14 @@ def generate(
         order = (backend,)  # named: that backend, no fallback
     else:
         order, paid_ok = generate_backend_order(), paid_generation_opted_in()
+    # Native params are one vendor's: an order that may try several backends takes
+    # them per backend, and each backend gets only its own (#61).
+    may_fall_back = adapter is None and (
+        isinstance(backend, (list, tuple)) or backend in (None, "", "auto")
+    )
+    by_backend = provider_params_by_backend(
+        provider_params, order, per_backend=may_fall_back
+    )
     with spend_scope(budget):
         report, backend, skipped = generate_in_order(
             prompt,
@@ -842,6 +863,7 @@ def generate(
             repair=repair,
             level=level,
             check_prompt=check_prompt,
+            provider_params=by_backend,
             **affordances,
         )
     results = report.results
@@ -871,11 +893,12 @@ def generate(
 
 
 def _with_call_facts(candidate, result):
-    """Copy a generation's notes, cost and (for a preview) bytes from its ingest result."""
+    """Copy a generation's notes, cost, raw payload and (for a preview) bytes from its ingest result."""
     candidate.notes = list(result.notes)
     candidate.cost_estimate_usd = result.cost_estimate_usd
     candidate.cost_actual_usd = result.cost_actual_usd
     candidate.audio_bytes = result.audio_bytes  # set only by store=False (#107)
+    candidate.raw = result.raw  # the provider's payload beside the audio (#61)
     return candidate
 
 

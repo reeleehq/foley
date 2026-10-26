@@ -37,6 +37,7 @@ def _add_from(
     intended_use: Optional[IntendedUse] = None,
     adapter=None,
     on_unsupported: Optional[str] = None,
+    provider_params: Optional[dict] = None,
     **affordances,
 ) -> IngestReport:
     """Search a live ``source`` and ingest its license-clean hits into ``library``.
@@ -64,6 +65,12 @@ def _add_from(
         on_unsupported: A search parameter the source cannot honour: ``None``
             (default) drops it with a note in ``report.notes``; ``'raise'`` raises
             (see :func:`foley.sources._dispatch.translate_affordances`).
+        provider_params: Native search params of the source that foley has no
+            unified affordance for (#61), e.g. Freesound's
+            ``{"filter": "ac_brightness:[50 TO 100]"}``. Passed to the adapter's
+            ``search`` untranslated (so the unsupported-parameter policy does not see
+            them) and merged over its translated params; the licence filter and the
+            fail-closed gate still apply.
         **affordances: Extra unified affordances forwarded to the adapter's
             ``search`` (e.g. ``duration_range``, ``sort``).
 
@@ -86,6 +93,8 @@ def _add_from(
     search_kw, search_notes = plan_search(
         source, config, affordances, on_unsupported=on_unsupported
     )
+    if provider_params is not None:  # untranslated: the adapter merges it (#61)
+        search_kw["provider_params"] = provider_params
 
     from ..obs.recorder import current_run
     from ..obs.trace import GENAI

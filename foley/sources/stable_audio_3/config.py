@@ -76,6 +76,14 @@ SOURCE_CONFIG = {
         "cache_bytes_ok": True,
     },
     "commercial_ok": True,  # revenue-capped; enforced by keep() from the licence row
+    # What a caller's ``provider_params`` (#61) may not do: the prompt, the output
+    # path and the model files are foley's (and are passed after any provider flag,
+    # so the script's last-wins parsing keeps them).
+    "provider_params": {
+        "append": {},
+        "reserved": ["prompt", "out", "dit", "decoder", "model", "model_id"],
+        "priced": [],
+    },
     "pricing": {
         "unit": "free",
         "amount_usd": 0.0,

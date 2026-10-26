@@ -103,6 +103,10 @@ class IngestResult(SerializableMixin):
     #: ``IngestReport.exception``), so ``to_dict``/``to_json`` stay byte-free.
     audio_bytes = None
 
+    #: What the provider returned besides the audio of a generation (#61; see
+    #: :attr:`foley.sources.base.GeneratedClip.raw`). A plain attribute, never serialized.
+    raw = None
+
 
 @dataclass
 class IngestReport(SerializableMixin):

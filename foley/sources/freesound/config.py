@@ -101,6 +101,15 @@ SOURCE_CONFIG = {
     },
     # The token-tier API is free to call (commercial use of the API is negotiated
     # separately with UPF; see report 14 and the maintainer's open question).
+    # What a caller's ``provider_params`` (#61) may not do (see
+    # foley.sources.base.merge_provider_params). ``filter`` carries the licence filter
+    # and ``fields`` the licence and gen_ai_preference fields the per-item gate reads:
+    # both are append-only, so neither can be replaced or dropped.
+    "provider_params": {
+        "append": {"filter": " ", "fields": {"joiner": ",", "group": False}},
+        "reserved": ["query", "token"],
+        "priced": [],
+    },
     "pricing": {
         "unit": "free",
         "amount_usd": 0.0,

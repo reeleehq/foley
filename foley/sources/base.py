@@ -40,7 +40,14 @@ import os
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Iterator, Optional, Protocol, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    Iterator,
+    Mapping,
+    Optional,
+    Protocol,
+    runtime_checkable,
+)
 
 from ..base import AcquisitionMethod, LicenseRecord
 from ..licensing import apply_license_flags
@@ -50,6 +57,9 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 
 __all__ = [
     "check_prompt_influence",
+    "check_provider_params",
+    "merge_provider_params",
+    "recorded_params",
     "native_adherence",
     "resolve_source_key",
     "using_source_accounts",
@@ -145,6 +155,177 @@ def native_adherence(
         lo, hi = float(coerce["lo"]), float(coerce["hi"])
         return lo + float(prompt_influence) * (hi - lo)
     raise ValueError(f"{config['name']}: unknown prompt_influence coerce {coerce!r}")
+
+
+def check_provider_params(
+    provider_params: Optional[Mapping] = None, *, policy: Optional[Mapping] = None
+) -> dict:
+    """``provider_params`` as a plain dict, checked against a source's ``policy`` (#61).
+
+    ``policy`` is the source's ``SOURCE_CONFIG["provider_params"]`` row (see
+    :func:`merge_provider_params`). Every key must be a ``str``; a ``reserved`` key
+    (one that decides what foley screened, recorded or wrote: the prompt, an output
+    path, the model) and a ``priced`` key (one that changes what the call costs, which
+    foley estimated and reserved from its own request) are refused, before anything
+    is sent or paid for.
+
+    >>> check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})
+    {'steps': 8}
+    >>> check_provider_params({"prompt": "x"}, policy={"reserved": ["prompt"]})
+    Traceback (most recent call last):
+    ...
+    ValueError: provider_params['prompt'] is reserved: foley sets it (it decides what is screened, recorded or written); use the unified argument instead
+    >>> check_provider_params({1: "x"})
+    Traceback (most recent call last):
+    ...
+    TypeError: provider_params keys must be str (native parameter names), got int: 1
+
+    Raises:
+        TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.
+        ValueError: If a key is ``reserved`` or ``priced`` by the policy, or the
+            source declares no policy at all.
+    """
+    if provider_params is None:
+        return {}
+    if not isinstance(provider_params, Mapping):
+        raise TypeError(
+            "provider_params must be a mapping of native names to values, got "
+            f"{type(provider_params).__name__}"
+        )
+    if policy is None and provider_params:
+        raise ValueError(
+            "this source declares no provider_params policy, so it cannot take "
+            f"provider_params (got {sorted(map(str, provider_params))})"
+        )
+    policy = policy or {}
+    reserved = set(policy.get("reserved") or ())
+    priced = set(policy.get("priced") or ())
+    for key in provider_params:
+        if not isinstance(key, str):
+            raise TypeError(
+                "provider_params keys must be str (native parameter names), got "
+                f"{type(key).__name__}: {key!r}"
+            )
+        if key in reserved:
+            raise ValueError(
+                f"provider_params[{key!r}] is reserved: foley sets it (it decides what "
+                "is screened, recorded or written); use the unified argument instead"
+            )
+        if key in priced:
+            raise ValueError(
+                f"provider_params[{key!r}] changes the price of the call, which foley "
+                "estimates and reserves from its own request: use the unified "
+                "argument (e.g. duration=) or the source config instead"
+            )
+    return dict(provider_params)
+
+
+def _append_spec(spec) -> "tuple[str, bool]":
+    """``(joiner, grouped)`` of a policy ``append`` row (a joiner str means grouped)."""
+    if isinstance(spec, str):
+        return spec, True
+    return spec["joiner"], bool(spec.get("group", True))
+
+
+def _check_grouped(key: str, value: str) -> None:
+    """Refuse a value that could escape the ``(...)`` group it is wrapped in.
+
+    Parentheses outside double quotes (a backslash escapes) must balance and never
+    close more than they opened, so ``x) OR (license:*`` cannot widen the clause.
+    """
+    depth, quoted, escaped = 0, False, False
+    for ch in value:
+        if escaped:
+            escaped = False
+        elif ch == "\\":
+            escaped = True
+        elif ch == '"':
+            quoted = not quoted
+        elif not quoted and ch == "(":
+            depth += 1
+        elif not quoted and ch == ")":
+            depth -= 1
+            if depth < 0:
+                break
+    if depth != 0 or quoted or escaped:
+        raise ValueError(
+            f"provider_params[{key!r}] has unbalanced parentheses or quotes: it is "
+            f"appended as one group and may not close it ({value!r})"
+        )
+
+
+def merge_provider_params(
+    native: dict,
+    provider_params: Optional[Mapping] = None,
+    *,
+    policy: Optional[Mapping] = None,
+) -> dict:
+    """``native`` with the caller's vendor-native ``provider_params`` merged on top (#61).
+
+    The escape hatch for a vendor parameter foley has no unified affordance for (a
+    Freesound ``ac_brightness`` filter, an ElevenLabs body field): it is merged AFTER
+    foley's translation, so a provider param overrides the translated native one of
+    the same name. ``policy`` is the source's ``SOURCE_CONFIG["provider_params"]``
+    row, the one place a source says what a caller may not do:
+
+    * ``append`` — ``{key: joiner}``: the caller's value is appended to foley's as
+      ``{joiner}({value})`` (so an ``OR`` inside it cannot widen foley's clause; a
+      value that would close the group is refused), never replacing it; ``None`` or
+      an empty value is skipped. ``{key: {"joiner": ",", "group": False}}`` appends a
+      list item instead (Freesound's ``fields``).
+    * ``reserved`` / ``priced`` — keys refused (see :func:`check_provider_params`).
+
+    A pure function: ``native`` is not mutated.
+
+    >>> policy = {"append": {"filter": " "}}
+    >>> merge_provider_params({"filter": 'license:"CC0"', "page_size": 15},
+    ...                       {"filter": "a:1 OR b:2", "page_size": 5}, policy=policy)
+    {'filter': 'license:"CC0" (a:1 OR b:2)', 'page_size': 5}
+    >>> merge_provider_params({"steps": 8}, None)
+    {'steps': 8}
+    >>> merge_provider_params({}, [("steps", 8)])
+    Traceback (most recent call last):
+    ...
+    TypeError: provider_params must be a mapping of native names to values, got list
+
+    Raises:
+        TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.
+        ValueError: For a reserved or priced key, or an appended value that would
+            escape its group.
+    """
+    extra = check_provider_params(provider_params, policy=policy)
+    append = (policy or {}).get("append") or {}
+    out = dict(native)
+    for key, value in extra.items():
+        if key not in append:
+            out[key] = value
+            continue
+        if value is None or not str(value).strip():
+            continue  # nothing to append
+        joiner, grouped = _append_spec(append[key])
+        value = str(value)
+        if grouped:
+            _check_grouped(key, value)
+            value = f"({value})"
+        base = out.get(key)
+        out[key] = value if base in (None, "") else f"{base}{joiner}{value}"
+    return out
+
+
+def recorded_params(sent: dict, provider_params: Optional[Mapping] = None) -> dict:
+    """The ``generation_params`` a generator records: the native params it ``sent``
+    (provider params already merged in), plus a ``provider_params`` entry listing what
+    the caller supplied, when anything was (#61).
+
+    >>> recorded_params({"steps": 50}, {"steps": 50})
+    {'steps': 50, 'provider_params': {'steps': 50}}
+    >>> recorded_params({"steps": 8})
+    {'steps': 8}
+    """
+    out = dict(sent)
+    if provider_params:
+        out["provider_params"] = dict(provider_params)
+    return out
 
 
 def unsupported_notes(
@@ -448,11 +629,17 @@ class GeneratedClip:
             :func:`foley.sources.generate.generate` façade folds these into the
             stored :class:`~foley.index.ingest.IngestResult`\\ 's ``notes`` so they
             surface in the run report.
+        raw: What the provider returned besides the audio (#61), for a caller who needs
+            a vendor field foley does not model (ElevenLabs: the status and response
+            headers; fal: the response minus its audio payload), else ``None``. The
+            façade copies it onto the returned candidate's transient ``raw``; it is
+            not kept in the generations cache, so a replayed clip has none.
     """
 
     audio_bytes: bytes
     candidate: "Candidate"
     notes: list = field(default_factory=list)
+    raw: Optional[dict] = None
 
 
 @runtime_checkable
