@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=8f83b1af"></script>
+    <script src="../_static/documentation_options.js?v=2bfb35b6"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.56" />
+  <meta name="docsearch:version" content="0.0.57" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -904,6 +904,7 @@ window.runMermaid = runMermaid;</script>
 <span class="c1"># Auto-discovery is lazy, so the Freesound adapter (and requests) is not imported</span>
 <span class="c1"># until first use — `import foley` stays dol-only.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.sources</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_from</span><span class="p">,</span> <span class="n">list_sources</span><span class="p">,</span> <span class="n">register_source</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.sources.capabilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">capabilities_of</span><span class="p">,</span> <span class="n">ledger</span><span class="p">,</span> <span class="n">list_backends</span>
 
 <span class="c1"># --- source: generation adapters (Stable Audio Open / ElevenLabs) — #6 ---------</span>
 <span class="c1"># The generate facade + its helpers. The generator adapter packages (and their</span>
@@ -1123,6 +1124,9 @@ window.runMermaid = runMermaid;</script>
     <span class="c1"># --- source: live-source adapters + add_from pull facade -----------------</span>
     <span class="s2">"add_from"</span><span class="p">,</span>
     <span class="s2">"list_sources"</span><span class="p">,</span>
+    <span class="s2">"list_backends"</span><span class="p">,</span>
+    <span class="s2">"capabilities_of"</span><span class="p">,</span>
+    <span class="s2">"ledger"</span><span class="p">,</span>
     <span class="s2">"register_source"</span><span class="p">,</span>
     <span class="c1"># --- source: generation adapters (Stable Audio Open / ElevenLabs) --------</span>
     <span class="s2">"generate"</span><span class="p">,</span>

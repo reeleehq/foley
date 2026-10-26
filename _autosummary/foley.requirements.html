@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=8f83b1af"></script>
+    <script src="../_static/documentation_options.js?v=2bfb35b6"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.56" />
+  <meta name="docsearch:version" content="0.0.57" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -399,6 +399,7 @@
 <li class="toctree-l2 has-children"><a class="reference internal" href="foley.sources.html">foley.sources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.base.html">foley.sources.base</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.bbc_remarc.html">foley.sources.bbc_remarc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.capabilities.html">foley.sources.capabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.clotho.html">foley.sources.clotho</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.elevenlabs.html">foley.sources.elevenlabs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.fal.html">foley.sources.fal</a></li>
@@ -543,9 +544,10 @@ lists <code class="docutils literal notranslate"><span class="pre">degraded_tool
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">{keys,</span> <span class="pre">extras,</span> <span class="pre">system,</span> <span class="pre">offline,</span> <span class="pre">sources,</span> <span class="pre">llm,</span> <span class="pre">degraded_tools}</span></code> — all
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">{keys,</span> <span class="pre">extras,</span> <span class="pre">system,</span> <span class="pre">offline,</span> <span class="pre">sources,</span> <span class="pre">backends,</span> <span class="pre">llm,</span> <span class="pre">degraded_tools}</span></code> — all
 JSON-safe. <code class="docutils literal notranslate"><span class="pre">llm</span></code> is the provider the SELECT rungs resolve to right now
-(see <a class="reference internal" href="foley.agent.llm.html#foley.agent.llm.resolve_llm" title="foley.agent.llm.resolve_llm"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.agent.llm.resolve_llm()</span></code></a>), or the reason it cannot resolve.</p>
+(see <a class="reference internal" href="foley.agent.llm.html#foley.agent.llm.resolve_llm" title="foley.agent.llm.resolve_llm"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.agent.llm.resolve_llm()</span></code></a>), or the reason it cannot resolve.
+<code class="docutils literal notranslate"><span class="pre">backends</span></code> is <a class="reference internal" href="foley.html#foley.ledger" title="foley.ledger"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.ledger()</span></code></a> (per-source capabilities + planned targets).</p>
 </dd>
 </dl>
 </dd></dl>

@@ -1,0 +1,15 @@
+foley.sources.capabilities
+==========================
+
+.. automodule:: foley.sources.capabilities
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      capabilities_of
+      ledger
+      list_backends
+      load_targets
+   

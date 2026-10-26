@@ -775,6 +775,7 @@ the default `rings` — it is opt-in only.
 | [`base`](foley.sources.base.html.md#module-foley.sources.base)                           | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.                             |
 |-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 | [`bbc_remarc`](foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)               | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                                                |
+| [`capabilities`](foley.sources.capabilities.html.md#module-foley.sources.capabilities)           | What each live source emits, and what foley plans to support: `list_backends` + `ledger`.                  |
 | [`clotho`](foley.sources.clotho.html.md#module-foley.sources.clotho)                       | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.                               |
 | [`elevenlabs`](foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)               | ElevenLabs Sound Effects generate source (hosted; #6).                                                     |
 | [`fal`](foley.sources.fal.html.md#module-foley.sources.fal)                             | fal-hosted generate sources, executed through `falaw` (#73).                                               |

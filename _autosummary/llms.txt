@@ -78,6 +78,7 @@
 - [foley.sources](foley.sources.html.md): Bulk-corpus source adapters for foley’s SOURCE stage.
 - [foley.sources.base](foley.sources.base.html.md): The bulk-corpus source contract — a downloaded corpus as an ingestable stream.
 - [foley.sources.bbc_remarc](foley.sources.bbc_remarc.html.md): BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.
+- [foley.sources.capabilities](foley.sources.capabilities.html.md): What each live source emits, and what foley plans to support: &#96;list_backends&#96; + &#96;ledger&#96;.
 - [foley.sources.clotho](foley.sources.clotho.html.md): Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.
 - [foley.sources.elevenlabs](foley.sources.elevenlabs.html.md): ElevenLabs Sound Effects generate source (hosted; #6).
 - [foley.sources.elevenlabs.adapter](foley.sources.elevenlabs.adapter.html.md): ElevenLabs Sound Effects generate adapter — hosted Text-to-SFX v2 over HTTP.

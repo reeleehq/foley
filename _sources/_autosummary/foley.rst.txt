@@ -65,6 +65,9 @@
       demo
       add_from
       list_sources
+      list_backends
+      capabilities_of
+      ledger
       register_source
       generate
       candidate_of

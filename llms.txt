@@ -80,6 +80,7 @@
 - [foley.sources](_autosummary/foley.sources.html.md): Bulk-corpus source adapters for foley’s SOURCE stage.
 - [foley.sources.base](_autosummary/foley.sources.base.html.md): The bulk-corpus source contract — a downloaded corpus as an ingestable stream.
 - [foley.sources.bbc_remarc](_autosummary/foley.sources.bbc_remarc.html.md): BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.
+- [foley.sources.capabilities](_autosummary/foley.sources.capabilities.html.md): What each live source emits, and what foley plans to support: &#96;list_backends&#96; + &#96;ledger&#96;.
 - [foley.sources.clotho](_autosummary/foley.sources.clotho.html.md): Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.
 - [foley.sources.elevenlabs](_autosummary/foley.sources.elevenlabs.html.md): ElevenLabs Sound Effects generate source (hosted; #6).
 - [foley.sources.elevenlabs.adapter](_autosummary/foley.sources.elevenlabs.adapter.html.md): ElevenLabs Sound Effects generate adapter — hosted Text-to-SFX v2 over HTTP.
@@ -114,7 +115,7 @@
 - [foley.sources.wikimedia_commons.config](_autosummary/foley.sources.wikimedia_commons.config.html.md): &#96;SOURCE_CONFIG&#96; for the Wikimedia Commons retrieve source (#79 · report 14 §3.3).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 14:52 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 16:18 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=8f83b1af"></script>
+    <script src="../_static/documentation_options.js?v=2bfb35b6"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.56" />
+  <meta name="docsearch:version" content="0.0.57" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -399,6 +399,7 @@
 <li class="toctree-l2 has-children"><a class="reference internal" href="foley.sources.html">foley.sources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.base.html">foley.sources.base</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.bbc_remarc.html">foley.sources.bbc_remarc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.capabilities.html">foley.sources.capabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.clotho.html">foley.sources.clotho</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.elevenlabs.html">foley.sources.elevenlabs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.fal.html">foley.sources.fal</a></li>
@@ -710,103 +711,112 @@ lazy-imported inside the audio/QC functions that need them (install via the
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.list_sources" title="foley.list_sources"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_sources</span></code></a>(*[, egress_allow])</p></td>
 <td><p>Return the names of registered live sources (runs discovery first).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.register_source" title="foley.register_source"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_source</span></code></a>(name, config[, adapter])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.list_backends" title="foley.list_backends"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list_backends</span></code></a>(*[, kind, supports])</p></td>
+<td><p>Names of registered live sources, filtered by <code class="docutils literal notranslate"><span class="pre">kind</span></code> and by what they support.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.capabilities_of" title="foley.capabilities_of"><code class="xref py py-obj docutils literal notranslate"><span class="pre">capabilities_of</span></code></a>(config)</p></td>
+<td><p>The capability view of one <code class="docutils literal notranslate"><span class="pre">SOURCE_CONFIG</span></code> (JSON-safe).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.ledger" title="foley.ledger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ledger</span></code></a>(*[, targets])</p></td>
+<td><p>Implemented vs planned backends, computed from the registry (never hand-kept).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.register_source" title="foley.register_source"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_source</span></code></a>(name, config[, adapter])</p></td>
 <td><p>Register a live source directly (out-of-tree plugin or a test double).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.generate" title="foley.generate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate</span></code></a>(prompt, *[, backend, library, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.generate" title="foley.generate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate</span></code></a>(prompt, *[, backend, library, ...])</p></td>
 <td><p>Generate a sound effect for <code class="docutils literal notranslate"><span class="pre">prompt</span></code> and add it to the library (by-value).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.candidate_of" title="foley.candidate_of"><code class="xref py py-obj docutils literal notranslate"><span class="pre">candidate_of</span></code></a>(result)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.candidate_of" title="foley.candidate_of"><code class="xref py py-obj docutils literal notranslate"><span class="pre">candidate_of</span></code></a>(result)</p></td>
 <td><p>Wrap a stored <a class="reference internal" href="foley.index.ingest.html#foley.index.ingest.IngestResult" title="foley.index.ingest.IngestResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">IngestResult</span></code></a> as a generated candidate.</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">art50_checklist</span></code>(record)</p></td>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">art50_checklist</span></code>(record)</p></td>
 <td><p>Return the per-clip EU AI Act Art.</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">scan_prompt</span></code>(prompt)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">scan_prompt</span></code>(prompt)</p></td>
 <td><p>Scan a generation <code class="docutils literal notranslate"><span class="pre">prompt</span></code> for trademarked-audio-logo + voice-clone risk.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.find" title="foley.find"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find</span></code></a>(context, *[, max_events, seconds, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.find" title="foley.find"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find</span></code></a>(context, *[, max_events, seconds, ...])</p></td>
 <td><p>The headline: a narrative context → verified, license-clean sound candidates.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.plan" title="foley.plan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plan</span></code></a>(candidates, *[, transcript])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.plan" title="foley.plan"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plan</span></code></a>(candidates, *[, transcript])</p></td>
 <td><p>Fold verified candidates into the SPARSE <a class="reference internal" href="#foley.SoundDesignTimeline" title="foley.SoundDesignTimeline"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundDesignTimeline</span></code></a> (the SELECT→WEAVE bridge).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.decompose_context" title="foley.decompose_context"><code class="xref py py-obj docutils literal notranslate"><span class="pre">decompose_context</span></code></a>(context, *[, max_events, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.decompose_context" title="foley.decompose_context"><code class="xref py py-obj docutils literal notranslate"><span class="pre">decompose_context</span></code></a>(context, *[, max_events, ...])</p></td>
 <td><p>Decompose a passage into <code class="docutils literal notranslate"><span class="pre">&lt;=</span> <span class="pre">max_events</span></code> sparse <a class="reference internal" href="#foley.SoundEvent" title="foley.SoundEvent"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundEvent</span></code></a>s.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.refine_query" title="foley.refine_query"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refine_query</span></code></a>(query, *[, n, hint, refiner, _span])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.refine_query" title="foley.refine_query"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refine_query</span></code></a>(query, *[, n, hint, refiner, _span])</p></td>
 <td><p>Expand <code class="docutils literal notranslate"><span class="pre">query</span></code> into up to <code class="docutils literal notranslate"><span class="pre">n</span></code> paraphrases for multi-query retrieval.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.verify_match" title="foley.verify_match"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_match</span></code></a>(event, candidate, *[, level, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.verify_match" title="foley.verify_match"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_match</span></code></a>(event, candidate, *[, level, ...])</p></td>
 <td><p>Verify <code class="docutils literal notranslate"><span class="pre">candidate</span></code> against <code class="docutils literal notranslate"><span class="pre">event</span></code> up to rung <code class="docutils literal notranslate"><span class="pre">level</span></code> (AND-confirming ladder).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.decide" title="foley.decide"><code class="xref py py-obj docutils literal notranslate"><span class="pre">decide</span></code></a>(event, kept, verified, *, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.decide" title="foley.decide"><code class="xref py py-obj docutils literal notranslate"><span class="pre">decide</span></code></a>(event, kept, verified, *, ...)</p></td>
 <td><p>The single generate-vs-retrieve branch — a PURE function (report 05 §4).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.score" title="foley.score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score</span></code></a>(segments, *[, audio, transcript, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.score" title="foley.score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score</span></code></a>(segments, *[, audio, transcript, ...])</p></td>
 <td><p>Choose sounds for narration text and (optionally) weave them into the narration audio.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.install_agent_kit" title="foley.install_agent_kit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">install_agent_kit</span></code></a>([dest, overwrite])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.install_agent_kit" title="foley.install_agent_kit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">install_agent_kit</span></code></a>([dest, overwrite])</p></td>
 <td><p>Copy the shipped skill + slash command + subagent into <code class="docutils literal notranslate"><span class="pre">dest</span></code> (a <code class="docutils literal notranslate"><span class="pre">.claude</span></code> dir).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.mcp_server" title="foley.mcp_server"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mcp_server</span></code></a>(*[, library, session, runtime, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.mcp_server" title="foley.mcp_server"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mcp_server</span></code></a>(*[, library, session, runtime, ...])</p></td>
 <td><p>Build the foley MCP server (lazy <code class="docutils literal notranslate"><span class="pre">py2mcp</span></code>); registers the JSON-safe tool surface.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.build_mcp_server" title="foley.build_mcp_server"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_mcp_server</span></code></a>(*[, library, session, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.build_mcp_server" title="foley.build_mcp_server"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_mcp_server</span></code></a>(*[, library, session, ...])</p></td>
 <td><p>Build the foley MCP server (lazy <code class="docutils literal notranslate"><span class="pre">py2mcp</span></code>); registers the JSON-safe tool surface.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.make_http_app" title="foley.make_http_app"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_http_app</span></code></a>(*, auth[, path, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.make_http_app" title="foley.make_http_app"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_http_app</span></code></a>(*, auth[, path, ...])</p></td>
 <td><p>Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.serve_http" title="foley.serve_http"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serve_http</span></code></a>(*[, host, port, path])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.serve_http" title="foley.serve_http"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serve_http</span></code></a>(*[, host, port, path])</p></td>
 <td><p>Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.preview" title="foley.preview"><code class="xref py py-obj docutils literal notranslate"><span class="pre">preview</span></code></a>(candidate_or_id, *[, seconds, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.preview" title="foley.preview"><code class="xref py py-obj docutils literal notranslate"><span class="pre">preview</span></code></a>(candidate_or_id, *[, seconds, ...])</p></td>
 <td><p>Produce a short audition of a sound; set its <code class="docutils literal notranslate"><span class="pre">preview_uri</span></code> to a store key.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.similar_to" title="foley.similar_to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">similar_to</span></code></a>(clip_or_candidate, *[, k, library])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.similar_to" title="foley.similar_to"><code class="xref py py-obj docutils literal notranslate"><span class="pre">similar_to</span></code></a>(clip_or_candidate, *[, k, library])</p></td>
 <td><p>&quot;More like this&quot; — neighbours of a sound id / candidate, or of a raw clip.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.refine" title="foley.refine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refine</span></code></a>([session, query, picked_ids, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.refine" title="foley.refine"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refine</span></code></a>([session, query, picked_ids, ...])</p></td>
 <td><p>Relevance-feedback refinement: expand for recall, boost picks, drop rejects, re-rank.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.make_session_store" title="foley.make_session_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_session_store</span></code></a>([session_id, name, rootdir])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.make_session_store" title="foley.make_session_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_session_store</span></code></a>([session_id, name, rootdir])</p></td>
 <td><p>Build a per-session JSON store: <code class="docutils literal notranslate"><span class="pre">Mapping[key</span> <span class="pre">-&gt;</span> <span class="pre">dict]</span></code> under <code class="docutils literal notranslate"><span class="pre">sessions/{id}/{name}/</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.offline" title="foley.offline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">offline</span></code></a>([config])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.offline" title="foley.offline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">offline</span></code></a>([config])</p></td>
 <td><p>Alias of <code class="xref py py-func docutils literal notranslate"><span class="pre">offline_scope()</span></code> — <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">foley.offline():</span> <span class="pre">...</span></code> for local-first runs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.is_offline" title="foley.is_offline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_offline</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.is_offline" title="foley.is_offline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_offline</span></code></a>()</p></td>
 <td><p>Whether an offline runtime scope is currently active.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.using_source_accounts" title="foley.using_source_accounts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">using_source_accounts</span></code></a>(**accounts)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.using_source_accounts" title="foley.using_source_accounts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">using_source_accounts</span></code></a>(**accounts)</p></td>
 <td><p>Bind per-request source accounts (a key, and what goes with it) for a <code class="docutils literal notranslate"><span class="pre">with</span></code> block.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.check_requirements" title="foley.check_requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_requirements</span></code></a>(*[, names, verbose])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.check_requirements" title="foley.check_requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_requirements</span></code></a>(*[, names, verbose])</p></td>
 <td><p>Report which optional foley capabilities are available (<code class="docutils literal notranslate"><span class="pre">{name:</span> <span class="pre">is_available}</span></code>).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.verify_and_setup" title="foley.verify_and_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_and_setup</span></code></a>(*[, names])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.verify_and_setup" title="foley.verify_and_setup"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_and_setup</span></code></a>(*[, names])</p></td>
 <td><p>Return a per-requirement status + guidance report (never runs an installer).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.capability_report" title="foley.capability_report"><code class="xref py py-obj docutils literal notranslate"><span class="pre">capability_report</span></code></a>(*[, runtime])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.capability_report" title="foley.capability_report"><code class="xref py py-obj docutils literal notranslate"><span class="pre">capability_report</span></code></a>(*[, runtime])</p></td>
 <td><p>A JSON-safe capability + posture snapshot for the CLI, docs, and the MCP tool.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.evaluate" title="foley.evaluate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evaluate</span></code></a>(*[, golden, k])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.evaluate" title="foley.evaluate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evaluate</span></code></a>(*[, golden, k])</p></td>
 <td><p>Run the Tier-1 retrieval eval over the golden set (<a class="reference external" href="mailto:nDCG&#37;&#52;&#48;10">nDCG<span>&#64;</span>10</a> / recall / mAP / MRR).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.evaluate_fit" title="foley.evaluate_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evaluate_fit</span></code></a>(*[, golden, sample, level, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.evaluate_fit" title="foley.evaluate_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">evaluate_fit</span></code></a>(*[, golden, sample, level, ...])</p></td>
 <td><p>Run the Tier-2 <strong>fit</strong> eval over the golden set — &quot;does the accepted clip fit?&quot; (#10b).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.credits" title="foley.credits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credits</span></code></a>(sounds, *[, title, only_required, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.credits" title="foley.credits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credits</span></code></a>(sounds, *[, title, only_required, ...])</p></td>
 <td><p>Build the TASL attribution <a class="reference internal" href="foley.provenance.html#foley.provenance.Credits" title="foley.provenance.Credits"><code class="xref py py-class docutils literal notranslate"><span class="pre">Credits</span></code></a> for <code class="docutils literal notranslate"><span class="pre">sounds</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.credits_for" title="foley.credits_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credits_for</span></code></a>(sounds, *[, title, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.credits_for" title="foley.credits_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credits_for</span></code></a>(sounds, *[, title, ...])</p></td>
 <td><p>Build the deduplicated <a class="reference internal" href="#foley.Credits" title="foley.Credits"><code class="xref py py-class docutils literal notranslate"><span class="pre">Credits</span></code></a> for the sounds used in a run.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.attribution_line" title="foley.attribution_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">attribution_line</span></code></a>(source, *[, fmt])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.attribution_line" title="foley.attribution_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">attribution_line</span></code></a>(source, *[, fmt])</p></td>
 <td><p>Render one sound's TASL attribution line.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.credit_entry" title="foley.credit_entry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credit_entry</span></code></a>(record, *[, title])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.credit_entry" title="foley.credit_entry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credit_entry</span></code></a>(record, *[, title])</p></td>
 <td><p>Build a <a class="reference internal" href="#foley.CreditEntry" title="foley.CreditEntry"><code class="xref py py-class docutils literal notranslate"><span class="pre">CreditEntry</span></code></a> from a record (title override optional).</p></td>
 </tr>
 </tbody>
@@ -3280,6 +3290,27 @@ its lifetime (default <a class="reference internal" href="foley.cost.html#foley.
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.capabilities_of">
+<span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">capabilities_of</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/capabilities.html#capabilities_of"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.capabilities_of" title="Link to this definition">#</a></dt>
+<dd><p>The capability view of one <code class="docutils literal notranslate"><span class="pre">SOURCE_CONFIG</span></code> (JSON-safe).</p>
+<p>Keys: <code class="docutils literal notranslate"><span class="pre">kind</span></code>, <code class="docutils literal notranslate"><span class="pre">affordances</span></code> (what the source accepts), <code class="docutils literal notranslate"><span class="pre">deterministic</span></code>
+(a <code class="docutils literal notranslate"><span class="pre">seed</span></code> is honoured), <code class="docutils literal notranslate"><span class="pre">loopable</span></code> (a native <code class="docutils literal notranslate"><span class="pre">loop</span></code> is honoured),
+<code class="docutils literal notranslate"><span class="pre">offline_capable</span></code> (<code class="docutils literal notranslate"><span class="pre">data_egress</span> <span class="pre">==</span> <span class="pre">'local'</span></code>), <code class="docutils literal notranslate"><span class="pre">max_duration_s</span></code> /
+<code class="docutils literal notranslate"><span class="pre">min_duration_s</span></code> / <code class="docutils literal notranslate"><span class="pre">sample_rate</span></code> (<code class="docutils literal notranslate"><span class="pre">None</span></code> when undeclared).
+<code class="docutils literal notranslate"><span class="pre">deterministic</span></code> and <code class="docutils literal notranslate"><span class="pre">loopable</span></code> are <code class="docutils literal notranslate"><span class="pre">None</span></code> for retrieve sources (they only
+describe generators). A <code class="docutils literal notranslate"><span class="pre">config['capabilities']</span></code> dict adds facts a config cannot
+imply (e.g. <code class="docutils literal notranslate"><span class="pre">watermarked</span></code>); it may not redefine a derived key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">config['capabilities']</span></code> collides with a derived key.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.capability_report">
 <span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">capability_report</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">runtime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/requirements.html#capability_report"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.capability_report" title="Link to this definition">#</a></dt>
 <dd><p>A JSON-safe capability + posture snapshot for the CLI, docs, and the MCP tool.</p>
@@ -3294,9 +3325,10 @@ lists <code class="docutils literal notranslate"><span class="pre">degraded_tool
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">{keys,</span> <span class="pre">extras,</span> <span class="pre">system,</span> <span class="pre">offline,</span> <span class="pre">sources,</span> <span class="pre">llm,</span> <span class="pre">degraded_tools}</span></code> — all
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">{keys,</span> <span class="pre">extras,</span> <span class="pre">system,</span> <span class="pre">offline,</span> <span class="pre">sources,</span> <span class="pre">backends,</span> <span class="pre">llm,</span> <span class="pre">degraded_tools}</span></code> — all
 JSON-safe. <code class="docutils literal notranslate"><span class="pre">llm</span></code> is the provider the SELECT rungs resolve to right now
-(see <a class="reference internal" href="foley.agent.llm.html#foley.agent.llm.resolve_llm" title="foley.agent.llm.resolve_llm"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.agent.llm.resolve_llm()</span></code></a>), or the reason it cannot resolve.</p>
+(see <a class="reference internal" href="foley.agent.llm.html#foley.agent.llm.resolve_llm" title="foley.agent.llm.resolve_llm"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.agent.llm.resolve_llm()</span></code></a>), or the reason it cannot resolve.
+<code class="docutils literal notranslate"><span class="pre">backends</span></code> is <a class="reference internal" href="#foley.ledger" title="foley.ledger"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.ledger()</span></code></a> (per-source capabilities + planned targets).</p>
 </dd>
 </dl>
 </dd></dl>
@@ -4315,6 +4347,25 @@ SSOT consulted).</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.ledger">
+<span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">ledger</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">targets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/capabilities.html#ledger"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.ledger" title="Link to this definition">#</a></dt>
+<dd><p>Implemented vs planned backends, computed from the registry (never hand-kept).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>targets</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]]</span>) – Planned backends (default <code class="xref py py-func docutils literal notranslate"><span class="pre">load_targets()</span></code>), each
+<code class="docutils literal notranslate"><span class="pre">{name,</span> <span class="pre">kind,</span> <span class="pre">note}</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">{'implemented':</span> <span class="pre">{name:</span> <span class="pre">capabilities},</span> <span class="pre">'planned':</span> <span class="pre">[target,</span> <span class="pre">...]}</span></code>;
+<code class="docutils literal notranslate"><span class="pre">planned</span></code> holds only targets with no registered source of that name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.license_id_from_cc_url">
 <span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">license_id_from_cc_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#license_id_from_cc_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.license_id_from_cc_url" title="Link to this definition">#</a></dt>
 <dd><p>Map a Creative-Commons license URL <strong>or label</strong> to <code class="docutils literal notranslate"><span class="pre">(license_id,</span> <span class="pre">verified)</span></code>.</p>
@@ -4367,6 +4418,35 @@ for (a <code class="docutils literal notranslate"><span class="pre">2.1/jp</span
 unrecognized / <code class="docutils literal notranslate"><span class="pre">Proprietary-*</span></code> id.</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.list_backends">
+<span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">list_backends</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">supports</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/capabilities.html#list_backends"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.list_backends" title="Link to this definition">#</a></dt>
+<dd><p>Names of registered live sources, filtered by <code class="docutils literal notranslate"><span class="pre">kind</span></code> and by what they support.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kind</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – <code class="docutils literal notranslate"><span class="pre">'generate'</span></code> or <code class="docutils literal notranslate"><span class="pre">'retrieve'</span></code> (<code class="docutils literal notranslate"><span class="pre">None</span></code>: both).</p></li>
+<li><p><strong>supports</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span>]</span>) – One name or a list (all must hold). A name is an affordance the
+source accepts (<code class="docutils literal notranslate"><span class="pre">'seed'</span></code>, <code class="docutils literal notranslate"><span class="pre">'negative_prompt'</span></code>, <code class="docutils literal notranslate"><span class="pre">'loop'</span></code> …) or a
+true flag of <a class="reference internal" href="#foley.capabilities_of" title="foley.capabilities_of"><code class="xref py py-func docutils literal notranslate"><span class="pre">capabilities_of()</span></code></a> (<code class="docutils literal notranslate"><span class="pre">'deterministic'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'loopable'</span></code>, <code class="docutils literal notranslate"><span class="pre">'offline_capable'</span></code>, or any boolean fact a config declares).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – On an unknown <code class="docutils literal notranslate"><span class="pre">kind</span></code> or <code class="docutils literal notranslate"><span class="pre">supports</span></code> name (a typo must not
+    read as “nothing supports it”).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">foley</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="s1">'stable_audio'</span> <span class="ow">in</span> <span class="n">foley</span><span class="o">.</span><span class="n">list_backends</span><span class="p">(</span><span class="n">supports</span><span class="o">=</span><span class="s1">'seed'</span><span class="p">)</span>
+<span class="go">True</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
@@ -5709,6 +5789,7 @@ escalates to the injected/​default judge for that rung and returns <em>its</em
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.bootstrap"><code class="docutils literal notranslate"><span class="pre">bootstrap()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.build_mcp_server"><code class="docutils literal notranslate"><span class="pre">build_mcp_server()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.candidate_of"><code class="docutils literal notranslate"><span class="pre">candidate_of()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.capabilities_of"><code class="docutils literal notranslate"><span class="pre">capabilities_of()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.capability_report"><code class="docutils literal notranslate"><span class="pre">capability_report()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.check_requirements"><code class="docutils literal notranslate"><span class="pre">check_requirements()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.content_key"><code class="docutils literal notranslate"><span class="pre">content_key()</span></code></a></li>
@@ -5748,8 +5829,10 @@ escalates to the injected/​default judge for that rung and returns <em>its</em
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.keep"><code class="docutils literal notranslate"><span class="pre">keep()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.keep_sound"><code class="docutils literal notranslate"><span class="pre">keep_sound()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.lancedb_available"><code class="docutils literal notranslate"><span class="pre">lancedb_available()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.ledger"><code class="docutils literal notranslate"><span class="pre">ledger()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.license_id_from_cc_url"><code class="docutils literal notranslate"><span class="pre">license_id_from_cc_url()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.license_meta"><code class="docutils literal notranslate"><span class="pre">license_meta()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.list_backends"><code class="docutils literal notranslate"><span class="pre">list_backends()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.list_sources"><code class="docutils literal notranslate"><span class="pre">list_sources()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.loudness_normalize"><code class="docutils literal notranslate"><span class="pre">loudness_normalize()</span></code></a></li>

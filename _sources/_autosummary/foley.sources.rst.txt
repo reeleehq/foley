@@ -53,6 +53,7 @@ foley.sources
 
    base
    bbc_remarc
+   capabilities
    clotho
    elevenlabs
    fal

@@ -1,4 +1,4 @@
-> built 2026-10-26 14:52 UTC from d3da98a (main) · foley 0.0.56. Details: build_info.json
+> built 2026-10-26 16:18 UTC from d91c80f (main) · foley 0.0.57. Details: build_info.json
 
 # index.html.md
 
@@ -5162,6 +5162,9 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`demo`](_autosummary/foley.html.md#foley.demo)(\*[, library, query, k])                       | Ingest the bundled Ring-0 fixture and run one search — the smoke test.                                                                                                         |
 | [`add_from`](_autosummary/foley.html.md#foley.add_from)(source, \*, query[, license, limit, ...])  | Search a live `source` and ingest its license-clean hits into `library`.                                                                                                       |
 | [`list_sources`](_autosummary/foley.html.md#foley.list_sources)(\*[, egress_allow])                    | Return the names of registered live sources (runs discovery first).                                                                                                            |
+| [`list_backends`](_autosummary/foley.html.md#foley.list_backends)(\*[, kind, supports])                 | Names of registered live sources, filtered by `kind` and by what they support.                                                                                                 |
+| [`capabilities_of`](_autosummary/foley.html.md#foley.capabilities_of)(config)                             | The capability view of one `SOURCE_CONFIG` (JSON-safe).                                                                                                                        |
+| [`ledger`](_autosummary/foley.html.md#foley.ledger)(\*[, targets])                               | Implemented vs planned backends, computed from the registry (never hand-kept).                                                                                                 |
 | [`register_source`](_autosummary/foley.html.md#foley.register_source)(name, config[, adapter])            | Register a live source directly (out-of-tree plugin or a test double).                                                                                                         |
 | [`generate`](_autosummary/foley.html.md#foley.generate)(prompt, \*[, backend, library, ...])       | Generate a sound effect for `prompt` and add it to the library (by-value).                                                                                                     |
 | [`candidate_of`](_autosummary/foley.html.md#foley.candidate_of)(result)                                | Wrap a stored [`IngestResult`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestResult) as a generated candidate.                                          |
@@ -6953,6 +6956,23 @@ The report-10 §4.2 shape: retrieval and generation return the same
 * **Returns:**
   A [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate) with `origin=CandidateOrigin.generated`.
 
+### foley.capabilities_of(config)
+
+The capability view of one `SOURCE_CONFIG` (JSON-safe).
+
+Keys: `kind`, `affordances` (what the source accepts), `deterministic`
+(a `seed` is honoured), `loopable` (a native `loop` is honoured),
+`offline_capable` (`data_egress == 'local'`), `max_duration_s` /
+`min_duration_s` / `sample_rate` (`None` when undeclared).
+`deterministic` and `loopable` are `None` for retrieve sources (they only
+describe generators). A `config['capabilities']` dict adds facts a config cannot
+imply (e.g. `watermarked`); it may not redefine a derived key.
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `config['capabilities']` collides with a derived key.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### foley.capability_report(, runtime=None)
 
 A JSON-safe capability + posture snapshot for the CLI, docs, and the MCP tool.
@@ -6966,9 +6986,10 @@ lists `degraded_tools` — capabilities whose requirement is unmet.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 * **Returns:**
-  `{keys, extras, system, offline, sources, llm, degraded_tools}` — all
+  `{keys, extras, system, offline, sources, backends, llm, degraded_tools}` — all
   JSON-safe. `llm` is the provider the SELECT rungs resolve to right now
   (see [`foley.agent.llm.resolve_llm()`](_autosummary/foley.agent.llm.html.md#foley.agent.llm.resolve_llm)), or the reason it cannot resolve.
+  `backends` is [`foley.ledger()`](_autosummary/foley.html.md#foley.ledger) (per-source capabilities + planned targets).
 
 ### foley.check_requirements(, names=None, verbose=False)
 
@@ -7756,6 +7777,19 @@ True if `lancedb` is importable (the `foley[index]` extra is present).
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
+### foley.ledger(, targets=None)
+
+Implemented vs planned backends, computed from the registry (never hand-kept).
+
+* **Parameters:**
+  **targets** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]) – Planned backends (default `load_targets()`), each
+  `{name, kind, note}`.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+* **Returns:**
+  `{'implemented': {name: capabilities}, 'planned': [target, ...]}`;
+  `planned` holds only targets with no registered source of that name.
+
 ### foley.license_id_from_cc_url(url)
 
 Map a Creative-Commons license URL **or label** to `(license_id, verified)`.
@@ -7798,6 +7832,28 @@ Return the display [`LicenseMeta`](_autosummary/foley.html.md#foley.LicenseMeta)
 * **Returns:**
   The mapped [`LicenseMeta`](_autosummary/foley.html.md#foley.LicenseMeta), or `UNKNOWN_LICENSE_META` for an
   unrecognized / `Proprietary-*` id.
+
+### foley.list_backends(, kind=None, supports=None)
+
+Names of registered live sources, filtered by `kind` and by what they support.
+
+* **Parameters:**
+  * **kind** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'generate'` or `'retrieve'` (`None`: both).
+  * **supports** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – One name or a list (all must hold). A name is an affordance the
+    source accepts (`'seed'`, `'negative_prompt'`, `'loop'` …) or a
+    true flag of [`capabilities_of()`](_autosummary/foley.html.md#foley.capabilities_of) (`'deterministic'`,
+    `'loopable'`, `'offline_capable'`, or any boolean fact a config declares).
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – On an unknown `kind` or `supports` name (a typo must not
+      read as “nothing supports it”).
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+```pycon
+>>> import foley
+>>> 'stable_audio' in foley.list_backends(supports='seed')
+True
+```
 
 ### foley.list_sources(, egress_allow=None)
 
@@ -13619,7 +13675,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'netflix sound', 'tudum', 'ta-dum', 'netflix intro', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel jingle', 'intel bong', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'ta-dum', 'netflix intro', 'netflix sound', 'tudum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -14578,9 +14634,10 @@ lists `degraded_tools` — capabilities whose requirement is unmet.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 * **Returns:**
-  `{keys, extras, system, offline, sources, llm, degraded_tools}` — all
+  `{keys, extras, system, offline, sources, backends, llm, degraded_tools}` — all
   JSON-safe. `llm` is the provider the SELECT rungs resolve to right now
   (see [`foley.agent.llm.resolve_llm()`](_autosummary/foley.agent.llm.html.md#foley.agent.llm.resolve_llm)), or the reason it cannot resolve.
+  `backends` is [`foley.ledger()`](_autosummary/foley.html.md#foley.ledger) (per-source capabilities + planned targets).
 
 ### foley.requirements.check_requirements(, names=None, verbose=False)
 
@@ -15466,6 +15523,95 @@ passes explicit consent (`accept_ai_restricted=True`).
 ### foley.sources.bbc_remarc.BBC_REMARC *= UniformCorpus(name='bbc_remarc', ring=2, default_license_id='RemArc', source='bbc_remarc', rights_verified=True, tag_hints_from_path=False)*
 
 The BBC RemArc Ring-2 adapter (non-commercial AND ai_training_ok=False).
+
+
+# _autosummary/foley.sources.capabilities.html.md
+
+# foley.sources.capabilities
+
+What each live source emits, and what foley plans to support: `list_backends` + `ledger`.
+
+A `SOURCE_CONFIG` already says which vendor knobs a source *accepts*
+(`supported_affordances`). This module reads the same declarations and answers
+the questions a caller asks before choosing a backend: is the output reproducible
+from a seed, can it loop, how long can a clip be, does it run on-device?
+
+* [`capabilities_of()`](_autosummary/foley.sources.capabilities.html.md#foley.sources.capabilities.capabilities_of) is one pure view over a config: facts derived from the
+  fields that are already the SSOT (`supported_affordances`, `data_egress`,
+  `native_defaults`), overlaid with an optional explicit `config['capabilities']`
+  block for facts a config cannot imply (`sample_rate`, `watermarked`, …).
+* [`list_backends()`](_autosummary/foley.sources.capabilities.html.md#foley.sources.capabilities.list_backends) filters the registry by `kind` and `supports`.
+* [`ledger()`](_autosummary/foley.sources.capabilities.html.md#foley.sources.capabilities.ledger) computes implemented vs planned from the registry and
+  `foley/data/targets.json` (planned backends that otherwise live only in prose).
+  A planned target drops out of `planned` by itself once a source of that name is
+  registered, so the ledger cannot drift from the code.
+
+### Functions
+
+| [`capabilities_of`](_autosummary/foley.sources.capabilities.html.md#foley.sources.capabilities.capabilities_of)(config)             | The capability view of one `SOURCE_CONFIG` (JSON-safe).                        |
+|--------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
+| [`ledger`](_autosummary/foley.sources.capabilities.html.md#foley.sources.capabilities.ledger)(\*[, targets])               | Implemented vs planned backends, computed from the registry (never hand-kept). |
+| [`list_backends`](_autosummary/foley.sources.capabilities.html.md#foley.sources.capabilities.list_backends)(\*[, kind, supports]) | Names of registered live sources, filtered by `kind` and by what they support. |
+| [`load_targets`](_autosummary/foley.sources.capabilities.html.md#foley.sources.capabilities.load_targets)()                      | The planned-backend list shipped as `foley/data/targets.json`.                 |
+
+### foley.sources.capabilities.capabilities_of(config)
+
+The capability view of one `SOURCE_CONFIG` (JSON-safe).
+
+Keys: `kind`, `affordances` (what the source accepts), `deterministic`
+(a `seed` is honoured), `loopable` (a native `loop` is honoured),
+`offline_capable` (`data_egress == 'local'`), `max_duration_s` /
+`min_duration_s` / `sample_rate` (`None` when undeclared).
+`deterministic` and `loopable` are `None` for retrieve sources (they only
+describe generators). A `config['capabilities']` dict adds facts a config cannot
+imply (e.g. `watermarked`); it may not redefine a derived key.
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `config['capabilities']` collides with a derived key.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.sources.capabilities.ledger(, targets=None)
+
+Implemented vs planned backends, computed from the registry (never hand-kept).
+
+* **Parameters:**
+  **targets** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]) – Planned backends (default [`load_targets()`](_autosummary/foley.sources.capabilities.html.md#foley.sources.capabilities.load_targets)), each
+  `{name, kind, note}`.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+* **Returns:**
+  `{'implemented': {name: capabilities}, 'planned': [target, ...]}`;
+  `planned` holds only targets with no registered source of that name.
+
+### foley.sources.capabilities.list_backends(, kind=None, supports=None)
+
+Names of registered live sources, filtered by `kind` and by what they support.
+
+* **Parameters:**
+  * **kind** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'generate'` or `'retrieve'` (`None`: both).
+  * **supports** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – One name or a list (all must hold). A name is an affordance the
+    source accepts (`'seed'`, `'negative_prompt'`, `'loop'` …) or a
+    true flag of [`capabilities_of()`](_autosummary/foley.sources.capabilities.html.md#foley.sources.capabilities.capabilities_of) (`'deterministic'`,
+    `'loopable'`, `'offline_capable'`, or any boolean fact a config declares).
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – On an unknown `kind` or `supports` name (a typo must not
+      read as “nothing supports it”).
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+```pycon
+>>> import foley
+>>> 'stable_audio' in foley.list_backends(supports='seed')
+True
+```
+
+### foley.sources.capabilities.load_targets()
+
+The planned-backend list shipped as `foley/data/targets.json`.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 
 # _autosummary/foley.sources.clotho.html.md
@@ -16985,6 +17131,7 @@ the default `rings` — it is opt-in only.
 | [`base`](_autosummary/foley.sources.base.html.md#module-foley.sources.base)                           | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.                             |
 |-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 | [`bbc_remarc`](_autosummary/foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)               | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                                                |
+| [`capabilities`](_autosummary/foley.sources.capabilities.html.md#module-foley.sources.capabilities)           | What each live source emits, and what foley plans to support: `list_backends` + `ledger`.                  |
 | [`clotho`](_autosummary/foley.sources.clotho.html.md#module-foley.sources.clotho)                       | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.                               |
 | [`elevenlabs`](_autosummary/foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)               | ElevenLabs Sound Effects generate source (hosted; #6).                                                     |
 | [`fal`](_autosummary/foley.sources.fal.html.md#module-foley.sources.fal)                             | fal-hosted generate sources, executed through `falaw` (#73).                                               |
@@ -19747,7 +19894,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-26 14:52 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/d3da98a36ff2c47ca853da3a05e6dc1fa5754463"><code>d3da98a</code></a> on branch <code>main</code>, for **foley 0.0.56** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 16:18 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/d91c80f01b500fa95e0f8d10ec035336a3c87811"><code>d91c80f</code></a> on branch <code>main</code>, for **foley 0.0.57** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -19756,7 +19903,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/d3da98a36ff2c47ca853da3a05e6dc1fa5754463"><code>d3da98a36ff2c47ca853da3a05e6dc1fa5754463</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/d91c80f01b500fa95e0f8d10ec035336a3c87811"><code>d91c80f01b500fa95e0f8d10ec035336a3c87811</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -19767,9 +19914,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40343346393">40343346393</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40357541986">40357541986</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>d3da98a36ff2c47ca853da3a05e6dc1fa5754463</code> (in the history of the built commit) |
+| Event commit | <code>d91c80f01b500fa95e0f8d10ec035336a3c87811</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -19794,13 +19941,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.56/">0.0.56</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.57/">0.0.57</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout d3da98a36ff2c47ca853da3a05e6dc1fa5754463
+git checkout d91c80f01b500fa95e0f8d10ec035336a3c87811
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

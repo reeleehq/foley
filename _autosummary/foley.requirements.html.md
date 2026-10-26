@@ -42,9 +42,10 @@ lists `degraded_tools` — capabilities whose requirement is unmet.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 * **Returns:**
-  `{keys, extras, system, offline, sources, llm, degraded_tools}` — all
+  `{keys, extras, system, offline, sources, backends, llm, degraded_tools}` — all
   JSON-safe. `llm` is the provider the SELECT rungs resolve to right now
   (see [`foley.agent.llm.resolve_llm()`](foley.agent.llm.html.md#foley.agent.llm.resolve_llm)), or the reason it cannot resolve.
+  `backends` is [`foley.ledger()`](foley.html.md#foley.ledger) (per-source capabilities + planned targets).
 
 ### foley.requirements.check_requirements(, names=None, verbose=False)
 
