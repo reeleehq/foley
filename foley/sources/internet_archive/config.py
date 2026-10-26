@@ -49,6 +49,7 @@ SOURCE_CONFIG = {
     "license": {
         "default_license_id": "PDM-1.0",
         "cache_bytes_ok": True,
+        "cc0_license_ids": ["CC0-1.0"],
         "accepted_license_ids": [
             "CC0-1.0",
             "CC-BY-2.0",

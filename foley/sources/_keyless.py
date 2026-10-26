@@ -1,10 +1,10 @@
 """Shared pieces of the keyless retrieve sources (Openverse, Wikimedia Commons, Internet Archive; #79).
 
 * :func:`get_json` / :func:`get_bytes`: a GET through the injected
-  :class:`~foley.sources.http.Transport` that waits and retries on HTTP 429 (Commons
-  rate-limits a burst of four or five downloads; waits of 10, 30 and 60 s were enough)
-  and raises with the status on any other failure. ``sleep`` is injectable, so tests
-  never wait.
+  :class:`~foley.sources.http.Transport` that raises with the status on a non-200 answer.
+  Backoff on HTTP 429 and the rate limit are the transport's: the registry wraps every
+  external source's transport in :func:`foley.sources.resilience.resilient`, and a source
+  with its own waits (Commons) declares ``retry`` in its config.
 * :func:`strip_html`: the HTML-bearing metadata fields (Commons ``Artist``,
   ``ImageDescription``) as plain text.
 * :func:`license_for_item`: a source's own licence string through the one SSOT
@@ -18,13 +18,9 @@ from __future__ import annotations
 
 import html
 import re
-import time
-from typing import Callable, Optional
+from typing import Optional
 
 from .http import Transport
-
-#: Seconds waited before each retry of a rate-limited (HTTP 429) request.
-DEFAULT_RETRY_WAITS_S = (10.0, 30.0, 60.0)
 
 _TAG = re.compile(r"<[^>]+>")
 _SPACE = re.compile(r"\s+")
@@ -35,22 +31,9 @@ def strip_html(text: Optional[str]) -> str:
     return _SPACE.sub(" ", html.unescape(_TAG.sub(" ", text or ""))).strip()
 
 
-def _get(
-    http: Transport,
-    url: str,
-    *,
-    params: Optional[dict],
-    headers: Optional[dict],
-    what: str,
-    waits: "tuple[float, ...]",
-    sleep: Callable[[float], None],
-):
-    """One GET, retried after each wait in ``waits`` while the answer is 429."""
-    for wait in (*waits, None):
-        resp = http("GET", url, params=params, headers=headers)
-        if resp.status_code != 429 or wait is None:
-            break
-        sleep(wait)
+def _get(http: Transport, url: str, *, params, headers, what: str):
+    """One GET; a non-200 answer raises with its status (retrying is the transport's job)."""
+    resp = http("GET", url, params=params, headers=headers)
     if resp.status_code != 200:
         raise RuntimeError(f"{what} GET {url} -> {resp.status_code}")
     return resp
@@ -63,45 +46,45 @@ def get_json(
     params: Optional[dict] = None,
     headers: Optional[dict] = None,
     what: str,
-    waits: "tuple[float, ...]" = DEFAULT_RETRY_WAITS_S,
-    sleep: Callable[[float], None] = time.sleep,
 ):
-    """The decoded JSON of a GET; see the module docstring for the 429 policy."""
-    return _get(
-        http, url, params=params, headers=headers, what=what, waits=waits, sleep=sleep
-    ).json()
+    """The decoded JSON of a GET."""
+    return _get(http, url, params=params, headers=headers, what=what).json()
 
 
 def get_bytes(
-    http: Transport,
-    url: str,
-    *,
-    headers: Optional[dict] = None,
-    what: str,
-    waits: "tuple[float, ...]" = DEFAULT_RETRY_WAITS_S,
-    sleep: Callable[[float], None] = time.sleep,
+    http: Transport, url: str, *, headers: Optional[dict] = None, what: str
 ) -> bytes:
-    """The body of a GET; see the module docstring for the 429 policy."""
-    return _get(
-        http, url, params=None, headers=headers, what=what, waits=waits, sleep=sleep
-    ).content
+    """The body of a GET."""
+    return _get(http, url, params=None, headers=headers, what=what).content
+
+
+def raw_id(prefix: str, source_id: str) -> str:
+    """``source_id`` without its ``prefix`` (either id form is accepted)."""
+    s = str(source_id)
+    return s[len(prefix) :] if s.startswith(prefix) else s
 
 
 def license_for_item(
-    config: dict, *candidates: Optional[str]
+    config: dict, *candidates: Optional[str], only: Optional[list] = None
 ) -> "Optional[tuple[str, bool]]":
     """The ``(license_id, verified)`` of an item, or ``None`` when it must be dropped.
 
-    ``candidates`` are the source's licence strings for the item, most reliable first (a
-    licence URL, then a short label): the first that parses to a known licence wins. An
-    id outside the config's ``accepted_license_ids`` (share-alike, no-derivatives,
-    non-commercial, unknown) is dropped: fail closed.
+    ``candidates`` are the source's licence strings for the item (a licence URL and/or a
+    short label). Every non-empty one must parse to a known licence and they must agree: a
+    share-alike URL is not cleared by a looser label next to it. The id must also be in
+    the config's ``accepted_license_ids`` (and in ``only``, when a narrower set is asked
+    for, e.g. CC0 alone). Anything else (share-alike, no-derivatives, non-commercial,
+    unknown, empty) is dropped: fail closed.
     """
     from ..licensing import license_id_from_cc_url
 
-    accepted = config["license"]["accepted_license_ids"]
-    for text in candidates:
-        license_id, verified = license_id_from_cc_url(text)
-        if license_id != "unknown":
-            return (license_id, verified) if license_id in accepted else None
-    return None
+    parsed = [license_id_from_cc_url(t) for t in candidates if t and str(t).strip()]
+    ids = {license_id for license_id, _ in parsed}
+    if not parsed or "unknown" in ids or len(ids) != 1:
+        return None
+    (license_id,) = ids
+    if license_id not in config["license"]["accepted_license_ids"]:
+        return None
+    if only is not None and license_id not in only:
+        return None
+    return license_id, all(verified for _, verified in parsed)

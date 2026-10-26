@@ -3,32 +3,25 @@
 ``search`` calls ``/v1/audio/`` (anonymous: ``page_size`` ≤ 20, Freesound and Jamendo rows
 excluded, see the config) with the licence filter pushed into the query, then re-checks
 each row's licence fail-closed through :func:`foley.sources._keyless.license_for_item`
-(Openverse does not verify licences). Durations arrive in milliseconds. ``download`` fetches
+(Openverse does not verify licences: a row's licence is the one its origin provider
+reported, trusted like Freesound's own field; the landing page is the check for anything
+that matters). The terms' "made using Openverse" notice is stamped on each licence record
+(``notice_text_required``), so the credits carry it. Durations arrive in milliseconds. ``download`` fetches
 the row's ``url`` (cached from search, else resolved from ``/audio/{id}/``). HTTP and the
 429 sleep are injected.
 """
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
-from .._keyless import (
-    DEFAULT_RETRY_WAITS_S,
-    get_bytes,
-    get_json,
-    license_for_item,
-)
+from .._keyless import get_bytes, get_json, license_for_item, raw_id
 from ..base import api_license
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
 _PREFIX = "openverse:"
-
-
-def _raw_id(source_id: str) -> str:
-    s = str(source_id)
-    return s[len(_PREFIX) :] if s.startswith(_PREFIX) else s
 
 
 class OpenverseAdapter:
@@ -39,8 +32,6 @@ class OpenverseAdapter:
         include_freesound: Keep Freesound rows (stored by reference, bytes never cached);
             off by default: use the ``freesound`` source for those.
         http: The injected :class:`~foley.sources.http.Transport`.
-        sleep: Called with the seconds to wait after an HTTP 429.
-        retry_waits_s: The waits, one per retry.
     """
 
     def __init__(
@@ -49,16 +40,10 @@ class OpenverseAdapter:
         *,
         include_freesound: bool = False,
         http: Optional[Transport] = None,
-        sleep: Optional[Callable[[float], None]] = None,
-        retry_waits_s: "tuple[float, ...]" = DEFAULT_RETRY_WAITS_S,
     ):
-        import time
-
         self.config = config if config is not None else SOURCE_CONFIG
         self._include_freesound = include_freesound
         self._http: Transport = http if http is not None else requests_transport
-        self._sleep = sleep if sleep is not None else time.sleep
-        self._waits = retry_waits_s
         self._urls: "dict[str, str]" = {}
 
     @property
@@ -74,8 +59,6 @@ class OpenverseAdapter:
             params=params,
             headers={"User-Agent": api["user_agent"]},
             what="Openverse",
-            waits=self._waits,
-            sleep=self._sleep,
         )
 
     def search(
@@ -118,7 +101,7 @@ class OpenverseAdapter:
         Raises:
             LookupError: If its licence is not accepted.
         """
-        rid = _raw_id(source_id)
+        rid = raw_id(_PREFIX, source_id)
         path = self.config["api"]["detail_endpoint"]["path"].format(id=rid)
         cand = self._candidate(self._get_json(path), only=None)
         if cand is None:
@@ -129,7 +112,7 @@ class OpenverseAdapter:
 
     def download(self, source_id: str) -> bytes:
         """The row's audio bytes (from the URL a search hit gave, else resolved by id)."""
-        rid = _raw_id(source_id)
+        rid = raw_id(_PREFIX, source_id)
         if rid not in self._urls:
             self.get(rid)
         return get_bytes(
@@ -137,8 +120,6 @@ class OpenverseAdapter:
             self._urls[rid],
             headers={"User-Agent": self.config["api"]["user_agent"]},
             what="Openverse",
-            waits=self._waits,
-            sleep=self._sleep,
         )
 
     def _candidate(self, row: dict, *, only: Optional[list]) -> Optional[Candidate]:
@@ -147,8 +128,8 @@ class OpenverseAdapter:
         by_reference = row.get("source") == "freesound"
         if by_reference and not self._include_freesound:
             return None
-        found = license_for_item(self.config, row.get("license_url"))
-        if found is None or (only is not None and found[0] not in only):
+        found = license_for_item(self.config, row.get("license_url"), only=only)
+        if found is None:
             return None
         license_id, verified = found
         rid = str(row["id"])
@@ -164,6 +145,8 @@ class OpenverseAdapter:
             # Freesound's terms forbid caching its bytes, even for CC0.
             overrides={"cache_bytes_ok": False} if by_reference else None,
         )
+        # Their terms: say "made using Openverse, not endorsed" wherever the sound is credited.
+        lic.notice_text_required = self.config["notice"]
         self._urls[rid] = row["url"]
         duration_ms = row.get("duration")
         record = SoundRecord(

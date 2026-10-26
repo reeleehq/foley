@@ -61,5 +61,8 @@ SOURCE_CONFIG = {
         "seen": "2026-10-26",
     },
     "rate": {"per_min": 30},  # a burst of four or five downloads gets a 429
+    # Waits of 10, 20, then 40 s were enough after a 429 (RetryPolicy fields, read by
+    # foley.sources.resilience.make_resilient_transport_from_config).
+    "retry": {"max_attempts": 4, "base_delay_s": 10.0, "max_delay_s": 60.0},
     "data_egress": "external",
 }

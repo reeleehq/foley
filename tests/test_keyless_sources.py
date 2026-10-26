@@ -37,31 +37,51 @@ class Fake:
         raise AssertionError(f"unexpected request {url}")
 
 
-NO_WAIT = dict(sleep=lambda s: None)
-
-
 # ---------------------------------------------------------------------------
 # the shared helpers
 # ---------------------------------------------------------------------------
 
 
-def test_a_429_is_waited_out_then_succeeds_or_gives_up():
-    waited = []
-    http = Fake(("x", [Resp(status=429), Resp(status=429), Resp({"ok": 1})]))
-    assert get_json(http, "https://x/a", what="t", sleep=waited.append) == {"ok": 1}
-    assert waited == [10.0, 30.0]
-    always = Fake(("x", [Resp(status=429)] * 9))
-    with pytest.raises(RuntimeError, match="429"):
-        get_json(
-            always, "https://x/a", what="t", waits=(1.0, 2.0), sleep=lambda s: None
-        )
-    assert len(always.calls) == 3  # the first try plus one per wait
+def test_a_non_200_answer_raises_with_its_status():
+    for status in (429, 500):
+        with pytest.raises(RuntimeError, match=str(status)):
+            get_bytes(Fake(("x", Resp(status=status))), "https://x/a", what="t")
+    assert get_json(Fake(("x", Resp({"ok": 1}))), "https://x/a", what="t") == {"ok": 1}
 
 
-def test_other_failures_are_not_retried():
-    http = Fake(("x", [Resp(status=500)]))
-    with pytest.raises(RuntimeError, match="500"):
-        get_bytes(http, "https://x/a", what="t", sleep=lambda s: pytest.fail("slept"))
+def test_commons_declares_its_own_429_waits_and_the_transport_honours_them():
+    from foley.sources.resilience import make_resilient_transport_from_config
+    from foley.sources.wikimedia_commons.config import SOURCE_CONFIG
+
+    waits = []
+    base = Fake(("x", [Resp(status=429), Resp(status=429), Resp({"ok": 1})]))
+    t = make_resilient_transport_from_config(
+        SOURCE_CONFIG, base=base, sleep=waits.append
+    )
+    assert get_json(t, "https://x/a", what="t") == {"ok": 1}
+    assert [w for w in waits if w >= 10] == [
+        10.0,
+        20.0,
+    ]  # the throttle may add small waits
+
+
+def test_licence_strings_must_agree_and_all_parse():
+    from foley.sources._keyless import license_for_item
+    from foley.sources.wikimedia_commons.config import SOURCE_CONFIG as C
+
+    by, sa = (
+        "https://creativecommons.org/licenses/by/4.0/",
+        "https://creativecommons.org/licenses/by-sa/4.0/",
+    )
+    assert license_for_item(C, by, "CC BY 4.0") == ("CC-BY-4.0", True)
+    assert (
+        license_for_item(C, sa, "CC BY 4.0") is None
+    )  # a looser label cannot clear SA
+    assert license_for_item(C, by, "CC BY-SA 4.0") is None
+    assert license_for_item(C, by, "CC0") is None  # disagreement drops the item
+    assert license_for_item(C, "", None, "  ") is None
+    assert license_for_item(C, "Public domain") == ("PDM-1.0", False)
+    assert license_for_item(C, by, only=["CC0-1.0"]) is None
 
 
 def test_strip_html():
@@ -78,15 +98,16 @@ def test_strip_html():
 
 
 def _page(
-    pid, title, *, license_url="", short="", mime="application/ogg", index=1, **extra
-):
+    pid, title, *, license_url="", short="", mime="application/ogg",
+    mediatype="AUDIO", index=1, **extra,
+):  # fmt: skip
     em = {"LicenseShortName": {"value": short}, "Artist": {"value": '<a href="//u">Ann</a>'},
           "Credit": {"value": "<span>Own work</span>"}}  # fmt: skip
     if license_url:
         em["LicenseUrl"] = {"value": license_url}
     return {
         "pageid": pid, "title": title, "index": index,
-        "imageinfo": [{"url": f"https://upload.example/{pid}.ogg", "mime": mime,
+        "imageinfo": [{"url": f"https://upload.example/{pid}.ogg", "mime": mime, "mediatype": mediatype,
                        "duration": 2.5, "extmetadata": em, **extra}],
     }  # fmt: skip
 
@@ -97,7 +118,10 @@ COMMONS_PAGES = {
     "3": _page(3, "File:Sa.ogg", license_url="https://creativecommons.org/licenses/by-sa/4.0", short="CC BY-SA 4.0"),
     "4": _page(4, "File:Pd.ogg", short="Public domain", index=3),
     "5": _page(5, "File:Nd.ogg", license_url="https://creativecommons.org/licenses/by-nd/4.0", short="CC BY-ND 4.0"),
-    "6": _page(6, "File:Pic.jpg", short="CC0", mime="image/jpeg"),
+    "6": _page(6, "File:Pic.jpg", short="CC0", mime="image/jpeg", mediatype="BITMAP"),
+    "7": _page(7, "File:Clip.ogv", short="CC0", mediatype="VIDEO"),
+    "8": _page(8, "File:Loose.ogg", short="Attribution"),
+    "9": _page(9, "File:Mixed.ogg", license_url="https://creativecommons.org/licenses/by-sa/4.0", short="CC BY 4.0"),
 }  # fmt: skip
 
 
@@ -106,7 +130,7 @@ def _commons(**kw):
         ("api.php", Resp({"query": {"pages": COMMONS_PAGES}})),
         ("upload.example", Resp(content=b"OggS...")),
     )
-    return WikimediaCommonsAdapter(http=http, **NO_WAIT, **kw), http
+    return WikimediaCommonsAdapter(http=http, **kw), http
 
 
 def test_commons_cc0_request_keeps_cc0_only():
@@ -156,17 +180,6 @@ def test_commons_get_refuses_a_share_alike_file():
         ad.get("3")
 
 
-def test_commons_waits_out_a_429_on_download():
-    waited = []
-    http = Fake(
-        ("api.php", Resp({"query": {"pages": COMMONS_PAGES}})),
-        ("upload.example", [Resp(status=429), Resp(content=b"OggS")]),
-    )
-    ad = WikimediaCommonsAdapter(http=http, sleep=waited.append)
-    ad.search("sigh", license="cc0")
-    assert ad.download("1") == b"OggS" and waited == [10.0]
-
-
 # ---------------------------------------------------------------------------
 # Openverse
 # ---------------------------------------------------------------------------
@@ -190,7 +203,7 @@ def _openverse(**kw):
     http = Fake(
         ("/audio/", Resp({"results": OV_ROWS})), ("cdn/", Resp(content=b"RIFFxx"))
     )
-    return OpenverseAdapter(http=http, **NO_WAIT, **kw), http
+    return OpenverseAdapter(http=http, **kw), http
 
 
 def test_openverse_pushes_limits_and_filters_into_the_query():
@@ -222,6 +235,7 @@ def test_openverse_converts_ms_and_keeps_the_ready_attribution():
     assert c.sound.duration_s == 2.5 and c.sound.tags == ["door"]
     assert c.sound.license.attribution_text.startswith('"t-a" by Ann')
     assert "Not endorsed" in ad.notice
+    assert c.sound.license.notice_text_required == ad.notice  # reaches the credits
 
 
 def test_openverse_freesound_rows_are_by_reference_when_included():
@@ -247,8 +261,9 @@ IA_DOCS = [
     {"identifier": "by-item", "title": "By", "licenseurl": "https://creativecommons.org/licenses/by/4.0/"},
     {"identifier": "sa-item", "title": "Sa", "licenseurl": "https://creativecommons.org/licenses/by-sa/4.0/"},
     {"identifier": "none-item", "title": "No licence"},
+    {"identifier": "cc0-item", "title": "Zero", "licenseurl": "https://creativecommons.org/publicdomain/zero/1.0/"},
 ]  # fmt: skip
-IA_FILES = {"files": [{"name": "cover.jpg", "format": "JPEG", "size": "1000"},
+IA_FILES = {"metadata": {"licenseurl": "http://creativecommons.org/publicdomain/mark/1.0/"}, "files": [{"name": "clip.ogv", "format": "Ogg Video", "size": "10"},{"name": "cover.jpg", "format": "JPEG", "size": "1000"},
                       {"name": "huge.mp3", "format": "VBR MP3", "size": "99000000"},
                       {"name": "cut1.ogg", "format": "Ogg Vorbis", "size": "5000"}]}  # fmt: skip
 
@@ -259,7 +274,7 @@ def _ia(**kw):
         ("/metadata/", Resp(IA_FILES)),
         ("/download/", Resp(content=b"OggS")),
     )
-    return InternetArchiveAdapter(opt_in=True, http=http, **NO_WAIT, **kw), http
+    return InternetArchiveAdapter(opt_in=True, http=http, **kw), http
 
 
 def test_internet_archive_is_opt_in(monkeypatch):
@@ -276,6 +291,7 @@ def test_internet_archive_candidates_are_never_verified():
     assert [c.sound.id for c in got] == [
         "internet_archive:pd-item",
         "internet_archive:by-item",
+        "internet_archive:cc0-item",
     ]
     assert not any(c.sound.license.rights_verified for c in got)
     p = http.calls[0]["params"]
@@ -291,6 +307,32 @@ def test_internet_archive_candidates_are_never_verified():
         )
         or True
     )
+
+
+def test_internet_archive_cc0_request_keeps_cc0_only_and_queries_are_escaped():
+    ad, http = _ia()
+    got = ad.search('x) OR (mediatype:video "', license="cc0")
+    assert [c.sound.id for c in got] == ["internet_archive:cc0-item"]
+    q = http.calls[0]["params"]["q"]
+    assert q.startswith(r"(x\) OR \(mediatype\:video \") AND mediatype:audio")
+
+
+def test_internet_archive_download_refuses_an_item_with_a_bad_licence():
+    http = Fake(
+        (
+            "/metadata/",
+            Resp(
+                {
+                    "metadata": {
+                        "licenseurl": "https://creativecommons.org/licenses/by-sa/4.0/"
+                    },
+                    "files": IA_FILES["files"],
+                }
+            ),
+        )
+    )
+    with pytest.raises(LookupError, match="non-accepted"):
+        InternetArchiveAdapter(opt_in=True, http=http).download("sa-item")
 
 
 def test_internet_archive_download_picks_the_first_audio_file_under_the_cap():
@@ -348,7 +390,7 @@ def test_add_from_openverse_stores_a_cc0_row_by_value(library):
         ("/audio/", Resp({"results": [_row("a", "cc0")]})),
         ("cdn/", Resp(content=_wav())),
     )
-    ad = OpenverseAdapter(http=http, **NO_WAIT)
+    ad = OpenverseAdapter(http=http)
     report = add_from("openverse", query="door", library=library, adapter=ad)
     assert len(report.ingested) == 1
     rec = report.ingested[0].record
@@ -363,7 +405,7 @@ def test_add_from_stops_an_unverified_public_domain_claim(library):
         ("/audio/", Resp({"results": [_row("e", "pdm")]})),
         ("cdn/", Resp(content=_wav())),
     )
-    ad = OpenverseAdapter(http=http, **NO_WAIT)
+    ad = OpenverseAdapter(http=http)
     report = add_from(
         "openverse", query="door", license="any", library=library, adapter=ad
     )

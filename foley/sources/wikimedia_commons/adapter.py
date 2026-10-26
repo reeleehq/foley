@@ -13,32 +13,30 @@ the same call (the generator form). Each file's licence is read from ``extmetada
 * share-alike, no-derivatives and anything unrecognised are dropped (fail closed).
 
 The bytes come from ``upload.wikimedia.org`` with the same descriptive ``User-Agent``;
-a 429 is waited out (:mod:`foley.sources._keyless`). HTTP and the sleep are injected.
+a 429 is waited out by the resilient transport the registry wraps around ``http``
+(see ``retry`` in the config). HTTP is injected.
 """
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+import re
+from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
-from .._keyless import (
-    DEFAULT_RETRY_WAITS_S,
-    get_bytes,
-    get_json,
-    license_for_item,
-    strip_html,
-)
+from .._keyless import get_bytes, get_json, license_for_item, raw_id, strip_html
 from ..base import api_license
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
 _PREFIX = "wikimedia_commons:"
-_IMAGEINFO = "url|mime|size|extmetadata"
+_IMAGEINFO = "url|mime|size|mediatype|extmetadata"
+_VERSIONED = re.compile(r"\d")
 
 
-def _raw_id(source_id: str) -> str:
-    s = str(source_id)
-    return s[len(_PREFIX) :] if s.startswith(_PREFIX) else s
+def _clear_label(short: str) -> bool:
+    """Whether a licence label alone (no URL) names its licence: CC0, public domain, or a versioned CC."""
+    low = short.strip().lower()
+    return low in ("cc0", "public domain") or bool(_VERSIONED.search(low))
 
 
 def _meta(info: dict, key: str) -> str:
@@ -52,8 +50,6 @@ class WikimediaCommonsAdapter:
     Args:
         config: The ``SOURCE_CONFIG`` (the registry passes it positionally).
         http: The injected :class:`~foley.sources.http.Transport`.
-        sleep: Called with the seconds to wait after an HTTP 429 (default ``time.sleep``).
-        retry_waits_s: The waits, one per retry.
     """
 
     def __init__(
@@ -61,15 +57,9 @@ class WikimediaCommonsAdapter:
         config: Optional[dict] = None,
         *,
         http: Optional[Transport] = None,
-        sleep: Optional[Callable[[float], None]] = None,
-        retry_waits_s: "tuple[float, ...]" = DEFAULT_RETRY_WAITS_S,
     ):
-        import time
-
         self.config = config if config is not None else SOURCE_CONFIG
         self._http: Transport = http if http is not None else requests_transport
-        self._sleep = sleep if sleep is not None else time.sleep
-        self._waits = retry_waits_s
         self._urls: "dict[str, str]" = {}  # id -> file URL, from search hits
 
     # -- http ---------------------------------------------------------------
@@ -85,8 +75,6 @@ class WikimediaCommonsAdapter:
             params={"action": "query", "format": "json", **params},
             headers=self._headers(),
             what="Wikimedia Commons",
-            waits=self._waits,
-            sleep=self._sleep,
         )
 
     # -- SourceAdapter surface ----------------------------------------------
@@ -128,7 +116,7 @@ class WikimediaCommonsAdapter:
         Raises:
             LookupError: If the file is missing or its licence is not accepted.
         """
-        rid = _raw_id(source_id)
+        rid = raw_id(_PREFIX, source_id)
         pages = (
             self._query(pageids=rid, prop="imageinfo", iiprop=_IMAGEINFO).get("query")
             or {}
@@ -143,7 +131,7 @@ class WikimediaCommonsAdapter:
 
     def download(self, source_id: str) -> bytes:
         """The file's audio bytes (from the URL a search hit gave, else resolved by id)."""
-        rid = _raw_id(source_id)
+        rid = raw_id(_PREFIX, source_id)
         if rid not in self._urls:
             self.get(rid)  # fills the URL cache, or raises
         return get_bytes(
@@ -151,8 +139,6 @@ class WikimediaCommonsAdapter:
             self._urls[rid],
             headers=self._headers(),
             what="Wikimedia Commons",
-            waits=self._waits,
-            sleep=self._sleep,
         )
 
     # -- page -> licence-checked Candidate ----------------------------------
@@ -162,12 +148,13 @@ class WikimediaCommonsAdapter:
         if not infos or not page.get("pageid"):
             return None
         info = infos[0]
-        if not str(info.get("mime", "")).startswith(("audio/", "application/ogg")):
-            return None
-        found = license_for_item(
-            self.config, _meta(info, "LicenseUrl"), _meta(info, "LicenseShortName")
-        )
-        if found is None or (only is not None and found[0] not in only):
+        if str(info.get("mediatype", "")).upper() != "AUDIO":
+            return None  # a picture, a video, an .ogv served as application/ogg
+        url, short = _meta(info, "LicenseUrl"), _meta(info, "LicenseShortName")
+        if not url and not _clear_label(short):
+            return None  # a bare "Attribution" label is Commons' own, not a CC licence
+        found = license_for_item(self.config, url, short, only=only)
+        if found is None:
             return None
         license_id, verified = found
         pid = str(page["pageid"])

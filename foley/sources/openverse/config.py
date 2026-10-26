@@ -12,7 +12,9 @@ rows have ``category: null``, so it returns nothing.
 * **Licences.** From the row's ``license_url`` through the one licence SSOT: CC0 and CC-BY
   verified; the public-domain mark (``pdm``) is a claim, never verified; share-alike,
   no-derivatives and non-commercial are dropped. Openverse "does not verify its licensing
-  status", so a person confirms before relying on a row for something that matters.
+  status": a row carries the licence its origin provider reported, which foley trusts the way
+  it trusts Freesound's own licence field (the landing page is the check for anything that
+  matters; whether to hold CC rows back for a person is [foley#121]).
 * **Terms.** An app must "prominently indicate that it was made using Openverse but is not
   endorsed or certified by Openverse"; ``notice`` holds that sentence. No scraping.
 """

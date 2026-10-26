@@ -231,7 +231,8 @@ def make_resilient_transport_from_config(config: dict, *, base=None, **inject):
     """Build a resilient transport from a source ``config`` (its ``rate`` drives the throttle).
 
     Args:
-        config: A ``SOURCE_CONFIG`` dict (reads ``config['rate']``).
+        config: A ``SOURCE_CONFIG`` dict (reads ``config['rate']`` and, if present,
+            ``config['retry']``: :class:`RetryPolicy` fields).
         base: The base transport (default: :func:`foley.sources.http.requests_transport`).
         **inject: ``retry`` / ``breaker`` / ``clock`` / ``sleep`` overrides.
 
@@ -244,6 +245,10 @@ def make_resilient_transport_from_config(config: dict, *, base=None, **inject):
         base = requests_transport
     paid = (config.get("pricing") or {}).get("unit") != "free"
     inject.setdefault("resend_after_transport_error", not paid)
+    if config.get("retry") and "retry" not in inject:
+        # A source that needs its own waits (Wikimedia Commons rate-limits a burst of
+        # downloads and wants 10 s, 20 s, 40 s) declares ``retry`` as RetryPolicy fields.
+        inject["retry"] = RetryPolicy(**config["retry"])
     if paid and "retry" not in inject:
         # A gateway 502 / 504 can come after the provider accepted (and billed) the
         # request; only answers that mean "not processed" are retried for a paid source.
