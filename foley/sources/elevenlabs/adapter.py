@@ -31,12 +31,14 @@ import wave
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
+from ...cost import actual_call_cost
 from ..base import (
     GeneratedClip,
     SourceConfigurationError,
     generated_license,
     native_adherence,
     bound_source_account,
+    operator_env_key,
     resolve_source_key,
     source_account_id,
 )
@@ -261,7 +263,7 @@ class ElevenLabsAdapter:
         With no env key, an ``api_key=`` is how the operator configures foley in code,
         and the operator's plan (``plan=`` or the env's) applies to it.
         """
-        env_key = os.environ.get(self.config["auth"]["env_var"])
+        env_key = operator_env_key(self.config)
         return bool(self._api_key and env_key and self._api_key != env_key)
 
     def account_id(self) -> str:
@@ -372,6 +374,9 @@ class ElevenLabsAdapter:
             caption=prompt,
         )
         candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
+        candidate.cost_actual_usd = actual_call_cost(
+            self.config, duration=body.get("duration_seconds")
+        )
         return GeneratedClip(audio_bytes=audio_bytes, candidate=candidate, notes=notes)
 
     # -- helpers ------------------------------------------------------------
@@ -403,7 +408,7 @@ class ElevenLabsAdapter:
         spec = self.config["param_map"]["output_format"]
         try:
             return self._invoke(
-                params={"output_format": native_output_format}, body=body
+                params={"output_format": native_output_format}, body=body, notes=notes
             ), native_output_format
         except _HTTPStatusError as exc:
             fallback = spec.get("fallback_on_4xx", {}).get(native_output_format)
@@ -421,7 +426,9 @@ class ElevenLabsAdapter:
                 f"output_format {native_output_format!r} refused by ElevenLabs "
                 f"({exc.status_code}); fell back to {fallback!r}"
             )
-            return self._invoke(params={"output_format": fallback}, body=body), fallback
+            return self._invoke(
+                params={"output_format": fallback}, body=body, notes=notes
+            ), fallback
 
     def _wrap_pcm(
         self,
@@ -485,11 +492,13 @@ class ElevenLabsAdapter:
         hi = self.config["native_defaults"]["duration_max_s"]
         return max(lo, min(float(duration), hi))
 
-    def _invoke(self, *, params: dict, body: dict) -> bytes:
+    def _invoke(self, *, params: dict, body: dict, notes: list) -> bytes:
         """POST to the SFX endpoint and return the raw audio bytes (never JSON).
 
         ``output_format`` is a URL query param (``params``); the rest is the JSON
         ``body``. A non-200 raises ``RuntimeError`` with the best-effort ``detail``.
+        The credits the account was charged (the ``api.credits_header`` response
+        header, when the response carries it) are recorded in ``notes``.
         """
         endpoint = self.config["api"]["generate_endpoint"]
         url = self.config["api"]["base_url"] + endpoint["path"]
@@ -505,7 +514,19 @@ class ElevenLabsAdapter:
                 f"{_safe_detail(resp)}",
                 detail=_detail_of(resp),
             )
+        credits = _header(resp, self.config["api"].get("credits_header"))
+        if credits is not None:
+            notes.append(f"ElevenLabs charged {credits} credits for this call")
         return resp.content
+
+
+def _header(resp, name: Optional[str]) -> Optional[str]:
+    """Response header ``name`` (case-insensitive), or ``None`` (a fake may have no headers)."""
+    headers = getattr(resp, "headers", None) or {}
+    if not name:
+        return None
+    wanted = name.lower()
+    return next((v for k, v in headers.items() if k.lower() == wanted), None)
 
 
 #: Registry convention (arioso): the loader imports ``adapter.Adapter``.

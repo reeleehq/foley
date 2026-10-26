@@ -108,6 +108,16 @@ foley now reaches six fal endpoints as generate sources (`foley/sources/fal/`, e
 - Sonilo returns `audio` plus `audios`; Mirelo SFX 2.0 returns `audio` as a list and `seeds` as a list, and bills per sample (foley sends `num_samples=1`).
 - Durations came back as asked (within 0.05 s) on all three.
 
+## 6. Hands-on: ElevenLabs direct, first in the generation order (2026-10-26)
+
+foley now walks a generation order when no backend is named: `elevenlabs` (direct) → `fal_stable_audio_3` → `fal_elevenlabs` → `stable_audio`, the paid entries only after `FOLEY_GENERATE_PAID=1`. Five of the studio prompts above (page turn, musket into a hand, sabre handed over, clock ticking, sleepy sigh; footsteps and pacing were dropped from the film) went through it and were all served by ElevenLabs direct on the owner's paid plan: 15 s of audio, 150 credits, $0.030 at the pay-as-you-go rate. Measured facts:
+
+- **Price.** The API pricing page lists Sound Effects at $0.12 per minute ($0.002/s) [59]; the response header `character-cost` reported **10 credits per second** on every clip (15 for 1.5 s, 80 for 8 s). Two other ElevenLabs pages disagree with each other and with the header: the capability doc says 40 credits per second when a duration is set [60], the plan page says 200 credits per generation [61]. The header is what the account is charged; foley now records it on each clip's notes. Per second this is the same price as the fal route ($0.002/s), but a paid plan's seconds come out of its monthly allowance first (marginal cost 0 until it runs out), and the licence is the plan's own instead of `fal-partner-unverified`: that, not a lower list price, is why direct comes first.
+- **Licence.** Paid plans: royalty-free, commercial, no attribution; free plan: non-commercial with attribution; the Prohibited Use policy rules out reselling the raw effects (so `redistribute_standalone_ok=False`) [62][63]. foley stamps the plan row (`elevenlabs-paid-plan`) per clip, from `FOLEY_ELEVENLABS_PLAN`, and refuses before the call when it is unset. foley does not read the plan from the API (a scoped key need not carry `user_read`); the operator declares it.
+- **PCM layout (closes foley#95).** `output_format=pcm_48000` returns headerless S16LE (`content-type: audio/pcm`), **stereo**: 192,000 bytes for a 1.0 s request; all five clips implied 2 channels. A paid plan was not refused PCM.
+- **Levels.** As generated, integrated loudness ran from -14 LUFS (the sigh) to -43 LUFS (the clock): a 29 dB spread. `foley.level` now levels a clip to its class target (one-shot -25 LUFS, ambience bed -37 LUFS: the WEAVE layer gains under a -16 LUFS voice).
+- **Prompt match.** The fal Stable Audio 3 musket and page-turn takes were unrelated to their prompts and nothing caught it. `generate` now scores each clip against its prompt with CLAP and flags a mismatch; this host cannot run CLAP (no `transformers`, about 2 GB of free RAM), so these five clips are recorded as `unchecked`.
+
 ## REFERENCES
 
 1. foley report 13 — *SFX generation targets: the delta since July 2026* (2026-10-03), `foley/misc/docs/research/13-generation-targets-2026-10.md`
@@ -168,3 +178,9 @@ foley now reaches six fal endpoints as generate sources (`foley/sources/fal/`, e
 56. [GitHub — bytedance/Make-An-Audio-2](https://github.com/bytedance/Make-An-Audio-2)
 57. [Hugging Face — pinecoresystems/TinyPine-Sound-Effects (EzAudio-XL mirror, MIT)](https://huggingface.co/pinecoresystems/TinyPine-Sound-Effects)
 58. [AudioX-Turbo, arXiv:2606.12555](https://arxiv.org/abs/2606.12555)
+
+59. [ElevenLabs — API pricing (Sound Effects $0.12 per minute)](https://elevenlabs.io/pricing/api), seen 2026-10-26
+60. [ElevenLabs — Sound effects capability (credits per second)](https://elevenlabs.io/docs/overview/capabilities/sound-effects), seen 2026-10-26
+61. [ElevenLabs — Pricing (plans, credits, commercial licence)](https://elevenlabs.io/pricing), seen 2026-10-26
+62. [ElevenLabs — Commercial sound effects (paid plans: no attribution, royalty-free)](https://elevenlabs.io/sound-effects/commercial)
+63. [ElevenLabs help — Can I publish the content I generate?](https://elevenlabs.io/docs/help-center/legal/can-i-publish-the-content-i-generate-on-the-platform/llms.txt)

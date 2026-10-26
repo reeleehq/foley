@@ -127,6 +127,24 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
     return None
 
 
+def actual_call_cost(config: dict, *, duration: Optional[float] = None) -> Optional[float]:
+    """What a call just made costs at the declared price, for the duration actually sent.
+
+    The same pricing rule as :func:`estimate_call`, so the estimate and the actual
+    cannot disagree on it; ``None`` (unknown) when a per-second source was left to
+    choose its own length.
+
+    >>> cfg = {"pricing": {"unit": "per_second", "amount_usd": 0.002}}
+    >>> actual_call_cost(cfg, duration=3.0)
+    0.006
+    >>> actual_call_cost(cfg) is None
+    True
+    """
+    if duration is None and (config.get("pricing") or {}).get("unit") == "per_second":
+        return None
+    return estimate_call(config, duration=duration)
+
+
 def _stack() -> tuple:
     return _ACTIVE_BUDGET.get() or ()
 

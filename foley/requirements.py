@@ -45,9 +45,23 @@ _IMPORTABLE_REQUIREMENTS = {
 #: How each ``probe`` kind checks availability.
 _PROBES = {
     "binary": lambda name: shutil.which(name) is not None,
-    "env": lambda name: bool(os.environ.get(name)) or _key_is_bound(name),
+    "env": lambda name: any(os.environ.get(v) for v in _key_env_vars(name))
+    or _key_is_bound(name),
     "importable": lambda name: importlib.util.find_spec(name) is not None,
 }
+
+
+def _key_env_vars(env_var: str) -> "tuple[str, ...]":
+    """``env_var`` and the fleet aliases a source declares for it (``ELEVEN_API_KEY``)."""
+    from .sources.base import auth_env_vars
+    from .sources.registry import SOURCE_REGISTRY
+
+    names = [env_var]
+    for entry in SOURCE_REGISTRY.values():
+        found = auth_env_vars(entry["config"])
+        if found and found[0] == env_var:
+            names.extend(found[1:])
+    return tuple(dict.fromkeys(names))
 
 
 def _key_is_bound(env_var: str) -> bool:
@@ -124,7 +138,8 @@ def provider_key_env_vars() -> "tuple[str, ...]":
     test suite scrubs exactly these so no test can spend money by accident.
     """
     keys = [r.name for r in build_requirements().values() if r.probe == "env"]
-    return tuple(sorted(set(keys) | set(_KEY_ALIASES)))
+    aliases = {alias for key in keys for alias in _key_env_vars(key)}
+    return tuple(sorted(set(keys) | aliases | set(_KEY_ALIASES)))
 
 
 def _available(req: Requirement) -> bool:

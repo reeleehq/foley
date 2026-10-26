@@ -63,6 +63,27 @@ from its own config. The model: `foley/sources/fal/` (`fal_stable_audio_3`,
 - **Tests:** a replay runner that answers only the requests it was given; a miss raises,
   never falls through to the network. One live test, behind `FOLEY_LIVE_API_TESTS=1` and the key.
 
+### A generate source and the generation order
+
+An unnamed `foley.generate` walks `foley.sources.generate.DEFAULT_GENERATE_ORDER` (today
+`elevenlabs` → `fal_stable_audio_3` → `fal_elevenlabs` → `stable_audio`). A new generate
+source is reachable by name at once; put it in the order only when it beats a neighbour on
+price *and* licence, and keep a free local backend last. Paid entries are skipped unless
+the operator opted in (`FOLEY_GENERATE_PAID=1`, or an order/backend named in the env):
+**a key in the environment is never consent to spend** (#58). The chain skips a backend
+that refuses before the call (`SourceConfigurationError`, `EgressBlocked`,
+`UnsupportedParameter`) or whose call returns an `error` result; a QC, rights or budget
+outcome is final. So an adapter must raise `SourceConfigurationError` for every
+missing-configuration case *before* it sends anything.
+
+- **Key env vars the fleet already uses:** if other fleet packages read the same provider
+  key under another name, list it in `auth["env_var_aliases"]` (ElevenLabs:
+  `ELEVEN_API_KEY`, which `an` and `voxy` read). It is then found, probed by
+  `check_requirements`, and scrubbed by the test suite's paid-API guard.
+- **What the provider says it charged:** when the response carries it (ElevenLabs:
+  `api["credits_header"] = "character-cost"`), note it on the clip; set
+  `candidate.cost_actual_usd` with `foley.cost.actual_call_cost(config, duration=...)`.
+
 ## `SOURCE_CONFIG` (the declaration)
 
 ```python

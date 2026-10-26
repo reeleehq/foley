@@ -48,20 +48,118 @@ from ..runtime import EgressBlocked
 from .base import SourceConfigurationError
 from .registry import get_source
 
-#: The backend :func:`foley.generate` uses when none is named (free, local).
-DEFAULT_GENERATE_BACKEND = "stable_audio"
+#: The order :func:`foley.generate` tries backends in when none is named. ElevenLabs
+#: direct comes first: on a paid plan its clips come out of the monthly allowance
+#: (then $0.002/s, the same per-second price as the fal route) under the plan's own
+#: licence (commercial, royalty-free), where the fal route's licence is unverified.
+#: fal's Stable Audio 3 (commercial under $1M revenue) and fal's ElevenLabs follow, and
+#: the local Stable Audio Open (free, needs a GPU and its weights) is last. A backend
+#: that is not configured (no key, no plan), not reachable (offline), or whose call
+#: fails is skipped, with the reason on the clip's notes. The paid entries are tried
+#: only once the operator opts in to paid generation (:func:`paid_generation_opted_in`):
+#: a key in the environment is not that opt-in (#58).
+DEFAULT_GENERATE_ORDER = ("elevenlabs", "fal_stable_audio_3", "fal_elevenlabs", "stable_audio")
 
-#: Env var naming the default backend instead (e.g. ``fal_stable_audio_3`` on a host
-#: with no GPU). Naming a paid backend here is the operator asking for it.
+#: The last resort when nothing in the order is configured (free, local).
+DEFAULT_GENERATE_BACKEND = DEFAULT_GENERATE_ORDER[-1]
+
+#: Env var pinning ONE default backend (no fallback), e.g. ``fal_stable_audio_3``.
+#: Naming a paid backend here is the operator asking for it.
 GENERATE_BACKEND_ENV = "FOLEY_GENERATE_BACKEND"
+
+#: Env var replacing the order: comma-separated backend names (``elevenlabs,fal_sonilo``).
+#: Setting it is the operator naming backends, so its paid entries are tried.
+GENERATE_ORDER_ENV = "FOLEY_GENERATE_ORDER"
+
+#: Env var opting in to the paid entries of :data:`DEFAULT_GENERATE_ORDER` (``1``).
+GENERATE_PAID_ENV = "FOLEY_GENERATE_PAID"
+
+
+def paid_generation_opted_in() -> bool:
+    """Whether an unnamed generation may use the paid backends of its order.
+
+    Yes when the operator said so: ``$FOLEY_GENERATE_PAID=1``, or an order or a backend
+    named in ``$FOLEY_GENERATE_ORDER`` / ``$FOLEY_GENERATE_BACKEND``. A provider key in
+    the environment is not consent to spend (#58): keys are set for other tools too.
+    """
+    import os
+
+    if os.environ.get(GENERATE_BACKEND_ENV) or os.environ.get(GENERATE_ORDER_ENV):
+        return True
+    return os.environ.get(GENERATE_PAID_ENV, "").strip().lower() in ("1", "true", "yes")
+
+
+def backend_is_paid(backend: str) -> bool:
+    """Whether a call to ``backend`` may cost money (its pricing is not ``free``)."""
+    from ._dispatch import _is_paid
+    from .registry import SOURCE_REGISTRY, discover_sources
+
+    discover_sources()
+    entry = SOURCE_REGISTRY.get(backend)
+    return entry is None or _is_paid(entry["config"])
+
+
+def generate_backend_order() -> "tuple[str, ...]":
+    """The backends an unnamed generation tries, in order.
+
+    ``$FOLEY_GENERATE_BACKEND`` pins one (a one-element order: no fallback); else
+    ``$FOLEY_GENERATE_ORDER`` (comma-separated); else :data:`DEFAULT_GENERATE_ORDER`.
+    """
+    import os
+
+    pinned = os.environ.get(GENERATE_BACKEND_ENV)
+    if pinned:
+        return (pinned,)
+    listed = os.environ.get(GENERATE_ORDER_ENV, "")
+    names = tuple(n.strip() for n in listed.split(",") if n.strip())
+    return names or DEFAULT_GENERATE_ORDER
+
+
+def backend_has_key(backend: str) -> bool:
+    """Whether ``backend`` needs no key, or its key is set (an env var or a bound key).
+
+    A cheap readiness check that makes no call: a missing plan, extra or model weights
+    still refuse at plan time, and the generation order then moves on.
+    """
+    import os
+
+    from ocracy.kit import current_credentials
+
+    from .base import auth_env_vars
+    from .registry import SOURCE_REGISTRY, discover_sources
+
+    discover_sources()
+    entry = SOURCE_REGISTRY.get(backend)
+    if entry is None:
+        return False
+    names = auth_env_vars(entry["config"])
+    if not names:
+        return True
+    return any(os.environ.get(n) for n in names) or bool(
+        current_credentials().get(backend)
+    )
+
+
+def first_runnable_backend(order, *, paid_ok: bool = True) -> str:
+    """The first of ``order`` with its key set (and free, unless ``paid_ok``), else its last."""
+    order = tuple(order)
+    return next(
+        (
+            name
+            for name in order
+            if backend_has_key(name) and (paid_ok or not backend_is_paid(name))
+        ),
+        order[-1],
+    )
 
 
 def default_generate_backend() -> str:
-    """The generate backend used when none is named: ``$FOLEY_GENERATE_BACKEND``, else
-    :data:`DEFAULT_GENERATE_BACKEND` (the local Stable Audio Open)."""
-    import os
-
-    return os.environ.get(GENERATE_BACKEND_ENV) or DEFAULT_GENERATE_BACKEND
+    """The backend an unnamed generation tries first (:func:`first_runnable_backend` of
+    :func:`generate_backend_order`, paid ones only once opted in). What
+    :func:`foley.estimate` prices and the rights pre-check judges for ``backend='auto'``."""
+    return first_runnable_backend(
+        generate_backend_order(), paid_ok=paid_generation_opted_in()
+    )
 
 
 def generation_rights_refusal(backend: str, intended_use) -> Optional[str]:
@@ -196,6 +294,8 @@ def _generate(
     reuse_cached: bool = True,
     generations_cache=None,
     repair=True,
+    level=None,
+    check_prompt: bool = True,
     **affordances,
 ) -> IngestReport:
     """Generate a sound via ``backend`` and ingest it (by-value) into ``library``.
@@ -268,6 +368,15 @@ def _generate(
             repair runs before the watermark and the id, so the stored bytes, the
             content-hash id and the credential all describe the repaired clip; the
             generations cache keeps the bytes as received.
+        level: Level the clip to a loudness target before it is stored: a layer
+            (``'sfx_fg'``, ``'ambience'``, … , its class target, see
+            :func:`foley.level.class_target_lufs`) or a LUFS number. ``None`` (default)
+            stores it at the level it was generated at (the WEAVE render applies the
+            layer gains itself). Recorded in the licence's ``transformations``.
+        check_prompt: Score the clip against its prompt with the library's text-audio
+            embedder (:func:`foley.prompt_match.prompt_match`) and put the verdict in
+            ``qc['prompt_match']`` and the notes: a mismatch is flagged, not
+            quarantined; without a capable embedder the verdict is ``'unchecked'``.
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`foley.base.GENERATION_AFFORDANCES`).
@@ -389,6 +498,8 @@ def _generate(
         # (the generations cache already holds the bytes as received).
         if repair:
             audio_bytes = _repaired_bytes(audio_bytes, lic, clip.notes, repair=repair)
+        if level is not None:
+            audio_bytes = _levelled_bytes(audio_bytes, lic, clip.notes, level=level)
 
         # Watermark BEFORE ingest so the stored bytes carry the mark AND the
         # content-hash id hashes the watermarked PCM. Graceful degrade: a watermark
@@ -452,6 +563,8 @@ def _generate(
 
     res.cache_key = plan.content_key  # where the paid bytes are, whatever the outcome
     record_generation_outcome(plan, res.status, cache=generations_cache)
+    if check_prompt and res.status in ("pass", "warn"):
+        _check_prompt(prompt, audio_bytes, res, clip.notes, library=lib, stored=store)
 
     # Write the content-credential sidecar ONLY for a freshly stored clip — a
     # quarantined (QC-failed), duplicate, or errored generation was never added to the
@@ -474,6 +587,69 @@ def _generate(
     return report
 
 
+def generate_in_order(
+    prompt: str, order, *, paid_ok: bool = True, **kwargs
+) -> "tuple[IngestReport, str, list]":
+    """Run :func:`generate` through ``order`` until a backend produces a result.
+
+    The fallback mechanism behind an unnamed :func:`foley.generate`. Backends whose
+    key is not set are skipped without a call (:func:`backend_has_key`; the last one
+    is tried regardless, so a lone or local backend still reports its own error). A
+    backend is also skipped when it refuses before any provider call (not configured:
+    a missing plan or extra; offline; a meaning-carrying parameter it cannot honour)
+    or when its call fails (an ``error`` result: the provider answered with an error,
+    or the response did not decode). A QC or rights outcome is final: it is about the
+    sound, and another backend would charge again for the same request.
+
+    A budget refusal is never skipped: the run's cap holds across the whole order.
+
+    Args:
+        prompt: The sound description.
+        order: Backend names, in the order to try them.
+        paid_ok: ``False`` skips the paid backends (but the last), without a call.
+        **kwargs: Everything else :func:`generate` takes (affordances included).
+
+    Returns:
+        ``(report, backend, skipped)``: the report of the backend that ran, its name,
+        and one ``"<backend>: <reason>"`` line per backend skipped before it.
+
+    Raises:
+        Whatever the last backend tried raised, with ``skipped_backends`` set on the
+        exception to the lines for the backends skipped before it.
+    """
+    from ._dispatch import UnsupportedParameter
+
+    skippable = (SourceConfigurationError, EgressBlocked, UnsupportedParameter)
+    order = tuple(order)
+    skipped: list = []
+    for i, name in enumerate(order):
+        last = i == len(order) - 1
+        if not last and not paid_ok and backend_is_paid(name):
+            skipped.append(
+                f"{name}: paid, and paid generation is not opted in "
+                f"(${GENERATE_PAID_ENV}=1, or name the backend)"
+            )
+            continue
+        if not last and not backend_has_key(name):
+            skipped.append(f"{name}: no key set")
+            continue
+        try:
+            report = generate(prompt, backend=name, **kwargs)
+        except skippable as exc:
+            if last:
+                exc.skipped_backends = skipped
+                raise
+            skipped.append(f"{name}: {type(exc).__name__}: {exc}")
+            continue
+        res = report.results[0] if report.results else None
+        if not last and (res is None or res.status == "error"):
+            reason = (res.error if res is not None else None) or "no result"
+            skipped.append(f"{name}: {reason}")
+            continue
+        return report, name, skipped
+    raise ValueError("generate_in_order needs at least one backend")
+
+
 #: Non-affordance keyword params of :func:`_generate` (the rest are GENERATION_AFFORDANCES).
 _GENERATE_KNOWN = frozenset(
     {
@@ -489,6 +665,8 @@ _GENERATE_KNOWN = frozenset(
         "reuse_cached",
         "generations_cache",
         "repair",
+        "level",
+        "check_prompt",
     }
 )
 
@@ -579,6 +757,43 @@ def _repaired_bytes(audio_bytes: bytes, lic, notes: list, *, repair) -> bytes:
     if fixed is not audio_bytes:  # repaired and cleared: the clip is now a derivative
         lic.transformations.extend(result.applied)
     return fixed
+
+
+def _levelled_bytes(audio_bytes: bytes, lic, notes: list, *, level) -> bytes:
+    """The clip levelled to ``level`` (:func:`foley.level.level_bytes`), noted and recorded."""
+    from ..level import level_bytes
+
+    levelled, applied, _ = level_bytes(audio_bytes, level)
+    if applied is None:
+        notes.append(f"level {level!r}: unchanged (too short or too quiet to measure)")
+        return audio_bytes
+    notes.append(applied)
+    lic.transformations.append(applied)
+    return levelled
+
+
+def _check_prompt(prompt, audio_bytes, res, notes: list, *, library, stored: bool) -> None:
+    """Put the prompt-match verdict on the result, its record (re-stored) and the notes."""
+    from ..prompt_match import UNCHECKED, note_for, prompt_match
+
+    try:
+        embedder = library.embedder
+    except Exception as exc:  # noqa: BLE001 - no embedder here: say so
+        match = {"status": UNCHECKED, "reason": f"no embedder: {type(exc).__name__}: {exc}"}
+    else:
+        match = prompt_match(prompt, audio_bytes, embedder=embedder)
+    res.qc = {**(res.qc or {}), "prompt_match": match}
+    note = note_for(match)
+    if note:
+        notes.append(note)
+    rec = res.record
+    if rec is not None:
+        rec.qc = {**(rec.qc or {}), "prompt_match": match}
+        if stored:
+            try:
+                library.update_record(rec)
+            except Exception as exc:  # noqa: BLE001 - the verdict is still on the result
+                notes.append(f"prompt match: not saved on the stored record ({exc!r})")
 
 
 def _metadata_captioner(prompt: str):

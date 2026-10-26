@@ -147,12 +147,38 @@ def native_adherence(
     raise ValueError(f"{config['name']}: unknown prompt_influence coerce {coerce!r}")
 
 
+def auth_env_vars(config: dict) -> "tuple[str, ...]":
+    """The env vars a source's key may live in, in the order they are read.
+
+    ``config["auth"]["env_var"]`` is the documented one; ``env_var_aliases`` lists
+    names the rest of the fleet reads for the same provider (ElevenLabs: ``an`` and
+    ``voxy`` read ``ELEVEN_API_KEY`` too), so a key set for them is found here. Empty
+    for a source with no key.
+
+    >>> auth_env_vars({"auth": {"env_var": "A_KEY", "env_var_aliases": ["B_KEY"]}})
+    ('A_KEY', 'B_KEY')
+    >>> auth_env_vars({"auth": None})
+    ()
+    """
+    auth = config.get("auth") or {}
+    primary = auth.get("env_var")
+    if not primary:
+        return ()
+    return (primary, *auth.get("env_var_aliases", ()))
+
+
+def operator_env_key(config: dict) -> Optional[str]:
+    """The operator's key for a source: the first of :func:`auth_env_vars` that is set."""
+    return next((os.environ[v] for v in auth_env_vars(config) if os.environ.get(v)), None)
+
+
 def resolve_source_key(config: dict, api_key: Optional[str] = None) -> str:
-    """A source's API token: ``api_key``, else a bound key, else its env var.
+    """A source's API token: ``api_key``, else a bound key, else its env var(s).
 
     The chain is the fleet's facade kit (``ocracy.kit.resolve_credential``), so a
     server can bind a per-request key with ``ocracy.kit.using_credentials(<source>=key)``.
-    ``config["auth"]`` names the env var and the sign-up URL.
+    ``config["auth"]`` names the env var (and its fleet aliases, see
+    :func:`auth_env_vars`) and the sign-up URL.
 
     Raises:
         SourceConfigurationError: Naming the env var and where to get a key.
@@ -163,7 +189,7 @@ def resolve_source_key(config: dict, api_key: Optional[str] = None) -> str:
     return resolve_credential(
         name,
         api_key=api_key,
-        env_var=auth["env_var"],
+        env_var=auth_env_vars(config),
         guidance={name: {"get_key_url": auth.get("apply_url")}},
         error=SourceConfigurationError,
         hint="Or pass api_key=.",
@@ -246,9 +272,8 @@ def source_account_id(config: dict, api_key: Optional[str] = None) -> str:
     """
     from ocracy.kit import current_credentials
 
-    env_var = (config.get("auth") or {}).get("env_var")
     key = api_key or current_credentials().get(config["name"])
-    if not key or key == (os.environ.get(env_var) if env_var else None):
+    if not key or key == operator_env_key(config):
         return "operator"
     return key_fingerprint(key)
 

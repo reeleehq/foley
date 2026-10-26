@@ -264,20 +264,31 @@ def test_elevenlabs_wav_wraps_raw_pcm_in_a_wav_header():
     assert sr == 48000 and data.ndim == 1 and len(data) == 24000
 
 
-def test_elevenlabs_wav_detects_stereo_pcm_from_the_requested_duration():
+def test_elevenlabs_wav_wraps_stereo_pcm_as_the_verified_layout():
+    # #95: the SFX endpoint's raw PCM is stereo (verified live 2026-10-26).
     raw = _pcm_s16le(1.0, channels=2)
     transport = FakeTransport(FakeResponse(200, None, raw))
     clip = _el_adapter(transport).generate("rain", output_format="wav", duration=1.0)
     data, sr = sf.read(io.BytesIO(clip.audio_bytes))
     assert data.shape == (48000, 2)
-    assert any("implies 2 ch" in n for n in clip.notes)
+    assert not any("ch" in n and "pcm_48000" in n for n in clip.notes)
 
 
-def test_elevenlabs_wav_without_a_duration_notes_the_assumed_layout():
-    transport = FakeTransport(FakeResponse(200, None, _pcm_s16le(0.5)))
+def test_elevenlabs_wav_corrects_a_mono_body_from_the_requested_duration():
+    transport = FakeTransport(FakeResponse(200, None, _pcm_s16le(1.0)))
+    clip = _el_adapter(transport).generate("rain", output_format="wav", duration=1.0)
+    data, _ = sf.read(io.BytesIO(clip.audio_bytes))
+    assert data.ndim == 1 and len(data) == 48000
+    assert any("implies 1 ch" in n for n in clip.notes)
+
+
+def test_elevenlabs_wav_without_a_duration_uses_the_verified_layout():
+    transport = FakeTransport(FakeResponse(200, None, _pcm_s16le(0.5, channels=2)))
     clip = _el_adapter(transport).generate("rain", output_format="wav")
     assert clip.audio_bytes[:4] == b"RIFF"
-    assert any("assumed 1 ch" in n for n in clip.notes)
+    data, _ = sf.read(io.BytesIO(clip.audio_bytes))
+    assert data.shape == (24000, 2)
+    assert not any("assumed" in n for n in clip.notes)
 
 
 @pytest.mark.parametrize(

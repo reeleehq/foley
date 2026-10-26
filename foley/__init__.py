@@ -665,7 +665,7 @@ def _warn_if_hidden(hidden) -> None:
 def generate(
     prompt: str,
     *,
-    backend: "str | None" = None,
+    backend: "str | tuple[str, ...] | list[str] | None" = None,
     library=None,
     store: bool = True,
     adapter=None,
@@ -677,6 +677,8 @@ def generate(
     reuse_cached: bool = True,
     budget=None,
     repair=True,
+    level=None,
+    check_prompt: bool = True,
     **affordances,
 ):
     """Generate a sound effect for ``prompt`` and add it to the library (by-value).
@@ -693,13 +695,23 @@ def generate(
 
     Args:
         prompt: The natural-language sound description.
-        backend: A registered generate source. ``None`` (default) is
-            ``$FOLEY_GENERATE_BACKEND``, else ``"stable_audio"`` (local; needs
-            ``foley[stable-audio]``). Hosted: ``"elevenlabs"`` (``foley[elevenlabs]`` +
-            ``$ELEVENLABS_API_KEY``) and the fal endpoints ``"fal_stable_audio_3"``
-            (Stable Audio 3 Small-SFX, commercial under $1M revenue),
-            ``"fal_elevenlabs"``, ``"fal_sonilo"`` and ``"fal_mmaudio"`` (non-commercial)
-            (``foley[fal]`` + ``$FAL_KEY``).
+        backend: A registered generate source, or a sequence of them to try in
+            order. ``None`` (default) tries the generation order
+            (:func:`foley.sources.generate.generate_backend_order`): ElevenLabs
+            direct first (``"elevenlabs"``: ``foley[elevenlabs]``,
+            ``$ELEVENLABS_API_KEY`` or ``$ELEVEN_API_KEY``, and
+            ``$FOLEY_ELEVENLABS_PLAN``), then fal's ``"fal_stable_audio_3"`` (Stable
+            Audio 3 Small-SFX, commercial under $1M revenue) and ``"fal_elevenlabs"``
+            (``foley[fal]`` + ``$FAL_KEY``), then the local ``"stable_audio"``
+            (``foley[stable-audio]``). The paid ones are tried only once paid
+            generation is opted in (``$FOLEY_GENERATE_PAID=1``; a key in the
+            environment is not consent to spend, #58), so out of the box this is the
+            free local backend. A backend with no key, not configured, offline, or
+            whose call fails is skipped, and the candidate's ``notes`` say why.
+            ``$FOLEY_GENERATE_ORDER`` (comma-separated) replaces the order;
+            ``$FOLEY_GENERATE_BACKEND`` pins one backend. A named backend is used
+            alone, with no fallback. Others: ``"fal_sonilo"``, ``"fal_mirelo"``,
+            ``"fal_stable_audio_3_medium"``, ``"fal_mmaudio"`` (non-commercial).
         library: Target library (default: the process-wide default library).
         store: If ``False``, synthesize + QC a preview without adding it: the returned
             candidate's ``audio_bytes`` carries the clip (the archive bytes the library
@@ -735,6 +747,14 @@ def generate(
             :func:`foley.repair.repair`'s signature replaces the policy (an ffmpeg one;
             ``functools.partial(foley.repair.repair, min_status=QCStatus.pass_)`` also
             declicks clips QC admits with a warning, which are otherwise stored as is).
+        level: Level the clip to a loudness target before storing it: a layer name
+            (``'sfx_fg'`` -25 LUFS, ``'ambience'`` -37 LUFS, … : the WEAVE layer gains
+            under a -16 LUFS voice, see :func:`foley.level.class_target_lufs`) or a LUFS
+            number. ``None`` (default) keeps the generated level.
+        check_prompt: Score the clip against its prompt with the library's text-audio
+            embedder (CLAP) and flag a mismatch in the notes and
+            ``sound.qc['prompt_match']``; ``'unchecked'`` (with the reason) when no
+            capable embedder is available. Default ``True``.
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`GENERATION_AFFORDANCES`).
@@ -766,14 +786,27 @@ def generate(
             not on this machine.
     """
     from .cost import spend_scope
-    from .sources.generate import default_generate_backend
+    from .sources.generate import (
+        default_generate_backend,
+        generate_backend_order,
+        generate_in_order,
+        paid_generation_opted_in,
+    )
 
-    if backend in (None, "", "auto"):
-        backend = default_generate_backend()
+    paid_ok = True  # a named backend or order is the caller asking for it
+    if isinstance(backend, (list, tuple)):
+        order = tuple(backend)  # the caller's own order
+    elif backend not in (None, "", "auto"):
+        order = (backend,)  # named: that backend, no fallback
+    elif adapter is not None:
+        order = (default_generate_backend(),)  # an injected adapter is one backend
+    else:
+        order, paid_ok = generate_backend_order(), paid_generation_opted_in()
     with spend_scope(budget):
-        report = _generate_backend(
+        report, backend, skipped = generate_in_order(
             prompt,
-            backend=backend,
+            order,
+            paid_ok=paid_ok,
             library=library,
             store=store,
             adapter=adapter,
@@ -784,9 +817,13 @@ def generate(
             on_unsupported=on_unsupported,
             reuse_cached=reuse_cached,
             repair=repair,
+            level=level,
+            check_prompt=check_prompt,
             **affordances,
         )
     results = report.results
+    if results and skipped:
+        results[0].notes[:0] = [f"generation order: skipped {line}" for line in skipped]
     res = results[0] if results else None
     if res is None:
         raise GenerationError(
@@ -905,7 +942,11 @@ def estimate(verb: str, **kwargs):
     if verb == "generate":
         from .sources.generate import default_generate_backend
 
+        from .sources.generate import first_runnable_backend
+
         backend = kwargs.pop("backend", None)
+        if isinstance(backend, (list, tuple)):  # an order: the first it would try
+            backend = first_runnable_backend(backend)
         if backend in (None, "", "auto"):
             backend = default_generate_backend()
         return estimate_generation(backend, **kwargs)
