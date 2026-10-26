@@ -66,7 +66,16 @@ PemLike = Union[str, bytes]
 
 
 def _pem_text(pem: PemLike) -> str:
-    return pem.decode("ascii") if isinstance(pem, bytes) else pem
+    if isinstance(pem, bytes):
+        try:
+            return pem.decode("ascii")
+        except UnicodeDecodeError as exc:
+            raise ValueError(f"cert_chain_pem is not ASCII PEM text: {exc}") from exc
+    if not isinstance(pem, str):
+        raise ValueError(
+            f"cert_chain_pem must be str or bytes, got {type(pem).__name__}"
+        )
+    return pem
 
 
 def _callback_for(key, alg: str) -> "Callable[[bytes], bytes]":
@@ -111,6 +120,19 @@ def _callback_for(key, alg: str) -> "Callable[[bytes], bytes]":
 MIN_RSA_KEY_BITS = 2048
 
 
+#: ExtendedKeyUsage purposes c2pa-python accepts on a signing certificate (anyExtendedKeyUsage
+#: is refused: it is not on the list, and c2pa rejects it even beside a valid purpose).
+C2PA_SIGNING_EKU_OIDS = frozenset(
+    {
+        "1.3.6.1.5.5.7.3.4",  # emailProtection
+        "1.3.6.1.5.5.7.3.8",  # timeStamping
+        "1.3.6.1.5.5.7.3.9",  # OCSPSigning
+        "1.3.6.1.5.5.7.3.36",  # documentSigning
+        "1.3.6.1.4.1.62558.2.1",  # C2PA claim signing
+    }
+)
+
+
 def _profile_problems(cert) -> "list[str]":
     """What is wrong with ``cert`` as a C2PA end-entity (signing) certificate; ``[]`` if fine."""
     from cryptography import x509
@@ -129,9 +151,18 @@ def _profile_problems(cert) -> "list[str]":
     except x509.ExtensionNotFound:
         problems.append("it has no KeyUsage extension (digitalSignature required)")
     try:
-        cert.extensions.get_extension_for_class(x509.ExtendedKeyUsage)
+        eku = cert.extensions.get_extension_for_class(x509.ExtendedKeyUsage).value
+        purposes = {oid.dotted_string for oid in eku}
+        if "2.5.29.37.0" in purposes or not purposes & C2PA_SIGNING_EKU_OIDS:
+            problems.append(
+                "its ExtendedKeyUsage has no C2PA-acceptable purpose, or has anyExtendedKeyUsage "
+                f"(accepted: {sorted(C2PA_SIGNING_EKU_OIDS)})"
+            )
     except x509.ExtensionNotFound:
         problems.append("it has no ExtendedKeyUsage extension")
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if not cert.not_valid_before_utc <= now <= cert.not_valid_after_utc:
+        problems.append("it is expired or not yet valid")
     public_key = cert.public_key()
     if (
         isinstance(public_key, rsa.RSAPublicKey)
@@ -194,7 +225,7 @@ def make_c2pa_signer(
         ValueError: An unknown or non-string ``alg``, a key (or curve) that does not fit it,
             a chain that is not PEM or does not start with the key's own certificate, or an
             end-entity certificate outside the C2PA signing profile (a CA, no digitalSignature,
-            no ExtendedKeyUsage, or an RSA key under 2048 bits).
+            no acceptable ExtendedKeyUsage, an invalid validity window, or an RSA key under :data:`MIN_RSA_KEY_BITS`).
         ImportError: ``c2pa-python`` / ``cryptography`` missing (``pip install 'foley[c2pa]'``).
     """
     if not isinstance(alg, str):

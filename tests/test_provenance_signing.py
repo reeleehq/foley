@@ -18,7 +18,7 @@ from cryptography.hazmat.primitives import serialization  # noqa: E402
 from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa  # noqa: E402
 
 from foley.provenance import make_c2pa_signer, make_self_signed_c2pa_certs  # noqa: E402
-from foley.provenance.signing import SIGNING_ALGORITHMS  # noqa: E402
+from foley.provenance.signing import SIGNING_ALGORITHMS, _callback_for  # noqa: E402
 
 SR = 48_000
 
@@ -189,7 +189,17 @@ def test_a_reversed_or_unparseable_chain_is_refused_when_the_signer_is_built():
 # --- end-entity profile checks (#135) ---------------------------------------------------
 
 
-def _chain_for(key, *, ca=False, digital_signature=True, eku=True, with_issuer=True):
+def _chain_for(
+    key,
+    *,
+    ca=False,
+    digital_signature=True,
+    eku=True,
+    with_issuer=True,
+    eku_oids=None,
+    valid_from_days=-1,
+    valid_days=30,
+):
     """A ``(chain_pem, ca_pem)`` whose end-entity cert holds ``key``'s public key.
 
     The knobs break one profile rule each; the issuer is an ES256 CA made here.
@@ -235,8 +245,10 @@ def _chain_for(key, *, ca=False, digital_signature=True, eku=True, with_issuer=T
             .issuer_name(issuer)
             .public_key(pub)
             .serial_number(x509.random_serial_number())
-            .not_valid_before(now - datetime.timedelta(days=1))
-            .not_valid_after(now + datetime.timedelta(days=30))
+            .not_valid_before(now + datetime.timedelta(days=valid_from_days))
+            .not_valid_after(
+                now + datetime.timedelta(days=valid_from_days + valid_days)
+            )
             .add_extension(
                 x509.SubjectKeyIdentifier.from_public_key(pub), critical=False
             )
@@ -261,7 +273,9 @@ def _chain_for(key, *, ca=False, digital_signature=True, eku=True, with_issuer=T
         usage(digital_signature=digital_signature, key_cert_sign=ca),
     ]
     if eku:
-        extensions.append(x509.ExtendedKeyUsage([ExtendedKeyUsageOID.EMAIL_PROTECTION]))
+        extensions.append(
+            x509.ExtendedKeyUsage(eku_oids or [ExtendedKeyUsageOID.EMAIL_PROTECTION])
+        )
     ee = build(
         name("ee"),
         name("ca"),
@@ -296,6 +310,8 @@ def test_other_algorithms_sign_a_manifest_that_reads_back_clean(alg, key):
         ({"ca": True}, "CA certificate"),
         ({"digital_signature": False}, "digitalSignature"),
         ({"eku": False}, "ExtendedKeyUsage"),
+        ({"valid_from_days": -10, "valid_days": 5}, "expired"),
+        ({"valid_from_days": 5}, "not yet valid"),
     ],
 )
 def test_an_end_entity_cert_outside_the_c2pa_profile_is_refused_at_build_time(
@@ -307,6 +323,25 @@ def test_an_end_entity_cert_outside_the_c2pa_profile_is_refused_at_build_time(
         make_c2pa_signer(chain, _key_pem(key))
 
 
+@pytest.mark.parametrize(
+    "oid_name", ["SERVER_AUTH", "CODE_SIGNING", "ANY_EXTENDED_KEY_USAGE"]
+)
+def test_an_unacceptable_eku_purpose_is_refused_at_build_time(oid_name):
+    from cryptography.x509.oid import ExtendedKeyUsageOID
+
+    key = ec.generate_private_key(ec.SECP256R1())
+    chain, _ = _chain_for(key, eku_oids=[getattr(ExtendedKeyUsageOID, oid_name)])
+    with pytest.raises(ValueError, match="ExtendedKeyUsage"):
+        make_c2pa_signer(chain, _key_pem(key))
+
+
+@pytest.mark.parametrize("chain", [None, 123, b"\xff\xfe"])
+def test_a_non_pem_chain_value_is_a_value_error(chain):
+    _, key = make_self_signed_c2pa_certs()
+    with pytest.raises(ValueError, match="cert_chain_pem"):
+        make_c2pa_signer(chain, key)
+
+
 def test_a_small_rsa_key_is_refused_at_build_time():
     key = rsa.generate_private_key(65537, 1024)
     chain, _ = _chain_for(key)
@@ -316,9 +351,9 @@ def test_a_small_rsa_key_is_refused_at_build_time():
 
 def test_a_bare_leaf_is_accepted():
     key = ec.generate_private_key(ec.SECP256R1())
-    chain, _ = _chain_for(key, with_issuer=False)
+    chain, ca = _chain_for(key, with_issuer=False)
     assert chain.count("BEGIN CERTIFICATE") == 1
-    make_c2pa_signer(chain, _key_pem(key))
+    assert _sign_and_check(make_c2pa_signer(chain, _key_pem(key)), ca) == []
 
 
 @pytest.mark.parametrize("alg", [None, 256])
@@ -329,12 +364,29 @@ def test_a_non_string_alg_is_a_value_error(alg):
 
 
 def test_a_failed_signing_is_logged_not_silent(caplog):
-    from foley import weave
+    """A signer built outside make_c2pa_signer (so unchecked) with a cert c2pa rejects."""
+    from cryptography.x509.oid import ExtendedKeyUsageOID
 
-    cred = {"manifest": {"not": "a valid manifest"}}
+    from foley import weave
+    from foley.base import LicenseRecord, SoundRecord
+
+    key = ec.generate_private_key(ec.SECP256R1())
+    chain, _ = _chain_for(key, eku_oids=[ExtendedKeyUsageOID.SERVER_AUTH])
+    signer = c2pa.Signer.from_callback(
+        _callback_for(key, "es256"), c2pa.C2paSigningAlg.ES256, chain, None
+    )
+    rec = SoundRecord(
+        id="s1",
+        caption="rain",
+        tags=["rain"],
+        license=LicenseRecord(source="user", license_id="CC0-1.0", commercial_ok=True),
+    )
+    cred = weave._build_mix_credential(
+        [rec], asset_id="mix1", ai_disclosed=False, watermark_meta=None
+    )
     with caplog.at_level("WARNING", logger="foley.weave"):
-        assert (
-            weave._sign_and_embed(np.zeros(100, "float32"), SR, cred, cert=object())
-            is False
+        assert not weave._sign_and_embed(
+            np.zeros(100, "float32"), SR, cred, cert=signer
         )
     assert "C2PA signing failed" in caplog.text
+    assert cred["signed"] is False
