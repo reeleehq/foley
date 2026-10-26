@@ -25,10 +25,6 @@ from typing import Sequence
 
 from ..prompt_match import THRESHOLDS_PATH, load_thresholds
 
-THRESHOLDS_PATH = (
-    Path(__file__).resolve().parent.parent / "data" / "prompt_match" / "thresholds.json"
-)
-
 
 @dataclass(frozen=True)
 class Calibration:
