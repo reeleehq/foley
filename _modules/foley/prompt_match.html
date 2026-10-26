@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=a72e4630"></script>
+    <script src="../../_static/documentation_options.js?v=0356c229"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.48" />
+  <meta name="docsearch:version" content="0.0.49" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -755,7 +755,7 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="prompt_match">
 <a class="viewcode-back" href="../../_autosummary/foley.prompt_match.html#foley.prompt_match.prompt_match">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">prompt_match</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">embedder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">prompt_match</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">embedder</span><span class="p">,</span> <span class="n">fallback</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Score ``audio_bytes`` against ``prompt`` with ``embedder``; never raises.</span>
 
 <span class="sd">    Args:</span>
@@ -763,6 +763,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        audio_bytes: The clip (any format ``soundfile`` decodes).</span>
 <span class="sd">        embedder: A text-audio embedder (``embed_text`` / ``embed_audio``, L2-normalised</span>
 <span class="sd">            vectors) carrying ``prompt_match_threshold``; anything else is ``unchecked``.</span>
+<span class="sd">        fallback: A callable returning a second embedder (or ``None``), tried only when</span>
+<span class="sd">            ``embedder`` was meant to check but could not run (it failed to load or</span>
+<span class="sd">            embed: a small host without ``transformers``). Its own threshold applies and</span>
+<span class="sd">            its model is named in the result. The default ``None`` tries nothing else.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A JSON-safe dict: ``status`` (``match`` | ``mismatch`` | ``unchecked``), and</span>
@@ -772,6 +776,45 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &gt;&gt;&gt; prompt_match("a door creak", b"", embedder=None)["status"]</span>
 <span class="sd">    'unchecked'</span>
 <span class="sd">    """</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">_check</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">embedder</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fallback</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">_could_not_run</span><span class="p">(</span><span class="n">embedder</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="n">second</span> <span class="o">=</span> <span class="n">fallback</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">second</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">retry</span> <span class="o">=</span> <span class="n">_check</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">second</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">retry</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">!=</span> <span class="n">UNCHECKED</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">retry</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="o">**</span><span class="n">result</span><span class="p">,</span>
+                <span class="s2">"reason"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'reason'</span><span class="p">]</span><span class="si">}</span><span class="s2">; fallback </span><span class="si">{</span><span class="n">retry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'model'</span><span class="p">,</span><span class="w"> </span><span class="s1">'embedder'</span><span class="p">)</span><span class="si">}</span><span class="s2">: "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">retry</span><span class="p">[</span><span class="s1">'reason'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="p">}</span>
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+
+<div class="viewcode-block" id="calibrated_threshold">
+<a class="viewcode-back" href="../../_autosummary/foley.prompt_match.html#foley.prompt_match.calibrated_threshold">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">calibrated_threshold</span><span class="p">(</span>
+    <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">override</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">provisional</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""An embedder's prompt-match threshold: its override, else the calibration, else ``provisional``."""</span>
+    <span class="k">if</span> <span class="n">override</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">override</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="n">threshold_for</span><span class="p">(</span><span class="n">model_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">provisional</span> <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">found</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_could_not_run</span><span class="p">(</span><span class="n">embedder</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether ``embedder`` was meant to check (it has a threshold) yet came back unchecked."""</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="n">result</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">==</span> <span class="n">UNCHECKED</span>
+        <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">embedder</span><span class="p">,</span> <span class="s2">"prompt_match_threshold"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">embedder</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One embedder's verdict (the body of :func:`prompt_match`)."""</span>
     <span class="n">threshold</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">embedder</span><span class="p">,</span> <span class="s2">"prompt_match_threshold"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">embedder</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">what</span> <span class="o">=</span> <span class="s2">"no embedder"</span> <span class="k">if</span> <span class="n">embedder</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">type</span><span class="p">(</span><span class="n">embedder</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
@@ -793,8 +836,7 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"score"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span>
         <span class="s2">"threshold"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">),</span>
         <span class="s2">"model"</span><span class="p">:</span> <span class="n">model</span><span class="p">,</span>
-    <span class="p">}</span></div>
-
+    <span class="p">}</span>
 
 
 <div class="viewcode-block" id="note_for">

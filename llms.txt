@@ -21,6 +21,7 @@
 - [foley.index.indexes](_autosummary/foley.index.indexes.html.md): Concrete vector + keyword index backends (the swappable retrieval engines).
 - [foley.index.ingest](_autosummary/foley.index.ingest.html.md): The ingestion pipeline — turn any audio file into a searchable SoundRecord.
 - [foley.index.library](_autosummary/foley.index.library.html.md): The &#96;SoundLibrary&#96; façade — one searchable, license-aware sound library.
+- [foley.index.onnx_clap](_autosummary/foley.index.onnx_clap.html.md): CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers.
 - [foley.index.protocols](_autosummary/foley.index.protocols.html.md): Structural contracts for the foley index (the retrieval boundary).
 - [foley.index.search](_autosummary/foley.index.search.html.md): Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list.
 - [foley.index.taggers](_autosummary/foley.index.taggers.html.md): Taggers — auto-fill a sound’s semantic labels on ingest (report 03).
@@ -100,7 +101,7 @@
 - [foley.sources.stable_audio_3.config](_autosummary/foley.sources.stable_audio_3.config.html.md): &#96;SOURCE_CONFIG&#96; for the local Stable Audio 3 Small-SFX generator (#72 · report 13 · 17).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 11:58 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 12:19 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=a72e4630"></script>
+    <script src="../_static/documentation_options.js?v=0356c229"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.48" />
+  <meta name="docsearch:version" content="0.0.49" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -328,6 +328,7 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.index.indexes.html">foley.index.indexes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.ingest.html">foley.index.ingest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.library.html">foley.index.library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.onnx_clap.html">foley.index.onnx_clap</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.protocols.html">foley.index.protocols</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.search.html">foley.index.search</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.taggers.html">foley.index.taggers</a></li>
@@ -2102,13 +2103,16 @@ fusion).</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="foley.index.library.html#module-foley.index.library" title="foley.index.library"><code class="xref py py-obj docutils literal notranslate"><span class="pre">library</span></code></a></p></td>
 <td><p>The <code class="docutils literal notranslate"><span class="pre">SoundLibrary</span></code> façade — one searchable, license-aware sound library.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="foley.index.protocols.html#module-foley.index.protocols" title="foley.index.protocols"><code class="xref py py-obj docutils literal notranslate"><span class="pre">protocols</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.index.onnx_clap.html#module-foley.index.onnx_clap" title="foley.index.onnx_clap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">onnx_clap</span></code></a></p></td>
+<td><p>CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.index.protocols.html#module-foley.index.protocols" title="foley.index.protocols"><code class="xref py py-obj docutils literal notranslate"><span class="pre">protocols</span></code></a></p></td>
 <td><p>Structural contracts for the foley index (the retrieval boundary).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="foley.index.search.html#module-foley.index.search" title="foley.index.search"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.index.search.html#module-foley.index.search" title="foley.index.search"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search</span></code></a></p></td>
 <td><p>Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="foley.index.taggers.html#module-foley.index.taggers" title="foley.index.taggers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">taggers</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.index.taggers.html#module-foley.index.taggers" title="foley.index.taggers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">taggers</span></code></a></p></td>
 <td><p>Taggers — auto-fill a sound's semantic labels on ingest (report 03).</p></td>
 </tr>
 </tbody>

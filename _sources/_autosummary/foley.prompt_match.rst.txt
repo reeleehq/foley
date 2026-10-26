@@ -17,6 +17,7 @@ foley.prompt\_match
 
    .. autosummary::
    
+      calibrated_threshold
       load_thresholds
       note_for
       prompt_match

@@ -1,0 +1,26 @@
+foley.index.onnx\_clap
+======================
+
+.. automodule:: foley.index.onnx_clap
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      ONNX_CLAP_REPO
+      ONNX_CLAP_MODEL_ID
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      log_mel
+      mel_filters
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      OnnxClapEmbedder
+   

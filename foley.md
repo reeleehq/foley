@@ -1,4 +1,4 @@
-> built 2026-10-26 11:58 UTC from 0cf4c88 (main) · foley 0.0.48. Details: build_info.json
+> built 2026-10-26 12:19 UTC from d233b3c (main) · foley 0.0.49. Details: build_info.json
 
 # index.html.md
 
@@ -9388,15 +9388,16 @@ fusion).
 
 ### Modules
 
-| [`taxonomy`](_autosummary/foley.index.taxonomy.html.md#module-foley.index.taxonomy)   | UCS + AudioSet taxonomy: the `tags -> UCS CatID` resolver for foley.            |
-|-----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`embedders`](_autosummary/foley.index.embedders.html.md#module-foley.index.embedders) | Embedders — the joint text<->audio space that powers retrieval.                 |
-| [`indexes`](_autosummary/foley.index.indexes.html.md#module-foley.index.indexes)     | Concrete vector + keyword index backends (the swappable retrieval engines).     |
-| [`ingest`](_autosummary/foley.index.ingest.html.md#module-foley.index.ingest)       | The ingestion pipeline — turn any audio file into a searchable SoundRecord.     |
-| [`library`](_autosummary/foley.index.library.html.md#module-foley.index.library)     | The `SoundLibrary` façade — one searchable, license-aware sound library.        |
-| [`protocols`](_autosummary/foley.index.protocols.html.md#module-foley.index.protocols) | Structural contracts for the foley index (the retrieval boundary).              |
-| [`search`](_autosummary/foley.index.search.html.md#module-foley.index.search)       | Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list. |
-| [`taggers`](_autosummary/foley.index.taggers.html.md#module-foley.index.taggers)     | Taggers — auto-fill a sound's semantic labels on ingest (report 03).            |
+| [`taxonomy`](_autosummary/foley.index.taxonomy.html.md#module-foley.index.taxonomy)   | UCS + AudioSet taxonomy: the `tags -> UCS CatID` resolver for foley.                       |
+|-----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| [`embedders`](_autosummary/foley.index.embedders.html.md#module-foley.index.embedders) | Embedders — the joint text<->audio space that powers retrieval.                            |
+| [`indexes`](_autosummary/foley.index.indexes.html.md#module-foley.index.indexes)     | Concrete vector + keyword index backends (the swappable retrieval engines).                |
+| [`ingest`](_autosummary/foley.index.ingest.html.md#module-foley.index.ingest)       | The ingestion pipeline — turn any audio file into a searchable SoundRecord.                |
+| [`library`](_autosummary/foley.index.library.html.md#module-foley.index.library)     | The `SoundLibrary` façade — one searchable, license-aware sound library.                   |
+| [`onnx_clap`](_autosummary/foley.index.onnx_clap.html.md#module-foley.index.onnx_clap) | CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers. |
+| [`protocols`](_autosummary/foley.index.protocols.html.md#module-foley.index.protocols) | Structural contracts for the foley index (the retrieval boundary).                         |
+| [`search`](_autosummary/foley.index.search.html.md#module-foley.index.search)       | Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list.            |
+| [`taggers`](_autosummary/foley.index.taggers.html.md#module-foley.index.taggers)     | Taggers — auto-fill a sound's semantic labels on ingest (report 03).                       |
 
 
 # _autosummary/foley.index.indexes.html.md
@@ -10249,6 +10250,116 @@ The process-wide default library (local stores + CLAP + best index).
 
 * **Return type:**
   [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary)
+
+
+# _autosummary/foley.index.onnx_clap.html.md
+
+# foley.index.onnx_clap
+
+CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers.
+
+A production server with no GPU, about 2 GB of free RAM and no `transformers` cannot
+load [`ClapEmbedder`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.ClapEmbedder) (a ~1.7 GB model plus torch), so every
+generated clip there used to be `unchecked` by [`foley.prompt_match.prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)
+(#116). [`OnnxClapEmbedder`](_autosummary/foley.index.onnx_clap.html.md#foley.index.onnx_clap.OnnxClapEmbedder) runs `laion/larger_clap_general` from the community
+ONNX export `Xenova/larger_clap_general` (ungated), int8-quantised: about 205 MB on
+disk, a few hundred MB of RAM, and the same 512-d text-audio space, so it can stand in for
+the full model wherever only the similarity of a text and a clip matters.
+
+It needs `onnxruntime`, `tokenizers` and `huggingface_hub` (the `foley[clap-onnx]`
+extra) and `numpy`; the log-mel front end is a small numpy port of
+`transformers`’ `ClapFeatureExtractor` (checked against it in the tests), so nothing
+else is imported. The quantised model gives slightly different vectors from the full one:
+its prompt-match threshold is calibrated separately ([`foley.eval.prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)) under
+its own id, [`ONNX_CLAP_MODEL_ID`](_autosummary/foley.index.onnx_clap.html.md#foley.index.onnx_clap.ONNX_CLAP_MODEL_ID), and it is not a drop-in for an index built with the
+full embedder (use it to compare a text with a clip, not to search an index).
+
+Same protocol as [`ClapEmbedder`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.ClapEmbedder): `embed_text` ->
+`(n, 512)`, `embed_audio` -> `(512,)`, L2-normalised, `prompt_match_threshold`.
+Clips over 10 s are cut to the middle 10 s (`transformers` takes a random crop), so the
+vector is deterministic.
+
+### Module Attributes
+
+| [`ONNX_CLAP_REPO`](_autosummary/foley.index.onnx_clap.html.md#foley.index.onnx_clap.ONNX_CLAP_REPO)     | The ONNX export repo (an ungated mirror of the LAION checkpoint's graphs).              |
+|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [`ONNX_CLAP_MODEL_ID`](_autosummary/foley.index.onnx_clap.html.md#foley.index.onnx_clap.ONNX_CLAP_MODEL_ID) | The id the thresholds file keys the quantised model under (the checkpoint + its build). |
+
+### Functions
+
+| [`log_mel`](_autosummary/foley.index.onnx_clap.html.md#foley.index.onnx_clap.log_mel)(wav)   | The `(1001, 64)` dB log-mel features of a mono 48 kHz clip, as `ClapFeatureExtractor`'s.   |
+|-----------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| [`mel_filters`](_autosummary/foley.index.onnx_clap.html.md#foley.index.onnx_clap.mel_filters)()  | The `(513, 64)` triangular Slaney-scale, Slaney-normalised mel filter bank.                |
+
+### Classes
+
+| [`OnnxClapEmbedder`](_autosummary/foley.index.onnx_clap.html.md#foley.index.onnx_clap.OnnxClapEmbedder)(\*[, threads, ...])   | The int8 ONNX CLAP embedder (see the module docstring).   |
+|-----------------------------------------------------------------------------------------|-----------------------------------------------------------|
+
+### foley.index.onnx_clap.ONNX_CLAP_MODEL_ID *= 'Xenova/larger_clap_general:int8'*
+
+The id the thresholds file keys the quantised model under (the checkpoint + its build).
+
+### foley.index.onnx_clap.ONNX_CLAP_REPO *= 'Xenova/larger_clap_general'*
+
+The ONNX export repo (an ungated mirror of the LAION checkpoint’s graphs).
+
+### *class* foley.index.onnx_clap.OnnxClapEmbedder(, threads=None, prompt_match_threshold=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+The int8 ONNX CLAP embedder (see the module docstring).
+
+#### model_id
+
+[`ONNX_CLAP_MODEL_ID`](_autosummary/foley.index.onnx_clap.html.md#foley.index.onnx_clap.ONNX_CLAP_MODEL_ID), the key of its calibrated threshold.
+
+#### dim
+
+#### open_source
+
+True (the LAION checkpoint is).
+
+#### embed_audio(wav, sr)
+
+Embed one clip -> `(512,)` L2-normalised (down-mixed and resampled to 48 kHz).
+
+* **Return type:**
+  `ndarray`
+
+#### embed_text(text)
+
+Embed one or more query strings -> `(n_texts, 512)` L2-normalised.
+
+Each text is run alone, unpadded: the exported text graph takes no attention mask.
+
+* **Return type:**
+  `ndarray`
+
+#### *property* prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)*
+
+The calibrated threshold of the quantised model (provisional until calibrated).
+
+### foley.index.onnx_clap.log_mel(wav)
+
+The `(1001, 64)` dB log-mel features of a mono 48 kHz clip, as `ClapFeatureExtractor`’s.
+
+The clip is cut to its middle 10 s or, if shorter, repeated to fill 10 s and
+zero-padded (`repeatpad`); then a centred, reflect-padded, periodic-Hann STFT
+(1024 / hop 480), power spectrum, mel projection, `10 * log10(max(x, 1e-10))`.
+
+* **Return type:**
+  `ndarray`
+
+### foley.index.onnx_clap.mel_filters()
+
+The `(513, 64)` triangular Slaney-scale, Slaney-normalised mel filter bank.
+
+What `ClapFeatureExtractor` uses outside its “fusion” mode (`librosa.filters.mel`’s
+defaults, 50 Hz to 14 kHz).
+
+* **Return type:**
+  `ndarray`
 
 
 # _autosummary/foley.index.protocols.html.md
@@ -12607,8 +12718,9 @@ Zero-dependency import: `numpy` and the embedder’s own stack load inside.
 
 ### Functions
 
-| [`load_thresholds`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.load_thresholds)([path])                         | `{model_id: calibration dict}`; empty when nothing has been calibrated.                                   |
+| [`calibrated_threshold`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.calibrated_threshold)(model_id[, override])      | An embedder's prompt-match threshold: its override, else the calibration, else `provisional`.             |
 |--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| [`load_thresholds`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.load_thresholds)([path])                         | `{model_id: calibration dict}`; empty when nothing has been calibrated.                                   |
 | [`note_for`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.note_for)(result)                                | The one-line candidate note for a [`prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match) result. |
 | [`prompt_match`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)(prompt, audio_bytes, \*, embedder) | Score `audio_bytes` against `prompt` with `embedder`; never raises.                                       |
 | [`threshold_for`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.threshold_for)(model_id, \*[, path])             | The calibrated threshold of checkpoint `model_id`, or `None`.                                             |
@@ -12639,6 +12751,13 @@ the clip matches its prompt, does not, or was not checked.
 * **Type:**
   `status` values
 
+### foley.prompt_match.calibrated_threshold(model_id, override=None, , provisional)
+
+An embedder’s prompt-match threshold: its override, else the calibration, else `provisional`.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
 ### foley.prompt_match.load_thresholds(path=PosixPath('/home/runner/work/foley/foley/foley/data/prompt_match/thresholds.json'))
 
 `{model_id: calibration dict}`; empty when nothing has been calibrated.
@@ -12653,7 +12772,7 @@ The one-line candidate note for a [`prompt_match()`](_autosummary/foley.prompt_m
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### foley.prompt_match.prompt_match(prompt, audio_bytes, , embedder)
+### foley.prompt_match.prompt_match(prompt, audio_bytes, , embedder, fallback=None)
 
 Score `audio_bytes` against `prompt` with `embedder`; never raises.
 
@@ -12662,6 +12781,10 @@ Score `audio_bytes` against `prompt` with `embedder`; never raises.
   * **audio_bytes** ([`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)) – The clip (any format `soundfile` decodes).
   * **embedder** – A text-audio embedder (`embed_text` / `embed_audio`, L2-normalised
     vectors) carrying `prompt_match_threshold`; anything else is `unchecked`.
+  * **fallback** – A callable returning a second embedder (or `None`), tried only when
+    `embedder` was meant to check but could not run (it failed to load or
+    embed: a small host without `transformers`). Its own threshold applies and
+    its model is named in the result. The default `None` tries nothing else.
 * **Returns:**
   `status` (`match` | `mismatch` | `unchecked`), and
   `score` (cosine similarity), `threshold` and `model` when checked, or
@@ -12990,7 +13113,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'netflix chime', 'netflix sound', 'ta dum', 'netflix intro', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta-dum', 'tudum', 'netflix sound', 'ta dum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -18631,7 +18754,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-26 11:58 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/0cf4c8815898d7e1a086607436a985b89e044e36"><code>0cf4c88</code></a> on branch <code>main</code>, for **foley 0.0.48** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 12:19 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/d233b3c5a0a75df3f27ed147489099a385ec3d63"><code>d233b3c</code></a> on branch <code>main</code>, for **foley 0.0.49** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -18640,7 +18763,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/0cf4c8815898d7e1a086607436a985b89e044e36"><code>0cf4c8815898d7e1a086607436a985b89e044e36</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/d233b3c5a0a75df3f27ed147489099a385ec3d63"><code>d233b3c5a0a75df3f27ed147489099a385ec3d63</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -18651,9 +18774,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40318652303">40318652303</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40321335025">40321335025</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>0cf4c8815898d7e1a086607436a985b89e044e36</code> (in the history of the built commit) |
+| Event commit | <code>d233b3c5a0a75df3f27ed147489099a385ec3d63</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -18678,13 +18801,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.48/">0.0.48</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.49/">0.0.49</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 0cf4c8815898d7e1a086607436a985b89e044e36
+git checkout d233b3c5a0a75df3f27ed147489099a385ec3d63
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

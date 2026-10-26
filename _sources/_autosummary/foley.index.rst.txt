@@ -58,6 +58,7 @@ foley.index
    indexes
    ingest
    library
+   onnx_clap
    protocols
    search
    taggers

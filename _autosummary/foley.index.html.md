@@ -1175,12 +1175,13 @@ fusion).
 
 ### Modules
 
-| [`taxonomy`](foley.index.taxonomy.html.md#module-foley.index.taxonomy)   | UCS + AudioSet taxonomy: the `tags -> UCS CatID` resolver for foley.            |
-|-----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`embedders`](foley.index.embedders.html.md#module-foley.index.embedders) | Embedders — the joint text<->audio space that powers retrieval.                 |
-| [`indexes`](foley.index.indexes.html.md#module-foley.index.indexes)     | Concrete vector + keyword index backends (the swappable retrieval engines).     |
-| [`ingest`](foley.index.ingest.html.md#module-foley.index.ingest)       | The ingestion pipeline — turn any audio file into a searchable SoundRecord.     |
-| [`library`](foley.index.library.html.md#module-foley.index.library)     | The `SoundLibrary` façade — one searchable, license-aware sound library.        |
-| [`protocols`](foley.index.protocols.html.md#module-foley.index.protocols) | Structural contracts for the foley index (the retrieval boundary).              |
-| [`search`](foley.index.search.html.md#module-foley.index.search)       | Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list. |
-| [`taggers`](foley.index.taggers.html.md#module-foley.index.taggers)     | Taggers — auto-fill a sound's semantic labels on ingest (report 03).            |
+| [`taxonomy`](foley.index.taxonomy.html.md#module-foley.index.taxonomy)   | UCS + AudioSet taxonomy: the `tags -> UCS CatID` resolver for foley.                       |
+|-----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| [`embedders`](foley.index.embedders.html.md#module-foley.index.embedders) | Embedders — the joint text<->audio space that powers retrieval.                            |
+| [`indexes`](foley.index.indexes.html.md#module-foley.index.indexes)     | Concrete vector + keyword index backends (the swappable retrieval engines).                |
+| [`ingest`](foley.index.ingest.html.md#module-foley.index.ingest)       | The ingestion pipeline — turn any audio file into a searchable SoundRecord.                |
+| [`library`](foley.index.library.html.md#module-foley.index.library)     | The `SoundLibrary` façade — one searchable, license-aware sound library.                   |
+| [`onnx_clap`](foley.index.onnx_clap.html.md#module-foley.index.onnx_clap) | CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers. |
+| [`protocols`](foley.index.protocols.html.md#module-foley.index.protocols) | Structural contracts for the foley index (the retrieval boundary).                         |
+| [`search`](foley.index.search.html.md#module-foley.index.search)       | Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list.            |
+| [`taggers`](foley.index.taggers.html.md#module-foley.index.taggers)     | Taggers — auto-fill a sound's semantic labels on ingest (report 03).                       |

@@ -30,8 +30,9 @@ Zero-dependency import: `numpy` and the embedder’s own stack load inside.
 
 ### Functions
 
-| [`load_thresholds`](#foley.prompt_match.load_thresholds)([path])                         | `{model_id: calibration dict}`; empty when nothing has been calibrated.                                   |
+| [`calibrated_threshold`](#foley.prompt_match.calibrated_threshold)(model_id[, override])      | An embedder's prompt-match threshold: its override, else the calibration, else `provisional`.             |
 |--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| [`load_thresholds`](#foley.prompt_match.load_thresholds)([path])                         | `{model_id: calibration dict}`; empty when nothing has been calibrated.                                   |
 | [`note_for`](#foley.prompt_match.note_for)(result)                                | The one-line candidate note for a [`prompt_match()`](#foley.prompt_match.prompt_match) result. |
 | [`prompt_match`](#foley.prompt_match.prompt_match)(prompt, audio_bytes, \*, embedder) | Score `audio_bytes` against `prompt` with `embedder`; never raises.                                       |
 | [`threshold_for`](#foley.prompt_match.threshold_for)(model_id, \*[, path])             | The calibrated threshold of checkpoint `model_id`, or `None`.                                             |
@@ -62,6 +63,13 @@ the clip matches its prompt, does not, or was not checked.
 * **Type:**
   `status` values
 
+### foley.prompt_match.calibrated_threshold(model_id, override=None, , provisional)
+
+An embedder’s prompt-match threshold: its override, else the calibration, else `provisional`.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
 ### foley.prompt_match.load_thresholds(path=PosixPath('/home/runner/work/foley/foley/foley/data/prompt_match/thresholds.json'))
 
 `{model_id: calibration dict}`; empty when nothing has been calibrated.
@@ -76,7 +84,7 @@ The one-line candidate note for a [`prompt_match()`](#foley.prompt_match.prompt_
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### foley.prompt_match.prompt_match(prompt, audio_bytes, , embedder)
+### foley.prompt_match.prompt_match(prompt, audio_bytes, , embedder, fallback=None)
 
 Score `audio_bytes` against `prompt` with `embedder`; never raises.
 
@@ -85,6 +93,10 @@ Score `audio_bytes` against `prompt` with `embedder`; never raises.
   * **audio_bytes** ([`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)) – The clip (any format `soundfile` decodes).
   * **embedder** – A text-audio embedder (`embed_text` / `embed_audio`, L2-normalised
     vectors) carrying `prompt_match_threshold`; anything else is `unchecked`.
+  * **fallback** – A callable returning a second embedder (or `None`), tried only when
+    `embedder` was meant to check but could not run (it failed to load or
+    embed: a small host without `transformers`). Its own threshold applies and
+    its model is named in the result. The default `None` tries nothing else.
 * **Returns:**
   `status` (`match` | `mismatch` | `unchecked`), and
   `score` (cosine similarity), `threshold` and `model` when checked, or

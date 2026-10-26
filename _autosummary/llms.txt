@@ -19,6 +19,7 @@
 - [foley.index.indexes](foley.index.indexes.html.md): Concrete vector + keyword index backends (the swappable retrieval engines).
 - [foley.index.ingest](foley.index.ingest.html.md): The ingestion pipeline — turn any audio file into a searchable SoundRecord.
 - [foley.index.library](foley.index.library.html.md): The &#96;SoundLibrary&#96; façade — one searchable, license-aware sound library.
+- [foley.index.onnx_clap](foley.index.onnx_clap.html.md): CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers.
 - [foley.index.protocols](foley.index.protocols.html.md): Structural contracts for the foley index (the retrieval boundary).
 - [foley.index.search](foley.index.search.html.md): Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list.
 - [foley.index.taggers](foley.index.taggers.html.md): Taggers — auto-fill a sound’s semantic labels on ingest (report 03).
