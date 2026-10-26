@@ -275,7 +275,17 @@ def license_id_from_cc_url(url: Optional[str]) -> "tuple[str, bool]":
         tokens = _without_path_language(url, tokens)
         if toks & {"zero", "cc0"}:
             return _only_known(
-                tokens, {"publicdomain", "zero", "cc0", "public", "domain", "universal", "dedication"}, "CC0-1.0"
+                tokens,
+                {
+                    "publicdomain",
+                    "zero",
+                    "cc0",
+                    "public",
+                    "domain",
+                    "universal",
+                    "dedication",
+                },
+                "CC0-1.0",
             )
         # 'mark' or a bare public-domain claim, never verified. A label that adds a word
         # ("not public domain", "public domain in the US only") negates or limits the
@@ -290,7 +300,9 @@ def license_id_from_cc_url(url: Optional[str]) -> "tuple[str, bool]":
         or _has_phrase(tokens, "creative", "commons", "zero")
     ):
         return _only_known(
-            _without_path_language(url, tokens), {"cc0", "0", "zero", "universal", "dedication"}, "CC0-1.0"
+            _without_path_language(url, tokens),
+            {"cc0", "0", "zero", "universal", "dedication"},
+            "CC0-1.0",
         )
     if toks & {"sampling", "sampling+"}:
         return _only_known(
@@ -323,9 +335,7 @@ def _only_known(
     leftover = [
         t
         for t in tokens
-        if t not in allowed
-        and t not in _NEUTRAL_TOKENS
-        and t not in versions
+        if t not in allowed and t not in _NEUTRAL_TOKENS and t not in versions
     ]
     if leftover or len(set(versions)) > 1:
         return "unknown", False
