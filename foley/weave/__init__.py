@@ -213,6 +213,31 @@ def _foley_version() -> str:
         return "unknown"
 
 
+#: C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).
+_C2PA_CREATED = "c2pa.created"
+_C2PA_PLACED = "c2pa.placed"
+_C2PA_COMPONENT_OF = "componentOf"
+_INGREDIENT_ID_PREFIX = "foley:ingredient:"
+
+
+def _as_c2pa_ingredient(credential: dict, *, index: int) -> dict:
+    """A per-sound content credential, declared as a C2PA ``componentOf`` ingredient.
+
+    Adds (never removes) the fields ``c2pa.Builder`` reads from an ingredient — ``title``,
+    ``format``, ``relationship`` and a manifest-unique ``instance_id`` (the handle a
+    ``c2pa.placed`` action's ``ingredientIds`` resolves) — so the sidecar keeps the full
+    per-sound credential while the signed manifest gets a valid ingredient.
+    """
+    manifest = credential["manifest"]
+    return {
+        **credential,
+        "title": manifest["title"],
+        "format": manifest["format"],
+        "relationship": _C2PA_COMPONENT_OF,
+        "instance_id": f"{_INGREDIENT_ID_PREFIX}{index}:{credential['asset_ref']}",
+    }
+
+
 def _build_mix_credential(
     records, *, asset_id, ai_disclosed, watermark_meta, fmt="wav"
 ):
@@ -220,35 +245,39 @@ def _build_mix_credential(
 
     Reuses :func:`foley.provenance.disclosure.build_content_credential` per ingredient
     (so the credential shape never forks between the per-sound sidecar and the mix
-    manifest) and asserts a ``c2pa.created``+``c2pa.placed`` composite, plus an EU AI
-    Act Art. 50 disclosure when any ingredient is AI-generated.
+    manifest) and asserts a ``c2pa.created`` composite with one ``c2pa.placed`` per
+    ingredient, plus an EU AI Act Art. 50 disclosure when any ingredient is AI-generated.
+
+    C2PA requires every ``c2pa.placed`` action to reference its ingredient
+    (``assertion.action.ingredientMismatch`` otherwise), so each per-sound credential is
+    declared as a ``componentOf`` ingredient (via :func:`_as_c2pa_ingredient`) and its
+    ``placed`` action names it through ``parameters.ingredientIds``. A mix with no
+    (credentialed) ingredient asserts ``c2pa.created`` alone.
     """
     from ..provenance import disclosure
 
     ingredients = []
     for r in records:
         try:
-            ingredients.append(
-                disclosure.build_content_credential(r, asset_id=_ref_of(r))
-            )
+            cred = disclosure.build_content_credential(r, asset_id=_ref_of(r))
         except Exception:
-            continue
+            _log.warning(
+                "no credential for %r; omitted from the mix manifest",
+                _ref_of(r),
+                exc_info=True,
+            )
+            continue  # an ingredient without a credential is neither declared nor placed
+        ingredients.append(_as_c2pa_ingredient(cred, index=len(ingredients)))
     source_type = (
         disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA
         if ai_disclosed
         else disclosure.IPTC_DIGITAL_CREATION
     )
-    assertions = [
-        {
-            "label": "c2pa.actions",
-            "data": {
-                "actions": [
-                    {"action": "c2pa.created", "digitalSourceType": source_type},
-                    {"action": "c2pa.placed"},
-                ]
-            },
-        }
+    actions = [{"action": _C2PA_CREATED, "digitalSourceType": source_type}] + [
+        {"action": _C2PA_PLACED, "parameters": {"ingredientIds": [i["instance_id"]]}}
+        for i in ingredients
     ]
+    assertions = [{"label": "c2pa.actions", "data": {"actions": actions}}]
     if ai_disclosed:
         assertions.append(
             {
