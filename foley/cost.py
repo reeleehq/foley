@@ -127,7 +127,9 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
     return None
 
 
-def actual_call_cost(config: dict, *, duration: Optional[float] = None) -> Optional[float]:
+def actual_call_cost(
+    config: dict, *, duration: Optional[float] = None
+) -> Optional[float]:
     """What a call just made costs at the declared price, for the duration actually sent.
 
     The same pricing rule as :func:`estimate_call`, so the estimate and the actual

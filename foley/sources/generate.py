@@ -58,7 +58,12 @@ from .registry import get_source
 #: fails is skipped, with the reason on the clip's notes. The paid entries are tried
 #: only once the operator opts in to paid generation (:func:`paid_generation_opted_in`):
 #: a key in the environment is not that opt-in (#58).
-DEFAULT_GENERATE_ORDER = ("elevenlabs", "fal_stable_audio_3", "fal_elevenlabs", "stable_audio")
+DEFAULT_GENERATE_ORDER = (
+    "elevenlabs",
+    "fal_stable_audio_3",
+    "fal_elevenlabs",
+    "stable_audio",
+)
 
 #: The last resort when nothing in the order is configured (free, local).
 DEFAULT_GENERATE_BACKEND = DEFAULT_GENERATE_ORDER[-1]
@@ -577,7 +582,9 @@ def _generate(
     record_generation_outcome(plan, res.status, cache=generations_cache)
     if res.status in ("pass", "warn"):
         if check_prompt:
-            post_qc["prompt_match"] = _prompt_verdict(prompt, audio_bytes, lib, clip.notes)
+            post_qc["prompt_match"] = _prompt_verdict(
+                prompt, audio_bytes, lib, clip.notes
+            )
         if post_qc:
             _stamp_qc(res, post_qc, clip.notes, library=lib, stored=store)
 
@@ -865,7 +872,9 @@ def _repaired_bytes(audio_bytes: bytes, lic, notes: list, *, repair) -> bytes:
     return fixed
 
 
-def _levelled_bytes(audio_bytes: bytes, lic, notes: list, *, level) -> "tuple[bytes, dict]":
+def _levelled_bytes(
+    audio_bytes: bytes, lic, notes: list, *, level
+) -> "tuple[bytes, dict]":
     """The clip levelled to ``level`` (:func:`foley.level.level_bytes`), noted and recorded.
 
     Returns the bytes and the structured fact for ``qc['level']`` (target, measured
@@ -895,7 +904,10 @@ def _prompt_verdict(prompt, audio_bytes, library, notes: list) -> dict:
     try:
         embedder = library.embedder
     except Exception as exc:  # noqa: BLE001 - no embedder here: say so
-        match = {"status": UNCHECKED, "reason": f"no embedder: {type(exc).__name__}: {exc}"}
+        match = {
+            "status": UNCHECKED,
+            "reason": f"no embedder: {type(exc).__name__}: {exc}",
+        }
     else:
         match = prompt_match(prompt, audio_bytes, embedder=embedder)
     note = note_for(match)

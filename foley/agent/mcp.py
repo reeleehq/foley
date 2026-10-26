@@ -427,7 +427,12 @@ def foley_generate(
     if len(order) == 1:  # a single backend is judged here; an order, per backend
         refusal = generation_rights_refusal(order[0], use)
         if refusal is not None:
-            return {"ok": False, "status": "refused", "error": refusal, "backend": backend}
+            return {
+                "ok": False,
+                "status": "refused",
+                "error": refusal,
+                "backend": backend,
+            }
 
     # The public façade returns the stored Candidate (a re-searchable, by-value
     # SoundRecord) and RAISES GenerationError on any non-success outcome (QC-quarantined,

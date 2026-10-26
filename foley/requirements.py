@@ -45,8 +45,9 @@ _IMPORTABLE_REQUIREMENTS = {
 #: How each ``probe`` kind checks availability.
 _PROBES = {
     "binary": lambda name: shutil.which(name) is not None,
-    "env": lambda name: any(os.environ.get(v) for v in _key_env_vars(name))
-    or _key_is_bound(name),
+    "env": lambda name: (
+        any(os.environ.get(v) for v in _key_env_vars(name)) or _key_is_bound(name)
+    ),
     "importable": lambda name: importlib.util.find_spec(name) is not None,
 }
 

@@ -169,7 +169,9 @@ def auth_env_vars(config: dict) -> "tuple[str, ...]":
 
 def operator_env_key(config: dict) -> Optional[str]:
     """The operator's key for a source: the first of :func:`auth_env_vars` that is set."""
-    return next((os.environ[v] for v in auth_env_vars(config) if os.environ.get(v)), None)
+    return next(
+        (os.environ[v] for v in auth_env_vars(config) if os.environ.get(v)), None
+    )
 
 
 def resolve_source_key(config: dict, api_key: Optional[str] = None) -> str:

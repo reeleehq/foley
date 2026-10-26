@@ -116,7 +116,9 @@ def level_bytes(
         return audio_bytes, None, None
     # A quiet clip raised to its target can overshoot the QC true-peak gate between
     # samples; keep it under the same ceiling the repair aims for.
-    levelled, _ = limit_true_peak(levelled, sr, ceiling_dbtp=DEFAULT_REPAIR_CEILING_DBTP)
+    levelled, _ = limit_true_peak(
+        levelled, sr, ceiling_dbtp=DEFAULT_REPAIR_CEILING_DBTP
+    )
     peak_in = float(np.max(np.abs(wav))) or 1.0
     peak_out = float(np.max(np.abs(levelled))) or 1.0
     gain_db = 20.0 * float(np.log10(peak_out / peak_in))
