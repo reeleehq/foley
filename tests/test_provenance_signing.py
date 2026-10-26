@@ -93,8 +93,6 @@ def test_a_signed_mix_validates_with_no_failure_codes(n_ingredients):
 
 
 def test_an_ingredient_whose_credential_fails_is_neither_declared_nor_placed():
-    from foley import weave
-
     cred = disclosure.build_mix_credential(
         [_rec(1), object(), _rec(2)],
         asset_id="mix1",

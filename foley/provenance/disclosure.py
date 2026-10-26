@@ -632,7 +632,7 @@ def as_c2pa_ingredient(credential: dict, *, index: int) -> dict:
 
 
 def build_mix_credential(records, *, asset_id, ai_disclosed, watermark_meta, fmt="wav"):
-    """Build the MIX-level C2PA-shaped content credential (report 07 / #9b, re-asserted here).
+    """Build the MIX-level C2PA-shaped content credential (report 07 / #9b), as re-asserted by ``weave.reassert_provenance``.
 
     Reuses :func:`build_content_credential` per ingredient (so the credential shape never
     forks between the per-sound sidecar and the mix manifest) and asserts a

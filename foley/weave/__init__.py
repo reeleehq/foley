@@ -286,9 +286,9 @@ def reassert_provenance(
     out = {"audio": audio, "watermark": None, "content_credential": None}
     ai_records = [r for r in records if _is_ai(r)]
     effective = watermark if watermark is not None else bool(ai_records)
-    try:
-        from ..provenance import disclosure
+    from ..provenance import disclosure
 
+    try:
         wm = disclosure.resolve_watermarker(effective, watermarker)
     except Exception:
         wm = None  # fail-safe: e.g. watermark=True but AudioSeal absent
@@ -313,8 +313,6 @@ def reassert_provenance(
         )
         out["content_credential"] = cred
         if provenance_store is not None:
-            from ..provenance import disclosure
-
             disclosure.write_content_credential(provenance_store, asset_id, cred)
         _sign_and_embed(
             out["audio"],
