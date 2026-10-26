@@ -20,6 +20,7 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Optional, Union
 
@@ -60,6 +61,9 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 #: The synthetic library key WEAVE binds raw narration audio under (when the caller
 #: passes audio rather than a ref already in the library).
 NARRATION_REF: str = "__foley_narration__"
+
+
+_log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -321,6 +325,10 @@ def _sign_and_embed(
         wav = encode(audio, sample_rate, fmt="wav", subtype="FLOAT")
         signed = _c2pa_sign_wav(wav, credential["manifest"], cert)
     except Exception:
+        _log.warning(
+            "C2PA signing failed; falling back to the sidecar-only credential",
+            exc_info=True,
+        )
         return False  # fail-safe: sidecar remains the SSOT
     credential["signed"] = True
     credential["embedded"] = True

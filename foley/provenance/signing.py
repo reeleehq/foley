@@ -107,8 +107,45 @@ def _callback_for(key, alg: str) -> "Callable[[bytes], bytes]":
     return sign_ecdsa
 
 
-def _check_chain_matches_key(cert_chain_pem: str, key) -> None:
-    """Raise ``ValueError`` unless the chain is PEM, end-entity first, and holds ``key``'s cert."""
+#: A C2PA signing key must be at least this many bits when RSA (PS* algorithms).
+MIN_RSA_KEY_BITS = 2048
+
+
+def _profile_problems(cert) -> "list[str]":
+    """What is wrong with ``cert`` as a C2PA end-entity (signing) certificate; ``[]`` if fine."""
+    from cryptography import x509
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    problems = []
+    try:
+        if cert.extensions.get_extension_for_class(x509.BasicConstraints).value.ca:
+            problems.append("it is a CA certificate (BasicConstraints ca=TRUE)")
+    except x509.ExtensionNotFound:
+        pass
+    try:
+        usage = cert.extensions.get_extension_for_class(x509.KeyUsage).value
+        if not usage.digital_signature:
+            problems.append("KeyUsage lacks digitalSignature")
+    except x509.ExtensionNotFound:
+        problems.append("it has no KeyUsage extension (digitalSignature required)")
+    try:
+        cert.extensions.get_extension_for_class(x509.ExtendedKeyUsage)
+    except x509.ExtensionNotFound:
+        problems.append("it has no ExtendedKeyUsage extension")
+    public_key = cert.public_key()
+    if (
+        isinstance(public_key, rsa.RSAPublicKey)
+        and public_key.key_size < MIN_RSA_KEY_BITS
+    ):
+        problems.append(
+            f"its RSA key is {public_key.key_size} bits (< {MIN_RSA_KEY_BITS})"
+        )
+    return problems
+
+
+def _check_signing_chain(cert_chain_pem: str, key) -> None:
+    """Raise ``ValueError`` unless the chain is PEM, end-entity first, holds ``key``'s cert,
+    and that certificate fits the C2PA signing profile (so signing cannot fail later, silently)."""
     from cryptography import x509
     from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
@@ -127,6 +164,11 @@ def _check_chain_matches_key(cert_chain_pem: str, key) -> None:
             "the first certificate of cert_chain_pem does not belong to the private key: "
             "the chain is the end-entity certificate FOLLOWED BY its issuer"
         )
+    if problems := _profile_problems(certs[0]):
+        raise ValueError(
+            "the end-entity certificate is not a valid C2PA signing certificate: "
+            + "; ".join(problems)
+        )
 
 
 def make_c2pa_signer(
@@ -140,17 +182,25 @@ def make_c2pa_signer(
     """A ``c2pa.Signer`` for ``foley.weave(..., sign_cert=...)`` from a cert chain and key.
 
     Args:
-        cert_chain_pem: The end-entity certificate followed by its issuer(s), PEM.
+        cert_chain_pem: The end-entity certificate followed by its issuer(s), PEM. A bare
+            leaf is accepted (not enforced): C2PA validators then need the issuer among their
+            trust anchors, and it is not embedded in the manifest.
         private_key_pem: The signing key, PEM (PKCS#8 ``BEGIN PRIVATE KEY`` or SEC1).
         alg: One of :data:`SIGNING_ALGORITHMS` (default ``'es256'``); it must match the key.
         tsa_url: An RFC 3161 timestamp-authority URL (``None``: no timestamp).
         password: The key's passphrase, if it is encrypted (str or bytes).
 
     Raises:
-        ValueError: An unknown ``alg``, a key (or curve) that does not fit it, or a chain
-            that is not PEM or does not start with the key's own certificate.
+        ValueError: An unknown or non-string ``alg``, a key (or curve) that does not fit it,
+            a chain that is not PEM or does not start with the key's own certificate, or an
+            end-entity certificate outside the C2PA signing profile (a CA, no digitalSignature,
+            no ExtendedKeyUsage, or an RSA key under 2048 bits).
         ImportError: ``c2pa-python`` / ``cryptography`` missing (``pip install 'foley[c2pa]'``).
     """
+    if not isinstance(alg, str):
+        raise ValueError(
+            f"alg must be a string, one of {sorted(SIGNING_ALGORITHMS)}; got {alg!r}"
+        )
     alg = alg.lower()
     if alg not in SIGNING_ALGORITHMS:
         raise ValueError(f"alg={alg!r}: choose one of {sorted(SIGNING_ALGORITHMS)}")
@@ -173,7 +223,7 @@ def make_c2pa_signer(
     )
     chain = _pem_text(cert_chain_pem)
     callback = _callback_for(key, alg)
-    _check_chain_matches_key(chain, key)
+    _check_signing_chain(chain, key)
     return c2pa.Signer.from_callback(
         callback, getattr(c2pa.C2paSigningAlg, alg.upper()), chain, tsa_url
     )
