@@ -388,21 +388,27 @@ def foley_generate(
     ``cache_key``: where its paid bytes are in the generations cache
     (``foley.generations.get(cache_key)``, on the host — bytes never travel over MCP).
     """
+    from .. import GenerationError, generate
+    from ..cost import BudgetExceeded, spend_scope
     from ..runtime import EXTERNAL, EgressBlocked
+    from ..sources._dispatch import UnsupportedParameter
+    from ..sources.base import SourceConfigurationError
     from ..sources.generate import (
+        backend_is_paid,
         first_runnable_backend,
         generate_backend_order,
+        generation_rights_refusal,
         paid_generation_opted_in,
     )
     from ..sources.registry import source_egress
+
+    use = intended_use_for(commercial_ok=commercial_ok)
 
     # The bound server runtime may differ from the call's context (a server built with
     # runtime= but not run under offline_scope), so check it here too; undeclared
     # egress counts as external (fail-closed), as in the registry.
     def allowed(name):
         return _runtime().allows(source_egress(name) or EXTERNAL)
-
-    from ..sources.generate import backend_is_paid
 
     auto = backend in ("auto", "", None)
     order = generate_backend_order() if auto else (backend,)
@@ -417,30 +423,25 @@ def foley_generate(
             "ok": False,
             "error": f"backend {backend!r} is external and disallowed in offline mode",
         }
-    # The backend the order would try first: what the rights pre-check judges.
-    backend = first_runnable_backend(order, paid_ok=paid_ok)
-    from .. import GenerationError, generate
+    backend = first_runnable_backend(order, paid_ok=paid_ok)  # reported if refused
+    if len(order) == 1:  # a single backend is judged here; an order, per backend
+        refusal = generation_rights_refusal(order[0], use)
+        if refusal is not None:
+            return {"ok": False, "status": "refused", "error": refusal, "backend": backend}
 
     # The public façade returns the stored Candidate (a re-searchable, by-value
     # SoundRecord) and RAISES GenerationError on any non-success outcome (QC-quarantined,
     # rights-blocked, safety-refused, or an empty result). Surface both as JSON so the
     # agent gets the real generated id on success — and a structured error, never an
     # escaping exception, on failure — honoring the module's JSON-in/JSON-out contract.
-    from ..cost import BudgetExceeded
-    from ..sources._dispatch import UnsupportedParameter
-    from ..sources.base import SourceConfigurationError
-
-    from ..cost import spend_scope
-    from ..sources.generate import generation_rights_refusal
-
-    refusal = generation_rights_refusal(
-        backend, intended_use_for(commercial_ok=commercial_ok)
-    )
-    if refusal is not None:
-        return {"ok": False, "status": "refused", "error": refusal, "backend": backend}
     try:
         with spend_scope(_server_budget()):
-            cand = generate(prompt, backend=order, library=_lib())
+            cand = generate(
+                prompt,
+                backend=order if len(order) > 1 else order[0],
+                library=_lib(),
+                intended_use=use,
+            )
         backend = cand.sound.license.source or backend  # the one that served it
     except (
         EgressBlocked,
@@ -448,8 +449,15 @@ def foley_generate(
         SourceConfigurationError,
         UnsupportedParameter,
     ) as exc:
-        # Refused before any provider call: say why, as JSON.
-        return {"ok": False, "status": "refused", "error": str(exc), "backend": backend}
+        # Refused before a billed call (an earlier backend in the order may have been
+        # refused by its provider, unbilled): say why, as JSON.
+        return {
+            "ok": False,
+            "status": "refused",
+            "error": str(exc),
+            "backend": backend,
+            "skipped_backends": getattr(exc, "skipped_backends", None),
+        }
     except GenerationError as exc:
         return {
             "ok": False,

@@ -95,7 +95,17 @@ def test_a_key_alone_never_selects_a_paid_backend(paid_keys):
 def test_opting_in_puts_elevenlabs_first(paid_keys, monkeypatch):
     monkeypatch.setenv("FOLEY_GENERATE_PAID", "1")
     assert generate_module.default_generate_backend() == "elevenlabs"
+    # The bound is the dearest backend the order would try (one of them bills).
+    assert foley.estimate("generate", duration=2) == pytest.approx(0.0206)
+    monkeypatch.delenv("FAL_KEY")
     assert foley.estimate("generate", duration=2) == pytest.approx(0.004)
+
+
+def test_an_empty_order_is_an_error():
+    with pytest.raises(ValueError, match="empty"):
+        foley.estimate("generate", backend=())
+    with pytest.raises(ValueError, match="empty"):
+        foley.generate("x", backend=[])
 
 
 def test_without_its_key_elevenlabs_is_passed_over(monkeypatch):
@@ -160,8 +170,79 @@ def test_a_backend_sequence_is_an_explicit_order(paid_keys, monkeypatch, library
     fal, _ = _fal_adapter("fal_elevenlabs", runner=ReplayRunner(default=(encode(_tone(), SR, fmt="WAV"), {"audio": {"url": "u"}})))
     failing = ElevenLabsAdapter(http=FakeTransport(FakeResponse(429, {"detail": "busy"})))
     _swap_sources(monkeypatch, {"elevenlabs": failing, "fal_elevenlabs": fal})
-    cand = foley.generate("a sigh", backend=("elevenlabs", "fal_elevenlabs"), library=library)
+    from foley.licensing import intended_use_for
+
+    cand = foley.generate(
+        "a sigh",
+        backend=("elevenlabs", "fal_elevenlabs"),
+        library=library,
+        intended_use=intended_use_for(commercial_ok=False),
+    )
     assert cand.sound.license.source == "fal_elevenlabs"
+
+
+def test_the_order_passes_over_a_backend_whose_licence_cannot_serve_the_use(
+    paid_keys, monkeypatch, library
+):
+    # fal_elevenlabs is fal-partner-unverified (non-commercial): under the default
+    # commercial use it is skipped before it is paid for.
+    failing = ElevenLabsAdapter(http=FakeTransport(FakeResponse(503, {"detail": "down"})))
+    fal, runner = _fal_adapter("fal_elevenlabs")
+    _swap_sources(monkeypatch, {"elevenlabs": failing, "fal_elevenlabs": fal})
+    from foley.sources.base import SourceConfigurationError
+
+    with pytest.raises(SourceConfigurationError, match="licence does not fit"):
+        foley.generate("a sigh", backend=("elevenlabs", "fal_elevenlabs"), library=library)
+    assert runner.calls == []
+
+
+def test_a_possibly_billed_failure_is_final(paid_keys, monkeypatch, library):
+    # A 200 whose body does not decode was billed: never pay a second backend.
+    junk = ElevenLabsAdapter(http=FakeTransport(FakeResponse(200, None, b"not audio" * 50)))
+    fal, runner = _fal_adapter("fal_stable_audio_3")
+    _swap_sources(monkeypatch, {"elevenlabs": junk, "fal_stable_audio_3": fal})
+    with pytest.raises(foley.GenerationError):
+        foley.generate("a knock", backend=("elevenlabs", "fal_stable_audio_3"), library=library)
+    assert runner.calls == []
+
+
+def test_a_refused_request_releases_its_reservation(paid_keys, monkeypatch, library):
+    # 30 s upper bound reserved for ElevenLabs ($0.06), refused unbilled; fal ($0.0206)
+    # must still fit under a $0.07 cap.
+    failing = ElevenLabsAdapter(http=FakeTransport(FakeResponse(500, {"detail": "down"})))
+    fal, runner = _fal_adapter("fal_stable_audio_3")
+    _swap_sources(monkeypatch, {"elevenlabs": failing, "fal_stable_audio_3": fal})
+    cand = foley.generate(
+        "a knock",
+        backend=("elevenlabs", "fal_stable_audio_3"),
+        library=library,
+        budget=foley.Budget(max_usd=0.07),
+    )
+    assert cand.sound.license.source == "fal_stable_audio_3" and len(runner.calls) == 1
+
+
+def test_a_bad_level_fails_before_any_call(paid_keys, monkeypatch, library):
+    transport = FakeTransport()
+    _swap_sources(monkeypatch, {"elevenlabs": ElevenLabsAdapter(http=transport)})
+    with pytest.raises(ValueError, match="level="):
+        foley.generate("a knock", backend=("elevenlabs", "stable_audio"), library=library, level="loud")
+    assert transport.calls == []
+
+
+def test_an_unknown_backend_in_the_order_is_named_as_such(paid_keys, monkeypatch, library):
+    fal, _ = _fal_adapter("fal_stable_audio_3")
+    _swap_sources(monkeypatch, {"fal_stable_audio_3": fal})
+    cand = foley.generate("a knock", backend=("elevenlab", "fal_stable_audio_3"), library=library)
+    assert any("elevenlab: not a registered generate source" in n for n in cand.notes)
+
+
+def test_an_injected_adapter_is_one_backend_named_by_its_config(paid_keys, monkeypatch, library):
+    monkeypatch.setenv("FOLEY_GENERATE_PAID", "1")
+    fal, runner = _fal_adapter("fal_stable_audio_3")
+    cand = foley.generate("a knock", adapter=fal, library=library)
+    assert cand.sound.license.source == "fal_stable_audio_3" and len(runner.calls) == 1
+    with pytest.raises(ValueError, match="one backend"):
+        foley.generate("a knock", adapter=fal, backend=("elevenlabs", "fal_stable_audio_3"))
 
 
 def test_the_credits_header_is_noted(paid_keys):
@@ -212,6 +293,7 @@ def test_generate_levels_on_request_and_records_it(paid_keys, monkeypatch, libra
     )
     assert any(t.startswith("levelled from") for t in cand.sound.license.transformations)
     assert cand.sound.loudness_lufs == pytest.approx(-25.0, abs=0.7)
+    assert cand.sound.qc["level"]["target_lufs"] == -25.0 and cand.sound.qc["level"]["applied"]
 
 
 # ---------------------------------------------------------------------------

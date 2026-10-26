@@ -679,6 +679,7 @@ def generate(
     repair=True,
     level=None,
     check_prompt: bool = True,
+    intended_use=None,
     **affordances,
 ):
     """Generate a sound effect for ``prompt`` and add it to the library (by-value).
@@ -706,8 +707,10 @@ def generate(
             (``foley[stable-audio]``). The paid ones are tried only once paid
             generation is opted in (``$FOLEY_GENERATE_PAID=1``; a key in the
             environment is not consent to spend, #58), so out of the box this is the
-            free local backend. A backend with no key, not configured, offline, or
-            whose call fails is skipped, and the candidate's ``notes`` say why.
+            free local backend. A backend with no key, not configured, offline,
+            whose licence cannot serve ``intended_use``, or whose provider refused the
+            request (an HTTP error, nothing billed) is skipped, and the candidate's
+            ``notes`` say why; a failure that may have been billed is final.
             ``$FOLEY_GENERATE_ORDER`` (comma-separated) replaces the order;
             ``$FOLEY_GENERATE_BACKEND`` pins one backend. A named backend is used
             alone, with no fallback. Others: ``"fal_sonilo"``, ``"fal_mirelo"``,
@@ -755,6 +758,10 @@ def generate(
             embedder (CLAP) and flag a mismatch in the notes and
             ``sound.qc['prompt_match']``; ``'unchecked'`` (with the reason) when no
             capable embedder is available. Default ``True``.
+        intended_use: The :class:`IntendedUse` the clip must serve when an order is
+            walked (default: commercial): a backend whose licence cannot serve it is
+            skipped before anything is paid for. A single named backend is used as
+            asked (its licence is gated downstream by :func:`keep`).
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`GENERATION_AFFORDANCES`).
@@ -794,12 +801,17 @@ def generate(
     )
 
     paid_ok = True  # a named backend or order is the caller asking for it
-    if isinstance(backend, (list, tuple)):
+    if adapter is not None:  # an injected adapter is one backend, named by its config
+        if isinstance(backend, (list, tuple)):
+            raise ValueError("adapter= is one backend: pass a single backend= name")
+        named = getattr(adapter, "config", {}).get("name")
+        order = (backend if backend not in (None, "", "auto") else named or default_generate_backend(),)
+    elif isinstance(backend, (list, tuple)):
         order = tuple(backend)  # the caller's own order
+        if not order:
+            raise ValueError("backend= is an empty sequence: name at least one backend")
     elif backend not in (None, "", "auto"):
         order = (backend,)  # named: that backend, no fallback
-    elif adapter is not None:
-        order = (default_generate_backend(),)  # an injected adapter is one backend
     else:
         order, paid_ok = generate_backend_order(), paid_generation_opted_in()
     with spend_scope(budget):
@@ -807,6 +819,7 @@ def generate(
             prompt,
             order,
             paid_ok=paid_ok,
+            intended_use=intended_use,
             library=library,
             store=store,
             adapter=adapter,
@@ -838,8 +851,9 @@ def generate(
         cand = Candidate(sound=lib[res.id], origin=CandidateOrigin.generated)
         return _with_call_facts(cand, res)
     cause = res.error or "; ".join(res.notes) or res.status
+    tried = f" (skipped first: {'; '.join(skipped)})" if skipped else ""
     raise GenerationError(
-        f"generation via {backend!r} yielded no stored sound ({res.status}): {cause}",
+        f"generation via {backend!r} yielded no stored sound ({res.status}): {cause}{tried}",
         report=report,
         status=res.status,
         cache_key=res.cache_key,
@@ -940,16 +954,9 @@ def estimate(verb: str, **kwargs):
             _get(name)
         return estimate_call(SOURCE_REGISTRY[name]["config"])
     if verb == "generate":
-        from .sources.generate import default_generate_backend
+        from .sources.generate import estimate_order
 
-        from .sources.generate import first_runnable_backend
-
-        backend = kwargs.pop("backend", None)
-        if isinstance(backend, (list, tuple)):  # an order: the first it would try
-            backend = first_runnable_backend(backend)
-        if backend in (None, "", "auto"):
-            backend = default_generate_backend()
-        return estimate_generation(backend, **kwargs)
+        return estimate_order(kwargs.pop("backend", None), **kwargs)
     if verb in ("find", "score"):
         keys = ("max_events", "backend", "llm", "k", "verify", "max_refine_loops")
         kw = {key: kwargs[key] for key in keys if key in kwargs}

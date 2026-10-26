@@ -73,6 +73,16 @@ def resolve_target_lufs(spec: LevelSpec) -> float:
         ) from None
 
 
+def require_loudness_meter() -> None:
+    """Raise ``ImportError`` (with the install line) when ``pyloudnorm`` is missing."""
+    try:
+        import pyloudnorm  # noqa: F401
+    except ImportError as exc:
+        raise ImportError(
+            "level= measures loudness with pyloudnorm: pip install 'foley[audio]'"
+        ) from exc
+
+
 def level_bytes(
     audio_bytes: bytes, target: LevelSpec
 ) -> "tuple[bytes, Optional[str], Optional[float]]":
@@ -90,18 +100,28 @@ def level_bytes(
     """
     import numpy as np
 
-    from .audio import LUFS_GATE_FLOOR, encode, load, loudness_normalize
+    from .audio import (
+        LUFS_GATE_FLOOR,
+        encode,
+        limit_true_peak,
+        load,
+        loudness_normalize,
+    )
+    from .repair import DEFAULT_REPAIR_CEILING_DBTP
 
     target_lufs = resolve_target_lufs(target)
     wav, sr = load(audio_bytes)
     levelled, measured = loudness_normalize(wav, sr, target_lufs=target_lufs)
     if not np.isfinite(measured) or measured <= LUFS_GATE_FLOOR:
         return audio_bytes, None, None
+    # A quiet clip raised to its target can overshoot the QC true-peak gate between
+    # samples; keep it under the same ceiling the repair aims for.
+    levelled, _ = limit_true_peak(levelled, sr, ceiling_dbtp=DEFAULT_REPAIR_CEILING_DBTP)
     peak_in = float(np.max(np.abs(wav))) or 1.0
     peak_out = float(np.max(np.abs(levelled))) or 1.0
     gain_db = 20.0 * float(np.log10(peak_out / peak_in))
     applied = (
         f"levelled from {measured:.1f} LUFS toward {target_lufs:.1f} LUFS "
-        f"({gain_db:+.1f} dB, sample peak kept under the ceiling)"
+        f"({gain_db:+.1f} dB, true peak kept under {DEFAULT_REPAIR_CEILING_DBTP:g} dBTP)"
     )
     return encode(levelled, sr), applied, float(measured)
