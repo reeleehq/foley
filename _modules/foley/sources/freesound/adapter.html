@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=1c03bfdc"></script>
+    <script src="../../../../_static/documentation_options.js?v=b87b3bc5"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.54" />
+  <meta name="docsearch:version" content="0.0.55" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -715,18 +715,20 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for foley.sources.freesound.adapter</h1><div class="highlight"><pre>
-<span></span><span class="sd">"""Freesound APIv2 retrieve adapter — CC0 sounds, stored strictly by-reference.</span>
+<span></span><span class="sd">"""Freesound APIv2 retrieve adapter — CC0 (and CC-BY) sounds, stored strictly by-reference.</span>
 
 <span class="sd">Freesound (report 01 §Freesound) is foley's anchor retrieve source. This adapter</span>
 <span class="sd">turns a natural-language query into ranked, license-clean</span>
 <span class="sd">:class:`~foley.base.Candidate`\\ s over the Freesound APIv2, honoring two</span>
 <span class="sd">load-bearing constraints:</span>
 
-<span class="sd">* **CC0-only (for #5), pushed into the query.** The CC0 filter is sent as the</span>
-<span class="sd">  native ``filter=license:"Creative Commons 0"`` so non-CC0 sounds never leave the</span>
-<span class="sd">  server; each returned item is *also* re-checked fail-closed against the</span>
-<span class="sd">  ``accepted_license_ids`` allowlist — the server filter is a promise foley does</span>
-<span class="sd">  not control, so a non-CC0 item that slips through is dropped, never indexed.</span>
+<span class="sd">* **CC0 by default, CC-BY on request, pushed into the query.** The CC0 filter is sent</span>
+<span class="sd">  as the native ``filter=license:"Creative Commons 0"`` so other sounds never leave the</span>
+<span class="sd">  server (``license`` other than ``'cc0'`` also asks for ``"Attribution"``: the</span>
+<span class="sd">  credit-bearing sounds the :func:`~foley.licensing.keep` gate then admits only for a</span>
+<span class="sd">  caller that can attribute). Each returned item is *also* re-checked fail-closed</span>
+<span class="sd">  against the ``accepted_license_ids`` allowlist — the server filter is a promise foley</span>
+<span class="sd">  does not control, so an NC / SA / ND item that slips through is dropped, never indexed.</span>
 <span class="sd">* **By-reference storage (TOS).** The Freesound API TOS forbids caching the audio</span>
 <span class="sd">  bytes even for CC0, so every sound is licensed ``cache_bytes_ok=False`` (a</span>
 <span class="sd">  per-item override on top of its own CC id — see</span>
@@ -767,6 +769,21 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">"""Strip the ``freesound:`` namespace prefix (accept either id form)."""</span>
     <span class="n">s</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">source_id</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">":"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"freesound:"</span><span class="p">)</span> <span class="k">else</span> <span class="n">s</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bst_category</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">ucs_category</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The Broad Sound Taxonomy top-level name for a UCS CatID or category, else ``None``.</span>
+
+<span class="sd">    Only the categories the config maps. ``None`` (no pre-filter) for anything else: a</span>
+<span class="sd">    coarse pre-filter must never hide sounds on a guess.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">...index.taxonomy</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_ucs_table</span>
+
+    <span class="n">row</span> <span class="o">=</span> <span class="n">default_ucs_table</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ucs_category</span><span class="p">)</span>
+    <span class="n">category</span> <span class="o">=</span> <span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">category</span> <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">ucs_category</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"ucs_category"</span><span class="p">][</span><span class="s2">"bst_category_by_ucs_category"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="n">category</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_preview_url</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -853,25 +870,31 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">license</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"cc0"</span><span class="p">,</span>
+        <span class="n">license</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"cc0"</span><span class="p">,</span>
         <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
         <span class="n">duration_range</span><span class="p">:</span> <span class="s2">"Optional[tuple[float, float]]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">sort</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">similar_to</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ucs_category</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[Candidate]"</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Search Freesound for ``query``; return license-clean candidates.</span>
 
-<span class="sd">        The ``license='cc0'`` filter is pushed into the native Solr ``filter`` so</span>
-<span class="sd">        non-CC0 sounds never leave the server; every returned item is still</span>
-<span class="sd">        re-checked fail-closed before it becomes a candidate.</span>
+<span class="sd">        The license filter is pushed into the native Solr ``filter`` so other sounds</span>
+<span class="sd">        never leave the server; every returned item is still re-checked fail-closed</span>
+<span class="sd">        before it becomes a candidate.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            license: License constraint. ``'cc0'`` (default) sends the CC0 filter;</span>
-<span class="sd">                ``None`` sends none (the per-item guard still enforces the</span>
-<span class="sd">                ``accepted_license_ids`` allowlist, so results stay CC0 for #5).</span>
+<span class="sd">            license: License constraint. ``'cc0'`` (default) sends the CC0 filter and</span>
+<span class="sd">                keeps CC0 alone; ``None`` sends no filter and any other value asks for</span>
+<span class="sd">                CC0 + Attribution; both keep what the ``accepted_license_ids``</span>
+<span class="sd">                allowlist holds (CC0, CC-BY), so NC / SA / ND never come back.</span>
 <span class="sd">            k: Max results (Freesound caps ``page_size`` at 150).</span>
 <span class="sd">            duration_range: Optional ``(min_s, max_s)`` native duration filter.</span>
 <span class="sd">            sort: Optional native sort key (default: Freesound relevance).</span>
+<span class="sd">            similar_to: A Freesound sound id (either id form): "more like this one".</span>
+<span class="sd">            ucs_category: A UCS CatID or category, mapped to a coarse Broad Sound</span>
+<span class="sd">                Taxonomy ``category`` pre-filter (no filter if it is not recognised).</span>
 <span class="sd">            **kw: Ignored extra affordances (``on_unsupported_param='warn'``).</span>
 
 <span class="sd">        Returns:</span>
@@ -885,8 +908,19 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"page_size"</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="mi">150</span><span class="p">),</span>
         <span class="p">}</span>
         <span class="n">filters</span><span class="p">:</span> <span class="s2">"list[str]"</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">license_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"license"</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">license</span> <span class="o">==</span> <span class="s2">"cc0"</span><span class="p">:</span>
-            <span class="n">filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"license"</span><span class="p">][</span><span class="s2">"to_native"</span><span class="p">])</span>
+            <span class="n">filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">license_map</span><span class="p">[</span><span class="s2">"to_native"</span><span class="p">])</span>
+        <span class="k">elif</span> <span class="n">license</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">license_map</span><span class="p">[</span><span class="s2">"to_native_attribution"</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">ucs_category</span><span class="p">:</span>
+            <span class="n">bst</span> <span class="o">=</span> <span class="n">_bst_category</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">ucs_category</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">bst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"ucs_category"</span><span class="p">][</span><span class="s2">"to_native"</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">category</span><span class="o">=</span><span class="n">bst</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
         <span class="k">if</span> <span class="n">duration_range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="n">duration_range</span>
             <span class="n">filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -898,13 +932,17 @@ window.runMermaid = runMermaid;</script>
             <span class="n">params</span><span class="p">[</span><span class="s2">"filter"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">filters</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">sort</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">params</span><span class="p">[</span><span class="s2">"sort"</span><span class="p">]</span> <span class="o">=</span> <span class="n">sort</span>
+        <span class="k">if</span> <span class="n">similar_to</span><span class="p">:</span>
+            <span class="n">native</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"similar_to"</span><span class="p">][</span><span class="s2">"native_name"</span><span class="p">]</span>
+            <span class="n">params</span><span class="p">[</span><span class="n">native</span><span class="p">]</span> <span class="o">=</span> <span class="n">_raw_id</span><span class="p">(</span><span class="n">similar_to</span><span class="p">)</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_json</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"api"</span><span class="p">][</span><span class="s2">"search_endpoint"</span><span class="p">][</span><span class="s2">"path"</span><span class="p">]),</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
         <span class="p">)</span>
+        <span class="n">only</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"license"</span><span class="p">][</span><span class="s2">"cc0_license_ids"</span><span class="p">]</span> <span class="k">if</span> <span class="n">license</span> <span class="o">==</span> <span class="s2">"cc0"</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">candidates</span><span class="p">:</span> <span class="s2">"list[Candidate]"</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"results"</span><span class="p">,</span> <span class="p">[]):</span>
-            <span class="n">cand</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_candidate_from_item</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+            <span class="n">cand</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_candidate_from_item</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">only</span><span class="o">=</span><span class="n">only</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">cand</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># None =&gt; fail-closed drop (non-accepted license)</span>
                 <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cand</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">candidates</span></div>
@@ -959,12 +997,15 @@ window.runMermaid = runMermaid;</script>
 
     <span class="c1"># -- item -&gt; license-checked Candidate ----------------------------------</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_candidate_from_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Optional[Candidate]"</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_candidate_from_item</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">only</span><span class="p">:</span> <span class="s2">"Optional[list[str]]"</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Optional[Candidate]"</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Build a license-checked :class:`~foley.base.Candidate` (None =&gt; drop).</span>
 
 <span class="sd">        The per-item fail-closed guard: an item whose license is unverified or not</span>
 <span class="sd">        in ``accepted_license_ids`` returns ``None`` (dropped, never indexed) even</span>
-<span class="sd">        if the server-side filter returned it. Every kept item gets a</span>
+<span class="sd">        if the server-side filter returned it (``only`` narrows the allowlist for a</span>
+<span class="sd">        CC0-only search). Every kept item gets a</span>
 <span class="sd">        by-reference :class:`~foley.base.LicenseRecord` (``cache_bytes_ok=False``)</span>
 <span class="sd">        and a short, case-stable ``freesound:&lt;id&gt;`` canonical id.</span>
 <span class="sd">        """</span>
@@ -972,7 +1013,9 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">raw_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="n">license_id</span><span class="p">,</span> <span class="n">verified</span> <span class="o">=</span> <span class="n">license_id_from_cc_url</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"license"</span><span class="p">))</span>
-        <span class="n">accepted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"license"</span><span class="p">][</span><span class="s2">"accepted_license_ids"</span><span class="p">]</span>
+        <span class="n">accepted</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">only</span> <span class="k">if</span> <span class="n">only</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"license"</span><span class="p">][</span><span class="s2">"accepted_license_ids"</span><span class="p">]</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">verified</span> <span class="ow">or</span> <span class="n">license_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">accepted</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># fail-closed: never index a non-accepted-license sound</span>
 

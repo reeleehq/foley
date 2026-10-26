@@ -1,4 +1,4 @@
-> built 2026-10-26 14:11 UTC from 5df17b5 (main) · foley 0.0.54. Details: build_info.json
+> built 2026-10-26 14:34 UTC from 246b857 (main) · foley 0.0.55. Details: build_info.json
 
 # index.html.md
 
@@ -71,12 +71,12 @@ result.notes  # how placements were timed, e.g. estimates when foley[align] is a
 
 ## How it works — four stages
 
-| Stage      | What it does                                                                                                                                                                                                                                                     | Built on                                                                                                                           |
-|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| **Source** | your own files · Freesound (CC0) · keyless: Openverse, Wikimedia Commons, Internet Archive (opt-in; licences unverified) · generate (Stable Audio 3 local on CPU; Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking                                                                                 |
-| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                                                                                                                                                                                        | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
-| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                                                                                                                                                                                           | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
-| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits                                                                                                                                                                  | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
+| Stage      | What it does                                                                                                                                                                                                                                                                                   | Built on                                                                                                                           |
+|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| **Source** | your own files · Freesound (CC0, or CC-BY when you can credit) · keyless: Openverse, Wikimedia Commons, Internet Archive (opt-in; licences unverified) · generate (Stable Audio 3 local on CPU; Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking                                                                                 |
+| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                                                                                                                                                                                                                      | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
+| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                                                                                                                                                                                                                         | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
+| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits                                                                                                                                                                                                | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
 
 The selection tools publish as an **MCP server** (via `py2mcp`) so the same capabilities
 drive the agent, a CLI, and external hosts.
@@ -2771,7 +2771,7 @@ Every field is a no-op at its default, so a sparse item (no `processing`)
 renders untouched; the mixer departs from dry/centered/full-level only when a
 field is set.
 
-### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False), 'sort': Affordance(name='sort', type=<class 'str'>, description='score|duration|created|downloads', default='score', stage='query', carries_meaning=False), 'text': Affordance(name='text', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False)}*
+### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False), 'sort': Affordance(name='sort', type=<class 'str'>, description='score|duration|created|downloads', default='score', stage='query', carries_meaning=False), 'text': Affordance(name='text', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False)}*
 
 Unified query-stage parameters (search / find / filter surface).
 
@@ -13619,7 +13619,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta-dum', 'netflix chime', 'netflix sound', 'ta dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta dum', 'netflix intro', 'ta-dum', 'netflix chime', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel jingle', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -15840,18 +15840,20 @@ The FoleySet Ring-0 adapter (uniform CC-BY, folder-path tag hints).
 
 # foley.sources.freesound.adapter
 
-Freesound APIv2 retrieve adapter — CC0 sounds, stored strictly by-reference.
+Freesound APIv2 retrieve adapter — CC0 (and CC-BY) sounds, stored strictly by-reference.
 
 Freesound (report 01 §Freesound) is foley’s anchor retrieve source. This adapter
 turns a natural-language query into ranked, license-clean
 [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)s over the Freesound APIv2, honoring two
 load-bearing constraints:
 
-* **CC0-only (for #5), pushed into the query.** The CC0 filter is sent as the
-  native `filter=license:"Creative Commons 0"` so non-CC0 sounds never leave the
-  server; each returned item is *also* re-checked fail-closed against the
-  `accepted_license_ids` allowlist — the server filter is a promise foley does
-  not control, so a non-CC0 item that slips through is dropped, never indexed.
+* **CC0 by default, CC-BY on request, pushed into the query.** The CC0 filter is sent
+  as the native `filter=license:"Creative Commons 0"` so other sounds never leave the
+  server (`license` other than `'cc0'` also asks for `"Attribution"`: the
+  credit-bearing sounds the [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) gate then admits only for a
+  caller that can attribute). Each returned item is *also* re-checked fail-closed
+  against the `accepted_license_ids` allowlist — the server filter is a promise foley
+  does not control, so an NC / SA / ND item that slips through is dropped, never indexed.
 * **By-reference storage (TOS).** The Freesound API TOS forbids caching the audio
   bytes even for CC0, so every sound is licensed `cache_bytes_ok=False` (a
   per-item override on top of its own CC id — see
@@ -15926,21 +15928,25 @@ Resolve one Freesound id (`'12345'` or `'freesound:12345'`) to a record.
 * **Return type:**
   [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)
 
-#### search(query, , license='cc0', k=15, duration_range=None, sort=None, \*\*kw)
+#### search(query, , license='cc0', k=15, duration_range=None, sort=None, similar_to=None, ucs_category=None, \*\*kw)
 
 Search Freesound for `query`; return license-clean candidates.
 
-The `license='cc0'` filter is pushed into the native Solr `filter` so
-non-CC0 sounds never leave the server; every returned item is still
-re-checked fail-closed before it becomes a candidate.
+The license filter is pushed into the native Solr `filter` so other sounds
+never leave the server; every returned item is still re-checked fail-closed
+before it becomes a candidate.
 
 * **Parameters:**
-  * **license** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – License constraint. `'cc0'` (default) sends the CC0 filter;
-    `None` sends none (the per-item guard still enforces the
-    `accepted_license_ids` allowlist, so results stay CC0 for #5).
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint. `'cc0'` (default) sends the CC0 filter and
+    keeps CC0 alone; `None` sends no filter and any other value asks for
+    CC0 + Attribution; both keep what the `accepted_license_ids`
+    allowlist holds (CC0, CC-BY), so NC / SA / ND never come back.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max results (Freesound caps `page_size` at 150).
   * **duration_range** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – Optional `(min_s, max_s)` native duration filter.
   * **sort** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional native sort key (default: Freesound relevance).
+  * **similar_to** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A Freesound sound id (either id form): “more like this one”.
+  * **ucs_category** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A UCS CatID or category, mapped to a coarse Broad Sound
+    Taxonomy `category` pre-filter (no filter if it is not recognised).
   * **\*\*kw** – Ignored extra affordances (`on_unsupported_param='warn'`).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
@@ -15961,7 +15967,8 @@ Stdlib-only and declarative — imports nothing heavy, so
 unified foley query vocabulary onto Freesound’s native params, declares the
 token-auth env var, the APIv2 endpoints, the rate limits, and — crucially — the
 **license block**: `cache_bytes_ok=False` (the Freesound API TOS forbids caching
-the bytes, even for CC0) and a CC0-only `accepted_license_ids` allowlist for #5.
+the bytes, even for CC0) and an `accepted_license_ids` allowlist of CC0 plus CC-BY (admitted when the caller
+can attribute, #78; SA, ND and NC stay fail-closed).
 
 The `cache_bytes_ok=False` fact is a top-level property of the *source* (the TOS
 constraint is invariant across every Freesound CC variant), distinct from the
@@ -15992,9 +15999,9 @@ here.
 
 ### Modules
 
-| [`adapter`](_autosummary/foley.sources.freesound.adapter.html.md#module-foley.sources.freesound.adapter)   | Freesound APIv2 retrieve adapter — CC0 sounds, stored strictly by-reference.        |
-|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| [`config`](_autosummary/foley.sources.freesound.config.html.md#module-foley.sources.freesound.config)     | `SOURCE_CONFIG` for the Freesound APIv2 retrieve source (report 01 · 07 · 10 §4.1). |
+| [`adapter`](_autosummary/foley.sources.freesound.adapter.html.md#module-foley.sources.freesound.adapter)   | Freesound APIv2 retrieve adapter — CC0 (and CC-BY) sounds, stored strictly by-reference.   |
+|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| [`config`](_autosummary/foley.sources.freesound.config.html.md#module-foley.sources.freesound.config)     | `SOURCE_CONFIG` for the Freesound APIv2 retrieve source (report 01 · 07 · 10 §4.1).        |
 
 
 # _autosummary/foley.sources.fsd50k.html.md
@@ -19611,18 +19618,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-26 14:11 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/5df17b58fa9143c2cec114c150ba8d1272682c34"><code>5df17b5</code></a> on branch <code>main</code>, for **foley 0.0.54** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 14:34 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/246b857c05714ebe6ea15e77e667cc6ea05dccd2"><code>246b857</code></a> on branch <code>main</code>, for **foley 0.0.55** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.54) is behind the latest release on PyPI (0.0.55): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/5df17b58fa9143c2cec114c150ba8d1272682c34"><code>5df17b58fa9143c2cec114c150ba8d1272682c34</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/246b857c05714ebe6ea15e77e667cc6ea05dccd2"><code>246b857c05714ebe6ea15e77e667cc6ea05dccd2</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -19633,9 +19638,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40336881288">40336881288</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40340424256">40340424256</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>5df17b58fa9143c2cec114c150ba8d1272682c34</code> (in the history of the built commit) |
+| Event commit | <code>246b857c05714ebe6ea15e77e667cc6ea05dccd2</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -19660,13 +19665,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.55/">0.0.55</a>, newer than the documented version (0.0.54).
+Latest release: <a href="https://pypi.org/project/foley/0.0.55/">0.0.55</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 5df17b58fa9143c2cec114c150ba8d1272682c34
+git checkout 246b857c05714ebe6ea15e77e667cc6ea05dccd2
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

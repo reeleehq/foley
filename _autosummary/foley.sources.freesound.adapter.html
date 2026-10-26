@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=1c03bfdc"></script>
+    <script src="../_static/documentation_options.js?v=b87b3bc5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.54" />
+  <meta name="docsearch:version" content="0.0.55" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -490,17 +490,19 @@
                   
   <section id="module-foley.sources.freesound.adapter">
 <span id="foley-sources-freesound-adapter"></span><h1>foley.sources.freesound.adapter<a class="headerlink" href="#module-foley.sources.freesound.adapter" title="Link to this heading">#</a></h1>
-<p>Freesound APIv2 retrieve adapter — CC0 sounds, stored strictly by-reference.</p>
+<p>Freesound APIv2 retrieve adapter — CC0 (and CC-BY) sounds, stored strictly by-reference.</p>
 <p>Freesound (report 01 §Freesound) is foley’s anchor retrieve source. This adapter
 turns a natural-language query into ranked, license-clean
 <a class="reference internal" href="foley.base.html#foley.base.Candidate" title="foley.base.Candidate"><code class="xref py py-class docutils literal notranslate"><span class="pre">Candidate</span></code></a>s over the Freesound APIv2, honoring two
 load-bearing constraints:</p>
 <ul>
-<li><p><strong>CC0-only (for #5), pushed into the query.</strong> The CC0 filter is sent as the
-native <code class="docutils literal notranslate"><span class="pre">filter=license:&quot;Creative</span> <span class="pre">Commons</span> <span class="pre">0&quot;</span></code> so non-CC0 sounds never leave the
-server; each returned item is <em>also</em> re-checked fail-closed against the
-<code class="docutils literal notranslate"><span class="pre">accepted_license_ids</span></code> allowlist — the server filter is a promise foley does
-not control, so a non-CC0 item that slips through is dropped, never indexed.</p></li>
+<li><p><strong>CC0 by default, CC-BY on request, pushed into the query.</strong> The CC0 filter is sent
+as the native <code class="docutils literal notranslate"><span class="pre">filter=license:&quot;Creative</span> <span class="pre">Commons</span> <span class="pre">0&quot;</span></code> so other sounds never leave the
+server (<code class="docutils literal notranslate"><span class="pre">license</span></code> other than <code class="docutils literal notranslate"><span class="pre">'cc0'</span></code> also asks for <code class="docutils literal notranslate"><span class="pre">&quot;Attribution&quot;</span></code>: the
+credit-bearing sounds the <a class="reference internal" href="foley.licensing.html#foley.licensing.keep" title="foley.licensing.keep"><code class="xref py py-func docutils literal notranslate"><span class="pre">keep()</span></code></a> gate then admits only for a
+caller that can attribute). Each returned item is <em>also</em> re-checked fail-closed
+against the <code class="docutils literal notranslate"><span class="pre">accepted_license_ids</span></code> allowlist — the server filter is a promise foley
+does not control, so an NC / SA / ND item that slips through is dropped, never indexed.</p></li>
 <li><p><strong>By-reference storage (TOS).</strong> The Freesound API TOS forbids caching the audio
 bytes even for CC0, so every sound is licensed <code class="docutils literal notranslate"><span class="pre">cache_bytes_ok=False</span></code> (a
 per-item override on top of its own CC id — see
@@ -610,20 +612,24 @@ by-reference storage contract).</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="foley.sources.freesound.adapter.FreesoundAdapter.search">
-<span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">license</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cc0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/freesound/adapter.html#FreesoundAdapter.search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.freesound.adapter.FreesoundAdapter.search" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">license</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cc0'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration_range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">similar_to</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ucs_category</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/freesound/adapter.html#FreesoundAdapter.search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.freesound.adapter.FreesoundAdapter.search" title="Link to this definition">#</a></dt>
 <dd><p>Search Freesound for <code class="docutils literal notranslate"><span class="pre">query</span></code>; return license-clean candidates.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">license='cc0'</span></code> filter is pushed into the native Solr <code class="docutils literal notranslate"><span class="pre">filter</span></code> so
-non-CC0 sounds never leave the server; every returned item is still
-re-checked fail-closed before it becomes a candidate.</p>
+<p>The license filter is pushed into the native Solr <code class="docutils literal notranslate"><span class="pre">filter</span></code> so other sounds
+never leave the server; every returned item is still re-checked fail-closed
+before it becomes a candidate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>license</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – License constraint. <code class="docutils literal notranslate"><span class="pre">'cc0'</span></code> (default) sends the CC0 filter;
-<code class="docutils literal notranslate"><span class="pre">None</span></code> sends none (the per-item guard still enforces the
-<code class="docutils literal notranslate"><span class="pre">accepted_license_ids</span></code> allowlist, so results stay CC0 for #5).</p></li>
+<li><p><strong>license</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – License constraint. <code class="docutils literal notranslate"><span class="pre">'cc0'</span></code> (default) sends the CC0 filter and
+keeps CC0 alone; <code class="docutils literal notranslate"><span class="pre">None</span></code> sends no filter and any other value asks for
+CC0 + Attribution; both keep what the <code class="docutils literal notranslate"><span class="pre">accepted_license_ids</span></code>
+allowlist holds (CC0, CC-BY), so NC / SA / ND never come back.</p></li>
 <li><p><strong>k</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Max results (Freesound caps <code class="docutils literal notranslate"><span class="pre">page_size</span></code> at 150).</p></li>
 <li><p><strong>duration_range</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">(min_s,</span> <span class="pre">max_s)</span></code> native duration filter.</p></li>
 <li><p><strong>sort</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Optional native sort key (default: Freesound relevance).</p></li>
+<li><p><strong>similar_to</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – A Freesound sound id (either id form): “more like this one”.</p></li>
+<li><p><strong>ucs_category</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – A UCS CatID or category, mapped to a coarse Broad Sound
+Taxonomy <code class="docutils literal notranslate"><span class="pre">category</span></code> pre-filter (no filter if it is not recognised).</p></li>
 <li><p><strong>**kw</strong> – Ignored extra affordances (<code class="docutils literal notranslate"><span class="pre">on_unsupported_param='warn'</span></code>).</p></li>
 </ul>
 </dd>

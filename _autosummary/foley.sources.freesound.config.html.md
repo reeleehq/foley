@@ -7,7 +7,8 @@ Stdlib-only and declarative — imports nothing heavy, so
 unified foley query vocabulary onto Freesound’s native params, declares the
 token-auth env var, the APIv2 endpoints, the rate limits, and — crucially — the
 **license block**: `cache_bytes_ok=False` (the Freesound API TOS forbids caching
-the bytes, even for CC0) and a CC0-only `accepted_license_ids` allowlist for #5.
+the bytes, even for CC0) and an `accepted_license_ids` allowlist of CC0 plus CC-BY (admitted when the caller
+can attribute, #78; SA, ND and NC stay fail-closed).
 
 The `cache_bytes_ok=False` fact is a top-level property of the *source* (the TOS
 constraint is invariant across every Freesound CC variant), distinct from the

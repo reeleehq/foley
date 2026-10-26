@@ -19,6 +19,6 @@ here.
 
 ### Modules
 
-| [`adapter`](foley.sources.freesound.adapter.html.md#module-foley.sources.freesound.adapter)   | Freesound APIv2 retrieve adapter — CC0 sounds, stored strictly by-reference.        |
-|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| [`config`](foley.sources.freesound.config.html.md#module-foley.sources.freesound.config)     | `SOURCE_CONFIG` for the Freesound APIv2 retrieve source (report 01 · 07 · 10 §4.1). |
+| [`adapter`](foley.sources.freesound.adapter.html.md#module-foley.sources.freesound.adapter)   | Freesound APIv2 retrieve adapter — CC0 (and CC-BY) sounds, stored strictly by-reference.   |
+|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| [`config`](foley.sources.freesound.config.html.md#module-foley.sources.freesound.config)     | `SOURCE_CONFIG` for the Freesound APIv2 retrieve source (report 01 · 07 · 10 §4.1).        |

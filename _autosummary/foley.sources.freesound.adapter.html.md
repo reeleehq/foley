@@ -1,17 +1,19 @@
 # foley.sources.freesound.adapter
 
-Freesound APIv2 retrieve adapter — CC0 sounds, stored strictly by-reference.
+Freesound APIv2 retrieve adapter — CC0 (and CC-BY) sounds, stored strictly by-reference.
 
 Freesound (report 01 §Freesound) is foley’s anchor retrieve source. This adapter
 turns a natural-language query into ranked, license-clean
 [`Candidate`](foley.base.html.md#foley.base.Candidate)s over the Freesound APIv2, honoring two
 load-bearing constraints:
 
-* **CC0-only (for #5), pushed into the query.** The CC0 filter is sent as the
-  native `filter=license:"Creative Commons 0"` so non-CC0 sounds never leave the
-  server; each returned item is *also* re-checked fail-closed against the
-  `accepted_license_ids` allowlist — the server filter is a promise foley does
-  not control, so a non-CC0 item that slips through is dropped, never indexed.
+* **CC0 by default, CC-BY on request, pushed into the query.** The CC0 filter is sent
+  as the native `filter=license:"Creative Commons 0"` so other sounds never leave the
+  server (`license` other than `'cc0'` also asks for `"Attribution"`: the
+  credit-bearing sounds the [`keep()`](foley.licensing.html.md#foley.licensing.keep) gate then admits only for a
+  caller that can attribute). Each returned item is *also* re-checked fail-closed
+  against the `accepted_license_ids` allowlist — the server filter is a promise foley
+  does not control, so an NC / SA / ND item that slips through is dropped, never indexed.
 * **By-reference storage (TOS).** The Freesound API TOS forbids caching the audio
   bytes even for CC0, so every sound is licensed `cache_bytes_ok=False` (a
   per-item override on top of its own CC id — see
@@ -86,21 +88,25 @@ Resolve one Freesound id (`'12345'` or `'freesound:12345'`) to a record.
 * **Return type:**
   [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord)
 
-#### search(query, , license='cc0', k=15, duration_range=None, sort=None, \*\*kw)
+#### search(query, , license='cc0', k=15, duration_range=None, sort=None, similar_to=None, ucs_category=None, \*\*kw)
 
 Search Freesound for `query`; return license-clean candidates.
 
-The `license='cc0'` filter is pushed into the native Solr `filter` so
-non-CC0 sounds never leave the server; every returned item is still
-re-checked fail-closed before it becomes a candidate.
+The license filter is pushed into the native Solr `filter` so other sounds
+never leave the server; every returned item is still re-checked fail-closed
+before it becomes a candidate.
 
 * **Parameters:**
-  * **license** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – License constraint. `'cc0'` (default) sends the CC0 filter;
-    `None` sends none (the per-item guard still enforces the
-    `accepted_license_ids` allowlist, so results stay CC0 for #5).
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint. `'cc0'` (default) sends the CC0 filter and
+    keeps CC0 alone; `None` sends no filter and any other value asks for
+    CC0 + Attribution; both keep what the `accepted_license_ids`
+    allowlist holds (CC0, CC-BY), so NC / SA / ND never come back.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max results (Freesound caps `page_size` at 150).
   * **duration_range** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – Optional `(min_s, max_s)` native duration filter.
   * **sort** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional native sort key (default: Freesound relevance).
+  * **similar_to** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A Freesound sound id (either id form): “more like this one”.
+  * **ucs_category** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A UCS CatID or category, mapped to a coarse Broad Sound
+    Taxonomy `category` pre-filter (no filter if it is not recognised).
   * **\*\*kw** – Ignored extra affordances (`on_unsupported_param='warn'`).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]

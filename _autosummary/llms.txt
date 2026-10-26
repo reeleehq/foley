@@ -86,7 +86,7 @@
 - [foley.sources.fal.config](foley.sources.fal.config.html.md): &#96;SOURCE_CONFIGS&#96; for the fal-hosted text-to-SFX endpoints, executed through &#96;falaw&#96; (#73).
 - [foley.sources.foleyset](foley.sources.foleyset.html.md): FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).
 - [foley.sources.freesound](foley.sources.freesound.html.md): Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (&#96;foley&#91;freesound&#93;&#96;).
-- [foley.sources.freesound.adapter](foley.sources.freesound.adapter.html.md): Freesound APIv2 retrieve adapter — CC0 sounds, stored strictly by-reference.
+- [foley.sources.freesound.adapter](foley.sources.freesound.adapter.html.md): Freesound APIv2 retrieve adapter — CC0 (and CC-BY) sounds, stored strictly by-reference.
 - [foley.sources.freesound.config](foley.sources.freesound.config.html.md): &#96;SOURCE_CONFIG&#96; for the Freesound APIv2 retrieve source (report 01 · 07 · 10 §4.1).
 - [foley.sources.fsd50k](foley.sources.fsd50k.html.md): FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).
 - [foley.sources.http](foley.sources.http.html.md): Injectable HTTP transport for foley’s live source adapters.

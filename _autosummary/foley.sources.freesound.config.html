@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=1c03bfdc"></script>
+    <script src="../_static/documentation_options.js?v=b87b3bc5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.54" />
+  <meta name="docsearch:version" content="0.0.55" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -496,7 +496,8 @@
 unified foley query vocabulary onto Freesound’s native params, declares the
 token-auth env var, the APIv2 endpoints, the rate limits, and — crucially — the
 <strong>license block</strong>: <code class="docutils literal notranslate"><span class="pre">cache_bytes_ok=False</span></code> (the Freesound API TOS forbids caching
-the bytes, even for CC0) and a CC0-only <code class="docutils literal notranslate"><span class="pre">accepted_license_ids</span></code> allowlist for #5.</p>
+the bytes, even for CC0) and an <code class="docutils literal notranslate"><span class="pre">accepted_license_ids</span></code> allowlist of CC0 plus CC-BY (admitted when the caller
+can attribute, #78; SA, ND and NC stay fail-closed).</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">cache_bytes_ok=False</span></code> fact is a top-level property of the <em>source</em> (the TOS
 constraint is invariant across every Freesound CC variant), distinct from the
 per-item copyright license each sound carries. See
