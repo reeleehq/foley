@@ -190,6 +190,7 @@ from .bootstrap import bootstrap, demo
 # Auto-discovery is lazy, so the Freesound adapter (and requests) is not imported
 # until first use — `import foley` stays dol-only.
 from .sources import add_from, list_sources, register_source
+from .sources.capabilities import capabilities_of, ledger, list_backends
 
 # --- source: generation adapters (Stable Audio Open / ElevenLabs) — #6 ---------
 # The generate facade + its helpers. The generator adapter packages (and their
@@ -409,6 +410,9 @@ __all__ = [
     # --- source: live-source adapters + add_from pull facade -----------------
     "add_from",
     "list_sources",
+    "list_backends",
+    "capabilities_of",
+    "ledger",
     "register_source",
     # --- source: generation adapters (Stable Audio Open / ElevenLabs) --------
     "generate",

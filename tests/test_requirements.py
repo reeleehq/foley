@@ -46,7 +46,7 @@ def test_verify_and_setup_reports_never_installs():
 
 def test_capability_report_shape():
     rep = foley.capability_report()
-    assert set(rep) == {"keys", "extras", "system", "offline", "sources", "llm", "degraded_tools"}
+    assert set(rep) == {"keys", "extras", "system", "offline", "sources", "backends", "llm", "degraded_tools"}
     assert "FREESOUND_API_KEY" in rep["keys"]  # env-probed
     assert "py2mcp" in rep["extras"]  # importable-probed
     assert "ffmpeg" in rep["system"]  # binary-probed

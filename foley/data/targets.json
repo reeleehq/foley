@@ -1,0 +1,6 @@
+{
+  "targets": [
+    {"name": "epidemic_sound", "kind": "retrieve", "note": "partner-gated pro API; stub adapter once an agreement exists (roadmap, design.md)"},
+    {"name": "storyblocks", "kind": "retrieve", "note": "partner-gated pro API; stub adapter once an agreement exists (roadmap, design.md)"}
+  ]
+}
