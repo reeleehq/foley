@@ -39,11 +39,15 @@ SOURCE_CONFIG = {
     "param_map": {
         "prompt": {"native_name": "prompt", "required": True},
         "duration": {"native_name": "audio_end_in_s"},
-        # foley prompt_influence (0..1) -> native guidance_scale via
-        #   guidance_scale = 1 + prompt_influence * (cfg_max - 1)
-        # NB: the CFG kwarg is 'guidance_scale' (NOT 'cfg_scale'); it must be passed
-        # explicitly or the pipeline uses its own default 7.0.
-        "prompt_influence": {"native_name": "guidance_scale"},
+        # foley prompt_influence (0..1) -> native guidance_scale, linear 1..15
+        # (foley.sources.base.native_adherence); None -> native_default, the
+        # model's own 7.0. NB: the CFG kwarg is 'guidance_scale' (NOT 'cfg_scale');
+        # it is always passed explicitly (the adapter never relies on the pipeline).
+        "prompt_influence": {
+            "native_name": "guidance_scale",
+            "coerce": {"kind": "linear", "lo": 1.0, "hi": 15.0},
+            "native_default": 7.0,
+        },
         "negative_prompt": {"native_name": "negative_prompt"},
         "steps": {"native_name": "num_inference_steps"},
         # foley seed -> a torch.Generator built in the adapter.
@@ -68,7 +72,10 @@ SOURCE_CONFIG = {
         "duration_default_s": 10.0,  # NOT the 47.55s model max
         "duration_max_s": 47.55,
         "num_inference_steps_default": 200,
-        "cfg_max": 15.0,  # prompt_influence=1.0 -> guidance_scale=15.0
+        # A distilled checkpoint (post-trained for CFG 1, ~8 steps) sets this True,
+        # with prompt_influence's native_default 1.0: a requested prompt_influence is
+        # then noted and not applied (#70). Stable Audio Open 1.0 is not distilled.
+        "distilled": False,
         "num_waveforms_per_prompt": 1,
         "output_type": "np",
     },

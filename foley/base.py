@@ -163,7 +163,10 @@ GENERATION_AFFORDANCES: dict[str, Affordance] = {
         "duration", float, "Seconds; None => backend default", stage="generate"
     ),
     "prompt_influence": Affordance(
-        "prompt_influence", float, "0..1 unified guidance", 0.3, "generate"
+        "prompt_influence",
+        float,
+        "0..1 unified adherence; None => the backend's native default",
+        stage="generate",
     ),
     "negative_prompt": Affordance(
         "negative_prompt",
@@ -472,6 +475,14 @@ class Candidate(SerializableMixin):
     notes: list = field(default_factory=list)
     cost_estimate_usd: Optional[float] = None
     cost_actual_usd: Optional[float] = None
+
+    #: The clip's bytes when foley holds them nowhere it can serve them from — a
+    #: ``generate(store=False)`` preview (the archive bytes the library would have
+    #: stored). A plain class attribute, NOT a dataclass field, so it is never
+    #: serialized: ``to_dict``/``to_json`` stay byte-free (cf. ``IngestReport.exception``).
+    #: ``copy``/``deepcopy``/``pickle`` keep it; ``dataclasses.replace`` and a
+    #: ``from_dict`` round trip drop it.
+    audio_bytes = None
 
 
 # ---------------------------------------------------------------------------

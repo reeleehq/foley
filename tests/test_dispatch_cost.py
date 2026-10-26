@@ -230,7 +230,35 @@ def test_paid_llm_calls_count_toward_the_cap(monkeypatch, library):
     assert llm_call_estimate("anthropic", max_tokens=500) > 0
     assert foley.estimate("find", llm="anthropic") > 1.0  # 6 events x 10 judge calls ...
     with pytest.raises(BudgetExceeded, match="upper bound"):
-        foley.find(DEMO, library=library, llm="anthropic")
+        foley.find(DEMO, library=library, llm="anthropic", budget=Budget(max_usd=1.0))
+
+
+def test_a_chosen_paid_llm_gets_a_default_cap_that_fits_a_default_run(monkeypatch, library):
+    """#88: find(llm='anthropic') with the defaults is not refused before its first call."""
+    from foley.agent import llm
+    from foley.cost import default_max_usd as _default_max_usd
+    from foley.cost import DEFAULT_MAX_USD
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    monkeypatch.delenv("FOLEY_LLM", raising=False)
+    assert _default_max_usd(None) == _default_max_usd("fake") == DEFAULT_MAX_USD
+    assert _default_max_usd("anthropic") == 3.0
+    monkeypatch.setattr(llm, "_require_anthropic", lambda: None)  # no SDK needed here
+    assert foley.estimate("find", llm="anthropic") < _default_max_usd("anthropic")
+    # The default cap still holds a run whose bound is over it (k=20: about $4.6).
+    with pytest.raises(BudgetExceeded, match=r"\$3\.00 cap"):
+        foley.find(DEMO, library=library, llm="anthropic", k=20)
+    monkeypatch.setenv("FOLEY_LLM", "anthropic")
+    assert _default_max_usd(None) == 3.0  # the operator's choice counts too
+    # score() has one cap for the whole run, sized the same way (refused at $3, not $1).
+    with pytest.raises(BudgetExceeded, match=r"\$3\.00 cap"):
+        foley.score([DEMO], library=library, llm="anthropic", max_events=10)
+    # So has the MCP server, for its lifetime, when its operator chose Claude.
+    from foley.agent import mcp
+
+    mcp._STATE["budget"], mcp._STATE["max_usd"] = None, None
+    assert mcp._server_budget().max_usd == 3.0
+    mcp._STATE["budget"] = None
 
 
 def test_a_paid_rung_is_charged_its_actual_usage(monkeypatch):
@@ -328,6 +356,31 @@ def test_a_quarantined_generation_keeps_its_bytes(library, paid_source,
                for key in cache.requests)
 
 
+def test_a_refused_generation_names_its_kept_bytes_on_every_surface(
+    library, paid_source, _in_memory_generations_cache
+):
+    """#107: the error, the result and the MCP tool all carry the cache key."""
+    from foley.agent import mcp
+
+    paid_source("silent3", amount=0.05, silent=True)
+    with pytest.raises(foley.GenerationError) as exc:
+        foley.generate("a door creaks", backend="silent3", library=library)
+    (entry,) = _in_memory_generations_cache.requests.values()
+    assert exc.value.cache_key == entry["content_key"]
+    assert exc.value.report.results[0].cache_key == exc.value.cache_key
+    assert foley.generations.get(exc.value.cache_key) == _in_memory_generations_cache.audio[
+        entry["content_key"]
+    ]
+    mcp._configure(library=library)
+    mcp._STATE["budget"] = None
+    try:
+        out = mcp.foley_generate("a door creaks", backend="silent3")
+    finally:
+        mcp._STATE["budget"] = None
+    assert out["ok"] is False and out["status"] == "quarantined"
+    assert foley.generations.get(out["cache_key"])
+
+
 # ---------------------------------------------------------------------------
 # #64 — the root cause reaches the caller
 # ---------------------------------------------------------------------------
@@ -350,6 +403,23 @@ def test_add_from_raises_on_a_missing_key(library, monkeypatch):
     with pytest.raises(SourceConfigurationError) as exc:
         foley.add_from("freesound", query="door", library=library, adapter=adapter)
     assert "FREESOUND_API_KEY" in str(exc.value) and "http" in str(exc.value)
+
+
+def test_a_per_request_key_reaches_the_source(monkeypatch):
+    """Keys resolve through ocracy's facade kit: explicit, then a bound key, then env."""
+    from ocracy.kit import using_credentials
+
+    from foley.sources.elevenlabs.adapter import ElevenLabsAdapter
+    from foley.sources.freesound.adapter import FreesoundAdapter
+
+    monkeypatch.setenv("FREESOUND_API_KEY", "server-key")
+    fs = FreesoundAdapter(http=lambda *a, **k: pytest.fail("no HTTP"))
+    assert fs.api_key == "server-key"
+    with using_credentials(freesound="user-key", elevenlabs="user-el-key"):
+        assert fs.api_key == "user-key"
+        assert FreesoundAdapter(api_key="explicit").api_key == "explicit"
+        monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
+        assert ElevenLabsAdapter().api_key == "user-el-key"
 
 
 def test_a_backend_failure_is_chained_into_generation_error(library, paid_source):
@@ -685,3 +755,41 @@ def test_llm_prices_come_from_falaw_and_unlisted_models_are_unknown():
     assert _usage_cost("no-such-model", SimpleNamespace(usage=usage)) is None
     assert _usage_cost("claude-opus-4-7", SimpleNamespace(usage=None)) is None
     assert llm_call_estimate("anthropic", model="no-such-model", max_tokens=5) is None
+
+@pytest.mark.parametrize("bad", [5.0, -0.1, True, "0.5"])
+def test_a_bad_prompt_influence_is_refused_before_any_budget_is_reserved(
+    paid_source, library, bad
+):
+    from foley.cost import spend_scope
+
+    adapter = paid_source("sixty", amount=0.60)
+    with spend_scope(Budget(max_usd=1.0)) as budget:
+        with pytest.raises(ValueError, match="prompt_influence"):
+            foley.generate("a door creaks", backend="sixty", library=library,
+                           prompt_influence=bad)
+    assert adapter.calls == 0 and budget.spent_usd == 0
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+def test_a_non_finite_duration_is_refused_before_any_budget_is_reserved(
+    paid_source, library, bad
+):
+    from foley.cost import spend_scope
+
+    adapter = paid_source("sixty", amount=0.60)
+    with spend_scope(Budget(max_usd=1.0)) as budget:
+        with pytest.raises(ValueError, match="duration"):
+            foley.generate("a door creaks", backend="sixty", library=library,
+                           duration=bad)
+    assert adapter.calls == 0 and budget.spent_usd == 0
+
+
+def test_a_nan_estimate_is_unknown_cost_and_never_poisons_the_budget():
+    budget = Budget(max_usd=0.0)
+    with pytest.raises(CostApprovalRequired):
+        budget.reserve(float("nan"), what="x")
+    approved = Budget(max_usd=0.0, approve_unknown_cost=True)
+    approved.reserve(float("nan"), what="x")
+    assert approved.spent_usd == 0
+    with pytest.raises(BudgetExceeded):
+        approved.check(0.01, what="y")

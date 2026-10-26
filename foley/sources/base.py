@@ -35,6 +35,10 @@ so the derived permission flags stay single-sourced.
 
 from __future__ import annotations
 
+import hashlib
+import os
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Iterator, Optional, Protocol, runtime_checkable
 
@@ -45,6 +49,13 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from ..base import Candidate, SoundRecord
 
 __all__ = [
+    "check_prompt_influence",
+    "native_adherence",
+    "resolve_source_key",
+    "using_source_accounts",
+    "bound_source_account",
+    "key_fingerprint",
+    "source_account_id",
     "SourceConfigurationError",
     "ClipSpec",
     "CorpusAdapter",
@@ -72,6 +83,219 @@ class SourceConfigurationError(RuntimeError):
     and pull façades let it propagate, and its message names what to set (the env var
     and, for a key, its sign-up URL) (#64).
     """
+
+
+def check_prompt_influence(value) -> None:
+    """Raise ``ValueError`` unless ``value`` is ``None`` or a real number in ``0..1``.
+
+    Called when a generation is planned, before any budget is reserved, and again
+    by :func:`native_adherence`. A ``bool`` or a numeric string is refused rather
+    than coerced: ``True`` would silently mean the maximum.
+    """
+    if value is None:
+        return
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"prompt_influence must be a number in 0..1, got {value!r}")
+    if not 0.0 <= float(value) <= 1.0:
+        raise ValueError(f"prompt_influence must be in 0..1, got {value!r}")
+
+
+def native_adherence(
+    config: dict, prompt_influence: Optional[float], notes: list
+) -> Optional[float]:
+    """Map foley's unified ``prompt_influence`` (0..1) onto a source's native scale.
+
+    The source declares the mapping on ``config["param_map"]["prompt_influence"]``:
+    ``coerce`` (``{"kind": "identity"}`` or ``{"kind": "linear", "lo": ..., "hi": ...}``,
+    0 -> ``lo``, 1 -> ``hi``) and ``native_default`` (the model's own value, or ``None``
+    to send nothing and let the API apply its default). Native scales differ widely
+    (ElevenLabs 0..1, Stable Audio Open's CFG 1..15), so one unified default would be
+    wrong for most of them: ``None`` means "the model's own default".
+
+    A source whose ``native_defaults["distilled"]`` is true was post-trained for its
+    native default (e.g. distilled Stable Audio models expect CFG 1), so a requested
+    ``prompt_influence`` is not applied: the native default is used and ``notes`` says
+    so (#70).
+
+    Raises:
+        ValueError: If ``prompt_influence`` is outside ``0..1``.
+    """
+    spec = (config.get("param_map") or {}).get("prompt_influence") or {}
+    native_default = spec.get("native_default")
+    distilled = (config.get("native_defaults") or {}).get("distilled")
+    if distilled and native_default is None:
+        raise SourceConfigurationError(
+            f"{config['name']}: a distilled source must declare "
+            "param_map['prompt_influence']['native_default'] (the CFG it was "
+            "post-trained for)"
+        )
+    if prompt_influence is None:
+        return native_default
+    check_prompt_influence(prompt_influence)
+    if distilled:
+        notes.append(
+            f"prompt_influence={prompt_influence!r} not applied: {config['name']} is a "
+            f"distilled model, post-trained for its native default ({native_default!r})"
+        )
+        return native_default
+    coerce = spec.get("coerce") or {"kind": "identity"}
+    if coerce["kind"] == "identity":
+        return float(prompt_influence)
+    if coerce["kind"] == "linear":
+        lo, hi = float(coerce["lo"]), float(coerce["hi"])
+        return lo + float(prompt_influence) * (hi - lo)
+    raise ValueError(f"{config['name']}: unknown prompt_influence coerce {coerce!r}")
+
+
+def auth_env_vars(config: dict) -> "tuple[str, ...]":
+    """The env vars a source's key may live in, in the order they are read.
+
+    ``config["auth"]["env_var"]`` is the documented one; ``env_var_aliases`` lists
+    names the rest of the fleet reads for the same provider (ElevenLabs: ``an`` and
+    ``voxy`` read ``ELEVEN_API_KEY`` too), so a key set for them is found here. Empty
+    for a source with no key.
+
+    >>> auth_env_vars({"auth": {"env_var": "A_KEY", "env_var_aliases": ["B_KEY"]}})
+    ('A_KEY', 'B_KEY')
+    >>> auth_env_vars({"auth": None})
+    ()
+    """
+    auth = config.get("auth") or {}
+    primary = auth.get("env_var")
+    if not primary:
+        return ()
+    return (primary, *auth.get("env_var_aliases", ()))
+
+
+def operator_env_key(config: dict) -> Optional[str]:
+    """The operator's key for a source: the first of :func:`auth_env_vars` that is set."""
+    return next(
+        (os.environ[v] for v in auth_env_vars(config) if os.environ.get(v)), None
+    )
+
+
+def resolve_source_key(config: dict, api_key: Optional[str] = None) -> str:
+    """A source's API token: ``api_key``, else a bound key, else its env var(s).
+
+    The chain is the fleet's facade kit (``ocracy.kit.resolve_credential``), so a
+    server can bind a per-request key with ``ocracy.kit.using_credentials(<source>=key)``.
+    ``config["auth"]`` names the env var (and its fleet aliases, see
+    :func:`auth_env_vars`) and the sign-up URL.
+
+    Raises:
+        SourceConfigurationError: Naming the env var and where to get a key.
+    """
+    from ocracy.kit import resolve_credential
+
+    name, auth = config["name"], config["auth"]
+    return resolve_credential(
+        name,
+        api_key=api_key,
+        env_var=auth_env_vars(config),
+        guidance={name: {"get_key_url": auth.get("apply_url")}},
+        error=SourceConfigurationError,
+        hint="Or pass api_key=.",
+    )
+
+
+#: The account settings bound with a source's key (see :func:`using_source_accounts`).
+_BOUND_ACCOUNTS: "ContextVar[dict]" = ContextVar("foley_source_accounts", default={})
+
+#: What an account may carry besides its key.
+_ACCOUNT_FIELDS = ("plan",)
+
+
+def key_fingerprint(key: str) -> str:
+    """A short, one-way id for an API key: tells accounts apart without keeping the key."""
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+
+
+@contextmanager
+def using_source_accounts(**accounts):
+    """Bind per-request source accounts (a key, and what goes with it) for a ``with`` block.
+
+    The key is bound through ``ocracy.kit.using_credentials``, so
+    :func:`resolve_source_key` uses it; the rest of the account (ElevenLabs: its
+    ``plan``, which decides the licence) is bound **with** that key, and only applies
+    while that same key is the one bound (#98)::
+
+        with foley.using_source_accounts(
+            elevenlabs={"key": user_key, "plan": "elevenlabs-free-plan"},
+            freesound=user_freesound_key,  # a string is a key alone
+        ):
+            foley.generate("a door creaks", backend="elevenlabs")
+
+    A source given ``None`` (or an empty key) binds nothing, so an optional request
+    header can be passed straight through.
+
+    The binding lives in a ``ContextVar``: it covers what runs inside the block, in
+    this context. Consume a lazy result (``find(stream=True)``) inside the block, and
+    run work handed to a thread pool under ``contextvars.copy_context()``; outside the
+    block the operator's key and plan apply again.
+
+    Raises:
+        ValueError: For a field an account cannot carry.
+    """
+    from ocracy.kit import using_credentials
+
+    keys, settings = {}, {}
+    for source, account in accounts.items():
+        if isinstance(account, str) or account is None:
+            account = {"key": account}
+        unknown = set(account) - {"key", *_ACCOUNT_FIELDS}
+        if unknown:
+            raise ValueError(
+                f"{source}: unknown account field(s) {sorted(unknown)}; "
+                f"an account has a 'key' and optionally {list(_ACCOUNT_FIELDS)}"
+            )
+        key = account.get("key")
+        if not key:
+            continue
+        keys[source] = key
+        settings[source] = {
+            **{f: account[f] for f in _ACCOUNT_FIELDS if account.get(f) is not None},
+            "key_id": key_fingerprint(key),
+        }
+    with using_credentials(keys):
+        token = _BOUND_ACCOUNTS.set({**_BOUND_ACCOUNTS.get(), **settings})
+        try:
+            yield
+        finally:
+            _BOUND_ACCOUNTS.reset(token)
+
+
+def source_account_id(config: dict, api_key: Optional[str] = None) -> str:
+    """Which account a call to the source is made on: ``'operator'``, or a key's fingerprint.
+
+    The operator's account is the source's env key (or no key at all: a cache entry
+    can then still be replayed offline, and rotating the operator's key does not
+    orphan the cache). Any other key, given as ``api_key`` or bound for the request,
+    is another account, told apart by :func:`key_fingerprint` (#98).
+    """
+    from ocracy.kit import current_credentials
+
+    key = api_key or current_credentials().get(config["name"])
+    if not key or key == operator_env_key(config):
+        return "operator"
+    return key_fingerprint(key)
+
+
+def bound_source_account(source: str) -> Optional[dict]:
+    """The account bound for ``source`` in this context, or ``None`` when no key is bound.
+
+    A key bound without its account (``ocracy.kit.using_credentials(<source>=key)``,
+    or a key rebound over the one an account came with) gives ``{}``: its plan is
+    unknown, and the caller must not fall back to the operator's.
+    """
+    from ocracy.kit import current_credentials
+
+    key = current_credentials().get(source)
+    if not key:
+        return None
+    account = _BOUND_ACCOUNTS.get().get(source) or {}
+    if account.get("key_id") != key_fingerprint(key):
+        return {}
+    return {k: v for k, v in account.items() if k != "key_id"}
 
 
 @dataclass

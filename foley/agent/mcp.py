@@ -60,15 +60,16 @@ def _server_budget():
     Keyed on the server, not on the ``session`` argument (which the calling agent
     chooses, so a per-session cap could be dodged by inventing session ids). The cap
     is set by whoever starts the server (``build_mcp_server(max_usd=...)``) and lasts
-    for the server's lifetime; restart the server to reset it.
+    for the server's lifetime; restart the server to reset it. Unset, it is
+    :func:`foley.cost.default_max_usd` ($1, or $3 under ``$FOLEY_LLM=anthropic``, #88).
     """
-    from ..cost import DEFAULT_MAX_USD
+    from ..cost import default_max_usd
     from .policy import Budget
 
     with _BUDGET_LOCK:  # tools run in a threadpool: one budget, even on a first burst
         if _STATE["budget"] is None:
             cap = _STATE["max_usd"]
-            _STATE["budget"] = Budget(max_usd=DEFAULT_MAX_USD if cap is None else cap)
+            _STATE["budget"] = Budget(max_usd=default_max_usd() if cap is None else cap)
         return _STATE["budget"]
 
 
@@ -216,6 +217,7 @@ def _weave_result_row(result) -> dict:
         "watermark": result.watermark,
         "content_credential": result.content_credential,
         "run_manifest_ref": result.run_manifest_ref,
+        "notes": list(getattr(result, "notes", ())),
     }
 
 
@@ -369,53 +371,106 @@ def foley_list_picks(session: str = "default") -> list:
 
 def foley_generate(
     prompt: str,
-    backend: str = "stable_audio",
+    backend: str = "auto",
     commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
     session: str = "default",
 ) -> dict:
-    """Generate a sound from a text prompt (local backends only when offline)."""
+    """Generate a sound from a text prompt (local backends only when offline).
+
+    ``backend='auto'`` tries the host's generation order (ElevenLabs direct first, then
+    the fal backends, then the local Stable Audio Open; the paid ones only when the
+    host opted in with ``$FOLEY_GENERATE_PAID=1``; ``$FOLEY_GENERATE_ORDER`` /
+    ``$FOLEY_GENERATE_BACKEND`` change it), skipping what is not configured or not
+    allowed offline; name one to choose (``fal_stable_audio_3``, ``elevenlabs``, ...).
+
+    A clip QC would quarantine for a clipped run just over the gate is repaired and
+    stored (the repair is in the result's notes). A refused generation's dict carries
+    ``cache_key``: where its paid bytes are in the generations cache
+    (``foley.generations.get(cache_key)``, on the host — bytes never travel over MCP).
+    """
+    from .. import GenerationError, generate
+    from ..cost import BudgetExceeded, spend_scope
     from ..runtime import EXTERNAL, EgressBlocked
+    from ..sources._dispatch import UnsupportedParameter
+    from ..sources.base import SourceConfigurationError
+    from ..sources.generate import (
+        backend_is_paid,
+        first_runnable_backend,
+        generate_backend_order,
+        generation_rights_refusal,
+        paid_generation_opted_in,
+    )
     from ..sources.registry import source_egress
+
+    use = intended_use_for(commercial_ok=commercial_ok)
 
     # The bound server runtime may differ from the call's context (a server built with
     # runtime= but not run under offline_scope), so check it here too; undeclared
     # egress counts as external (fail-closed), as in the registry.
-    egress = source_egress(backend) or EXTERNAL
-    if not _runtime().allows(egress):
+    def allowed(name):
+        return _runtime().allows(source_egress(name) or EXTERNAL)
+
+    auto = backend in ("auto", "", None)
+    order = generate_backend_order() if auto else (backend,)
+    paid_ok = not auto or paid_generation_opted_in()
+    order = tuple(
+        name
+        for name in order
+        if allowed(name) and (paid_ok or name == order[-1] or not backend_is_paid(name))
+    )
+    if not order:
         return {
             "ok": False,
             "error": f"backend {backend!r} is external and disallowed in offline mode",
         }
-    from .. import GenerationError, generate
+    backend = first_runnable_backend(order, paid_ok=paid_ok)  # reported if refused
+    if len(order) == 1:  # a single backend is judged here; an order, per backend
+        refusal = generation_rights_refusal(order[0], use)
+        if refusal is not None:
+            return {
+                "ok": False,
+                "status": "refused",
+                "error": refusal,
+                "backend": backend,
+            }
 
     # The public façade returns the stored Candidate (a re-searchable, by-value
     # SoundRecord) and RAISES GenerationError on any non-success outcome (QC-quarantined,
     # rights-blocked, safety-refused, or an empty result). Surface both as JSON so the
     # agent gets the real generated id on success — and a structured error, never an
     # escaping exception, on failure — honoring the module's JSON-in/JSON-out contract.
-    from ..cost import BudgetExceeded
-    from ..sources._dispatch import UnsupportedParameter
-    from ..sources.base import SourceConfigurationError
-
-    from ..cost import spend_scope
-
     try:
         with spend_scope(_server_budget()):
-            cand = generate(prompt, backend=backend, library=_lib())
+            cand = generate(
+                prompt,
+                backend=order if len(order) > 1 else order[0],
+                library=_lib(),
+                intended_use=use,
+            )
+        backend = cand.sound.license.source or backend  # the one that served it
     except (
         EgressBlocked,
         BudgetExceeded,
         SourceConfigurationError,
         UnsupportedParameter,
     ) as exc:
-        # Refused before any provider call: say why, as JSON.
-        return {"ok": False, "status": "refused", "error": str(exc), "backend": backend}
+        # Refused before a billed call (an earlier backend in the order may have been
+        # refused by its provider, unbilled): say why, as JSON.
+        return {
+            "ok": False,
+            "status": "refused",
+            "error": str(exc),
+            "backend": backend,
+            "skipped_backends": getattr(exc, "skipped_backends", None),
+        }
     except GenerationError as exc:
         return {
             "ok": False,
             "status": getattr(exc, "status", None),
             "error": str(exc),
             "backend": backend,
+            # The paid bytes, when kept: foley.generations.get(cache_key) (#107).
+            "cache_key": getattr(exc, "cache_key", None),
         }
     from ..licensing import keep
 
@@ -739,7 +794,8 @@ def build_mcp_server(
         include: Optional subset of tool names to expose.
         name: The MCP server name.
         max_usd: The server's cumulative spend cap across every paid tool call, for
-            its lifetime (default :data:`foley.cost.DEFAULT_MAX_USD`, $1).
+            its lifetime (default :func:`foley.cost.default_max_usd`: $1, or $3 under
+            ``$FOLEY_LLM=anthropic``).
 
     Returns:
         A ``fastmcp.FastMCP`` server.

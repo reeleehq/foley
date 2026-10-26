@@ -106,7 +106,9 @@ class ModelNotCached(EgressBlocked):
     """
 
 
-def load_pretrained(loader, model_id: str, *, how_to_fetch: "str | None" = None, **kwargs):
+def load_pretrained(
+    loader, model_id: str, *, how_to_fetch: "str | None" = None, **kwargs
+):
     """Call ``loader(model_id, **kwargs)`` — a ``from_pretrained`` — honouring the posture.
 
     Online, it is a plain call. Under :func:`offline` it passes
@@ -187,7 +189,9 @@ def _is_cache_miss(exc: BaseException) -> bool:
 
 
 #: Whether outbound connections are blocked in this context (set by :func:`no_download`).
-_DOWNLOADS_BLOCKED: "ContextVar[str | None]" = ContextVar("foley_no_download", default=None)
+_DOWNLOADS_BLOCKED: "ContextVar[str | None]" = ContextVar(
+    "foley_no_download", default=None
+)
 
 
 class _OfflineBlocked(ConnectionRefusedError):
@@ -213,7 +217,9 @@ def _ensure_socket_gate() -> None:
                     if isinstance(host, bytes):
                         host = host.decode()
                     if host is not None and _outbound(str(host)):
-                        raise _OfflineBlocked(f"offline: name lookup for {host!r} blocked")
+                        raise _OfflineBlocked(
+                            f"offline: name lookup for {host!r} blocked"
+                        )
                 else:
                     sock, address = args[0], args[1]
                     host = address[0] if isinstance(address, tuple) else None
@@ -222,7 +228,9 @@ def _ensure_socket_gate() -> None:
                         and sock.family != getattr(socket, "AF_UNIX", None)
                         and _outbound(str(host))
                     ):
-                        raise _OfflineBlocked(f"offline: connection to {address!r} blocked")
+                        raise _OfflineBlocked(
+                            f"offline: connection to {address!r} blocked"
+                        )
             return real(*args, **kwargs)
 
         wrapped._foley_gate = True

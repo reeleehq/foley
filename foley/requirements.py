@@ -45,9 +45,43 @@ _IMPORTABLE_REQUIREMENTS = {
 #: How each ``probe`` kind checks availability.
 _PROBES = {
     "binary": lambda name: shutil.which(name) is not None,
-    "env": lambda name: bool(os.environ.get(name)),
+    "env": lambda name: (
+        any(os.environ.get(v) for v in _key_env_vars(name)) or _key_is_bound(name)
+    ),
     "importable": lambda name: importlib.util.find_spec(name) is not None,
 }
+
+
+def _key_env_vars(env_var: str) -> "tuple[str, ...]":
+    """``env_var`` and the fleet aliases a source declares for it (``ELEVEN_API_KEY``)."""
+    from .sources.base import auth_env_vars
+    from .sources.registry import SOURCE_REGISTRY
+
+    names = [env_var]
+    for entry in SOURCE_REGISTRY.values():
+        found = auth_env_vars(entry["config"])
+        if found and found[0] == env_var:
+            names.extend(found[1:])
+    return tuple(dict.fromkeys(names))
+
+
+def _key_is_bound(env_var: str) -> bool:
+    """Whether a source whose key lives in ``env_var`` has a per-request key bound (#98).
+
+    A server binds a user's key with :func:`foley.using_source_accounts` (or
+    ``ocracy.kit.using_credentials``); the source is then configured for that request
+    even though the env var is unset.
+    """
+    from ocracy.kit import current_credentials
+
+    from .sources.registry import SOURCE_REGISTRY
+
+    bound = current_credentials()
+    return any(
+        bound.get(name)
+        for name, entry in SOURCE_REGISTRY.items()
+        if (entry["config"].get("auth") or {}).get("env_var") == env_var
+    )
 
 
 def _derive_key_requirements() -> "dict[str, Requirement]":
@@ -67,7 +101,11 @@ def _derive_key_requirements() -> "dict[str, Requirement]":
             continue
         reqs[env_var] = Requirement(
             name=env_var,
-            purpose=f"the {name} source adapter (foley[{name}])",
+            purpose=(
+                f"the {auth['extra']} sources (foley[{auth['extra']}])"
+                if auth.get("extra")
+                else f"the {name} source adapter (foley[{name}])"
+            ),
             url=auth.get("apply_url", ""),
             install={},
             probe="env",
@@ -87,7 +125,10 @@ def build_requirements() -> "dict[str, Requirement]":
 
 
 #: Credential env vars that are aliases of a listed key (same provider, other auth form).
-_KEY_ALIASES = ("ANTHROPIC_AUTH_TOKEN",)
+_KEY_ALIASES = (
+    "ANTHROPIC_AUTH_TOKEN",
+    "FAL_API_KEY",
+)  # FAL_API_KEY: falaw reads it too
 
 
 def provider_key_env_vars() -> "tuple[str, ...]":
@@ -98,7 +139,8 @@ def provider_key_env_vars() -> "tuple[str, ...]":
     test suite scrubs exactly these so no test can spend money by accident.
     """
     keys = [r.name for r in build_requirements().values() if r.probe == "env"]
-    return tuple(sorted(set(keys) | set(_KEY_ALIASES)))
+    aliases = {alias for key in keys for alias in _key_env_vars(key)}
+    return tuple(sorted(set(keys) | aliases | set(_KEY_ALIASES)))
 
 
 def _available(req: Requirement) -> bool:

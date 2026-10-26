@@ -346,6 +346,46 @@ def fade(
     return samples * env[:, None] if samples.ndim == 2 else samples * env
 
 
+def limit_true_peak(
+    samples: "ndarray",
+    sample_rate: int,
+    *,
+    ceiling_dbtp: float = TRUE_PEAK_MAX_DBTP,
+    oversample: Optional[int] = None,
+) -> tuple["ndarray", float]:
+    """Attenuate ``samples`` so their inter-sample true peak sits at or below ``ceiling_dbtp``.
+
+    A **static** gain — the whole clip is turned down by one factor, never boosted —
+    which is transparent and exactly what a Tier-0 range fault needs: after it, a
+    flat-topped run or an over-ceiling peak is no longer at full scale. It is not a
+    dynamic look-ahead limiter (the shared leveler of foley#91 is), so the distortion
+    of a heavily clipped clip stays in the waveform; that is why :mod:`foley.repair`
+    applies it only to a clip just over the clipping gate.
+
+    Args:
+        samples: Working array (mono or multichannel).
+        sample_rate: Sample rate in Hz (passed to the true-peak measurement).
+        ceiling_dbtp: The true-peak ceiling in dBTP (default: foley's -1 dBTP).
+        oversample: Oversampling factor for the true-peak estimate (default: the
+            QC table's ``true_peak_oversample``).
+
+    Returns:
+        ``(attenuated, gain_db)``. ``gain_db`` is ``0.0`` — and ``samples`` comes back
+        as is — when the clip is already under the ceiling or is silent.
+
+    Lazy dependency: ``numpy`` (via :func:`foley.qc.true_peak_dbtp`).
+    """
+    from .qc import DEFAULT_QC_THRESHOLDS, true_peak_dbtp
+
+    if oversample is None:
+        oversample = DEFAULT_QC_THRESHOLDS.true_peak_oversample
+    peak = true_peak_dbtp(samples, sample_rate, oversample=oversample)
+    if not math.isfinite(peak) or peak <= ceiling_dbtp:
+        return samples, 0.0
+    gain_db = float(ceiling_dbtp - peak)
+    return samples * (10.0 ** (gain_db / 20.0)), gain_db
+
+
 def loudness_normalize(
     samples: "ndarray",
     sample_rate: int,

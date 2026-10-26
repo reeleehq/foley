@@ -122,7 +122,9 @@ def score(
         llm: Which LLM the SELECT rungs use (``'fake'`` | ``'local'`` | ``'anthropic'``;
             ``None`` reads ``$FOLEY_LLM``, else the free default) — see :func:`foley.find`.
         budget: The run's :class:`~foley.agent.policy.Budget` — one spend cap
-            (``max_usd``, default $1) across every segment's paid calls (#57).
+            (``max_usd``) across every segment's paid calls (#57). Default: $1, or $3
+            when ``llm`` (or ``$FOLEY_LLM``) is ``'anthropic'``
+            (:func:`foley.cost.default_max_usd`, #88).
         **weave_kwargs: Forwarded to :func:`foley.weave` (e.g. ``sign_cert``, ``watermark``).
 
     Returns:
@@ -150,8 +152,13 @@ def score(
 
     all_candidates = []
     events: "list[ScoredEvent]" = []
-    from .cost import spend_scope
+    from .cost import active_budget, default_max_usd, spend_scope
 
+    if budget is None and active_budget() is None:
+        # One cap for the whole score run, sized to the LLM the caller chose (#88).
+        from .agent.policy import Budget
+
+        budget = Budget(max_usd=default_max_usd(llm))
     with (
         obs.run("score", params={"n_segments": len(segs), "verify": str(verify)}),
         spend_scope(budget),

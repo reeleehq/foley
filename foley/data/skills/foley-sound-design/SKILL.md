@@ -55,12 +55,45 @@ weaves into a mastered mix. This is the stable contract downstream packages (`br
 | fold picks → timeline | `foley.plan(cands)` | `foley_plan` |
 | edit (non-destructive) | `foley.weave.timeline.*` | `foley_swap_clip` / `foley_set_gain` / `foley_nudge` / `foley_toggle` / `foley_set_master` |
 | render | `foley.weave(narration, timeline)` | `foley_weave` |
-| generate when nothing fits | `foley.generate(prompt)` | `foley_generate` |
+| generate when nothing fits | `foley.generate(prompt, backend=...)` (see below) | `foley_generate` |
 | what's the workflow / what's installed | — | `foley_guide` / `foley_capabilities` / `foley_status` |
 
 **MCP is JSON-in / JSON-out**: tools take/return only JSON (ids, scores, license summaries,
 timeline dicts, store keys) — audio is referenced by a byte-store key, never inlined. Call
 `foley_guide` first if unsure.
+
+## Generating a sound from a text description
+
+Retrieval comes first: `foley.find` / `foley.score` search the library and generate only when nothing verified fits (pass `backend=` to choose what the fallback uses). When you already know nothing will fit (a specific foley moment for a film), generate directly:
+
+```python
+clip = foley.generate(
+    "a single page of an old paper book being turned, crisp paper rustle, close-up",
+    backend="fal_stable_audio_3",
+    duration=1.5,
+)
+```
+
+| backend | what it is | licence foley records | price (fal, 2026-10-25) |
+|---|---|---|---|
+| `fal_stable_audio_3` | Stable Audio 3 Small-SFX: the default pick, seeded, takes `negative_prompt` | Stability Community: commercial under US $1M revenue | $0.0206 per clip (to 120 s) |
+| `fal_stable_audio_3_medium` | Stable Audio 3 Medium: better on hard prompts | Stability Community | $0.0376 per clip |
+| `fal_elevenlabs` | ElevenLabs SFX v2 via fal: strong on human non-speech (sighs, breaths), `loop` | `fal-partner-unverified` (non-commercial until confirmed) | $0.002/s, ≤ 22 s |
+| `fal_sonilo` | Sonilo v1.1 via fal | `fal-partner-unverified` | $0.0018/s |
+| `fal_mirelo` | Mirelo SFX 2.0 via fal, to 600 s | `fal-partner-unverified` | $0.015/s (0.010 until 2026-12-13) |
+| `fal_mmaudio` | MMAudio via fal | CC BY-NC 4.0 (attribution) | $0.001/s |
+| `stable_audio` | Stable Audio Open 1.0, local (GPU, gated weights) | Stability Community | free |
+| `elevenlabs` | ElevenLabs direct: **first in the generation order**; seconds come out of a paid plan's monthly allowance (10 credits/s, seen 2026-10-26), stereo 48 kHz PCM, `loop` | the account's plan (`$FOLEY_ELEVENLABS_PLAN`): paid = commercial, royalty-free, no attribution; free = non-commercial + attribution | $0.002/s once the allowance is used |
+
+All `fal_*` backends need `foley[fal]` and `$FAL_KEY`; `elevenlabs` needs `foley[elevenlabs]`, `$ELEVENLABS_API_KEY` (or the fleet's `$ELEVEN_API_KEY`) and `$FOLEY_ELEVENLABS_PLAN`.
+
+**The generation order.** With no `backend=`, `generate`, `find`'s fallback and `foley_generate` walk `elevenlabs` → `fal_stable_audio_3` → `fal_elevenlabs` → `stable_audio`: ElevenLabs direct first (same per-second price as the fal route, allowance first, and the plan's own licence instead of an unverified one). A backend with no key, no plan, offline, whose licence cannot serve the use (fal's ElevenLabs is non-commercial until its terms are confirmed), or whose provider refused the request with an HTTP error (nothing billed) is skipped, and the candidate's notes say why (`generation order: skipped ...`). Anything that may have been billed (a timeout, an undecodable response) is final, as is a QC or budget refusal: at most one backend bills per generation, and `foley.estimate` bounds it by the dearest backend the order would try. The paid entries run only after an explicit opt-in, `$FOLEY_GENERATE_PAID=1`: a key in the environment is not consent to spend (#58), so out of the box the order is the free local backend. `backend="elevenlabs"` uses that one with no fallback; `backend=("elevenlabs", "fal_sonilo")` is your own order; `$FOLEY_GENERATE_ORDER` replaces the default order and `$FOLEY_GENERATE_BACKEND` pins one. Every call is priced before it is made (`foley.estimate("generate", backend=..., duration=...)`), capped by the run's `Budget`, and kept in the generations cache: an identical request replays for free, `reuse_cached=False` pays for a fresh take. The licence, prompt, native request and the seed the model used are on `clip.sound.license`.
+
+**Check what came back.** A clean clip can still be the wrong sound (fal Stable Audio 3 answered "a flintlock musket placed into a hand" and "a page turn" with unrelated sounds, and nothing caught it). `generate` scores each clip against its prompt with the library's CLAP embedder and puts the verdict in `sound.qc['prompt_match']` and the notes: `mismatch` is flagged (listen before using it), and where CLAP is not installed the verdict is `unchecked`, never a silent pass. Treat `unchecked` as "listen to it".
+
+**Level what you export.** Models disagree by 10 dB or more. `generate(..., level="sfx_fg")` (or `foley.level.level_bytes(bytes, "sfx_fg")` on a clip you already have) scales a clip to its class target: the WEAVE layer gain under a -16 LUFS voice, so a one-shot is -25 LUFS and an ambience bed -37 LUFS. A clip under 0.4 s cannot be measured and is left alone. The default stores clips at their generated level because the WEAVE render applies the layer gains itself.
+
+Prompt craft that worked: name the material and the action ("leather shoes on old wooden floorboards"), the count ("four clear footsteps", "a single page"), the space ("quiet indoor room, dry"), and the mic ("close-up"). Ask for the length the moment needs (1.5 s for a page turn, 8 s for a clock bed). Generate two or three backends for a sound and pick by ear. Never synthesize an effect from oscillators and noise when a model or a recording can give a real one.
 
 ## Taste heuristics
 
@@ -72,6 +105,17 @@ timeline dicts, store keys) — audio is referenced by a byte-store key, never i
 - **Salience.** Score a moment only if the sound adds meaning. Leave silence where silence works.
 - **Loudness.** Pick a master profile for the delivery target: `podcast` (-16 LUFS), `streaming`
   (-14), `broadcast_ebu` (-23). The mix is loudness-normalized + true-peak-limited.
+
+## Audience reactions: the crowd answers, it does not coincide
+
+A cheer, laugh or applause synced to the *instant* of the on-screen event sounds like a track pasted on the cut. Place it with `foley.weave.reaction` (`reaction_cue`, `reaction_plan`, `hush_plan`):
+
+- **Time it from when the event is legible, not when it starts.** An entrance is legible when the figure is mostly in frame; a reveal when the new face has settled. Then add the latency: gasp ~0.2 s, whistle ~0.45, cheer ~0.5, applause ~0.55, laugh ~0.6 (the gag has to land first). These are craft defaults, not measurements: published latency data is thin, so tune by ear with `latency=`.
+- **Shape it: attack, peak, tail.** Claps ripple in (about 1 s) and never start at full density; a cheer swells fast and thins slowly; laughter swells shortest.
+- **Repeats are smaller.** A second cheer is ~0.65x the first: the crowd "dies down" and bumps again, it does not climb.
+- **Ask for the right kind.** Cheers (voices, surprise and delight) are not applause (claps); a clapping clip is not a cheer. Say which you want.
+- **Silence needs a cause.** To quiet a crowd, place a "shh" after the applause has peaked (`hush_plan`) and fade the applause out under it over ~0.7 s, rather than cutting it.
+- **Trim the clip's own lead-in.** A stock clip's audible onset is not its file start; trim silence first or the latency is wrong by the lead-in.
 
 ## Licensing is load-bearing (foley's output gets published)
 

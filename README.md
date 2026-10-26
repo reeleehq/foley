@@ -31,25 +31,44 @@ candidates = foley.find("She pushed open the heavy oak door; rain hammered outsi
 hits = foley.search("distant thunder rumble", k=10)  # commercial use is the default
 
 # Generate a sound when nothing fits (arioso-style; pluggable backends)
+# needs foley[stable-audio] and the gated stabilityai/stable-audio-open-1.0 weights
+# (accept its license on Hugging Face, set HF_TOKEN); backend="elevenlabs" needs
+# ELEVENLABS_API_KEY and is paid
 clip = foley.generate("a single wooden door creak", backend="stable_audio", duration=3)
 
-# Grow the library — ingest auto-tags, captions, and embeds every file
+# No GPU? The fal-hosted backends (foley[fal] + FAL_KEY; paid, priced before the call):
+# Stable Audio 3 Small-SFX at $0.0206 a clip, commercial use under $1M revenue
+clip = foley.generate(
+    "a single wooden door creak", backend="fal_stable_audio_3", duration=3
+)
+
+# Or let foley pick: with paid generation opted in (FOLEY_GENERATE_PAID=1) an unnamed
+# backend walks the generation order, ElevenLabs direct first (ELEVENLABS_API_KEY or
+# ELEVEN_API_KEY, plus FOLEY_ELEVENLABS_PLAN), then fal, then the local model; the
+# notes say which backends were skipped and why
+clip = foley.generate("a single wooden door creak", duration=3, level="sfx_fg")
+clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
+
+# Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
-foley.add_from("freesound", query="ocean waves", license="cc0")
+foley.add_from(
+    "freesound", query="ocean waves", license="cc0"
+)  # needs FREESOUND_API_KEY
 
 # Compose: place the sounds under the narration (find → plan → weave)
 timeline = foley.plan(candidates)  # the editable sound-design plan
 result = foley.weave("narration.wav", timeline)  # mastered mix + SDH captions + credits
+result.notes  # how placements were timed, e.g. estimates when foley[align] is absent
 ```
 
 ## How it works — four stages
 
 | Stage | What it does | Built on |
 |-------|--------------|----------|
-| **Source** | your own files · Freesound (CC0) · generate (Stable Audio Open / ElevenLabs) | config-driven adapters, per-sound license tracking |
-| **Index** | probe → tag → caption → embed every sound; hybrid keyword+semantic search | PANNs · CLAP · EnCLAP · LanceDB (local→cloud via `dol`) |
+| **Source** | your own files · Freesound (CC0) · generate (Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking |
+| **Index** | probe → tag → caption → embed every sound; hybrid keyword+semantic search | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in |
 | **Select** | decompose a narrative context → search → verify → generate-or-retrieve | CLAP retrieval + LLM decomposition + a verification ladder |
-| **Weave** | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits | forced-alignment · LUFS/EBU-R128 |
+| **Weave** | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
 
 The selection tools publish as an **MCP server** (via `py2mcp`) so the same capabilities
 drive the agent, a CLI, and external hosts.
@@ -114,14 +133,16 @@ lazily, so a bare install stays light. What each adds:
 | `audio` | numpy/soundfile DSP + LUFS mastering |
 | `clap` | the CLAP text↔audio retrieval engine |
 | `index` / `index-sqlite` | the hybrid vector+keyword index (LanceDB / sqlite-vec) |
-| `freesound` · `stable-audio` · `elevenlabs` | live retrieve / generate sources |
+| `freesound` · `stable-audio` · `elevenlabs` · `fal` | live retrieve / generate sources (`fal`: the fal-hosted generators through `falaw`) |
 | `agent` · `local-llm` | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint) |
-| `align` · `weave` · `provenance` · `c2pa` | forced alignment, OTIO/rubberband, watermarking, signed C2PA |
+| `align` · `weave` · `provenance` · `c2pa` | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA |
 | `mcp` · `obs` | the MCP server · OpenTelemetry export |
 
 **Nothing paid runs unless you ask for it.** Having `ANTHROPIC_API_KEY` set does not switch the SELECT rungs to Claude: pass `llm="anthropic"` to `find()` / `score()` or set `FOLEY_LLM=anthropic` (`llm="local"` uses `FOLEY_LLM_BASE_URL`). By default they run the free deterministic fakes, or your local endpoint if one is configured. `with foley.offline():` (or `FOLEY_OFFLINE=1`) blocks every external source and LLM call foley makes, on every surface, raising `foley.runtime.EgressBlocked` (model weights are never downloaded offline: a model not already cached raises `foley.runtime.ModelNotCached`, naming the command to fetch it while online).
 
-**Every paid call is priced and capped.** `foley.estimate("generate", backend="elevenlabs", duration=3)` says what a call costs before it is made (`None` means unknown, never free). A `find` / `score` / `generate` run stops before the first paid call that would take it past `Budget(max_usd=1.0)` (the default), and a call of unknown cost needs `Budget(approve_unknown_cost=True)`. Every paid response is kept in `~/.local/share/foley/generations/` before QC, so an identical request is served from there instead of paying twice. What a backend could not honour is never silent: a parameter that changes the result (`seed` on ElevenLabs) raises, and every other drop or clamp is listed in the returned candidate's `notes`.
+**Every paid call is priced and capped.** `foley.estimate("generate", backend="elevenlabs", duration=3)` says what a call costs before it is made (`None` means unknown, never free). A `find` / `score` / `generate` run stops before the first paid call that would take it past its `Budget(max_usd=...)` (default $1, or $3 when you chose Claude with `llm="anthropic"` / `FOLEY_LLM=anthropic`, since a default `find` with Claude is bounded at about $2.52), and a call of unknown cost needs `Budget(approve_unknown_cost=True)`. Every paid response is kept in `~/.local/share/foley/generations/` before QC, so an identical request is served from there instead of paying twice. What a backend could not honour is never silent: a parameter that changes the result (`seed` on ElevenLabs) raises, and every other drop or clamp is listed in the returned candidate's `notes`.
+
+**A paid clip is repaired before it is quarantined, and never lost.** A generation Tier-0 QC would refuse for a clipped run just over the gate (a 1 s bite at 0.0125 % clipped, with the edge click and the +0.5 dBTP peak such a clip carries) gets the report's own fixes — a 20 ms fade and a true-peak attenuation (`foley.repair`), which clear all three — is checked again and stored; the repair is on the candidate's `notes` and in its licence's `transformations`. Silence, NaN, a too-short clip and heavy clipping (a flat top over about a millisecond, or over 0.1 % of the clip) are still quarantined, with the reason noted. `repair=False` keeps the quarantine; a callable with `foley.repair.repair`'s signature replaces the policy (`functools.partial(foley.repair.repair, min_status=foley.QCStatus.pass_)` also declicks clips QC admits with a warning, which are otherwise stored as is). `store=False` previews a generation without indexing it: the candidate's `audio_bytes` carries the clip, and enrichment that needs an absent extra (`foley[clap]`) is skipped with a note instead of failing after the paid call. And when a generation is refused anyway, the `GenerationError`'s `cache_key` names the paid bytes: `foley.generations.get(err.cache_key)` returns them as received, `foley.repair.repair_bytes(raw)` applies the same fixes to them, and `foley.generations.find(prompt, backend=..., duration=...)` lists what was kept, newest first (entries kept by earlier versions carry no timestamp and come last).
 
 `foley.check_requirements()` (and the `foley_capabilities` MCP tool) report what's installed and
 what's degraded. Full docs: **[thorwhalen.github.io/foley](https://thorwhalen.github.io/foley)**.

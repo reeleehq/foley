@@ -41,7 +41,7 @@ foley.list_backends(*, kind=None, supports=None) -> list[str]                   
 foley.estimate(verb, **same_kwargs) -> float | None                                   # new: None = unknown → approval (#57)
 ```
 
-- `backend=None` resolves to the free local default: `stable_audio_3` once #72 lands, `stable_audio` until then. It is never a paid backend, and an unknown name raises.
+- `backend=None` resolves to the free local default: `stable_audio_3` once #72 lands, `stable_audio` until then. It is never a paid backend unless the operator opts in to paid generation (`FOLEY_GENERATE_PAID=1`, added 2026-10-26: the generation order then tries ElevenLabs direct first, then fal); a key in the environment is not that opt-in. An unknown name raises.
 - `commercial_ok` gets **one default for every verb and surface** (#63). The audit found `find` defaulting to commercial use while `score` and MCP default to non-commercial.
 
 ### Canonical vocabulary (promotion rule: a concept is canonical only when at least two targets share it)

@@ -133,7 +133,10 @@ class WhisperXAligner:
             how_to_fetch="align one clip with foley.weave once while online.",
         ):
             model = whisperx.load_model(
-                self.model_size, self.device, language=language, **_offline_kwargs(whisperx)
+                self.model_size,
+                self.device,
+                language=language,
+                **_offline_kwargs(whisperx),
             )
             align_model, meta = whisperx.load_align_model(
                 language_code=language, device=self.device
@@ -159,6 +162,15 @@ def _whisperx_available() -> bool:
     import importlib.util
 
     return importlib.util.find_spec("whisperx") is not None
+
+
+def aligner_name(aligner) -> str:
+    """``fake`` / ``whisperx`` for the built-ins, else the class name (run manifest)."""
+    if isinstance(aligner, FakeAligner):
+        return "fake"
+    if isinstance(aligner, WhisperXAligner):
+        return "whisperx"
+    return type(aligner).__name__
 
 
 def _default_aligner() -> "Aligner":

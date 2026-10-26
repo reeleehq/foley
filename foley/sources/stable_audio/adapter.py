@@ -11,8 +11,9 @@ Load-bearing details verified against the diffusers docs + HF model card:
 
 * **The CFG kwarg is ``guidance_scale``** (NOT ``cfg_scale``), and it MUST be passed
   explicitly or the pipeline silently uses its own default 7.0. foley maps its
-  unified ``prompt_influence`` (0..1) onto it via
-  ``guidance_scale = 1 + prompt_influence * (cfg_max - 1)`` (``cfg_max`` configurable).
+  unified ``prompt_influence`` (0..1) onto it linearly (1..15, declared in the
+  config's ``coerce``); ``None`` sends the model's own default, and a distilled
+  checkpoint (``native_defaults["distilled"]``) always gets its native default.
 * **Output is channel-first ``(channels, samples)``** — transposed to the
   time-first ``(frames, channels)`` foley/soundfile convention before encoding.
 * **The sample rate is read off the pipeline** (``pipe.vae.sampling_rate`` = 44100),
@@ -34,7 +35,12 @@ from __future__ import annotations
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
-from ..base import GeneratedClip, generated_license
+from ..base import (
+    GeneratedClip,
+    SourceConfigurationError,
+    generated_license,
+    native_adherence,
+)
 from .config import SOURCE_CONFIG
 
 
@@ -77,7 +83,9 @@ class StableAudioAdapter:
         dtype = torch.float16 if cuda else torch.float32
         from ...runtime import load_pretrained
 
-        pipe = load_pretrained(StableAudioPipeline.from_pretrained, model_id, torch_dtype=dtype)
+        pipe = load_pretrained(
+            StableAudioPipeline.from_pretrained, model_id, torch_dtype=dtype
+        )
         return pipe.to("cuda" if cuda else "cpu")
 
     # -- GenerateAdapter surface --------------------------------------------
@@ -87,7 +95,7 @@ class StableAudioAdapter:
         prompt: str,
         *,
         duration: Optional[float] = None,
-        prompt_influence: float = 0.3,
+        prompt_influence: Optional[float] = None,
         negative_prompt: Optional[str] = None,
         steps: Optional[int] = None,
         seed: Optional[int] = None,
@@ -101,9 +109,10 @@ class StableAudioAdapter:
             prompt: The natural-language sound description (required).
             duration: Seconds (clamped to the model's ~47.55 s max). ``None`` uses a
                 sane 10 s default (NOT the 47.55 s maximum).
-            prompt_influence: ``0..1`` unified guidance; mapped to the native
-                ``guidance_scale`` via ``1 + prompt_influence * (cfg_max - 1)``.
-                Default ``0.3`` → ``guidance_scale ≈ 5.2``.
+            prompt_influence: ``0..1`` unified adherence, mapped linearly onto the
+                native ``guidance_scale`` (1..15). ``None`` (default) sends the
+                model's own default (7.0 for Stable Audio Open 1.0); a distilled
+                checkpoint ignores it with a note.
             negative_prompt: Content to exclude (ignored by the model when guidance
                 ≤ 1).
             steps: Diffusion steps (native ``num_inference_steps``); default 200.
@@ -125,7 +134,12 @@ class StableAudioAdapter:
         # Resolve unified affordances -> native params (recorded verbatim, so
         # provenance never carries the unified names — the guard against arioso's
         # confirmed cfg_scale mislabel + dropped-guidance bug).
-        guidance_scale = 1.0 + prompt_influence * (nd["cfg_max"] - 1.0)
+        guidance_scale = native_adherence(self.config, prompt_influence, notes)
+        if guidance_scale is None:  # never let the pipeline pick its own CFG
+            raise SourceConfigurationError(
+                f"{self.name}: param_map['prompt_influence'] needs a native_default "
+                "(the guidance_scale to send when none is asked for)"
+            )
         audio_end_in_s = min(
             duration if duration is not None else nd["duration_default_s"],
             nd["duration_max_s"],

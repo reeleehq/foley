@@ -47,6 +47,12 @@ class ClapEmbedder:
             holder allows only open-source models (#69).
     """
 
+    #: Cosine similarity under which a generated clip is flagged as not matching its
+    #: prompt (:func:`foley.prompt_match.prompt_match`). Provisional: LAION-CLAP puts
+    #: matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
+    #: this value is not yet calibrated on a labelled set of foley generations.
+    prompt_match_threshold: float = 0.2
+
     def __init__(self, model_id: str = DEFAULT_CLAP_MODEL_ID, *, device=None):
         """Create the embedder (model weights load lazily on first use).
 

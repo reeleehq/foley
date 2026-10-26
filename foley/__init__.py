@@ -125,15 +125,23 @@ from .qc import (
 )
 from .stores import (
     DEFAULT_AUDIO_DIR,
+    DEFAULT_GENERATIONS_DIR,
     DEFAULT_META_DIR,
     DEFAULT_RUN_DIR,
     FOLEY_DATA_DIR,
+    GenerationsCache,
     content_key,
     make_byte_store,
+    make_generations_store,
     make_meta_store,
     make_run_store,
     store_sound,
 )
+
+# --- repair: the QC-driven fixes generate() applies before quarantining (#107) ----
+# stdlib-only at import (numpy loads inside repair.repair); ``foley.repair.repair`` is
+# the default of ``generate(repair=...)``.
+from . import repair
 from . import index
 from .index import (
     CLAP_SAMPLE_RATE,
@@ -260,6 +268,7 @@ from .agent.preview import preview, refine, similar_to
 from .agent.session import SessionStore
 from .requirements import capability_report, check_requirements, verify_and_setup
 from .runtime import RuntimeConfig, is_offline, offline
+from .sources.base import using_source_accounts
 from .stores import make_session_store
 
 __all__ = [
@@ -314,6 +323,13 @@ __all__ = [
     "DEFAULT_AUDIO_DIR",
     "DEFAULT_META_DIR",
     "DEFAULT_RUN_DIR",
+    # --- stores: the paid-generations cache (#59, #107) ------------------------
+    "generations",
+    "GenerationsCache",
+    "make_generations_store",
+    "DEFAULT_GENERATIONS_DIR",
+    # --- repair: QC-driven fixes before quarantine (#107) -----------------------
+    "repair",
     # --- qc: Tier-0 deterministic audio QC -----------------------------------
     "QCStatus",
     "QCThresholds",
@@ -440,6 +456,7 @@ __all__ = [
     "RuntimeConfig",
     "offline",
     "is_offline",
+    "using_source_accounts",
     "check_requirements",
     "verify_and_setup",
     "capability_report",
@@ -648,7 +665,7 @@ def _warn_if_hidden(hidden) -> None:
 def generate(
     prompt: str,
     *,
-    backend: str = "stable_audio",
+    backend: "str | tuple[str, ...] | list[str] | None" = None,
     library=None,
     store: bool = True,
     adapter=None,
@@ -659,6 +676,10 @@ def generate(
     on_unsupported=None,
     reuse_cached: bool = True,
     budget=None,
+    repair=True,
+    level=None,
+    check_prompt: bool = True,
+    intended_use=None,
     **affordances,
 ):
     """Generate a sound effect for ``prompt`` and add it to the library (by-value).
@@ -675,11 +696,31 @@ def generate(
 
     Args:
         prompt: The natural-language sound description.
-        backend: A registered generate source — ``"stable_audio"`` (default, local;
-            needs ``foley[stable-audio]``) or ``"elevenlabs"`` (hosted;
-            ``foley[elevenlabs]`` + ``$ELEVENLABS_API_KEY``).
+        backend: A registered generate source, or a sequence of them to try in
+            order. ``None`` (default) tries the generation order
+            (:func:`foley.sources.generate.generate_backend_order`): ElevenLabs
+            direct first (``"elevenlabs"``: ``foley[elevenlabs]``,
+            ``$ELEVENLABS_API_KEY`` or ``$ELEVEN_API_KEY``, and
+            ``$FOLEY_ELEVENLABS_PLAN``), then fal's ``"fal_stable_audio_3"`` (Stable
+            Audio 3 Small-SFX, commercial under $1M revenue) and ``"fal_elevenlabs"``
+            (``foley[fal]`` + ``$FAL_KEY``), then the local ``"stable_audio"``
+            (``foley[stable-audio]``). The paid ones are tried only once paid
+            generation is opted in (``$FOLEY_GENERATE_PAID=1``; a key in the
+            environment is not consent to spend, #58), so out of the box this is the
+            free local backend. A backend with no key, not configured, offline,
+            whose licence cannot serve ``intended_use``, or whose provider refused the
+            request (an HTTP error, nothing billed) is skipped, and the candidate's
+            ``notes`` say why; a failure that may have been billed is final.
+            ``$FOLEY_GENERATE_ORDER`` (comma-separated) replaces the order;
+            ``$FOLEY_GENERATE_BACKEND`` pins one backend. A named backend is used
+            alone, with no fallback. Others: ``"fal_sonilo"``, ``"fal_mirelo"``,
+            ``"fal_stable_audio_3_medium"``, ``"fal_mmaudio"`` (non-commercial).
         library: Target library (default: the process-wide default library).
-        store: If ``False``, synthesize + enrich a preview without adding it.
+        store: If ``False``, synthesize + QC a preview without adding it: the returned
+            candidate's ``audio_bytes`` carries the clip (the archive bytes the library
+            would have stored), and enrichment that needs an absent extra
+            (``foley[clap]``) is skipped with a note instead of failing after the paid
+            call (#107).
         adapter: Optional pre-built adapter (the DI seam; production omits it and the
             registry lazily builds one).
         watermark: ``True`` require an AudioSeal watermark, ``False`` never, ``None``
@@ -697,6 +738,30 @@ def generate(
             (default ``True``): a paid sound is never paid for twice (#59).
         budget: A :class:`Budget` for this call (default: the active run's, else a
             fresh one — a $1 cap; an unknown cost needs approval) (#57).
+        repair: What to do with a generation QC would quarantine for a clipped run
+            just over the gate (#107). ``True`` (default) applies the report's own
+            fixes (:func:`foley.repair.repair`: a 20 ms fade and a true-peak
+            attenuation, which also clear the edge click and the over-ceiling peak such
+            a clip carries), checks again and stores the repaired clip, recording the
+            repair on the candidate's ``notes`` and in the licence's
+            ``transformations``; unrepairable faults (silence, NaN, too short, heavy
+            clipping) are still quarantined, with the reason in the error's report.
+            ``False`` quarantines as before; a callable with
+            :func:`foley.repair.repair`'s signature replaces the policy (an ffmpeg one;
+            ``functools.partial(foley.repair.repair, min_status=QCStatus.pass_)`` also
+            declicks clips QC admits with a warning, which are otherwise stored as is).
+        level: Level the clip to a loudness target before storing it: a layer name
+            (``'sfx_fg'`` -25 LUFS, ``'ambience'`` -37 LUFS, … : the WEAVE layer gains
+            under a -16 LUFS voice, see :func:`foley.level.class_target_lufs`) or a LUFS
+            number. ``None`` (default) keeps the generated level.
+        check_prompt: Score the clip against its prompt with the library's text-audio
+            embedder (CLAP) and flag a mismatch in the notes and
+            ``sound.qc['prompt_match']``; ``'unchecked'`` (with the reason) when no
+            capable embedder is available. Default ``True``.
+        intended_use: The :class:`IntendedUse` the clip must serve when an order is
+            walked (default: commercial): a backend whose licence cannot serve it is
+            skipped before anything is paid for. A single named backend is used as
+            asked (its licence is gated downstream by :func:`keep`).
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`GENERATION_AFFORDANCES`).
@@ -714,7 +779,10 @@ def generate(
         GenerationError: If the backend yields no stored sound (QC-quarantined,
             rights-blocked, or a synthesis/ingest error). The message carries the root
             cause and the exception is chained to it; it also carries the full
-            ``report`` and terminal ``status`` so callers can react distinctly.
+            ``report`` and terminal ``status`` so callers can react distinctly, and
+            ``cache_key`` — where the paid bytes are in the generations cache
+            (``foley.generations.get(err.cache_key)``), since they were billed either
+            way (#107).
         SourceConfigurationError: If the backend is not configured (a missing key or
             plan) — the message names the env var and where to get the key.
         UnsupportedParameter: For a meaning-carrying parameter the backend cannot
@@ -725,11 +793,37 @@ def generate(
             not on this machine.
     """
     from .cost import spend_scope
+    from .sources.generate import (
+        default_generate_backend,
+        generate_backend_order,
+        generate_in_order,
+        paid_generation_opted_in,
+    )
 
+    paid_ok = True  # a named backend or order is the caller asking for it
+    if adapter is not None:  # an injected adapter is one backend, named by its config
+        if isinstance(backend, (list, tuple)):
+            raise ValueError("adapter= is one backend: pass a single backend= name")
+        named = (getattr(adapter, "config", None) or {}).get("name")
+        order = (
+            backend
+            if backend not in (None, "", "auto")
+            else named or default_generate_backend(),
+        )
+    elif isinstance(backend, (list, tuple)):
+        order = tuple(backend)  # the caller's own order
+        if not order:
+            raise ValueError("backend= is an empty sequence: name at least one backend")
+    elif backend not in (None, "", "auto"):
+        order = (backend,)  # named: that backend, no fallback
+    else:
+        order, paid_ok = generate_backend_order(), paid_generation_opted_in()
     with spend_scope(budget):
-        report = _generate_backend(
+        report, backend, skipped = generate_in_order(
             prompt,
-            backend=backend,
+            order,
+            paid_ok=paid_ok,
+            intended_use=intended_use,
             library=library,
             store=store,
             adapter=adapter,
@@ -739,9 +833,14 @@ def generate(
             provenance_store=provenance_store,
             on_unsupported=on_unsupported,
             reuse_cached=reuse_cached,
+            repair=repair,
+            level=level,
+            check_prompt=check_prompt,
             **affordances,
         )
     results = report.results
+    if results and skipped:
+        results[0].notes[:0] = [f"generation order: skipped {line}" for line in skipped]
     res = results[0] if results else None
     if res is None:
         raise GenerationError(
@@ -756,18 +855,21 @@ def generate(
         cand = Candidate(sound=lib[res.id], origin=CandidateOrigin.generated)
         return _with_call_facts(cand, res)
     cause = res.error or "; ".join(res.notes) or res.status
+    tried = f" (skipped first: {'; '.join(skipped)})" if skipped else ""
     raise GenerationError(
-        f"generation via {backend!r} yielded no stored sound ({res.status}): {cause}",
+        f"generation via {backend!r} yielded no stored sound ({res.status}): {cause}{tried}",
         report=report,
         status=res.status,
+        cache_key=res.cache_key,
     ) from report.exception
 
 
 def _with_call_facts(candidate, result):
-    """Copy a generation's notes and cost from its ingest result onto the candidate."""
+    """Copy a generation's notes, cost and (for a preview) bytes from its ingest result."""
     candidate.notes = list(result.notes)
     candidate.cost_estimate_usd = result.cost_estimate_usd
     candidate.cost_actual_usd = result.cost_actual_usd
+    candidate.audio_bytes = result.audio_bytes  # set only by store=False (#107)
     return candidate
 
 
@@ -856,8 +958,9 @@ def estimate(verb: str, **kwargs):
             _get(name)
         return estimate_call(SOURCE_REGISTRY[name]["config"])
     if verb == "generate":
-        backend = kwargs.pop("backend", None) or "stable_audio"
-        return estimate_generation(backend, **kwargs)
+        from .sources.generate import estimate_order
+
+        return estimate_order(kwargs.pop("backend", None), **kwargs)
     if verb in ("find", "score"):
         keys = ("max_events", "backend", "llm", "k", "verify", "max_refine_loops")
         kw = {key: kwargs[key] for key in keys if key in kwargs}
@@ -876,15 +979,26 @@ def estimate(verb: str, **kwargs):
 
 
 def __getattr__(name: str):
-    """Lazily expose ``foley.library`` + the #9b disclosure helpers.
+    """Lazily expose ``foley.library``, ``foley.generations`` + the #9b disclosure helpers.
 
     ``library`` is kept lazy so ``import foley`` never constructs the CLAP model or
-    the index; the disclosure helpers are lazy so the (stdlib-only)
+    the index; ``generations`` — the paid-generations cache, a
+    :class:`~foley.stores.GenerationsCache` (``foley.generations.get(key)`` /
+    ``.find(prompt, ...)``, #107) — is resolved through the dispatch path's default so
+    a cache injected there (a test's in-memory one) is the one you read; the
+    disclosure helpers are lazy so the (stdlib-only)
     :mod:`foley.provenance.disclosure` module is not imported until first use,
     keeping the eager ``import foley`` graph minimal.
     """
     if name == "library":
         return default_library()
+    if name == "generations":
+        # A fresh handle each access (cheap: two dol stores over one on-disk cache);
+        # hold it in a variable for repeated use. Resolved through the dispatch path
+        # so an injected default (a test's in-memory cache) is the one you read.
+        from .sources._dispatch import _default_cache
+
+        return _default_cache()
     if name in ("art50_checklist", "scan_prompt", "build_content_credential"):
         from .provenance import disclosure
 

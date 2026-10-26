@@ -18,6 +18,7 @@ run away. This module is stdlib-only (imports only :mod:`foley.base` /
 
 from __future__ import annotations
 
+import math
 import threading
 from dataclasses import dataclass, field
 from enum import Enum
@@ -83,6 +84,11 @@ class Decision:
     reason: str = ""
 
 
+def _known(usd) -> bool:
+    """A cost that can be summed: not ``None`` and finite (a NaN would poison the run)."""
+    return usd is not None and math.isfinite(float(usd))
+
+
 @dataclass
 class Budget:
     """Bounded-cost accounting: per-event loop counts, and a cumulative dollar cap (#57).
@@ -146,7 +152,7 @@ class Budget:
         self, reserved_usd: "Optional[float]", actual_usd: "Optional[float]"
     ) -> None:
         """Replace a reservation with the actual cost (``None`` actual: keep the reservation)."""
-        if actual_usd is None or reserved_usd is None:
+        if not _known(actual_usd) or not _known(reserved_usd):
             return
         with self._lock:
             self._spent_usd += float(actual_usd) - float(reserved_usd)
@@ -162,7 +168,9 @@ class Budget:
             CostApprovalRequired: If the cost is unknown and not approved.
             BudgetExceeded: If spend + ``estimate_usd`` would exceed ``max_usd``.
         """
-        if estimate_usd is None:
+        if not _known(
+            estimate_usd
+        ):  # None, or a NaN/inf estimate: unknown, never summed
             if not self._approves_unknown():
                 raise CostApprovalRequired(
                     f"{what}: its cost is unknown, so it needs approval. Pass "
@@ -183,7 +191,7 @@ class Budget:
             self._add(usd)
 
     def _add(self, usd: "Optional[float]") -> None:
-        if usd is None:
+        if not _known(usd):
             self._unknown_calls += 1
         else:
             self._spent_usd += float(usd)
