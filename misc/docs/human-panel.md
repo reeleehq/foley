@@ -16,7 +16,9 @@ A grade calibration needs at least 3 raters and 50 rated units, and grades that 
 from foley.eval import panel, render_panel_html
 
 tasks, key = panel.grade_tasks([(unit_id, prompt, "renders/u1.wav", "sa3"), ...])
-_, _, blind = panel.save_tasks(tasks, key, "panel/")   # copies every clip to panel/audio/<opaque id>
+_, _, blind = panel.save_tasks(
+    tasks, key, "panel/"
+)  # copies every clip to panel/audio/<opaque id>
 open("panel/index.html", "w").write(render_panel_html(blind, title="Foley fit panel"))
 ```
 
@@ -35,15 +37,23 @@ import dataclasses
 responses = panel.load_responses("panel/responses.jsonl", tasks)
 
 # 2AFC: which system wins?
-print(bradley_terry.fit(panel.pairwise_comparisons(tasks, key, responses), bootstrap=1000).ranking())
+print(
+    bradley_terry.fit(
+        panel.pairwise_comparisons(tasks, key, responses), bootstrap=1000
+    ).ranking()
+)
 
 # MUSHRA: screened mean scores with 95% intervals
 print(panel.mushra_scores(tasks, key, responses))
 
 # Grades: human-human and judge-vs-human α, for the calibration report
 units = panel.rating_units(tasks, key, responses)
-cal = panel.calibrate_against_judge(units, judge_grades)     # {unit: grade} from the fit judge
-report = dataclasses.replace(fit_report, calibration=dataclasses.asdict(cal["judge_vs_human"]))
+cal = panel.calibrate_against_judge(
+    units, judge_grades
+)  # {unit: grade} from the fit judge
+report = dataclasses.replace(
+    fit_report, calibration=dataclasses.asdict(cal["judge_vs_human"])
+)
 ```
 
 `cal["human_alpha"]` is the humans' own agreement: if it is under 0.667, fix the rubric before judging the judge. `cal["judge_vs_human"]` compares the judge with the humans' consensus (the per-unit median), not as one more rater, so many agreeing humans cannot lend it their agreement; `.promoted` is true when it reaches α of 0.8 and `cal["insufficient"]` is empty. `cal["per_rater"]` is the judge against each person alone.
