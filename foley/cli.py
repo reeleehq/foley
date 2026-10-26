@@ -168,6 +168,8 @@ def _cmd_eval_fit(args) -> int:
         seed=args.seed,
         llm=args.llm,
     )
+    if args.update_baseline or args.baseline:
+        return _fit_baseline_command(args, report)
     if args.json:
         import dataclasses
         import json
@@ -190,6 +192,52 @@ def _cmd_eval_fit(args) -> int:
         print(f"floor={args.min_fit_precision:.4f} -> {'PASS' if ok else 'FAIL'}")
         return 0 if ok else 1
     return 0
+
+
+def _fit_baseline_command(args, report) -> int:
+    """``eval-fit --update-baseline`` (re-stamp) or ``--baseline`` (gate against the stamp)."""
+    from .eval.baseline import (
+        DEFAULT_FIT_BASELINE_PATH,
+        check_fit_baseline,
+        load_baseline,
+        write_fit_baseline,
+    )
+    from .eval.golden import DEFAULT_GOLDEN_PATH, RING0_CORPUS_PATH, load_golden
+
+    seed_path = args.golden or DEFAULT_GOLDEN_PATH
+    if args.update_baseline:
+        import datetime
+
+        try:  # keep the golden-set revision label across re-stamps
+            revision = load_baseline(DEFAULT_FIT_BASELINE_PATH)["golden"]["revision"]
+        except (FileNotFoundError, KeyError):  # else the retrieval baseline's label
+            revision = load_baseline()["golden"]["revision"]
+        bl = write_fit_baseline(
+            report,
+            path=DEFAULT_FIT_BASELINE_PATH,
+            level=args.level,
+            sample=args.sample,
+            seed_path=seed_path,
+            manifest_path=RING0_CORPUS_PATH,
+            updated_at=datetime.date.today().isoformat(),
+            n_items=len(load_golden(seed_path)),
+            revision=revision,
+        )
+        print(
+            f"fit baseline updated -> {DEFAULT_FIT_BASELINE_PATH} (value={bl['value']})"
+        )
+        return 0
+    baseline = load_baseline(DEFAULT_FIT_BASELINE_PATH)
+    ok, message = check_fit_baseline(
+        report,
+        baseline,
+        level=args.level,
+        sample=args.sample,
+        seed_path=seed_path,
+        manifest_path=RING0_CORPUS_PATH,
+    )
+    print(f"{message} -> {'PASS' if ok else 'FAIL'}")
+    return 0 if ok else 1
 
 
 def _cmd_search(args) -> int:
@@ -320,6 +368,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_eval_fit.add_argument(
         "--json", action="store_true", help="emit the full FitReport as JSON"
+    )
+    p_eval_fit.add_argument(
+        "--baseline",
+        action="store_true",
+        help="gate against the committed fit baseline (same judge/rung/sample/seed only)",
+    )
+    p_eval_fit.add_argument(
+        "--update-baseline",
+        action="store_true",
+        help="re-stamp the committed fit baseline from this run (a reviewable diff)",
     )
     p_eval_fit.set_defaults(func=_cmd_eval_fit)
 

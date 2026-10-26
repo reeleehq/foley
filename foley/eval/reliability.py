@@ -220,7 +220,18 @@ def calibrate_judge_vs_human(
     if human.ndim == 1:
         human = human[None, :]
     judge = np.asarray(judge_grades, dtype=float)[None, :]
-    data = np.vstack([human, judge])
+    return alpha_result(np.vstack([human, judge]), level=level)
+
+
+def alpha_result(reliability_data, *, level: str = "ordinal") -> AlphaResult:
+    """An :class:`AlphaResult` for any ``(raters × units)`` matrix (``nan`` = missing).
+
+    The one place α, its band and the promotion rule are put together: used for the
+    judge-vs-human matrix here and for human-only agreement in :mod:`foley.eval.panel`.
+    """
+    import numpy as np
+
+    data = np.asarray(reliability_data, dtype=float)
     alpha = krippendorff_alpha(data, level=level)
     n_rated = int(np.sum(np.sum(~np.isnan(data), axis=0) >= 2))
     return AlphaResult(
