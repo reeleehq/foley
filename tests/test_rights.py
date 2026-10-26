@@ -457,6 +457,13 @@ def test_one_intent_cannot_contradict_the_other():
         ("https://creativecommons.org/licenses/by/3.0/de", ("unknown", False)),
         ("Public domain (CC0) except in Germany", ("unknown", False)),
         ("https://www.creativecommons.org/licenses/by/4.0/", ("CC-BY-4.0", True)),
+        ("https://creativecommons.org/licenses/by/4.0/deed.fr", ("CC-BY-4.0", True)),
+        ("https://creativecommons.org/licenses/by/4.0/deed.sa", ("unknown", False)),
+        ("https://creativecommons.org/licenses/by/4.0/deed.nd", ("unknown", False)),
+        ("https://creativecommons.org/licenses/by/4.0/deed.nc", ("CC-BY-NC-4.0", True)),
+        ("https://creativecommons.org/publicdomain/zero/1.0/nc", ("unknown", False)),
+        ("CC0 1.0 / no", ("unknown", False)),
+        ("Public domain (CC0) 1.0/us", ("unknown", False)),
     ],
 )
 def test_a_public_domain_label_that_adds_words_fails_closed(label, expected):
