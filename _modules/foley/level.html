@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=c3e19674"></script>
+    <script src="../../_static/documentation_options.js?v=6799126d"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.58" />
+  <meta name="docsearch:version" content="0.0.59" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -753,7 +753,12 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Layer</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">Meter</span>
 
 <span class="c1">#: What ``level=`` accepts: a layer (or its name) for its class target, or a LUFS value.</span>
 <span class="n">LevelSpec</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">Layer</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
@@ -818,13 +823,14 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="level_bytes">
 <a class="viewcode-back" href="../../_autosummary/foley.level.html#foley.level.level_bytes">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">level_bytes</span><span class="p">(</span>
-    <span class="n">audio_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">LevelSpec</span>
+    <span class="n">audio_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">LevelSpec</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">meter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Meter</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[bytes, Optional[str], Optional[float]]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Scale an encoded clip to ``target`` loudness; return ``(bytes, applied, measured)``.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        audio_bytes: Any clip ``soundfile`` decodes.</span>
 <span class="sd">        target: A layer (its class target) or a LUFS number (see :func:`resolve_target_lufs`).</span>
+<span class="sd">        meter: A :data:`foley.audio.Meter` (default ``pyloudnorm``).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        ``(bytes, applied, measured_lufs)``: the levelled clip re-encoded in foley's FLAC</span>
@@ -845,7 +851,7 @@ window.runMermaid = runMermaid;</script>
 
     <span class="n">target_lufs</span> <span class="o">=</span> <span class="n">resolve_target_lufs</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
     <span class="n">wav</span><span class="p">,</span> <span class="n">sr</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="n">audio_bytes</span><span class="p">)</span>
-    <span class="n">gain</span><span class="p">,</span> <span class="n">measured</span> <span class="o">=</span> <span class="n">loudness_gain_db</span><span class="p">(</span><span class="n">wav</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">target_lufs</span><span class="o">=</span><span class="n">target_lufs</span><span class="p">)</span>
+    <span class="n">gain</span><span class="p">,</span> <span class="n">measured</span> <span class="o">=</span> <span class="n">loudness_gain_db</span><span class="p">(</span><span class="n">wav</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">target_lufs</span><span class="o">=</span><span class="n">target_lufs</span><span class="p">,</span> <span class="n">meter</span><span class="o">=</span><span class="n">meter</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">measured</span> <span class="o">&lt;=</span> <span class="n">LUFS_GATE_FLOOR</span><span class="p">:</span>  <span class="c1"># too short or too quiet to measure: left alone</span>
         <span class="k">return</span> <span class="n">audio_bytes</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
     <span class="n">levelled</span> <span class="o">=</span> <span class="n">wav</span> <span class="o">*</span> <span class="p">(</span><span class="mf">10.0</span> <span class="o">**</span> <span class="p">(</span><span class="n">gain</span> <span class="o">/</span> <span class="mf">20.0</span><span class="p">))</span>
@@ -888,6 +894,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">peak_ceiling_dbfs</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">REFERENCE_PEAK_CEILING_DBFS</span><span class="p">,</span>
     <span class="n">short_peak_dbfs</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">SHORT_CLIP_PEAK_DBFS</span><span class="p">,</span>
     <span class="n">max_boost_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">MAX_REFERENCE_BOOST_DB</span><span class="p">,</span>
+    <span class="n">meter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Meter</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The gain (dB) that brings ``clip`` to the reference loudness; ``0.0`` if it cannot.</span>
 
@@ -903,6 +910,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        sample_rate: Sample rate in Hz.</span>
 <span class="sd">        reference_lufs: The loudness every clip is brought to (default: foley's</span>
 <span class="sd">            reference programme loudness, :data:`foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).</span>
+<span class="sd">        meter: A :data:`foley.audio.Meter` (default ``pyloudnorm``).</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_LOUDNESS_TARGET_LUFS</span><span class="p">,</span> <span class="n">loudness_gain_db</span>
 
@@ -916,6 +924,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">peak_ceiling_dbfs</span><span class="o">=</span><span class="n">peak_ceiling_dbfs</span><span class="p">,</span>
             <span class="n">short_peak_dbfs</span><span class="o">=</span><span class="n">short_peak_dbfs</span><span class="p">,</span>
             <span class="n">max_boost_db</span><span class="o">=</span><span class="n">max_boost_db</span><span class="p">,</span>
+            <span class="n">meter</span><span class="o">=</span><span class="n">meter</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
         <span class="c1"># The render must not die on one clip the meter cannot read (more than five</span>

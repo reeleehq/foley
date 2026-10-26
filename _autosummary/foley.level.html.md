@@ -44,7 +44,7 @@ functions.
 
 | [`class_target_lufs`](#foley.level.class_target_lufs)(layer)                        | The integrated-loudness target (LUFS) for a clip of `layer`.                                                                         |
 |--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| [`level_bytes`](#foley.level.level_bytes)(audio_bytes, target)                | Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.                                                     |
+| [`level_bytes`](#foley.level.level_bytes)(audio_bytes, target, \*[, meter])   | Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.                                                     |
 | [`reference_gain_db`](#foley.level.reference_gain_db)(clip, sample_rate, \*[, ...]) | The gain (dB) that brings `clip` to the reference loudness; `0.0` if it cannot.                                                      |
 | [`require_loudness_meter`](#foley.level.require_loudness_meter)()                        | Raise `ImportError` (with the install line) when `pyloudnorm` is missing.                                                            |
 | [`resolve_target_lufs`](#foley.level.resolve_target_lufs)(spec)                       | A `level=` value as a LUFS target: a number as is, a layer via [`class_target_lufs()`](#foley.level.class_target_lufs). |
@@ -92,13 +92,14 @@ module docstring), so it moves with both SSOTs.
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
-### foley.level.level_bytes(audio_bytes, target)
+### foley.level.level_bytes(audio_bytes, target, , meter=None)
 
 Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.
 
 * **Parameters:**
   * **audio_bytes** ([`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)) – Any clip `soundfile` decodes.
   * **target** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`Layer`](foley.base.html.md#foley.base.Layer), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float), [`int`](https://docs.python.org/3/builtins/functions.html#int)]) – A layer (its class target) or a LUFS number (see [`resolve_target_lufs()`](#foley.level.resolve_target_lufs)).
+  * **meter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[ndarray, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – A [`foley.audio.Meter`](foley.audio.html.md#foley.audio.Meter) (default `pyloudnorm`).
 * **Returns:**
   the levelled clip re-encoded in foley’s FLAC
   archive form and a one-line account of the gain applied (for the licence’s
@@ -107,7 +108,7 @@ Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]
 
-### foley.level.reference_gain_db(clip, sample_rate, , reference_lufs=None, peak_ceiling_dbfs=-1.0, short_peak_dbfs=-6.0, max_boost_db=36.0)
+### foley.level.reference_gain_db(clip, sample_rate, , reference_lufs=None, peak_ceiling_dbfs=-1.0, short_peak_dbfs=-6.0, max_boost_db=36.0, meter=None)
 
 The gain (dB) that brings `clip` to the reference loudness; `0.0` if it cannot.
 
@@ -123,6 +124,7 @@ clip’s sample peak stays at or under `peak_ceiling_dbfs` and the boost at
   * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
   * **reference_lufs** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The loudness every clip is brought to (default: foley’s
     reference programme loudness, `foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).
+  * **meter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[ndarray, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – A [`foley.audio.Meter`](foley.audio.html.md#foley.audio.Meter) (default `pyloudnorm`).
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
 

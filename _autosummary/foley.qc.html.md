@@ -12,7 +12,7 @@ Zero-dependency import contract:
 : This module imports **stdlib only** at the top level. `numpy` is
   lazy-imported inside each function body (like `foley.audio`), so
   `import foley.qc` succeeds on a bare install with no scientific stack.
-  [`measure_lufs()`](#foley.qc.measure_lufs) additionally lazy-imports `pyloudnorm` and returns
+  The [`measure_lufs()`](#foley.qc.measure_lufs) meter (`pyloudnorm`, via [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs)) is lazy and it returns
   `None` when it (or a measurable clip) is absent; everything else is
   numpy-only.
 
@@ -45,7 +45,7 @@ sound_record.qc = report.to_dict()   # becomes filterable metadata
 | [`has_nan_inf`](#foley.qc.has_nan_inf)(samples)                            | Return `True` if any sample is `NaN` or `Inf` (corrupt-clip guard).                                                                                                            |
 | [`is_below`](#foley.qc.is_below)(status[, min_status])                  | True when `status` is worse than the admission floor `min_status`.                                                                                                             |
 | [`is_silent`](#foley.qc.is_silent)(samples, \*[, rms_floor_dbfs])        | Return `True` when whole-clip RMS falls below `rms_floor_dbfs`.                                                                                                                |
-| [`measure_lufs`](#foley.qc.measure_lufs)(samples, sample_rate, \*[, ...])   | Integrated loudness (LUFS, ITU-R BS.1770-4) via `pyloudnorm` (lazy).                                                                                                           |
+| [`measure_lufs`](#foley.qc.measure_lufs)(samples, sample_rate, \*[, ...])   | Integrated loudness (LUFS, ITU-R BS.1770-4) via [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs).                    |
 | [`needs_edge_fade`](#foley.qc.needs_edge_fade)(samples, \*[, rel_peak_dbfs])   | Return `True` when the first or last sample sits above `rel_peak_dbfs` relative to the clip peak — i.e. a nonzero boundary that clicks under narration and needs a short fade. |
 | [`run_qc`](#foley.qc.run_qc)(samples, sample_rate, \*[, thresholds])  | Run every Tier-0 check and fold the results into a [`QCReport`](#foley.qc.QCReport).                                                                  |
 | [`true_peak_dbtp`](#foley.qc.true_peak_dbtp)(samples, sample_rate, \*[, ...]) | Inter-sample true-peak level in dBTP.                                                                                                                                          |
@@ -206,9 +206,11 @@ A zero (exactly silent) clip has RMS `0` -> `-inf` dBFS -> `True`.
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
-### foley.qc.measure_lufs(samples, sample_rate, , gate_floor_lufs=-70.0, min_block_s=0.4)
+### foley.qc.measure_lufs(samples, sample_rate, , gate_floor_lufs=-70.0, min_block_s=0.4, meter=None)
 
-Integrated loudness (LUFS, ITU-R BS.1770-4) via `pyloudnorm` (lazy).
+Integrated loudness (LUFS, ITU-R BS.1770-4) via [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs).
+
+The one meter (`pyloudnorm` by default, lazy; `meter` swaps it).
 
 Returns `None` when `pyloudnorm` is unavailable, the clip is shorter than
 one gating block (`min_block_s`), the samples are non-finite, or the

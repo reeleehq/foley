@@ -9,6 +9,7 @@ foley.audio
    .. autosummary::
    
       AudioSource
+      Meter
    
    .. rubric:: Functions
 
@@ -22,6 +23,7 @@ foley.audio
       load
       loudness_gain_db
       loudness_normalize
+      pyloudnorm_meter
       resample
       save
       to_mono

@@ -19,8 +19,8 @@ errors, so weaving never depends on it. `ffmpeg` is a WEAVE system requirement (
 
 ### Functions
 
-| [`master`](#foley.weave.master.master)(mix, sample_rate, profile, \*[, engine])   | Master `mix` to `profile` — LUFS-normalise then true-peak-limit (report 06 §5).   |
-|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| [`master`](#foley.weave.master.master)(mix, sample_rate, profile, \*[, ...])   | Master `mix` to `profile` — LUFS-normalise then true-peak-limit (report 06 §5).   |
+|-------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
 
 ### Classes
 
@@ -40,7 +40,7 @@ Return the plain-dict form (for `WeaveResult.master_report` / obs).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.weave.master.master(mix, sample_rate, profile, , engine='auto')
+### foley.weave.master.master(mix, sample_rate, profile, , engine='auto', limiter=None, meter=None)
 
 Master `mix` to `profile` — LUFS-normalise then true-peak-limit (report 06 §5).
 
@@ -51,6 +51,11 @@ Master `mix` to `profile` — LUFS-normalise then true-peak-limit (report 06 §5
   * **engine** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `'auto'`/`'inprocess'` master in-process (default, portable). `'ffmpeg'`
     uses the two-pass `ffmpeg loudnorm` “guarantee the numbers” master (report 06
     §5.4) and **fails safe** back to in-process if ffmpeg is unavailable or errors.
+  * **limiter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int), [`float`](https://docs.python.org/3/builtins/functions.html#float)], `ndarray`]]) – The in-process true-peak stage (a `Limiter`, `(mix, sample_rate,
+    ceiling_db) -> mix`; default: a static true-peak-safe scale). The seam for a
+    lookahead limiter (foley#91). In-process engine only; the true peak in the
+    report is always measured here, never taken from the limiter.
+  * **meter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – A [`foley.audio.Meter`](foley.audio.html.md#foley.audio.Meter) for the loudness stages (default `pyloudnorm`).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`MasterReport`](#foley.weave.master.MasterReport)]
 * **Returns:**

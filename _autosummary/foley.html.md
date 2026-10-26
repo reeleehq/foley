@@ -82,7 +82,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`true_peak_dbtp`](#foley.true_peak_dbtp)(samples, sample_rate, \*[, ...])     | Inter-sample true-peak level in dBTP.                                                                                                                                          |
 | [`estimate_snr`](#foley.estimate_snr)(samples, sample_rate, \*[, ...])       | Estimate SNR in dB (advisory — a busy-street SFX legitimately scores low).                                                                                                     |
 | [`needs_edge_fade`](#foley.needs_edge_fade)(samples, \*[, rel_peak_dbfs])       | Return `True` when the first or last sample sits above `rel_peak_dbfs` relative to the clip peak — i.e. a nonzero boundary that clicks under narration and needs a short fade. |
-| [`measure_lufs`](#foley.measure_lufs)(samples, sample_rate, \*[, ...])       | Integrated loudness (LUFS, ITU-R BS.1770-4) via `pyloudnorm` (lazy).                                                                                                           |
+| [`measure_lufs`](#foley.measure_lufs)(samples, sample_rate, \*[, ...])       | Integrated loudness (LUFS, ITU-R BS.1770-4) via [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs).                    |
 | [`load`](#foley.load)(src, \*[, target_sr, mono, dtype])             | Decode audio into a float working array.                                                                                                                                       |
 | [`save`](#foley.save)(samples, sample_rate, dst, \*[, fmt, ...])     | Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).                                                                                                          |
 | [`encode`](#foley.encode)(samples, sample_rate, \*[, fmt, subtype])    | Encode `samples` fully in memory and return the container bytes.                                                                                                               |
@@ -2876,7 +2876,7 @@ Decode audio into a float working array.
 
 Lazy dependencies: `soundfile` (and `soxr` when `target_sr` differs).
 
-### foley.loudness_normalize(samples, sample_rate, , target_lufs=-16.0, peak_ceiling_dbfs=-1.0, min_block_s=0.4)
+### foley.loudness_normalize(samples, sample_rate, , target_lufs=-16.0, peak_ceiling_dbfs=-1.0, min_block_s=0.4, meter=None)
 
 Loudness-normalize to `target_lufs`, then keep it peak-safe.
 
@@ -2901,6 +2901,7 @@ gunshots).
     oversampled measurement.
   * **min_block_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Minimum clip length (seconds) that can be loudness-measured;
     shorter clips are returned unchanged with `measured = -inf`.
+  * **meter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – A `Meter` (default `pyloudnorm`).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 * **Returns:**
@@ -3034,9 +3035,11 @@ injectable library / runtime / byte-store, and hands the resolved tool functions
 * **Returns:**
   A `fastmcp.FastMCP` server.
 
-### foley.measure_lufs(samples, sample_rate, , gate_floor_lufs=-70.0, min_block_s=0.4)
+### foley.measure_lufs(samples, sample_rate, , gate_floor_lufs=-70.0, min_block_s=0.4, meter=None)
 
-Integrated loudness (LUFS, ITU-R BS.1770-4) via `pyloudnorm` (lazy).
+Integrated loudness (LUFS, ITU-R BS.1770-4) via [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs).
+
+The one meter (`pyloudnorm` by default, lazy; `meter` swaps it).
 
 Returns `None` when `pyloudnorm` is unavailable, the clip is shorter than
 one gating block (`min_block_s`), the samples are non-finite, or the

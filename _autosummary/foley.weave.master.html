@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=c3e19674"></script>
+    <script src="../_static/documentation_options.js?v=6799126d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.58" />
+  <meta name="docsearch:version" content="0.0.59" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -506,7 +506,7 @@ errors, so weaving never depends on it. <code class="docutils literal notranslat
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.master.master" title="foley.weave.master.master"><code class="xref py py-obj docutils literal notranslate"><span class="pre">master</span></code></a>(mix, sample_rate, profile, *[, engine])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.master.master" title="foley.weave.master.master"><code class="xref py py-obj docutils literal notranslate"><span class="pre">master</span></code></a>(mix, sample_rate, profile, *[, ...])</p></td>
 <td><p>Master <code class="docutils literal notranslate"><span class="pre">mix</span></code> to <code class="docutils literal notranslate"><span class="pre">profile</span></code> — LUFS-normalise then true-peak-limit (report 06 §5).</p></td>
 </tr>
 </tbody>
@@ -543,7 +543,7 @@ errors, so weaving never depends on it. <code class="docutils literal notranslat
 
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.weave.master.master">
-<span class="sig-prename descclassname"><span class="pre">foley.weave.master.</span></span><span class="sig-name descname"><span class="pre">master</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/master.html#master"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.master.master" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">foley.weave.master.</span></span><span class="sig-name descname"><span class="pre">master</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/master.html#master"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.master.master" title="Link to this definition">#</a></dt>
 <dd><p>Master <code class="docutils literal notranslate"><span class="pre">mix</span></code> to <code class="docutils literal notranslate"><span class="pre">profile</span></code> — LUFS-normalise then true-peak-limit (report 06 §5).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -554,6 +554,11 @@ errors, so weaving never depends on it. <code class="docutils literal notranslat
 <li><p><strong>engine</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – <code class="docutils literal notranslate"><span class="pre">'auto'</span></code>/<code class="docutils literal notranslate"><span class="pre">'inprocess'</span></code> master in-process (default, portable). <code class="docutils literal notranslate"><span class="pre">'ffmpeg'</span></code>
 uses the two-pass <code class="docutils literal notranslate"><span class="pre">ffmpeg</span> <span class="pre">loudnorm</span></code> “guarantee the numbers” master (report 06
 §5.4) and <strong>fails safe</strong> back to in-process if ffmpeg is unavailable or errors.</p></li>
+<li><p><strong>limiter</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]</span>) – The in-process true-peak stage (a <code class="xref py py-data docutils literal notranslate"><span class="pre">Limiter</span></code>, <code class="docutils literal notranslate"><span class="pre">(mix,</span> <span class="pre">sample_rate,</span>
+<span class="pre">ceiling_db)</span> <span class="pre">-&gt;</span> <span class="pre">mix</span></code>; default: a static true-peak-safe scale). The seam for a
+lookahead limiter (foley#91). In-process engine only; the true peak in the
+report is always measured here, never taken from the limiter.</p></li>
+<li><p><strong>meter</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>], <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span>) – A <a class="reference internal" href="foley.audio.html#foley.audio.Meter" title="foley.audio.Meter"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.audio.Meter</span></code></a> for the loudness stages (default <code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code>).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
