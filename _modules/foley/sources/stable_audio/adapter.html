@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=6799126d"></script>
+    <script src="../../../../_static/documentation_options.js?v=4d22d5b7"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.59" />
+  <meta name="docsearch:version" content="0.0.60" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -917,13 +917,14 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="StableAudioAdapter.invoke_native">
 <a class="viewcode-back" href="../../../../_autosummary/foley.sources.stable_audio.adapter.html#foley.sources.stable_audio.adapter.StableAudioAdapter.invoke_native">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">invoke_native</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">native</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Run the pipeline with native kwargs and return ``(encoded_bytes, sample_rate)``.</span>
+<span class="w">        </span><span class="sd">"""Run the pipeline with native kwargs; return ``(encoded_bytes, sample_rate)``.</span>
 
 <span class="sd">        The public entry below foley's translation (#61): ``native`` goes to the</span>
 <span class="sd">        ``StableAudioPipeline`` call as is (``guidance_scale``, ``audio_end_in_s``, …).</span>
 <span class="sd">        No licence record is built and no dispatch-layer check runs (cost, egress): a</span>
-<span class="sd">        caller of this method owns those. Builds a per-device ``torch.Generator`` only when ``seed`` is set (so a</span>
-<span class="sd">        ``seed=None`` generation never imports torch — the fake-pipeline test path).</span>
+<span class="sd">        caller of this method owns those. Builds a per-device ``torch.Generator`` only</span>
+<span class="sd">        when ``seed`` is set (so a ``seed=None`` generation never imports torch — the</span>
+<span class="sd">        fake-pipeline test path).</span>
 <span class="sd">        """</span>
         <span class="n">pipe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="p">()</span>
         <span class="n">generator</span> <span class="o">=</span> <span class="kc">None</span>

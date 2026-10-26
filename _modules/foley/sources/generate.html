@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=6799126d"></script>
+    <script src="../../../_static/documentation_options.js?v=4d22d5b7"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.59" />
+  <meta name="docsearch:version" content="0.0.60" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -755,6 +755,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Candidate</span><span class="p">,</span> <span class="n">CandidateOrigin</span>
@@ -1393,6 +1394,30 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">prices</span><span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_unwrap_own_entry</span><span class="p">(</span><span class="n">provider_params</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The flat params for the one backend ``name`` (a ``{name: {...}}`` is unwrapped).</span>
+
+<span class="sd">    A wrapper naming another registered source raises rather than send its params to</span>
+<span class="sd">    ``name``.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
+
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="n">wrappers</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">k</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">provider_params</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">k</span> <span class="o">==</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">SOURCE_REGISTRY</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">wrappers</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">provider_params</span>
+    <span class="k">if</span> <span class="n">wrappers</span> <span class="o">==</span> <span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">provider_params</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">provider_params</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"provider_params names backend(s) </span><span class="si">{</span><span class="n">wrappers</span><span class="si">}</span><span class="s2"> but the generation is for "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: give a flat dict of native names, or just </span><span class="se">{{</span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: </span><span class="se">{{</span><span class="s2">...</span><span class="se">}}}}</span><span class="s2">"</span>
+    <span class="p">)</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">provider_params_by_backend</span><span class="p">(</span>
     <span class="n">provider_params</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">per_backend</span><span class="p">:</span> <span class="nb">bool</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"dict[str, dict]"</span><span class="p">:</span>
@@ -1402,7 +1427,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    backend (``per_backend``: ``backend`` unnamed, ``'auto'`` or a list) takes them as</span>
 <span class="sd">    ``{backend_name: {native_name: value}}`` and hands each backend only its own; a</span>
 <span class="sd">    flat dict there raises rather than send one vendor's params to another. A single</span>
-<span class="sd">    named backend takes the flat dict. Each backend's params are checked against its</span>
+<span class="sd">    named backend takes the flat dict </span>
+<span class="sd">    (or its own ``{name: {...}}``, unwrapped). Each backend's params are checked against its</span>
 <span class="sd">    config's ``provider_params`` policy here, before any backend is called.</span>
 
 <span class="sd">    &gt;&gt;&gt; provider_params_by_backend({"steps": 8}, ("x",), per_backend=False)</span>
@@ -1418,21 +1444,16 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        ValueError: For a flat dict where a per-backend one is needed, a backend not</span>
 <span class="sd">            in ``order``, or a key the backend's policy refuses.</span>
 <span class="sd">    """</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
-
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_provider_params</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_provider_params</span><span class="p">,</span> <span class="n">require_params_mapping</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
 
     <span class="k">if</span> <span class="n">provider_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">provider_params</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"provider_params must be a mapping, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">provider_params</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
-        <span class="p">)</span>
+    <span class="n">require_params_mapping</span><span class="p">(</span><span class="n">provider_params</span><span class="p">)</span>
     <span class="n">order</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">per_backend</span><span class="p">:</span>
         <span class="p">(</span><span class="n">name</span><span class="p">,)</span> <span class="o">=</span> <span class="n">order</span>
-        <span class="n">by_backend</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">provider_params</span><span class="p">}</span>
+        <span class="n">by_backend</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">_unwrap_own_entry</span><span class="p">(</span><span class="n">provider_params</span><span class="p">,</span> <span class="n">name</span><span class="p">)}</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">flat</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">k</span>

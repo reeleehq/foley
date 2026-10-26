@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=6799126d"></script>
+    <script src="../_static/documentation_options.js?v=4d22d5b7"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.59" />
+  <meta name="docsearch:version" content="0.0.60" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -606,12 +606,13 @@ in <code class="docutils literal notranslate"><span class="pre">generation_param
 <dl class="py method">
 <dt class="sig sig-object py" id="foley.sources.stable_audio.adapter.StableAudioAdapter.invoke_native">
 <span class="sig-name descname"><span class="pre">invoke_native</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">native</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/stable_audio/adapter.html#StableAudioAdapter.invoke_native"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.stable_audio.adapter.StableAudioAdapter.invoke_native" title="Link to this definition">#</a></dt>
-<dd><p>Run the pipeline with native kwargs and return <code class="docutils literal notranslate"><span class="pre">(encoded_bytes,</span> <span class="pre">sample_rate)</span></code>.</p>
+<dd><p>Run the pipeline with native kwargs; return <code class="docutils literal notranslate"><span class="pre">(encoded_bytes,</span> <span class="pre">sample_rate)</span></code>.</p>
 <p>The public entry below foley’s translation (#61): <code class="docutils literal notranslate"><span class="pre">native</span></code> goes to the
 <code class="docutils literal notranslate"><span class="pre">StableAudioPipeline</span></code> call as is (<code class="docutils literal notranslate"><span class="pre">guidance_scale</span></code>, <code class="docutils literal notranslate"><span class="pre">audio_end_in_s</span></code>, …).
 No licence record is built and no dispatch-layer check runs (cost, egress): a
-caller of this method owns those. Builds a per-device <code class="docutils literal notranslate"><span class="pre">torch.Generator</span></code> only when <code class="docutils literal notranslate"><span class="pre">seed</span></code> is set (so a
-<code class="docutils literal notranslate"><span class="pre">seed=None</span></code> generation never imports torch — the fake-pipeline test path).</p>
+caller of this method owns those. Builds a per-device <code class="docutils literal notranslate"><span class="pre">torch.Generator</span></code> only
+when <code class="docutils literal notranslate"><span class="pre">seed</span></code> is set (so a <code class="docutils literal notranslate"><span class="pre">seed=None</span></code> generation never imports torch — the
+fake-pipeline test path).</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>

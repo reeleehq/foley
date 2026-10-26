@@ -93,10 +93,11 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
 
 #### invoke_native(prompt, , native, seed=None)
 
-Run the pipeline with native kwargs and return `(encoded_bytes, sample_rate)`.
+Run the pipeline with native kwargs; return `(encoded_bytes, sample_rate)`.
 
 The public entry below foley’s translation (#61): `native` goes to the
 `StableAudioPipeline` call as is (`guidance_scale`, `audio_end_in_s`, …).
 No licence record is built and no dispatch-layer check runs (cost, egress): a
-caller of this method owns those. Builds a per-device `torch.Generator` only when `seed` is set (so a
-`seed=None` generation never imports torch — the fake-pipeline test path).
+caller of this method owns those. Builds a per-device `torch.Generator` only
+when `seed` is set (so a `seed=None` generation never imports torch — the
+fake-pipeline test path).

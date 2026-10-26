@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=6799126d"></script>
+    <script src="../_static/documentation_options.js?v=4d22d5b7"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.59" />
+  <meta name="docsearch:version" content="0.0.60" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -539,55 +539,58 @@ so the derived permission flags stay single-sourced.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.check_provider_params" title="foley.sources.base.check_provider_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_provider_params</span></code></a>([provider_params, policy])</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">provider_params</span></code> as a plain dict, checked against a source's <code class="docutils literal notranslate"><span class="pre">policy</span></code> (#61).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.merge_provider_params" title="foley.sources.base.merge_provider_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_provider_params</span></code></a>(native[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.require_params_mapping" title="foley.sources.base.require_params_mapping"><code class="xref py py-obj docutils literal notranslate"><span class="pre">require_params_mapping</span></code></a>(provider_params)</p></td>
+<td><p>Raise <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> unless <code class="docutils literal notranslate"><span class="pre">provider_params</span></code> is a mapping (#61).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.merge_provider_params" title="foley.sources.base.merge_provider_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_provider_params</span></code></a>(native[, ...])</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">native</span></code> with the caller's vendor-native <code class="docutils literal notranslate"><span class="pre">provider_params</span></code> merged on top (#61).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.recorded_params" title="foley.sources.base.recorded_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">recorded_params</span></code></a>(sent[, provider_params])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.recorded_params" title="foley.sources.base.recorded_params"><code class="xref py py-obj docutils literal notranslate"><span class="pre">recorded_params</span></code></a>(sent[, provider_params])</p></td>
 <td><p>The <code class="docutils literal notranslate"><span class="pre">generation_params</span></code> a generator records: the native params it <code class="docutils literal notranslate"><span class="pre">sent</span></code> (provider params already merged in), plus a <code class="docutils literal notranslate"><span class="pre">provider_params</span></code> entry listing what the caller supplied, when anything was (#61).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.native_adherence" title="foley.sources.base.native_adherence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">native_adherence</span></code></a>(config, prompt_influence, notes)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.native_adherence" title="foley.sources.base.native_adherence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">native_adherence</span></code></a>(config, prompt_influence, notes)</p></td>
 <td><p>Map foley's unified <code class="docutils literal notranslate"><span class="pre">prompt_influence</span></code> (0..1) onto a source's native scale.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.resolve_source_key" title="foley.sources.base.resolve_source_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_source_key</span></code></a>(config[, api_key])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.resolve_source_key" title="foley.sources.base.resolve_source_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_source_key</span></code></a>(config[, api_key])</p></td>
 <td><p>A source's API token: <code class="docutils literal notranslate"><span class="pre">api_key</span></code>, else a bound key, else its env var(s).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.using_source_accounts" title="foley.sources.base.using_source_accounts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">using_source_accounts</span></code></a>(**accounts)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.using_source_accounts" title="foley.sources.base.using_source_accounts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">using_source_accounts</span></code></a>(**accounts)</p></td>
 <td><p>Bind per-request source accounts (a key, and what goes with it) for a <code class="docutils literal notranslate"><span class="pre">with</span></code> block.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.bound_source_account" title="foley.sources.base.bound_source_account"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bound_source_account</span></code></a>(source)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.bound_source_account" title="foley.sources.base.bound_source_account"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bound_source_account</span></code></a>(source)</p></td>
 <td><p>The account bound for <code class="docutils literal notranslate"><span class="pre">source</span></code> in this context, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when no key is bound.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.key_fingerprint" title="foley.sources.base.key_fingerprint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">key_fingerprint</span></code></a>(key)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.key_fingerprint" title="foley.sources.base.key_fingerprint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">key_fingerprint</span></code></a>(key)</p></td>
 <td><p>A short, one-way id for an API key: tells accounts apart without keeping the key.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.source_account_id" title="foley.sources.base.source_account_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">source_account_id</span></code></a>(config[, api_key])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.source_account_id" title="foley.sources.base.source_account_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">source_account_id</span></code></a>(config[, api_key])</p></td>
 <td><p>Which account a call to the source is made on: <code class="docutils literal notranslate"><span class="pre">'operator'</span></code>, or a key's fingerprint.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.bulk_license" title="foley.sources.base.bulk_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bulk_license</span></code></a>(*, source, license_id, ...[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.bulk_license" title="foley.sources.base.bulk_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bulk_license</span></code></a>(*, source, license_id, ...[, ...])</p></td>
 <td><p>Build a bulk-acquisition <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>, flags derived.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.per_clip_license_meta" title="foley.sources.base.per_clip_license_meta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">per_clip_license_meta</span></code></a>(license_url, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.per_clip_license_meta" title="foley.sources.base.per_clip_license_meta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">per_clip_license_meta</span></code></a>(license_url, *[, ...])</p></td>
 <td><p>The <code class="docutils literal notranslate"><span class="pre">ClipSpec.meta</span></code> rights fields for a clip that carries its own CC licence.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.license_from_clip_meta" title="foley.sources.base.license_from_clip_meta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">license_from_clip_meta</span></code></a>(source, spec)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.license_from_clip_meta" title="foley.sources.base.license_from_clip_meta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">license_from_clip_meta</span></code></a>(source, spec)</p></td>
 <td><p>Build a clip's rights record from <a class="reference internal" href="#foley.sources.base.per_clip_license_meta" title="foley.sources.base.per_clip_license_meta"><code class="xref py py-func docutils literal notranslate"><span class="pre">per_clip_license_meta()</span></code></a> fields (fail-closed).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.api_license" title="foley.sources.base.api_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">api_license</span></code></a>(*, source, license_id, ...[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.api_license" title="foley.sources.base.api_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">api_license</span></code></a>(*, source, license_id, ...[, ...])</p></td>
 <td><p>Build an API-acquisition <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>, flags derived.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.generated_license" title="foley.sources.base.generated_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generated_license</span></code></a>(*, source, license_id, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.generated_license" title="foley.sources.base.generated_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generated_license</span></code></a>(*, source, license_id, ...)</p></td>
 <td><p>Build an AI-generated <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>, flags derived + provenance stamped.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.register_corpus" title="foley.sources.base.register_corpus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_corpus</span></code></a>(adapter)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.register_corpus" title="foley.sources.base.register_corpus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_corpus</span></code></a>(adapter)</p></td>
 <td><p>Register <code class="docutils literal notranslate"><span class="pre">adapter</span></code> in <a class="reference internal" href="#foley.sources.base.CORPUS_REGISTRY" title="foley.sources.base.CORPUS_REGISTRY"><code class="xref py py-data docutils literal notranslate"><span class="pre">CORPUS_REGISTRY</span></code></a> (idempotent) and return it.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.ring_of" title="foley.sources.base.ring_of"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ring_of</span></code></a>(name)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.ring_of" title="foley.sources.base.ring_of"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ring_of</span></code></a>(name)</p></td>
 <td><p>Return the ring of the registered corpus <code class="docutils literal notranslate"><span class="pre">name</span></code> (raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.corpora_in_rings" title="foley.sources.base.corpora_in_rings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">corpora_in_rings</span></code></a>(rings)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.corpora_in_rings" title="foley.sources.base.corpora_in_rings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">corpora_in_rings</span></code></a>(rings)</p></td>
 <td><p>Registered adapters whose ring is in <code class="docutils literal notranslate"><span class="pre">rings</span></code> (sorted by name).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.select_corpora" title="foley.sources.base.select_corpora"><code class="xref py py-obj docutils literal notranslate"><span class="pre">select_corpora</span></code></a>(*[, rings, corpora])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.select_corpora" title="foley.sources.base.select_corpora"><code class="xref py py-obj docutils literal notranslate"><span class="pre">select_corpora</span></code></a>(*[, rings, corpora])</p></td>
 <td><p>Resolve the adapters a bootstrap run should touch.</p></td>
 </tr>
 </tbody>
@@ -1326,6 +1329,17 @@ the caller supplied, when anything was (#61).</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.base.require_params_mapping">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">require_params_mapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">provider_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#require_params_mapping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.require_params_mapping" title="Link to this definition">#</a></dt>
+<dd><p>Raise <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> unless <code class="docutils literal notranslate"><span class="pre">provider_params</span></code> is a mapping (#61).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.base.resolve_source_key">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">resolve_source_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#resolve_source_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.resolve_source_key" title="Link to this definition">#</a></dt>
 <dd><p>A source’s API token: <code class="docutils literal notranslate"><span class="pre">api_key</span></code>, else a bound key, else its env var(s).</p>
@@ -1518,6 +1532,7 @@ block the operator’s key and plan apply again.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.per_clip_license_meta"><code class="docutils literal notranslate"><span class="pre">per_clip_license_meta()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.recorded_params"><code class="docutils literal notranslate"><span class="pre">recorded_params()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.register_corpus"><code class="docutils literal notranslate"><span class="pre">register_corpus()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.require_params_mapping"><code class="docutils literal notranslate"><span class="pre">require_params_mapping()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.resolve_source_key"><code class="docutils literal notranslate"><span class="pre">resolve_source_key()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.ring_of"><code class="docutils literal notranslate"><span class="pre">ring_of()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.select_corpora"><code class="docutils literal notranslate"><span class="pre">select_corpora()</span></code></a></li>

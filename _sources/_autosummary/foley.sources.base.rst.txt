@@ -16,6 +16,7 @@ foley.sources.base
    
       check_prompt_influence
       check_provider_params
+      require_params_mapping
       merge_provider_params
       recorded_params
       native_adherence
