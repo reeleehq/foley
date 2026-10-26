@@ -896,6 +896,18 @@ def _levelled_bytes(
     return levelled, fact
 
 
+@functools.lru_cache(maxsize=1)
+def _small_host_embedder():
+    """The ONNX CLAP embedder (:mod:`foley.index.onnx_clap`), or ``None`` without its extra."""
+    import importlib.util
+
+    if any(importlib.util.find_spec(m) is None for m in ("onnxruntime", "tokenizers")):
+        return None
+    from ..index.onnx_clap import OnnxClapEmbedder
+
+    return OnnxClapEmbedder()
+
+
 def _prompt_verdict(prompt, audio_bytes, library, notes: list) -> dict:
     """The prompt-match verdict for the clip (:func:`foley.prompt_match.prompt_match`), noted."""
     from ..prompt_match import UNCHECKED, note_for, prompt_match
@@ -903,12 +915,20 @@ def _prompt_verdict(prompt, audio_bytes, library, notes: list) -> dict:
     try:
         embedder = library.embedder
     except Exception as exc:  # noqa: BLE001 - no embedder here: say so
-        match = {
-            "status": UNCHECKED,
-            "reason": f"no embedder: {type(exc).__name__}: {exc}",
-        }
+        embedder = None
+        reason = f"no embedder: {type(exc).__name__}: {exc}"
+    if embedder is None:
+        # A library whose embedder cannot even be built is the small-host case too.
+        second = _small_host_embedder()
+        match = (
+            prompt_match(prompt, audio_bytes, embedder=second)
+            if second is not None
+            else {"status": UNCHECKED, "reason": reason}
+        )
     else:
-        match = prompt_match(prompt, audio_bytes, embedder=embedder)
+        match = prompt_match(
+            prompt, audio_bytes, embedder=embedder, fallback=_small_host_embedder
+        )
     note = note_for(match)
     if note:
         notes.append(note)

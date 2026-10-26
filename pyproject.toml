@@ -72,6 +72,17 @@ clap = [
     "transformers>=4.40",
     "torch",
 ]
+# CLAP on a small host (#116): the int8 ONNX build of the same checkpoint
+# (Xenova/larger_clap_general), ~205 MB and ~0.6 GB RAM, no torch or transformers.
+# Used for the generation prompt-match check when the full embedder cannot load.
+# Imported lazily inside foley.index.onnx_clap ONLY. Deliberately NOT in
+# [tool.wads.ci.install] — its tests inject fake sessions and never download the model.
+clap-onnx = [
+    "onnxruntime",
+    "tokenizers",
+    "huggingface_hub",
+    "numpy",
+]
 # Hybrid vector+keyword index — LanceDB (vector column + Tantivy FTS + RRF in one table).
 index = [
     "lancedb>=0.13",

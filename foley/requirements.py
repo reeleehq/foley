@@ -33,6 +33,13 @@ _ANTHROPIC_KEY = Requirement(
 
 #: Importable extras that unlock a capability when installed.
 _IMPORTABLE_REQUIREMENTS = {
+    "onnxruntime": Requirement(
+        name="onnxruntime",
+        purpose="the prompt-match check on a small host, no torch (foley[clap-onnx])",
+        url="https://pypi.org/project/onnxruntime/",
+        install={"any": "pip install 'foley[clap-onnx]'"},
+        probe="importable",
+    ),
     "py2mcp": Requirement(
         name="py2mcp",
         purpose="serve foley to agents over MCP (foley[mcp])",
