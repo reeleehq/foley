@@ -17,7 +17,7 @@ stdlib; the ~1.7 GB checkpoint loads on the first ``embed_*`` call.
 from __future__ import annotations
 
 from functools import cached_property, lru_cache
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from numpy import ndarray
@@ -30,6 +30,12 @@ CLAP_SAMPLE_RATE: int = 48_000
 
 #: Embedding width for the default checkpoint (verified: ``projection_dim=512``).
 DEFAULT_CLAP_DIM: int = 512
+
+
+#: The prompt-match threshold of a checkpoint with no calibration on record. LAION-CLAP
+#: puts matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15; this is
+#: a guess between them, not a measurement.
+PROVISIONAL_PROMPT_MATCH_THRESHOLD: float = 0.2
 
 
 class ClapEmbedder:
@@ -47,21 +53,38 @@ class ClapEmbedder:
             holder allows only open-source models (#69).
     """
 
-    #: Cosine similarity under which a generated clip is flagged as not matching its
-    #: prompt (:func:`foley.prompt_match.prompt_match`). Provisional: LAION-CLAP puts
-    #: matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
-    #: this value is not yet calibrated on a labelled set of foley generations.
-    prompt_match_threshold: float = 0.2
+    @property
+    def prompt_match_threshold(self) -> float:
+        """Cosine similarity under which a generated clip is flagged as not matching its prompt.
 
-    def __init__(self, model_id: str = DEFAULT_CLAP_MODEL_ID, *, device=None):
+        Calibrated per checkpoint on a labelled set (:mod:`foley.eval.prompt_match`,
+        ``foley/data/prompt_match/thresholds.json``); a checkpoint nobody has calibrated
+        gets :data:`PROVISIONAL_PROMPT_MATCH_THRESHOLD`.
+        """
+        from ..prompt_match import threshold_for
+
+        if self._prompt_match_threshold is not None:
+            return self._prompt_match_threshold
+        found = threshold_for(self.model_id)
+        return PROVISIONAL_PROMPT_MATCH_THRESHOLD if found is None else found
+
+    def __init__(
+        self,
+        model_id: str = DEFAULT_CLAP_MODEL_ID,
+        *,
+        device=None,
+        prompt_match_threshold: Optional[float] = None,
+    ):
         """Create the embedder (model weights load lazily on first use).
 
         Args:
             model_id: A CLAP checkpoint on the HF Hub.
             device: Optional torch device string; defaults to CUDA when available,
                 else CPU.
+            prompt_match_threshold: Override the calibrated prompt-match threshold.
         """
         self.model_id = model_id
+        self._prompt_match_threshold = prompt_match_threshold
         self.open_source = model_id.startswith("laion/")
         self._device = device
         # Known for the default checkpoint; resolved lazily (from the lightweight

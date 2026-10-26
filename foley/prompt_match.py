@@ -21,7 +21,16 @@ Zero-dependency import: ``numpy`` and the embedder's own stack load inside.
 
 from __future__ import annotations
 
+import functools
+import json
+from pathlib import Path
 from typing import Optional
+
+#: Where the per-checkpoint calibrated thresholds live (package data, so they ship in the
+#: wheel). Written by :func:`foley.eval.prompt_match.save_threshold`.
+THRESHOLDS_PATH = (
+    Path(__file__).resolve().parent / "data" / "prompt_match" / "thresholds.json"
+)
 
 #: ``status`` values: the clip matches its prompt, does not, or was not checked.
 MATCH, MISMATCH, UNCHECKED = "match", "mismatch", "unchecked"
@@ -96,3 +105,18 @@ def _cosine(prompt: str, audio_bytes: bytes, embedder) -> float:
     text_vec = np.asarray(embedder.embed_text(prompt), dtype=np.float64).reshape(-1)
     denom = float(np.linalg.norm(audio_vec) * np.linalg.norm(text_vec)) or 1.0
     return float(audio_vec @ text_vec) / denom
+
+
+@functools.lru_cache(maxsize=8)
+def load_thresholds(path: Path = THRESHOLDS_PATH) -> dict:
+    """``{model_id: calibration dict}``; empty when nothing has been calibrated."""
+    try:
+        return json.loads(Path(path).read_text())
+    except FileNotFoundError:
+        return {}
+
+
+def threshold_for(model_id: str, *, path: Path = THRESHOLDS_PATH) -> Optional[float]:
+    """The calibrated threshold of checkpoint ``model_id``, or ``None``."""
+    entry = load_thresholds(path).get(model_id)
+    return None if entry is None else float(entry["threshold"])
