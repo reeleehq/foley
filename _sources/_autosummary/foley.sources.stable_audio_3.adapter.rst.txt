@@ -1,0 +1,28 @@
+foley.sources.stable\_audio\_3.adapter
+======================================
+
+.. automodule:: foley.sources.stable_audio_3.adapter
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      Runner
+      Adapter
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      runtime_ready
+      sa3_home
+      setup_hint
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      StableAudio3Adapter
+   

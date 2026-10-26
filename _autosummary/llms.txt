@@ -92,6 +92,9 @@
 - [foley.sources.stable_audio](foley.sources.stable_audio.html.md): Stable Audio Open 1.0 generate source (local default; #6).
 - [foley.sources.stable_audio.adapter](foley.sources.stable_audio.adapter.html.md): Stable Audio Open 1.0 generate adapter — local &#96;diffusers&#96; inference.
 - [foley.sources.stable_audio.config](foley.sources.stable_audio.config.html.md): &#96;SOURCE_CONFIG&#96; for the local Stable Audio Open 1.0 generator (report 02 · 07 · 10 §4.1).
+- [foley.sources.stable_audio_3](foley.sources.stable_audio_3.html.md): Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).
+- [foley.sources.stable_audio_3.adapter](foley.sources.stable_audio_3.adapter.html.md): Stable Audio 3 Small-SFX generate adapter: Stability’s TFLite CPU build, run as a process.
+- [foley.sources.stable_audio_3.config](foley.sources.stable_audio_3.config.html.md): &#96;SOURCE_CONFIG&#96; for the local Stable Audio 3 Small-SFX generator (#72 · report 13 · 17).
 - [foley.stores](foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 
 ## Optional

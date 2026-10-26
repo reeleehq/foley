@@ -1,4 +1,4 @@
-> built 2026-10-26 10:36 UTC from 948d290 (main) · foley 0.0.45. Details: build_info.json
+> built 2026-10-26 11:03 UTC from 2d3b2a3 (main) · foley 0.0.46. Details: build_info.json
 
 # index.html.md
 
@@ -40,7 +40,7 @@ hits = foley.search("distant thunder rumble", k=10)  # commercial use is the def
 # needs foley[stable-audio] and the gated stabilityai/stable-audio-open-1.0 weights
 # (accept its license on Hugging Face, set HF_TOKEN); backend="elevenlabs" needs
 # ELEVENLABS_API_KEY and is paid
-clip = foley.generate("a single wooden door creak", backend="stable_audio", duration=3)
+clip = foley.generate("a single wooden door creak", backend="stable_audio_3", duration=3)  # local, CPU; setup: foley.check_requirements(verbose=True)
 
 # No GPU? The fal-hosted backends (foley[fal] + FAL_KEY; paid, priced before the call):
 # Stable Audio 3 Small-SFX at $0.0206 a clip, commercial use under $1M revenue
@@ -69,12 +69,12 @@ result.notes  # how placements were timed, e.g. estimates when foley[align] is a
 
 ## How it works — four stages
 
-| Stage      | What it does                                                                                                                                | Built on                                                                                                                           |
-|------------|---------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| **Source** | your own files · Freesound (CC0) · generate (Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking                                                                                 |
-| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                                                                   | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
-| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                                                                      | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
-| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits                                             | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
+| Stage      | What it does                                                                                                                                                             | Built on                                                                                                                           |
+|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| **Source** | your own files · Freesound (CC0) · generate (Stable Audio 3 local on CPU; Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking                                                                                 |
+| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                                                                                                | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
+| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                                                                                                   | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
+| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits                                                                          | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
 
 The selection tools publish as an **MCP server** (via `py2mcp`) so the same capabilities
 drive the agent, a CLI, and external hosts.
@@ -6857,8 +6857,10 @@ training uses).
     `$ELEVENLABS_API_KEY` or `$ELEVEN_API_KEY`, and
     `$FOLEY_ELEVENLABS_PLAN`), then fal’s `"fal_stable_audio_3"` (Stable
     Audio 3 Small-SFX, commercial under $1M revenue) and `"fal_elevenlabs"`
-    (`foley[fal]` + `$FAL_KEY`), then the local `"stable_audio"`
-    (`foley[stable-audio]`). The paid ones are tried only once paid
+    (`foley[fal]` + `$FAL_KEY`), then the local `"stable_audio_3"`
+    (Stable Audio 3 Small-SFX on the CPU, no GPU or token; one-time setup:
+    `foley.check_requirements(verbose=True)` prints it) and last
+    `"stable_audio"` (`foley[stable-audio]`). The paid ones are tried only once paid
     generation is opted in (`$FOLEY_GENERATE_PAID=1`; a key in the
     environment is not consent to spend, #58), so out of the box this is the
     free local backend. A backend with no key, not configured, offline,
@@ -12817,7 +12819,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'netflix chime', 'netflix sound', 'netflix intro', 'ta dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'tudum', 'ta-dum', 'netflix chime', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16045,21 +16047,22 @@ the default `rings` — it is opt-in only.
 
 ### Modules
 
-| [`base`](_autosummary/foley.sources.base.html.md#module-foley.sources.base)                 | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.            |
-|-------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| [`bbc_remarc`](_autosummary/foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)     | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                               |
-| [`clotho`](_autosummary/foley.sources.clotho.html.md#module-foley.sources.clotho)             | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.              |
-| [`elevenlabs`](_autosummary/foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)     | ElevenLabs Sound Effects generate source (hosted; #6).                                    |
-| [`fal`](_autosummary/foley.sources.fal.html.md#module-foley.sources.fal)                   | fal-hosted generate sources, executed through `falaw` (#73).                              |
-| [`foleyset`](_autosummary/foley.sources.foleyset.html.md#module-foley.sources.foleyset)         | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                 |
-| [`freesound`](_autosummary/foley.sources.freesound.html.md#module-foley.sources.freesound)       | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).   |
-| [`fsd50k`](_autosummary/foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)             | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                           |
-| [`http`](_autosummary/foley.sources.http.html.md#module-foley.sources.http)                 | Injectable HTTP transport for foley's live source adapters.                               |
-| [`pull`](_autosummary/foley.sources.pull.html.md#module-foley.sources.pull)                 | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                    |
-| [`registry`](_autosummary/foley.sources.registry.html.md#module-foley.sources.registry)         | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).  |
-| [`resilience`](_autosummary/foley.sources.resilience.html.md#module-foley.sources.resilience)     | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12). |
-| [`sonniss`](_autosummary/foley.sources.sonniss.html.md#module-foley.sources.sonniss)           | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                      |
-| [`stable_audio`](_autosummary/foley.sources.stable_audio.html.md#module-foley.sources.stable_audio) | Stable Audio Open 1.0 generate source (local default; #6).                                |
+| [`base`](_autosummary/foley.sources.base.html.md#module-foley.sources.base)                     | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.            |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| [`bbc_remarc`](_autosummary/foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)         | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                               |
+| [`clotho`](_autosummary/foley.sources.clotho.html.md#module-foley.sources.clotho)                 | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.              |
+| [`elevenlabs`](_autosummary/foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)         | ElevenLabs Sound Effects generate source (hosted; #6).                                    |
+| [`fal`](_autosummary/foley.sources.fal.html.md#module-foley.sources.fal)                       | fal-hosted generate sources, executed through `falaw` (#73).                              |
+| [`foleyset`](_autosummary/foley.sources.foleyset.html.md#module-foley.sources.foleyset)             | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                 |
+| [`freesound`](_autosummary/foley.sources.freesound.html.md#module-foley.sources.freesound)           | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).   |
+| [`fsd50k`](_autosummary/foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                 | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                           |
+| [`http`](_autosummary/foley.sources.http.html.md#module-foley.sources.http)                     | Injectable HTTP transport for foley's live source adapters.                               |
+| [`pull`](_autosummary/foley.sources.pull.html.md#module-foley.sources.pull)                     | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                    |
+| [`registry`](_autosummary/foley.sources.registry.html.md#module-foley.sources.registry)             | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).  |
+| [`resilience`](_autosummary/foley.sources.resilience.html.md#module-foley.sources.resilience)         | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12). |
+| [`sonniss`](_autosummary/foley.sources.sonniss.html.md#module-foley.sources.sonniss)               | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                      |
+| [`stable_audio`](_autosummary/foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)     | Stable Audio Open 1.0 generate source (local default; #6).                                |
+| [`stable_audio_3`](_autosummary/foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3) | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).       |
 
 
 # _autosummary/foley.sources.http.html.md
@@ -16630,6 +16633,142 @@ at `import foley` or during discovery — via the module `__getattr__` below.
 | [`adapter`](_autosummary/foley.sources.stable_audio.adapter.html.md#module-foley.sources.stable_audio.adapter)   | Stable Audio Open 1.0 generate adapter — local `diffusers` inference.                     |
 |------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
 | [`config`](_autosummary/foley.sources.stable_audio.config.html.md#module-foley.sources.stable_audio.config)     | `SOURCE_CONFIG` for the local Stable Audio Open 1.0 generator (report 02 · 07 · 10 §4.1). |
+
+
+# _autosummary/foley.sources.stable_audio_3.adapter.html.md
+
+# foley.sources.stable_audio_3.adapter
+
+Stable Audio 3 Small-SFX generate adapter: Stability’s TFLite CPU build, run as a process.
+
+The model is not a pip package: Stability ships it as `optimized/tflite` in
+`Stability-AI/stable-audio-3` (a script plus a requirements file, weights fetched on
+first use from the ungated `stabilityai/stable-audio-3-optimized`). The adapter drives
+that checkout’s `scripts/sa3_tflite.py` with the checkout’s own virtualenv Python, so
+foley takes on no dependency and `import foley` stays dol-only. Setup is two commands
+([`setup_hint()`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.setup_hint)); a missing checkout raises `SourceConfigurationError` with them,
+which the generation order treats as “skip this backend”.
+
+* **Seam:** `runner=` (`runner(cmd, *, cwd, env, timeout) -> (returncode, stderr)`)
+  is the process boundary; a test injects a fake that writes the `--out` file.
+* **Offline:** the process runs with `HF_HUB_OFFLINE=1` when the runtime forbids
+  external egress, and a failure then raises [`ModelNotCached`](_autosummary/foley.runtime.html.md#foley.runtime.ModelNotCached)
+  (foley never downloads weights inside [`foley.offline()`](_autosummary/foley.html.md#foley.offline), #86).
+* **Seed:** always passed (a random one when none is given) and recorded, so every
+  clip is reproducible from its provenance.
+* **Distilled:** CFG 1; `prompt_influence` is noted and not applied (#70), and a
+  negative prompt only acts when CFG is above 1, so it is dropped with a note.
+
+### Module Attributes
+
+| [`Runner`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.Runner)   | `runner(cmd, *, cwd, env, timeout) -> (returncode, stderr_text)`.   |
+|-----------------------------------------------------------|---------------------------------------------------------------------|
+| [`Adapter`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.Adapter)  | Registry convention (arioso): the loader imports `adapter.Adapter`. |
+
+### Functions
+
+| [`runtime_ready`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.runtime_ready)([config, home])   | Whether the checkout and its virtualenv are in place (weights download on first use).   |
+|----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [`sa3_home`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.sa3_home)([config])              | Where the Stability checkout lives: `$FOLEY_SA3_DIR`, else the config's default.        |
+| [`setup_hint`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.setup_hint)([config])            | The commands that install the runtime and fetch the weights (never run by foley).       |
+
+### Classes
+
+| [`Adapter`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.Adapter)                                     | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                             |
+|----------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`StableAudio3Adapter`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.StableAudio3Adapter)([config, runner, home]) | Local Stable Audio 3 Small-SFX adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+
+### foley.sources.stable_audio_3.adapter.Adapter
+
+Registry convention (arioso): the loader imports `adapter.Adapter`.
+
+### foley.sources.stable_audio_3.adapter.Runner
+
+`runner(cmd, *, cwd, env, timeout) -> (returncode, stderr_text)`.
+
+alias of `Callable`[[…], `tuple[int, str]`]
+
+### *class* foley.sources.stable_audio_3.adapter.StableAudio3Adapter(config=None, , runner=None, home=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Local Stable Audio 3 Small-SFX adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)).
+
+* **Parameters:**
+  * **config** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The `SOURCE_CONFIG` (the registry passes it positionally).
+  * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – The process boundary (see [`Runner`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.Runner)); defaults to a subprocess.
+  * **home** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]) – The Stability checkout; defaults to [`sa3_home()`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.sa3_home).
+
+#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
+
+Generate a sound for `prompt` on the CPU; return its bytes + provisional candidate.
+
+`duration` is clamped to the model’s 1..120 s (default 10 s); the model renders
+whole latent frames, so the clip may differ from it by a few milliseconds.
+`seed=None` draws a random seed, recorded in the clip’s provenance.
+
+* **Return type:**
+  [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip)
+
+### foley.sources.stable_audio_3.adapter.runtime_ready(config=None, , home=None)
+
+Whether the checkout and its virtualenv are in place (weights download on first use).
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.sources.stable_audio_3.adapter.sa3_home(config=None)
+
+Where the Stability checkout lives: `$FOLEY_SA3_DIR`, else the config’s default.
+
+* **Return type:**
+  [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
+
+### foley.sources.stable_audio_3.adapter.setup_hint(config=None)
+
+The commands that install the runtime and fetch the weights (never run by foley).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+
+# _autosummary/foley.sources.stable_audio_3.config.html.md
+
+# foley.sources.stable_audio_3.config
+
+`SOURCE_CONFIG` for the local Stable Audio 3 Small-SFX generator (#72 · report 13 · 17).
+
+Stdlib-only and declarative, like every source config. The model runs on a laptop CPU
+through Stability’s TFLite/LiteRT build (`optimized/tflite` in
+`Stability-AI/stable-audio-3`; weights in the **ungated** HF repo
+`stabilityai/stable-audio-3-optimized`, about 1.2 GB), driven by that checkout’s own
+script in its own virtualenv: foley adds no dependency. The model is distilled (CFG 1,
+8 steps), the same posture as the `fal_stable_audio_3` source, and generates under the
+same Stability Community licence (commercial under US $1M revenue; the cap flows from the
+`LICENSE_FLAGS` row). The T5Gemma text encoder also carries the Gemma Terms of Use.
+
+
+# _autosummary/foley.sources.stable_audio_3.html.md
+
+# foley.sources.stable_audio_3
+
+Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).
+
+Auto-discovered by [`foley.sources.registry.discover_sources()`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.discover_sources), which imports ONLY
+[`config`](_autosummary/foley.sources.stable_audio_3.config.html.md#module-foley.sources.stable_audio_3.config) (stdlib-only). The adapter loads on first
+use via the module `__getattr__` below, so `import foley` stays dol-only.
+
+### Classes
+
+| `Adapter`                                     |                                                                                                                                                 |
+|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `StableAudio3Adapter`([config, runner, home]) | Local Stable Audio 3 Small-SFX adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+
+### Modules
+
+| [`adapter`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#module-foley.sources.stable_audio_3.adapter)   | Stable Audio 3 Small-SFX generate adapter: Stability's TFLite CPU build, run as a process.   |
+|--------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| [`config`](_autosummary/foley.sources.stable_audio_3.config.html.md#module-foley.sources.stable_audio_3.config)     | `SOURCE_CONFIG` for the local Stable Audio 3 Small-SFX generator (#72 · report 13 · 17).     |
 
 
 # _autosummary/foley.stores.html.md
@@ -18310,16 +18449,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-26 10:36 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/948d29010b1892f455356194229dc7463773a921"><code>948d290</code></a> on branch <code>main</code>, for **foley 0.0.45** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 11:03 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/2d3b2a3592dfaee1cb225a619138a79c24ff2269"><code>2d3b2a3</code></a> on branch <code>main</code>, for **foley 0.0.46** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.46) is behind the latest release on PyPI (0.0.47): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/948d29010b1892f455356194229dc7463773a921"><code>948d29010b1892f455356194229dc7463773a921</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/2d3b2a3592dfaee1cb225a619138a79c24ff2269"><code>2d3b2a3592dfaee1cb225a619138a79c24ff2269</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -18330,9 +18471,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40308488269">40308488269</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40311901703">40311901703</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>948d29010b1892f455356194229dc7463773a921</code> (in the history of the built commit) |
+| Event commit | <code>2d3b2a3592dfaee1cb225a619138a79c24ff2269</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -18357,13 +18498,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.45/">0.0.45</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.47/">0.0.47</a>, newer than the documented version (0.0.46).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 948d29010b1892f455356194229dc7463773a921
+git checkout 2d3b2a3592dfaee1cb225a619138a79c24ff2269
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

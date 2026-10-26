@@ -772,18 +772,19 @@ the default `rings` — it is opt-in only.
 
 ### Modules
 
-| [`base`](foley.sources.base.html.md#module-foley.sources.base)                 | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.            |
-|-------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| [`bbc_remarc`](foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)     | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                               |
-| [`clotho`](foley.sources.clotho.html.md#module-foley.sources.clotho)             | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.              |
-| [`elevenlabs`](foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)     | ElevenLabs Sound Effects generate source (hosted; #6).                                    |
-| [`fal`](foley.sources.fal.html.md#module-foley.sources.fal)                   | fal-hosted generate sources, executed through `falaw` (#73).                              |
-| [`foleyset`](foley.sources.foleyset.html.md#module-foley.sources.foleyset)         | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                 |
-| [`freesound`](foley.sources.freesound.html.md#module-foley.sources.freesound)       | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).   |
-| [`fsd50k`](foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)             | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                           |
-| [`http`](foley.sources.http.html.md#module-foley.sources.http)                 | Injectable HTTP transport for foley's live source adapters.                               |
-| [`pull`](foley.sources.pull.html.md#module-foley.sources.pull)                 | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                    |
-| [`registry`](foley.sources.registry.html.md#module-foley.sources.registry)         | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).  |
-| [`resilience`](foley.sources.resilience.html.md#module-foley.sources.resilience)     | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12). |
-| [`sonniss`](foley.sources.sonniss.html.md#module-foley.sources.sonniss)           | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                      |
-| [`stable_audio`](foley.sources.stable_audio.html.md#module-foley.sources.stable_audio) | Stable Audio Open 1.0 generate source (local default; #6).                                |
+| [`base`](foley.sources.base.html.md#module-foley.sources.base)                     | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.            |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| [`bbc_remarc`](foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)         | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                               |
+| [`clotho`](foley.sources.clotho.html.md#module-foley.sources.clotho)                 | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.              |
+| [`elevenlabs`](foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)         | ElevenLabs Sound Effects generate source (hosted; #6).                                    |
+| [`fal`](foley.sources.fal.html.md#module-foley.sources.fal)                       | fal-hosted generate sources, executed through `falaw` (#73).                              |
+| [`foleyset`](foley.sources.foleyset.html.md#module-foley.sources.foleyset)             | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                 |
+| [`freesound`](foley.sources.freesound.html.md#module-foley.sources.freesound)           | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).   |
+| [`fsd50k`](foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                 | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                           |
+| [`http`](foley.sources.http.html.md#module-foley.sources.http)                     | Injectable HTTP transport for foley's live source adapters.                               |
+| [`pull`](foley.sources.pull.html.md#module-foley.sources.pull)                     | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                    |
+| [`registry`](foley.sources.registry.html.md#module-foley.sources.registry)             | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).  |
+| [`resilience`](foley.sources.resilience.html.md#module-foley.sources.resilience)         | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12). |
+| [`sonniss`](foley.sources.sonniss.html.md#module-foley.sources.sonniss)               | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                      |
+| [`stable_audio`](foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)     | Stable Audio Open 1.0 generate source (local default; #6).                                |
+| [`stable_audio_3`](foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3) | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).       |

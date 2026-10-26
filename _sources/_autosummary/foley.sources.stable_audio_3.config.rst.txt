@@ -1,0 +1,6 @@
+foley.sources.stable\_audio\_3.config
+=====================================
+
+.. automodule:: foley.sources.stable_audio_3.config
+
+   

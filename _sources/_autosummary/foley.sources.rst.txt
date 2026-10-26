@@ -65,3 +65,4 @@ foley.sources
    resilience
    sonniss
    stable_audio
+   stable_audio_3

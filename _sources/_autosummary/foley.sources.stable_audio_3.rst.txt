@@ -1,0 +1,21 @@
+foley.sources.stable\_audio\_3
+==============================
+
+.. automodule:: foley.sources.stable_audio_3
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      StableAudio3Adapter
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   adapter
+   config

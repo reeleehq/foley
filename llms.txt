@@ -94,9 +94,12 @@
 - [foley.sources.stable_audio](_autosummary/foley.sources.stable_audio.html.md): Stable Audio Open 1.0 generate source (local default; #6).
 - [foley.sources.stable_audio.adapter](_autosummary/foley.sources.stable_audio.adapter.html.md): Stable Audio Open 1.0 generate adapter — local &#96;diffusers&#96; inference.
 - [foley.sources.stable_audio.config](_autosummary/foley.sources.stable_audio.config.html.md): &#96;SOURCE_CONFIG&#96; for the local Stable Audio Open 1.0 generator (report 02 · 07 · 10 §4.1).
+- [foley.sources.stable_audio_3](_autosummary/foley.sources.stable_audio_3.html.md): Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).
+- [foley.sources.stable_audio_3.adapter](_autosummary/foley.sources.stable_audio_3.adapter.html.md): Stable Audio 3 Small-SFX generate adapter: Stability’s TFLite CPU build, run as a process.
+- [foley.sources.stable_audio_3.config](_autosummary/foley.sources.stable_audio_3.config.html.md): &#96;SOURCE_CONFIG&#96; for the local Stable Audio 3 Small-SFX generator (#72 · report 13 · 17).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 10:36 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 11:03 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

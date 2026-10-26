@@ -2409,8 +2409,10 @@ training uses).
     `$ELEVENLABS_API_KEY` or `$ELEVEN_API_KEY`, and
     `$FOLEY_ELEVENLABS_PLAN`), then fal’s `"fal_stable_audio_3"` (Stable
     Audio 3 Small-SFX, commercial under $1M revenue) and `"fal_elevenlabs"`
-    (`foley[fal]` + `$FAL_KEY`), then the local `"stable_audio"`
-    (`foley[stable-audio]`). The paid ones are tried only once paid
+    (`foley[fal]` + `$FAL_KEY`), then the local `"stable_audio_3"`
+    (Stable Audio 3 Small-SFX on the CPU, no GPU or token; one-time setup:
+    `foley.check_requirements(verbose=True)` prints it) and last
+    `"stable_audio"` (`foley[stable-audio]`). The paid ones are tried only once paid
     generation is opted in (`$FOLEY_GENERATE_PAID=1`; a key in the
     environment is not consent to spend, #58), so out of the box this is the
     free local backend. A backend with no key, not configured, offline,
