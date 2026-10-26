@@ -265,6 +265,13 @@ def test_bbc_remarc_forbids_commercial_and_ai_training():
 # ---------------------------------------------------------------------------
 # capabilities + list_backends + ledger (#60)
 # ---------------------------------------------------------------------------
+def SOURCE(name):
+    from foley.sources.registry import SOURCE_REGISTRY, discover_sources
+
+    discover_sources()
+    return SOURCE_REGISTRY[name]["config"]
+
+
 def test_list_backends_supports_seed_and_kind():
     import foley
 
@@ -273,7 +280,24 @@ def test_list_backends_supports_seed_and_kind():
     assert "elevenlabs" not in seeded and "freesound" not in seeded
     assert foley.list_backends(kind="retrieve", supports="seed") == []
     assert "freesound" in foley.list_backends(kind="retrieve")
-    assert set(foley.list_backends(supports=["seed", "negative_prompt"])) <= set(seeded)
+    both = foley.list_backends(supports=["seed", "negative_prompt"])
+    assert "stable_audio" in both and "fal_mirelo" in both
+    assert "fal_sonilo" not in foley.list_backends(supports="seed")
+    assert foley.list_backends(supports="offline_capable") == ["stable_audio", "stable_audio_3"]
+    assert foley.capabilities_of(SOURCE("freesound"))["deterministic"] is None
+    assert foley.capabilities_of(SOURCE("stable_audio_3"))["sample_rate"] == 44100
+
+
+def test_list_backends_rejects_typos_and_derived_overrides():
+    import pytest
+
+    import foley
+
+    for bad in ({"supports": "seeed"}, {"kind": "genrate"}, {"supports": "kind"}):
+        with pytest.raises(ValueError):
+            foley.list_backends(**bad)
+    with pytest.raises(ValueError, match="derived"):
+        foley.capabilities_of({"name": "x", "capabilities": {"kind": "retrieve"}})
 
 
 def test_list_backends_flags_and_fake():
@@ -287,7 +311,8 @@ def test_list_backends_flags_and_fake():
             "kind": "generate",
             "data_egress": "local",
             "supported_affordances": ["prompt", "loop"],
-            "capabilities": {"watermarked": True, "sample_rate": 16000},
+            "native_defaults": {"sample_rate": 16000},
+            "capabilities": {"watermarked": True},
         },
         adapter=object(),
     )
@@ -312,4 +337,5 @@ def test_ledger_computes_planned_from_registry():
     # a planned target that is now registered drops out of 'planned'
     led = foley.ledger(targets=[{"name": "freesound", "kind": "retrieve", "note": ""}])
     assert led["planned"] == []
+    assert foley.ledger(targets=[])["planned"] == []
     assert foley.capability_report()["backends"]["implemented"]
