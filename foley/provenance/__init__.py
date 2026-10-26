@@ -16,6 +16,7 @@ reach the pure helpers via ``foley.art50_checklist`` / ``foley.scan_prompt``.
 
 from __future__ import annotations
 
+from .signing import make_c2pa_signer, make_self_signed_c2pa_certs
 from .credits import (
     CreditEntry,
     Credits,
@@ -33,5 +34,7 @@ __all__ = [
     "credit_entry",
     "credits_for",
     "credits_manifest",
+    "make_c2pa_signer",
+    "make_self_signed_c2pa_certs",
     "render_credits_md",
 ]

@@ -245,6 +245,7 @@ weave = [
 # [tool.wads.ci.install]; the sidecar (build_content_credential) needs none of this.
 c2pa = [
     "c2pa-python",
+    "cryptography",  # foley.provenance.make_c2pa_signer / make_self_signed_c2pa_certs
 ]
 # The MCP server (#12): serve foley's façade to agents/humans as JSON-safe tools via
 # py2mcp (which pulls fastmcp). `py2mcp` is imported LAZILY inside
