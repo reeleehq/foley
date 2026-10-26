@@ -93,8 +93,13 @@ SOURCE_CONFIG = {
     "provider_params": {
         "append": {},
         "reserved": [
-            "prompt", "prompt_embeds", "negative_prompt_embeds", "seed",
-            "generator", "latents", "output_type",
+            "prompt",
+            "prompt_embeds",
+            "negative_prompt_embeds",
+            "seed",
+            "generator",
+            "latents",
+            "output_type",
         ],
         "priced": [],
     },

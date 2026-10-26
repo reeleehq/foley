@@ -112,7 +112,9 @@ class WikimediaCommonsAdapter:
             iiprop=_IMAGEINFO,
         )
         data = self.invoke_native(
-            **merge_provider_params(params, provider_params, policy=self.config.get("provider_params"))
+            **merge_provider_params(
+                params, provider_params, policy=self.config.get("provider_params")
+            )
         )
         pages = sorted(
             ((data.get("query") or {}).get("pages") or {}).values(),

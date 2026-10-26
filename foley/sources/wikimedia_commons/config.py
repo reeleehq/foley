@@ -59,8 +59,15 @@ SOURCE_CONFIG = {
     "provider_params": {
         "append": {},
         "reserved": [
-            "action", "format", "generator", "gsrsearch", "gsrnamespace",
-            "prop", "iiprop", "pageids", "titles",
+            "action",
+            "format",
+            "generator",
+            "gsrsearch",
+            "gsrnamespace",
+            "prop",
+            "iiprop",
+            "pageids",
+            "titles",
         ],
         "priced": [],
     },

@@ -695,8 +695,7 @@ def provider_params_by_backend(
         return {}
     if not isinstance(provider_params, Mapping):
         raise TypeError(
-            "provider_params must be a mapping, got "
-            f"{type(provider_params).__name__}"
+            f"provider_params must be a mapping, got {type(provider_params).__name__}"
         )
     order = tuple(order)
     if not per_backend:
@@ -725,9 +724,7 @@ def provider_params_by_backend(
     out = {}
     for name, params in by_backend.items():
         config = (SOURCE_REGISTRY.get(name) or {}).get("config") or {}
-        out[name] = check_provider_params(
-            params, policy=config.get("provider_params")
-        )
+        out[name] = check_provider_params(params, policy=config.get("provider_params"))
     return out
 
 
