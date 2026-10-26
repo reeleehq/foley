@@ -17,7 +17,7 @@ stdlib; the ~1.7 GB checkpoint loads on the first ``embed_*`` call.
 from __future__ import annotations
 
 from functools import cached_property, lru_cache
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from numpy import ndarray
@@ -61,20 +61,30 @@ class ClapEmbedder:
         ``foley/data/prompt_match/thresholds.json``); a checkpoint nobody has calibrated
         gets :data:`PROVISIONAL_PROMPT_MATCH_THRESHOLD`.
         """
-        from ..eval.prompt_match import threshold_for
+        from ..prompt_match import threshold_for
 
+        if self._prompt_match_threshold is not None:
+            return self._prompt_match_threshold
         found = threshold_for(self.model_id)
         return PROVISIONAL_PROMPT_MATCH_THRESHOLD if found is None else found
 
-    def __init__(self, model_id: str = DEFAULT_CLAP_MODEL_ID, *, device=None):
+    def __init__(
+        self,
+        model_id: str = DEFAULT_CLAP_MODEL_ID,
+        *,
+        device=None,
+        prompt_match_threshold: Optional[float] = None,
+    ):
         """Create the embedder (model weights load lazily on first use).
 
         Args:
             model_id: A CLAP checkpoint on the HF Hub.
             device: Optional torch device string; defaults to CUDA when available,
                 else CPU.
+            prompt_match_threshold: Override the calibrated prompt-match threshold.
         """
         self.model_id = model_id
+        self._prompt_match_threshold = prompt_match_threshold
         self.open_source = model_id.startswith("laion/")
         self._device = device
         # Known for the default checkpoint; resolved lazily (from the lightweight

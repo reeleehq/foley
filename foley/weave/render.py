@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional
 
 from ..base import Layer, SoundDesignTimeline
-from ..level import reference_gain_db
+from ..level import REFERENCE_PEAK_CEILING_DBFS, reference_gain_db
 from .align import _default_aligner, aligner_name
 from .master import MasterReport, master
 from .mix import (
@@ -92,8 +92,8 @@ class RenderResult:
 class FullRender:
     """Default :class:`ApplyStrategy` — the full per-item DSP chain (report 06 §3-4).
 
-    ``level`` (measured loudness to the reference, :func:`foley.level.reference_gain_db`)
-    → ``fit-duration`` (loop/trim) → distance → reverb send → constant-power pan →
+    ``fit-duration`` (loop/trim) → ``level`` (measured loudness to the reference,
+    :func:`foley.level.reference_gain_db`, on what will be heard) → distance → reverb send → constant-power pan →
     declick → gain (base layer level + item ``gain_db``) → overlay at the resolved
     onset. Levelling first means the layer gains act on clips of equal loudness, whatever
     level each was generated or recorded at (#111); ``level_clips=False`` renders the
@@ -113,14 +113,19 @@ class FullRender:
     ) -> "ndarray":
         p = item.processing
         pl = item.placement
-        if self.level_clips:
-            clip = clip * db_to_lin(reference_gain_db(clip, sample_rate))
         clip = fit_duration(clip, sample_rate, duration=pl.duration, loop=pl.loop)
+        layer_gain_db = LAYER_GAIN_DB.get(item.layer, 0.0)
+        if (
+            self.level_clips
+        ):  # on what will be heard (looped/trimmed), peak after layer gain
+            ceiling = REFERENCE_PEAK_CEILING_DBFS - layer_gain_db
+            gain = reference_gain_db(clip, sample_rate, peak_ceiling_dbfs=ceiling)
+            clip = clip * db_to_lin(gain)
         clip = apply_distance(clip, sample_rate, p.distance)
         clip = reverb_send(clip, sample_rate, p.reverb_send)
         stereo = constant_power_pan(clip, p.pan)
         stereo = declick(stereo, sample_rate, fade_in=p.fade_in, fade_out=p.fade_out)
-        gain = db_to_lin(LAYER_GAIN_DB.get(item.layer, 0.0) + p.gain_db)
+        gain = db_to_lin(layer_gain_db + p.gain_db)
         stereo = stereo * gain
         return overlay(bus, stereo, int(pl.onset * sample_rate))
 

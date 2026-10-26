@@ -8,7 +8,7 @@ scored against another prompt is a *mismatch* (the failure the check exists for:
 clip of the wrong thing). :func:`calibrate_threshold` picks the cut that best separates
 the two and reports precision and recall of the **mismatch** call; :func:`save_threshold`
 records it per checkpoint in ``foley/data/prompt_match/thresholds.json``, which
-:class:`foley.index.embedders.ClapEmbedder` reads.
+:func:`foley.prompt_match.threshold_for` (and so :class:`foley.index.embedders.ClapEmbedder`) reads.
 
 The labels are only as good as the clips: a "match" is a clip generated for the prompt,
 not one a person listened to, so a generation that missed its prompt counts as a match
@@ -21,9 +21,10 @@ from __future__ import annotations
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Sequence
 
-#: Where the per-checkpoint thresholds live (package data, so they ship in the wheel).
+from ..prompt_match import THRESHOLDS_PATH, load_thresholds
+
 THRESHOLDS_PATH = (
     Path(__file__).resolve().parent.parent / "data" / "prompt_match" / "thresholds.json"
 )
@@ -139,18 +140,17 @@ def calibrate_threshold(scores: "Sequence[tuple[float, bool]]") -> Calibration:
     )  # fmt: skip
 
 
-def load_thresholds(path: Path = THRESHOLDS_PATH) -> dict:
-    """``{model_id: calibration dict}``; empty when nothing has been calibrated."""
-    try:
-        return json.loads(Path(path).read_text())
-    except FileNotFoundError:
-        return {}
+def load_labelled_dir(directory) -> "list[tuple[str, bytes, bool]]":
+    """The ``score_pairs`` items of a directory holding ``manifest.json`` and its clips.
 
-
-def threshold_for(model_id: str, *, path: Path = THRESHOLDS_PATH) -> Optional[float]:
-    """The calibrated threshold of checkpoint ``model_id``, or ``None``."""
-    entry = load_thresholds(path).get(model_id)
-    return None if entry is None else float(entry["threshold"])
+    The manifest is a list of ``{"prompt": ..., "file": ..., "match": true}`` (``match``
+    defaults to true; set it false for a clip a listener rejected for its prompt).
+    """
+    root = Path(directory)
+    return [
+        (m["prompt"], (root / m["file"]).read_bytes(), m.get("match", True))
+        for m in json.loads((root / "manifest.json").read_text())
+    ]
 
 
 def save_threshold(
@@ -161,7 +161,8 @@ def save_threshold(
     path: Path = THRESHOLDS_PATH,
 ) -> None:
     """Record ``calibration`` for ``model_id`` (``source``: what set it was measured on)."""
-    data = load_thresholds(path)
+    data = dict(load_thresholds(path))
     data[model_id] = {**calibration.to_dict(), "calibrated_on": source}
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     Path(path).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+    load_thresholds.cache_clear()

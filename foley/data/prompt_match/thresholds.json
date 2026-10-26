@@ -1,7 +1,7 @@
 {
   "laion/larger_clap_general": {
     "auc": 0.9392,
-    "calibrated_on": "20 prompts, each with a Stable Audio 3 Small-SFX clip (4 s, seeds 11-30); 20 matches, 380 cross-prompt mismatches; match labels are 'generated for the prompt', not by ear (2026-10-26)",
+    "calibrated_on": "20 prompts, each with one Stable Audio 3 Small-SFX clip (4 s). 20 matches ('generated for the prompt', not checked by ear) vs 380 cross-prompt mismatches (easy negatives, mean similarity 0.006). Precision is for that 19:1 mix and overstates real use, where most clips match; the cut rests on 2 of 20 matches. Re-run with by-ear labels when a labelled set exists. 2026-10-26",
     "f1": 0.9477,
     "match_kept": 0.9,
     "match_mean": 0.2618,

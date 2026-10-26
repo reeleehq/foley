@@ -8,10 +8,10 @@ np = pytest.importorskip("numpy")
 
 from foley.eval.prompt_match import (  # noqa: E402
     calibrate_threshold,
-    load_thresholds,
+    load_labelled_dir,
     save_threshold,
-    threshold_for,
 )
+from foley.prompt_match import load_thresholds, threshold_for  # noqa: E402
 from foley.index.embedders import (  # noqa: E402
     PROVISIONAL_PROMPT_MATCH_THRESHOLD,
     ClapEmbedder,
@@ -47,6 +47,7 @@ def test_both_classes_are_required():
 
 def test_thresholds_round_trip_per_checkpoint(tmp_path):
     path = tmp_path / "t.json"
+    load_thresholds.cache_clear()
     assert load_thresholds(path) == {} and threshold_for("m", path=path) is None
     save_threshold("m", calibrate_threshold(_scores()), source="synthetic", path=path)
     assert threshold_for("m", path=path) == pytest.approx(
@@ -61,3 +62,21 @@ def test_the_embedder_reads_its_checkpoints_calibration():
     assert ClapEmbedder("someone/else-clap").prompt_match_threshold == (
         PROVISIONAL_PROMPT_MATCH_THRESHOLD
     )
+
+
+def test_an_embedder_threshold_can_be_overridden():
+    assert ClapEmbedder(prompt_match_threshold=0.5).prompt_match_threshold == 0.5
+
+
+def test_a_labelled_directory_loads_in_score_pairs_form(tmp_path):
+    (tmp_path / "a.wav").write_bytes(b"A")
+    (tmp_path / "b.wav").write_bytes(b"B")
+    (tmp_path / "manifest.json").write_text(
+        json.dumps(
+            [
+                {"prompt": "a", "file": "a.wav"},
+                {"prompt": "b", "file": "b.wav", "match": False},
+            ]
+        )
+    )
+    assert load_labelled_dir(tmp_path) == [("a", b"A", True), ("b", b"B", False)]

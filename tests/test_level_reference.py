@@ -54,7 +54,22 @@ def test_silence_and_garbage_are_left_alone():
 
 
 def test_the_boost_is_capped():
-    assert reference_gain_db(_tone(1.0, 2e-4), SR) <= 36.0
+    assert reference_gain_db(_tone(1.0, 3e-3), SR) <= 36.0
+
+
+def test_a_long_near_silent_clip_is_not_amplified():
+    assert reference_gain_db(_tone(1.0, 2e-4), SR) == 0.0  # below the loudness gate
+
+
+def test_a_loud_transient_is_levelled_up_to_the_ceiling_the_caller_sets():
+    clip = np.zeros(SR, dtype="float32")
+    clip[100] = 0.9
+    clip += _tone(1.0, 0.002)
+    held = reference_gain_db(clip, SR)  # default ceiling: -1 dBFS
+    freed = reference_gain_db(
+        clip, SR, peak_ceiling_dbfs=-1.0 + 9.0
+    )  # sfx_fg's layer gain
+    assert freed > held + 8.0  # the -1 dBFS ceiling no longer holds back the transient
 
 
 class _Lib:

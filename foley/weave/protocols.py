@@ -55,7 +55,9 @@ class ApplyStrategy(Protocol):
     overlay), while :class:`~foley.weave.render.PlaceOnly` does a dry declicked
     overlay (fast preview / DSP-free fallback). ``item`` is already anchor-resolved
     (``item.placement.onset`` is in seconds); ``bus`` and ``clip`` are stereo
-    ``float32`` working arrays at ``sample_rate``.
+    ``float32`` working arrays at ``sample_rate``. A strategy with settings that change
+    its output should expose them as a ``cache_key`` string: the :class:`RenderCache`
+    keys on it (default: the class name).
     """
 
     def apply(

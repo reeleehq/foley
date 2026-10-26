@@ -33,6 +33,7 @@ functions.
 
 from __future__ import annotations
 
+import math
 from typing import Optional, Union
 
 from .base import Layer
@@ -134,8 +135,9 @@ def level_bytes(
     return encode(levelled, sr), applied, float(measured)
 
 
-#: Sample-peak ceiling (dBFS) a reference-levelled clip must stay under, so the layer
-#: gain and the master limiter start from a clip that does not clip.
+#: Sample-peak ceiling (dBFS) the levelled clip must stay under. The render passes this
+#: *after* the layer gain (see :class:`foley.weave.render.FullRender`), so a loud transient
+#: is not held back by headroom the layer gain is about to take anyway.
 REFERENCE_PEAK_CEILING_DBFS = -1.0
 #: Where a clip too short for a loudness reading (a click, a page flick) puts its sample
 #: peak. Provisional: the peak a typical one-shot has when its integrated loudness is the
@@ -160,8 +162,9 @@ def reference_gain_db(
     """The gain (dB) that brings ``clip`` to the reference loudness; ``0.0`` if it cannot.
 
     Integrated loudness (BS.1770, gated) is measured and the gain is
-    ``reference_lufs - measured``. A clip too short or too quiet to measure is levelled by
-    its sample peak (to ``short_peak_dbfs``) instead. Either way the gain is capped so the
+    ``reference_lufs - measured``. A clip too short to measure is levelled by
+    its sample peak (to ``short_peak_dbfs``) instead; one that is long enough but below the
+    loudness gate is near-silent and left alone. Either way the gain is capped so the
     clip's sample peak stays at or under ``peak_ceiling_dbfs`` and the boost at
     ``max_boost_db``; a silent or non-finite clip gets ``0.0``. Pure and deterministic.
 
@@ -173,7 +176,7 @@ def reference_gain_db(
     """
     import numpy as np
 
-    from .audio import DEFAULT_LOUDNESS_TARGET_LUFS
+    from .audio import DEFAULT_LOUDNESS_TARGET_LUFS, LUFS_MIN_BLOCK_S
     from .qc import measure_lufs
 
     reference = (
@@ -187,5 +190,8 @@ def reference_gain_db(
     if peak_db <= SILENT_PEAK_DBFS:
         return 0.0
     measured = measure_lufs(x, sample_rate)
+    too_short = x.shape[0] < math.ceil(LUFS_MIN_BLOCK_S * sample_rate)
+    if measured is None and not too_short:
+        return 0.0  # below the loudness gate: near-silent, flag, don't amplify
     wanted = short_peak_dbfs - peak_db if measured is None else reference - measured
     return float(min(wanted, peak_ceiling_dbfs - peak_db, max_boost_db))
