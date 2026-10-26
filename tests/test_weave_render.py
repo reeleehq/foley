@@ -28,27 +28,37 @@ class _Lib:
     def __init__(self):
         rng = np.random.default_rng(1)
         voice = (0.1 * rng.standard_normal(2 * SR)).astype("float32")
-        door = (0.5 * np.sin(2 * np.pi * 300 * np.arange(int(0.2 * SR)) / SR)).astype("float32")
+        door = (0.5 * np.sin(2 * np.pi * 300 * np.arange(int(0.2 * SR)) / SR)).astype(
+            "float32"
+        )
         rain = (0.15 * rng.standard_normal(SR)).astype("float32")
         self.arrays = {"nar": (voice, SR), "door": (door, SR), "rain": (rain, SR)}
 
     def array(self, ref, *, sr=None, mono=True):
         s, o = self.arrays[ref]
-        return to_working(s, o, mono=mono, target_sr=WORKING_SAMPLE_RATE if sr is None else sr)
+        return to_working(
+            s, o, mono=mono, target_sr=WORKING_SAMPLE_RATE if sr is None else sr
+        )
 
 
 def _tl():
     return SoundDesignTimeline(
         narration_ref="nar",
         items=[
-            TimelineItem(clip_ref="door", onset="on 'door'", gain=-6.0, layer=Layer.sfx_fg),
-            TimelineItem(clip_ref="rain", onset=None, gain=-18.0, layer=Layer.ambience, loop=True),
+            TimelineItem(
+                clip_ref="door", onset="on 'door'", gain=-6.0, layer=Layer.sfx_fg
+            ),
+            TimelineItem(
+                clip_ref="rain", onset=None, gain=-18.0, layer=Layer.ambience, loop=True
+            ),
         ],
     )
 
 
 def _render(**kw):
-    return render(_tl(), _Lib(), sr=SR, transcript=TRANSCRIPT, aligner=FakeAligner(), **kw)
+    return render(
+        _tl(), _Lib(), sr=SR, transcript=TRANSCRIPT, aligner=FakeAligner(), **kw
+    )
 
 
 def test_render_is_deterministic_and_pure():
@@ -74,10 +84,14 @@ def test_cache_invalidates_when_an_item_changes():
     """A warm cache must NOT serve a stale bus after an item edit (proves _bus_hash coverage)."""
     lib = _Lib()
     cache = RenderCache()
-    r1 = render(_tl(), lib, sr=SR, transcript=TRANSCRIPT, aligner=FakeAligner(), cache=cache)
+    r1 = render(
+        _tl(), lib, sr=SR, transcript=TRANSCRIPT, aligner=FakeAligner(), cache=cache
+    )
     tl2 = _tl()
     tl2.items[0] = replace(tl2.items[0], gain=-30.0)  # change the door's level
-    r2 = render(tl2, lib, sr=SR, transcript=TRANSCRIPT, aligner=FakeAligner(), cache=cache)
+    r2 = render(
+        tl2, lib, sr=SR, transcript=TRANSCRIPT, aligner=FakeAligner(), cache=cache
+    )
     # the edited render differs from the cached original (cache correctly invalidated) ...
     assert not np.array_equal(r1.audio, r2.audio)
     # ... and matches a fresh full render of the edited timeline (correct, not stale)

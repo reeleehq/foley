@@ -60,7 +60,11 @@ def test_cli_search_dispatches(monkeypatch, capsys):
 
     def fake_search(query, **kw):
         captured.update(query=query, **kw)
-        rec = SoundRecord(id="deadbeefcafe123", caption="thunder", license=LicenseRecord(source="t", license_id="CC0-1.0"))
+        rec = SoundRecord(
+            id="deadbeefcafe123",
+            caption="thunder",
+            license=LicenseRecord(source="t", license_id="CC0-1.0"),
+        )
         return [Candidate(sound=rec)]
 
     monkeypatch.setattr(foley, "search", fake_search)

@@ -56,7 +56,9 @@ def test_offline_scope_dominates_foley_obs_env(monkeypatch):
     monkeypatch.setenv("FOLEY_OBS", "1")
     assert foley.obs.is_enabled()  # the env var turns obs on...
     with offline_scope():
-        assert not foley.obs.is_enabled()  # ...but offline force-disables it, dominating the env
+        assert (
+            not foley.obs.is_enabled()
+        )  # ...but offline force-disables it, dominating the env
     assert foley.obs.is_enabled()  # restored on exit (env var still set)
     monkeypatch.delenv("FOLEY_OBS", raising=False)
 

@@ -38,7 +38,9 @@ def test_constant_power_pan_energy_invariant():
 
 def test_speech_duck_gain_dips_and_recovers():
     sr = 1000
-    env = speech_duck_gain(3000, sr, [(1.0, 2.0)], duck_db=DUCK_DB, attack=0.01, release=0.05)
+    env = speech_duck_gain(
+        3000, sr, [(1.0, 2.0)], duck_db=DUCK_DB, attack=0.01, release=0.05
+    )
     assert env.shape == (3000,)
     assert env[0] == pytest.approx(1.0, abs=1e-3)  # unity before speech
     assert env[1500] < 0.5  # ducked mid-speech

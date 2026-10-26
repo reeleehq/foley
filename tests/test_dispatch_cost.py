@@ -39,7 +39,9 @@ def _run_store():
 @pytest.fixture
 def library(fake_embedder):
     idx = MemoryIndex(dim=fake_embedder.dim)
-    return SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
+    return SoundLibrary(
+        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
+    )
 
 
 def _wav(freq=440.0, *, silent=False, dur=0.6):
@@ -109,7 +111,9 @@ def _el_adapter(transport=None, *, plan="elevenlabs-paid-plan", api_key="k"):
     def must_not_call(*a, **k):
         raise AssertionError("the ElevenLabs API must not be called")
 
-    return ElevenLabsAdapter(api_key=api_key, http=transport or must_not_call, plan=plan)
+    return ElevenLabsAdapter(
+        api_key=api_key, http=transport or must_not_call, plan=plan
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -120,16 +124,27 @@ def _el_adapter(transport=None, *, plan="elevenlabs-paid-plan", api_key="k"):
 def test_a_meaning_carrying_parameter_raises_before_any_call(library):
     """The acceptance line: seed on ElevenLabs (non-deterministic) raises."""
     with pytest.raises(UnsupportedParameter, match="seed"):
-        foley.generate("a door creaks", backend="elevenlabs", adapter=_el_adapter(),
-                       library=library, seed=1)
+        foley.generate(
+            "a door creaks",
+            backend="elevenlabs",
+            adapter=_el_adapter(),
+            library=library,
+            seed=1,
+        )
 
 
 def test_under_warn_every_drop_is_on_the_returned_candidate(library, paid_source):
     paid_source("droppy", amount=0.01)
     with pytest.warns(UserWarning, match="steps"):
-        cand = foley.generate("a door creaks", backend="droppy", library=library,
-                              steps=12, negative_prompt="hum", on_unsupported="warn",
-                              duration=99)
+        cand = foley.generate(
+            "a door creaks",
+            backend="droppy",
+            library=library,
+            steps=12,
+            negative_prompt="hum",
+            on_unsupported="warn",
+            duration=99,
+        )
     joined = " | ".join(cand.notes)
     assert "steps=12" in joined and "negative_prompt='hum'" in joined
     assert "clamped to 30 s" in joined
@@ -145,15 +160,23 @@ def test_an_ordinary_drop_is_noted_without_raising(library, paid_source):
 
 def test_add_from_notes_unsupported_search_parameters(library):
     class StubSearch:
-        config = {"name": "stubsearch", "supported_affordances": ["query", "k", "license"],
-                  "data_egress": "external"}
+        config = {
+            "name": "stubsearch",
+            "supported_affordances": ["query", "k", "license"],
+            "data_egress": "external",
+        }
 
         def search(self, query, **kw):
             assert "ucs_category" not in kw  # dropped before the source sees it
             return []
 
-    report = foley.add_from("stubsearch", query="door", library=library,
-                            adapter=StubSearch(), ucs_category="DOORWood")
+    report = foley.add_from(
+        "stubsearch",
+        query="door",
+        library=library,
+        adapter=StubSearch(),
+        ucs_category="DOORWood",
+    )
     assert any("ucs_category" in n for n in report.notes)
 
 
@@ -166,7 +189,9 @@ def test_estimate_is_none_when_unknown_never_zero(paid_source):
     paid_source("mystery", unit=None)
     assert foley.estimate("generate", backend="mystery") is None
     assert foley.estimate("generate", backend="stable_audio") == 0.0
-    assert foley.estimate("generate", backend="elevenlabs", duration=3) == pytest.approx(0.006)
+    assert foley.estimate(
+        "generate", backend="elevenlabs", duration=3
+    ) == pytest.approx(0.006)
 
 
 def test_unknown_cost_needs_approval(library, paid_source):
@@ -174,8 +199,12 @@ def test_unknown_cost_needs_approval(library, paid_source):
     with pytest.raises(CostApprovalRequired):
         foley.generate("a door creaks", backend="mystery2", library=library)
     assert adapter.calls == 0
-    cand = foley.generate("a door creaks", backend="mystery2", library=library,
-                          budget=Budget(approve_unknown_cost=True))
+    cand = foley.generate(
+        "a door creaks",
+        backend="mystery2",
+        library=library,
+        budget=Budget(approve_unknown_cost=True),
+    )
     assert adapter.calls == 1 and cand.cost_estimate_usd is None
 
 
@@ -189,7 +218,9 @@ def test_a_call_over_the_default_one_dollar_cap_is_refused(library, paid_source)
 def test_find_stops_before_the_first_paid_call_over_budget(paid_source, fake_embedder):
     """The acceptance line: a find whose estimate exceeds the budget never pays."""
     idx = MemoryIndex(dim=fake_embedder.dim)
-    empty = SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
+    empty = SoundLibrary(
+        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
+    )
     adapter = paid_source("pricey2", amount=0.30)  # 6 events x $0.30 = $1.80 > $1
     assert foley.estimate("find", backend="pricey2") == pytest.approx(1.80)
     with pytest.raises(BudgetExceeded, match="upper bound"):
@@ -216,8 +247,9 @@ def test_a_stricter_inner_budget_still_applies(paid_source, library):
     adapter = paid_source("fifty", amount=0.50)
     with spend_scope(Budget(max_usd=10.0)):
         with pytest.raises(BudgetExceeded):
-            foley.generate("a door", backend="fifty", library=library,
-                           budget=Budget(max_usd=0.10))
+            foley.generate(
+                "a door", backend="fifty", library=library, budget=Budget(max_usd=0.10)
+            )
     assert adapter.calls == 0
 
 
@@ -228,12 +260,16 @@ def test_paid_llm_calls_count_toward_the_cap(monkeypatch, library):
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
     assert llm_call_estimate("anthropic", max_tokens=500) > 0
-    assert foley.estimate("find", llm="anthropic") > 1.0  # 6 events x 10 judge calls ...
+    assert (
+        foley.estimate("find", llm="anthropic") > 1.0
+    )  # 6 events x 10 judge calls ...
     with pytest.raises(BudgetExceeded, match="upper bound"):
         foley.find(DEMO, library=library, llm="anthropic", budget=Budget(max_usd=1.0))
 
 
-def test_a_chosen_paid_llm_gets_a_default_cap_that_fits_a_default_run(monkeypatch, library):
+def test_a_chosen_paid_llm_gets_a_default_cap_that_fits_a_default_run(
+    monkeypatch, library
+):
     """#88: find(llm='anthropic') with the defaults is not refused before its first call."""
     from foley.agent import llm
     from foley.cost import default_max_usd as _default_max_usd
@@ -272,9 +308,16 @@ def test_a_paid_rung_is_charged_its_actual_usage(monkeypatch):
         class messages:  # noqa: N801
             @staticmethod
             def create(**kw):
-                text = SimpleNamespace(type="text", text='{"match": true, "confidence": 0.9, "reason": "ok"}')
-                return SimpleNamespace(content=[text], model="claude-opus-4-8", stop_reason="end_turn",
-                                       usage=SimpleNamespace(input_tokens=1000, output_tokens=100))
+                text = SimpleNamespace(
+                    type="text",
+                    text='{"match": true, "confidence": 0.9, "reason": "ok"}',
+                )
+                return SimpleNamespace(
+                    content=[text],
+                    model="claude-opus-4-8",
+                    stop_reason="end_turn",
+                    usage=SimpleNamespace(input_tokens=1000, output_tokens=100),
+                )
 
     cand = Candidate(sound=SoundRecord(id="x", caption="door"))
     with spend_scope(Budget(max_usd=1.0)) as budget:
@@ -300,7 +343,9 @@ def test_a_failed_call_that_may_have_billed_is_still_charged(paid_source, librar
     assert budget.spent_usd == pytest.approx(0.80)
 
 
-def test_a_stream_does_not_lend_its_budget_to_the_caller(paid_source, library, fake_embedder):
+def test_a_stream_does_not_lend_its_budget_to_the_caller(
+    paid_source, library, fake_embedder
+):
     from foley.cost import active_budget
 
     stream = foley.find(DEMO, library=library, stream=True, budget=Budget(max_usd=5.0))
@@ -308,7 +353,9 @@ def test_a_stream_does_not_lend_its_budget_to_the_caller(paid_source, library, f
     assert active_budget() is None  # between items, the stream's budget is not in force
 
 
-def test_an_mcp_server_has_one_cap_whatever_session_ids_the_agent_sends(paid_source, library):
+def test_an_mcp_server_has_one_cap_whatever_session_ids_the_agent_sends(
+    paid_source, library
+):
     from foley.agent import mcp
 
     adapter = paid_source("mcpgen", amount=0.40)
@@ -331,19 +378,29 @@ def test_an_mcp_server_has_one_cap_whatever_session_ids_the_agent_sends(paid_sou
 
 def test_an_identical_paid_request_is_a_cache_hit(library, paid_source):
     adapter = paid_source("cached", amount=0.05)
-    first = foley.generate("a door creaks", backend="cached", library=library, duration=2)
-    second = foley.generate("a door creaks", backend="cached", library=library, duration=2)
+    first = foley.generate(
+        "a door creaks", backend="cached", library=library, duration=2
+    )
+    second = foley.generate(
+        "a door creaks", backend="cached", library=library, duration=2
+    )
     assert adapter.calls == 1
     assert second.sound.id == first.sound.id
     assert second.cost_actual_usd == 0.0
     assert any("generations cache" in n for n in second.notes)
-    foley.generate("a door creaks", backend="cached", library=library, duration=2,
-                   reuse_cached=False)
+    foley.generate(
+        "a door creaks",
+        backend="cached",
+        library=library,
+        duration=2,
+        reuse_cached=False,
+    )
     assert adapter.calls == 2
 
 
-def test_a_quarantined_generation_keeps_its_bytes(library, paid_source,
-                                                  _in_memory_generations_cache):
+def test_a_quarantined_generation_keeps_its_bytes(
+    library, paid_source, _in_memory_generations_cache
+):
     paid_source("silent", amount=0.05, silent=True)
     with pytest.raises(foley.GenerationError) as exc:
         foley.generate("a door creaks", backend="silent", library=library)
@@ -351,9 +408,11 @@ def test_a_quarantined_generation_keeps_its_bytes(library, paid_source,
     cache = _in_memory_generations_cache
     (entry,) = cache.requests.values()
     assert cache.audio[entry["content_key"]]  # the paid bytes are retrievable
-    assert any(key in str(exc.value) or key in " ".join(r_n for r in exc.value.report.results
-                                                         for r_n in r.notes)
-               for key in cache.requests)
+    assert any(
+        key in str(exc.value)
+        or key in " ".join(r_n for r in exc.value.report.results for r_n in r.notes)
+        for key in cache.requests
+    )
 
 
 def test_a_refused_generation_names_its_kept_bytes_on_every_surface(
@@ -368,9 +427,10 @@ def test_a_refused_generation_names_its_kept_bytes_on_every_surface(
     (entry,) = _in_memory_generations_cache.requests.values()
     assert exc.value.cache_key == entry["content_key"]
     assert exc.value.report.results[0].cache_key == exc.value.cache_key
-    assert foley.generations.get(exc.value.cache_key) == _in_memory_generations_cache.audio[
-        entry["content_key"]
-    ]
+    assert (
+        foley.generations.get(exc.value.cache_key)
+        == _in_memory_generations_cache.audio[entry["content_key"]]
+    )
     mcp._configure(library=library)
     mcp._STATE["budget"] = None
     try:
@@ -390,7 +450,9 @@ def test_a_missing_key_names_the_env_var_and_its_sign_up_url(library, monkeypatc
     monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
     adapter = _el_adapter(api_key=None)
     with pytest.raises(SourceConfigurationError) as exc:
-        foley.generate("a door creaks", backend="elevenlabs", adapter=adapter, library=library)
+        foley.generate(
+            "a door creaks", backend="elevenlabs", adapter=adapter, library=library
+        )
     assert "ELEVENLABS_API_KEY" in str(exc.value)
     assert "https://elevenlabs.io/app/settings/api-keys" in str(exc.value)
 
@@ -399,7 +461,9 @@ def test_add_from_raises_on_a_missing_key(library, monkeypatch):
     from foley.sources.freesound.adapter import FreesoundAdapter
 
     monkeypatch.delenv("FREESOUND_API_KEY", raising=False)
-    adapter = FreesoundAdapter(http=lambda *a, **k: pytest.fail("no HTTP without a key"))
+    adapter = FreesoundAdapter(
+        http=lambda *a, **k: pytest.fail("no HTTP without a key")
+    )
     with pytest.raises(SourceConfigurationError) as exc:
         foley.add_from("freesound", query="door", library=library, adapter=adapter)
     assert "FREESOUND_API_KEY" in str(exc.value) and "http" in str(exc.value)
@@ -442,11 +506,16 @@ def test_a_quarantined_request_is_not_replayed(library, paid_source):
     assert adapter.calls == 2  # the bad result is kept, not served again
 
 
-def test_a_corrupt_cache_entry_is_a_miss(library, paid_source, _in_memory_generations_cache):
+def test_a_corrupt_cache_entry_is_a_miss(
+    library, paid_source, _in_memory_generations_cache
+):
     adapter = paid_source("corrupt", amount=0.05)
     foley.generate("a door creaks", backend="corrupt", library=library)
     for key in _in_memory_generations_cache.requests:
-        _in_memory_generations_cache.requests[key] = {"content_key": None, "license": {}}
+        _in_memory_generations_cache.requests[key] = {
+            "content_key": None,
+            "license": {},
+        }
     cand = foley.generate("a door creaks", backend="corrupt", library=library)
     assert adapter.calls == 2 and cand.sound.id
 
@@ -459,7 +528,9 @@ def test_a_failed_cache_write_keeps_the_paid_sound(library, paid_source, monkeyp
         def __setitem__(self, k, v):
             raise OSError("disk full")
 
-    monkeypatch.setattr(_dispatch, "_default_cache", lambda: GenerationsCache(Full(), {}))
+    monkeypatch.setattr(
+        _dispatch, "_default_cache", lambda: GenerationsCache(Full(), {})
+    )
     paid_source("fullgen", amount=0.05)
     cand = foley.generate("a door creaks", backend="fullgen", library=library)
     assert cand.sound.id in library.meta
@@ -481,7 +552,9 @@ def test_a_cache_hit_keeps_the_adapters_notes(library, paid_source):
     assert any("substituted" in n for n in second.notes)
 
 
-def test_an_identical_request_spelled_differently_is_one_cache_entry(library, paid_source):
+def test_an_identical_request_spelled_differently_is_one_cache_entry(
+    library, paid_source
+):
     adapter = paid_source("spelled", amount=0.05)
     foley.generate("a door", backend="spelled", library=library, duration=2)
     foley.generate("a door", backend="spelled", library=library, duration=2.0)
@@ -500,8 +573,9 @@ def test_a_missing_extra_is_a_configuration_error(library, paid_source):
 
 
 def test_estimate_prices_the_call_as_it_would_be_made():
-    assert foley.estimate("generate", backend="elevenlabs", duration=60) == pytest.approx(0.06)
-
+    assert foley.estimate(
+        "generate", backend="elevenlabs", duration=60
+    ) == pytest.approx(0.06)
 
 
 # ---------------------------------------------------------------------------
@@ -526,8 +600,12 @@ def _fake_anthropic(*, fail_with=None, calls=None):
                 if fail_with and len(calls or []) <= len(fail_with):
                     raise fail_with[len(calls) - 1]
                 text = SimpleNamespace(type="text", text='{"events": []}')
-                return SimpleNamespace(content=[text], model="claude-opus-4-8",
-                                       stop_reason="end_turn", usage=_Usage(100, 50))
+                return SimpleNamespace(
+                    content=[text],
+                    model="claude-opus-4-8",
+                    stop_reason="end_turn",
+                    usage=_Usage(100, 50),
+                )
 
     return _Client()
 
@@ -541,7 +619,9 @@ def test_a_long_passage_is_bounded_by_its_real_length(monkeypatch):
     with spend_scope(Budget(max_usd=1.0)) as budget:
         budget.charge(0.90)
         with pytest.raises(BudgetExceeded):
-            AnthropicDecomposer(client=_fake_anthropic(calls=calls)).decompose("x" * 400_000)
+            AnthropicDecomposer(client=_fake_anthropic(calls=calls)).decompose(
+                "x" * 400_000
+            )
     assert calls == [] and budget.spent_usd == pytest.approx(0.90)
 
 
@@ -550,13 +630,21 @@ def test_a_metered_call_is_charged_its_actual_usage_and_never_resent_after_a_tim
     from foley.cost import spend_scope
 
     with spend_scope(Budget(max_usd=1.0)) as budget:
-        metered_create(_fake_anthropic(calls=[]), model="claude-opus-4-8", max_tokens=500,
-                       messages=[{"role": "user", "content": "hi"}])
+        metered_create(
+            _fake_anthropic(calls=[]),
+            model="claude-opus-4-8",
+            max_tokens=500,
+            messages=[{"role": "user", "content": "hi"}],
+        )
         assert budget.spent_usd == pytest.approx((100 * 5 + 50 * 25) / 1e6)
         calls = []
         with pytest.raises(TimeoutError):
-            metered_create(_fake_anthropic(fail_with=[TimeoutError("read")], calls=calls),
-                           model="claude-opus-4-8", max_tokens=500, messages=[])
+            metered_create(
+                _fake_anthropic(fail_with=[TimeoutError("read")], calls=calls),
+                model="claude-opus-4-8",
+                max_tokens=500,
+                messages=[],
+            )
         assert len(calls) == 1  # not re-sent
         assert budget.spent_usd > (100 * 5 + 50 * 25) / 1e6  # the reservation stays
 
@@ -569,18 +657,27 @@ def test_a_rejected_metered_call_is_retried_without_double_charging():
     from foley.cost import spend_scope
 
     req = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
-    rejected = anthropic.RateLimitError("slow down", response=httpx.Response(429, request=req),
-                                        body=None)
+    rejected = anthropic.RateLimitError(
+        "slow down", response=httpx.Response(429, request=req), body=None
+    )
     calls = []
     with spend_scope(Budget(max_usd=1.0)) as budget:
-        metered_create(_fake_anthropic(fail_with=[rejected], calls=calls), sleep=lambda s: None,
-                       model="claude-opus-4-8", max_tokens=500, messages=[])
+        metered_create(
+            _fake_anthropic(fail_with=[rejected], calls=calls),
+            sleep=lambda s: None,
+            model="claude-opus-4-8",
+            max_tokens=500,
+            messages=[],
+        )
     assert len(calls) == 2
     assert budget.spent_usd == pytest.approx((100 * 5 + 50 * 25) / 1e6)
 
 
 def test_a_paid_post_is_not_resent_after_a_transport_error():
-    from foley.sources.resilience import SourceUnavailable, make_resilient_transport_from_config
+    from foley.sources.resilience import (
+        SourceUnavailable,
+        make_resilient_transport_from_config,
+    )
 
     sent = []
 
@@ -590,12 +687,15 @@ def test_a_paid_post_is_not_resent_after_a_transport_error():
 
     paid = make_resilient_transport_from_config(
         {"rate": None, "pricing": {"unit": "per_second", "amount_usd": 0.002}},
-        base=flaky, sleep=lambda s: None)
+        base=flaky,
+        sleep=lambda s: None,
+    )
     with pytest.raises(TimeoutError):
         paid("POST", "https://api.example/x")
     assert sent == ["POST"]
     free = make_resilient_transport_from_config(
-        {"rate": None, "pricing": {"unit": "free"}}, base=flaky, sleep=lambda s: None)
+        {"rate": None, "pricing": {"unit": "free"}}, base=flaky, sleep=lambda s: None
+    )
     with pytest.raises(SourceUnavailable):
         free("POST", "https://api.example/x")
     assert len(sent) > 2  # a free source keeps its retries
@@ -634,8 +734,9 @@ def test_concurrent_calls_cannot_all_pass_before_any_is_counted(paid_source, lib
     assert budget.spent_usd == pytest.approx(0.80)
 
 
-def test_a_rights_refusal_or_ingest_error_replays_the_paid_bytes(library, paid_source,
-                                                                 _in_memory_generations_cache):
+def test_a_rights_refusal_or_ingest_error_replays_the_paid_bytes(
+    library, paid_source, _in_memory_generations_cache
+):
     adapter = paid_source("replay", amount=0.05)
     foley.generate("a door", backend="replay", library=library)
     for key, entry in list(_in_memory_generations_cache.requests.items()):
@@ -654,14 +755,18 @@ def test_loopback_means_this_machine_only():
 def test_estimate_score_sums_one_find_per_segment(paid_source):
     paid_source("seg", amount=0.01)
     one = foley.estimate("find", backend="seg", context="a door")
-    assert foley.estimate("score", backend="seg", segments=["a door", "rain"]) == pytest.approx(2 * one)
+    assert foley.estimate(
+        "score", backend="seg", segments=["a door", "rain"]
+    ) == pytest.approx(2 * one)
 
 
 def test_an_over_budget_mcp_find_is_a_json_refusal(library, monkeypatch):
     from foley.agent import mcp
 
     def over_budget(*a, **k):
-        raise BudgetExceeded("this find run (upper bound) would cost ~$3.00, over its $1.00 cap")
+        raise BudgetExceeded(
+            "this find run (upper bound) would cost ~$3.00, over its $1.00 cap"
+        )
 
     monkeypatch.setattr(foley, "find", over_budget)
     mcp._configure(library=library)
@@ -692,8 +797,9 @@ def test_a_refused_reservation_leaves_no_half_reservation(monkeypatch):
     assert outer.spent_usd == 0.0
 
 
-def test_bad_cached_bytes_are_replayed_at_most_once(library, paid_source,
-                                                    _in_memory_generations_cache, monkeypatch):
+def test_bad_cached_bytes_are_replayed_at_most_once(
+    library, paid_source, _in_memory_generations_cache, monkeypatch
+):
     adapter = paid_source("badbytes", amount=0.05)
     original = adapter.generate
 
@@ -724,7 +830,9 @@ def test_paid_sources_do_not_retry_gateway_errors():
 
     paid = make_resilient_transport_from_config(
         {"rate": None, "pricing": {"unit": "per_call", "amount_usd": 1}},
-        base=gateway, sleep=lambda s: None)
+        base=gateway,
+        sleep=lambda s: None,
+    )
     paid("POST", "https://api.example/x")
     assert sent == ["POST"]
 
@@ -756,6 +864,7 @@ def test_llm_prices_come_from_falaw_and_unlisted_models_are_unknown():
     assert _usage_cost("claude-opus-4-7", SimpleNamespace(usage=None)) is None
     assert llm_call_estimate("anthropic", model="no-such-model", max_tokens=5) is None
 
+
 @pytest.mark.parametrize("bad", [5.0, -0.1, True, "0.5"])
 def test_a_bad_prompt_influence_is_refused_before_any_budget_is_reserved(
     paid_source, library, bad
@@ -765,8 +874,9 @@ def test_a_bad_prompt_influence_is_refused_before_any_budget_is_reserved(
     adapter = paid_source("sixty", amount=0.60)
     with spend_scope(Budget(max_usd=1.0)) as budget:
         with pytest.raises(ValueError, match="prompt_influence"):
-            foley.generate("a door creaks", backend="sixty", library=library,
-                           prompt_influence=bad)
+            foley.generate(
+                "a door creaks", backend="sixty", library=library, prompt_influence=bad
+            )
     assert adapter.calls == 0 and budget.spent_usd == 0
 
 
@@ -779,8 +889,9 @@ def test_a_non_finite_duration_is_refused_before_any_budget_is_reserved(
     adapter = paid_source("sixty", amount=0.60)
     with spend_scope(Budget(max_usd=1.0)) as budget:
         with pytest.raises(ValueError, match="duration"):
-            foley.generate("a door creaks", backend="sixty", library=library,
-                           duration=bad)
+            foley.generate(
+                "a door creaks", backend="sixty", library=library, duration=bad
+            )
     assert adapter.calls == 0 and budget.spent_usd == 0
 
 

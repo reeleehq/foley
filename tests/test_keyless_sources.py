@@ -460,7 +460,10 @@ def test_a_paid_source_keeps_its_narrow_retry_unless_it_sets_its_own():
 def test_provider_params_reach_each_keyless_search_and_keep_the_licence_checks():
     """#61: native params pass through; the per-item licence re-check still applies."""
     ov, http = _openverse()
-    ids = [c.sound.id for c in ov.search("door", provider_params={"category": "sound_effect"})]
+    ids = [
+        c.sound.id
+        for c in ov.search("door", provider_params={"category": "sound_effect"})
+    ]
     assert http.calls[0]["params"]["category"] == "sound_effect"
     assert ids == ["openverse:a"]  # still CC0 only
 
@@ -476,7 +479,10 @@ def test_provider_params_reach_each_keyless_search_and_keep_the_licence_checks()
     data = wc.invoke_native(list="search", srsearch="door")
     assert data == {"query": {"pages": COMMONS_PAGES}}  # the parsed JSON, as is
     assert http.calls[-1]["params"] == {
-        "action": "query", "format": "json", "list": "search", "srsearch": "door"
+        "action": "query",
+        "format": "json",
+        "list": "search",
+        "srsearch": "door",
     }
 
 
@@ -505,7 +511,9 @@ def test_reserved_keyless_params_raise_before_any_request(make, key):
     ad, http = make()
     import re
 
-    with pytest.raises(ValueError, match=re.escape(f"provider_params[{key!r}] is reserved")):
+    with pytest.raises(
+        ValueError, match=re.escape(f"provider_params[{key!r}] is reserved")
+    ):
         ad.search("door", provider_params={key: "x"})
     assert http.calls == []
 

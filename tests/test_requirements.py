@@ -11,7 +11,10 @@ def test_probe_dispatch(monkeypatch):
     status = req.check_requirements(names=("FREESOUND_API_KEY",))
     assert status["FREESOUND_API_KEY"] is True
     monkeypatch.delenv("FREESOUND_API_KEY", raising=False)
-    assert req.check_requirements(names=("FREESOUND_API_KEY",))["FREESOUND_API_KEY"] is False
+    assert (
+        req.check_requirements(names=("FREESOUND_API_KEY",))["FREESOUND_API_KEY"]
+        is False
+    )
 
 
 def test_importable_probe(monkeypatch):
@@ -46,7 +49,16 @@ def test_verify_and_setup_reports_never_installs():
 
 def test_capability_report_shape():
     rep = foley.capability_report()
-    assert set(rep) == {"keys", "extras", "system", "offline", "sources", "backends", "llm", "degraded_tools"}
+    assert set(rep) == {
+        "keys",
+        "extras",
+        "system",
+        "offline",
+        "sources",
+        "backends",
+        "llm",
+        "degraded_tools",
+    }
     assert "FREESOUND_API_KEY" in rep["keys"]  # env-probed
     assert "py2mcp" in rep["extras"]  # importable-probed
     assert "ffmpeg" in rep["system"]  # binary-probed

@@ -36,7 +36,10 @@ class FakeLibrary:
                 storage_mode=StorageMode.by_value,
                 uri=f"secret://{sid}",
                 license=LicenseRecord(
-                    source="user", license_id="CC0-1.0", commercial_ok=True, rights_verified=True
+                    source="user",
+                    license_id="CC0-1.0",
+                    commercial_ok=True,
+                    rights_verified=True,
                 ),
             )
             for sid, cap in [
@@ -150,7 +153,10 @@ def test_candidate_row_is_compact_and_leak_free():
             storage_mode=StorageMode.by_value,
             uri="secret/path",
             license=LicenseRecord(
-                source="user", license_id="CC0-1.0", commercial_ok=True, rights_verified=True
+                source="user",
+                license_id="CC0-1.0",
+                commercial_ok=True,
+                rights_verified=True,
             ),
         ),
         clap_score=0.8,

@@ -39,25 +39,39 @@ def _license(license_id, *, source, **kw):
 
 def _sound(sound_id, license, *, caption=None, tags=(), ucs_category=None):
     return SoundRecord(
-        id=sound_id, license=license, caption=caption, tags=list(tags), ucs_category=ucs_category
+        id=sound_id,
+        license=license,
+        caption=caption,
+        tags=list(tags),
+        ucs_category=ucs_category,
     )
 
 
 def _freesound_cc0():
     lic = _license(
-        "CC0-1.0", source="freesound", source_id="12345",
-        source_url="https://freesound.org/s/12345/", creator_name="alice",
+        "CC0-1.0",
+        source="freesound",
+        source_id="12345",
+        source_url="https://freesound.org/s/12345/",
+        creator_name="alice",
         license_url="http://creativecommons.org/publicdomain/zero/1.0/",
-        acquisition_method=AcquisitionMethod.api, rights_verified=True,
+        acquisition_method=AcquisitionMethod.api,
+        rights_verified=True,
     )
-    return _sound("freesound:12345", lic, caption="rain on window", tags=["rain", "window"])
+    return _sound(
+        "freesound:12345", lic, caption="rain on window", tags=["rain", "window"]
+    )
 
 
 def _fsd50k_ccby():
     lic = _license(
-        "CC-BY-4.0", source="fsd50k", source_id="222",
-        source_url="https://freesound.org/s/222/", creator_name="amy",
-        acquisition_method=AcquisitionMethod.bulk, rights_verified=True,
+        "CC-BY-4.0",
+        source="fsd50k",
+        source_id="222",
+        source_url="https://freesound.org/s/222/",
+        creator_name="amy",
+        acquisition_method=AcquisitionMethod.bulk,
+        rights_verified=True,
     )
     return _sound("cafe_a1b2", lic, tags=["door", "creak", "wood"])
 
@@ -109,7 +123,9 @@ def test_credit_entry_user_owned_degrades_author_and_url():
 def test_title_fallback_ladder():
     lic = _license("CC-BY-4.0", source="fsd50k", source_id="s9")
     assert credit_entry(_sound("i", lic, caption="  A Caption  ")).title == "A Caption"
-    assert credit_entry(_sound("i", lic, tags=["boom", "impact"])).title == "Boom impact"
+    assert (
+        credit_entry(_sound("i", lic, tags=["boom", "impact"])).title == "Boom impact"
+    )
     assert credit_entry(_sound("i", lic, ucs_category="explosion")).title == "Explosion"
     assert credit_entry(_sound("i", lic)).title == "fsd50k sound s9"
     lic2 = _license("unknown", source="x")  # no source_id -> sound_id
@@ -123,8 +139,13 @@ def test_title_fallback_ladder():
 
 def test_author_fallback_ladder():
     base = dict(source="freesound", license_id="CC-BY-4.0")
-    assert credit_entry(_sound("i", _license(creator_name="bob", **base))).author == "bob"
-    assert credit_entry(_sound("i", _license(rights_holder="Acme", **base))).author == "Acme"
+    assert (
+        credit_entry(_sound("i", _license(creator_name="bob", **base))).author == "bob"
+    )
+    assert (
+        credit_entry(_sound("i", _license(rights_holder="Acme", **base))).author
+        == "Acme"
+    )
     assert credit_entry(_sound("i", _license(**base))).author == "freesound"
 
 
@@ -136,7 +157,10 @@ def test_author_fallback_ladder():
 def test_dedup_first_writer_wins_stable_order():
     a, b = _freesound_cc0(), _fsd50k_ccby()
     c = credits_for([b, a, b, a])  # duplicates
-    assert [e.sound_id for e in c] == ["cafe_a1b2", "freesound:12345"]  # appearance order
+    assert [e.sound_id for e in c] == [
+        "cafe_a1b2",
+        "freesound:12345",
+    ]  # appearance order
 
 
 def test_sort_by_author_and_title():
@@ -163,7 +187,12 @@ def test_only_required_drops_courtesy_credits():
 
 
 def test_modification_notice():
-    lic = _license("CC-BY-4.0", source="fsd50k", creator_name="amy", transformations=["trim", "loudness"])
+    lic = _license(
+        "CC-BY-4.0",
+        source="fsd50k",
+        creator_name="amy",
+        transformations=["trim", "loudness"],
+    )
     e = credit_entry(_sound("i", lic, caption="thunder"))
     assert e.modified is True
     assert " (modified)" in attribution_line(e, fmt="plain")
@@ -183,7 +212,9 @@ def test_ai_disclosure_segment():
         lic = _license("ElevenLabs-SFX", source="ElevenLabs", **gen)
         return attribution_line(_sound("g", lic, caption="whoosh"), fmt="markdown")
 
-    assert " · AI-generated with eleven_v2" in line(is_ai_generated=True, generator_model="eleven_v2")
+    assert " · AI-generated with eleven_v2" in line(
+        is_ai_generated=True, generator_model="eleven_v2"
+    )
     assert line(is_ai_generated=True).endswith(" · AI-generated")  # model None
     assert "— disclosure recommended" in line(
         is_ai_generated=True, generator_model="m", disclosure_recommended=True
@@ -200,7 +231,9 @@ def test_attribution_text_wins_verbatim():
     lic = _license("CC-BY-4.0", source="freesound", creator_name="amy")
     lic.attribution_text = "Custom credit, all rights per notice."
     e = credit_entry(_sound("i", lic, caption="ignored"))
-    assert attribution_line(e, fmt="markdown") == "Custom credit, all rights per notice."
+    assert (
+        attribution_line(e, fmt="markdown") == "Custom credit, all rights per notice."
+    )
     assert attribution_line(e, fmt="plain") == "Custom credit, all rights per notice."
 
 
@@ -209,8 +242,12 @@ def test_attribution_text_still_gets_foley_owned_mod_and_ai_tail():
     # the (modified) notice + AI-disclosure segment MUST still be appended (CC-BY
     # legally requires indicating modifications).
     lic = _license(
-        "CC-BY-4.0", source="freesound", creator_name="amy",
-        transformations=["trim", "fade"], is_ai_generated=True, generator_model="m",
+        "CC-BY-4.0",
+        source="freesound",
+        creator_name="amy",
+        transformations=["trim", "fade"],
+        is_ai_generated=True,
+        generator_model="m",
     )
     lic.attribution_text = '"Rain" by amy / CC BY 4.0'
     line = attribution_line(credit_entry(_sound("i", lic)), fmt="markdown")
@@ -289,10 +326,16 @@ def test_watermark_c2pa_pass_through_zero_render_change():
     marked.c2pa_manifest_ref = "cr://abc123"
 
     entry = credits_for([_sound("s", marked, caption="rain")]).manifest["entries"][0]
-    assert entry["watermark"] == {"present": True, "method": "audioseal", "version": "1"}
+    assert entry["watermark"] == {
+        "present": True,
+        "method": "audioseal",
+        "version": "1",
+    }
     assert entry["c2pa_manifest_ref"] == "cr://abc123"
     # the rendered line is byte-identical with vs without the pass-through fields
-    line_of = lambda lic: attribution_line(credit_entry(_sound("s", lic, caption="rain")))
+    line_of = lambda lic: attribution_line(
+        credit_entry(_sound("s", lic, caption="rain"))
+    )
     assert line_of(marked) == line_of(base)
 
 
@@ -360,4 +403,6 @@ def test_facade_write_to_writes_both_artifacts(tmp_path):
 
 def test_render_credits_md_heading_level_override():
     c = credits_for([_freesound_cc0()])
-    assert render_credits_md(c, title="Sound credits", heading_level=3).startswith("### Sound credits")
+    assert render_credits_md(c, title="Sound credits", heading_level=3).startswith(
+        "### Sound credits"
+    )

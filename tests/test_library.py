@@ -16,15 +16,32 @@ from foley.index import LanceIndex, MemoryIndex, SoundLibrary  # noqa: E402
 from foley.index.indexes import lancedb_available  # noqa: E402
 
 
-def _mk_record(sid, caption, tags, *, ucs=None, commercial=True, duration=2.0,
-               snr=None, uri=None, cache=False):
+def _mk_record(
+    sid,
+    caption,
+    tags,
+    *,
+    ucs=None,
+    commercial=True,
+    duration=2.0,
+    snr=None,
+    uri=None,
+    cache=False,
+):
     lic = LicenseRecord(
-        source="test", license_id="CC0-1.0",
-        commercial_ok=commercial, cache_bytes_ok=cache,
+        source="test",
+        license_id="CC0-1.0",
+        commercial_ok=commercial,
+        cache_bytes_ok=cache,
     )
     rec = SoundRecord(
-        id=sid, caption=caption, tags=tags, ucs_category=ucs,
-        duration_s=duration, uri=uri or f"test://{sid}", license=lic,
+        id=sid,
+        caption=caption,
+        tags=tags,
+        ucs_category=ucs,
+        duration_s=duration,
+        uri=uri or f"test://{sid}",
+        license=lic,
     )
     if snr is not None:
         rec.qc = {"snr_db": snr}
@@ -45,21 +62,61 @@ def library(request, tmp_path, fake_embedder):
         idx = LanceIndex(uri=str(tmp_path / "lance"), dim=fake_embedder.dim)
     else:
         idx = MemoryIndex(dim=fake_embedder.dim)
-    return SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
+    return SoundLibrary(
+        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
+    )
 
 
 @pytest.fixture
 def populated(library):
-    _add(library, "s1", "heavy wooden door creaking open", ["door", "wood"],
-         ucs="DOORWood", commercial=True, snr=40.0, duration=2.0)
-    _add(library, "s2", "soft cat meowing indoors", ["cat", "meow"],
-         ucs="ANMLCat", commercial=False, snr=10.0, duration=1.5)
-    _add(library, "s3", "heavy rain on a window pane", ["rain", "weather"],
-         ucs="WEATHRain", commercial=True, snr=25.0, duration=5.0)
-    _add(library, "s4", "distant thunder rumble in a storm", ["thunder", "storm"],
-         ucs="WEATHThunder", commercial=True, duration=8.0)
-    _add(library, "s5", "dog barking loudly outside", ["dog", "bark"],
-         ucs="ANMLDog", commercial=True, duration=3.0)
+    _add(
+        library,
+        "s1",
+        "heavy wooden door creaking open",
+        ["door", "wood"],
+        ucs="DOORWood",
+        commercial=True,
+        snr=40.0,
+        duration=2.0,
+    )
+    _add(
+        library,
+        "s2",
+        "soft cat meowing indoors",
+        ["cat", "meow"],
+        ucs="ANMLCat",
+        commercial=False,
+        snr=10.0,
+        duration=1.5,
+    )
+    _add(
+        library,
+        "s3",
+        "heavy rain on a window pane",
+        ["rain", "weather"],
+        ucs="WEATHRain",
+        commercial=True,
+        snr=25.0,
+        duration=5.0,
+    )
+    _add(
+        library,
+        "s4",
+        "distant thunder rumble in a storm",
+        ["thunder", "storm"],
+        ucs="WEATHThunder",
+        commercial=True,
+        duration=8.0,
+    )
+    _add(
+        library,
+        "s5",
+        "dog barking loudly outside",
+        ["dog", "bark"],
+        ucs="ANMLDog",
+        commercial=True,
+        duration=3.0,
+    )
     return library
 
 
@@ -110,7 +167,9 @@ def test_search_respects_k(populated):
 
 def test_filter_commercial_ok_excludes_noncommercial(populated):
     unfiltered = {c.sound.id for c in populated.search("cat meowing", k=5)}
-    filtered = {c.sound.id for c in populated.search("cat meowing", k=5, commercial_ok=True)}
+    filtered = {
+        c.sound.id for c in populated.search("cat meowing", k=5, commercial_ok=True)
+    }
     assert "s2" in unfiltered  # the cat clip is retrievable
     assert "s2" not in filtered  # ...but filtered out as non-commercial
 
@@ -178,7 +237,9 @@ def test_rerank_keeps_best_first(populated):
 @pytest.fixture
 def tiny_library(fake_embedder):
     idx = MemoryIndex(dim=fake_embedder.dim)
-    return SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
+    return SoundLibrary(
+        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
+    )
 
 
 def test_audio_by_value_returns_cached_bytes(tiny_library):
@@ -198,8 +259,14 @@ def test_audio_by_reference_reads_local_path(tiny_library, tmp_path):
 
 
 def test_audio_remote_reference_raises(tiny_library):
-    _add(tiny_library, "u1", "a remote clip", ["clip"],
-         uri="https://example.com/x.flac", cache=False)
+    _add(
+        tiny_library,
+        "u1",
+        "a remote clip",
+        ["clip"],
+        uri="https://example.com/x.flac",
+        cache=False,
+    )
     with pytest.raises(LookupError):
         tiny_library.audio("u1")
 

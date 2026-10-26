@@ -334,10 +334,21 @@ def test_generations_cache_get_by_content_or_request_key():
     cache = GenerationsCache(
         audio={ck: raw},
         requests={
-            "req-a": {"content_key": ck, "backend": "el", "prompt": "bite",
-                      "affordances": {"duration": 1.0}, "status": "quarantined", "at": 1.0},
-            "req-b": {"content_key": ck, "backend": "el", "prompt": "bite",
-                      "affordances": {"duration": 2.0}, "at": 2.0},
+            "req-a": {
+                "content_key": ck,
+                "backend": "el",
+                "prompt": "bite",
+                "affordances": {"duration": 1.0},
+                "status": "quarantined",
+                "at": 1.0,
+            },
+            "req-b": {
+                "content_key": ck,
+                "backend": "el",
+                "prompt": "bite",
+                "affordances": {"duration": 2.0},
+                "at": 2.0,
+            },
             "req-c": {"answered_by": "req-b", "at": 3.0},  # a fallback's alias
             "req-bad": "not a dict",
         },
@@ -357,19 +368,37 @@ def test_generations_cache_find_matches_prompt_backend_and_affordances_newest_fi
     from foley.stores import GenerationsCache
 
     requests = {
-        "old": {"content_key": "k1", "backend": "el", "prompt": "bite",
-                "affordances": {"duration": 1.0}, "status": "quarantined", "at": 1.0},
-        "new": {"content_key": "k2", "backend": "el", "prompt": "bite",
-                "affordances": {"duration": 2.0}, "at": 2.0},
+        "old": {
+            "content_key": "k1",
+            "backend": "el",
+            "prompt": "bite",
+            "affordances": {"duration": 1.0},
+            "status": "quarantined",
+            "at": 1.0,
+        },
+        "new": {
+            "content_key": "k2",
+            "backend": "el",
+            "prompt": "bite",
+            "affordances": {"duration": 2.0},
+            "at": 2.0,
+        },
         "alias": {"answered_by": "new", "at": 3.0},
-        "other": {"content_key": "k3", "backend": "sa", "prompt": "bite",
-                  "affordances": {"duration": 1.0}, "at": 4.0},
+        "other": {
+            "content_key": "k3",
+            "backend": "sa",
+            "prompt": "bite",
+            "affordances": {"duration": 1.0},
+            "at": 4.0,
+        },
         "bad": "not a dict",
     }
     cache = GenerationsCache(audio={}, requests=requests)
     assert [k for k, _ in cache.find("bite")] == ["other", "new", "old"]  # newest first
     assert [k for k, _ in cache.find("bite", backend="el")] == ["new", "old"]
-    assert [k for k, _ in cache.find("bite", backend="el", duration=1)] == ["old"]  # 1 == 1.0
+    assert [k for k, _ in cache.find("bite", backend="el", duration=1)] == [
+        "old"
+    ]  # 1 == 1.0
     assert cache.find("bite", duration=3) == []
     assert cache.find("hush") == []
     assert len(cache.find()) == 3  # everything but the alias and the unreadable entry

@@ -35,7 +35,9 @@ def _tone(seconds=1.0, amp=0.3, freq=440.0):
 @pytest.fixture
 def library(fake_embedder):
     idx = MemoryIndex(dim=fake_embedder.dim)
-    return SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
+    return SoundLibrary(
+        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
+    )
 
 
 @pytest.fixture
@@ -50,7 +52,9 @@ def _swap_sources(monkeypatch, adapters):
 
     def fake_get_source(name):
         if name not in adapters:
-            raise AssertionError(f"the order reached {name!r}, which this test did not expect")
+            raise AssertionError(
+                f"the order reached {name!r}, which this test did not expect"
+            )
         return {"adapter": adapters[name]}
 
     monkeypatch.setattr(generate_module, "get_source", fake_get_source)
@@ -72,9 +76,13 @@ def test_the_alias_is_scrubbed_and_probed_like_the_key(monkeypatch):
     from foley.requirements import check_requirements, provider_key_env_vars
 
     assert "ELEVEN_API_KEY" in provider_key_env_vars()
-    assert check_requirements(names=("ELEVENLABS_API_KEY",)) == {"ELEVENLABS_API_KEY": False}
+    assert check_requirements(names=("ELEVENLABS_API_KEY",)) == {
+        "ELEVENLABS_API_KEY": False
+    }
     monkeypatch.setenv("ELEVEN_API_KEY", "x")
-    assert check_requirements(names=("ELEVENLABS_API_KEY",)) == {"ELEVENLABS_API_KEY": True}
+    assert check_requirements(names=("ELEVENLABS_API_KEY",)) == {
+        "ELEVENLABS_API_KEY": True
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -120,11 +128,15 @@ def test_the_order_env_replaces_the_order(monkeypatch):
     assert generate_module.paid_generation_opted_in()
 
 
-def test_auto_generation_is_served_by_elevenlabs_direct(paid_keys, monkeypatch, library):
+def test_auto_generation_is_served_by_elevenlabs_direct(
+    paid_keys, monkeypatch, library
+):
     monkeypatch.setenv("FOLEY_GENERATE_PAID", "1")
     transport = FakeTransport(FakeResponse(200, None, encode(_tone(2.0), SR)))
     _swap_sources(monkeypatch, {"elevenlabs": ElevenLabsAdapter(http=transport)})
-    cand = foley.generate("a clock ticking", library=library, duration=2, output_format="mp3")
+    cand = foley.generate(
+        "a clock ticking", library=library, duration=2, output_format="mp3"
+    )
     assert cand.sound.license.source == "elevenlabs"
     assert cand.sound.license.commercial_ok is True  # the paid plan's licence row
     assert cand.cost_estimate_usd == pytest.approx(0.004)
@@ -145,13 +157,16 @@ def test_a_failing_elevenlabs_call_falls_back_to_fal(paid_keys, monkeypatch, lib
     assert len(runner.calls) == 1
 
 
-def test_a_missing_plan_skips_elevenlabs_before_any_call(paid_keys, monkeypatch, library):
+def test_a_missing_plan_skips_elevenlabs_before_any_call(
+    paid_keys, monkeypatch, library
+):
     monkeypatch.setenv("FOLEY_GENERATE_PAID", "1")
     monkeypatch.delenv("FOLEY_ELEVENLABS_PLAN")
     transport = FakeTransport()
     fal, _ = _fal_adapter("fal_stable_audio_3")
     _swap_sources(
-        monkeypatch, {"elevenlabs": ElevenLabsAdapter(http=transport), "fal_stable_audio_3": fal}
+        monkeypatch,
+        {"elevenlabs": ElevenLabsAdapter(http=transport), "fal_stable_audio_3": fal},
     )
     cand = foley.generate("a sabre drawn", library=library)
     assert cand.sound.license.source == "fal_stable_audio_3"
@@ -160,15 +175,24 @@ def test_a_missing_plan_skips_elevenlabs_before_any_call(paid_keys, monkeypatch,
 
 
 def test_a_named_backend_never_falls_back(paid_keys, monkeypatch, library):
-    failing = ElevenLabsAdapter(http=FakeTransport(FakeResponse(500, {"detail": "down"})))
+    failing = ElevenLabsAdapter(
+        http=FakeTransport(FakeResponse(500, {"detail": "down"}))
+    )
     _swap_sources(monkeypatch, {"elevenlabs": failing})
     with pytest.raises(foley.GenerationError):
         foley.generate("a sigh", backend="elevenlabs", library=library)
 
 
 def test_a_backend_sequence_is_an_explicit_order(paid_keys, monkeypatch, library):
-    fal, _ = _fal_adapter("fal_elevenlabs", runner=ReplayRunner(default=(encode(_tone(), SR, fmt="WAV"), {"audio": {"url": "u"}})))
-    failing = ElevenLabsAdapter(http=FakeTransport(FakeResponse(429, {"detail": "busy"})))
+    fal, _ = _fal_adapter(
+        "fal_elevenlabs",
+        runner=ReplayRunner(
+            default=(encode(_tone(), SR, fmt="WAV"), {"audio": {"url": "u"}})
+        ),
+    )
+    failing = ElevenLabsAdapter(
+        http=FakeTransport(FakeResponse(429, {"detail": "busy"}))
+    )
     _swap_sources(monkeypatch, {"elevenlabs": failing, "fal_elevenlabs": fal})
     from foley.licensing import intended_use_for
 
@@ -186,30 +210,40 @@ def test_the_order_passes_over_a_backend_whose_licence_cannot_serve_the_use(
 ):
     # fal_elevenlabs is fal-partner-unverified (non-commercial): under the default
     # commercial use it is skipped before it is paid for.
-    failing = ElevenLabsAdapter(http=FakeTransport(FakeResponse(503, {"detail": "down"})))
+    failing = ElevenLabsAdapter(
+        http=FakeTransport(FakeResponse(503, {"detail": "down"}))
+    )
     fal, runner = _fal_adapter("fal_elevenlabs")
     _swap_sources(monkeypatch, {"elevenlabs": failing, "fal_elevenlabs": fal})
     from foley.sources.base import SourceConfigurationError
 
     with pytest.raises(SourceConfigurationError, match="licence does not fit"):
-        foley.generate("a sigh", backend=("elevenlabs", "fal_elevenlabs"), library=library)
+        foley.generate(
+            "a sigh", backend=("elevenlabs", "fal_elevenlabs"), library=library
+        )
     assert runner.calls == []
 
 
 def test_a_possibly_billed_failure_is_final(paid_keys, monkeypatch, library):
     # A 200 whose body does not decode was billed: never pay a second backend.
-    junk = ElevenLabsAdapter(http=FakeTransport(FakeResponse(200, None, b"not audio" * 50)))
+    junk = ElevenLabsAdapter(
+        http=FakeTransport(FakeResponse(200, None, b"not audio" * 50))
+    )
     fal, runner = _fal_adapter("fal_stable_audio_3")
     _swap_sources(monkeypatch, {"elevenlabs": junk, "fal_stable_audio_3": fal})
     with pytest.raises(foley.GenerationError):
-        foley.generate("a knock", backend=("elevenlabs", "fal_stable_audio_3"), library=library)
+        foley.generate(
+            "a knock", backend=("elevenlabs", "fal_stable_audio_3"), library=library
+        )
     assert runner.calls == []
 
 
 def test_a_refused_request_releases_its_reservation(paid_keys, monkeypatch, library):
     # 30 s upper bound reserved for ElevenLabs ($0.06), refused unbilled; fal ($0.0206)
     # must still fit under a $0.07 cap.
-    failing = ElevenLabsAdapter(http=FakeTransport(FakeResponse(500, {"detail": "down"})))
+    failing = ElevenLabsAdapter(
+        http=FakeTransport(FakeResponse(500, {"detail": "down"}))
+    )
     fal, runner = _fal_adapter("fal_stable_audio_3")
     _swap_sources(monkeypatch, {"elevenlabs": failing, "fal_stable_audio_3": fal})
     cand = foley.generate(
@@ -225,24 +259,37 @@ def test_a_bad_level_fails_before_any_call(paid_keys, monkeypatch, library):
     transport = FakeTransport()
     _swap_sources(monkeypatch, {"elevenlabs": ElevenLabsAdapter(http=transport)})
     with pytest.raises(ValueError, match="level="):
-        foley.generate("a knock", backend=("elevenlabs", "stable_audio"), library=library, level="loud")
+        foley.generate(
+            "a knock",
+            backend=("elevenlabs", "stable_audio"),
+            library=library,
+            level="loud",
+        )
     assert transport.calls == []
 
 
-def test_an_unknown_backend_in_the_order_is_named_as_such(paid_keys, monkeypatch, library):
+def test_an_unknown_backend_in_the_order_is_named_as_such(
+    paid_keys, monkeypatch, library
+):
     fal, _ = _fal_adapter("fal_stable_audio_3")
     _swap_sources(monkeypatch, {"fal_stable_audio_3": fal})
-    cand = foley.generate("a knock", backend=("elevenlab", "fal_stable_audio_3"), library=library)
+    cand = foley.generate(
+        "a knock", backend=("elevenlab", "fal_stable_audio_3"), library=library
+    )
     assert any("elevenlab: not a registered generate source" in n for n in cand.notes)
 
 
-def test_an_injected_adapter_is_one_backend_named_by_its_config(paid_keys, monkeypatch, library):
+def test_an_injected_adapter_is_one_backend_named_by_its_config(
+    paid_keys, monkeypatch, library
+):
     monkeypatch.setenv("FOLEY_GENERATE_PAID", "1")
     fal, runner = _fal_adapter("fal_stable_audio_3")
     cand = foley.generate("a knock", adapter=fal, library=library)
     assert cand.sound.license.source == "fal_stable_audio_3" and len(runner.calls) == 1
     with pytest.raises(ValueError, match="one backend"):
-        foley.generate("a knock", adapter=fal, backend=("elevenlabs", "fal_stable_audio_3"))
+        foley.generate(
+            "a knock", adapter=fal, backend=("elevenlabs", "fal_stable_audio_3")
+        )
 
 
 def test_the_credits_header_is_noted(paid_keys):
@@ -289,11 +336,21 @@ def test_generate_levels_on_request_and_records_it(paid_keys, monkeypatch, libra
     transport = FakeTransport(FakeResponse(200, None, encode(_tone(2.0, amp=0.9), SR)))
     adapter = ElevenLabsAdapter(http=transport)
     cand = foley.generate(
-        "a bell", backend="elevenlabs", adapter=adapter, library=library, level="sfx_fg", duration=2
+        "a bell",
+        backend="elevenlabs",
+        adapter=adapter,
+        library=library,
+        level="sfx_fg",
+        duration=2,
     )
-    assert any(t.startswith("levelled from") for t in cand.sound.license.transformations)
+    assert any(
+        t.startswith("levelled from") for t in cand.sound.license.transformations
+    )
     assert cand.sound.loudness_lufs == pytest.approx(-25.0, abs=0.7)
-    assert cand.sound.qc["level"]["target_lufs"] == -25.0 and cand.sound.qc["level"]["applied"]
+    assert (
+        cand.sound.qc["level"]["target_lufs"] == -25.0
+        and cand.sound.qc["level"]["applied"]
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -324,7 +381,10 @@ def test_prompt_match_flags_a_clip_unlike_its_prompt():
     from foley.prompt_match import prompt_match
 
     clip = encode(_tone(1.0), SR)
-    assert prompt_match("musket into a hand", clip, embedder=_AlignedFake(0.05))["status"] == "mismatch"
+    assert (
+        prompt_match("musket into a hand", clip, embedder=_AlignedFake(0.05))["status"]
+        == "mismatch"
+    )
     ok = prompt_match("musket into a hand", clip, embedder=_AlignedFake(0.4))
     assert ok["status"] == "match" and ok["score"] == pytest.approx(0.4, abs=1e-3)
 
@@ -338,22 +398,38 @@ def test_prompt_match_is_unchecked_without_a_capable_embedder(fake_embedder):
 
 def test_generate_puts_the_verdict_on_the_stored_record(paid_keys, fake_embedder):
     idx = MemoryIndex(dim=_AlignedFake.dim)
-    lib = SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=_AlignedFake(0.05))
-    adapter = ElevenLabsAdapter(http=FakeTransport(FakeResponse(200, None, encode(_tone(1.0), SR))))
-    cand = foley.generate("a page turn", backend="elevenlabs", adapter=adapter, library=lib, duration=1)
+    lib = SoundLibrary(
+        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=_AlignedFake(0.05)
+    )
+    adapter = ElevenLabsAdapter(
+        http=FakeTransport(FakeResponse(200, None, encode(_tone(1.0), SR)))
+    )
+    cand = foley.generate(
+        "a page turn", backend="elevenlabs", adapter=adapter, library=lib, duration=1
+    )
     assert cand.sound.qc["prompt_match"]["status"] == "mismatch"
     assert lib[cand.sound.id].qc["prompt_match"]["status"] == "mismatch"  # persisted
     assert any("prompt match: MISMATCH" in n for n in cand.notes)
 
 
 def test_generate_says_unchecked_with_a_bag_of_words_embedder(paid_keys, library):
-    adapter = ElevenLabsAdapter(http=FakeTransport(FakeResponse(200, None, encode(_tone(1.0), SR))))
-    cand = foley.generate("a page turn", backend="elevenlabs", adapter=adapter, library=library, duration=1)
+    adapter = ElevenLabsAdapter(
+        http=FakeTransport(FakeResponse(200, None, encode(_tone(1.0), SR)))
+    )
+    cand = foley.generate(
+        "a page turn",
+        backend="elevenlabs",
+        adapter=adapter,
+        library=library,
+        duration=1,
+    )
     assert cand.sound.qc["prompt_match"]["status"] == "unchecked"
     assert any(n.startswith("prompt match: unchecked") for n in cand.notes)
 
 
-def test_a_single_backend_order_is_judged_when_a_use_is_given(paid_keys, monkeypatch, library):
+def test_a_single_backend_order_is_judged_when_a_use_is_given(
+    paid_keys, monkeypatch, library
+):
     # FOLEY_GENERATE_BACKEND=fal_elevenlabs: find's 'auto' must refuse before paying.
     from foley.agent.tools import generate_sound
     from foley.licensing import intended_use_for
@@ -367,7 +443,9 @@ def test_a_single_backend_order_is_judged_when_a_use_is_given(paid_keys, monkeyp
     assert runner.calls == []
 
 
-def test_a_queue_source_error_is_never_treated_as_unbilled(paid_keys, monkeypatch, library):
+def test_a_queue_source_error_is_never_treated_as_unbilled(
+    paid_keys, monkeypatch, library
+):
     # A 5xx while fetching a fal result may come after the job ran (billed): final.
     class Fetch502(RuntimeError):
         status_code = 502
@@ -377,9 +455,13 @@ def test_a_queue_source_error_is_never_treated_as_unbilled(paid_keys, monkeypatc
 
     first, _ = _fal_adapter("fal_stable_audio_3", runner=failing_runner)
     second, runner = _fal_adapter("fal_stable_audio_3_medium")
-    _swap_sources(monkeypatch, {"fal_stable_audio_3": first, "fal_stable_audio_3_medium": second})
+    _swap_sources(
+        monkeypatch, {"fal_stable_audio_3": first, "fal_stable_audio_3_medium": second}
+    )
     with pytest.raises(foley.GenerationError):
         foley.generate(
-            "a knock", backend=("fal_stable_audio_3", "fal_stable_audio_3_medium"), library=library
+            "a knock",
+            backend=("fal_stable_audio_3", "fal_stable_audio_3_medium"),
+            library=library,
         )
     assert runner.calls == []

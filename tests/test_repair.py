@@ -57,7 +57,9 @@ def _with_run(x, *, run, value=1.0):
 
 def just_over_the_gate():
     """The production's apple bite: ratio just over 0.01 %, an edge click, > -1 dBTP."""
-    run = int(TH.clip_reject_ratio * SR) + 2  # 0.01 % of 1 s = 4.8 -> 6 samples (>= min_run)
+    run = (
+        int(TH.clip_reject_ratio * SR) + 2
+    )  # 0.01 % of 1 s = 4.8 -> 6 samples (>= min_run)
     assert TH.clip_min_run <= run < TH.clip_reject_run
     return _with_run(_cosine(), run=run)
 
@@ -118,7 +120,9 @@ def test_the_production_case_is_quarantined_by_qc_and_cleared_by_repair():
     x = just_over_the_gate()
     before = run_qc(x, SR)
     assert before.status is QCStatus.fail
-    assert TH.clip_reject_ratio < before.clipped_ratio <= DEFAULT_REPAIR_MAX_CLIPPED_RATIO
+    assert (
+        TH.clip_reject_ratio < before.clipped_ratio <= DEFAULT_REPAIR_MAX_CLIPPED_RATIO
+    )
     assert before.needs_edge_fade and before.true_peak_dbtp > TH.true_peak_max_dbtp
     assert unrepairable(before) is None
     assert suggested_fixes(before) == [FIX_FADE, FIX_LIMIT]
@@ -205,14 +209,18 @@ def test_a_long_clip_cannot_hide_a_long_flat_top_under_a_small_ratio():
     plateau = _with_run(long_sine, run=400)  # 8 ms flat top; 400 / 480 000 = 0.083 %
     before = run_qc(plateau, SR)
     assert before.status is QCStatus.fail
-    assert before.clipped_ratio <= DEFAULT_REPAIR_MAX_CLIPPED_RATIO  # the ratio alone would pass
+    assert (
+        before.clipped_ratio <= DEFAULT_REPAIR_MAX_CLIPPED_RATIO
+    )  # the ratio alone would pass
     assert before.clipped_max_run > DEFAULT_REPAIR_MAX_CLIPPED_RUN
     assert unrepairable(before).startswith("flat top of 400 samples")
     assert not repair(plateau, SR).repaired
 
     short_run = _with_run(long_sine, run=40)  # < 1 ms: fails by the run prong only
     before = run_qc(short_run, SR)
-    assert before.status is QCStatus.fail and before.clipped_ratio <= TH.clip_reject_ratio
+    assert (
+        before.status is QCStatus.fail and before.clipped_ratio <= TH.clip_reject_ratio
+    )
     result = repair(short_run, SR)
     assert result.repaired and result.cleared() and result.after.clipped_max_run == 0
     assert DEFAULT_REPAIR_MAX_CLIPPED_RUN == 5 * TH.clip_reject_run
@@ -238,7 +246,9 @@ def test_note_says_what_was_done_or_why_nothing_was():
     assert "QC was fail: hard clipping" in done
     skipped = repair(np.zeros(SR, dtype=np.float32), SR).note()
     assert skipped.startswith("repair skipped (not repairable: near-silent); QC fail:")
-    res = RepairResult(samples=np.zeros(1), sample_rate=SR, before=run_qc(just_over_the_gate(), SR))
+    res = RepairResult(
+        samples=np.zeros(1), sample_rate=SR, before=run_qc(just_over_the_gate(), SR)
+    )
     res.applied.append("looked at it")
     res.after = res.before
     assert res.note().startswith("repair tried (looked at it) but QC still fail:")
@@ -262,7 +272,9 @@ def test_repair_bytes_round_trips_an_encoded_clip():
     same, result = repair_bytes(clean)
     assert same is clean and not result.repaired and result.note() is None
     # a policy that does not clear the floor keeps the bytes as received
-    unfixed, result = repair_bytes(raw, policy=lambda s, r, *, report: RepairResult(s, r, report))
+    unfixed, result = repair_bytes(
+        raw, policy=lambda s, r, *, report: RepairResult(s, r, report)
+    )
     assert unfixed is raw and not result.repaired
 
 
@@ -272,4 +284,6 @@ def test_repair_knobs_are_keyword_arguments_with_named_defaults():
     assert "50 ms" in result.applied[0] and "-3 dBTP" in result.applied[1]
     assert result.after.true_peak_dbtp <= -3.0 + 1e-6
     assert DEFAULT_REPAIR_MAX_CLIPPED_RATIO == pytest.approx(10 * TH.clip_reject_ratio)
-    assert not repair(x, SR, max_clipped_run=1).repaired  # a tighter run bound refuses it
+    assert not repair(
+        x, SR, max_clipped_run=1
+    ).repaired  # a tighter run bound refuses it

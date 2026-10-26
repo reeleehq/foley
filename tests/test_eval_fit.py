@@ -55,14 +55,22 @@ _CANONICAL = np.array(
 
 def test_krippendorff_canonical_values():
     """α matches Krippendorff's published values for the canonical fixture (to 3dp)."""
-    assert krippendorff_alpha(_CANONICAL, level="nominal") == pytest.approx(0.743, abs=0.001)
-    assert krippendorff_alpha(_CANONICAL, level="ordinal") == pytest.approx(0.815, abs=0.001)
-    assert krippendorff_alpha(_CANONICAL, level="interval") == pytest.approx(0.849, abs=0.001)
+    assert krippendorff_alpha(_CANONICAL, level="nominal") == pytest.approx(
+        0.743, abs=0.001
+    )
+    assert krippendorff_alpha(_CANONICAL, level="ordinal") == pytest.approx(
+        0.815, abs=0.001
+    )
+    assert krippendorff_alpha(_CANONICAL, level="interval") == pytest.approx(
+        0.849, abs=0.001
+    )
 
 
 def test_krippendorff_degenerate():
     """Perfect agreement → 1.0; a single-rater / empty matrix → 1.0 (no expected disagreement)."""
-    assert krippendorff_alpha(np.array([[1, 2, 3, 4], [1, 2, 3, 4]], dtype=float)) == 1.0
+    assert (
+        krippendorff_alpha(np.array([[1, 2, 3, 4], [1, 2, 3, 4]], dtype=float)) == 1.0
+    )
     assert krippendorff_alpha(np.array([[1, 2, 3]], dtype=float)) == 1.0  # one rater
 
 
@@ -124,9 +132,15 @@ def test_generation_fidelity_stamped(fake_embedder):
     wavs = [rng.standard_normal(2048).astype(np.float32) for _ in range(6)]
     res = generation_fidelity(wavs, wavs, embedder=fake_embedder, metric="fad")
     assert isinstance(res, FidelityResult)
-    assert res.metric == "fad" and res.value == pytest.approx(0.0, abs=1e-6)  # same set → 0
+    assert res.metric == "fad" and res.value == pytest.approx(
+        0.0, abs=1e-6
+    )  # same set → 0
     assert res.stamp.embedding == fake_embedder.model_id
-    assert res.stamp.toolkit == "foley-numpy" and res.stamp.n_ref == 6 and res.stamp.n_gen == 6
+    assert (
+        res.stamp.toolkit == "foley-numpy"
+        and res.stamp.n_ref == 6
+        and res.stamp.n_gen == 6
+    )
     # the KAD dispatch path (numpy KAD is shipped, not deferred) — the metric math itself
     # is validated at scale in test_kad_properties; here we only cover the dispatch (the
     # unbiased MMD² is biased away from 0 at this tiny m, so we don't assert a value).
@@ -157,8 +171,12 @@ def test_fit_precision_oracle():
     relevants = [True, False, False, True, True, False]  # TP=2, FP=2, FN=1
     assert fit_precision(matches, relevants) == pytest.approx(2 / 4)  # 0.5
     assert fit_recall(matches, relevants) == pytest.approx(2 / 3)  # ≠ precision
-    assert fit_f1(matches, relevants) == pytest.approx(2 * 0.5 * (2 / 3) / (0.5 + 2 / 3))  # 4/7
-    assert fit_precision([], []) == 0.0 and fit_recall([], []) == 0.0  # nothing accepted
+    assert fit_f1(matches, relevants) == pytest.approx(
+        2 * 0.5 * (2 / 3) / (0.5 + 2 / 3)
+    )  # 4/7
+    assert (
+        fit_precision([], []) == 0.0 and fit_recall([], []) == 0.0
+    )  # nothing accepted
 
 
 # ---------------------------------------------------------------------------
@@ -183,7 +201,11 @@ def test_run_fit_eval_reproducible():
     """Same seed + fake judge → identical fit numbers (determinism)."""
     a = run_fit_eval(fit_judge=StringOverlapJudge(), level="listen", seed=0, k=5)
     b = run_fit_eval(fit_judge=StringOverlapJudge(), level="listen", seed=0, k=5)
-    assert (a.fit_precision, a.n_accepted, a.fit_score) == (b.fit_precision, b.n_accepted, b.fit_score)
+    assert (a.fit_precision, a.n_accepted, a.fit_score) == (
+        b.fit_precision,
+        b.n_accepted,
+        b.fit_score,
+    )
 
 
 def test_fit_report_gate_is_the_sole_gate():
@@ -206,8 +228,11 @@ def test_run_fit_eval_rejects_clap_rung():
 
 def test_stratified_sample_deterministic():
     """The stratified draw is seeded-deterministic, capped, and round-robins across strata."""
-    units = [(f"i{s}", 0, {"query": "q", "ucs_catid": f"{fam}Gnrl", "diegetic": True})
-             for fam in ("DOOR", "RAIN", "WIND") for s in range(4)]
+    units = [
+        (f"i{s}", 0, {"query": "q", "ucs_catid": f"{fam}Gnrl", "diegetic": True})
+        for fam in ("DOOR", "RAIN", "WIND")
+        for s in range(4)
+    ]
     strata_keys = ("family", "diegetic")
     d1 = stratified_sample(units, strata_keys=strata_keys, sample=6, seed=0)
     d2 = stratified_sample(units, strata_keys=strata_keys, sample=6, seed=0)
@@ -215,7 +240,9 @@ def test_stratified_sample_deterministic():
     # round-robin ⇒ each of the 3 families appears twice in a 6-of-12 draw
     fams = [u[2]["ucs_catid"][:4] for u in d1]
     assert all(fams.count(f) == 2 for f in ("DOOR", "RAIN", "WIND"))
-    assert stratified_sample(units, strata_keys=strata_keys, sample=None, seed=0) == units  # None = all
+    assert (
+        stratified_sample(units, strata_keys=strata_keys, sample=None, seed=0) == units
+    )  # None = all
 
 
 # ---------------------------------------------------------------------------
@@ -228,7 +255,9 @@ def test_fit_never_binds_ranking_symbols():
     import foley.eval.fit as fitmod
 
     ns = set(vars(fitmod))
-    assert not ({"build_run", "evaluate_run", "to_qrels", "run_ring0_retrieval_eval"} & ns)
+    assert not (
+        {"build_run", "evaluate_run", "to_qrels", "run_ring0_retrieval_eval"} & ns
+    )
 
 
 def test_fit_eval_does_not_touch_retrieval_ranking(monkeypatch):

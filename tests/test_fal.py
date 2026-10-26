@@ -58,13 +58,21 @@ class ReplayRunner:
 @pytest.fixture
 def library(fake_embedder):
     idx = MemoryIndex(dim=fake_embedder.dim)
-    return SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
+    return SoundLibrary(
+        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
+    )
 
 
 def _adapter(name="fal_stable_audio_3", runner=None, **kw):
-    response = {"audio": {"url": "https://fal.media/x.wav"}, "seed": 1234, "prompt": "p"}
+    response = {
+        "audio": {"url": "https://fal.media/x.wav"},
+        "seed": 1234,
+        "prompt": "p",
+    }
     runner = runner or ReplayRunner(default=(_wav(), response))
-    return FalAdapter(CONFIGS[name], api_key="fal-test-key", runner=runner, **kw), runner
+    return FalAdapter(
+        CONFIGS[name], api_key="fal-test-key", runner=runner, **kw
+    ), runner
 
 
 # ---------------------------------------------------------------------------
@@ -110,7 +118,9 @@ def test_sa3_native_payload_has_prompt_default_duration_and_fixed_args():
     args = adapter.native_arguments("a clock ticks")
     assert args["prompt"] == "a clock ticks"
     assert args["duration"] == 10.0  # the declared default, not fal's 30 s
-    assert args["enable_prompt_expansion"] is False  # the prompt we record is the one used
+    assert (
+        args["enable_prompt_expansion"] is False
+    )  # the prompt we record is the one used
     assert args["guidance_scale"] == 1.0  # distilled: CFG 1
     assert args["output_format"] == "wav"
 
@@ -134,9 +144,20 @@ def test_sonilo_maps_output_format_to_audio_format():
 
 def test_mirelo_asks_for_one_sample_and_reads_the_seed_list(library):
     response = {"audio": [{"url": "u"}], "seeds": [42], "model": "sfx2.0"}
-    adapter, runner = _adapter("fal_mirelo", runner=ReplayRunner(default=(_wav(), response)))
-    rec = generate_backend("a sabre", backend="fal_mirelo", library=library,
-                           adapter=adapter, duration=1).ingested[0].record
+    adapter, runner = _adapter(
+        "fal_mirelo", runner=ReplayRunner(default=(_wav(), response))
+    )
+    rec = (
+        generate_backend(
+            "a sabre",
+            backend="fal_mirelo",
+            library=library,
+            adapter=adapter,
+            duration=1,
+        )
+        .ingested[0]
+        .record
+    )
     assert runner.calls[0][1]["num_samples"] == 1  # billed per sample
     assert rec.license.generation_seed == 42
 
@@ -144,8 +165,12 @@ def test_mirelo_asks_for_one_sample_and_reads_the_seed_list(library):
 def test_sa3_medium_shares_the_small_schema():
     medium, small = CONFIGS["fal_stable_audio_3_medium"], CONFIGS["fal_stable_audio_3"]
     assert medium["param_map"] == small["param_map"]
-    assert medium["param_map"] is not small["param_map"]  # a copy: no cross-source leaks
-    assert foley.estimate("generate", backend="fal_stable_audio_3_medium") == pytest.approx(0.0376)
+    assert (
+        medium["param_map"] is not small["param_map"]
+    )  # a copy: no cross-source leaks
+    assert foley.estimate(
+        "generate", backend="fal_stable_audio_3_medium"
+    ) == pytest.approx(0.0376)
 
 
 def test_mmaudio_maps_prompt_influence_onto_cfg_strength():
@@ -164,8 +189,11 @@ def test_generate_stores_by_value_with_the_stability_licence_and_the_returned_se
 ):
     adapter, runner = _adapter()
     report = generate_backend(
-        "an old clock ticking", backend="fal_stable_audio_3", library=library,
-        adapter=adapter, duration=2,
+        "an old clock ticking",
+        backend="fal_stable_audio_3",
+        library=library,
+        adapter=adapter,
+        duration=2,
     )
     (res,) = report.ingested
     rec = res.record
@@ -174,7 +202,10 @@ def test_generate_stores_by_value_with_the_stability_licence_and_the_returned_se
     assert lic.license_id == "Stability-Community"
     assert lic.revenue_cap_usd == 1_000_000
     assert lic.is_ai_generated and lic.generation_seed == 1234
-    assert lic.generation_params["fal_endpoint"] == CONFIGS["fal_stable_audio_3"]["api"]["endpoint_id"]
+    assert (
+        lic.generation_params["fal_endpoint"]
+        == CONFIGS["fal_stable_audio_3"]["api"]["endpoint_id"]
+    )
     assert res.cost_estimate_usd == pytest.approx(0.0206)
     assert res.cost_actual_usd == pytest.approx(0.0206)
     assert runner.calls[0][2] == "fal-test-key"
@@ -182,7 +213,9 @@ def test_generate_stores_by_value_with_the_stability_licence_and_the_returned_se
 
 def test_an_identical_request_is_served_from_the_generations_cache(library):
     adapter, runner = _adapter()
-    kw = dict(backend="fal_stable_audio_3", library=library, adapter=adapter, duration=2)
+    kw = dict(
+        backend="fal_stable_audio_3", library=library, adapter=adapter, duration=2
+    )
     generate_backend("a quill scratching", **kw)
     second = generate_backend("a quill scratching", store=False, **kw)
     assert len(runner.calls) == 1
@@ -193,7 +226,9 @@ def test_an_identical_request_is_served_from_the_generations_cache(library):
 
 def test_reuse_cached_false_pays_again(library):
     adapter, runner = _adapter()
-    kw = dict(backend="fal_stable_audio_3", library=library, adapter=adapter, duration=2)
+    kw = dict(
+        backend="fal_stable_audio_3", library=library, adapter=adapter, duration=2
+    )
     generate_backend("a quill scratching", **kw)
     generate_backend("a quill scratching", reuse_cached=False, store=False, **kw)
     assert len(runner.calls) == 2
@@ -231,7 +266,10 @@ def test_a_seed_on_a_backend_without_seeds_raises_before_paying(library):
 def test_distilled_sa3_notes_an_unapplied_prompt_influence(library):
     adapter, runner = _adapter()
     report = generate_backend(
-        "x", backend="fal_stable_audio_3", library=library, adapter=adapter,
+        "x",
+        backend="fal_stable_audio_3",
+        library=library,
+        adapter=adapter,
         prompt_influence=0.9,
     )
     assert runner.calls[0][1]["guidance_scale"] == 1.0
@@ -239,32 +277,62 @@ def test_distilled_sa3_notes_an_unapplied_prompt_influence(library):
 
 
 @pytest.mark.parametrize(
-    "name, commercial", [("fal_stable_audio_3", True), ("fal_stable_audio_3_medium", True),
-                         ("fal_mirelo", False), ("fal_elevenlabs", False),
-                         ("fal_sonilo", False), ("fal_mmaudio", False)]
+    "name, commercial",
+    [
+        ("fal_stable_audio_3", True),
+        ("fal_stable_audio_3_medium", True),
+        ("fal_mirelo", False),
+        ("fal_elevenlabs", False),
+        ("fal_sonilo", False),
+        ("fal_mmaudio", False),
+    ],
 )
 def test_keep_follows_each_endpoints_licence(library, name, commercial):
-    adapter, _ = _adapter(name, runner=ReplayRunner(default=(_wav(), {"audio": {"url": "u"}})))
+    adapter, _ = _adapter(
+        name, runner=ReplayRunner(default=(_wav(), {"audio": {"url": "u"}}))
+    )
     report = generate_backend("a sabre", backend=name, library=library, adapter=adapter)
     rec = report.ingested[0].record
-    assert bool(keep(rec.license, IntendedUse(commercial=True, publish=True, can_attribute=True))) is commercial
-    assert keep(rec.license, IntendedUse(commercial=False, publish=True, can_attribute=True))
+    assert (
+        bool(
+            keep(
+                rec.license,
+                IntendedUse(commercial=True, publish=True, can_attribute=True),
+            )
+        )
+        is commercial
+    )
+    assert keep(
+        rec.license, IntendedUse(commercial=False, publish=True, can_attribute=True)
+    )
 
 
 def test_mmaudio_carries_its_attribution(library):
-    adapter, _ = _adapter("fal_mmaudio", runner=ReplayRunner(default=(_wav(), {"audio": {"url": "u"}})))
-    rec = generate_backend("x", backend="fal_mmaudio", library=library, adapter=adapter).ingested[0].record
+    adapter, _ = _adapter(
+        "fal_mmaudio", runner=ReplayRunner(default=(_wav(), {"audio": {"url": "u"}}))
+    )
+    rec = (
+        generate_backend("x", backend="fal_mmaudio", library=library, adapter=adapter)
+        .ingested[0]
+        .record
+    )
     assert rec.license.requires_attribution
     assert "MMAudio" in rec.license.attribution_text
 
 
 def test_estimates_are_honest_upper_bounds():
-    assert foley.estimate("generate", backend="fal_stable_audio_3") == pytest.approx(0.0206)
+    assert foley.estimate("generate", backend="fal_stable_audio_3") == pytest.approx(
+        0.0206
+    )
     # no duration asked: priced at what the adapter sends (Sonilo's 8 s default) ...
     assert foley.estimate("generate", backend="fal_sonilo") == pytest.approx(8 * 0.0018)
     # ... or, with no default, at the endpoint's maximum (ElevenLabs on fal: 22 s)
-    assert foley.estimate("generate", backend="fal_elevenlabs") == pytest.approx(22 * 0.002)
-    assert foley.estimate("generate", backend="fal_mmaudio", duration=3) == pytest.approx(0.003)
+    assert foley.estimate("generate", backend="fal_elevenlabs") == pytest.approx(
+        22 * 0.002
+    )
+    assert foley.estimate(
+        "generate", backend="fal_mmaudio", duration=3
+    ) == pytest.approx(0.003)
 
 
 def test_default_backend_comes_from_the_env(monkeypatch):
@@ -281,7 +349,9 @@ def test_default_backend_comes_from_the_env(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_falaw_runner_skips_falaws_cache_read_and_reads_the_bytes(monkeypatch, tmp_path):
+def test_falaw_runner_skips_falaws_cache_read_and_reads_the_bytes(
+    monkeypatch, tmp_path
+):
     falaw = pytest.importorskip("falaw")
     seen = {}
     blob = tmp_path / "a.wav"
@@ -322,8 +392,11 @@ def test_falaw_runner_raises_on_a_response_without_audio(monkeypatch):
 def test_live_sa3_small_sfx_generates_a_decodable_clip(library):
     pytest.importorskip("falaw")
     cand = foley.generate(
-        "a single wooden floorboard creak", backend="fal_stable_audio_3",
-        library=library, duration=2, reuse_cached=False,
+        "a single wooden floorboard creak",
+        backend="fal_stable_audio_3",
+        library=library,
+        duration=2,
+        reuse_cached=False,
     )
     assert cand.sound.duration_s == pytest.approx(2.0, abs=0.2)
     assert cand.sound.license.license_id == "Stability-Community"
@@ -356,33 +429,59 @@ def test_the_cache_key_covers_what_the_payload_adds(library):
 
     a, _ = _adapter()
     changed = dict(CONFIGS["fal_stable_audio_3"])
-    changed["native_defaults"] = dict(changed["native_defaults"], duration_default_s=3.0)
+    changed["native_defaults"] = dict(
+        changed["native_defaults"], duration_default_s=3.0
+    )
     b = FalAdapter(changed, api_key="fal-test-key", runner=ReplayRunner())
-    key_a = plan_generation("fal_stable_audio_3", "x", adapter=a, reuse_cached=False).request_key
-    key_b = plan_generation("fal_stable_audio_3", "x", adapter=b, config=changed,
-                            reuse_cached=False).request_key
+    key_a = plan_generation(
+        "fal_stable_audio_3", "x", adapter=a, reuse_cached=False
+    ).request_key
+    key_b = plan_generation(
+        "fal_stable_audio_3", "x", adapter=b, config=changed, reuse_cached=False
+    ).request_key
     assert key_a != key_b
 
 
 def test_seed_and_steps_go_out_as_ints_and_the_seed_is_recorded(library):
-    adapter, runner = _adapter("fal_mmaudio", runner=ReplayRunner(default=(_wav(), {"audio": {"url": "u"}})))
-    rec = generate_backend("x", backend="fal_mmaudio", library=library, adapter=adapter,
-                           seed=42, steps=10).ingested[0].record
+    adapter, runner = _adapter(
+        "fal_mmaudio", runner=ReplayRunner(default=(_wav(), {"audio": {"url": "u"}}))
+    )
+    rec = (
+        generate_backend(
+            "x",
+            backend="fal_mmaudio",
+            library=library,
+            adapter=adapter,
+            seed=42,
+            steps=10,
+        )
+        .ingested[0]
+        .record
+    )
     sent = runner.calls[0][1]
     assert sent["seed"] == 42 and isinstance(sent["seed"], int)
     assert isinstance(sent["num_steps"], int)
     assert rec.license.generation_seed == 42
 
 
-@pytest.mark.parametrize("name, refused", [("fal_stable_audio_3", False), ("fal_sonilo", True),
-                                           ("fal_mmaudio", True), ("elevenlabs", False)])
+@pytest.mark.parametrize(
+    "name, refused",
+    [
+        ("fal_stable_audio_3", False),
+        ("fal_sonilo", True),
+        ("fal_mmaudio", True),
+        ("elevenlabs", False),
+    ],
+)
 def test_rights_are_checked_before_paying(name, refused):
     from foley.licensing import intended_use_for
     from foley.sources.generate import generation_rights_refusal
 
     reason = generation_rights_refusal(name, intended_use_for())  # commercial default
     assert (reason is not None) is refused
-    assert generation_rights_refusal(name, intended_use_for(commercial_ok=False)) is None
+    assert (
+        generation_rights_refusal(name, intended_use_for(commercial_ok=False)) is None
+    )
 
 
 def test_mcp_generate_refuses_a_noncommercial_backend_for_free(monkeypatch):
@@ -397,7 +496,9 @@ def test_mcp_generate_refuses_a_noncommercial_backend_for_free(monkeypatch):
 
 def test_auto_is_accepted_by_generate_and_estimate(monkeypatch):
     monkeypatch.setenv("FOLEY_GENERATE_BACKEND", "fal_sonilo")
-    assert foley.estimate("generate", backend="auto", duration=1) == pytest.approx(0.0018)
+    assert foley.estimate("generate", backend="auto", duration=1) == pytest.approx(
+        0.0018
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -432,7 +533,10 @@ def test_a_provider_duration_cannot_under_reserve_the_budget(name):
     with spend_scope(budget):
         with pytest.raises(ValueError, match="price"):
             foley.generate(
-                "rain", backend=name, adapter=adapter, duration=1,
+                "rain",
+                backend=name,
+                adapter=adapter,
+                duration=1,
                 provider_params={duration: config["native_defaults"]["duration_max_s"]},
             )
     assert runner.calls == [] and budget.spent_usd == 0.0
@@ -459,5 +563,9 @@ def test_invoke_native_sends_the_arguments_as_is():
     adapter, runner = _adapter()
     audio, response = adapter.invoke_native({"prompt": "rain", "steps": 4})
     endpoint = CONFIGS["fal_stable_audio_3"]["api"]["endpoint_id"]
-    assert runner.calls[0][:3] == (endpoint, {"prompt": "rain", "steps": 4}, "fal-test-key")
+    assert runner.calls[0][:3] == (
+        endpoint,
+        {"prompt": "rain", "steps": 4},
+        "fal-test-key",
+    )
     assert audio and response["seed"] == 1234

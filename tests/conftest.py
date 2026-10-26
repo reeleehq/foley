@@ -87,7 +87,8 @@ NETWORK_TRIP_MARKER = "network_trip_expected"
 
 def pytest_configure(config):
     config.addinivalue_line(
-        "markers", f"{NETWORK_TRIP_MARKER}: the test deliberately trips the socket guard"
+        "markers",
+        f"{NETWORK_TRIP_MARKER}: the test deliberately trips the socket guard",
     )
 
 
@@ -124,7 +125,11 @@ def _isolate_from_paid_apis(monkeypatch, request, _provider_key_env_vars):
     """
     if live_api_tests_enabled():
         # Live tests may use real keys, but never the shell's choice of default backend.
-        for name in ("FOLEY_GENERATE_BACKEND", "FOLEY_GENERATE_ORDER", "FOLEY_GENERATE_PAID"):
+        for name in (
+            "FOLEY_GENERATE_BACKEND",
+            "FOLEY_GENERATE_ORDER",
+            "FOLEY_GENERATE_PAID",
+        ):
             monkeypatch.delenv(name, raising=False)
         yield
         return
@@ -138,7 +143,10 @@ def _isolate_from_paid_apis(monkeypatch, request, _provider_key_env_vars):
     trips: list = []
 
     def _allowed(sock, address) -> bool:
-        if getattr(socket, "AF_UNIX", None) is not None and sock.family == socket.AF_UNIX:
+        if (
+            getattr(socket, "AF_UNIX", None) is not None
+            and sock.family == socket.AF_UNIX
+        ):
             return True
         host = address[0] if isinstance(address, tuple) else address
         return is_loopback_host(host)
