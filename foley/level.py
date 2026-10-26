@@ -36,7 +36,12 @@ from __future__ import annotations
 import math
 from typing import Optional, Union
 
+from typing import TYPE_CHECKING
+
 from .base import Layer
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from .audio import Meter
 
 #: What ``level=`` accepts: a layer (or its name) for its class target, or a LUFS value.
 LevelSpec = Union[Layer, str, float, int]
@@ -90,13 +95,14 @@ def require_loudness_meter() -> None:
 
 
 def level_bytes(
-    audio_bytes: bytes, target: LevelSpec
+    audio_bytes: bytes, target: LevelSpec, *, meter: Optional[Meter] = None
 ) -> "tuple[bytes, Optional[str], Optional[float]]":
     """Scale an encoded clip to ``target`` loudness; return ``(bytes, applied, measured)``.
 
     Args:
         audio_bytes: Any clip ``soundfile`` decodes.
         target: A layer (its class target) or a LUFS number (see :func:`resolve_target_lufs`).
+        meter: A :data:`foley.audio.Meter` (default ``pyloudnorm``).
 
     Returns:
         ``(bytes, applied, measured_lufs)``: the levelled clip re-encoded in foley's FLAC
@@ -117,7 +123,7 @@ def level_bytes(
 
     target_lufs = resolve_target_lufs(target)
     wav, sr = load(audio_bytes)
-    gain, measured = loudness_gain_db(wav, sr, target_lufs=target_lufs)
+    gain, measured = loudness_gain_db(wav, sr, target_lufs=target_lufs, meter=meter)
     if measured <= LUFS_GATE_FLOOR:  # too short or too quiet to measure: left alone
         return audio_bytes, None, None
     levelled = wav * (10.0 ** (gain / 20.0))
@@ -157,6 +163,7 @@ def reference_gain_db(
     peak_ceiling_dbfs: float = REFERENCE_PEAK_CEILING_DBFS,
     short_peak_dbfs: float = SHORT_CLIP_PEAK_DBFS,
     max_boost_db: float = MAX_REFERENCE_BOOST_DB,
+    meter: Optional[Meter] = None,
 ) -> float:
     """The gain (dB) that brings ``clip`` to the reference loudness; ``0.0`` if it cannot.
 
@@ -172,6 +179,7 @@ def reference_gain_db(
         sample_rate: Sample rate in Hz.
         reference_lufs: The loudness every clip is brought to (default: foley's
             reference programme loudness, :data:`foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).
+        meter: A :data:`foley.audio.Meter` (default ``pyloudnorm``).
     """
     from .audio import DEFAULT_LOUDNESS_TARGET_LUFS, loudness_gain_db
 
@@ -185,6 +193,7 @@ def reference_gain_db(
             peak_ceiling_dbfs=peak_ceiling_dbfs,
             short_peak_dbfs=short_peak_dbfs,
             max_boost_db=max_boost_db,
+            meter=meter,
         )
     except (ImportError, ValueError):
         # The render must not die on one clip the meter cannot read (more than five
