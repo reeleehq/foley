@@ -804,7 +804,7 @@ def generate(
     if adapter is not None:  # an injected adapter is one backend, named by its config
         if isinstance(backend, (list, tuple)):
             raise ValueError("adapter= is one backend: pass a single backend= name")
-        named = getattr(adapter, "config", {}).get("name")
+        named = (getattr(adapter, "config", None) or {}).get("name")
         order = (backend if backend not in (None, "", "auto") else named or default_generate_backend(),)
     elif isinstance(backend, (list, tuple)):
         order = tuple(backend)  # the caller's own order

@@ -351,3 +351,35 @@ def test_generate_says_unchecked_with_a_bag_of_words_embedder(paid_keys, library
     cand = foley.generate("a page turn", backend="elevenlabs", adapter=adapter, library=library, duration=1)
     assert cand.sound.qc["prompt_match"]["status"] == "unchecked"
     assert any(n.startswith("prompt match: unchecked") for n in cand.notes)
+
+
+def test_a_single_backend_order_is_judged_when_a_use_is_given(paid_keys, monkeypatch, library):
+    # FOLEY_GENERATE_BACKEND=fal_elevenlabs: find's 'auto' must refuse before paying.
+    from foley.agent.tools import generate_sound
+    from foley.licensing import intended_use_for
+    from foley.sources.base import SourceConfigurationError
+
+    monkeypatch.setenv("FOLEY_GENERATE_BACKEND", "fal_elevenlabs")
+    fal, runner = _fal_adapter("fal_elevenlabs")
+    _swap_sources(monkeypatch, {"fal_elevenlabs": fal})
+    with pytest.raises(SourceConfigurationError):
+        generate_sound("a sigh", library=library, intended_use=intended_use_for())
+    assert runner.calls == []
+
+
+def test_a_queue_source_error_is_never_treated_as_unbilled(paid_keys, monkeypatch, library):
+    # A 5xx while fetching a fal result may come after the job ran (billed): final.
+    class Fetch502(RuntimeError):
+        status_code = 502
+
+    def failing_runner(*a, **k):
+        raise Fetch502("result fetch failed")
+
+    first, _ = _fal_adapter("fal_stable_audio_3", runner=failing_runner)
+    second, runner = _fal_adapter("fal_stable_audio_3_medium")
+    _swap_sources(monkeypatch, {"fal_stable_audio_3": first, "fal_stable_audio_3_medium": second})
+    with pytest.raises(foley.GenerationError):
+        foley.generate(
+            "a knock", backend=("fal_stable_audio_3", "fal_stable_audio_3_medium"), library=library
+        )
+    assert runner.calls == []

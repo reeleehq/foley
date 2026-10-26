@@ -258,7 +258,9 @@ def _generate_and_reverify(
         # loudly, since nothing was generated — and find falls back to retrieval.
         import warnings
 
-        warnings.warn(f"generation skipped: {exc}", UserWarning, stacklevel=2)
+        skipped = getattr(exc, "skipped_backends", None)
+        extra = f" (skipped first: {'; '.join(skipped)})" if skipped else ""
+        warnings.warn(f"generation skipped: {exc}{extra}", UserWarning, stacklevel=2)
         return None
     except EgressBlocked as exc:
         # Offline: an external backend, or a local one whose weights are not cached.

@@ -678,10 +678,11 @@ def generate_in_order(
         prompt: The sound description.
         order: Backend names, in the order to try them.
         paid_ok: ``False`` skips the paid backends (but the last), without a call.
-        intended_use: The :class:`~foley.base.IntendedUse` the clip must serve (default
-            :data:`foley.licensing.DEFAULT_INTENDED_USE`: commercial), applied when
-            ``order`` has more than one backend; a single named backend is used as
-            asked, and its licence is gated downstream as before.
+        intended_use: The :class:`~foley.base.IntendedUse` the clip must serve. With
+            more than one backend it defaults to
+            :data:`foley.licensing.DEFAULT_INTENDED_USE` (commercial); a single
+            backend is judged only when a use is passed (else used as asked, its
+            licence gated downstream as before).
         **kwargs: Everything else :func:`generate` takes (affordances included).
 
     Returns:
@@ -702,6 +703,10 @@ def generate_in_order(
     if not order:
         raise ValueError("a generation order needs at least one backend")
     if len(order) == 1:
+        if intended_use is not None:  # asked for a use: judge it before paying
+            refusal = generation_rights_refusal(order[0], intended_use)
+            if refusal is not None:
+                raise SourceConfigurationError(refusal)
         return generate(prompt, backend=order[0], **kwargs), order[0], []
 
     discover_sources()
@@ -710,7 +715,8 @@ def generate_in_order(
     skipped: list = []
     for i, name in enumerate(order):
         last = i == len(order) - 1
-        if name not in SOURCE_REGISTRY:
+        entry = SOURCE_REGISTRY.get(name)
+        if entry is None or entry["config"].get("kind") != "generate":
             skipped.append(f"{name}: not a registered generate source")
             continue
         refusal = generation_rights_refusal(name, use)

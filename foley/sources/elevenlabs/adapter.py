@@ -127,8 +127,13 @@ class _HTTPStatusError(RuntimeError):
     """A non-200 from ElevenLabs (still a ``RuntimeError``); carries ``status_code``.
 
     ``detail`` is the body's ``detail`` (a dict in the documented shape, a string in
-    older responses), or ``None`` when the body is not JSON.
+    older responses), or ``None`` when the body is not JSON. ``unbilled``: the
+    endpoint is one POST that returns the audio or an error, and an error produced
+    no audio, so it was not charged
+    (:func:`foley.sources._dispatch.provider_refused`).
     """
+
+    unbilled = True
 
     def __init__(self, status_code: int, message: str, detail=None):
         super().__init__(message)
