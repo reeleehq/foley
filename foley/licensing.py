@@ -239,8 +239,10 @@ def license_id_from_cc_url(url: Optional[str]) -> "tuple[str, bool]":
         # 'mark' or a bare public-domain claim, never verified. A label that adds a word
         # ("not public domain", "public domain in the US only") negates or limits the
         # claim, so it fails closed like any unrecognised token.
-        pdm, _ = _only_known(tokens, {"publicdomain", "domain", "mark", "pdm"}, "PDM-1.0")
-        return (pdm, False) if pdm != "unknown" else ("unknown", False)
+        pdm, _ = _only_known(
+            tokens, {"publicdomain", "domain", "mark", "universal"}, "PDM-1.0"
+        )
+        return pdm, False
     if (
         "cc0" in toks
         or _has_phrase(tokens, "creative", "commons", "0")

@@ -440,6 +440,7 @@ def test_one_intent_cannot_contradict_the_other():
     [
         ("Public domain", ("PDM-1.0", False)),
         ("Public Domain Mark 1.0", ("PDM-1.0", False)),
+        ("Public Domain Mark 1.0 Universal", ("PDM-1.0", False)),
         ("http://creativecommons.org/publicdomain/mark/1.0/", ("PDM-1.0", False)),
         ("Not public domain", ("unknown", False)),
         ("not in the public domain", ("unknown", False)),
