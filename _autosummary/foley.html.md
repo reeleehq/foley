@@ -2793,11 +2793,12 @@ Loudness-normalize to `target_lufs`, then keep it peak-safe.
 
 Integrated loudness is measured (ITU-R BS.1770-4 / EBU R128), the signal is
 scaled to `target_lufs`, and finally attenuated so its sample peak sits at
-or below `peak_ceiling_dbfs`. Two inputs are returned **unchanged** (flag
-them, don’t amplify): near-silent input (measured loudness at or below
-`LUFS_GATE_FLOOR`), and a clip shorter than one BS.1770 gating block
-(`min_block_s`) — which `pyloudnorm` cannot measure and would otherwise
-raise `ValueError` on (routine for one-shots: clicks, blips, gunshots).
+or below `peak_ceiling_dbfs`: the gain is `loudness_gain_db()`. Inputs are
+returned **unchanged** (flag them, don’t amplify) when silent or non-finite,
+near-silent (measured loudness at or below `LUFS_GATE_FLOOR`), or shorter than one
+BS.1770 gating block (`min_block_s`) — which `pyloudnorm` cannot measure and
+would otherwise raise `ValueError` on (routine for one-shots: clicks, blips,
+gunshots).
 
 * **Parameters:**
   * **samples** (`ndarray`) – Working array (mono or multichannel, time on axis 0 — the layout

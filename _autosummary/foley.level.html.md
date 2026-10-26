@@ -39,7 +39,6 @@ functions.
 | [`REFERENCE_PEAK_CEILING_DBFS`](#foley.level.REFERENCE_PEAK_CEILING_DBFS) | Sample-peak ceiling (dBFS) the levelled clip must stay under.                                                            |
 | [`SHORT_CLIP_PEAK_DBFS`](#foley.level.SHORT_CLIP_PEAK_DBFS)        | Where a clip too short for a loudness reading (a click, a page flick) puts its sample peak.                              |
 | [`MAX_REFERENCE_BOOST_DB`](#foley.level.MAX_REFERENCE_BOOST_DB)      | The most a clip is boosted to reach the reference (dB), so a near-silent clip's noise floor is not raised without bound. |
-| [`SILENT_PEAK_DBFS`](#foley.level.SILENT_PEAK_DBFS)            | A clip whose sample peak is under this (dBFS) is silent for levelling purposes.                                          |
 
 ### Functions
 
@@ -75,10 +74,6 @@ is not held back by headroom the layer gain is about to take anyway.
 Where a clip too short for a loudness reading (a click, a page flick) puts its sample
 peak. Provisional: the peak a typical one-shot has when its integrated loudness is the
 reference (about 10 dB of crest above -16 LUFS).
-
-### foley.level.SILENT_PEAK_DBFS *= -80.0*
-
-A clip whose sample peak is under this (dBFS) is silent for levelling purposes.
 
 ### foley.level.class_target_lufs(layer)
 

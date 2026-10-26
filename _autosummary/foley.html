@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=d78a2f11"></script>
+    <script src="../_static/documentation_options.js?v=1c03bfdc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.53" />
+  <meta name="docsearch:version" content="0.0.54" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -4418,11 +4418,12 @@ not declare <code class="docutils literal notranslate"><span class="pre">data_eg
 <dd><p>Loudness-normalize to <code class="docutils literal notranslate"><span class="pre">target_lufs</span></code>, then keep it peak-safe.</p>
 <p>Integrated loudness is measured (ITU-R BS.1770-4 / EBU R128), the signal is
 scaled to <code class="docutils literal notranslate"><span class="pre">target_lufs</span></code>, and finally attenuated so its sample peak sits at
-or below <code class="docutils literal notranslate"><span class="pre">peak_ceiling_dbfs</span></code>. Two inputs are returned <strong>unchanged</strong> (flag
-them, don’t amplify): near-silent input (measured loudness at or below
-<code class="docutils literal notranslate"><span class="pre">LUFS_GATE_FLOOR</span></code>), and a clip shorter than one BS.1770 gating block
-(<code class="docutils literal notranslate"><span class="pre">min_block_s</span></code>) — which <code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code> cannot measure and would otherwise
-raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> on (routine for one-shots: clicks, blips, gunshots).</p>
+or below <code class="docutils literal notranslate"><span class="pre">peak_ceiling_dbfs</span></code>: the gain is <code class="xref py py-func docutils literal notranslate"><span class="pre">loudness_gain_db()</span></code>. Inputs are
+returned <strong>unchanged</strong> (flag them, don’t amplify) when silent or non-finite,
+near-silent (measured loudness at or below <code class="docutils literal notranslate"><span class="pre">LUFS_GATE_FLOOR</span></code>), or shorter than one
+BS.1770 gating block (<code class="docutils literal notranslate"><span class="pre">min_block_s</span></code>) — which <code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code> cannot measure and
+would otherwise raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> on (routine for one-shots: clicks, blips,
+gunshots).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">

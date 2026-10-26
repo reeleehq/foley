@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=d78a2f11"></script>
+    <script src="../../_static/documentation_options.js?v=1c03bfdc"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.53" />
+  <meta name="docsearch:version" content="0.0.54" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -781,6 +781,7 @@ window.runMermaid = runMermaid;</script>
 <span class="n">TRUE_PEAK_MAX_DBTP</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>  <span class="c1"># ceiling after loudness normalization</span>
 <span class="n">LUFS_GATE_FLOOR</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">70.0</span>  <span class="c1"># pyloudnorm near-silent gate; flag, don't amplify</span>
 <span class="n">LUFS_MIN_BLOCK_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span>  <span class="c1"># BS.1770 gating block; shorter clips can't be measured</span>
+<span class="n">SILENT_PEAK_DBFS</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">80.0</span>  <span class="c1"># a clip whose sample peak is under this is silent</span>
 
 <span class="c1">#: A source ``load`` can decode: a filesystem path, raw encoded bytes, or an</span>
 <span class="c1">#: already-open binary file-like object (e.g. ``io.BytesIO``).</span>
@@ -1130,6 +1131,92 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="integrated_lufs">
+<a class="viewcode-back" href="../../_autosummary/foley.audio.html#foley.integrated_lufs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">integrated_lufs</span><span class="p">(</span>
+    <span class="n">samples</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">min_block_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LUFS_MIN_BLOCK_S</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Integrated loudness (LUFS, BS.1770-4) of ``samples``; ``-inf`` when too short to gate.</span>
+
+<span class="sd">    The one measurer :func:`loudness_gain_db` and the WEAVE master share. The length</span>
+<span class="sd">    guard uses ``math.ceil`` (not ``int(round)``) to mirror pyloudnorm's float threshold</span>
+<span class="sd">    ``n &lt; block_size*rate`` at every sample rate, including rates where ``0.4*sr`` is</span>
+<span class="sd">    not integral; identical to ``int(round)`` at all standard (÷5) rates.</span>
+
+<span class="sd">    Lazy dependency: ``pyloudnorm``.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pyloudnorm</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyln</span>
+
+    <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">min_block_s</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"-inf"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">pyln</span><span class="o">.</span><span class="n">Meter</span><span class="p">(</span><span class="n">sample_rate</span><span class="p">)</span><span class="o">.</span><span class="n">integrated_loudness</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="loudness_gain_db">
+<a class="viewcode-back" href="../../_autosummary/foley.audio.html#foley.loudness_gain_db">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">loudness_gain_db</span><span class="p">(</span>
+    <span class="n">samples</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span>
+    <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">target_lufs</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">peak_ceiling_dbfs</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">TRUE_PEAK_MAX_DBTP</span><span class="p">,</span>
+    <span class="n">short_peak_dbfs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_boost_db</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">min_block_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LUFS_MIN_BLOCK_S</span><span class="p">,</span>
+    <span class="n">gate_floor_lufs</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LUFS_GATE_FLOOR</span><span class="p">,</span>
+    <span class="n">silent_peak_dbfs</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">SILENT_PEAK_DBFS</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The one loudness-gain rule: ``(gain_db, measured_lufs)`` to bring a clip to a target.</span>
+
+<span class="sd">    The policy for short, near-silent and high-crest clips lives here, and</span>
+<span class="sd">    :func:`loudness_normalize` and :func:`foley.level.reference_gain_db` both apply it:</span>
+
+<span class="sd">    * a silent (peak at or under ``silent_peak_dbfs``) or non-finite clip: ``0.0``;</span>
+<span class="sd">    * integrated loudness (BS.1770-4, gated) at or under ``gate_floor_lufs``:</span>
+<span class="sd">      near-silent, ``0.0`` (flag, don't amplify);</span>
+<span class="sd">    * a clip shorter than one gating block (``min_block_s``) cannot be measured</span>
+<span class="sd">      (``measured = -inf``): with ``short_peak_dbfs`` it is levelled by its sample peak</span>
+<span class="sd">      to that level, without it ``0.0``;</span>
+<span class="sd">    * otherwise ``target_lufs - measured``;</span>
+
+<span class="sd">    and a non-zero gain is capped so the sample peak stays at or under</span>
+<span class="sd">    ``peak_ceiling_dbfs`` (a high-crest clip is held back) and, when ``max_boost_db`` is</span>
+<span class="sd">    given, the boost at that many dB. Pure and deterministic.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``(gain_db, measured_lufs)``; ``measured_lufs`` is ``-inf`` for a clip too short</span>
+<span class="sd">        to measure, a value at or under :data:`LUFS_GATE_FLOOR` for a near-silent one.</span>
+
+<span class="sd">    Lazy dependencies: ``pyloudnorm`` (+ ``numpy``).</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+        <span class="k">return</span> <span class="mf">0.0</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"-inf"</span><span class="p">)</span>
+    <span class="n">peak</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+    <span class="n">peak_db</span> <span class="o">=</span> <span class="mf">20.0</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">peak</span><span class="p">)</span> <span class="k">if</span> <span class="n">peak</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"-inf"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">peak_db</span> <span class="o">&lt;=</span> <span class="n">silent_peak_dbfs</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">0.0</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"-inf"</span><span class="p">)</span>
+
+    <span class="n">measured</span> <span class="o">=</span> <span class="n">integrated_lufs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">min_block_s</span><span class="o">=</span><span class="n">min_block_s</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">measured</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"-inf"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">min_block_s</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">short_peak_dbfs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">measured</span>  <span class="c1"># too short to gate; flag, don't amplify</span>
+        <span class="n">wanted</span> <span class="o">=</span> <span class="n">short_peak_dbfs</span> <span class="o">-</span> <span class="n">peak_db</span>
+    <span class="k">elif</span> <span class="n">measured</span> <span class="o">&lt;=</span> <span class="n">gate_floor_lufs</span><span class="p">:</span>  <span class="c1"># near-silent: flag, don't amplify</span>
+        <span class="k">return</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">measured</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">wanted</span> <span class="o">=</span> <span class="n">target_lufs</span> <span class="o">-</span> <span class="n">measured</span>
+
+    <span class="n">gain</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">wanted</span><span class="p">,</span> <span class="n">peak_ceiling_dbfs</span> <span class="o">-</span> <span class="n">peak_db</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">max_boost_db</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">gain</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">gain</span><span class="p">,</span> <span class="n">max_boost_db</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">gain</span><span class="p">),</span> <span class="n">measured</span></div>
+
+
+
 <div class="viewcode-block" id="loudness_normalize">
 <a class="viewcode-back" href="../../_autosummary/foley.audio.html#foley.loudness_normalize">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">loudness_normalize</span><span class="p">(</span>
@@ -1144,11 +1231,12 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Integrated loudness is measured (ITU-R BS.1770-4 / EBU R128), the signal is</span>
 <span class="sd">    scaled to ``target_lufs``, and finally attenuated so its sample peak sits at</span>
-<span class="sd">    or below ``peak_ceiling_dbfs``. Two inputs are returned **unchanged** (flag</span>
-<span class="sd">    them, don't amplify): near-silent input (measured loudness at or below</span>
-<span class="sd">    ``LUFS_GATE_FLOOR``), and a clip shorter than one BS.1770 gating block</span>
-<span class="sd">    (``min_block_s``) — which ``pyloudnorm`` cannot measure and would otherwise</span>
-<span class="sd">    raise ``ValueError`` on (routine for one-shots: clicks, blips, gunshots).</span>
+<span class="sd">    or below ``peak_ceiling_dbfs``: the gain is :func:`loudness_gain_db`. Inputs are</span>
+<span class="sd">    returned **unchanged** (flag them, don't amplify) when silent or non-finite,</span>
+<span class="sd">    near-silent (measured loudness at or below ``LUFS_GATE_FLOOR``), or shorter than one</span>
+<span class="sd">    BS.1770 gating block (``min_block_s``) — which ``pyloudnorm`` cannot measure and</span>
+<span class="sd">    would otherwise raise ``ValueError`` on (routine for one-shots: clicks, blips,</span>
+<span class="sd">    gunshots).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        samples: Working array (mono or multichannel, time on axis 0 — the layout</span>
@@ -1171,27 +1259,16 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Lazy dependencies: ``pyloudnorm`` (+ ``numpy``).</span>
 <span class="sd">    """</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">pyloudnorm</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyln</span>
-
-    <span class="c1"># math.ceil (not int(round)) exactly mirrors pyloudnorm's float threshold</span>
-    <span class="c1"># n &lt; block_size*rate at every sample rate, incl. rates where 0.4*sr is not</span>
-    <span class="c1"># integral; identical to int(round) at all standard (÷5) rates.</span>
-    <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">min_block_s</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"-inf"</span><span class="p">)</span>  <span class="c1"># too short to gate; flag, don't amplify</span>
-
-    <span class="n">meter</span> <span class="o">=</span> <span class="n">pyln</span><span class="o">.</span><span class="n">Meter</span><span class="p">(</span><span class="n">sample_rate</span><span class="p">)</span>
-    <span class="n">measured</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">meter</span><span class="o">.</span><span class="n">integrated_loudness</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span>
-    <span class="k">if</span> <span class="n">measured</span> <span class="o">&lt;=</span> <span class="n">LUFS_GATE_FLOOR</span><span class="p">:</span>  <span class="c1"># near-silent: flag, don't amplify</span>
+    <span class="n">gain_db</span><span class="p">,</span> <span class="n">measured</span> <span class="o">=</span> <span class="n">loudness_gain_db</span><span class="p">(</span>
+        <span class="n">samples</span><span class="p">,</span>
+        <span class="n">sample_rate</span><span class="p">,</span>
+        <span class="n">target_lufs</span><span class="o">=</span><span class="n">target_lufs</span><span class="p">,</span>
+        <span class="n">peak_ceiling_dbfs</span><span class="o">=</span><span class="n">peak_ceiling_dbfs</span><span class="p">,</span>
+        <span class="n">min_block_s</span><span class="o">=</span><span class="n">min_block_s</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">measured</span> <span class="o">&lt;=</span> <span class="n">LUFS_GATE_FLOOR</span><span class="p">:</span>  <span class="c1"># silent, too short or near-silent: unchanged</span>
         <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">measured</span>
-
-    <span class="n">normalized</span> <span class="o">=</span> <span class="n">pyln</span><span class="o">.</span><span class="n">normalize</span><span class="o">.</span><span class="n">loudness</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">measured</span><span class="p">,</span> <span class="n">target_lufs</span><span class="p">)</span>
-
-    <span class="n">ceiling</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="p">(</span><span class="n">peak_ceiling_dbfs</span> <span class="o">/</span> <span class="mf">20.0</span><span class="p">)</span>
-    <span class="n">peak</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">normalized</span><span class="p">)))</span>
-    <span class="k">if</span> <span class="n">peak</span> <span class="o">&gt;</span> <span class="n">ceiling</span><span class="p">:</span>
-        <span class="n">normalized</span> <span class="o">=</span> <span class="n">normalized</span> <span class="o">*</span> <span class="p">(</span><span class="n">ceiling</span> <span class="o">/</span> <span class="n">peak</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">normalized</span><span class="p">,</span> <span class="n">measured</span></div>
+    <span class="k">return</span> <span class="n">samples</span> <span class="o">*</span> <span class="p">(</span><span class="mf">10.0</span> <span class="o">**</span> <span class="p">(</span><span class="n">gain_db</span> <span class="o">/</span> <span class="mf">20.0</span><span class="p">)),</span> <span class="n">measured</span></div>
 
 
 

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=d78a2f11"></script>
+    <script src="../../_static/documentation_options.js?v=1c03bfdc"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.53" />
+  <meta name="docsearch:version" content="0.0.54" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1000,7 +1000,17 @@ window.runMermaid = runMermaid;</script>
         <span class="n">tokens</span> <span class="o">=</span> <span class="n">_without_path_language</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">tokens</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">toks</span> <span class="o">&amp;</span> <span class="p">{</span><span class="s2">"zero"</span><span class="p">,</span> <span class="s2">"cc0"</span><span class="p">}:</span>
             <span class="k">return</span> <span class="n">_only_known</span><span class="p">(</span>
-                <span class="n">tokens</span><span class="p">,</span> <span class="p">{</span><span class="s2">"publicdomain"</span><span class="p">,</span> <span class="s2">"zero"</span><span class="p">,</span> <span class="s2">"cc0"</span><span class="p">,</span> <span class="s2">"public"</span><span class="p">,</span> <span class="s2">"domain"</span><span class="p">,</span> <span class="s2">"universal"</span><span class="p">,</span> <span class="s2">"dedication"</span><span class="p">},</span> <span class="s2">"CC0-1.0"</span>
+                <span class="n">tokens</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">"publicdomain"</span><span class="p">,</span>
+                    <span class="s2">"zero"</span><span class="p">,</span>
+                    <span class="s2">"cc0"</span><span class="p">,</span>
+                    <span class="s2">"public"</span><span class="p">,</span>
+                    <span class="s2">"domain"</span><span class="p">,</span>
+                    <span class="s2">"universal"</span><span class="p">,</span>
+                    <span class="s2">"dedication"</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="s2">"CC0-1.0"</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="c1"># 'mark' or a bare public-domain claim, never verified. A label that adds a word</span>
         <span class="c1"># ("not public domain", "public domain in the US only") negates or limits the</span>
@@ -1015,7 +1025,9 @@ window.runMermaid = runMermaid;</script>
         <span class="ow">or</span> <span class="n">_has_phrase</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="s2">"creative"</span><span class="p">,</span> <span class="s2">"commons"</span><span class="p">,</span> <span class="s2">"zero"</span><span class="p">)</span>
     <span class="p">):</span>
         <span class="k">return</span> <span class="n">_only_known</span><span class="p">(</span>
-            <span class="n">_without_path_language</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">tokens</span><span class="p">),</span> <span class="p">{</span><span class="s2">"cc0"</span><span class="p">,</span> <span class="s2">"0"</span><span class="p">,</span> <span class="s2">"zero"</span><span class="p">,</span> <span class="s2">"universal"</span><span class="p">,</span> <span class="s2">"dedication"</span><span class="p">},</span> <span class="s2">"CC0-1.0"</span>
+            <span class="n">_without_path_language</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">tokens</span><span class="p">),</span>
+            <span class="p">{</span><span class="s2">"cc0"</span><span class="p">,</span> <span class="s2">"0"</span><span class="p">,</span> <span class="s2">"zero"</span><span class="p">,</span> <span class="s2">"universal"</span><span class="p">,</span> <span class="s2">"dedication"</span><span class="p">},</span>
+            <span class="s2">"CC0-1.0"</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">toks</span> <span class="o">&amp;</span> <span class="p">{</span><span class="s2">"sampling"</span><span class="p">,</span> <span class="s2">"sampling+"</span><span class="p">}:</span>
         <span class="k">return</span> <span class="n">_only_known</span><span class="p">(</span>
@@ -1049,9 +1061,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">leftover</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">t</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tokens</span>
-        <span class="k">if</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span>
-        <span class="ow">and</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_NEUTRAL_TOKENS</span>
-        <span class="ow">and</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">versions</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_NEUTRAL_TOKENS</span> <span class="ow">and</span> <span class="n">t</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">versions</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="n">leftover</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">versions</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">"unknown"</span><span class="p">,</span> <span class="kc">False</span>

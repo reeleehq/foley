@@ -1,4 +1,4 @@
-> built 2026-10-26 13:53 UTC from a7508e6 (main) · foley 0.0.53. Details: build_info.json
+> built 2026-10-26 14:11 UTC from 5df17b5 (main) · foley 0.0.54. Details: build_info.json
 
 # index.html.md
 
@@ -2267,8 +2267,10 @@ a file-like object).
 |-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
 | [`ensure_channels`](_autosummary/foley.audio.html.md#foley.audio.ensure_channels)(samples, \*, channels)             | Coerce `samples` to exactly `channels` channels.                                     |
 | [`fade`](_autosummary/foley.audio.html.md#foley.audio.fade)(samples, sample_rate, \*[, fade_in_s, ...])   | Apply in/out gain ramps to `samples` (a short declick by default).                   |
+| [`integrated_lufs`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs)(samples, sample_rate, \*[, ...])   | Integrated loudness (LUFS, BS.1770-4) of `samples`; `-inf` when too short to gate.   |
 | [`limit_true_peak`](_autosummary/foley.audio.html.md#foley.audio.limit_true_peak)(samples, sample_rate, \*[, ...])   | Attenuate `samples` so their inter-sample true peak sits at or below `ceiling_dbtp`. |
 | [`load`](_autosummary/foley.audio.html.md#foley.audio.load)(src, \*[, target_sr, mono, dtype])            | Decode audio into a float working array.                                             |
+| [`loudness_gain_db`](_autosummary/foley.audio.html.md#foley.audio.loudness_gain_db)(samples, sample_rate, \*, ...)    | The one loudness-gain rule: `(gain_db, measured_lufs)` to bring a clip to a target.  |
 | [`loudness_normalize`](_autosummary/foley.audio.html.md#foley.audio.loudness_normalize)(samples, sample_rate, \*)       | Loudness-normalize to `target_lufs`, then keep it peak-safe.                         |
 | [`resample`](_autosummary/foley.audio.html.md#foley.audio.resample)(samples, sample_rate, \*[, ...])          | Resample `samples` to `target_sr` (a no-op when already there).                      |
 | [`save`](_autosummary/foley.audio.html.md#foley.audio.save)(samples, sample_rate, dst, \*[, fmt, ...])    | Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).                |
@@ -2345,6 +2347,20 @@ out-ramps never overlap on tiny inputs.
 
 Lazy dependency: `numpy`.
 
+### foley.audio.integrated_lufs(samples, sample_rate, , min_block_s=0.4)
+
+Integrated loudness (LUFS, BS.1770-4) of `samples`; `-inf` when too short to gate.
+
+The one measurer [`loudness_gain_db()`](_autosummary/foley.audio.html.md#foley.audio.loudness_gain_db) and the WEAVE master share. The length
+guard uses `math.ceil` (not `int(round)`) to mirror pyloudnorm’s float threshold
+`n < block_size*rate` at every sample rate, including rates where `0.4*sr` is
+not integral; identical to `int(round)` at all standard (÷5) rates.
+
+Lazy dependency: `pyloudnorm`.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
 ### foley.audio.limit_true_peak(samples, sample_rate, , ceiling_dbtp=-1.0, oversample=None)
 
 Attenuate `samples` so their inter-sample true peak sits at or below `ceiling_dbtp`.
@@ -2391,17 +2407,45 @@ Decode audio into a float working array.
 
 Lazy dependencies: `soundfile` (and `soxr` when `target_sr` differs).
 
+### foley.audio.loudness_gain_db(samples, sample_rate, , target_lufs, peak_ceiling_dbfs=-1.0, short_peak_dbfs=None, max_boost_db=None, min_block_s=0.4, gate_floor_lufs=-70.0, silent_peak_dbfs=-80.0)
+
+The one loudness-gain rule: `(gain_db, measured_lufs)` to bring a clip to a target.
+
+The policy for short, near-silent and high-crest clips lives here, and
+[`loudness_normalize()`](_autosummary/foley.audio.html.md#foley.audio.loudness_normalize) and [`foley.level.reference_gain_db()`](_autosummary/foley.level.html.md#foley.level.reference_gain_db) both apply it:
+
+* a silent (peak at or under `silent_peak_dbfs`) or non-finite clip: `0.0`;
+* integrated loudness (BS.1770-4, gated) at or under `gate_floor_lufs`:
+  near-silent, `0.0` (flag, don’t amplify);
+* a clip shorter than one gating block (`min_block_s`) cannot be measured
+  (`measured = -inf`): with `short_peak_dbfs` it is levelled by its sample peak
+  to that level, without it `0.0`;
+* otherwise `target_lufs - measured`;
+
+and a non-zero gain is capped so the sample peak stays at or under
+`peak_ceiling_dbfs` (a high-crest clip is held back) and, when `max_boost_db` is
+given, the boost at that many dB. Pure and deterministic.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+* **Returns:**
+  `(gain_db, measured_lufs)`; `measured_lufs` is `-inf` for a clip too short
+  to measure, a value at or under `LUFS_GATE_FLOOR` for a near-silent one.
+
+Lazy dependencies: `pyloudnorm` (+ `numpy`).
+
 ### foley.audio.loudness_normalize(samples, sample_rate, , target_lufs=-16.0, peak_ceiling_dbfs=-1.0, min_block_s=0.4)
 
 Loudness-normalize to `target_lufs`, then keep it peak-safe.
 
 Integrated loudness is measured (ITU-R BS.1770-4 / EBU R128), the signal is
 scaled to `target_lufs`, and finally attenuated so its sample peak sits at
-or below `peak_ceiling_dbfs`. Two inputs are returned **unchanged** (flag
-them, don’t amplify): near-silent input (measured loudness at or below
-`LUFS_GATE_FLOOR`), and a clip shorter than one BS.1770 gating block
-(`min_block_s`) — which `pyloudnorm` cannot measure and would otherwise
-raise `ValueError` on (routine for one-shots: clicks, blips, gunshots).
+or below `peak_ceiling_dbfs`: the gain is [`loudness_gain_db()`](_autosummary/foley.audio.html.md#foley.audio.loudness_gain_db). Inputs are
+returned **unchanged** (flag them, don’t amplify) when silent or non-finite,
+near-silent (measured loudness at or below `LUFS_GATE_FLOOR`), or shorter than one
+BS.1770 gating block (`min_block_s`) — which `pyloudnorm` cannot measure and
+would otherwise raise `ValueError` on (routine for one-shots: clicks, blips,
+gunshots).
 
 * **Parameters:**
   * **samples** (`ndarray`) – Working array (mono or multichannel, time on axis 0 — the layout
@@ -7794,11 +7838,12 @@ Loudness-normalize to `target_lufs`, then keep it peak-safe.
 
 Integrated loudness is measured (ITU-R BS.1770-4 / EBU R128), the signal is
 scaled to `target_lufs`, and finally attenuated so its sample peak sits at
-or below `peak_ceiling_dbfs`. Two inputs are returned **unchanged** (flag
-them, don’t amplify): near-silent input (measured loudness at or below
-`LUFS_GATE_FLOOR`), and a clip shorter than one BS.1770 gating block
-(`min_block_s`) — which `pyloudnorm` cannot measure and would otherwise
-raise `ValueError` on (routine for one-shots: clicks, blips, gunshots).
+or below `peak_ceiling_dbfs`: the gain is `loudness_gain_db()`. Inputs are
+returned **unchanged** (flag them, don’t amplify) when silent or non-finite,
+near-silent (measured loudness at or below `LUFS_GATE_FLOOR`), or shorter than one
+BS.1770 gating block (`min_block_s`) — which `pyloudnorm` cannot measure and
+would otherwise raise `ValueError` on (routine for one-shots: clicks, blips,
+gunshots).
 
 * **Parameters:**
   * **samples** (`ndarray`) – Working array (mono or multichannel, time on axis 0 — the layout
@@ -11949,7 +11994,6 @@ functions.
 | [`REFERENCE_PEAK_CEILING_DBFS`](_autosummary/foley.level.html.md#foley.level.REFERENCE_PEAK_CEILING_DBFS) | Sample-peak ceiling (dBFS) the levelled clip must stay under.                                                            |
 | [`SHORT_CLIP_PEAK_DBFS`](_autosummary/foley.level.html.md#foley.level.SHORT_CLIP_PEAK_DBFS)        | Where a clip too short for a loudness reading (a click, a page flick) puts its sample peak.                              |
 | [`MAX_REFERENCE_BOOST_DB`](_autosummary/foley.level.html.md#foley.level.MAX_REFERENCE_BOOST_DB)      | The most a clip is boosted to reach the reference (dB), so a near-silent clip's noise floor is not raised without bound. |
-| [`SILENT_PEAK_DBFS`](_autosummary/foley.level.html.md#foley.level.SILENT_PEAK_DBFS)            | A clip whose sample peak is under this (dBFS) is silent for levelling purposes.                                          |
 
 ### Functions
 
@@ -11985,10 +12029,6 @@ is not held back by headroom the layer gain is about to take anyway.
 Where a clip too short for a loudness reading (a click, a page flick) puts its sample
 peak. Provisional: the peak a typical one-shot has when its integrated loudness is the
 reference (about 10 dB of crest above -16 LUFS).
-
-### foley.level.SILENT_PEAK_DBFS *= -80.0*
-
-A clip whose sample peak is under this (dBFS) is silent for levelling purposes.
 
 ### foley.level.class_target_lufs(layer)
 
@@ -13579,7 +13619,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'netflix intro', 'ta dum', 'ta-dum', 'netflix chime', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel jingle', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta-dum', 'netflix chime', 'netflix sound', 'ta dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -19571,16 +19611,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-26 13:53 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/a7508e628b50072ea27c63cea96432f30008f7cb"><code>a7508e6</code></a> on branch <code>main</code>, for **foley 0.0.53** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 14:11 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/5df17b58fa9143c2cec114c150ba8d1272682c34"><code>5df17b5</code></a> on branch <code>main</code>, for **foley 0.0.54** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.54) is behind the latest release on PyPI (0.0.55): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/a7508e628b50072ea27c63cea96432f30008f7cb"><code>a7508e628b50072ea27c63cea96432f30008f7cb</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/5df17b58fa9143c2cec114c150ba8d1272682c34"><code>5df17b58fa9143c2cec114c150ba8d1272682c34</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -19591,9 +19633,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40334060742">40334060742</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40336881288">40336881288</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>a7508e628b50072ea27c63cea96432f30008f7cb</code> (in the history of the built commit) |
+| Event commit | <code>5df17b58fa9143c2cec114c150ba8d1272682c34</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -19618,13 +19660,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.53/">0.0.53</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.55/">0.0.55</a>, newer than the documented version (0.0.54).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout a7508e628b50072ea27c63cea96432f30008f7cb
+git checkout 5df17b58fa9143c2cec114c150ba8d1272682c34
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

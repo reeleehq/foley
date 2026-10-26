@@ -12,7 +12,6 @@ foley.level
       REFERENCE_PEAK_CEILING_DBFS
       SHORT_CLIP_PEAK_DBFS
       MAX_REFERENCE_BOOST_DB
-      SILENT_PEAK_DBFS
    
    .. rubric:: Functions
 

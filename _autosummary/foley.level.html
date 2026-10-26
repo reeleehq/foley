@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=d78a2f11"></script>
+    <script src="../_static/documentation_options.js?v=1c03bfdc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.53" />
+  <meta name="docsearch:version" content="0.0.54" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -524,9 +524,6 @@ functions.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.level.MAX_REFERENCE_BOOST_DB" title="foley.level.MAX_REFERENCE_BOOST_DB"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MAX_REFERENCE_BOOST_DB</span></code></a></p></td>
 <td><p>The most a clip is boosted to reach the reference (dB), so a near-silent clip's noise floor is not raised without bound.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.level.SILENT_PEAK_DBFS" title="foley.level.SILENT_PEAK_DBFS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SILENT_PEAK_DBFS</span></code></a></p></td>
-<td><p>A clip whose sample peak is under this (dBFS) is silent for levelling purposes.</p></td>
-</tr>
 </tbody>
 </table>
 </div>
@@ -584,12 +581,6 @@ is not held back by headroom the layer gain is about to take anyway.</p>
 <dd><p>Where a clip too short for a loudness reading (a click, a page flick) puts its sample
 peak. Provisional: the peak a typical one-shot has when its integrated loudness is the
 reference (about 10 dB of crest above -16 LUFS).</p>
-</dd></dl>
-
-<dl class="py data">
-<dt class="sig sig-object py" id="foley.level.SILENT_PEAK_DBFS">
-<span class="sig-prename descclassname"><span class="pre">foley.level.</span></span><span class="sig-name descname"><span class="pre">SILENT_PEAK_DBFS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-80.0</span></span><a class="headerlink" href="#foley.level.SILENT_PEAK_DBFS" title="Link to this definition">#</a></dt>
-<dd><p>A clip whose sample peak is under this (dBFS) is silent for levelling purposes.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -740,7 +731,6 @@ reference programme loudness, <code class="xref py py-data docutils literal notr
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.level.MAX_REFERENCE_BOOST_DB"><code class="docutils literal notranslate"><span class="pre">MAX_REFERENCE_BOOST_DB</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.level.REFERENCE_PEAK_CEILING_DBFS"><code class="docutils literal notranslate"><span class="pre">REFERENCE_PEAK_CEILING_DBFS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.level.SHORT_CLIP_PEAK_DBFS"><code class="docutils literal notranslate"><span class="pre">SHORT_CLIP_PEAK_DBFS</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.level.SILENT_PEAK_DBFS"><code class="docutils literal notranslate"><span class="pre">SILENT_PEAK_DBFS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.level.class_target_lufs"><code class="docutils literal notranslate"><span class="pre">class_target_lufs()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.level.level_bytes"><code class="docutils literal notranslate"><span class="pre">level_bytes()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.level.reference_gain_db"><code class="docutils literal notranslate"><span class="pre">reference_gain_db()</span></code></a></li>
