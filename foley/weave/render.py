@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional
 
 from ..base import Layer, SoundDesignTimeline
+from ..level import reference_gain_db
 from .align import _default_aligner, aligner_name
 from .master import MasterReport, master
 from .mix import (
@@ -91,16 +92,29 @@ class RenderResult:
 class FullRender:
     """Default :class:`ApplyStrategy` — the full per-item DSP chain (report 06 §3-4).
 
-    ``fit-duration`` (loop/trim) → distance → reverb send → constant-power pan →
+    ``level`` (measured loudness to the reference, :func:`foley.level.reference_gain_db`)
+    → ``fit-duration`` (loop/trim) → distance → reverb send → constant-power pan →
     declick → gain (base layer level + item ``gain_db``) → overlay at the resolved
-    onset.
+    onset. Levelling first means the layer gains act on clips of equal loudness, whatever
+    level each was generated or recorded at (#111); ``level_clips=False`` renders the
+    clips as stored.
     """
+
+    def __init__(self, *, level_clips: bool = True):
+        self.level_clips = level_clips
+
+    @property
+    def cache_key(self) -> str:
+        """What distinguishes this strategy's output in :class:`RenderCache` keys."""
+        return f"{type(self).__name__}(level_clips={self.level_clips})"
 
     def apply(
         self, item: "TimelineItem", bus: "ndarray", clip: "ndarray", *, sample_rate: int
     ) -> "ndarray":
         p = item.processing
         pl = item.placement
+        if self.level_clips:
+            clip = clip * db_to_lin(reference_gain_db(clip, sample_rate))
         clip = fit_duration(clip, sample_rate, duration=pl.duration, loop=pl.loop)
         clip = apply_distance(clip, sample_rate, p.distance)
         clip = reverb_send(clip, sample_rate, p.reverb_send)
@@ -176,7 +190,7 @@ def _bus_hash(items: "list[TimelineItem]", n: int, sr: int, strategy) -> str:
     Covers everything that affects the *pre-duck* bus: the strategy, sample rate,
     bus length, and each item's clip + resolved placement + processing.
     """
-    parts = [type(strategy).__name__, str(sr), str(n)]
+    parts = [getattr(strategy, "cache_key", type(strategy).__name__), str(sr), str(n)]
     for it in items:
         pl, p = it.placement, it.processing
         parts.append(

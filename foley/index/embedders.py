@@ -32,6 +32,12 @@ CLAP_SAMPLE_RATE: int = 48_000
 DEFAULT_CLAP_DIM: int = 512
 
 
+#: The prompt-match threshold of a checkpoint with no calibration on record. LAION-CLAP
+#: puts matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15; this is
+#: a guess between them, not a measurement.
+PROVISIONAL_PROMPT_MATCH_THRESHOLD: float = 0.2
+
+
 class ClapEmbedder:
     """LAION-CLAP text<->audio embedder (the default retrieval engine).
 
@@ -47,11 +53,18 @@ class ClapEmbedder:
             holder allows only open-source models (#69).
     """
 
-    #: Cosine similarity under which a generated clip is flagged as not matching its
-    #: prompt (:func:`foley.prompt_match.prompt_match`). Provisional: LAION-CLAP puts
-    #: matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
-    #: this value is not yet calibrated on a labelled set of foley generations.
-    prompt_match_threshold: float = 0.2
+    @property
+    def prompt_match_threshold(self) -> float:
+        """Cosine similarity under which a generated clip is flagged as not matching its prompt.
+
+        Calibrated per checkpoint on a labelled set (:mod:`foley.eval.prompt_match`,
+        ``foley/data/prompt_match/thresholds.json``); a checkpoint nobody has calibrated
+        gets :data:`PROVISIONAL_PROMPT_MATCH_THRESHOLD`.
+        """
+        from ..eval.prompt_match import threshold_for
+
+        found = threshold_for(self.model_id)
+        return PROVISIONAL_PROMPT_MATCH_THRESHOLD if found is None else found
 
     def __init__(self, model_id: str = DEFAULT_CLAP_MODEL_ID, *, device=None):
         """Create the embedder (model weights load lazily on first use).

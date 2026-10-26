@@ -17,10 +17,15 @@ Two cases are left unchanged and said so, never amplified: a clip too short to
 measure (under one 400 ms gating block: a click, a page flick) and a near-silent one.
 
 :func:`foley.generate` levels a clip when asked (``level='sfx_fg'``, a
-:class:`~foley.base.Layer`, or a LUFS number). It does not by default: the WEAVE
-render applies the layer gains itself to the clip as stored, so a library clip
-levelled to its class target would be attenuated twice. Levelling exported clips for
-listening, or a library weave normalises by measured loudness, are the uses.
+:class:`~foley.base.Layer`, or a LUFS number), for export and listening. It does not by
+default: the library keeps clips as generated, and the WEAVE render brings every clip to
+the reference loudness itself (below), so a stored clip's level does not matter to the mix.
+
+**The WEAVE render levels by measurement** (:func:`reference_gain_db`, used by
+:class:`foley.weave.render.FullRender`): each clip is first brought to the reference
+loudness, then the layer gain is applied, so a hot ElevenLabs clip and a quiet Stable
+Audio one land at the same place in the mix and ``generate(level=...)`` stays an export
+tool. A clip too short for a loudness reading is levelled by its peak instead.
 
 Zero-dependency import: ``numpy``, ``pyloudnorm`` and ``soundfile`` load inside the
 functions.
@@ -127,3 +132,60 @@ def level_bytes(
         f"({gain_db:+.1f} dB, true peak kept under {DEFAULT_REPAIR_CEILING_DBTP:g} dBTP)"
     )
     return encode(levelled, sr), applied, float(measured)
+
+
+#: Sample-peak ceiling (dBFS) a reference-levelled clip must stay under, so the layer
+#: gain and the master limiter start from a clip that does not clip.
+REFERENCE_PEAK_CEILING_DBFS = -1.0
+#: Where a clip too short for a loudness reading (a click, a page flick) puts its sample
+#: peak. Provisional: the peak a typical one-shot has when its integrated loudness is the
+#: reference (about 10 dB of crest above -16 LUFS).
+SHORT_CLIP_PEAK_DBFS = -6.0
+#: The most a clip is boosted to reach the reference (dB), so a near-silent clip's noise
+#: floor is not raised without bound. The 29 dB spread seen on a real film fits inside.
+MAX_REFERENCE_BOOST_DB = 36.0
+#: A clip whose sample peak is under this (dBFS) is silent for levelling purposes.
+SILENT_PEAK_DBFS = -80.0
+
+
+def reference_gain_db(
+    clip,
+    sample_rate: int,
+    *,
+    reference_lufs: Optional[float] = None,
+    peak_ceiling_dbfs: float = REFERENCE_PEAK_CEILING_DBFS,
+    short_peak_dbfs: float = SHORT_CLIP_PEAK_DBFS,
+    max_boost_db: float = MAX_REFERENCE_BOOST_DB,
+) -> float:
+    """The gain (dB) that brings ``clip`` to the reference loudness; ``0.0`` if it cannot.
+
+    Integrated loudness (BS.1770, gated) is measured and the gain is
+    ``reference_lufs - measured``. A clip too short or too quiet to measure is levelled by
+    its sample peak (to ``short_peak_dbfs``) instead. Either way the gain is capped so the
+    clip's sample peak stays at or under ``peak_ceiling_dbfs`` and the boost at
+    ``max_boost_db``; a silent or non-finite clip gets ``0.0``. Pure and deterministic.
+
+    Args:
+        clip: Mono or multichannel samples, time on axis 0.
+        sample_rate: Sample rate in Hz.
+        reference_lufs: The loudness every clip is brought to (default: foley's
+            reference programme loudness, :data:`foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).
+    """
+    import numpy as np
+
+    from .audio import DEFAULT_LOUDNESS_TARGET_LUFS
+    from .qc import measure_lufs
+
+    reference = (
+        DEFAULT_LOUDNESS_TARGET_LUFS if reference_lufs is None else reference_lufs
+    )
+    x = np.asarray(clip, dtype=np.float64)
+    if not np.isfinite(x).all() or x.size == 0:
+        return 0.0
+    peak = float(np.max(np.abs(x)))
+    peak_db = 20.0 * float(np.log10(peak)) if peak > 0 else float("-inf")
+    if peak_db <= SILENT_PEAK_DBFS:
+        return 0.0
+    measured = measure_lufs(x, sample_rate)
+    wanted = short_peak_dbfs - peak_db if measured is None else reference - measured
+    return float(min(wanted, peak_ceiling_dbfs - peak_db, max_boost_db))

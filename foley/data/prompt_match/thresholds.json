@@ -1,0 +1,15 @@
+{
+  "laion/larger_clap_general": {
+    "auc": 0.9392,
+    "calibrated_on": "20 prompts, each with a Stable Audio 3 Small-SFX clip (4 s, seeds 11-30); 20 matches, 380 cross-prompt mismatches; match labels are 'generated for the prompt', not by ear (2026-10-26)",
+    "f1": 0.9477,
+    "match_kept": 0.9,
+    "match_mean": 0.2618,
+    "mismatch_mean": 0.0059,
+    "n_match": 20,
+    "n_mismatch": 380,
+    "precision": 0.9942,
+    "recall": 0.9053,
+    "threshold": 0.1446
+  }
+}
