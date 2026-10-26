@@ -1,15 +1,17 @@
-"""Freesound APIv2 retrieve adapter — CC0 sounds, stored strictly by-reference.
+"""Freesound APIv2 retrieve adapter — CC0 (and CC-BY) sounds, stored strictly by-reference.
 
 Freesound (report 01 §Freesound) is foley's anchor retrieve source. This adapter
 turns a natural-language query into ranked, license-clean
 :class:`~foley.base.Candidate`\\ s over the Freesound APIv2, honoring two
 load-bearing constraints:
 
-* **CC0-only (for #5), pushed into the query.** The CC0 filter is sent as the
-  native ``filter=license:"Creative Commons 0"`` so non-CC0 sounds never leave the
-  server; each returned item is *also* re-checked fail-closed against the
-  ``accepted_license_ids`` allowlist — the server filter is a promise foley does
-  not control, so a non-CC0 item that slips through is dropped, never indexed.
+* **CC0 by default, CC-BY on request, pushed into the query.** The CC0 filter is sent
+  as the native ``filter=license:"Creative Commons 0"`` so other sounds never leave the
+  server (``license`` other than ``'cc0'`` also asks for ``"Attribution"``: the
+  credit-bearing sounds the :func:`~foley.licensing.keep` gate then admits only for a
+  caller that can attribute). Each returned item is *also* re-checked fail-closed
+  against the ``accepted_license_ids`` allowlist — the server filter is a promise foley
+  does not control, so an NC / SA / ND item that slips through is dropped, never indexed.
 * **By-reference storage (TOS).** The Freesound API TOS forbids caching the audio
   bytes even for CC0, so every sound is licensed ``cache_bytes_ok=False`` (a
   per-item override on top of its own CC id — see
@@ -50,6 +52,24 @@ def _raw_id(source_id: str) -> str:
     """Strip the ``freesound:`` namespace prefix (accept either id form)."""
     s = str(source_id)
     return s.split(":", 1)[1] if s.startswith("freesound:") else s
+
+
+def _bst_category(config: dict, ucs_category: str) -> Optional[str]:
+    """The Broad Sound Taxonomy top-level name for a UCS CatID or category, else ``None``.
+
+    ``None`` (no pre-filter) for a value that is neither a CatID in the UCS table nor a
+    known category: a coarse pre-filter must never hide sounds on a guess.
+    """
+    from ...index.taxonomy import default_ucs_table
+
+    spec = config["param_map"]["ucs_category"]
+    row = default_ucs_table().get(ucs_category)
+    category = (row.category if row is not None else ucs_category).upper()
+    known = {r.category.upper() for r in default_ucs_table()}
+    mapping = spec["bst_category_by_ucs_category"]
+    if category in mapping:
+        return mapping[category]
+    return spec["bst_default_category"] if category in known else None
 
 
 def _preview_url(item: dict) -> Optional[str]:
@@ -132,25 +152,31 @@ class FreesoundAdapter:
         self,
         query: str,
         *,
-        license: str = "cc0",
+        license: Optional[str] = "cc0",
         k: int = 15,
         duration_range: "Optional[tuple[float, float]]" = None,
         sort: Optional[str] = None,
+        similar_to: Optional[str] = None,
+        ucs_category: Optional[str] = None,
         **kw,
     ) -> "list[Candidate]":
         """Search Freesound for ``query``; return license-clean candidates.
 
-        The ``license='cc0'`` filter is pushed into the native Solr ``filter`` so
-        non-CC0 sounds never leave the server; every returned item is still
-        re-checked fail-closed before it becomes a candidate.
+        The license filter is pushed into the native Solr ``filter`` so other sounds
+        never leave the server; every returned item is still re-checked fail-closed
+        before it becomes a candidate.
 
         Args:
-            license: License constraint. ``'cc0'`` (default) sends the CC0 filter;
-                ``None`` sends none (the per-item guard still enforces the
-                ``accepted_license_ids`` allowlist, so results stay CC0 for #5).
+            license: License constraint. ``'cc0'`` (default) sends the CC0 filter and
+                keeps CC0 alone; ``None`` sends no filter and any other value asks for
+                CC0 + Attribution; both keep what the ``accepted_license_ids``
+                allowlist holds (CC0, CC-BY), so NC / SA / ND never come back.
             k: Max results (Freesound caps ``page_size`` at 150).
             duration_range: Optional ``(min_s, max_s)`` native duration filter.
             sort: Optional native sort key (default: Freesound relevance).
+            similar_to: A Freesound sound id (either id form): "more like this one".
+            ucs_category: A UCS CatID or category, mapped to a coarse Broad Sound
+                Taxonomy ``category`` pre-filter (no filter if it is not recognised).
             **kw: Ignored extra affordances (``on_unsupported_param='warn'``).
 
         Returns:
@@ -164,8 +190,19 @@ class FreesoundAdapter:
             "page_size": min(int(k), 150),
         }
         filters: "list[str]" = []
+        license_map = self.config["param_map"]["license"]
         if license == "cc0":
-            filters.append(self.config["param_map"]["license"]["to_native"])
+            filters.append(license_map["to_native"])
+        elif license is not None:
+            filters.append(license_map["to_native_attribution"])
+        if ucs_category:
+            bst = _bst_category(self.config, ucs_category)
+            if bst is not None:
+                filters.append(
+                    self.config["param_map"]["ucs_category"]["to_native"].format(
+                        category=bst
+                    )
+                )
         if duration_range is not None:
             lo, hi = duration_range
             filters.append(
@@ -177,13 +214,17 @@ class FreesoundAdapter:
             params["filter"] = " ".join(filters)
         if sort is not None:
             params["sort"] = sort
+        if similar_to:
+            native = self.config["param_map"]["similar_to"]["native_name"]
+            params[native] = _raw_id(similar_to)
 
         data = self._get_json(
             self._url(self.config["api"]["search_endpoint"]["path"]), params=params
         )
+        only = self.config["license"]["cc0_license_ids"] if license == "cc0" else None
         candidates: "list[Candidate]" = []
         for item in data.get("results", []):
-            cand = self._candidate_from_item(item)
+            cand = self._candidate_from_item(item, only=only)
             if cand is not None:  # None => fail-closed drop (non-accepted license)
                 candidates.append(cand)
         return candidates
@@ -231,12 +272,15 @@ class FreesoundAdapter:
 
     # -- item -> license-checked Candidate ----------------------------------
 
-    def _candidate_from_item(self, item: dict) -> "Optional[Candidate]":
+    def _candidate_from_item(
+        self, item: dict, *, only: "Optional[list[str]]" = None
+    ) -> "Optional[Candidate]":
         """Build a license-checked :class:`~foley.base.Candidate` (None => drop).
 
         The per-item fail-closed guard: an item whose license is unverified or not
         in ``accepted_license_ids`` returns ``None`` (dropped, never indexed) even
-        if the server-side filter returned it. Every kept item gets a
+        if the server-side filter returned it (``only`` narrows the allowlist for a
+        CC0-only search). Every kept item gets a
         by-reference :class:`~foley.base.LicenseRecord` (``cache_bytes_ok=False``)
         and a short, case-stable ``freesound:<id>`` canonical id.
         """
@@ -244,7 +288,9 @@ class FreesoundAdapter:
         if raw_id is None:
             return None
         license_id, verified = license_id_from_cc_url(item.get("license"))
-        accepted = self.config["license"]["accepted_license_ids"]
+        accepted = (
+            only if only is not None else self.config["license"]["accepted_license_ids"]
+        )
         if not verified or license_id not in accepted:
             return None  # fail-closed: never index a non-accepted-license sound
 

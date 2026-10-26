@@ -152,6 +152,9 @@ QUERY_AFFORDANCES: dict[str, Affordance] = {
     "min_snr": Affordance("min_snr", float, "QC filter: min SNR dB"),
     "commercial_ok": Affordance("commercial_ok", bool, "License filter shorthand"),
     "license": Affordance("license", str, "Explicit license id constraint"),
+    "similar_to": Affordance(
+        "similar_to", str, "Source sound id: more like this one (a source that has it)"
+    ),
     "sort": Affordance("sort", str, "score|duration|created|downloads", "score"),
     "rerank": Affordance("rerank", bool, "Apply second-stage rerank", False),
 }
