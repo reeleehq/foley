@@ -162,6 +162,7 @@ obs = [
 # anthropic import; the real-path test injects a fake client (importorskip-guarded).
 agent = [
     "anthropic",
+    "falaw>=0.0.63", # the LLM price table (llm_call_cost_usd)
 ]
 # Offline / local-LLM SELECT rungs: the OpenAI-compatible client for an on-device endpoint
 # (Ollama / llama.cpp / vLLM), so decompose/judge/refine run with nothing leaving the device.
@@ -225,6 +226,7 @@ mcp = [
     "py2mcp",
 ]
 test = [
+    "falaw>=0.0.63", # llm_call_cost_usd prices the LLM-rung budget tests
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "numpy",

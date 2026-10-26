@@ -28,6 +28,7 @@ from __future__ import annotations
 import importlib
 import os
 import warnings
+from types import SimpleNamespace
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -117,18 +118,6 @@ def require_llm_egress(provider: str) -> None:
     require_egress(llm_egress(provider), what=f"LLM provider {provider!r}")
 
 
-#: Anthropic first-party prices, USD per million tokens ``(input, output)``. Source: the
-#: Claude API model table (claude-api reference, cached 2026-09-25). A model not listed
-#: here has an unknown price, so its calls need the run's approval.
-ANTHROPIC_PRICES_PER_MTOK: "dict[str, tuple[float, float]]" = {
-    "claude-opus-4-8": (5.0, 25.0),
-    "claude-opus-5": (5.0, 25.0),
-    "claude-opus-5-5": (4.0, 20.0),
-    "claude-sonnet-5-5": (2.0, 10.0),
-    "claude-haiku-4-5": (1.0, 5.0),
-}
-PRICES_SEEN = "2026-09-25"
-
 #: A floor on characters per token, so ``chars / CHARS_PER_TOKEN_FLOOR`` bounds the
 #: input tokens of any prompt (English runs ~4 chars/token; 2 leaves room for code,
 #: numbers and other scripts). Input bounds are computed from the real prompt.
@@ -182,28 +171,38 @@ def llm_call_estimate(
         return None
     from ._genai import DEFAULT_AGENT_MODEL
 
-    prices = ANTHROPIC_PRICES_PER_MTOK.get(model or DEFAULT_AGENT_MODEL)
-    if prices is None:
-        return None
     chars = input_chars
     if kind is not None:
         chars += _rung_fixed_chars(kind) + RUNG_VARIABLE_CHARS[kind]
     tokens_in = -(-chars // CHARS_PER_TOKEN_FLOOR)
     tokens_out = max_tokens if max_tokens is not None else max(RUNG_MAX_TOKENS.values())
-    return (tokens_in * prices[0] + tokens_out * prices[1]) / 1e6
+    usage = SimpleNamespace(input_tokens=tokens_in, output_tokens=tokens_out)
+    return _anthropic_cost(model, usage)
+
+
+def _anthropic_cost(model: Optional[str], usage) -> Optional[float]:
+    """USD for a ``usage`` (token counts) at ``model``'s listed price, else ``None``.
+
+    The price table is ``falaw``'s (``falaw.llm_call_cost_usd``), the fleet's single
+    source for it; its ``known=False`` is ``None`` here.
+    """
+    from falaw import llm_call_cost_usd
+
+    from ._genai import DEFAULT_AGENT_MODEL
+
+    usd, known = llm_call_cost_usd("anthropic", model or DEFAULT_AGENT_MODEL, usage)
+    return usd if known else None
 
 
 def _usage_cost(model: Optional[str], response) -> Optional[float]:
     """The actual USD cost of an Anthropic response from its ``usage``, if priceable."""
-    from ._genai import DEFAULT_AGENT_MODEL
-
     usage = getattr(response, "usage", None)
-    prices = ANTHROPIC_PRICES_PER_MTOK.get(model or DEFAULT_AGENT_MODEL)
-    tin = getattr(usage, "input_tokens", None)
-    tout = getattr(usage, "output_tokens", None)
-    if prices is None or not isinstance(tin, int) or not isinstance(tout, int):
+    if not all(
+        isinstance(getattr(usage, f, None), int)
+        for f in ("input_tokens", "output_tokens")
+    ):
         return None
-    return (tin * prices[0] + tout * prices[1]) / 1e6
+    return _anthropic_cost(model, usage)
 
 
 def guard_llm_call(provider: str) -> None:
