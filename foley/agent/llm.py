@@ -169,8 +169,6 @@ def llm_call_estimate(
         return 0.0
     if provider != "anthropic":
         return None
-    from ._genai import DEFAULT_AGENT_MODEL
-
     chars = input_chars
     if kind is not None:
         chars += _rung_fixed_chars(kind) + RUNG_VARIABLE_CHARS[kind]
