@@ -67,7 +67,7 @@ result.notes  # how placements were timed, e.g. estimates when foley[align] is a
 
 | Stage | What it does | Built on |
 |-------|--------------|----------|
-| **Source** | your own files · Freesound (CC0) · generate (Stable Audio 3 local on CPU; Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking |
+| **Source** | your own files · Freesound (CC0) · keyless: Openverse, Wikimedia Commons, Internet Archive (opt-in; licences unverified) · generate (Stable Audio 3 local on CPU; Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking |
 | **Index** | probe → tag → caption → embed every sound; hybrid keyword+semantic search | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in |
 | **Select** | decompose a narrative context → search → verify → generate-or-retrieve | CLAP retrieval + LLM decomposition + a verification ladder |
 | **Weave** | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |

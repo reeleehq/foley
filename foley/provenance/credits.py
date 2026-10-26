@@ -328,8 +328,8 @@ def render_credits_md(
         heading_level: Markdown heading level for the title (default ``2`` → ``##``).
 
     Returns:
-        The Markdown document (bulleted attribution lines; a placeholder note when
-        empty), ending in a single trailing newline.
+        The Markdown document (bulleted attribution lines, then each distinct
+        ``notice_text_required``; a placeholder note when empty), ending in a single trailing newline.
     """
     head = "#" * max(1, heading_level)
     heading = title if title is not None else credits.title
@@ -340,7 +340,12 @@ def render_credits_md(
         lines.extend(
             f"- {attribution_line(e, fmt='markdown')}" for e in credits.entries
         )
-    return "\n".join(lines) + "\n"
+        # Notices a source's terms require (Openverse: "made using Openverse"), once each.
+        notices = dict.fromkeys(
+            e.notice_text_required for e in credits.entries if e.notice_text_required
+        )
+        lines.extend(["", *notices])
+    return "\n".join(lines).rstrip("\n") + "\n"
 
 
 def credits_manifest(credits: Credits) -> dict:
