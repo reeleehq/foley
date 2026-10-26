@@ -121,7 +121,8 @@ def ledger(*, targets: Optional[list[dict]] = None) -> dict:
         ``planned`` holds only targets with no registered source of that name.
     """
     implemented = {
-        name: capabilities_of(SOURCE_REGISTRY[name]["config"]) for name in list_sources()
+        name: capabilities_of(SOURCE_REGISTRY[name]["config"])
+        for name in list_sources()
     }
     if targets is None:
         targets = load_targets()
