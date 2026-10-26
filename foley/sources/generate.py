@@ -52,8 +52,9 @@ from .registry import get_source
 #: direct comes first: on a paid plan its clips come out of the monthly allowance
 #: (then $0.002/s, the same per-second price as the fal route) under the plan's own
 #: licence (commercial, royalty-free), where the fal route's licence is unverified.
-#: fal's Stable Audio 3 (commercial under $1M revenue) and fal's ElevenLabs follow, and
-#: the local Stable Audio Open (free, needs a GPU and its weights) is last. A backend
+#: fal's Stable Audio 3 (commercial under $1M revenue) and fal's ElevenLabs follow, then
+#: the local Stable Audio 3 Small-SFX (free, runs on the CPU) and, last, the local Stable
+#: Audio Open (free, needs a GPU and its weights). A backend
 #: that is not configured (no key, no plan), not reachable (offline), or whose call
 #: fails is skipped, with the reason on the clip's notes. The paid entries are tried
 #: only once the operator opts in to paid generation (:func:`paid_generation_opted_in`):
@@ -62,11 +63,13 @@ DEFAULT_GENERATE_ORDER = (
     "elevenlabs",
     "fal_stable_audio_3",
     "fal_elevenlabs",
+    "stable_audio_3",
     "stable_audio",
 )
 
-#: The last resort when nothing in the order is configured (free, local).
-DEFAULT_GENERATE_BACKEND = DEFAULT_GENERATE_ORDER[-1]
+#: The local default: free, on the CPU, no GPU and no token (#72). The order falls back
+#: to ``stable_audio`` (Stable Audio Open 1.0, which needs a GPU) when it is not set up.
+DEFAULT_GENERATE_BACKEND = "stable_audio_3"
 
 #: Env var pinning ONE default backend (no fallback), e.g. ``fal_stable_audio_3``.
 #: Naming a paid backend here is the operator asking for it.

@@ -66,7 +66,7 @@ from its own config. The model: `foley/sources/fal/` (`fal_stable_audio_3`,
 ### A generate source and the generation order
 
 An unnamed `foley.generate` walks `foley.sources.generate.DEFAULT_GENERATE_ORDER` (today
-`elevenlabs` → `fal_stable_audio_3` → `fal_elevenlabs` → `stable_audio`). A new generate
+`elevenlabs` → `fal_stable_audio_3` → `fal_elevenlabs` → `stable_audio_3` → `stable_audio`). A new generate
 source is reachable by name at once; put it in the order only when it beats a neighbour on
 price *and* licence, and keep a free local backend last. Paid entries are skipped unless
 the operator opted in (`FOLEY_GENERATE_PAID=1`, or an order/backend named in the env):

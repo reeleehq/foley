@@ -89,7 +89,7 @@ def test_elevenlabs_direct_is_first_in_the_default_order():
 
 def test_a_key_alone_never_selects_a_paid_backend(paid_keys):
     # #58: keys are set for other tools too; spending needs an explicit opt-in.
-    assert generate_module.default_generate_backend() == "stable_audio"
+    assert generate_module.default_generate_backend() == "stable_audio_3"
 
 
 def test_opting_in_puts_elevenlabs_first(paid_keys, monkeypatch):

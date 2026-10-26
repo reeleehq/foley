@@ -34,7 +34,7 @@ hits = foley.search("distant thunder rumble", k=10)  # commercial use is the def
 # needs foley[stable-audio] and the gated stabilityai/stable-audio-open-1.0 weights
 # (accept its license on Hugging Face, set HF_TOKEN); backend="elevenlabs" needs
 # ELEVENLABS_API_KEY and is paid
-clip = foley.generate("a single wooden door creak", backend="stable_audio", duration=3)
+clip = foley.generate("a single wooden door creak", backend="stable_audio_3", duration=3)  # local, CPU; setup: foley.check_requirements(verbose=True)
 
 # No GPU? The fal-hosted backends (foley[fal] + FAL_KEY; paid, priced before the call):
 # Stable Audio 3 Small-SFX at $0.0206 a clip, commercial use under $1M revenue
@@ -65,7 +65,7 @@ result.notes  # how placements were timed, e.g. estimates when foley[align] is a
 
 | Stage | What it does | Built on |
 |-------|--------------|----------|
-| **Source** | your own files · Freesound (CC0) · generate (Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking |
+| **Source** | your own files · Freesound (CC0) · generate (Stable Audio 3 local on CPU; Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking |
 | **Index** | probe → tag → caption → embed every sound; hybrid keyword+semantic search | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in |
 | **Select** | decompose a narrative context → search → verify → generate-or-retrieve | CLAP retrieval + LLM decomposition + a verification ladder |
 | **Weave** | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
