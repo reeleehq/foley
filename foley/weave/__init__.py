@@ -280,16 +280,10 @@ def _c2pa_sign_wav(wav_bytes: bytes, manifest: dict, signer) -> bytes:
     — a ready-to-use ``c2pa`` signer the caller built for their signing identity + c2pa
     version (dependency-injected, so foley pins no version-fragile signer-construction API).
 
-    Build one for a C2PA-conformant signing identity, e.g.::
-
-        signer = c2pa.Signer.from_callback(sign_cb, c2pa.C2paSigningAlg.ES256, cert_chain_pem)
-        # or, with a local key: c2pa.Signer.from_info(c2pa.C2paSignerInfo(
-        #     alg=b"es256", sign_cert=<chain PEM>, private_key=<PKCS#8 PEM>, ta_url=<TSA URL>))
-
-    where ``cert_chain_pem`` is the end-entity cert **followed by** its issuer (the C2PA cert
-    profile: KeyUsage=digitalSignature, EKU=emailProtection, plus Subject/Authority Key
-    Identifiers) and the private key is PKCS#8 (``BEGIN PRIVATE KEY``). Verified end-to-end
-    (sign + embed + read back) against ``c2pa-python`` — see ``tests/test_weave_upgrades.py``.
+    Build one with :func:`foley.provenance.make_c2pa_signer` (cert chain + key; ``foley[c2pa]``),
+    or :func:`foley.provenance.make_self_signed_c2pa_certs` for a throwaway dev chain.
+    Verified end-to-end (sign + embed + read back) against ``c2pa-python``: see
+    ``tests/test_provenance_signing.py``.
     """
     import io
     import json
@@ -457,7 +451,8 @@ def weave(
         watermark: ``True`` force a watermark, ``False`` never, ``None`` (default) auto —
             watermark iff the mix contains AI-generated audio and AudioSeal is installed.
         watermarker: An injected watermarker (the DI seam; tests pass a fake).
-        sign_cert: A signing cert for the (deferred) signed+embedded C2PA path.
+        sign_cert: A ready ``c2pa.Signer`` for the signed+embedded C2PA path (build one
+            with :func:`foley.provenance.make_c2pa_signer`); omit for the sidecar only.
         export_captions: If ``True`` (default), emit WebVTT + SRT SDH captions.
         provenance_store: An optional ``MutableMapping`` to persist the C2PA sidecar.
 
