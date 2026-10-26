@@ -36,7 +36,12 @@ from __future__ import annotations
 import math
 from typing import Optional, Union
 
+from typing import TYPE_CHECKING
+
 from .base import Layer
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from .audio import Meter
 
 #: What ``level=`` accepts: a layer (or its name) for its class target, or a LUFS value.
 LevelSpec = Union[Layer, str, float, int]
@@ -90,7 +95,7 @@ def require_loudness_meter() -> None:
 
 
 def level_bytes(
-    audio_bytes: bytes, target: LevelSpec, *, meter=None
+    audio_bytes: bytes, target: LevelSpec, *, meter: Optional[Meter] = None
 ) -> "tuple[bytes, Optional[str], Optional[float]]":
     """Scale an encoded clip to ``target`` loudness; return ``(bytes, applied, measured)``.
 
@@ -158,7 +163,7 @@ def reference_gain_db(
     peak_ceiling_dbfs: float = REFERENCE_PEAK_CEILING_DBFS,
     short_peak_dbfs: float = SHORT_CLIP_PEAK_DBFS,
     max_boost_db: float = MAX_REFERENCE_BOOST_DB,
-    meter=None,
+    meter: Optional[Meter] = None,
 ) -> float:
     """The gain (dB) that brings ``clip`` to the reference loudness; ``0.0`` if it cannot.
 

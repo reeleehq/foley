@@ -55,13 +55,18 @@ def test_master_injected_limiter_and_meter_are_used():
 
     def limiter(m, rate, ceiling_db):
         calls["limiter"] += 1
-        return m, -3.0, False
+        return m * 0.5  # a different array: the report must measure it, not trust it
 
     def meter(x, rate):
         calls["meter"] += 1
         return -20.0
 
-    _, report = master(mix, sr, MASTER_PROFILES["podcast"], limiter=limiter, meter=meter)
+    mastered, report = master(
+        mix, sr, MASTER_PROFILES["podcast"], limiter=limiter, meter=meter
+    )
     assert calls["limiter"] == 1 and calls["meter"] >= 2
-    assert report.true_peak_dbtp == -3.0 and report.limited is False
+    assert report.limited is True
+    assert report.true_peak_dbtp == pytest.approx(
+        float(__import__("foley.qc", fromlist=["x"]).true_peak_dbtp(mastered, sr))
+    )
     assert report.input_lufs == -20.0 and report.output_lufs == -20.0

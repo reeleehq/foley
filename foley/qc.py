@@ -10,7 +10,7 @@ Zero-dependency import contract:
     This module imports **stdlib only** at the top level. ``numpy`` is
     lazy-imported inside each function body (like ``foley.audio``), so
     ``import foley.qc`` succeeds on a bare install with no scientific stack.
-    :func:`measure_lufs` additionally lazy-imports ``pyloudnorm`` and returns
+    The :func:`measure_lufs` meter (``pyloudnorm``, via :func:`foley.audio.integrated_lufs`) is lazy and it returns
     ``None`` when it (or a measurable clip) is absent; everything else is
     numpy-only.
 
@@ -34,6 +34,8 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:  # annotations only — never imported at runtime
     import numpy as np
+
+    from .audio import Meter
 
 
 #: BS.1770 integrated-loudness gating block = 400 ms; a clip shorter than one
@@ -429,7 +431,7 @@ def measure_lufs(
             loudness = integrated_lufs(
                 x, sample_rate, min_block_s=min_block_s, meter=meter
             )
-        except Exception:
+        except (ImportError, ValueError):
             return None
     if not np.isfinite(loudness) or loudness <= gate_floor_lufs:
         return None

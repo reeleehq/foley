@@ -20,13 +20,19 @@ from __future__ import annotations
 
 import math
 from dataclasses import asdict, dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Optional
 
 from ..base import MasterProfile
 from .mix import db_to_lin
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from numpy import ndarray
+
+    from ..audio import Meter
+
+    #: The in-process true-peak stage: ``(mix, sample_rate, ceiling_db) -> mix``.
+    #: ``master`` measures what it returns, so the report stays an audit.
+    Limiter = Callable[["ndarray", int, float], "ndarray"]
 
 
 @dataclass
@@ -47,7 +53,9 @@ class MasterReport:
         return asdict(self)
 
 
-def _measure_lufs(samples: "ndarray", sample_rate: int, *, meter=None) -> float:
+def _measure_lufs(
+    samples: "ndarray", sample_rate: int, *, meter: "Optional[Meter]" = None
+) -> float:
     """Integrated loudness (LUFS) of ``samples``; ``-inf`` when too short to gate."""
     from ..audio import integrated_lufs
 
@@ -61,13 +69,11 @@ def _tp(mix: "ndarray", sample_rate: int) -> float:
     return float(true_peak_dbtp(mix, sample_rate))
 
 
-def _true_peak_limit(
-    mix: "ndarray", sample_rate: int, ceiling_db: float
-) -> "tuple[ndarray, float, bool]":
+def _true_peak_limit(mix: "ndarray", sample_rate: int, ceiling_db: float) -> "ndarray":
     """Scale ``mix`` so its inter-sample true peak sits at/below ``ceiling_db``.
 
-    Returns ``(mix, true_peak_dbtp, limited)``. A true-peak-safe *scale* (not a
-    lookahead limiter) — simple, deterministic, and never raises the ceiling.
+    The default :data:`Limiter`: a true-peak-safe *scale* (not a lookahead limiter),
+    simple, deterministic, and never raises the level.
     """
     import numpy as np
 
@@ -75,9 +81,8 @@ def _true_peak_limit(
 
     tp = true_peak_dbtp(mix, sample_rate)
     if not np.isfinite(tp) or tp <= ceiling_db:
-        return mix, tp, False
-    out = mix * db_to_lin(ceiling_db - tp)
-    return out, true_peak_dbtp(out, sample_rate), True
+        return mix
+    return mix * db_to_lin(ceiling_db - tp)
 
 
 def _parse_loudnorm_json(stderr: str) -> dict:
@@ -172,8 +177,8 @@ def master(
     profile: MasterProfile,
     *,
     engine: str = "auto",
-    limiter=None,
-    meter=None,
+    limiter: "Optional[Limiter]" = None,
+    meter: "Optional[Meter]" = None,
 ) -> "tuple[ndarray, MasterReport]":
     """Master ``mix`` to ``profile`` — LUFS-normalise then true-peak-limit (report 06 §5).
 
@@ -184,11 +189,11 @@ def master(
         engine: ``'auto'``/``'inprocess'`` master in-process (default, portable). ``'ffmpeg'``
             uses the two-pass ``ffmpeg loudnorm`` "guarantee the numbers" master (report 06
             §5.4) and **fails safe** back to in-process if ffmpeg is unavailable or errors.
-        limiter: The in-process true-peak stage, ``(mix, sample_rate, ceiling_db) ->
-            (mix, true_peak_dbtp, limited)`` (default: a static true-peak-safe scale,
-            :func:`_true_peak_limit`). The seam for a lookahead limiter (foley#91).
-        meter: A :data:`foley.audio.Meter` for the in-process loudness stages (default
-            ``pyloudnorm``).
+        limiter: The in-process true-peak stage (a :data:`Limiter`, ``(mix, sample_rate,
+            ceiling_db) -> mix``; default: a static true-peak-safe scale). The seam for a
+            lookahead limiter (foley#91). In-process engine only; the true peak in the
+            report is always measured here, never taken from the limiter.
+        meter: A :data:`foley.audio.Meter` for the loudness stages (default ``pyloudnorm``).
 
     Returns:
         ``(mastered_mix, MasterReport)``. Loudness is measured before and after so the
@@ -198,8 +203,8 @@ def master(
     if engine == "ffmpeg":
         try:
             mastered = _master_ffmpeg(mix, sample_rate, profile)
-            out_lufs = _measure_lufs(mastered, sample_rate)
-            in_lufs = _measure_lufs(mix, sample_rate)
+            out_lufs = _measure_lufs(mastered, sample_rate, meter=meter)
+            in_lufs = _measure_lufs(mix, sample_rate, meter=meter)
             return mastered, MasterReport(
                 target_lufs=profile.target_lufs,
                 input_lufs=in_lufs,
@@ -224,9 +229,11 @@ def master(
         peak_ceiling_dbfs=profile.true_peak_db,
         meter=meter,
     )
-    limited_mix, tp, limited = (limiter or _true_peak_limit)(
+    limited_mix = (limiter or _true_peak_limit)(
         normalized, sample_rate, profile.true_peak_db
     )
+    limited = limited_mix is not normalized
+    tp = _tp(limited_mix, sample_rate)
     output_lufs = _measure_lufs(limited_mix, sample_rate, meter=meter)
     gain_db = (
         output_lufs - input_lufs

@@ -364,3 +364,5 @@ def test_measure_lufs_is_the_audio_meter_with_none_contract():
     bad = x.copy()
     bad[5] = np.nan
     assert measure_lufs(bad, sr) is None
+    six = np.tile(x[:, None], (1, 6))
+    assert measure_lufs(six, sr) is None  # >5 channels: pyloudnorm ValueError
