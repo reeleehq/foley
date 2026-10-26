@@ -182,3 +182,34 @@ def test_c2pa_real_sign_embed_and_readback():
     # c2pa can read the embedded manifest back out of the signed asset
     manifest = json.loads(c2pa.Reader("audio/wav", io.BytesIO(signed)).json())
     assert manifest.get("active_manifest")
+
+
+def test_c2pa_sign_refuses_non_wav_manifest(monkeypatch):
+    from foley import weave
+
+    cred = {"manifest": {"format": "audio/mpeg"}, "signed": False, "embedded": False}
+    assert weave._sign_and_embed(_noise(0.01), SR, cred, cert=object()) is False
+    assert cred["signed"] is False
+
+
+def test_reassert_provenance_logs_credential_failure(monkeypatch, caplog):
+    from foley import weave
+    from foley.provenance import disclosure
+
+    def boom(*a, **k):
+        raise RuntimeError("nope")
+
+    monkeypatch.setattr(disclosure, "build_mix_credential", boom)
+    with caplog.at_level("WARNING"):
+        out = weave.reassert_provenance(_noise(0.01), SR, [], asset_id="m")
+    assert out["content_credential"] is None
+    assert "provenance re-assertion failed" in caplog.text
+
+
+def test_foley_version_single_source():
+    from foley import _version
+    from foley.obs import recorder, trace
+    from foley.provenance import disclosure
+
+    assert recorder._foley_version is trace._foley_version is disclosure._foley_version
+    assert recorder._foley_version is _version.foley_version

@@ -194,6 +194,10 @@ def _is_ai(record) -> bool:
     return bool(getattr(lic, "is_ai_generated", False))
 
 
+#: The one container the signer embeds into (the mix is rendered to WAV before signing).
+_SIGNABLE_MIME = "audio/wav"
+
+
 def _c2pa_sign_wav(wav_bytes: bytes, manifest: dict, signer) -> bytes:
     """Promote ``manifest`` into a signed, EMBEDDED C2PA manifest over ``wav_bytes``.
 
@@ -213,7 +217,7 @@ def _c2pa_sign_wav(wav_bytes: bytes, manifest: dict, signer) -> bytes:
 
     builder = c2pa.Builder(json.dumps(manifest))
     dest = io.BytesIO()
-    builder.sign(signer, "audio/wav", io.BytesIO(wav_bytes), dest)
+    builder.sign(signer, _SIGNABLE_MIME, io.BytesIO(wav_bytes), dest)
     return dest.getvalue()
 
 
@@ -231,6 +235,13 @@ def _sign_and_embed(
     weaving never depends on it and a mis-versioned signer degrades gracefully.
     """
     if cert is None:
+        return False
+    manifest_format = credential["manifest"].get("format", _SIGNABLE_MIME)
+    if manifest_format != _SIGNABLE_MIME:
+        _log.warning(
+            "C2PA signing supports WAV only (manifest format %r); sidecar-only",
+            manifest_format,
+        )
         return False
     import importlib.util
 
@@ -323,7 +334,10 @@ def reassert_provenance(
             asset_id=asset_id,
         )
     except Exception:
-        pass  # fail-safe: never block the render on provenance
+        _log.warning(
+            "provenance re-assertion failed; weaving continues without the mix credential",
+            exc_info=True,
+        )  # fail-safe: never block the render on provenance
     return out
 
 

@@ -44,6 +44,8 @@ import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, MutableMapping, Optional, Protocol, runtime_checkable
 
+from .._version import foley_version as _foley_version
+
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from ..base import Candidate, LicenseRecord, SoundRecord
 
@@ -484,15 +486,6 @@ _MIME_BY_FORMAT = {
     "opus": "audio/opus",
     "m4a": "audio/mp4",
 }
-
-
-def _foley_version() -> str:
-    try:
-        from importlib.metadata import version
-
-        return version("foley")
-    except Exception:  # pragma: no cover
-        return "unknown"
 
 
 def build_content_credential(

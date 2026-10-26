@@ -21,6 +21,8 @@ import importlib.util
 from contextlib import contextmanager
 from typing import ContextManager, Optional, Protocol, runtime_checkable
 
+from .._version import foley_version as _foley_version
+
 #: The GenAI semantic-convention attribute keys foley emits. HARDCODED as strings on
 #: purpose — the ``opentelemetry.semconv._incubating`` constants are Development-
 #: stability and shift across minor versions. This dict is the single place they are named.
@@ -175,15 +177,6 @@ def _otel_importable() -> bool:
     # would freeze a bare-install process into the no-op path even after opentelemetry
     # is installed mid-process (or, in tests, across an install/uninstall).
     return importlib.util.find_spec("opentelemetry") is not None
-
-
-def _foley_version() -> str:
-    try:
-        from importlib.metadata import version
-
-        return version("foley")
-    except Exception:  # pragma: no cover
-        return "unknown"
 
 
 def get_tracer(*, prefer_otel: bool = True) -> Tracer:
