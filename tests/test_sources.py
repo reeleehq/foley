@@ -339,3 +339,14 @@ def test_ledger_computes_planned_from_registry():
     assert led["planned"] == []
     assert foley.ledger(targets=[])["planned"] == []
     assert foley.capability_report()["backends"]["implemented"]
+
+
+def test_provider_params_need_a_declared_policy():
+    import pytest
+
+    from foley.sources.base import check_provider_params
+
+    assert check_provider_params({}, policy=None) == {}
+    with pytest.raises(ValueError, match="no provider_params policy"):
+        check_provider_params({"x": 1}, policy=None)
+    assert check_provider_params({"x": 1}, policy={}) == {"x": 1}

@@ -233,3 +233,14 @@ def test_invoke_native_runs_the_script_with_native_flags(home):
     )
     assert load(audio)[1] == SR
     assert _arg(run.calls[0]["cmd"], "--steps") == "4"
+
+
+def test_provider_flag_abbreviations_cannot_override_core_flags(tmp_path):
+    from foley.sources.stable_audio_3 import adapter as sa3
+
+    a = sa3.Adapter()
+    cmd = a._command(
+        tmp_path, "p", {"see": 7, "seconds": 2.0, "steps": 8, "cfg": 1.0, "seed": 3}, tmp_path / "o.wav"
+    )
+    assert cmd.index("--see") < cmd.index("--seed")
+    assert cmd[cmd.index("--seed") + 1] == "3"

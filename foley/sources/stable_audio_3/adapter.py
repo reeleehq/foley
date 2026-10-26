@@ -100,6 +100,10 @@ def setup_hint(config: Optional[dict] = None) -> str:
     )
 
 
+#: The flags foley itself sets and records (they must win over any abbreviation).
+_CORE_FLAGS = frozenset({"seconds", "steps", "cfg", "seed"})
+
+
 class StableAudio3Adapter:
     """Local Stable Audio 3 Small-SFX adapter (a :class:`~foley.sources.base.GenerateAdapter`).
 
@@ -209,10 +213,12 @@ class StableAudio3Adapter:
     ) -> "list[str]":
         nd = self.config["native_defaults"]
         cmd = [str(_venv_python(tflite)), str(tflite / "scripts" / "sa3_tflite.py")]
-        for key, value in native.items():  # seconds/steps/cfg/seed + provider flags
-            cmd += [f"--{key}", str(value)]
-        # foley's own flags come last: argparse keeps the last value, so no native
-        # key (not even an abbreviation such as ``--ou``) can override them.
+        # Provider-only flags first, then foley's own: argparse keeps the last value
+        # and accepts abbreviations, so no extra key (``--see``, ``--ou``) can
+        # override what foley sends and records.
+        ordered = sorted(native, key=lambda k: k in _CORE_FLAGS)
+        for key in ordered:
+            cmd += [f"--{key}", str(native[key])]
         cmd += [
             "--dit", nd["dit"],
             "--decoder", nd["decoder"],

@@ -182,7 +182,8 @@ def check_provider_params(
 
     Raises:
         TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.
-        ValueError: If a key is ``reserved`` or ``priced`` by the policy.
+        ValueError: If a key is ``reserved`` or ``priced`` by the policy, or the
+            source declares no policy at all.
     """
     if provider_params is None:
         return {}
@@ -190,6 +191,11 @@ def check_provider_params(
         raise TypeError(
             "provider_params must be a mapping of native names to values, got "
             f"{type(provider_params).__name__}"
+        )
+    if policy is None and provider_params:
+        raise ValueError(
+            "this source declares no provider_params policy, so it cannot take "
+            f"provider_params (got {sorted(map(str, provider_params))})"
         )
     policy = policy or {}
     reserved = set(policy.get("reserved") or ())
