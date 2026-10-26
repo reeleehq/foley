@@ -147,6 +147,35 @@ def native_adherence(
     raise ValueError(f"{config['name']}: unknown prompt_influence coerce {coerce!r}")
 
 
+def unsupported_notes(
+    config: dict, *, loop: bool = False, output_format: Optional[str] = None, **extra
+) -> "list[str]":
+    """Notes for affordances a local model has no native parameter for (warn-and-drop).
+
+    ``loop`` has none (a future WEAVE crossfade); ``output_format`` is the audio layer's,
+    so only a format other than the config's ``output.default_format`` is noted; any
+    ``extra`` affordance passed with a value is unknown to the model.
+    """
+    name = config.get("display_name", config["name"])
+    default_format = (config.get("output") or {}).get("default_format", "wav")
+    notes = []
+    if loop:
+        notes.append(
+            f"loop has no native {name} param (a future WEAVE crossfade); ignored"
+        )
+    if output_format and output_format != default_format:
+        notes.append(
+            f"output_format {output_format!r} is applied by the audio layer, not "
+            "the model; ignored (archived as FLAC on ingest)"
+        )
+    notes += [
+        f"affordance {key!r} is not a known {name} param; ignored"
+        for key, value in extra.items()
+        if value is not None
+    ]
+    return notes
+
+
 def auth_env_vars(config: dict) -> "tuple[str, ...]":
     """The env vars a source's key may live in, in the order they are read.
 

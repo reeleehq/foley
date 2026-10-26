@@ -4,6 +4,8 @@ Hermetic: the process boundary (``runner=``) is a fake that writes the ``--out``
 no checkout, weights or subprocess are needed.
 """
 
+import sys
+
 import pytest
 
 np = pytest.importorskip("numpy")
@@ -33,15 +35,15 @@ def home(tmp_path):
 
 
 class FakeRunner:
-    def __init__(self, *, code=0, write=True):
-        self.calls, self.code, self.write = [], code, write
+    def __init__(self, *, code=0, write=True, stderr="boom: it broke\nsecond line"):
+        self.calls, self.code, self.write, self.stderr = [], code, write, stderr
 
     def __call__(self, cmd, *, cwd, env, timeout):
         self.calls.append({"cmd": cmd, "env": env, "cwd": cwd})
         if self.write:
             out = cmd[cmd.index("--out") + 1]
             open(out, "wb").write(encode(np.zeros(SR // 2, np.float32), SR))
-        return self.code, "boom: it broke\nsecond line"
+        return self.code, self.stderr
 
 
 def _arg(cmd, flag):
@@ -116,9 +118,11 @@ def test_a_failed_run_is_an_error_with_the_script_output(home):
         ad.generate("x")
 
 
-def test_offline_never_downloads_and_failure_names_the_fetch(home, monkeypatch):
+def test_offline_never_downloads_and_missing_weights_name_the_fetch(home, monkeypatch):
     monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
-    run = FakeRunner(code=1, write=False)
+    run = FakeRunner(
+        code=1, write=False, stderr="huggingface_hub.errors.LocalEntryNotFoundError: x"
+    )
     ad = StableAudio3Adapter(runner=run, home=home)
     with offline(), pytest.raises(ModelNotCached, match="git clone"):
         ad.generate("x")
@@ -126,6 +130,26 @@ def test_offline_never_downloads_and_failure_names_the_fetch(home, monkeypatch):
     online = FakeRunner()
     StableAudio3Adapter(runner=online, home=home).generate("x")
     assert "HF_HUB_OFFLINE" not in online.calls[0]["env"]
+
+
+def test_an_offline_crash_that_is_not_missing_weights_is_not_blamed_on_them(home):
+    ad = StableAudio3Adapter(runner=FakeRunner(code=1, write=False), home=home)
+    with offline(), pytest.raises(RuntimeError, match="exited with code 1") as err:
+        ad.generate("x")
+    assert not isinstance(err.value, ModelNotCached)
+
+
+def test_the_runtime_is_declared_for_check_requirements(home, monkeypatch):
+    from foley.requirements import check_requirements, verify_and_setup
+
+    name = "stable-audio-3-tflite"
+    monkeypatch.setenv("FOLEY_SA3_DIR", str(home))
+    assert check_requirements(names=(name,)) == {name: True}
+    monkeypatch.setenv("FOLEY_SA3_DIR", str(home / "nowhere"))
+    assert check_requirements(names=(name,)) == {name: False}
+    install = verify_and_setup(names=(name,))[name]["install"]
+    # the shell hint is POSIX only (.venv/bin); elsewhere it points at the project page
+    assert ("git clone" in install) == sys.platform.startswith(("darwin", "linux"))
 
 
 def test_the_local_default_precedes_stable_audio_open_in_the_order():
@@ -145,3 +169,13 @@ def test_the_local_default_precedes_stable_audio_open_in_the_order():
 
     discover_sources()
     assert SOURCE_REGISTRY["stable_audio_3"]["config"]["data_egress"] == "local"
+
+
+def test_unsupported_notes_are_shared_and_config_driven():
+    from foley.sources.base import unsupported_notes
+    from foley.sources.stable_audio.config import SOURCE_CONFIG as SAO
+
+    assert unsupported_notes(SAO) == []
+    notes = unsupported_notes(SAO, loop=True, output_format="mp3", bogus=1, none=None)
+    assert len(notes) == 3 and "Stable Audio Open" in notes[0]
+    assert unsupported_notes(SAO, output_format="wav") == []  # the config's own format

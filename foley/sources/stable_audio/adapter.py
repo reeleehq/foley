@@ -40,6 +40,7 @@ from ..base import (
     SourceConfigurationError,
     generated_license,
     native_adherence,
+    unsupported_notes,
 )
 from .config import SOURCE_CONFIG
 
@@ -129,7 +130,9 @@ class StableAudioAdapter:
             ``generation_seed`` captured).
         """
         nd = self.config["native_defaults"]
-        notes = self._warn_unsupported(loop=loop, output_format=output_format, **kw)
+        notes = unsupported_notes(
+            self.config, loop=loop, output_format=output_format, **kw
+        )
 
         # Resolve unified affordances -> native params (recorded verbatim, so
         # provenance never carries the unified names — the guard against arioso's
@@ -176,26 +179,6 @@ class StableAudioAdapter:
         return GeneratedClip(audio_bytes=audio_bytes, candidate=candidate, notes=notes)
 
     # -- helpers ------------------------------------------------------------
-
-    def _warn_unsupported(self, *, loop: bool, output_format: str, **kw) -> list:
-        """Collect notes for affordances the pipeline has no native param for."""
-        notes: list = []
-        if loop:
-            notes.append(
-                "loop has no native Stable Audio Open param (a future WEAVE "
-                "crossfade); ignored"
-            )
-        if output_format and output_format != self.config["output"]["default_format"]:
-            notes.append(
-                f"output_format {output_format!r} is applied by the audio layer, "
-                "not the model; ignored (archived as FLAC on ingest)"
-            )
-        for name, value in kw.items():
-            if value is not None:
-                notes.append(
-                    f"affordance {name!r} is not a known Stable Audio param; ignored"
-                )
-        return notes
 
     def _invoke(self, prompt: str, *, native: dict, seed: Optional[int]):
         """Run the pipeline and return ``(encoded_bytes, sample_rate)``.

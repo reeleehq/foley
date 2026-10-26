@@ -43,28 +43,52 @@ _IMPORTABLE_REQUIREMENTS = {
 }
 
 
-def _sa3_requirement() -> Requirement:
-    """The local Stable Audio 3 CPU runtime (#72): a checkout plus its virtualenv.
+def _resolve(ref: str):
+    """The callable named ``"package.module:function"``."""
+    module, _, attr = ref.partition(":")
+    return getattr(importlib.import_module(module), attr)
 
-    Not a pip extra, so it is probed by ``probe="sa3_runtime"``; built on demand because
-    its setup command names the checkout directory.
+
+def _derive_runtime_requirements() -> "dict[str, Requirement]":
+    """Derive a requirement for each source that needs a local runtime set up.
+
+    A source declares ``SOURCE_CONFIG["runtime"] = {"name", "purpose", "url", "ready",
+    "setup"}``: ``ready`` and ``setup`` are ``"module:function"`` references (resolved
+    only when asked), the first returning whether the runtime is in place, the second
+    the shell command that installs it. The runtime is not a pip extra (a model
+    checkout, a binary), so it is probed with ``probe="runtime"``.
     """
-    from .sources.stable_audio_3.adapter import setup_hint
+    from .sources.registry import SOURCE_REGISTRY, discover_sources
 
-    hint = setup_hint()
-    return Requirement(
-        name="stable-audio-3-tflite",
-        purpose="the local Stable Audio 3 Small-SFX generator (CPU, no GPU, no token)",
-        url="https://github.com/Stability-AI/stable-audio-3/tree/main/optimized/tflite",
-        install={"darwin": hint, "linux": hint},
-        probe="sa3_runtime",
-    )
+    discover_sources()
+    reqs: "dict[str, Requirement]" = {}
+    for entry in SOURCE_REGISTRY.values():
+        runtime = entry["config"].get("runtime")
+        if not runtime:
+            continue
+        hint = _resolve(runtime["setup"])(entry["config"])
+        if runtime["name"] in reqs:
+            raise ValueError(f"two sources declare the runtime {runtime['name']!r}")
+        reqs[runtime["name"]] = Requirement(
+            name=runtime["name"],
+            purpose=runtime["purpose"],
+            url=runtime.get("url", ""),
+            install={"darwin": hint, "linux": hint},
+            probe="runtime",
+        )
+    return reqs
 
 
-def _sa3_runtime_ready(_name: str) -> bool:
-    from .sources.stable_audio_3.adapter import runtime_ready
+def _runtime_ready(name: str) -> bool:
+    """Whether the local runtime named ``name`` (a source's ``runtime`` block) is in place."""
+    from .sources.registry import SOURCE_REGISTRY, discover_sources
 
-    return runtime_ready()
+    discover_sources()
+    for entry in SOURCE_REGISTRY.values():
+        runtime = entry["config"].get("runtime") or {}
+        if runtime.get("name") == name:
+            return bool(_resolve(runtime["ready"])(entry["config"]))
+    return False
 
 
 #: How each ``probe`` kind checks availability.
@@ -74,7 +98,7 @@ _PROBES = {
         any(os.environ.get(v) for v in _key_env_vars(name)) or _key_is_bound(name)
     ),
     "importable": lambda name: importlib.util.find_spec(name) is not None,
-    "sa3_runtime": _sa3_runtime_ready,
+    "runtime": _runtime_ready,
 }
 
 
@@ -147,8 +171,12 @@ def build_requirements() -> "dict[str, Requirement]":
     )  # FREESOUND_API_KEY / ELEVENLABS_API_KEY / …
     reqs[_ANTHROPIC_KEY.name] = _ANTHROPIC_KEY
     reqs.update(_IMPORTABLE_REQUIREMENTS)  # py2mcp
-    sa3 = _sa3_requirement()
-    reqs[sa3.name] = sa3
+    for name, req in _derive_runtime_requirements().items():
+        if name in reqs:
+            raise ValueError(
+                f"runtime requirement {name!r} collides with another requirement"
+            )
+        reqs[name] = req
     return reqs
 
 
