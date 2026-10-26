@@ -66,7 +66,8 @@ Raised when a source’s circuit breaker is open or its retries are exhausted.
 Build a resilient transport from a source `config` (its `rate` drives the throttle).
 
 * **Parameters:**
-  * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG` dict (reads `config['rate']`).
+  * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG` dict (reads `config['rate']` and, if present,
+    `config['retry']`: [`RetryPolicy`](#foley.sources.resilience.RetryPolicy) fields).
   * **base** – The base transport (default: [`foley.sources.http.requests_transport()`](foley.sources.http.html.md#foley.sources.http.requests_transport)).
   * **\*\*inject** – `retry` / `breaker` / `clock` / `sleep` overrides.
 * **Returns:**

@@ -1,0 +1,21 @@
+foley.sources.internet\_archive
+===============================
+
+.. automodule:: foley.sources.internet_archive
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      InternetArchiveAdapter
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   adapter
+   config

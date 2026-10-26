@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="_static/documentation_options.js?v=0356c229"></script>
+    <script src="_static/documentation_options.js?v=e072a57b"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.49" />
+  <meta name="docsearch:version" content="0.0.50" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -738,9 +738,15 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="_autosummary/foley.sources.freesound.adapter.html#foley.sources.freesound.adapter.Adapter">(in module foley.sources.freesound.adapter)</a>
 </li>
+        <li><a href="_autosummary/foley.sources.internet_archive.adapter.html#foley.sources.internet_archive.adapter.Adapter">(in module foley.sources.internet_archive.adapter)</a>
+</li>
+        <li><a href="_autosummary/foley.sources.openverse.adapter.html#foley.sources.openverse.adapter.Adapter">(in module foley.sources.openverse.adapter)</a>
+</li>
         <li><a href="_autosummary/foley.sources.stable_audio.adapter.html#foley.sources.stable_audio.adapter.Adapter">(in module foley.sources.stable_audio.adapter)</a>
 </li>
         <li><a href="_autosummary/foley.sources.stable_audio_3.adapter.html#foley.sources.stable_audio_3.adapter.Adapter">(in module foley.sources.stable_audio_3.adapter)</a>
+</li>
+        <li><a href="_autosummary/foley.sources.wikimedia_commons.adapter.html#foley.sources.wikimedia_commons.adapter.Adapter">(in module foley.sources.wikimedia_commons.adapter)</a>
 </li>
       </ul></li>
       <li><a href="_autosummary/foley.index.library.html#foley.index.library.SoundLibrary.add">add() (foley.index.library.SoundLibrary method)</a>
@@ -1525,12 +1531,12 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="_autosummary/foley.cost.html#foley.cost.default_max_usd">default_max_usd() (in module foley.cost)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/foley.cost.html#foley.cost.DEFAULT_MAX_USD_BY_LLM">DEFAULT_MAX_USD_BY_LLM (in module foley.cost)</a>
 </li>
       <li><a href="_autosummary/foley.eval.retrieval.html#foley.eval.retrieval.DEFAULT_METRICS">DEFAULT_METRICS (in module foley.eval.retrieval)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/foley.qc.html#foley.qc.DEFAULT_MIN_STATUS">DEFAULT_MIN_STATUS (in module foley.qc)</a>
 </li>
       <li><a href="_autosummary/foley.stores.html#foley.stores.DEFAULT_PROVENANCE_DIR">DEFAULT_PROVENANCE_DIR (in module foley.stores)</a>
@@ -1652,7 +1658,13 @@ window.runMermaid = runMermaid;</script>
       <ul>
         <li><a href="_autosummary/foley.sources.freesound.adapter.html#foley.sources.freesound.adapter.FreesoundAdapter.download">(foley.sources.freesound.adapter.FreesoundAdapter method)</a>
 </li>
+        <li><a href="_autosummary/foley.sources.internet_archive.adapter.html#foley.sources.internet_archive.adapter.InternetArchiveAdapter.download">(foley.sources.internet_archive.adapter.InternetArchiveAdapter method)</a>
+</li>
+        <li><a href="_autosummary/foley.sources.openverse.adapter.html#foley.sources.openverse.adapter.OpenverseAdapter.download">(foley.sources.openverse.adapter.OpenverseAdapter method)</a>
+</li>
         <li><a href="_autosummary/foley.sources.html#foley.sources.SourceAdapter.download">(foley.sources.SourceAdapter method)</a>
+</li>
+        <li><a href="_autosummary/foley.sources.wikimedia_commons.adapter.html#foley.sources.wikimedia_commons.adapter.WikimediaCommonsAdapter.download">(foley.sources.wikimedia_commons.adapter.WikimediaCommonsAdapter method)</a>
 </li>
       </ul></li>
       <li><a href="_autosummary/foley.agent.session.html#foley.agent.session.SessionStore.drop_pick">drop_pick() (foley.agent.session.SessionStore method)</a>
@@ -2287,8 +2299,6 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.prompt_match.html#module-foley.prompt_match">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     foley.provenance
 
@@ -2324,6 +2334,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.repair.html#module-foley.repair">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     foley.requirements
 
@@ -2451,6 +2463,48 @@ window.runMermaid = runMermaid;</script>
 </li>
       </ul></li>
       <li>
+    foley.sources.internet_archive
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.internet_archive.html#module-foley.sources.internet_archive">module</a>
+</li>
+      </ul></li>
+      <li>
+    foley.sources.internet_archive.adapter
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.internet_archive.adapter.html#module-foley.sources.internet_archive.adapter">module</a>
+</li>
+      </ul></li>
+      <li>
+    foley.sources.internet_archive.config
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.internet_archive.config.html#module-foley.sources.internet_archive.config">module</a>
+</li>
+      </ul></li>
+      <li>
+    foley.sources.openverse
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.openverse.html#module-foley.sources.openverse">module</a>
+</li>
+      </ul></li>
+      <li>
+    foley.sources.openverse.adapter
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.openverse.adapter.html#module-foley.sources.openverse.adapter">module</a>
+</li>
+      </ul></li>
+      <li>
+    foley.sources.openverse.config
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.openverse.config.html#module-foley.sources.openverse.config">module</a>
+</li>
+      </ul></li>
+      <li>
     foley.sources.pull
 
       <ul>
@@ -2518,6 +2572,27 @@ window.runMermaid = runMermaid;</script>
 
       <ul>
         <li><a href="_autosummary/foley.sources.stable_audio_3.config.html#module-foley.sources.stable_audio_3.config">module</a>
+</li>
+      </ul></li>
+      <li>
+    foley.sources.wikimedia_commons
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.wikimedia_commons.html#module-foley.sources.wikimedia_commons">module</a>
+</li>
+      </ul></li>
+      <li>
+    foley.sources.wikimedia_commons.adapter
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.wikimedia_commons.adapter.html#module-foley.sources.wikimedia_commons.adapter">module</a>
+</li>
+      </ul></li>
+      <li>
+    foley.sources.wikimedia_commons.config
+
+      <ul>
+        <li><a href="_autosummary/foley.sources.wikimedia_commons.config.html#module-foley.sources.wikimedia_commons.config">module</a>
 </li>
       </ul></li>
       <li>
@@ -2786,14 +2861,14 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
       <li><a href="_autosummary/foley.html#foley.GenerationError">GenerationError</a>, <a href="_autosummary/foley.sources.html#foley.sources.GenerationError">[1]</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/foley.html#foley.GenerationsCache">GenerationsCache (class in foley)</a>
 
       <ul>
         <li><a href="_autosummary/foley.stores.html#foley.stores.GenerationsCache">(class in foley.stores)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/foley.html#foley.GenerationsCache.get">get() (foley.GenerationsCache method)</a>
 
       <ul>
@@ -2805,7 +2880,13 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="_autosummary/foley.sources.freesound.adapter.html#foley.sources.freesound.adapter.FreesoundAdapter.get">(foley.sources.freesound.adapter.FreesoundAdapter method)</a>
 </li>
+        <li><a href="_autosummary/foley.sources.internet_archive.adapter.html#foley.sources.internet_archive.adapter.InternetArchiveAdapter.get">(foley.sources.internet_archive.adapter.InternetArchiveAdapter method)</a>
+</li>
+        <li><a href="_autosummary/foley.sources.openverse.adapter.html#foley.sources.openverse.adapter.OpenverseAdapter.get">(foley.sources.openverse.adapter.OpenverseAdapter method)</a>
+</li>
         <li><a href="_autosummary/foley.sources.html#foley.sources.SourceAdapter.get">(foley.sources.SourceAdapter method)</a>
+</li>
+        <li><a href="_autosummary/foley.sources.wikimedia_commons.adapter.html#foley.sources.wikimedia_commons.adapter.WikimediaCommonsAdapter.get">(foley.sources.wikimedia_commons.adapter.WikimediaCommonsAdapter method)</a>
 </li>
         <li><a href="_autosummary/foley.stores.html#foley.stores.GenerationsCache.get">(foley.stores.GenerationsCache method)</a>
 </li>
@@ -3018,6 +3099,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.base.html#foley.base.IntendedUse">(class in foley.base)</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/foley.sources.internet_archive.adapter.html#foley.sources.internet_archive.adapter.InternetArchiveAdapter">InternetArchiveAdapter (class in foley.sources.internet_archive.adapter)</a>
+</li>
       <li><a href="_autosummary/foley.provenance.disclosure.html#foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA">IPTC_TRAINED_ALGORITHMIC_MEDIA (in module foley.provenance.disclosure)</a>
 </li>
       <li><a href="_autosummary/foley.qc.html#foley.qc.is_below">is_below() (in module foley.qc)</a>
@@ -3682,6 +3765,18 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="_autosummary/foley.sources.http.html#module-foley.sources.http">foley.sources.http</a>
 </li>
+        <li><a href="_autosummary/foley.sources.internet_archive.html#module-foley.sources.internet_archive">foley.sources.internet_archive</a>
+</li>
+        <li><a href="_autosummary/foley.sources.internet_archive.adapter.html#module-foley.sources.internet_archive.adapter">foley.sources.internet_archive.adapter</a>
+</li>
+        <li><a href="_autosummary/foley.sources.internet_archive.config.html#module-foley.sources.internet_archive.config">foley.sources.internet_archive.config</a>
+</li>
+        <li><a href="_autosummary/foley.sources.openverse.html#module-foley.sources.openverse">foley.sources.openverse</a>
+</li>
+        <li><a href="_autosummary/foley.sources.openverse.adapter.html#module-foley.sources.openverse.adapter">foley.sources.openverse.adapter</a>
+</li>
+        <li><a href="_autosummary/foley.sources.openverse.config.html#module-foley.sources.openverse.config">foley.sources.openverse.config</a>
+</li>
         <li><a href="_autosummary/foley.sources.pull.html#module-foley.sources.pull">foley.sources.pull</a>
 </li>
         <li><a href="_autosummary/foley.sources.registry.html#module-foley.sources.registry">foley.sources.registry</a>
@@ -3701,6 +3796,12 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.sources.stable_audio_3.adapter.html#module-foley.sources.stable_audio_3.adapter">foley.sources.stable_audio_3.adapter</a>
 </li>
         <li><a href="_autosummary/foley.sources.stable_audio_3.config.html#module-foley.sources.stable_audio_3.config">foley.sources.stable_audio_3.config</a>
+</li>
+        <li><a href="_autosummary/foley.sources.wikimedia_commons.html#module-foley.sources.wikimedia_commons">foley.sources.wikimedia_commons</a>
+</li>
+        <li><a href="_autosummary/foley.sources.wikimedia_commons.adapter.html#module-foley.sources.wikimedia_commons.adapter">foley.sources.wikimedia_commons.adapter</a>
+</li>
+        <li><a href="_autosummary/foley.sources.wikimedia_commons.config.html#module-foley.sources.wikimedia_commons.config">foley.sources.wikimedia_commons.config</a>
 </li>
         <li><a href="_autosummary/foley.stores.html#module-foley.stores">foley.stores</a>
 </li>
@@ -3803,6 +3904,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.html#foley.WeaveResult.notes">(foley.WeaveResult attribute)</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/foley.sources.openverse.adapter.html#foley.sources.openverse.adapter.OpenverseAdapter.notice">notice (foley.sources.openverse.adapter.OpenverseAdapter property)</a>
+</li>
       <li><a href="_autosummary/foley.obs.html#foley.obs.ObsConfig.now">now() (foley.obs.ObsConfig method)</a>
 
       <ul>
@@ -3859,6 +3962,8 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.index.onnx_clap.html#foley.index.onnx_clap.OnnxClapEmbedder.open_source">(foley.index.onnx_clap.OnnxClapEmbedder attribute)</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/foley.sources.openverse.adapter.html#foley.sources.openverse.adapter.OpenverseAdapter">OpenverseAdapter (class in foley.sources.openverse.adapter)</a>
+</li>
       <li><a href="_autosummary/foley.index.taxonomy.model.html#foley.index.taxonomy.model.UcsTable.order">order (foley.index.taxonomy.model.UcsTable attribute)</a>
 
       <ul>
@@ -4520,7 +4625,13 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="_autosummary/foley.sources.freesound.adapter.html#foley.sources.freesound.adapter.FreesoundAdapter.search">(foley.sources.freesound.adapter.FreesoundAdapter method)</a>
 </li>
+        <li><a href="_autosummary/foley.sources.internet_archive.adapter.html#foley.sources.internet_archive.adapter.InternetArchiveAdapter.search">(foley.sources.internet_archive.adapter.InternetArchiveAdapter method)</a>
+</li>
+        <li><a href="_autosummary/foley.sources.openverse.adapter.html#foley.sources.openverse.adapter.OpenverseAdapter.search">(foley.sources.openverse.adapter.OpenverseAdapter method)</a>
+</li>
         <li><a href="_autosummary/foley.sources.html#foley.sources.SourceAdapter.search">(foley.sources.SourceAdapter method)</a>
+</li>
+        <li><a href="_autosummary/foley.sources.wikimedia_commons.adapter.html#foley.sources.wikimedia_commons.adapter.WikimediaCommonsAdapter.search">(foley.sources.wikimedia_commons.adapter.WikimediaCommonsAdapter method)</a>
 </li>
         <li><a href="_autosummary/foley.html#foley.search">(in module foley)</a>
 </li>
@@ -4639,14 +4750,14 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/foley.base.html#foley.base.SoundDesignTimeline">(class in foley.base)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/foley.html#foley.SoundEvent">SoundEvent (class in foley)</a>
 
       <ul>
         <li><a href="_autosummary/foley.base.html#foley.base.SoundEvent">(class in foley.base)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/foley.html#foley.SoundLibrary">SoundLibrary (class in foley)</a>
 
       <ul>
@@ -5159,6 +5270,8 @@ window.runMermaid = runMermaid;</script>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_autosummary/foley.sources.wikimedia_commons.adapter.html#foley.sources.wikimedia_commons.adapter.WikimediaCommonsAdapter">WikimediaCommonsAdapter (class in foley.sources.wikimedia_commons.adapter)</a>
+</li>
       <li><a href="_autosummary/foley.weave.align.html#foley.weave.align.FakeAligner.word_timeline">word_timeline() (foley.weave.align.FakeAligner method)</a>
 
       <ul>

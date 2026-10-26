@@ -1,4 +1,4 @@
-> built 2026-10-26 12:19 UTC from d233b3c (main) · foley 0.0.49. Details: build_info.json
+> built 2026-10-26 12:48 UTC from f97da14 (main) · foley 0.0.50. Details: build_info.json
 
 # index.html.md
 
@@ -71,12 +71,12 @@ result.notes  # how placements were timed, e.g. estimates when foley[align] is a
 
 ## How it works — four stages
 
-| Stage      | What it does                                                                                                                                                             | Built on                                                                                                                           |
-|------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| **Source** | your own files · Freesound (CC0) · generate (Stable Audio 3 local on CPU; Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking                                                                                 |
-| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                                                                                                | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
-| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                                                                                                   | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
-| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits                                                                          | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
+| Stage      | What it does                                                                                                                                                                                                                                                     | Built on                                                                                                                           |
+|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| **Source** | your own files · Freesound (CC0) · keyless: Openverse, Wikimedia Commons, Internet Archive (opt-in; licences unverified) · generate (Stable Audio 3 local on CPU; Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking                                                                                 |
+| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                                                                                                                                                                                        | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
+| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                                                                                                                                                                                           | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
+| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits                                                                                                                                                                  | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
 
 The selection tools publish as an **MCP server** (via `py2mcp`) so the same capabilities
 drive the agent, a CLI, and external hosts.
@@ -12976,8 +12976,8 @@ Render `credits` as a deterministic `CREDITS.md` document.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 * **Returns:**
-  The Markdown document (bulleted attribution lines; a placeholder note when
-  empty), ending in a single trailing newline.
+  The Markdown document (bulleted attribution lines, then each distinct
+  `notice_text_required`; a placeholder note when empty), ending in a single trailing newline.
 
 
 # _autosummary/foley.provenance.disclosure.html.md
@@ -13113,7 +13113,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta-dum', 'tudum', 'netflix sound', 'ta dum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'tudum', 'ta-dum', 'netflix sound', 'ta dum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel chime', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -13395,8 +13395,8 @@ Render `credits` as a deterministic `CREDITS.md` document.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 * **Returns:**
-  The Markdown document (bulleted attribution lines; a placeholder note when
-  empty), ending in a single trailing newline.
+  The Markdown document (bulleted attribution lines, then each distinct
+  `notice_text_required`; a placeholder note when empty), ending in a single trailing newline.
 
 ### Modules
 
@@ -16341,22 +16341,25 @@ the default `rings` — it is opt-in only.
 
 ### Modules
 
-| [`base`](_autosummary/foley.sources.base.html.md#module-foley.sources.base)                     | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.            |
-|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| [`bbc_remarc`](_autosummary/foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)         | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                               |
-| [`clotho`](_autosummary/foley.sources.clotho.html.md#module-foley.sources.clotho)                 | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.              |
-| [`elevenlabs`](_autosummary/foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)         | ElevenLabs Sound Effects generate source (hosted; #6).                                    |
-| [`fal`](_autosummary/foley.sources.fal.html.md#module-foley.sources.fal)                       | fal-hosted generate sources, executed through `falaw` (#73).                              |
-| [`foleyset`](_autosummary/foley.sources.foleyset.html.md#module-foley.sources.foleyset)             | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                 |
-| [`freesound`](_autosummary/foley.sources.freesound.html.md#module-foley.sources.freesound)           | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).   |
-| [`fsd50k`](_autosummary/foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                 | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                           |
-| [`http`](_autosummary/foley.sources.http.html.md#module-foley.sources.http)                     | Injectable HTTP transport for foley's live source adapters.                               |
-| [`pull`](_autosummary/foley.sources.pull.html.md#module-foley.sources.pull)                     | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                    |
-| [`registry`](_autosummary/foley.sources.registry.html.md#module-foley.sources.registry)             | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).  |
-| [`resilience`](_autosummary/foley.sources.resilience.html.md#module-foley.sources.resilience)         | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12). |
-| [`sonniss`](_autosummary/foley.sources.sonniss.html.md#module-foley.sources.sonniss)               | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                      |
-| [`stable_audio`](_autosummary/foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)     | Stable Audio Open 1.0 generate source (local default; #6).                                |
-| [`stable_audio_3`](_autosummary/foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3) | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).       |
+| [`base`](_autosummary/foley.sources.base.html.md#module-foley.sources.base)                           | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.                             |
+|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| [`bbc_remarc`](_autosummary/foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)               | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                                                |
+| [`clotho`](_autosummary/foley.sources.clotho.html.md#module-foley.sources.clotho)                       | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.                               |
+| [`elevenlabs`](_autosummary/foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)               | ElevenLabs Sound Effects generate source (hosted; #6).                                                     |
+| [`fal`](_autosummary/foley.sources.fal.html.md#module-foley.sources.fal)                             | fal-hosted generate sources, executed through `falaw` (#73).                                               |
+| [`foleyset`](_autosummary/foley.sources.foleyset.html.md#module-foley.sources.foleyset)                   | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                                  |
+| [`freesound`](_autosummary/foley.sources.freesound.html.md#module-foley.sources.freesound)                 | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).                    |
+| [`fsd50k`](_autosummary/foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                       | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                                            |
+| [`http`](_autosummary/foley.sources.http.html.md#module-foley.sources.http)                           | Injectable HTTP transport for foley's live source adapters.                                                |
+| [`internet_archive`](_autosummary/foley.sources.internet_archive.html.md#module-foley.sources.internet_archive)   | Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (`foley[internet-archive]`). |
+| [`openverse`](_autosummary/foley.sources.openverse.html.md#module-foley.sources.openverse)                 | Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).                        |
+| [`pull`](_autosummary/foley.sources.pull.html.md#module-foley.sources.pull)                           | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                                     |
+| [`registry`](_autosummary/foley.sources.registry.html.md#module-foley.sources.registry)                   | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).                   |
+| [`resilience`](_autosummary/foley.sources.resilience.html.md#module-foley.sources.resilience)               | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).                  |
+| [`sonniss`](_autosummary/foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                       |
+| [`stable_audio`](_autosummary/foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)           | Stable Audio Open 1.0 generate source (local default; #6).                                                 |
+| [`stable_audio_3`](_autosummary/foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3)       | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).                        |
+| [`wikimedia_commons`](_autosummary/foley.sources.wikimedia_commons.html.md#module-foley.sources.wikimedia_commons) | Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).                 |
 
 
 # _autosummary/foley.sources.http.html.md
@@ -16464,6 +16467,237 @@ fake-injection test path never needs an HTTP library at all. The returned
   [`Response`](_autosummary/foley.sources.http.html.md#foley.sources.http.Response)
 * **Returns:**
   The `requests.Response` (a [`Response`](_autosummary/foley.sources.http.html.md#foley.sources.http.Response)).
+
+
+# _autosummary/foley.sources.internet_archive.adapter.html.md
+
+# foley.sources.internet_archive.adapter
+
+Internet Archive retrieve adapter: opt-in discovery of archival sounds, never auto-verified.
+
+Items come from `advancedsearch.php` restricted to audio with a `licenseurl`. Each
+item’s licence string goes through the one licence SSOT and the config’s allowlist, and
+every candidate gets `rights_verified=False` whatever it says: the field is what the
+uploader asserted. So [`foley.sources.pull.add_from()`](_autosummary/foley.sources.pull.html.md#foley.sources.pull.add_from) skips these until a person has
+confirmed an item; the adapter is for finding and fetching, not for clearing.
+Constructing it without the opt-in raises [`SourceConfigurationError`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError).
+
+### Module Attributes
+
+| [`Adapter`](_autosummary/foley.sources.internet_archive.adapter.html.md#foley.sources.internet_archive.adapter.Adapter)   | Registry convention (arioso): the loader imports `adapter.Adapter`.   |
+|------------------------------------------------------------|-----------------------------------------------------------------------|
+
+### Classes
+
+| [`Adapter`](_autosummary/foley.sources.internet_archive.adapter.html.md#foley.sources.internet_archive.adapter.Adapter)                                        | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                  |
+|-------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| [`InternetArchiveAdapter`](_autosummary/foley.sources.internet_archive.adapter.html.md#foley.sources.internet_archive.adapter.InternetArchiveAdapter)([config, opt_in, http]) | Opt-in Internet Archive adapter (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)). |
+
+### foley.sources.internet_archive.adapter.Adapter
+
+Registry convention (arioso): the loader imports `adapter.Adapter`.
+
+### *class* foley.sources.internet_archive.adapter.InternetArchiveAdapter(config=None, , opt_in=None, http=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Opt-in Internet Archive adapter (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)).
+
+* **Parameters:**
+  * **config** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The `SOURCE_CONFIG` (the registry passes it positionally).
+  * **opt_in** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]) – Use the archive. Default: whether `$FOLEY_INTERNET_ARCHIVE` is set to 1.
+  * **http** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport)]) – The injected [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport).
+
+#### download(source_id)
+
+The first audio file of the item under `max_file_bytes` (see the config).
+
+* **Raises:**
+  [**LookupError**](https://docs.python.org/3/builtins/exceptions.html#LookupError) – If the item’s licence is not accepted (checked here too, so a
+      direct call cannot fetch what a search would have dropped), or it has no
+      suitable audio file.
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+#### get(source_id)
+
+Resolve one item identifier to its record.
+
+* **Raises:**
+  [**LookupError**](https://docs.python.org/3/builtins/exceptions.html#LookupError) – If the item is missing or its licence is not accepted.
+* **Return type:**
+  [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)
+
+#### search(query, , license=None, k=15, \*\*kw)
+
+Search archive audio for `query`; return candidates (all unverified).
+
+`license='cc0'` keeps CC0 items only; any other value keeps every accepted
+licence. The query always asks for items with a `licenseurl`.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
+
+
+# _autosummary/foley.sources.internet_archive.config.html.md
+
+# foley.sources.internet_archive.config
+
+`SOURCE_CONFIG` for the Internet Archive retrieve source (#79 · report 14 §3.4).
+
+Keyless and **opt-in** (`$FOLEY_INTERNET_ARCHIVE=1` or `opt_in=True`): the archive holds
+public-domain archival sounds, but its licences are what the uploader typed. Every
+candidate therefore carries `rights_verified=False` (the pull gate stops it until a
+person confirms the item), and an item with no `licenseurl` is dropped. For instance a
+commercial sound-effects library can sit there under the Public Domain Mark.
+
+Search: `advancedsearch.php` (Lucene syntax, `mediatype:audio`). An item is a
+collection of files, not one sound: `download` picks the first audio file under
+`max_file_bytes` from `/metadata/<identifier>`.
+
+
+# _autosummary/foley.sources.internet_archive.html.md
+
+# foley.sources.internet_archive
+
+Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (`foley[internet-archive]`).
+
+Declares `SOURCE_CONFIG` (auto-discovered); the adapter loads lazily, so importing
+this package stays dol-only.
+
+### Classes
+
+| `Adapter`                                        |                                                                                                                                      |
+|--------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| `InternetArchiveAdapter`([config, opt_in, http]) | Opt-in Internet Archive adapter (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)). |
+
+### Modules
+
+| [`adapter`](_autosummary/foley.sources.internet_archive.adapter.html.md#module-foley.sources.internet_archive.adapter)   | Internet Archive retrieve adapter: opt-in discovery of archival sounds, never auto-verified.   |
+|----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| [`config`](_autosummary/foley.sources.internet_archive.config.html.md#module-foley.sources.internet_archive.config)     | `SOURCE_CONFIG` for the Internet Archive retrieve source (#79 · report 14 §3.4).               |
+
+
+# _autosummary/foley.sources.openverse.adapter.html.md
+
+# foley.sources.openverse.adapter
+
+Openverse retrieve adapter: keyless audio search with ready attribution strings.
+
+`search` calls `/v1/audio/` (anonymous: `page_size` ≤ 20, Freesound and Jamendo rows
+excluded, see the config) with the licence filter pushed into the query, then re-checks
+each row’s licence fail-closed through `foley.sources._keyless.license_for_item()`
+(Openverse does not verify licences: a row’s licence is the one its origin provider
+reported, trusted like Freesound’s own field; the landing page is the check for anything
+that matters). The terms’ “made using Openverse” notice is stamped on each licence record
+(`notice_text_required`), so the credits carry it. Durations arrive in milliseconds. `download` fetches
+the row’s `url` (cached from search, else resolved from `/audio/{id}/`). HTTP and the
+429 sleep are injected.
+
+### Module Attributes
+
+| [`Adapter`](_autosummary/foley.sources.openverse.adapter.html.md#foley.sources.openverse.adapter.Adapter)   | Registry convention (arioso): the loader imports `adapter.Adapter`.   |
+|------------------------------------------------------------|-----------------------------------------------------------------------|
+
+### Classes
+
+| [`Adapter`](_autosummary/foley.sources.openverse.adapter.html.md#foley.sources.openverse.adapter.Adapter)                         | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                            |
+|----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| [`OpenverseAdapter`](_autosummary/foley.sources.openverse.adapter.html.md#foley.sources.openverse.adapter.OpenverseAdapter)([config, ...]) | Keyless Openverse adapter (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)). |
+
+### foley.sources.openverse.adapter.Adapter
+
+Registry convention (arioso): the loader imports `adapter.Adapter`.
+
+### *class* foley.sources.openverse.adapter.OpenverseAdapter(config=None, , include_freesound=False, http=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Keyless Openverse adapter (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)).
+
+* **Parameters:**
+  * **config** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The `SOURCE_CONFIG` (the registry passes it positionally).
+  * **include_freesound** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Keep Freesound rows (stored by reference, bytes never cached);
+    off by default: use the `freesound` source for those.
+  * **http** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport)]) – The injected [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport).
+
+#### download(source_id)
+
+The row’s audio bytes (from the URL a search hit gave, else resolved by id).
+
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+#### get(source_id)
+
+Resolve one row id (a UUID) to its record.
+
+* **Raises:**
+  [**LookupError**](https://docs.python.org/3/builtins/exceptions.html#LookupError) – If its licence is not accepted.
+* **Return type:**
+  [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)
+
+#### *property* notice *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The sentence Openverse’s terms require an app to show prominently.
+
+#### search(query, , license='cc0', k=15, \*\*kw)
+
+Search Openverse audio for `query`; return licence-checked candidates.
+
+* **Parameters:**
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'cc0'` (default) asks for CC0 only; anything else asks for CC0,
+    CC-BY and public-domain-mark rows.
+  * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max rows (anonymous limit 20).
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
+
+
+# _autosummary/foley.sources.openverse.config.html.md
+
+# foley.sources.openverse.config
+
+`SOURCE_CONFIG` for the Openverse retrieve source (#79 · report 14 §3.2).
+
+Keyless: `GET https://api.openverse.org/v1/audio/`, anonymous. Anonymous use is capped
+at 20 requests a minute and 200 a day, and `page_size` at 20 (a larger value is a 401).
+`duration` is in **milliseconds**. Do not filter by `category=sound_effect`: Freesound
+rows have `category: null`, so it returns nothing.
+
+* **Which sources.** Freesound rows are excluded by default: Freesound’s terms forbid
+  caching its bytes and that needs its own key, so use the `freesound` source (pass
+  `include_freesound=True` to the adapter to keep them, stored by reference). Jamendo is
+  music, excluded too. What remains is mostly Wikimedia audio.
+* **Licences.** From the row’s `license_url` through the one licence SSOT: CC0 and CC-BY
+  verified; the public-domain mark (`pdm`) is a claim, never verified; share-alike,
+  no-derivatives and non-commercial are dropped. Openverse “does not verify its licensing
+  status”: a row carries the licence its origin provider reported, which foley trusts the way
+  it trusts Freesound’s own licence field (the landing page is the check for anything that
+  matters; whether to hold CC rows back for a person is [foley#121]).
+* **Terms.** An app must “prominently indicate that it was made using Openverse but is not
+  endorsed or certified by Openverse”; `notice` holds that sentence. No scraping.
+
+
+# _autosummary/foley.sources.openverse.html.md
+
+# foley.sources.openverse
+
+Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).
+
+Declares `SOURCE_CONFIG` (auto-discovered); the adapter loads lazily, so importing
+this package stays dol-only.
+
+### Classes
+
+| `Adapter`                         |                                                                                                                                |
+|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| `OpenverseAdapter`([config, ...]) | Keyless Openverse adapter (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)). |
+
+### Modules
+
+| [`adapter`](_autosummary/foley.sources.openverse.adapter.html.md#module-foley.sources.openverse.adapter)   | Openverse retrieve adapter: keyless audio search with ready attribution strings.   |
+|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| [`config`](_autosummary/foley.sources.openverse.config.html.md#module-foley.sources.openverse.config)     | `SOURCE_CONFIG` for the Openverse retrieve source (#79 · report 14 §3.2).          |
 
 
 # _autosummary/foley.sources.pull.html.md
@@ -16732,7 +16966,8 @@ Raised when a source’s circuit breaker is open or its retries are exhausted.
 Build a resilient transport from a source `config` (its `rate` drives the throttle).
 
 * **Parameters:**
-  * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG` dict (reads `config['rate']`).
+  * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG` dict (reads `config['rate']` and, if present,
+    `config['retry']`: [`RetryPolicy`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.RetryPolicy) fields).
   * **base** – The base transport (default: [`foley.sources.http.requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport)).
   * **\*\*inject** – `retry` / `breaker` / `clock` / `sleep` overrides.
 * **Returns:**
@@ -17063,6 +17298,122 @@ use via the module `__getattr__` below, so `import foley` stays dol-only.
 | [`adapter`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#module-foley.sources.stable_audio_3.adapter)   | Stable Audio 3 Small-SFX generate adapter: Stability's TFLite CPU build, run as a process.   |
 |--------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
 | [`config`](_autosummary/foley.sources.stable_audio_3.config.html.md#module-foley.sources.stable_audio_3.config)     | `SOURCE_CONFIG` for the local Stable Audio 3 Small-SFX generator (#72 · report 13 · 17).     |
+
+
+# _autosummary/foley.sources.wikimedia_commons.adapter.html.md
+
+# foley.sources.wikimedia_commons.adapter
+
+Wikimedia Commons retrieve adapter: audio files with their licence, keyless.
+
+`search` turns a query into `list=search` over the File namespace restricted to audio
+(`filetype:audio`), asking for each file’s URL, size, duration and `extmetadata` in
+the same call (the generator form). Each file’s licence is read from `extmetadata`
+(`LicenseUrl`, else `LicenseShortName`) through the one licence SSOT, so:
+
+* CC0 and CC-BY become candidates, verified; a request for CC0 only (the façade’s
+  default `license='cc0'`) keeps CC0 alone;
+* “Public domain” becomes `PDM-1.0` with `rights_verified=False`: a claim, never
+  cleared by the licence field alone (Commons also holds impressions of copyrighted
+  characters labelled public domain), so the pull gate stops it until a person confirms;
+* share-alike, no-derivatives and anything unrecognised are dropped (fail closed).
+
+The bytes come from `upload.wikimedia.org` with the same descriptive `User-Agent`;
+a 429 is waited out by the resilient transport the registry wraps around `http`
+(see `retry` in the config). HTTP is injected.
+
+### Module Attributes
+
+| [`Adapter`](_autosummary/foley.sources.wikimedia_commons.adapter.html.md#foley.sources.wikimedia_commons.adapter.Adapter)   | Registry convention (arioso): the loader imports `adapter.Adapter`.   |
+|------------------------------------------------------------|-----------------------------------------------------------------------|
+
+### Classes
+
+| [`Adapter`](_autosummary/foley.sources.wikimedia_commons.adapter.html.md#foley.sources.wikimedia_commons.adapter.Adapter)                                 | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                    |
+|------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| [`WikimediaCommonsAdapter`](_autosummary/foley.sources.wikimedia_commons.adapter.html.md#foley.sources.wikimedia_commons.adapter.WikimediaCommonsAdapter)([config, http]) | Keyless Wikimedia Commons adapter (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)). |
+
+### foley.sources.wikimedia_commons.adapter.Adapter
+
+Registry convention (arioso): the loader imports `adapter.Adapter`.
+
+### *class* foley.sources.wikimedia_commons.adapter.WikimediaCommonsAdapter(config=None, , http=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Keyless Wikimedia Commons adapter (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)).
+
+* **Parameters:**
+  * **config** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The `SOURCE_CONFIG` (the registry passes it positionally).
+  * **http** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport)]) – The injected [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport).
+
+#### download(source_id)
+
+The file’s audio bytes (from the URL a search hit gave, else resolved by id).
+
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+#### get(source_id)
+
+Resolve one file (page id) to its record.
+
+* **Raises:**
+  [**LookupError**](https://docs.python.org/3/builtins/exceptions.html#LookupError) – If the file is missing or its licence is not accepted.
+* **Return type:**
+  [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)
+
+#### search(query, , license='cc0', k=15, \*\*kw)
+
+Search Commons audio for `query`; return licence-checked candidates.
+
+* **Parameters:**
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'cc0'` (default) keeps CC0 files only; anything else (`None`,
+    `'cc-by'`) also keeps CC-BY and the unverified public-domain claims.
+  * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max files requested (the API’s limit is 50).
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
+
+
+# _autosummary/foley.sources.wikimedia_commons.config.html.md
+
+# foley.sources.wikimedia_commons.config
+
+`SOURCE_CONFIG` for the Wikimedia Commons retrieve source (#79 · report 14 §3.3).
+
+Keyless: the MediaWiki Action API at `commons.wikimedia.org/w/api.php` with a
+descriptive `User-Agent`. The licence comes per file, as structured data
+(`extmetadata`: `LicenseUrl`, `LicenseShortName`), so it is parsed by the one
+licence SSOT and checked against `accepted_license_ids`: CC0 and CC-BY only, plus the
+public-domain mark, which is a *claim* and so is never auto-verified
+(`rights_verified=False`): Commons also holds impressions of copyrighted characters
+labelled public domain, which a licence field alone does not clear. Share-alike and
+no-derivatives files fail closed (`license_id_from_cc_url` refuses them).
+
+Files are CC and freely cacheable, so they are stored by value. The audio is whatever
+the uploader sent (ogg, flac, wav, mp3), fetched from `upload.wikimedia.org`.
+
+
+# _autosummary/foley.sources.wikimedia_commons.html.md
+
+# foley.sources.wikimedia_commons
+
+Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).
+
+Declares `SOURCE_CONFIG` (auto-discovered); the adapter loads lazily, so importing
+this package stays dol-only.
+
+### Classes
+
+| `Adapter`                                 |                                                                                                                                        |
+|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| `WikimediaCommonsAdapter`([config, http]) | Keyless Wikimedia Commons adapter (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)). |
+
+### Modules
+
+| [`adapter`](_autosummary/foley.sources.wikimedia_commons.adapter.html.md#module-foley.sources.wikimedia_commons.adapter)   | Wikimedia Commons retrieve adapter: audio files with their licence, keyless.      |
+|-----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| [`config`](_autosummary/foley.sources.wikimedia_commons.config.html.md#module-foley.sources.wikimedia_commons.config)     | `SOURCE_CONFIG` for the Wikimedia Commons retrieve source (#79 · report 14 §3.3). |
 
 
 # _autosummary/foley.stores.html.md
@@ -18754,7 +19105,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-26 12:19 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/d233b3c5a0a75df3f27ed147489099a385ec3d63"><code>d233b3c</code></a> on branch <code>main</code>, for **foley 0.0.49** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 12:48 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/f97da1410085691c36bd91d25d24d96e96ff6f59"><code>f97da14</code></a> on branch <code>main</code>, for **foley 0.0.50** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -18763,7 +19114,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/d233b3c5a0a75df3f27ed147489099a385ec3d63"><code>d233b3c5a0a75df3f27ed147489099a385ec3d63</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/f97da1410085691c36bd91d25d24d96e96ff6f59"><code>f97da1410085691c36bd91d25d24d96e96ff6f59</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -18774,9 +19125,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40321335025">40321335025</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40324781470">40324781470</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>d233b3c5a0a75df3f27ed147489099a385ec3d63</code> (in the history of the built commit) |
+| Event commit | <code>f97da1410085691c36bd91d25d24d96e96ff6f59</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -18801,13 +19152,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.49/">0.0.49</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.50/">0.0.50</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout d233b3c5a0a75df3f27ed147489099a385ec3d63
+git checkout f97da1410085691c36bd91d25d24d96e96ff6f59
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

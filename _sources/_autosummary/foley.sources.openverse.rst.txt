@@ -1,0 +1,21 @@
+foley.sources.openverse
+=======================
+
+.. automodule:: foley.sources.openverse
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      OpenverseAdapter
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   adapter
+   config

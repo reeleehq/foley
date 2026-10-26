@@ -89,6 +89,12 @@
 - [foley.sources.freesound.config](_autosummary/foley.sources.freesound.config.html.md): &#96;SOURCE_CONFIG&#96; for the Freesound APIv2 retrieve source (report 01 · 07 · 10 §4.1).
 - [foley.sources.fsd50k](_autosummary/foley.sources.fsd50k.html.md): FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).
 - [foley.sources.http](_autosummary/foley.sources.http.html.md): Injectable HTTP transport for foley’s live source adapters.
+- [foley.sources.internet_archive](_autosummary/foley.sources.internet_archive.html.md): Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (&#96;foley&#91;internet-archi...
+- [foley.sources.internet_archive.adapter](_autosummary/foley.sources.internet_archive.adapter.html.md): Internet Archive retrieve adapter: opt-in discovery of archival sounds, never auto-verified.
+- [foley.sources.internet_archive.config](_autosummary/foley.sources.internet_archive.config.html.md): &#96;SOURCE_CONFIG&#96; for the Internet Archive retrieve source (#79 · report 14 §3.4).
+- [foley.sources.openverse](_autosummary/foley.sources.openverse.html.md): Openverse retrieve source: keyless, licence-rich audio search (&#96;foley&#91;openverse&#93;&#96;).
+- [foley.sources.openverse.adapter](_autosummary/foley.sources.openverse.adapter.html.md): Openverse retrieve adapter: keyless audio search with ready attribution strings.
+- [foley.sources.openverse.config](_autosummary/foley.sources.openverse.config.html.md): &#96;SOURCE_CONFIG&#96; for the Openverse retrieve source (#79 · report 14 §3.2).
 - [foley.sources.pull](_autosummary/foley.sources.pull.html.md): &#96;add_from&#96; — the live-source pull façade (SOURCE → INDEX in one call).
 - [foley.sources.registry](_autosummary/foley.sources.registry.html.md): Live-source adapter registry: auto-discovery + lazy loading (arioso’s registry, ported).
 - [foley.sources.resilience](_autosummary/foley.sources.resilience.html.md): Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).
@@ -99,9 +105,12 @@
 - [foley.sources.stable_audio_3](_autosummary/foley.sources.stable_audio_3.html.md): Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).
 - [foley.sources.stable_audio_3.adapter](_autosummary/foley.sources.stable_audio_3.adapter.html.md): Stable Audio 3 Small-SFX generate adapter: Stability’s TFLite CPU build, run as a process.
 - [foley.sources.stable_audio_3.config](_autosummary/foley.sources.stable_audio_3.config.html.md): &#96;SOURCE_CONFIG&#96; for the local Stable Audio 3 Small-SFX generator (#72 · report 13 · 17).
+- [foley.sources.wikimedia_commons](_autosummary/foley.sources.wikimedia_commons.html.md): Wikimedia Commons retrieve source: keyless, licence per file (&#96;foley&#91;wikimedia-commons&#93;&#96;).
+- [foley.sources.wikimedia_commons.adapter](_autosummary/foley.sources.wikimedia_commons.adapter.html.md): Wikimedia Commons retrieve adapter: audio files with their licence, keyless.
+- [foley.sources.wikimedia_commons.config](_autosummary/foley.sources.wikimedia_commons.config.html.md): &#96;SOURCE_CONFIG&#96; for the Wikimedia Commons retrieve source (#79 · report 14 §3.3).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 12:19 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 12:48 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

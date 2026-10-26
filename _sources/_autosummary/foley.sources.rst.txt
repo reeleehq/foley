@@ -60,9 +60,12 @@ foley.sources
    freesound
    fsd50k
    http
+   internet_archive
+   openverse
    pull
    registry
    resilience
    sonniss
    stable_audio
    stable_audio_3
+   wikimedia_commons

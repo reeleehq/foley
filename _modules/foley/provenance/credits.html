@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=0356c229"></script>
+    <script src="../../../_static/documentation_options.js?v=e072a57b"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.49" />
+  <meta name="docsearch:version" content="0.0.50" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1062,8 +1062,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        heading_level: Markdown heading level for the title (default ``2`` → ``##``).</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        The Markdown document (bulleted attribution lines; a placeholder note when</span>
-<span class="sd">        empty), ending in a single trailing newline.</span>
+<span class="sd">        The Markdown document (bulleted attribution lines, then each distinct</span>
+<span class="sd">        ``notice_text_required``; a placeholder note when empty), ending in a single trailing newline.</span>
 <span class="sd">    """</span>
     <span class="n">head</span> <span class="o">=</span> <span class="s2">"#"</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">heading_level</span><span class="p">)</span>
     <span class="n">heading</span> <span class="o">=</span> <span class="n">title</span> <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">credits</span><span class="o">.</span><span class="n">title</span>
@@ -1074,7 +1074,12 @@ window.runMermaid = runMermaid;</script>
         <span class="n">lines</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">"- </span><span class="si">{</span><span class="n">attribution_line</span><span class="p">(</span><span class="n">e</span><span class="p">,</span><span class="w"> </span><span class="n">fmt</span><span class="o">=</span><span class="s1">'markdown'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">credits</span><span class="o">.</span><span class="n">entries</span>
         <span class="p">)</span>
-    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span></div>
+        <span class="c1"># Notices a source's terms require (Openverse: "made using Openverse"), once each.</span>
+        <span class="n">notices</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span>
+            <span class="n">e</span><span class="o">.</span><span class="n">notice_text_required</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">credits</span><span class="o">.</span><span class="n">entries</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">notice_text_required</span>
+        <span class="p">)</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">""</span><span class="p">,</span> <span class="o">*</span><span class="n">notices</span><span class="p">])</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span></div>
 
 
 

@@ -1,0 +1,19 @@
+foley.sources.internet\_archive.adapter
+=======================================
+
+.. automodule:: foley.sources.internet_archive.adapter
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      Adapter
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      InternetArchiveAdapter
+   

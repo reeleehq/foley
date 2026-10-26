@@ -1,0 +1,19 @@
+foley.sources.openverse.adapter
+===============================
+
+.. automodule:: foley.sources.openverse.adapter
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      Adapter
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      OpenverseAdapter
+   

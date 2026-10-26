@@ -133,8 +133,8 @@ Render `credits` as a deterministic `CREDITS.md` document.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 * **Returns:**
-  The Markdown document (bulleted attribution lines; a placeholder note when
-  empty), ending in a single trailing newline.
+  The Markdown document (bulleted attribution lines, then each distinct
+  `notice_text_required`; a placeholder note when empty), ending in a single trailing newline.
 
 ### Modules
 

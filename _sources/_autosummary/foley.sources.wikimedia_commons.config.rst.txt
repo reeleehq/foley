@@ -1,0 +1,6 @@
+foley.sources.wikimedia\_commons.config
+=======================================
+
+.. automodule:: foley.sources.wikimedia_commons.config
+
+   

@@ -1,0 +1,21 @@
+foley.sources.wikimedia\_commons
+================================
+
+.. automodule:: foley.sources.wikimedia_commons
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      WikimediaCommonsAdapter
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   adapter
+   config

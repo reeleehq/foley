@@ -1,0 +1,19 @@
+foley.sources.wikimedia\_commons.adapter
+========================================
+
+.. automodule:: foley.sources.wikimedia_commons.adapter
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      Adapter
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      WikimediaCommonsAdapter
+   
