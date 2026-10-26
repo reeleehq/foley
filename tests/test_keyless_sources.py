@@ -412,3 +412,46 @@ def test_add_from_stops_an_unverified_public_domain_claim(library):
     assert not report.ingested
     assert [r.status for r in report.results] == ["skipped_license"]
     assert all("cdn/" not in c["url"] for c in http.calls)  # no bytes were fetched
+
+
+def test_a_list_valued_licenseurl_does_not_crash_and_must_agree():
+    ad = InternetArchiveAdapter(opt_in=True, http=Fake())
+    ok = ad._candidate(
+        {
+            "identifier": "x",
+            "licenseurl": ["https://creativecommons.org/licenses/by/4.0/"],
+        },
+        only=None,
+    )
+    assert ok is not None and ok.sound.license.license_id == "CC-BY-4.0"
+    mixed = [
+        "https://creativecommons.org/licenses/by/4.0/",
+        "https://creativecommons.org/licenses/by-sa/4.0/",
+    ]
+    assert ad._candidate({"identifier": "x", "licenseurl": mixed}, only=None) is None
+    assert ad._candidate({"identifier": "x", "licenseurl": []}, only=None) is None
+
+
+def test_the_openverse_notice_is_printed_once_in_the_credits():
+    from foley.provenance.credits import credits_for
+
+    ad, _ = _openverse()
+    cands = [c for c in ad.search("door", license=None) if c.sound.id != "openverse:e"]
+    md = credits_for(cands).markdown
+    assert md.count("Made using Openverse") == 1 and md.endswith("Openverse.\n")
+    assert "Made using" not in credits_for([]).markdown
+
+
+def test_a_paid_source_keeps_its_narrow_retry_unless_it_sets_its_own():
+    from foley.sources.resilience import make_resilient_transport_from_config
+
+    waits = []
+    cfg = {
+        "pricing": {"unit": "per_call"},
+        "retry": {"max_attempts": 3, "base_delay_s": 1.0},
+    }
+    base = Fake(("x", [Resp(status=502), Resp({"ok": 1})]))
+    t = make_resilient_transport_from_config(cfg, base=base, sleep=waits.append)
+    assert (
+        t("GET", "https://x/a").status_code == 502
+    )  # 502 stays unretried for a paid source

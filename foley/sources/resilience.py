@@ -248,7 +248,9 @@ def make_resilient_transport_from_config(config: dict, *, base=None, **inject):
     if config.get("retry") and "retry" not in inject:
         # A source that needs its own waits (Wikimedia Commons rate-limits a burst of
         # downloads and wants 10 s, 20 s, 40 s) declares ``retry`` as RetryPolicy fields.
-        inject["retry"] = RetryPolicy(**config["retry"])
+        # (a paid source keeps its narrower retry_on unless the config sets its own)
+        fields = {"retry_on": (429, 500, 503)} if paid else {}
+        inject["retry"] = RetryPolicy(**{**fields, **config["retry"]})
     if paid and "retry" not in inject:
         # A gateway 502 / 504 can come after the provider accepted (and billed) the
         # request; only answers that mean "not processed" are retried for a paid source.

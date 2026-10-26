@@ -141,11 +141,9 @@ class InternetArchiveAdapter:
 
     def _candidate(self, doc: dict, *, only: Optional[list]) -> Optional[Candidate]:
         ident = doc.get("identifier")
-        found = (
-            license_for_item(self.config, doc.get("licenseurl"), only=only)
-            if ident
-            else None
-        )
+        urls = doc.get("licenseurl")  # archive metadata fields can be lists
+        urls = [urls] if isinstance(urls, str) else [str(u) for u in urls or []]
+        found = license_for_item(self.config, *urls, only=only) if ident else None
         if found is None:
             return None
         license_id, _ = found
@@ -156,7 +154,7 @@ class InternetArchiveAdapter:
             source=self.config["name"],
             source_id=str(ident),
             source_url=self.config["api"]["item_url"].format(id=ident),
-            license_url=doc["licenseurl"],
+            license_url=urls[0],
             license_id=license_id,
             rights_verified=False,  # uploader-asserted: a person confirms
             creator_name=creator or None,
