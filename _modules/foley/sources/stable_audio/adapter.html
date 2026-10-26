@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=4f34e5f2"></script>
+    <script src="../../../../_static/documentation_options.js?v=a72e4630"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.47" />
+  <meta name="docsearch:version" content="0.0.48" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -757,6 +757,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">SourceConfigurationError</span><span class="p">,</span>
     <span class="n">generated_license</span><span class="p">,</span>
     <span class="n">native_adherence</span><span class="p">,</span>
+    <span class="n">unsupported_notes</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_CONFIG</span>
 
@@ -850,7 +851,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            ``generation_seed`` captured).</span>
 <span class="sd">        """</span>
         <span class="n">nd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">]</span>
-        <span class="n">notes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_warn_unsupported</span><span class="p">(</span><span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="n">output_format</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="n">notes</span> <span class="o">=</span> <span class="n">unsupported_notes</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="n">output_format</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span>
+        <span class="p">)</span>
 
         <span class="c1"># Resolve unified affordances -&gt; native params (recorded verbatim, so</span>
         <span class="c1"># provenance never carries the unified names — the guard against arioso's</span>
@@ -898,26 +901,6 @@ window.runMermaid = runMermaid;</script>
 
 
     <span class="c1"># -- helpers ------------------------------------------------------------</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_warn_unsupported</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">output_format</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Collect notes for affordances the pipeline has no native param for."""</span>
-        <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="n">loop</span><span class="p">:</span>
-            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">"loop has no native Stable Audio Open param (a future WEAVE "</span>
-                <span class="s2">"crossfade); ignored"</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="n">output_format</span> <span class="ow">and</span> <span class="n">output_format</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"output"</span><span class="p">][</span><span class="s2">"default_format"</span><span class="p">]:</span>
-            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"output_format </span><span class="si">{</span><span class="n">output_format</span><span class="si">!r}</span><span class="s2"> is applied by the audio layer, "</span>
-                <span class="s2">"not the model; ignored (archived as FLAC on ingest)"</span>
-            <span class="p">)</span>
-        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kw</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"affordance </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is not a known Stable Audio param; ignored"</span>
-                <span class="p">)</span>
-        <span class="k">return</span> <span class="n">notes</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_invoke</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">native</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">"""Run the pipeline and return ``(encoded_bytes, sample_rate)``.</span>

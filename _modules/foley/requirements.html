@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=4f34e5f2"></script>
+    <script src="../../_static/documentation_options.js?v=a72e4630"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.47" />
+  <meta name="docsearch:version" content="0.0.48" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -760,28 +760,52 @@ window.runMermaid = runMermaid;</script>
 <span class="p">}</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_sa3_requirement</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Requirement</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""The local Stable Audio 3 CPU runtime (#72): a checkout plus its virtualenv.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The callable named ``"package.module:function"``."""</span>
+    <span class="n">module</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">attr</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">":"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">module</span><span class="p">),</span> <span class="n">attr</span><span class="p">)</span>
 
-<span class="sd">    Not a pip extra, so it is probed by ``probe="sa3_runtime"``; built on demand because</span>
-<span class="sd">    its setup command names the checkout directory.</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_derive_runtime_requirements</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">"dict[str, Requirement]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Derive a requirement for each source that needs a local runtime set up.</span>
+
+<span class="sd">    A source declares ``SOURCE_CONFIG["runtime"] = {"name", "purpose", "url", "ready",</span>
+<span class="sd">    "setup"}``: ``ready`` and ``setup`` are ``"module:function"`` references (resolved</span>
+<span class="sd">    only when asked), the first returning whether the runtime is in place, the second</span>
+<span class="sd">    the shell command that installs it. The runtime is not a pip extra (a model</span>
+<span class="sd">    checkout, a binary), so it is probed with ``probe="runtime"``.</span>
 <span class="sd">    """</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.stable_audio_3.adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_hint</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
 
-    <span class="n">hint</span> <span class="o">=</span> <span class="n">setup_hint</span><span class="p">()</span>
-    <span class="k">return</span> <span class="n">Requirement</span><span class="p">(</span>
-        <span class="n">name</span><span class="o">=</span><span class="s2">"stable-audio-3-tflite"</span><span class="p">,</span>
-        <span class="n">purpose</span><span class="o">=</span><span class="s2">"the local Stable Audio 3 Small-SFX generator (CPU, no GPU, no token)"</span><span class="p">,</span>
-        <span class="n">url</span><span class="o">=</span><span class="s2">"https://github.com/Stability-AI/stable-audio-3/tree/main/optimized/tflite"</span><span class="p">,</span>
-        <span class="n">install</span><span class="o">=</span><span class="p">{</span><span class="s2">"darwin"</span><span class="p">:</span> <span class="n">hint</span><span class="p">,</span> <span class="s2">"linux"</span><span class="p">:</span> <span class="n">hint</span><span class="p">},</span>
-        <span class="n">probe</span><span class="o">=</span><span class="s2">"sa3_runtime"</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="n">reqs</span><span class="p">:</span> <span class="s2">"dict[str, Requirement]"</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">SOURCE_REGISTRY</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">runtime</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s2">"config"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"runtime"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">runtime</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">hint</span> <span class="o">=</span> <span class="n">_resolve</span><span class="p">(</span><span class="n">runtime</span><span class="p">[</span><span class="s2">"setup"</span><span class="p">])(</span><span class="n">entry</span><span class="p">[</span><span class="s2">"config"</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">runtime</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="ow">in</span> <span class="n">reqs</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"two sources declare the runtime </span><span class="si">{</span><span class="n">runtime</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">reqs</span><span class="p">[</span><span class="n">runtime</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Requirement</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">runtime</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span>
+            <span class="n">purpose</span><span class="o">=</span><span class="n">runtime</span><span class="p">[</span><span class="s2">"purpose"</span><span class="p">],</span>
+            <span class="n">url</span><span class="o">=</span><span class="n">runtime</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"url"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+            <span class="n">install</span><span class="o">=</span><span class="p">{</span><span class="s2">"darwin"</span><span class="p">:</span> <span class="n">hint</span><span class="p">,</span> <span class="s2">"linux"</span><span class="p">:</span> <span class="n">hint</span><span class="p">},</span>
+            <span class="n">probe</span><span class="o">=</span><span class="s2">"runtime"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">reqs</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_sa3_runtime_ready</span><span class="p">(</span><span class="n">_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.stable_audio_3.adapter</span><span class="w"> </span><span class="kn">import</span> <span class="n">runtime_ready</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_runtime_ready</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether the local runtime named ``name`` (a source's ``runtime`` block) is in place."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
 
-    <span class="k">return</span> <span class="n">runtime_ready</span><span class="p">()</span>
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">SOURCE_REGISTRY</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="n">runtime</span> <span class="o">=</span> <span class="n">entry</span><span class="p">[</span><span class="s2">"config"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"runtime"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span> <span class="o">==</span> <span class="n">name</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">_resolve</span><span class="p">(</span><span class="n">runtime</span><span class="p">[</span><span class="s2">"ready"</span><span class="p">])(</span><span class="n">entry</span><span class="p">[</span><span class="s2">"config"</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="kc">False</span>
 
 
 <span class="c1">#: How each ``probe`` kind checks availability.</span>
@@ -791,7 +815,7 @@ window.runMermaid = runMermaid;</script>
         <span class="nb">any</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_key_env_vars</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="ow">or</span> <span class="n">_key_is_bound</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="p">),</span>
     <span class="s2">"importable"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">name</span><span class="p">:</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="s2">"sa3_runtime"</span><span class="p">:</span> <span class="n">_sa3_runtime_ready</span><span class="p">,</span>
+    <span class="s2">"runtime"</span><span class="p">:</span> <span class="n">_runtime_ready</span><span class="p">,</span>
 <span class="p">}</span>
 
 
@@ -866,8 +890,12 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>  <span class="c1"># FREESOUND_API_KEY / ELEVENLABS_API_KEY / …</span>
     <span class="n">reqs</span><span class="p">[</span><span class="n">_ANTHROPIC_KEY</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_ANTHROPIC_KEY</span>
     <span class="n">reqs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_IMPORTABLE_REQUIREMENTS</span><span class="p">)</span>  <span class="c1"># py2mcp</span>
-    <span class="n">sa3</span> <span class="o">=</span> <span class="n">_sa3_requirement</span><span class="p">()</span>
-    <span class="n">reqs</span><span class="p">[</span><span class="n">sa3</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">sa3</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">req</span> <span class="ow">in</span> <span class="n">_derive_runtime_requirements</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">reqs</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"runtime requirement </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> collides with another requirement"</span>
+            <span class="p">)</span>
+        <span class="n">reqs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">req</span>
     <span class="k">return</span> <span class="n">reqs</span></div>
 
 
