@@ -34,7 +34,9 @@ hits = foley.search("distant thunder rumble", k=10)  # commercial use is the def
 # needs foley[stable-audio] and the gated stabilityai/stable-audio-open-1.0 weights
 # (accept its license on Hugging Face, set HF_TOKEN); backend="elevenlabs" needs
 # ELEVENLABS_API_KEY and is paid
-clip = foley.generate("a single wooden door creak", backend="stable_audio_3", duration=3)  # local, CPU; setup: foley.check_requirements(verbose=True)
+clip = foley.generate(
+    "a single wooden door creak", backend="stable_audio_3", duration=3
+)  # local, CPU; setup: foley.check_requirements(verbose=True)
 
 # No GPU? The fal-hosted backends (foley[fal] + FAL_KEY; paid, priced before the call):
 # Stable Audio 3 Small-SFX at $0.0206 a clip, commercial use under $1M revenue
