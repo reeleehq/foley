@@ -42,6 +42,7 @@ import math
 import time
 import warnings
 from dataclasses import dataclass, field
+from collections.abc import Mapping
 from typing import Optional
 
 from ocracy.kit import UnsupportedParameter, make_translator
@@ -734,8 +735,12 @@ def plan_search(
     affordances: dict,
     *,
     on_unsupported: Optional[str] = None,
+    provider_params: Optional[Mapping] = None,
 ) -> "tuple[dict, list[str]]":
     """Egress check + translation for a retrieve source's ``search`` (the same policy).
+
+    ``provider_params`` (#61) is checked against the source's policy here, before any
+    call, and rides in the kwargs untranslated.
 
     Returns:
         ``(kwargs for adapter.search, notes)``.
@@ -743,6 +748,11 @@ def plan_search(
     from .registry import require_source_egress
 
     require_source_egress(source, config)
-    return translate_affordances(
+    search_kw, notes = translate_affordances(
         config, affordances, on_unsupported=on_unsupported, vocabulary=QUERY_AFFORDANCES
     )
+    if provider_params is not None:
+        search_kw["provider_params"] = check_provider_params(
+            provider_params, policy=config.get("provider_params")
+        )
+    return search_kw, notes

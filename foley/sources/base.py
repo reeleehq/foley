@@ -158,14 +158,13 @@ def native_adherence(
     raise ValueError(f"{config['name']}: unknown prompt_influence coerce {coerce!r}")
 
 
-def require_params_mapping(provider_params) -> Mapping:
+def require_params_mapping(provider_params) -> None:
     """``provider_params`` itself if it is a mapping, else a ``TypeError`` (#61)."""
     if not isinstance(provider_params, Mapping):
         raise TypeError(
             "provider_params must be a mapping of native names to values, got "
             f"{type(provider_params).__name__}"
         )
-    return provider_params
 
 
 def check_provider_params(

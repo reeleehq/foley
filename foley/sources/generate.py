@@ -38,6 +38,7 @@ unhandled exception.
 from __future__ import annotations
 
 import functools
+from collections.abc import Mapping
 from typing import Optional
 
 from ..base import Candidate, CandidateOrigin
@@ -661,6 +662,30 @@ def estimate_order(backend=None, **affordances) -> Optional[float]:
     return max(prices)
 
 
+def _unwrap_own_entry(provider_params, name: str) -> Mapping:
+    """The flat params for the one backend ``name`` (a ``{name: {...}}`` is unwrapped).
+
+    A wrapper naming another registered source raises rather than send its params to
+    ``name``.
+    """
+    from .registry import SOURCE_REGISTRY, discover_sources
+
+    discover_sources()
+    wrappers = [
+        k
+        for k, v in provider_params.items()
+        if isinstance(v, Mapping) and (k == name or k in SOURCE_REGISTRY)
+    ]
+    if not wrappers:
+        return provider_params
+    if wrappers == [name] and len(provider_params) == 1:
+        return provider_params[name]
+    raise ValueError(
+        f"provider_params names backend(s) {wrappers} but the generation is for "
+        f"{name!r}: give a flat dict of native names, or just {{{name!r}: {{...}}}}"
+    )
+
+
 def provider_params_by_backend(
     provider_params, order, *, per_backend: bool
 ) -> "dict[str, dict]":
@@ -686,8 +711,6 @@ def provider_params_by_backend(
         ValueError: For a flat dict where a per-backend one is needed, a backend not
             in ``order``, or a key the backend's policy refuses.
     """
-    from collections.abc import Mapping
-
     from .base import check_provider_params, require_params_mapping
     from .registry import SOURCE_REGISTRY, discover_sources
 
@@ -697,9 +720,7 @@ def provider_params_by_backend(
     order = tuple(order)
     if not per_backend:
         (name,) = order
-        inner = provider_params.get(name) if len(provider_params) == 1 else None
-        # ``{name: {...}}`` for the one backend named is the per-backend form: unwrap.
-        by_backend = {name: inner if isinstance(inner, Mapping) else provider_params}
+        by_backend = {name: _unwrap_own_entry(provider_params, name)}
     else:
         flat = [
             k

@@ -23,7 +23,7 @@ from ..base import IntendedUse
 from ..index.ingest import IngestReport, IngestResult, ingest_one
 from ..licensing import DEFAULT_INTENDED_USE, keep
 from ._dispatch import plan_search
-from .base import SourceConfigurationError, check_provider_params
+from .base import SourceConfigurationError
 from .registry import get_source
 
 
@@ -91,14 +91,12 @@ def _add_from(
     # The one dispatch path (#53): call-time egress check + the unsupported-parameter
     # policy over the extra search affordances; every drop is a report note.
     search_kw, search_notes = plan_search(
-        source, config, affordances, on_unsupported=on_unsupported
+        source,
+        config,
+        affordances,
+        on_unsupported=on_unsupported,
+        provider_params=provider_params,
     )
-    if provider_params is not None:  # untranslated: the adapter merges it (#61)
-        # Checked here so a reserved key raises the documented ValueError, not an
-        # error entry from inside ``adapter.search``.
-        search_kw["provider_params"] = check_provider_params(
-            provider_params, policy=config.get("provider_params")
-        )
 
     from ..obs.recorder import current_run
     from ..obs.trace import GENAI
