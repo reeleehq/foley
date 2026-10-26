@@ -111,15 +111,16 @@ def level_bytes(
         encode,
         limit_true_peak,
         load,
-        loudness_normalize,
+        loudness_gain_db,
     )
     from .repair import DEFAULT_REPAIR_CEILING_DBTP
 
     target_lufs = resolve_target_lufs(target)
     wav, sr = load(audio_bytes)
-    levelled, measured = loudness_normalize(wav, sr, target_lufs=target_lufs)
-    if not np.isfinite(measured) or measured <= LUFS_GATE_FLOOR:
+    gain, measured = loudness_gain_db(wav, sr, target_lufs=target_lufs)
+    if measured <= LUFS_GATE_FLOOR:  # too short or too quiet to measure: left alone
         return audio_bytes, None, None
+    levelled = wav * (10.0 ** (gain / 20.0))
     # A quiet clip raised to its target can overshoot the QC true-peak gate between
     # samples; keep it under the same ceiling the repair aims for.
     levelled, _ = limit_true_peak(
@@ -146,8 +147,6 @@ SHORT_CLIP_PEAK_DBFS = -6.0
 #: The most a clip is boosted to reach the reference (dB), so a near-silent clip's noise
 #: floor is not raised without bound. The 29 dB spread seen on a real film fits inside.
 MAX_REFERENCE_BOOST_DB = 36.0
-#: A clip whose sample peak is under this (dBFS) is silent for levelling purposes.
-SILENT_PEAK_DBFS = -80.0
 
 
 def reference_gain_db(
@@ -174,24 +173,16 @@ def reference_gain_db(
         reference_lufs: The loudness every clip is brought to (default: foley's
             reference programme loudness, :data:`foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).
     """
-    import numpy as np
+    from .audio import DEFAULT_LOUDNESS_TARGET_LUFS, loudness_gain_db
 
-    from .audio import DEFAULT_LOUDNESS_TARGET_LUFS, LUFS_MIN_BLOCK_S
-    from .qc import measure_lufs
-
-    reference = (
-        DEFAULT_LOUDNESS_TARGET_LUFS if reference_lufs is None else reference_lufs
+    gain, _ = loudness_gain_db(
+        clip,
+        sample_rate,
+        target_lufs=DEFAULT_LOUDNESS_TARGET_LUFS
+        if reference_lufs is None
+        else reference_lufs,
+        peak_ceiling_dbfs=peak_ceiling_dbfs,
+        short_peak_dbfs=short_peak_dbfs,
+        max_boost_db=max_boost_db,
     )
-    x = np.asarray(clip, dtype=np.float64)
-    if not np.isfinite(x).all() or x.size == 0:
-        return 0.0
-    peak = float(np.max(np.abs(x)))
-    peak_db = 20.0 * float(np.log10(peak)) if peak > 0 else float("-inf")
-    if peak_db <= SILENT_PEAK_DBFS:
-        return 0.0
-    measured = measure_lufs(x, sample_rate)
-    too_short = x.shape[0] < math.ceil(LUFS_MIN_BLOCK_S * sample_rate)
-    if measured is None and not too_short:
-        return 0.0  # below the loudness gate: near-silent, flag, don't amplify
-    wanted = short_peak_dbfs - peak_db if measured is None else reference - measured
-    return float(min(wanted, peak_ceiling_dbfs - peak_db, max_boost_db))
+    return gain
