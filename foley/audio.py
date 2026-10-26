@@ -470,9 +470,7 @@ def loudness_gain_db(
     if peak_db <= silent_peak_dbfs:
         return 0.0, float("-inf")
 
-    measured = integrated_lufs(
-        x, sample_rate, min_block_s=min_block_s, meter=meter
-    )
+    measured = integrated_lufs(x, sample_rate, min_block_s=min_block_s, meter=meter)
     if measured == float("-inf") and x.shape[0] < math.ceil(min_block_s * sample_rate):
         if short_peak_dbfs is None:
             return 0.0, measured  # too short to gate; flag, don't amplify
