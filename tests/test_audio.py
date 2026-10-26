@@ -388,3 +388,18 @@ def test_loudness_gain_db_leaves_silent_and_non_finite_clips_alone():
     sr = 48_000
     assert audio.loudness_gain_db(np.zeros(sr), sr, target_lufs=-16.0)[0] == 0.0
     assert audio.loudness_gain_db(np.full(sr, np.nan), sr, target_lufs=-16.0)[0] == 0.0
+
+
+def test_injected_meter_drives_gain_and_short_guard_stays_outside_it():
+    import numpy as np
+
+    sr = 48000
+    x = (0.05 * np.sin(2 * np.pi * 200 * np.arange(sr * 2) / sr)).astype("float64")
+    gain, measured = audio.loudness_gain_db(x, sr, target_lufs=-20.0, meter=lambda s, r: -30.0)
+    assert measured == -30.0 and gain == pytest.approx(10.0)
+    called = []
+    short = x[: sr // 10]  # under one gating block
+    assert audio.integrated_lufs(short, sr, meter=lambda s, r: called.append(1) or 0.0) == float("-inf")
+    assert called == []
+    out, m = audio.loudness_normalize(x, sr, target_lufs=-20.0, meter=lambda s, r: -30.0)
+    assert m == -30.0 and float(np.max(np.abs(out))) > float(np.max(np.abs(x)))

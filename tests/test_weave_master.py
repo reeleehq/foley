@@ -46,3 +46,22 @@ def test_master_report_is_json_serialisable():
     d = report.to_dict()
     assert d["target_lufs"] == -16.0 and d["engine"] == "inprocess"
     assert set(d) >= {"input_lufs", "output_lufs", "true_peak_dbtp", "limited"}
+
+
+def test_master_injected_limiter_and_meter_are_used():
+    sr = 48000
+    mix = _sine_stereo(200, 3.0, sr, 0.05)
+    calls = {"limiter": 0, "meter": 0}
+
+    def limiter(m, rate, ceiling_db):
+        calls["limiter"] += 1
+        return m, -3.0, False
+
+    def meter(x, rate):
+        calls["meter"] += 1
+        return -20.0
+
+    _, report = master(mix, sr, MASTER_PROFILES["podcast"], limiter=limiter, meter=meter)
+    assert calls["limiter"] == 1 and calls["meter"] >= 2
+    assert report.true_peak_dbtp == -3.0 and report.limited is False
+    assert report.input_lufs == -20.0 and report.output_lufs == -20.0

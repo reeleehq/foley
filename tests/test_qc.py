@@ -347,3 +347,20 @@ def test_custom_thresholds_are_honored():
     assert lenient.is_silent is False
     assert strict.is_silent is True
     assert strict.status is QCStatus.fail
+
+
+def test_measure_lufs_is_the_audio_meter_with_none_contract():
+    import numpy as np
+
+    from foley import audio
+    from foley.qc import measure_lufs
+
+    sr = 48000
+    x = (0.1 * np.sin(2 * np.pi * 300 * np.arange(sr * 2) / sr)).astype("float64")
+    assert measure_lufs(x, sr) == pytest.approx(audio.integrated_lufs(x, sr))
+    assert measure_lufs(x, sr, meter=lambda s, r: -25.0) == -25.0
+    assert measure_lufs(x[: sr // 10], sr) is None  # shorter than a gating block
+    assert measure_lufs(x, sr, meter=lambda s, r: -90.0) is None  # at/below the gate floor
+    bad = x.copy()
+    bad[5] = np.nan
+    assert measure_lufs(bad, sr) is None

@@ -47,11 +47,11 @@ class MasterReport:
         return asdict(self)
 
 
-def _measure_lufs(samples: "ndarray", sample_rate: int) -> float:
+def _measure_lufs(samples: "ndarray", sample_rate: int, *, meter=None) -> float:
     """Integrated loudness (LUFS) of ``samples``; ``-inf`` when too short to gate."""
     from ..audio import integrated_lufs
 
-    return integrated_lufs(samples, sample_rate)
+    return integrated_lufs(samples, sample_rate, meter=meter)
 
 
 def _tp(mix: "ndarray", sample_rate: int) -> float:
@@ -172,6 +172,8 @@ def master(
     profile: MasterProfile,
     *,
     engine: str = "auto",
+    limiter=None,
+    meter=None,
 ) -> "tuple[ndarray, MasterReport]":
     """Master ``mix`` to ``profile`` — LUFS-normalise then true-peak-limit (report 06 §5).
 
@@ -182,6 +184,11 @@ def master(
         engine: ``'auto'``/``'inprocess'`` master in-process (default, portable). ``'ffmpeg'``
             uses the two-pass ``ffmpeg loudnorm`` "guarantee the numbers" master (report 06
             §5.4) and **fails safe** back to in-process if ffmpeg is unavailable or errors.
+        limiter: The in-process true-peak stage, ``(mix, sample_rate, ceiling_db) ->
+            (mix, true_peak_dbtp, limited)`` (default: a static true-peak-safe scale,
+            :func:`_true_peak_limit`). The seam for a lookahead limiter (foley#91).
+        meter: A :data:`foley.audio.Meter` for the in-process loudness stages (default
+            ``pyloudnorm``).
 
     Returns:
         ``(mastered_mix, MasterReport)``. Loudness is measured before and after so the
@@ -215,11 +222,12 @@ def master(
         sample_rate,
         target_lufs=profile.target_lufs,
         peak_ceiling_dbfs=profile.true_peak_db,
+        meter=meter,
     )
-    limited_mix, tp, limited = _true_peak_limit(
+    limited_mix, tp, limited = (limiter or _true_peak_limit)(
         normalized, sample_rate, profile.true_peak_db
     )
-    output_lufs = _measure_lufs(limited_mix, sample_rate)
+    output_lufs = _measure_lufs(limited_mix, sample_rate, meter=meter)
     gain_db = (
         output_lufs - input_lufs
         if math.isfinite(output_lufs) and math.isfinite(input_lufs)

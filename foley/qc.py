@@ -405,32 +405,30 @@ def measure_lufs(
     *,
     gate_floor_lufs: float = DEFAULT_QC_THRESHOLDS.lufs_gate_floor,
     min_block_s: float = LUFS_MIN_BLOCK_S,
+    meter: "Optional[Meter]" = None,
 ) -> Optional[float]:
-    """Integrated loudness (LUFS, ITU-R BS.1770-4) via ``pyloudnorm`` (lazy).
+    """Integrated loudness (LUFS, ITU-R BS.1770-4) via :func:`foley.audio.integrated_lufs`.
+
+    The one meter (``pyloudnorm`` by default, lazy; ``meter`` swaps it).
 
     Returns ``None`` when ``pyloudnorm`` is unavailable, the clip is shorter than
     one gating block (``min_block_s``), the samples are non-finite, or the
     measured loudness is at/below the gate floor (near-silent / unstable — do
     not amplify, just flag).
     """
-    try:
-        import pyloudnorm as pyln
-    except Exception:
-        return None
     import numpy as np
 
+    from .audio import integrated_lufs
+
     x = np.asarray(samples, dtype=np.float64)
-    # math.ceil mirrors pyloudnorm's float block threshold exactly (see
-    # audio.loudness_normalize); a no-op vs int(round) at standard (÷5) rates.
-    if x.shape[0] < math.ceil(min_block_s * sample_rate):
-        return None
     if not np.isfinite(x).all():
         return None
-    meter = pyln.Meter(sample_rate)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        try:
-            loudness = float(meter.integrated_loudness(x))
+        try:  # a missing pyloudnorm / an unreadable layout is "not measurable"
+            loudness = integrated_lufs(
+                x, sample_rate, min_block_s=min_block_s, meter=meter
+            )
         except Exception:
             return None
     if not np.isfinite(loudness) or loudness <= gate_floor_lufs:
