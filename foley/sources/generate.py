@@ -695,7 +695,7 @@ def provider_params_by_backend(
     backend (``per_backend``: ``backend`` unnamed, ``'auto'`` or a list) takes them as
     ``{backend_name: {native_name: value}}`` and hands each backend only its own; a
     flat dict there raises rather than send one vendor's params to another. A single
-    named backend takes the flat dict 
+    named backend takes the flat dict
     (or its own ``{name: {...}}``, unwrapped). Each backend's params are checked against its
     config's ``provider_params`` policy here, before any backend is called.
 
