@@ -743,6 +743,19 @@ def test_an_injected_sdk_client_is_used_without_its_retries():
     assert seen == {"max_retries": 0}
 
 
+def test_llm_prices_come_from_falaw_and_unlisted_models_are_unknown():
+    """One price table for the fleet: listed models are priced, unlisted ones are None."""
+    from types import SimpleNamespace
+
+    from foley.agent.llm import _usage_cost, llm_call_estimate
+
+    usage = SimpleNamespace(input_tokens=1000, output_tokens=1000)
+    listed = _usage_cost("claude-opus-4-7", SimpleNamespace(usage=usage))
+    assert listed is not None and listed > 0  # the private table lacked this model
+    assert _usage_cost("no-such-model", SimpleNamespace(usage=usage)) is None
+    assert _usage_cost("claude-opus-4-7", SimpleNamespace(usage=None)) is None
+    assert llm_call_estimate("anthropic", model="no-such-model", max_tokens=5) is None
+
 @pytest.mark.parametrize("bad", [5.0, -0.1, True, "0.5"])
 def test_a_bad_prompt_influence_is_refused_before_any_budget_is_reserved(
     paid_source, library, bad
