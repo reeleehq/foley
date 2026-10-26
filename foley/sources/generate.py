@@ -670,7 +670,7 @@ def provider_params_by_backend(
     backend (``per_backend``: ``backend`` unnamed, ``'auto'`` or a list) takes them as
     ``{backend_name: {native_name: value}}`` and hands each backend only its own; a
     flat dict there raises rather than send one vendor's params to another. A single
-    named backend takes the flat dict. Each backend's params are checked against its
+    named backend takes the flat dict (or its own ``{name: {...}}``, unwrapped). Each backend's params are checked against its
     config's ``provider_params`` policy here, before any backend is called.
 
     >>> provider_params_by_backend({"steps": 8}, ("x",), per_backend=False)
@@ -688,19 +688,18 @@ def provider_params_by_backend(
     """
     from collections.abc import Mapping
 
-    from .base import check_provider_params
+    from .base import check_provider_params, require_params_mapping
     from .registry import SOURCE_REGISTRY, discover_sources
 
     if provider_params is None:
         return {}
-    if not isinstance(provider_params, Mapping):
-        raise TypeError(
-            f"provider_params must be a mapping, got {type(provider_params).__name__}"
-        )
+    require_params_mapping(provider_params)
     order = tuple(order)
     if not per_backend:
         (name,) = order
-        by_backend = {name: provider_params}
+        inner = provider_params.get(name) if len(provider_params) == 1 else None
+        # ``{name: {...}}`` for the one backend named is the per-backend form: unwrap.
+        by_backend = {name: inner if isinstance(inner, Mapping) else provider_params}
     else:
         flat = [
             k

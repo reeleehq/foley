@@ -687,6 +687,19 @@ def test_a_fields_override_cannot_drop_the_licence_fields(fields):
     )
 
 
+def test_add_from_raises_for_a_reserved_key_before_searching(library):
+    transport = _transport()
+    with pytest.raises(ValueError, match="provider_params\\['query'\\] is reserved"):
+        add_from(
+            "freesound",
+            query="rain",
+            library=library,
+            adapter=_adapter(transport),
+            provider_params={"query": "x"},
+        )
+    assert transport.calls == []
+
+
 @pytest.mark.parametrize("key", ["query", "token"])
 def test_reserved_search_params_raise(key):
     transport = _transport()

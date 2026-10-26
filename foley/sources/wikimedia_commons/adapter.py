@@ -68,7 +68,9 @@ class WikimediaCommonsAdapter:
         return {"User-Agent": self.config["api"]["user_agent"]}
 
     def invoke_native(self, **params) -> dict:
-        """Call the MediaWiki ``action=query`` API with native ``params``; return its JSON (#61).
+        """Call the MediaWiki ``action=query`` API with native ``params`` (#61).
+
+        Returns the JSON response.
 
         It bypasses the licence filter and the per-item licence check that
         :meth:`search` applies: the caller owns licence gating for what comes back.

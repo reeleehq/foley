@@ -23,7 +23,7 @@ from ..base import IntendedUse
 from ..index.ingest import IngestReport, IngestResult, ingest_one
 from ..licensing import DEFAULT_INTENDED_USE, keep
 from ._dispatch import plan_search
-from .base import SourceConfigurationError
+from .base import SourceConfigurationError, check_provider_params
 from .registry import get_source
 
 
@@ -94,7 +94,11 @@ def _add_from(
         source, config, affordances, on_unsupported=on_unsupported
     )
     if provider_params is not None:  # untranslated: the adapter merges it (#61)
-        search_kw["provider_params"] = provider_params
+        # Checked here so a reserved key raises the documented ValueError, not an
+        # error entry from inside ``adapter.search``.
+        search_kw["provider_params"] = check_provider_params(
+            provider_params, policy=config.get("provider_params")
+        )
 
     from ..obs.recorder import current_run
     from ..obs.trace import GENAI
