@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=e072a57b"></script>
+    <script src="../../_static/documentation_options.js?v=440a2162"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.50" />
+  <meta name="docsearch:version" content="0.0.51" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -926,7 +926,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">      ``share alike``, ``sharealike``) → ``('unknown', False)``: foley has no row</span>
 <span class="sd">      expressing those restrictions, so the sound is refused everywhere;</span>
 <span class="sd">    * the Public Domain Mark → ``('PDM-1.0', False)``: a claim about the work, not a</span>
-<span class="sd">      licence anyone granted, so never auto-verified (#56);</span>
+<span class="sd">      licence anyone granted, so never auto-verified (#56); a label that adds words to</span>
+<span class="sd">      it ("not public domain", "public domain in the US only") → ``('unknown', False)``;</span>
 <span class="sd">    * CC0 (``publicdomain/zero``, ``cc0``, ``creative commons 0``) → ``CC0-1.0``;</span>
 <span class="sd">    * Sampling+ → ``CC-Sampling+-1.0``;</span>
 <span class="sd">    * ``by`` / ``attribution`` with any mention of commercial use (``nc``,</span>
@@ -960,7 +961,13 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="n">_only_known</span><span class="p">(</span>
                 <span class="n">tokens</span><span class="p">,</span> <span class="p">{</span><span class="s2">"publicdomain"</span><span class="p">,</span> <span class="s2">"zero"</span><span class="p">,</span> <span class="s2">"public"</span><span class="p">,</span> <span class="s2">"domain"</span><span class="p">},</span> <span class="s2">"CC0-1.0"</span>
             <span class="p">)</span>
-        <span class="k">return</span> <span class="s2">"PDM-1.0"</span><span class="p">,</span> <span class="kc">False</span>  <span class="c1"># 'mark' or a bare public-domain claim</span>
+        <span class="c1"># 'mark' or a bare public-domain claim, never verified. A label that adds a word</span>
+        <span class="c1"># ("not public domain", "public domain in the US only") negates or limits the</span>
+        <span class="c1"># claim, so it fails closed like any unrecognised token.</span>
+        <span class="n">pdm</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_only_known</span><span class="p">(</span>
+            <span class="n">tokens</span><span class="p">,</span> <span class="p">{</span><span class="s2">"publicdomain"</span><span class="p">,</span> <span class="s2">"domain"</span><span class="p">,</span> <span class="s2">"mark"</span><span class="p">,</span> <span class="s2">"universal"</span><span class="p">},</span> <span class="s2">"PDM-1.0"</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">pdm</span><span class="p">,</span> <span class="kc">False</span>
     <span class="k">if</span> <span class="p">(</span>
         <span class="s2">"cc0"</span> <span class="ow">in</span> <span class="n">toks</span>
         <span class="ow">or</span> <span class="n">_has_phrase</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="s2">"creative"</span><span class="p">,</span> <span class="s2">"commons"</span><span class="p">,</span> <span class="s2">"0"</span><span class="p">)</span>

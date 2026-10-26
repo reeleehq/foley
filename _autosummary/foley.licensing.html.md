@@ -240,7 +240,8 @@ the string is split into tokens, and
   `share alike`, `sharealike`) → `('unknown', False)`: foley has no row
   expressing those restrictions, so the sound is refused everywhere;
 * the Public Domain Mark → `('PDM-1.0', False)`: a claim about the work, not a
-  licence anyone granted, so never auto-verified (#56);
+  licence anyone granted, so never auto-verified (#56); a label that adds words to
+  it (“not public domain”, “public domain in the US only”) → `('unknown', False)`;
 * CC0 (`publicdomain/zero`, `cc0`, `creative commons 0`) → `CC0-1.0`;
 * Sampling+ → `CC-Sampling+-1.0`;
 * `by` / `attribution` with any mention of commercial use (`nc`,
