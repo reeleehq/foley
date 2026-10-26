@@ -16,7 +16,7 @@ from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
 from .._keyless import get_bytes, get_json, license_for_item, raw_id, strip_html
-from ..base import SourceConfigurationError, api_license
+from ..base import SourceConfigurationError, api_license, merge_provider_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -63,12 +63,20 @@ class InternetArchiveAdapter:
         return get_json(self._http, url, params=params, what="Internet Archive")
 
     def search(
-        self, query: str, *, license: Optional[str] = None, k: int = 15, **kw
+        self,
+        query: str,
+        *,
+        license: Optional[str] = None,
+        k: int = 15,
+        provider_params: Optional[dict] = None,
+        **kw,
     ) -> "list[Candidate]":
         """Search archive audio for ``query``; return candidates (all unverified).
 
         ``license='cc0'`` keeps CC0 items only; any other value keeps every accepted
         licence. The query always asks for items with a ``licenseurl``.
+        ``provider_params`` are native advancedsearch params merged over the
+        translated ones (#61); a ``q`` is ANDed onto foley's, never replaces it.
         """
         api = self.config["api"]
         params = {
@@ -77,13 +85,24 @@ class InternetArchiveAdapter:
             "rows": min(int(k), api["max_rows"]),
             "output": "json",
         }
-        docs = (self._json(api["search_url"], params).get("response") or {}).get(
-            "docs", []
+        params = merge_provider_params(
+            params, provider_params, append_keys=("q",), joiner=" AND "
         )
+        docs = (
+            self.invoke_native(api["search_url"], **params).get("response") or {}
+        ).get("docs", [])
         only = self.config["license"]["cc0_license_ids"] if license == "cc0" else None
         return [
             c for c in (self._candidate(d, only=only) for d in docs) if c is not None
         ]
+
+    def invoke_native(self, url: str, **params) -> dict:
+        """GET an Internet Archive ``url`` with native ``params``; return the parsed JSON (#61).
+
+        It bypasses the licence filter and the per-item licence check that
+        :meth:`search` applies: the caller owns licence gating for what comes back.
+        """
+        return self._json(url, params)
 
     def get(self, source_id: str) -> SoundRecord:
         """Resolve one item identifier to its record.

@@ -684,6 +684,7 @@ def generate(
     level=None,
     check_prompt: bool = True,
     intended_use=None,
+    provider_params=None,
     **affordances,
 ):
     """Generate a sound effect for ``prompt`` and add it to the library (by-value).
@@ -768,6 +769,11 @@ def generate(
             walked (default: commercial): a backend whose licence cannot serve it is
             skipped before anything is paid for. A single named backend is used as
             asked (its licence is gated downstream by :func:`keep`).
+        provider_params: Vendor-native params foley has no unified affordance for
+            (#61), passed to every backend tried, e.g. ``{"num_inference_steps": 50}``. Merged by the backend over
+            its translated native params (a provider param wins), recorded in the
+            licence's ``generation_params``, and part of the generations-cache key;
+            never seen by the unsupported-parameter policy or the cost estimate.
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`GENERATION_AFFORDANCES`).
@@ -842,6 +848,7 @@ def generate(
             repair=repair,
             level=level,
             check_prompt=check_prompt,
+            provider_params=provider_params,
             **affordances,
         )
     results = report.results
@@ -871,11 +878,12 @@ def generate(
 
 
 def _with_call_facts(candidate, result):
-    """Copy a generation's notes, cost and (for a preview) bytes from its ingest result."""
+    """Copy a generation's notes, cost, raw payload and (for a preview) bytes from its ingest result."""
     candidate.notes = list(result.notes)
     candidate.cost_estimate_usd = result.cost_estimate_usd
     candidate.cost_actual_usd = result.cost_actual_usd
     candidate.audio_bytes = result.audio_bytes  # set only by store=False (#107)
+    candidate.raw = result.raw  # the provider's payload beside the audio (#61)
     return candidate
 
 

@@ -300,6 +300,7 @@ def _generate(
     repair=True,
     level=None,
     check_prompt: bool = True,
+    provider_params: Optional[dict] = None,
     **affordances,
 ) -> IngestReport:
     """Generate a sound via ``backend`` and ingest it (by-value) into ``library``.
@@ -384,6 +385,11 @@ def _generate(
             embedder (:func:`foley.prompt_match.prompt_match`) and put the verdict in
             ``qc['prompt_match']`` and the notes: a mismatch is flagged, not
             quarantined; without a capable embedder the verdict is ``'unchecked'``.
+        provider_params: Vendor-native params foley has no unified affordance for
+            (#61), e.g. ``{"num_inference_steps": 50}``. Merged by the backend over
+            its translated native params (a provider param wins), recorded in the
+            licence's ``generation_params``, and part of the generations-cache key;
+            never seen by the unsupported-parameter policy or the cost estimate.
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`foley.base.GENERATION_AFFORDANCES`).
@@ -449,6 +455,7 @@ def _generate(
         on_unsupported=on_unsupported,
         cache=generations_cache,
         reuse_cached=reuse_cached,
+        provider_params=provider_params,
         **affordances,
     )
 
@@ -599,6 +606,7 @@ def _generate(
         res.notes.extend(clip.notes)
     res.cost_estimate_usd = clip.candidate.cost_estimate_usd
     res.cost_actual_usd = clip.candidate.cost_actual_usd
+    res.raw = clip.raw  # transient: the provider's payload beside the audio (#61)
     # Record the operator-consent acknowledgement on a stored generation whose
     # license forbids AI training (mirrors bootstrap's Ring-2 note). ai_training_ok
     # stays False on the record — keep() still rejects it for will_train uses.
@@ -779,6 +787,7 @@ _GENERATE_KNOWN = frozenset(
         "repair",
         "level",
         "check_prompt",
+        "provider_params",
     }
 )
 
@@ -804,7 +813,7 @@ def generate(*args, **kwargs) -> IngestReport:
     }
     params = {
         k: _manifest_value(kwargs[k])
-        for k in ("store", "on_flagged", "watermark", "repair")
+        for k in ("store", "on_flagged", "watermark", "repair", "provider_params")
         if k in kwargs
     }
     with facade_run(

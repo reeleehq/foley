@@ -35,7 +35,7 @@ from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import ai_scope_from_gen_ai_preference, license_id_from_cc_url
-from ..base import api_license, resolve_source_key
+from ..base import api_license, merge_provider_params, resolve_source_key
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -46,6 +46,11 @@ _PREVIEW_KEYS = (
     "preview-lq-mp3",
     "preview-lq-ogg",
 )
+
+
+#: Native params a caller's ``provider_params`` are appended to, never replace (the
+#: Solr ``filter`` carries the licence filter).
+_APPENDED_PARAMS = ("filter",)
 
 
 def _raw_id(source_id: str) -> str:
@@ -155,6 +160,7 @@ class FreesoundAdapter:
         sort: Optional[str] = None,
         similar_to: Optional[str] = None,
         ucs_category: Optional[str] = None,
+        provider_params: Optional[dict] = None,
         **kw,
     ) -> "list[Candidate]":
         """Search Freesound for ``query``; return license-clean candidates.
@@ -174,12 +180,17 @@ class FreesoundAdapter:
             similar_to: A Freesound sound id (either id form): "more like this one".
             ucs_category: A UCS CatID or category, mapped to a coarse Broad Sound
                 Taxonomy ``category`` pre-filter (no filter if it is not recognised).
+            provider_params: Native Freesound search params foley has no affordance
+                for, merged over the translated ones (#61), e.g.
+                ``{"filter": "ac_brightness:[50 TO 100]"}``. A ``filter`` is appended
+                to foley's (the licence filter cannot be replaced), and the per-item
+                licence re-check still applies.
             **kw: Ignored extra affordances (``on_unsupported_param='warn'``).
 
         Returns:
             Up to ``k`` :class:`~foley.base.Candidate`\\ s (``origin=retrieved``),
-            each carrying a by-reference :class:`~foley.base.LicenseRecord` and a
-            transient ``preview_uri``.
+            each carrying a by-reference :class:`~foley.base.LicenseRecord`, a
+            transient ``preview_uri`` and the item JSON it was parsed from as ``raw``.
         """
         params: dict = {
             "query": query,
@@ -214,9 +225,12 @@ class FreesoundAdapter:
         if similar_to:
             native = self.config["param_map"]["similar_to"]["native_name"]
             params[native] = _raw_id(similar_to)
+        params = merge_provider_params(
+            params, provider_params, append_keys=_APPENDED_PARAMS
+        )
 
-        data = self._get_json(
-            self._url(self.config["api"]["search_endpoint"]["path"]), params=params
+        data = self.invoke_native(
+            self.config["api"]["search_endpoint"]["path"], **params
         )
         only = self.config["license"]["cc0_license_ids"] if license == "cc0" else None
         candidates: "list[Candidate]" = []
@@ -266,6 +280,20 @@ class FreesoundAdapter:
         if not url:
             raise LookupError(f"Freesound sound {rid} exposes no downloadable preview.")
         return self._get_bytes(url)
+
+    def invoke_native(self, path: str, **params):
+        """GET a Freesound APIv2 ``path`` with native ``params``; return the parsed JSON.
+
+        The public escape hatch below foley's translation (#61), e.g.
+        ``invoke_native("/search/", query="rain", filter="ac_brightness:[50 TO 100]")``.
+        It bypasses the licence filter and the per-item licence re-check that
+        :meth:`search` applies: the caller owns licence gating for what it gets back
+        (and the dispatch layer's egress check is not run either).
+
+        Raises:
+            RuntimeError: On a non-200 response (with Freesound's ``detail``).
+        """
+        return self._get_json(self._url(path), params=params or None)
 
     # -- item -> license-checked Candidate ----------------------------------
 
@@ -324,11 +352,13 @@ class FreesoundAdapter:
         preview = _preview_url(item)
         if preview:  # remember it so download(id) needs no extra instance fetch
             self._preview_cache[str(raw_id)] = preview
-        return Candidate(
+        cand = Candidate(
             sound=record,
             origin=CandidateOrigin.retrieved,
             preview_uri=preview,
         )
+        cand.raw = item  # transient (never serialized): the vendor fields foley skips
+        return cand
 
 
 #: Registry convention (arioso): the loader imports ``adapter.Adapter``.

@@ -1509,3 +1509,118 @@ def test_a_quarantined_generations_bytes_are_one_get_away(library, _in_memory_ge
         foley.generations.get("not-a-key")
     assert foley.generations.audio is _in_memory_generations_cache.audio  # test-isolated
 
+
+
+# ---------------------------------------------------------------------------
+# (#61) provider_params, raw, invoke_native
+# ---------------------------------------------------------------------------
+
+
+def test_elevenlabs_provider_params_override_translated_and_are_recorded():
+    transport = FakeTransport()
+    extra = {"prompt_influence": 0.9, "seed_hint": 7, "output_format": "mp3_44100_192"}
+    clip = _el_adapter(transport).generate(
+        "rain", prompt_influence=0.2, provider_params=extra
+    )
+    call = transport.calls[0]
+    assert call.json["prompt_influence"] == 0.9  # the provider param wins
+    assert call.json["seed_hint"] == 7
+    assert call.params["output_format"] == "mp3_44100_192"  # still a query param
+    assert "output_format" not in call.json
+    gp = clip.candidate.sound.license.generation_params
+    assert gp["prompt_influence"] == 0.9 and gp["seed_hint"] == 7
+    assert gp["output_format"] == "mp3_44100_192"
+    assert gp["provider_params"] == extra
+    assert not any("seed_hint" in n for n in clip.notes)  # not an "unknown" drop
+
+
+def test_stable_audio_provider_params_override_translated_and_are_recorded():
+    pipeline = FakePipeline()
+    clip = _sa_adapter(pipeline).generate(
+        "creak", steps=80, provider_params={"num_inference_steps": 50, "eta": 0.1}
+    )
+    assert pipeline.calls[0]["num_inference_steps"] == 50
+    assert pipeline.calls[0]["eta"] == 0.1
+    gp = clip.candidate.sound.license.generation_params
+    assert gp["num_inference_steps"] == 50
+    assert gp["provider_params"] == {"num_inference_steps": 50, "eta": 0.1}
+
+
+def test_generation_params_unchanged_without_provider_params():
+    gp = _sa_adapter().generate("creak").candidate.sound.license.generation_params
+    assert "provider_params" not in gp
+
+
+def test_elevenlabs_clip_raw_is_the_response_metadata():
+    resp = FakeResponse(200, None, _flac(_mono_tone()))
+    resp.headers = {"request-id": "abc", "character-cost": "12"}
+    clip = _el_adapter(FakeTransport(resp)).generate("rain", output_format="mp3")
+    assert clip.raw == {"status_code": 200, "headers": resp.headers}
+
+
+def test_elevenlabs_invoke_native_returns_the_response():
+    transport = FakeTransport()
+    resp = _el_adapter(transport).invoke_native(
+        params={"output_format": "mp3_44100_128"}, body={"text": "rain", "foo": 1}
+    )
+    assert resp.status_code == 200 and resp.content
+    assert transport.calls[0].json == {"text": "rain", "foo": 1}
+
+
+def test_stable_audio_invoke_native_runs_the_pipeline_with_native_kwargs():
+    pipeline = FakePipeline()
+    audio, sr = _sa_adapter(pipeline).invoke_native("creak", native={"guidance_scale": 3.0})
+    assert sr == SR and audio
+    assert pipeline.calls[0]["guidance_scale"] == 3.0
+
+
+def test_request_digest_keys_provider_params_only_when_given():
+    import hashlib
+    import json
+
+    from foley.sources._dispatch import native_request, request_digest
+
+    plain = request_digest("elevenlabs", "rain", EL_CONFIG, {})
+    nd = EL_CONFIG["native_defaults"]
+    legacy = {  # the key's shape before #61: calls without provider_params keep it
+        "v": 2,
+        "backend": "elevenlabs",
+        "model": nd.get("generator_version") or nd.get("model_id"),
+        "prompt": "rain",
+        "native": native_request(EL_CONFIG, {}),
+        "salt": None,
+    }
+    blob = json.dumps(legacy, sort_keys=True, default=str, separators=(",", ":"))
+    assert plain == hashlib.sha256(blob.encode()).hexdigest()
+    assert plain == request_digest("elevenlabs", "rain", EL_CONFIG, {}, provider_params={})
+    a = request_digest("elevenlabs", "rain", EL_CONFIG, {}, provider_params={"x": 1})
+    b = request_digest("elevenlabs", "rain", EL_CONFIG, {}, provider_params={"x": 2})
+    assert len({plain, a, b}) == 3
+
+
+def test_public_generate_threads_provider_params_cache_and_raw(library):
+    resp = FakeResponse(200, None, _flac(_mono_tone()))
+    resp.headers = {"request-id": "abc"}
+    transport = FakeTransport(resp)
+    adapter = _el_adapter(transport)
+
+    def gen(**pp):
+        return _gen(adapter, library, "mp3", provider_params=pp or None)
+
+    first = gen(prompt_influence=0.9)
+    assert transport.calls[0].json["prompt_influence"] == 0.9
+    assert first.raw == {"status_code": 200, "headers": {"request-id": "abc"}}
+    assert first.sound.license.generation_params["provider_params"] == {
+        "prompt_influence": 0.9
+    }
+    assert not any("different request" in n for n in first.notes)  # not a fallback
+    assert _served(gen(prompt_influence=0.9)) and len(transport.calls) == 1
+    gen(prompt_influence=0.8)  # another provider param: a cache miss, a new call
+    assert len(transport.calls) == 2
+    gen()  # none: its own key
+    assert len(transport.calls) == 3
+
+
+def test_public_generate_rejects_non_mapping_provider_params(library):
+    with pytest.raises(TypeError, match="provider_params"):
+        _gen(_el_adapter(), library, provider_params=["x"])

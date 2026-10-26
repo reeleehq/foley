@@ -40,7 +40,14 @@ import os
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Iterator, Optional, Protocol, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    Iterator,
+    Mapping,
+    Optional,
+    Protocol,
+    runtime_checkable,
+)
 
 from ..base import AcquisitionMethod, LicenseRecord
 from ..licensing import apply_license_flags
@@ -50,6 +57,8 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 
 __all__ = [
     "check_prompt_influence",
+    "merge_provider_params",
+    "recorded_params",
     "native_adherence",
     "resolve_source_key",
     "using_source_accounts",
@@ -145,6 +154,68 @@ def native_adherence(
         lo, hi = float(coerce["lo"]), float(coerce["hi"])
         return lo + float(prompt_influence) * (hi - lo)
     raise ValueError(f"{config['name']}: unknown prompt_influence coerce {coerce!r}")
+
+
+def merge_provider_params(
+    native: dict,
+    provider_params: Optional[Mapping] = None,
+    *,
+    append_keys: "tuple[str, ...]" = (),
+    joiner: str = " ",
+) -> dict:
+    """``native`` with the caller's vendor-native ``provider_params`` merged on top (#61).
+
+    The escape hatch for a vendor parameter foley has no unified affordance for (a
+    Freesound ``ac_brightness`` filter, an ElevenLabs body field): it is merged AFTER
+    foley's translation, so a provider param overrides the translated native one of
+    the same name, except a key in ``append_keys``, whose value is appended to
+    foley's (joined with ``joiner``) so a caller can narrow but never replace it
+    (Freesound's licence ``filter``). A pure function: ``native`` is not mutated.
+
+    >>> merge_provider_params({"filter": 'license:"CC0"', "page_size": 15},
+    ...                       {"filter": "ac_brightness:[50 TO 100]", "page_size": 5},
+    ...                       append_keys=("filter",))
+    {'filter': 'license:"CC0" ac_brightness:[50 TO 100]', 'page_size': 5}
+    >>> merge_provider_params({"steps": 8}, None)
+    {'steps': 8}
+    >>> merge_provider_params({}, [("steps", 8)])
+    Traceback (most recent call last):
+    ...
+    TypeError: provider_params must be a mapping of native names to values, got list
+
+    Raises:
+        TypeError: If ``provider_params`` is neither ``None`` nor a mapping.
+    """
+    if provider_params is None:
+        return dict(native)
+    if not isinstance(provider_params, Mapping):
+        raise TypeError(
+            "provider_params must be a mapping of native names to values, got "
+            f"{type(provider_params).__name__}"
+        )
+    out = dict(native)
+    for key, value in provider_params.items():
+        if key in append_keys and out.get(key):
+            out[key] = f"{out[key]}{joiner}{value}"
+        else:
+            out[key] = value
+    return out
+
+
+def recorded_params(sent: dict, provider_params: Optional[Mapping] = None) -> dict:
+    """The ``generation_params`` a generator records: the native params it ``sent``
+    (provider params already merged in), plus a ``provider_params`` entry listing what
+    the caller supplied, when anything was (#61).
+
+    >>> recorded_params({"steps": 50}, {"steps": 50})
+    {'steps': 50, 'provider_params': {'steps': 50}}
+    >>> recorded_params({"steps": 8})
+    {'steps': 8}
+    """
+    out = dict(sent)
+    if provider_params:
+        out["provider_params"] = dict(provider_params)
+    return out
 
 
 def unsupported_notes(
@@ -448,11 +519,17 @@ class GeneratedClip:
             :func:`foley.sources.generate.generate` façade folds these into the
             stored :class:`~foley.index.ingest.IngestResult`\\ 's ``notes`` so they
             surface in the run report.
+        raw: What the provider returned besides the audio (#61), for a caller who needs
+            a vendor field foley does not model (ElevenLabs: the status and response
+            headers; fal: the response minus its audio payload), else ``None``. The
+            façade copies it onto the returned candidate's transient ``raw``; it is
+            not kept in the generations cache, so a replayed clip has none.
     """
 
     audio_bytes: bytes
     candidate: "Candidate"
     notes: list = field(default_factory=list)
+    raw: Optional[dict] = None
 
 
 @runtime_checkable

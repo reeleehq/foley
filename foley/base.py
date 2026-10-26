@@ -487,6 +487,13 @@ class Candidate(SerializableMixin):
     #: ``from_dict`` round trip drop it.
     audio_bytes = None
 
+    #: The provider's own payload for this candidate (#61): the item JSON a retrieve
+    #: source parsed it from (Freesound), or what a generator returned besides the
+    #: audio (see :attr:`foley.sources.base.GeneratedClip.raw`), else ``None``. Like
+    #: ``audio_bytes``, a plain class attribute, NOT a dataclass field: it is never
+    #: serialized, so it never reaches the meta store however large it is.
+    raw = None
+
 
 # ---------------------------------------------------------------------------
 # IntendedUse — the caller's rights intent

@@ -19,7 +19,8 @@ the MCP and agent paths, which call it) and :func:`foley.add_from` go through he
    made if the run's cap would be exceeded or the cost is unknown and not approved.
 4. **Cache** — a paid call is keyed by :func:`request_digest` (backend, model version,
    prompt, the **native** request the affordances resolve to — :func:`native_request`
-   — the adapter's ``request_salt()``, and a fingerprint of the account's key, so the
+   — the caller's untranslated ``provider_params`` (when any), the adapter's
+   ``request_salt()``, and a fingerprint of the account's key, so the
    cache is never shared across keys); an identical request is served from the
    :class:`~foley.stores.GenerationsCache` without calling the provider, and every
    paid response is written there **before** QC or ingest. A response the provider
@@ -46,7 +47,7 @@ from typing import Optional
 from ocracy.kit import UnsupportedParameter, make_translator
 
 from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES
-from .base import check_prompt_influence
+from .base import check_prompt_influence, merge_provider_params
 
 __all__ = [
     "UNSUPPORTED_POLICIES",
@@ -141,7 +142,13 @@ _DIGEST_VERSION = 2
 
 
 def request_digest(
-    backend: str, prompt: str, config: dict, affordances: dict, salt=None
+    backend: str,
+    prompt: str,
+    config: dict,
+    affordances: dict,
+    salt=None,
+    *,
+    provider_params: Optional[dict] = None,
 ) -> str:
     """The cache key of a generation request (canonical JSON, SHA-256).
 
@@ -150,12 +157,28 @@ def request_digest(
     :func:`native_request`; so ``output_format='wav'`` is keyed as the ``pcm_48000``
     actually requested, and a change to a source's translation changes the key), and
     the adapter's ``request_salt()`` (ElevenLabs: the account plan, which decides the
-    licence).
+    licence). The caller's ``provider_params`` (#61) are keyed too, so a different
+    vendor param is a miss; a request without any keeps the key it always had.
     """
-    return _digest(backend, prompt, config, native_request(config, affordances), salt)
+    return _digest(
+        backend,
+        prompt,
+        config,
+        native_request(config, affordances),
+        salt,
+        provider_params=provider_params,
+    )
 
 
-def _digest(backend: str, prompt: str, config: dict, native: dict, salt) -> str:
+def _digest(
+    backend: str,
+    prompt: str,
+    config: dict,
+    native: dict,
+    salt,
+    *,
+    provider_params: Optional[dict] = None,
+) -> str:
     nd = config.get("native_defaults") or {}
     payload = {
         "v": _DIGEST_VERSION,
@@ -165,6 +188,8 @@ def _digest(backend: str, prompt: str, config: dict, native: dict, salt) -> str:
         "native": native,
         "salt": salt,
     }
+    if provider_params:  # only when given, so every existing key is unchanged
+        payload["provider_params"] = dict(provider_params)
     blob = json.dumps(payload, sort_keys=True, default=str, separators=(",", ":"))
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
@@ -275,6 +300,9 @@ class GenerationPlan:
     salt: object = None  # the adapter's request_salt() (part of every key)
     kept_key: Optional[str] = None  # where the response was kept (see run_generation)
     content_key: Optional[str] = None  # the kept bytes' key in cache.audio (#107)
+    provider_params: dict = field(
+        default_factory=dict
+    )  # untranslated vendor params (#61)
 
 
 def plan_generation(
@@ -286,6 +314,7 @@ def plan_generation(
     on_unsupported: Optional[str] = None,
     cache=None,
     reuse_cached: bool = True,
+    provider_params: Optional[dict] = None,
     **affordances,
 ) -> GenerationPlan:
     """Decide a generation call: egress, translation, price, cache lookup, budget.
@@ -300,6 +329,10 @@ def plan_generation(
         on_unsupported: See :func:`translate_affordances`.
         cache: A :class:`~foley.stores.GenerationsCache` (default: the local one).
         reuse_cached: Serve an identical paid request from the cache (default ``True``).
+        provider_params: Vendor-native params foley has no affordance for (#61). Kept
+            out of the translation (the unsupported-parameter policy never sees them)
+            and the cost estimate, handed to the adapter, which merges them over its
+            translated native params, and part of the cache key.
         **affordances: The canonical generation affordances.
 
     Raises:
@@ -325,6 +358,7 @@ def plan_generation(
         affordances=kept,
         notes=notes,
         estimate_usd=estimate_call(config, **kept),
+        provider_params=merge_provider_params({}, provider_params),  # validates
     )
     if _is_paid(config):
         from .base import SourceConfigurationError
@@ -337,7 +371,9 @@ def plan_generation(
             require_source_egress(backend, config)  # offline wins over a missing plan
             raise
         plan.salt = salt
-        plan.request_key = request_digest(backend, prompt, config, kept, salt)
+        plan.request_key = request_digest(
+            backend, prompt, config, kept, salt, provider_params=plan.provider_params
+        )
         if reuse_cached:
             # A paid sound already on this disk needs no egress and no spend.
             cache = cache if cache is not None else _default_cache()
@@ -392,7 +428,10 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
     # plan_generation already reserved the estimate on every budget in force.
     reserved = plan.estimate_usd if plan.request_key is not None else None
     try:
-        clip = adapter.generate(plan.prompt, **plan.affordances)
+        extra = (
+            {"provider_params": plan.provider_params} if plan.provider_params else {}
+        )
+        clip = adapter.generate(plan.prompt, **plan.affordances, **extra)
     except (SourceConfigurationError, EgressBlocked):
         release(reserved)  # refused before any request was sent (incl. offline weights)
         raise
@@ -465,7 +504,9 @@ def _answered_key(plan: GenerationPlan, clip) -> str:
     ``mp3_44100_128``), the response answers that other request, and is keyed as such:
     the request asked is then a miss, and calls the provider again.
     """
-    planned = native_request(plan.config, plan.affordances)
+    planned = merge_provider_params(
+        native_request(plan.config, plan.affordances), plan.provider_params
+    )
     lic = getattr(getattr(clip.candidate, "sound", None), "license", None)
     sent_params = getattr(lic, "generation_params", None) or {}
 
@@ -483,7 +524,14 @@ def _answered_key(plan: GenerationPlan, clip) -> str:
     }
     if sent == planned:
         return plan.request_key
-    return _digest(plan.backend, plan.prompt, plan.config, sent, plan.salt)
+    return _digest(
+        plan.backend,
+        plan.prompt,
+        plan.config,
+        sent,
+        plan.salt,
+        provider_params=plan.provider_params,
+    )
 
 
 def record_generation_outcome(plan: GenerationPlan, status: str, *, cache=None) -> None:
@@ -557,6 +605,7 @@ def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
         "backend": plan.backend,
         "prompt": plan.prompt,
         "affordances": plan.affordances,
+        **({"provider_params": plan.provider_params} if plan.provider_params else {}),
         "license": sound.license.to_dict(),
         "caption": sound.caption,
         "tags": list(sound.tags or []),

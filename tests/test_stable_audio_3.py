@@ -179,3 +179,28 @@ def test_unsupported_notes_are_shared_and_config_driven():
     notes = unsupported_notes(SAO, loop=True, output_format="mp3", bogus=1, none=None)
     assert len(notes) == 3 and "Stable Audio Open" in notes[0]
     assert unsupported_notes(SAO, output_format="wav") == []  # the config's own format
+
+
+def test_provider_params_override_flags_and_add_new_ones(home):
+    """#61: a provider param replaces a translated flag; an unknown one is passed on."""
+    run = FakeRunner()
+    clip = StableAudio3Adapter(runner=run, home=home).generate(
+        "x", seed=7, provider_params={"steps": 12, "seed": 9, "sampler": "dpm"}
+    )
+    cmd = run.calls[0]["cmd"]
+    assert _arg(cmd, "--steps") == "12" and _arg(cmd, "--seed") == "9"
+    assert _arg(cmd, "--sampler") == "dpm"
+    lic = clip.candidate.sound.license
+    assert lic.generation_seed == 9
+    assert lic.generation_params["provider_params"] == {
+        "steps": 12, "seed": 9, "sampler": "dpm"
+    }
+
+
+def test_invoke_native_runs_the_script_with_native_flags(home):
+    run = FakeRunner()
+    audio = StableAudio3Adapter(runner=run, home=home).invoke_native(
+        "x", {"seconds": 2, "steps": 4, "cfg": 1.0, "seed": 3}
+    )
+    assert load(audio)[1] == SR
+    assert _arg(run.calls[0]["cmd"], "--steps") == "4"

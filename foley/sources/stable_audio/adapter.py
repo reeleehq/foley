@@ -39,7 +39,9 @@ from ..base import (
     GeneratedClip,
     SourceConfigurationError,
     generated_license,
+    merge_provider_params,
     native_adherence,
+    recorded_params,
     unsupported_notes,
 )
 from .config import SOURCE_CONFIG
@@ -102,6 +104,7 @@ class StableAudioAdapter:
         seed: Optional[int] = None,
         loop: bool = False,
         output_format: str = "wav",
+        provider_params: Optional[dict] = None,
         **kw,
     ) -> GeneratedClip:
         """Generate a sound for ``prompt``; return its bytes + provisional candidate.
@@ -122,6 +125,9 @@ class StableAudioAdapter:
             loop: No native param (a future WEAVE crossfade) — warn-and-drop.
             output_format: No native param (the audio-write layer) — warn-and-drop;
                 the clip is archived as FLAC by ingest regardless.
+            provider_params: Native ``StableAudioPipeline`` kwargs merged over the
+                translated ones (#61; e.g. ``{"num_inference_steps": 50}``), recorded
+                in ``generation_params``.
             **kw: Extra/unknown affordances (warn-and-dropped).
 
         Returns:
@@ -157,10 +163,14 @@ class StableAudioAdapter:
             "negative_prompt": negative_prompt,
             "num_waveforms_per_prompt": nd["num_waveforms_per_prompt"],
         }
+        native = merge_provider_params(native, provider_params)
 
-        audio_bytes, sample_rate = self._invoke(prompt, native=native, seed=seed)
+        audio_bytes, sample_rate = self.invoke_native(prompt, native=native, seed=seed)
 
-        resolved = dict(native, sample_rate=sample_rate, model_id=nd["model_id"])
+        resolved = recorded_params(
+            dict(native, sample_rate=sample_rate, model_id=nd["model_id"]),
+            provider_params,
+        )
         lic = generated_license(
             source=self.name,
             license_id=self.config["license"]["default_license_id"],
@@ -180,10 +190,13 @@ class StableAudioAdapter:
 
     # -- helpers ------------------------------------------------------------
 
-    def _invoke(self, prompt: str, *, native: dict, seed: Optional[int]):
-        """Run the pipeline and return ``(encoded_bytes, sample_rate)``.
+    def invoke_native(self, prompt: str, *, native: dict, seed: Optional[int] = None):
+        """Run the pipeline with native kwargs and return ``(encoded_bytes, sample_rate)``.
 
-        Builds a per-device ``torch.Generator`` only when ``seed`` is set (so a
+        The public entry below foley's translation (#61): ``native`` goes to the
+        ``StableAudioPipeline`` call as is (``guidance_scale``, ``audio_end_in_s``, …).
+        No licence record is built and no dispatch-layer check runs (cost, egress): a
+        caller of this method owns those. Builds a per-device ``torch.Generator`` only when ``seed`` is set (so a
         ``seed=None`` generation never imports torch — the fake-pipeline test path).
         """
         pipe = self._pipe()

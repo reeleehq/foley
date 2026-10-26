@@ -455,3 +455,22 @@ def test_a_paid_source_keeps_its_narrow_retry_unless_it_sets_its_own():
     assert (
         t("GET", "https://x/a").status_code == 502
     )  # 502 stays unretried for a paid source
+
+
+def test_provider_params_reach_each_keyless_search_and_keep_the_licence_checks():
+    """#61: native params pass through; the per-item licence re-check still applies."""
+    ov, http = _openverse()
+    ids = [c.sound.id for c in ov.search("door", provider_params={"category": "sound_effect"})]
+    assert http.calls[0]["params"]["category"] == "sound_effect"
+    assert ids == ["openverse:a"]  # still CC0 only
+
+    ia, http = _ia()
+    ia.search("door", provider_params={"q": "year:[2000 TO 2010]", "sort[]": "date"})
+    p = http.calls[0]["params"]
+    assert p["q"].startswith("(door) AND mediatype:audio")  # ANDed, never replaced
+    assert p["q"].endswith(" AND year:[2000 TO 2010]") and p["sort[]"] == "date"
+
+    wc, http = _commons()
+    wc.search("door", provider_params={"gsrsort": "create_timestamp_desc"})
+    assert http.calls[0]["params"]["gsrsort"] == "create_timestamp_desc"
+    assert wc.invoke_native(list="search", srsearch="door") is not None

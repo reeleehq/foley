@@ -29,7 +29,13 @@ from typing import Callable, Optional
 import os
 
 from ...base import GENERATION_AFFORDANCES, Candidate, CandidateOrigin, SoundRecord
-from ..base import GeneratedClip, SourceConfigurationError, generated_license
+from ..base import (
+    GeneratedClip,
+    SourceConfigurationError,
+    generated_license,
+    merge_provider_params,
+    recorded_params,
+)
 
 #: The credential name falaw binds a fal key under (``falaw.using_fal_credentials``).
 FAL_CREDENTIAL = "fal"
@@ -191,19 +197,43 @@ class FalAdapter:
             args[duration_name] = float(default_s)
         return args
 
-    def generate(self, prompt: str, **affordances) -> GeneratedClip:
-        """Generate a sound for ``prompt`` on this source's fal endpoint.
+    def invoke_native(self, arguments: dict) -> "tuple[bytes, dict]":
+        """Call this source's fal endpoint with native ``arguments``; return ``(audio, response)``.
 
-        ``affordances`` are the canonical ones the dispatch layer kept (translated,
-        clamped, noted); see :func:`foley.sources._dispatch.plan_generation`.
+        The public entry below foley's translation (#61): ``arguments`` are sent as
+        is (no fixed arguments or default duration are added). No licence record is
+        built and no dispatch-layer gate (cost authorization, egress, the generations
+        cache) runs here: a caller of this method owns them, and pays for the call.
 
         Raises:
             SourceConfigurationError: If no fal key is available (before any call).
         """
-        key = self.api_key  # fail closed BEFORE the paid call
+        return self._runner(
+            self.config["api"]["endpoint_id"],
+            arguments,
+            api_key=self.api_key,
+            audio_field=(self.config.get("output") or {}).get("audio_field", "audio"),
+        )
+
+    def generate(
+        self, prompt: str, *, provider_params: Optional[dict] = None, **affordances
+    ) -> GeneratedClip:
+        """Generate a sound for ``prompt`` on this source's fal endpoint.
+
+        ``affordances`` are the canonical ones the dispatch layer kept (translated,
+        clamped, noted); see :func:`foley.sources._dispatch.plan_generation`.
+        ``provider_params`` (#61) are native endpoint arguments merged over the
+        translated ones and recorded in ``generation_params``. The clip's ``raw`` is
+        the endpoint's response (its audio is a URL, not the bytes).
+
+        Raises:
+            SourceConfigurationError: If no fal key is available (before any call).
+        """
         notes: list = []
         nd = self.config.get("native_defaults") or {}
-        args = self.native_arguments(prompt, **affordances)
+        args = merge_provider_params(
+            self.native_arguments(prompt, **affordances), provider_params
+        )
         if affordances.get("prompt_influence") is not None:
             from ..base import native_adherence
 
@@ -217,12 +247,7 @@ class FalAdapter:
                 f"{nd['duration_default_s']:g} s"
             )
         endpoint = self.config["api"]["endpoint_id"]
-        audio, response = self._runner(
-            endpoint,
-            args,
-            api_key=key,
-            audio_field=(self.config.get("output") or {}).get("audio_field", "audio"),
-        )
+        audio, response = self.invoke_native(args)
         seed_field = nd.get("seed_field")
         seed = (
             response.get(seed_field)
@@ -246,14 +271,21 @@ class FalAdapter:
             generator_version=nd.get("generator_version", endpoint),
             generation_prompt=prompt,
             generation_seed=_as_int(seed),
-            generation_params={**args, "fal_endpoint": endpoint},
+            generation_params=recorded_params(
+                {**args, "fal_endpoint": endpoint}, provider_params
+            ),
             source_url=self.config.get("website"),
             attribution_text=lic_cfg.get("attribution_text"),
         )
         record = SoundRecord(id=f"{self.name}:pending", license=lic, caption=prompt)
         candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
         candidate.cost_actual_usd = _actual_cost(self.config, args)
-        return GeneratedClip(audio_bytes=audio, candidate=candidate, notes=notes)
+        return GeneratedClip(
+            audio_bytes=audio,
+            candidate=candidate,
+            notes=notes,
+            raw=dict(response) if isinstance(response, dict) else None,
+        )
 
 
 def _actual_cost(config: dict, args: dict) -> Optional[float]:

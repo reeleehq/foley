@@ -398,3 +398,36 @@ def test_mcp_generate_refuses_a_noncommercial_backend_for_free(monkeypatch):
 def test_auto_is_accepted_by_generate_and_estimate(monkeypatch):
     monkeypatch.setenv("FOLEY_GENERATE_BACKEND", "fal_sonilo")
     assert foley.estimate("generate", backend="auto", duration=1) == pytest.approx(0.0018)
+
+
+# ---------------------------------------------------------------------------
+# (#61) provider_params, raw, invoke_native
+# ---------------------------------------------------------------------------
+
+
+def test_provider_params_override_native_arguments_and_are_recorded():
+    adapter, runner = _adapter()
+    base = adapter.native_arguments("rain", duration=2.0)
+    name = CONFIGS["fal_stable_audio_3"]["param_map"]["duration"]["native_name"]
+    clip = adapter.generate(
+        "rain", duration=2.0, provider_params={name: 3.0, "sync_mode": True}
+    )
+    sent = runner.calls[0][1]
+    assert sent == {**base, name: 3.0, "sync_mode": True}
+    gp = clip.candidate.sound.license.generation_params
+    assert gp[name] == 3.0 and gp["sync_mode"] is True
+    assert gp["provider_params"] == {name: 3.0, "sync_mode": True}
+
+
+def test_clip_raw_is_the_fal_response():
+    adapter, _ = _adapter()
+    clip = adapter.generate("rain")
+    assert clip.raw["seed"] == 1234 and clip.raw["audio"]["url"].endswith("x.wav")
+
+
+def test_invoke_native_sends_the_arguments_as_is():
+    adapter, runner = _adapter()
+    audio, response = adapter.invoke_native({"prompt": "rain", "steps": 4})
+    endpoint = CONFIGS["fal_stable_audio_3"]["api"]["endpoint_id"]
+    assert runner.calls[0][:3] == (endpoint, {"prompt": "rain", "steps": 4}, "fal-test-key")
+    assert audio and response["seed"] == 1234

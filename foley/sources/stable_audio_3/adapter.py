@@ -33,7 +33,9 @@ from ..base import (
     GeneratedClip,
     SourceConfigurationError,
     generated_license,
+    merge_provider_params,
     native_adherence,
+    recorded_params,
     unsupported_notes,
 )
 from .config import SOURCE_CONFIG
@@ -42,6 +44,9 @@ from .config import SOURCE_CONFIG
 Runner = Callable[..., "tuple[int, str]"]
 
 _SEED_MAX = 2**31 - 1  # the script's own range
+
+#: The native params the script command always carries (see ``_command``).
+_KNOWN_FLAGS = frozenset({"seconds", "steps", "cfg", "seed"})
 
 #: What the script's traceback names when huggingface_hub, forbidden to download
 #: (HF_HUB_OFFLINE=1), finds a weight file missing from the local cache.
@@ -130,6 +135,7 @@ class StableAudio3Adapter:
         seed: Optional[int] = None,
         loop: bool = False,
         output_format: str = "wav",
+        provider_params: Optional[dict] = None,
         **kw,
     ) -> GeneratedClip:
         """Generate a sound for ``prompt`` on the CPU; return its bytes + provisional candidate.
@@ -137,6 +143,9 @@ class StableAudio3Adapter:
         ``duration`` is clamped to the model's 1..120 s (default 10 s); the model renders
         whole latent frames, so the clip may differ from it by a few milliseconds.
         ``seed=None`` draws a random seed, recorded in the clip's provenance.
+        ``provider_params`` (#61) are native script flags merged over the translated
+        ones (``seconds``, ``steps``, ``cfg``, ``seed``; any other key is passed as
+        ``--<key> <value>``) and recorded in ``generation_params``.
         """
         nd = self.config["native_defaults"]
         notes = unsupported_notes(
@@ -162,7 +171,8 @@ class StableAudio3Adapter:
             "cfg": cfg,
             "seed": seed,
         }
-        audio_bytes = self._render(prompt, native)
+        native = merge_provider_params(native, provider_params)
+        audio_bytes = self.invoke_native(prompt, native)
 
         lic = generated_license(
             source=self.name,
@@ -170,8 +180,10 @@ class StableAudio3Adapter:
             generator_model=nd["generator_version"],
             generator_version=nd["generator_version"],
             generation_prompt=prompt,
-            generation_seed=seed,
-            generation_params=dict(native, model_id=nd["model_id"], dit=nd["dit"]),
+            generation_seed=native["seed"],  # a provider seed wins
+            generation_params=recorded_params(
+                dict(native, model_id=nd["model_id"], dit=nd["dit"]), provider_params
+            ),
         )
         record = SoundRecord(id=f"{self.name}:pending", license=lic, caption=prompt)
         candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
@@ -207,10 +219,19 @@ class StableAudio3Adapter:
             "--seed", str(native["seed"]),
             "--out", str(out),
         ]  # fmt: skip
+        for key, value in native.items():  # provider params beyond the known four
+            if key not in _KNOWN_FLAGS:
+                cmd += [f"--{key}", str(value)]
         return cmd
 
-    def _render(self, prompt: str, native: dict) -> bytes:
-        """Run the script into a temp file and return the WAV bytes it wrote."""
+    def invoke_native(self, prompt: str, native: dict) -> bytes:
+        """Run the script with native flags into a temp file; return the WAV bytes it wrote.
+
+        The public entry below foley's translation (#61): ``native`` holds the
+        script's own ``seconds`` / ``steps`` / ``cfg`` / ``seed`` (all required), and
+        any other key becomes a ``--<key> <value>`` flag. No licence record is built
+        and no dispatch-layer check runs (cost, egress): a caller owns those.
+        """
         from ...runtime import EXTERNAL, ModelNotCached, current_runtime
 
         tflite = self._tflite_dir()

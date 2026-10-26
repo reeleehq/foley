@@ -615,3 +615,58 @@ def test_cc_by_3_0_is_admitted_and_get_resolves_a_cc_by_id():
     (cand,) = adapter.search("rain", license="cc-by")
     assert cand.sound.license.license_id == "CC-BY-3.0"
     assert adapter.get("freesound:555").license.license_id == "CC-BY-3.0"
+
+
+# ---------------------------------------------------------------------------
+# (#61) provider_params, raw, invoke_native
+# ---------------------------------------------------------------------------
+
+BRIGHT = "ac_brightness:[50 TO 100]"
+
+
+def test_provider_params_filter_is_appended_and_licence_still_enforced():
+    """Acceptance (#61): a Freesound-only filter passes without editing foley."""
+    page = dict(SEARCH_PAGE, results=[SOUND_12345, _non_cc0_item(
+        "http://creativecommons.org/licenses/by-nc/4.0/")])
+    transport = _transport(search_page=page)
+    cands = _adapter(transport).search(
+        "rain", provider_params={"filter": BRIGHT, "group_by_pack": 1}
+    )
+    sent = transport.calls[0].params
+    assert SOURCE_CONFIG["param_map"]["license"]["to_native"] in sent["filter"]
+    assert BRIGHT in sent["filter"]  # both: the licence filter cannot be replaced
+    assert sent["group_by_pack"] == 1  # any other native param passes through
+    assert [c.sound.id for c in cands] == ["freesound:12345"]  # NC dropped, fail-closed
+
+
+def test_provider_params_must_be_a_mapping():
+    with pytest.raises(TypeError, match="provider_params"):
+        _adapter(_transport()).search("rain", provider_params=[("filter", BRIGHT)])
+
+
+def test_add_from_passes_provider_params_to_search(library):
+    transport = _transport()
+    report = add_from(
+        "freesound",
+        query="rain",
+        library=library,
+        adapter=_adapter(transport),
+        provider_params={"filter": BRIGHT},
+    )
+    assert BRIGHT in transport.calls[0].params["filter"]
+    assert not any("provider_params" in n for n in report.notes)  # not dropped
+    assert report.ingested
+
+
+def test_candidates_carry_the_item_json_as_transient_raw():
+    cand = _adapter(_transport()).search("rain")[0]
+    assert cand.raw == SOUND_12345
+    assert "raw" not in cand.to_dict()  # never serialized into the meta store
+
+
+def test_invoke_native_returns_the_parsed_json():
+    transport = _transport()
+    data = _adapter(transport).invoke_native("/search/text/", query="rain", filter=BRIGHT)
+    assert data == SEARCH_PAGE
+    assert transport.calls[0].params == {"query": "rain", "filter": BRIGHT}
+    assert transport.calls[0].headers["Authorization"].endswith("test-token")
