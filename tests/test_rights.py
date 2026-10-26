@@ -433,3 +433,23 @@ def test_one_intent_cannot_contradict_the_other():
 
     with pytest.raises(ValueError, match="contradicts"):
         intended_use_for(IntendedUse(commercial=True), commercial_ok=False)
+
+
+@pytest.mark.parametrize(
+    "label, expected",
+    [
+        ("Public domain", ("PDM-1.0", False)),
+        ("Public Domain Mark 1.0", ("PDM-1.0", False)),
+        ("http://creativecommons.org/publicdomain/mark/1.0/", ("PDM-1.0", False)),
+        ("Not public domain", ("unknown", False)),
+        ("not in the public domain", ("unknown", False)),
+        ("Public domain in the US only", ("unknown", False)),
+        ("Public domain except in Germany", ("unknown", False)),
+        ("Public domain (restricted)", ("unknown", False)),
+        ("http://creativecommons.org/publicdomain/zero/1.0/", ("CC0-1.0", True)),
+    ],
+)
+def test_a_public_domain_label_that_adds_words_fails_closed(label, expected):
+    from foley.licensing import license_id_from_cc_url
+
+    assert license_id_from_cc_url(label) == expected
