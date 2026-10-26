@@ -175,14 +175,19 @@ def reference_gain_db(
     """
     from .audio import DEFAULT_LOUDNESS_TARGET_LUFS, loudness_gain_db
 
-    gain, _ = loudness_gain_db(
-        clip,
-        sample_rate,
-        target_lufs=DEFAULT_LOUDNESS_TARGET_LUFS
-        if reference_lufs is None
-        else reference_lufs,
-        peak_ceiling_dbfs=peak_ceiling_dbfs,
-        short_peak_dbfs=short_peak_dbfs,
-        max_boost_db=max_boost_db,
-    )
+    try:
+        gain, _ = loudness_gain_db(
+            clip,
+            sample_rate,
+            target_lufs=DEFAULT_LOUDNESS_TARGET_LUFS
+            if reference_lufs is None
+            else reference_lufs,
+            peak_ceiling_dbfs=peak_ceiling_dbfs,
+            short_peak_dbfs=short_peak_dbfs,
+            max_boost_db=max_boost_db,
+        )
+    except (ImportError, ValueError):
+        # The render must not die on one clip the meter cannot read (more than five
+        # channels) or on a missing optional meter: leave that clip's level alone.
+        return 0.0
     return gain

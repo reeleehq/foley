@@ -49,11 +49,9 @@ class MasterReport:
 
 def _measure_lufs(samples: "ndarray", sample_rate: int) -> float:
     """Integrated loudness (LUFS) of ``samples``; ``-inf`` when too short to gate."""
-    import pyloudnorm as pyln
+    from ..audio import integrated_lufs
 
-    if samples.shape[0] < math.ceil(0.4 * sample_rate):
-        return float("-inf")
-    return float(pyln.Meter(sample_rate).integrated_loudness(samples))
+    return integrated_lufs(samples, sample_rate)
 
 
 def _tp(mix: "ndarray", sample_rate: int) -> float:
