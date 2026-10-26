@@ -4,6 +4,8 @@ Hermetic: the process boundary (``runner=``) is a fake that writes the ``--out``
 no checkout, weights or subprocess are needed.
 """
 
+import sys
+
 import pytest
 
 np = pytest.importorskip("numpy")
@@ -145,7 +147,9 @@ def test_the_runtime_is_declared_for_check_requirements(home, monkeypatch):
     assert check_requirements(names=(name,)) == {name: True}
     monkeypatch.setenv("FOLEY_SA3_DIR", str(home / "nowhere"))
     assert check_requirements(names=(name,)) == {name: False}
-    assert "git clone" in verify_and_setup(names=(name,))[name]["install"]
+    install = verify_and_setup(names=(name,))[name]["install"]
+    # the shell hint is POSIX only (.venv/bin); elsewhere it points at the project page
+    assert ("git clone" in install) == sys.platform.startswith(("darwin", "linux"))
 
 
 def test_the_local_default_precedes_stable_audio_open_in_the_order():
