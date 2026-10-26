@@ -22,6 +22,9 @@ from foley.provenance.signing import SIGNING_ALGORITHMS, _callback_for  # noqa: 
 
 SR = 48_000
 
+#: Validation-code prefixes about the signature / signing credential.
+_SIGNER_CODES = ("claimSignature", "signingCredential")
+
 
 def _key_pem(key, fmt=serialization.PrivateFormat.PKCS8) -> str:
     return key.private_bytes(
@@ -124,7 +127,8 @@ def test_the_check_would_catch_a_bad_signature():
     garbage = c2pa.Signer.from_callback(
         lambda data: b"\x01" * 64, c2pa.C2paSigningAlg.ES256, chain, None
     )
-    assert _sign_and_check(garbage, _ca_of(chain)) != []
+    codes = _sign_and_check(garbage, _ca_of(chain))
+    assert any(c.startswith(_SIGNER_CODES) for c in codes)
 
 
 def test_certs_and_key_may_be_bytes():

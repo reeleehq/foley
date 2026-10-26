@@ -213,6 +213,13 @@ def _foley_version() -> str:
         return "unknown"
 
 
+#: C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).
+_C2PA_CREATED = "c2pa.created"
+_C2PA_PLACED = "c2pa.placed"
+_C2PA_COMPONENT_OF = "componentOf"
+_INGREDIENT_ID_PREFIX = "foley:ingredient:"
+
+
 def _as_c2pa_ingredient(credential: dict, *, index: int) -> dict:
     """A per-sound content credential, declared as a C2PA ``componentOf`` ingredient.
 
@@ -226,8 +233,8 @@ def _as_c2pa_ingredient(credential: dict, *, index: int) -> dict:
         **credential,
         "title": manifest["title"],
         "format": manifest["format"],
-        "relationship": "componentOf",
-        "instance_id": f"foley:ingredient:{index}:{credential['asset_ref']}",
+        "relationship": _C2PA_COMPONENT_OF,
+        "instance_id": f"{_INGREDIENT_ID_PREFIX}{index}:{credential['asset_ref']}",
     }
 
 
@@ -254,6 +261,11 @@ def _build_mix_credential(
         try:
             cred = disclosure.build_content_credential(r, asset_id=_ref_of(r))
         except Exception:
+            _log.warning(
+                "no credential for %r; omitted from the mix manifest",
+                _ref_of(r),
+                exc_info=True,
+            )
             continue  # an ingredient without a credential is neither declared nor placed
         ingredients.append(_as_c2pa_ingredient(cred, index=len(ingredients)))
     source_type = (
@@ -261,8 +273,8 @@ def _build_mix_credential(
         if ai_disclosed
         else disclosure.IPTC_DIGITAL_CREATION
     )
-    actions = [{"action": "c2pa.created", "digitalSourceType": source_type}] + [
-        {"action": "c2pa.placed", "parameters": {"ingredientIds": [i["instance_id"]]}}
+    actions = [{"action": _C2PA_CREATED, "digitalSourceType": source_type}] + [
+        {"action": _C2PA_PLACED, "parameters": {"ingredientIds": [i["instance_id"]]}}
         for i in ingredients
     ]
     assertions = [{"label": "c2pa.actions", "data": {"actions": actions}}]
