@@ -118,6 +118,18 @@ caption = [
 freesound = [
     "requests",
 ]
+# Keyless retrieve sources (#79). `requests` is imported lazily inside
+# foley.sources.http.requests_transport ONLY. Deliberately NOT in [tool.wads.ci.install]:
+# their tests inject a fake transport and never touch the network.
+openverse = [
+    "requests",
+]
+wikimedia-commons = [
+    "requests",
+]
+internet-archive = [
+    "requests",
+]
 # Hosted ElevenLabs Sound Effects generator (#6). `requests` is imported lazily
 # inside foley.sources.http.requests_transport ONLY, so the core stays dol-only.
 # Deliberately NOT in [tool.wads.ci.install] — the adapter tests inject a fake
