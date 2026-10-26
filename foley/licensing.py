@@ -170,7 +170,7 @@ _NEUTRAL_TOKENS = frozenset(
         "http", "https", "www", "creativecommons.org", "creativecommons", "org",
         "licenses", "licence", "license", "legalcode", "deed", "deed.en", "en",
         "cc", "creative", "commons", "international", "unported", "generic",
-        "public", "version",
+        "public", "version", "universal", "dedication",
     }
 )  # fmt: skip
 
@@ -182,7 +182,29 @@ _BY_TOKENS = frozenset({"by", "attribution"})
 
 def _cc_tokens(text: str) -> "list[str]":
     """Lower-case word tokens of a CC URL or label (``by-nc/3.0`` → ``by nc 3.0``)."""
-    return re.findall(r"[a-z0-9.+]+", text.lower().replace("creativecommons.org", " "))
+    words = re.findall(r"[a-z0-9.+]+", text.lower().replace("creativecommons.org", " "))
+    return [w for w in (w.strip(".") for w in words) if w]
+
+
+#: A deed-page language suffix (``deed.fr``): the page's language, not a licence term.
+_DEED_LANG_RE = re.compile(r"^deed\.[a-z]{2,3}$")
+
+
+def _without_path_language(url: str, tokens: "list[str]") -> "list[str]":
+    """Drop a trailing language segment of a CC0 / Public Domain Mark URL.
+
+    ``/mark/1.0/es`` and ``/zero/1.0/fr`` are the deed in another language. Only for
+    these unversioned 1.0 families: after a ``by`` version the same segment is a
+    jurisdiction port (``/by/3.0/de``) that changes the terms, so it must fail closed.
+    """
+    if (
+        "/" in url
+        and len(tokens) > 2
+        and tokens[-2] == "1.0"
+        and re.fullmatch(r"[a-z]{2}", tokens[-1])
+    ):
+        return tokens[:-1]
+    return tokens
 
 
 def _has_phrase(tokens: "list[str]", *phrase: str) -> bool:
@@ -232,9 +254,10 @@ def license_id_from_cc_url(url: Optional[str]) -> "tuple[str, bool]":
     ):
         return "unknown", False
     if "publicdomain" in toks or _has_phrase(tokens, "public", "domain"):
-        if "zero" in toks:
+        tokens = _without_path_language(url, tokens)
+        if toks & {"zero", "cc0"}:
             return _only_known(
-                tokens, {"publicdomain", "zero", "public", "domain"}, "CC0-1.0"
+                tokens, {"publicdomain", "zero", "cc0", "public", "domain"}, "CC0-1.0"
             )
         # 'mark' or a bare public-domain claim, never verified. A label that adds a word
         # ("not public domain", "public domain in the US only") negates or limits the
@@ -248,7 +271,9 @@ def license_id_from_cc_url(url: Optional[str]) -> "tuple[str, bool]":
         or _has_phrase(tokens, "creative", "commons", "0")
         or _has_phrase(tokens, "creative", "commons", "zero")
     ):
-        return _only_known(tokens, {"cc0", "0", "zero"}, "CC0-1.0")
+        return _only_known(
+            _without_path_language(url, tokens), {"cc0", "0", "zero"}, "CC0-1.0"
+        )
     if toks & {"sampling", "sampling+"}:
         return _only_known(
             tokens, {"sampling", "sampling+", "plus"}, "CC-Sampling+-1.0"
@@ -280,7 +305,10 @@ def _only_known(
     leftover = [
         t
         for t in tokens
-        if t not in allowed and t not in _NEUTRAL_TOKENS and t not in versions
+        if t not in allowed
+        and t not in _NEUTRAL_TOKENS
+        and t not in versions
+        and not _DEED_LANG_RE.match(t)
     ]
     if leftover or len(set(versions)) > 1:
         return "unknown", False
