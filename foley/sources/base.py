@@ -57,6 +57,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 
 __all__ = [
     "check_prompt_influence",
+    "check_provider_params",
     "merge_provider_params",
     "recorded_params",
     "native_adherence",
@@ -156,26 +157,124 @@ def native_adherence(
     raise ValueError(f"{config['name']}: unknown prompt_influence coerce {coerce!r}")
 
 
+def check_provider_params(
+    provider_params: Optional[Mapping] = None, *, policy: Optional[Mapping] = None
+) -> dict:
+    """``provider_params`` as a plain dict, checked against a source's ``policy`` (#61).
+
+    ``policy`` is the source's ``SOURCE_CONFIG["provider_params"]`` row (see
+    :func:`merge_provider_params`). Every key must be a ``str``; a ``reserved`` key
+    (one that decides what foley screened, recorded or wrote: the prompt, an output
+    path, the model) and a ``priced`` key (one that changes what the call costs, which
+    foley estimated and reserved from its own request) are refused, before anything
+    is sent or paid for.
+
+    >>> check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})
+    {'steps': 8}
+    >>> check_provider_params({"prompt": "x"}, policy={"reserved": ["prompt"]})
+    Traceback (most recent call last):
+    ...
+    ValueError: provider_params['prompt'] is reserved: foley sets it (it decides what is screened, recorded or written); use the unified argument instead
+    >>> check_provider_params({1: "x"})
+    Traceback (most recent call last):
+    ...
+    TypeError: provider_params keys must be str (native parameter names), got int: 1
+
+    Raises:
+        TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.
+        ValueError: If a key is ``reserved`` or ``priced`` by the policy.
+    """
+    if provider_params is None:
+        return {}
+    if not isinstance(provider_params, Mapping):
+        raise TypeError(
+            "provider_params must be a mapping of native names to values, got "
+            f"{type(provider_params).__name__}"
+        )
+    policy = policy or {}
+    reserved = set(policy.get("reserved") or ())
+    priced = set(policy.get("priced") or ())
+    for key in provider_params:
+        if not isinstance(key, str):
+            raise TypeError(
+                "provider_params keys must be str (native parameter names), got "
+                f"{type(key).__name__}: {key!r}"
+            )
+        if key in reserved:
+            raise ValueError(
+                f"provider_params[{key!r}] is reserved: foley sets it (it decides what "
+                "is screened, recorded or written); use the unified argument instead"
+            )
+        if key in priced:
+            raise ValueError(
+                f"provider_params[{key!r}] changes the price of the call, which foley "
+                "estimates and reserves from its own request: use the unified "
+                "argument (e.g. duration=) or the source config instead"
+            )
+    return dict(provider_params)
+
+
+def _append_spec(spec) -> "tuple[str, bool]":
+    """``(joiner, grouped)`` of a policy ``append`` row (a joiner str means grouped)."""
+    if isinstance(spec, str):
+        return spec, True
+    return spec["joiner"], bool(spec.get("group", True))
+
+
+def _check_grouped(key: str, value: str) -> None:
+    """Refuse a value that could escape the ``(...)`` group it is wrapped in.
+
+    Parentheses outside double quotes (a backslash escapes) must balance and never
+    close more than they opened, so ``x) OR (license:*`` cannot widen the clause.
+    """
+    depth, quoted, escaped = 0, False, False
+    for ch in value:
+        if escaped:
+            escaped = False
+        elif ch == "\\":
+            escaped = True
+        elif ch == '"':
+            quoted = not quoted
+        elif not quoted and ch == "(":
+            depth += 1
+        elif not quoted and ch == ")":
+            depth -= 1
+            if depth < 0:
+                break
+    if depth != 0 or quoted or escaped:
+        raise ValueError(
+            f"provider_params[{key!r}] has unbalanced parentheses or quotes: it is "
+            f"appended as one group and may not close it ({value!r})"
+        )
+
+
 def merge_provider_params(
     native: dict,
     provider_params: Optional[Mapping] = None,
     *,
-    append_keys: "tuple[str, ...]" = (),
-    joiner: str = " ",
+    policy: Optional[Mapping] = None,
 ) -> dict:
     """``native`` with the caller's vendor-native ``provider_params`` merged on top (#61).
 
     The escape hatch for a vendor parameter foley has no unified affordance for (a
     Freesound ``ac_brightness`` filter, an ElevenLabs body field): it is merged AFTER
     foley's translation, so a provider param overrides the translated native one of
-    the same name, except a key in ``append_keys``, whose value is appended to
-    foley's (joined with ``joiner``) so a caller can narrow but never replace it
-    (Freesound's licence ``filter``). A pure function: ``native`` is not mutated.
+    the same name. ``policy`` is the source's ``SOURCE_CONFIG["provider_params"]``
+    row, the one place a source says what a caller may not do:
 
+    * ``append`` — ``{key: joiner}``: the caller's value is appended to foley's as
+      ``{joiner}({value})`` (so an ``OR`` inside it cannot widen foley's clause; a
+      value that would close the group is refused), never replacing it; ``None`` or
+      an empty value is skipped. ``{key: {"joiner": ",", "group": False}}`` appends a
+      list item instead (Freesound's ``fields``).
+    * ``reserved`` / ``priced`` — keys refused (see :func:`check_provider_params`).
+
+    A pure function: ``native`` is not mutated.
+
+    >>> policy = {"append": {"filter": " "}}
     >>> merge_provider_params({"filter": 'license:"CC0"', "page_size": 15},
-    ...                       {"filter": "ac_brightness:[50 TO 100]", "page_size": 5},
-    ...                       append_keys=("filter",))
-    {'filter': 'license:"CC0" ac_brightness:[50 TO 100]', 'page_size': 5}
+    ...                       {"filter": "a:1 OR b:2", "page_size": 5}, policy=policy)
+    {'filter': 'license:"CC0" (a:1 OR b:2)', 'page_size': 5}
     >>> merge_provider_params({"steps": 8}, None)
     {'steps': 8}
     >>> merge_provider_params({}, [("steps", 8)])
@@ -184,21 +283,26 @@ def merge_provider_params(
     TypeError: provider_params must be a mapping of native names to values, got list
 
     Raises:
-        TypeError: If ``provider_params`` is neither ``None`` nor a mapping.
+        TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.
+        ValueError: For a reserved or priced key, or an appended value that would
+            escape its group.
     """
-    if provider_params is None:
-        return dict(native)
-    if not isinstance(provider_params, Mapping):
-        raise TypeError(
-            "provider_params must be a mapping of native names to values, got "
-            f"{type(provider_params).__name__}"
-        )
+    extra = check_provider_params(provider_params, policy=policy)
+    append = (policy or {}).get("append") or {}
     out = dict(native)
-    for key, value in provider_params.items():
-        if key in append_keys and out.get(key):
-            out[key] = f"{out[key]}{joiner}{value}"
-        else:
+    for key, value in extra.items():
+        if key not in append:
             out[key] = value
+            continue
+        if value is None or not str(value).strip():
+            continue  # nothing to append
+        joiner, grouped = _append_spec(append[key])
+        value = str(value)
+        if grouped:
+            _check_grouped(key, value)
+            value = f"({value})"
+        base = out.get(key)
+        out[key] = value if base in (None, "") else f"{base}{joiner}{value}"
     return out
 
 

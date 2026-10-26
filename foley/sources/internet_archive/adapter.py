@@ -76,7 +76,8 @@ class InternetArchiveAdapter:
         ``license='cc0'`` keeps CC0 items only; any other value keeps every accepted
         licence. The query always asks for items with a ``licenseurl``.
         ``provider_params`` are native advancedsearch params merged over the
-        translated ones (#61); a ``q`` is ANDed onto foley's, never replaces it.
+        translated ones (#61); a ``q`` is ANDed onto foley's as one group, never
+        replaces it (the config's ``provider_params`` policy).
         """
         api = self.config["api"]
         params = {
@@ -86,7 +87,7 @@ class InternetArchiveAdapter:
             "output": "json",
         }
         params = merge_provider_params(
-            params, provider_params, append_keys=("q",), joiner=" AND "
+            params, provider_params, policy=self.config.get("provider_params")
         )
         docs = (
             self.invoke_native(api["search_url"], **params).get("response") or {}

@@ -407,16 +407,46 @@ def test_auto_is_accepted_by_generate_and_estimate(monkeypatch):
 
 def test_provider_params_override_native_arguments_and_are_recorded():
     adapter, runner = _adapter()
-    base = adapter.native_arguments("rain", duration=2.0)
-    name = CONFIGS["fal_stable_audio_3"]["param_map"]["duration"]["native_name"]
-    clip = adapter.generate(
-        "rain", duration=2.0, provider_params={name: 3.0, "sync_mode": True}
-    )
+    base = adapter.native_arguments("rain", duration=2.0, steps=8)
+    extra = {"num_inference_steps": 4, "sync_mode": True}
+    clip = adapter.generate("rain", duration=2.0, steps=8, provider_params=extra)
     sent = runner.calls[0][1]
-    assert sent == {**base, name: 3.0, "sync_mode": True}
+    assert base["num_inference_steps"] == 8 and sent == {**base, **extra}
     gp = clip.candidate.sound.license.generation_params
-    assert gp[name] == 3.0 and gp["sync_mode"] is True
-    assert gp["provider_params"] == {name: 3.0, "sync_mode": True}
+    assert gp["num_inference_steps"] == 4 and gp["sync_mode"] is True
+    assert gp["provider_params"] == extra
+    assert clip.candidate.sound.license.generation_seed == 1234  # the response's seed
+
+
+@pytest.mark.parametrize("name", ["fal_mirelo", "fal_elevenlabs", "fal_mmaudio"])
+def test_a_provider_duration_cannot_under_reserve_the_budget(name):
+    """A per-second fal source is priced from foley's duration: a provider one raises."""
+    from foley.agent.policy import Budget
+    from foley.cost import spend_scope
+
+    config = CONFIGS[name]
+    assert config["pricing"]["unit"] == "per_second"
+    duration = config["param_map"]["duration"]["native_name"]
+    adapter, runner = _adapter(name)
+    budget = Budget(max_usd=1.0)
+    with spend_scope(budget):
+        with pytest.raises(ValueError, match="price"):
+            foley.generate(
+                "rain", backend=name, adapter=adapter, duration=1,
+                provider_params={duration: config["native_defaults"]["duration_max_s"]},
+            )
+    assert runner.calls == [] and budget.spent_usd == 0.0
+    with pytest.raises(ValueError, match="price"):  # the adapter's own entry too
+        adapter.generate("rain", provider_params={duration: 600})
+    assert runner.calls == []
+
+
+@pytest.mark.parametrize("key", ["prompt", "enable_prompt_expansion", "num_samples"])
+def test_reserved_fal_arguments_raise(key):
+    adapter, runner = _adapter()
+    with pytest.raises(ValueError, match=f"provider_params\\[{key!r}\\] is reserved"):
+        adapter.generate("rain", provider_params={key: "x"})
+    assert runner.calls == []
 
 
 def test_clip_raw_is_the_fal_response():

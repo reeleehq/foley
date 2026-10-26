@@ -132,6 +132,13 @@ SOURCE_CONFIG = {
     # (fal_elevenlabs), with the plan's licence instead of an unverified one, which is
     # why it comes first in foley.sources.generate.DEFAULT_GENERATE_ORDER. With the
     # duration left to the model, the estimate is the 30 s maximum (an upper bound).
+    # What a caller's ``provider_params`` (#61) may not do: the prompt is what foley
+    # screened and records; duration and model decide the price foley reserved.
+    "provider_params": {
+        "append": {},
+        "reserved": ["text"],
+        "priced": ["duration_seconds", "model_id"],
+    },
     "pricing": {
         "unit": "per_second",
         "amount_usd": 0.002,

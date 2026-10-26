@@ -232,7 +232,9 @@ class FalAdapter:
         notes: list = []
         nd = self.config.get("native_defaults") or {}
         args = merge_provider_params(
-            self.native_arguments(prompt, **affordances), provider_params
+            self.native_arguments(prompt, **affordances),
+            provider_params,
+            policy=self.config.get("provider_params"),
         )
         if affordances.get("prompt_influence") is not None:
             from ..base import native_adherence

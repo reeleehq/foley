@@ -197,6 +197,35 @@ def test_provider_params_override_flags_and_add_new_ones(home):
     }
 
 
+@pytest.mark.parametrize("key", ["out", "prompt", "dit", "decoder", "model"])
+def test_reserved_script_flags_raise(home, key):
+    run = FakeRunner()
+    with pytest.raises(ValueError, match=f"provider_params\\[{key!r}\\] is reserved"):
+        StableAudio3Adapter(runner=run, home=home).generate(
+            "x", provider_params={key: "/tmp/elsewhere.wav"}
+        )
+    assert run.calls == []
+
+
+def test_foley_flags_come_last_so_an_abbreviation_cannot_override_them(home):
+    run = FakeRunner()
+    StableAudio3Adapter(runner=run, home=home).generate(
+        "x", provider_params={"ou": "/tmp/elsewhere.wav", "di": "lg"}
+    )
+    cmd = run.calls[0]["cmd"]
+    assert cmd.index("--ou") < cmd.index("--out") and cmd.index("--di") < cmd.index("--dit")
+    assert _arg(cmd, "--out") != "/tmp/elsewhere.wav"  # argparse keeps the last
+
+
+def test_the_recorded_seed_is_the_seed_sent(home):
+    run = FakeRunner()
+    clip = StableAudio3Adapter(runner=run, home=home).generate(
+        "x", seed=7, provider_params={"seed": 9.0}
+    )
+    assert _arg(run.calls[0]["cmd"], "--seed") == "9"
+    assert clip.candidate.sound.license.generation_seed == 9
+
+
 def test_invoke_native_runs_the_script_with_native_flags(home):
     run = FakeRunner()
     audio = StableAudio3Adapter(runner=run, home=home).invoke_native(

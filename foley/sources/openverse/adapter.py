@@ -93,7 +93,9 @@ class OpenverseAdapter:
         ]
         if excluded:
             params["excluded_source"] = ",".join(excluded)
-        params = merge_provider_params(params, provider_params)
+        params = merge_provider_params(
+            params, provider_params, policy=self.config.get("provider_params")
+        )
         wanted = self.config["license"]["cc0_license_ids"] if license == "cc0" else None
         out = []
         for row in self.invoke_native(api["search_endpoint"]["path"], **params).get(

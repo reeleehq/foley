@@ -352,7 +352,9 @@ class ElevenLabsAdapter:
             body["prompt_influence"] = native_influence
         if duration is not None:
             body["duration_seconds"] = self._clamp_duration(duration)
-        body = merge_provider_params(body, provider_params)
+        body = merge_provider_params(
+            body, provider_params, policy=self.config.get("provider_params")
+        )
         native_output_format = body.pop("output_format", native_output_format)
 
         resp, native_output_format = self._invoke_with_fallback(

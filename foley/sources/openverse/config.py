@@ -64,6 +64,13 @@ SOURCE_CONFIG = {
         ],
         "cc0_license_ids": ["CC0-1.0"],
     },
+    # What a caller's ``provider_params`` (#61) may not do: the query and licence
+    # filter are foley's; ``excluded_source`` (Freesound's terms) can only grow.
+    "provider_params": {
+        "append": {"excluded_source": {"joiner": ",", "group": False}},
+        "reserved": ["q", "license"],
+        "priced": [],
+    },
     "pricing": {
         "unit": "free",
         "amount_usd": 0.0,

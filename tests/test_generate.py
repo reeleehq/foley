@@ -1624,3 +1624,88 @@ def test_public_generate_threads_provider_params_cache_and_raw(library):
 def test_public_generate_rejects_non_mapping_provider_params(library):
     with pytest.raises(TypeError, match="provider_params"):
         _gen(_el_adapter(), library, provider_params=["x"])
+
+
+@pytest.mark.parametrize("key", ["duration_seconds", "model_id"])
+def test_a_provider_duration_or_model_cannot_under_reserve_the_budget(library, key):
+    """ElevenLabs is priced per second from foley's duration: a provider one raises
+    before the reservation, so the budget can never be charged less than the call."""
+    from foley.agent.policy import Budget
+
+    transport = FakeTransport()
+    budget = Budget(max_usd=1.0)
+    with pytest.raises(ValueError, match="price"):
+        _gen(_el_adapter(transport), library, provider_params={key: 30}, budget=budget)
+    assert transport.calls == [] and budget.spent_usd == 0.0
+
+
+def test_reserved_generator_keys_raise_before_any_call(library):
+    transport = FakeTransport()
+    with pytest.raises(ValueError, match="provider_params\\['text'\\] is reserved"):
+        _gen(_el_adapter(transport), library, provider_params={"text": "a gunshot"})
+    assert transport.calls == []
+    pipeline = FakePipeline()
+    for key in ("prompt", "prompt_embeds", "seed", "latents", "output_type"):
+        with pytest.raises(ValueError, match=f"provider_params\\[{key!r}\\] is reserved"):
+            _sa_adapter(pipeline).generate("creak", provider_params={key: 1})
+    assert pipeline.calls == []
+
+
+def test_provider_params_keys_must_be_str(library):
+    transport = FakeTransport()
+    with pytest.raises(TypeError, match="keys must be str"):
+        _gen(_el_adapter(transport), library, provider_params={("a",): 1})
+    assert transport.calls == []
+
+
+def test_a_multi_backend_generate_takes_provider_params_per_backend():
+    from foley.sources.generate import provider_params_by_backend
+
+    for backend in (None, "auto", ["elevenlabs", "stable_audio"]):
+        with pytest.raises(ValueError, match="per backend"):
+            foley.generate("rain", backend=backend, provider_params={"steps": 8})
+    order = ("elevenlabs", "stable_audio")
+    nested = {"stable_audio": {"num_inference_steps": 50}, "elevenlabs": {"loop": True}}
+    assert provider_params_by_backend(nested, order, per_backend=True) == nested
+    with pytest.raises(ValueError, match="only for backends in the order"):
+        provider_params_by_backend({"fal_mirelo": {}}, order, per_backend=True)
+    with pytest.raises(ValueError, match="reserved"):  # each backend's own policy
+        provider_params_by_backend(
+            {"stable_audio": {"prompt": "x"}}, order, per_backend=True
+        )
+
+
+def test_each_backend_tried_gets_only_its_own_provider_params(monkeypatch):
+    import importlib
+
+    generate_module = importlib.import_module("foley.sources.generate")
+    seen = []
+
+    def fake_generate(prompt, *, backend, provider_params=None, **kw):
+        seen.append((backend, provider_params))
+        raise SourceConfigurationError(f"{backend}: not configured")
+
+    monkeypatch.setattr(generate_module, "generate", fake_generate)
+    monkeypatch.setattr(generate_module, "backend_has_key", lambda name: True)
+    monkeypatch.setattr(generate_module, "generation_rights_refusal", lambda *a: None)
+    with pytest.raises(SourceConfigurationError):
+        generate_module.generate_in_order(
+            "rain",
+            ("elevenlabs", "stable_audio"),
+            provider_params={"stable_audio": {"num_inference_steps": 50}},
+        )
+    assert seen == [("elevenlabs", None), ("stable_audio", {"num_inference_steps": 50})]
+
+
+def test_a_fallback_with_provider_params_is_keyed_so_it_can_be_served(library):
+    """The fallback MP3 is keyed as the native request that asks for it, with the
+    provider params beside it: asking for that request is a cache hit."""
+    transport = _PcmByPlan(pcm_allowed=False)
+    adapter = _el_adapter(transport)
+    pp = {"prompt_influence": 0.9}
+    first = _gen(adapter, library, provider_params=pp)  # wav -> refused -> mp3
+    assert any("different request than the one asked" in n for n in first.notes)
+    assert _formats(transport) == ["pcm_48000", "mp3_44100_128"]
+    mp3 = _gen(adapter, library, "mp3", provider_params=pp)
+    assert _served(mp3) and len(transport.calls) == 2
+    assert not _served(_gen(adapter, library, "mp3", provider_params={"prompt_influence": 0.5}))

@@ -48,11 +48,6 @@ _PREVIEW_KEYS = (
 )
 
 
-#: Native params a caller's ``provider_params`` are appended to, never replace (the
-#: Solr ``filter`` carries the licence filter).
-_APPENDED_PARAMS = ("filter",)
-
-
 def _raw_id(source_id: str) -> str:
     """Strip the ``freesound:`` namespace prefix (accept either id form)."""
     s = str(source_id)
@@ -182,9 +177,11 @@ class FreesoundAdapter:
                 Taxonomy ``category`` pre-filter (no filter if it is not recognised).
             provider_params: Native Freesound search params foley has no affordance
                 for, merged over the translated ones (#61), e.g.
-                ``{"filter": "ac_brightness:[50 TO 100]"}``. A ``filter`` is appended
-                to foley's (the licence filter cannot be replaced), and the per-item
-                licence re-check still applies.
+                ``{"filter": "ac_brightness:[50 TO 100]"}``. Per the config's
+                ``provider_params`` policy, a ``filter`` is appended to foley's as one
+                group (the licence filter cannot be replaced or widened), ``fields`` are
+                appended to foley's (the licence fields cannot be dropped), and
+                ``query`` is refused; the per-item licence re-check still applies.
             **kw: Ignored extra affordances (``on_unsupported_param='warn'``).
 
         Returns:
@@ -226,7 +223,7 @@ class FreesoundAdapter:
             native = self.config["param_map"]["similar_to"]["native_name"]
             params[native] = _raw_id(similar_to)
         params = merge_provider_params(
-            params, provider_params, append_keys=_APPENDED_PARAMS
+            params, provider_params, policy=self.config.get("provider_params")
         )
 
         data = self.invoke_native(

@@ -45,9 +45,6 @@ Runner = Callable[..., "tuple[int, str]"]
 
 _SEED_MAX = 2**31 - 1  # the script's own range
 
-#: The native params the script command always carries (see ``_command``).
-_KNOWN_FLAGS = frozenset({"seconds", "steps", "cfg", "seed"})
-
 #: What the script's traceback names when huggingface_hub, forbidden to download
 #: (HF_HUB_OFFLINE=1), finds a weight file missing from the local cache.
 _WEIGHTS_MISSING = ("LocalEntryNotFoundError", "FileNotFoundError")
@@ -145,7 +142,8 @@ class StableAudio3Adapter:
         ``seed=None`` draws a random seed, recorded in the clip's provenance.
         ``provider_params`` (#61) are native script flags merged over the translated
         ones (``seconds``, ``steps``, ``cfg``, ``seed``; any other key is passed as
-        ``--<key> <value>``) and recorded in ``generation_params``.
+        ``--<key> <value>``) and recorded in ``generation_params``; the config's
+        ``provider_params`` policy refuses the prompt, output path and model flags.
         """
         nd = self.config["native_defaults"]
         notes = unsupported_notes(
@@ -171,7 +169,10 @@ class StableAudio3Adapter:
             "cfg": cfg,
             "seed": seed,
         }
-        native = merge_provider_params(native, provider_params)
+        native = merge_provider_params(
+            native, provider_params, policy=self.config.get("provider_params")
+        )
+        native["seed"] = int(native["seed"])  # what is sent is what is recorded
         audio_bytes = self.invoke_native(prompt, native)
 
         lic = generated_license(
@@ -180,7 +181,7 @@ class StableAudio3Adapter:
             generator_model=nd["generator_version"],
             generator_version=nd["generator_version"],
             generation_prompt=prompt,
-            generation_seed=native["seed"],  # a provider seed wins
+            generation_seed=native["seed"],  # the seed sent (a provider seed wins)
             generation_params=recorded_params(
                 dict(native, model_id=nd["model_id"], dit=nd["dit"]), provider_params
             ),
@@ -207,30 +208,27 @@ class StableAudio3Adapter:
         self, tflite: Path, prompt: str, native: dict, out: Path
     ) -> "list[str]":
         nd = self.config["native_defaults"]
-        cmd = [
-            str(_venv_python(tflite)),
-            str(tflite / "scripts" / "sa3_tflite.py"),
+        cmd = [str(_venv_python(tflite)), str(tflite / "scripts" / "sa3_tflite.py")]
+        for key, value in native.items():  # seconds/steps/cfg/seed + provider flags
+            cmd += [f"--{key}", str(value)]
+        # foley's own flags come last: argparse keeps the last value, so no native
+        # key (not even an abbreviation such as ``--ou``) can override them.
+        cmd += [
             "--dit", nd["dit"],
             "--decoder", nd["decoder"],
             f"--prompt={prompt}",  # '=' form: a prompt starting with '-' is not a flag
-            "--seconds", str(native["seconds"]),
-            "--steps", str(native["steps"]),
-            "--cfg", str(native["cfg"]),
-            "--seed", str(native["seed"]),
             "--out", str(out),
         ]  # fmt: skip
-        for key, value in native.items():  # provider params beyond the known four
-            if key not in _KNOWN_FLAGS:
-                cmd += [f"--{key}", str(value)]
         return cmd
 
     def invoke_native(self, prompt: str, native: dict) -> bytes:
         """Run the script with native flags into a temp file; return the WAV bytes it wrote.
 
-        The public entry below foley's translation (#61): ``native`` holds the
-        script's own ``seconds`` / ``steps`` / ``cfg`` / ``seed`` (all required), and
-        any other key becomes a ``--<key> <value>`` flag. No licence record is built
-        and no dispatch-layer check runs (cost, egress): a caller owns those.
+        The public entry below foley's translation (#61): each ``native`` key (the
+        script's ``seconds`` / ``steps`` / ``cfg`` / ``seed``, or any other flag) becomes
+        a ``--<key> <value>`` flag, followed by foley's own ``--dit`` / ``--decoder`` /
+        ``--prompt`` / ``--out``. No licence record is built and no dispatch-layer check
+        runs (cost, egress): a caller owns those.
         """
         from ...runtime import EXTERNAL, ModelNotCached, current_runtime
 

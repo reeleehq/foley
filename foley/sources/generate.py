@@ -389,7 +389,9 @@ def _generate(
             (#61), e.g. ``{"num_inference_steps": 50}``. Merged by the backend over
             its translated native params (a provider param wins), recorded in the
             licence's ``generation_params``, and part of the generations-cache key;
-            never seen by the unsupported-parameter policy or the cost estimate.
+            never seen by the unsupported-parameter policy. A key the source's
+            ``provider_params`` policy reserves or prices raises ``ValueError``
+            before any call, so the cost estimate is the call's.
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`foley.base.GENERATION_AFFORDANCES`).
@@ -659,12 +661,83 @@ def estimate_order(backend=None, **affordances) -> Optional[float]:
     return max(prices)
 
 
+def provider_params_by_backend(
+    provider_params, order, *, per_backend: bool
+) -> "dict[str, dict]":
+    """Each backend of ``order``'s own ``provider_params`` (#61), checked up front.
+
+    Native params belong to one vendor, so a generation that may try more than one
+    backend (``per_backend``: ``backend`` unnamed, ``'auto'`` or a list) takes them as
+    ``{backend_name: {native_name: value}}`` and hands each backend only its own; a
+    flat dict there raises rather than send one vendor's params to another. A single
+    named backend takes the flat dict. Each backend's params are checked against its
+    config's ``provider_params`` policy here, before any backend is called.
+
+    >>> provider_params_by_backend({"steps": 8}, ("x",), per_backend=False)
+    {'x': {'steps': 8}}
+    >>> provider_params_by_backend({"steps": 8}, ("x", "y"), per_backend=True)
+    Traceback (most recent call last):
+    ...
+    ValueError: provider_params for a generation that may try several backend(s) ('x', 'y') must be given per backend, as {backend_name: {native_name: value}} (or name one backend=); got a flat dict with key(s) ['steps']
+
+    Raises:
+        TypeError: If ``provider_params`` (or a backend's entry) is not a mapping, or
+            a key is not a ``str``.
+        ValueError: For a flat dict where a per-backend one is needed, a backend not
+            in ``order``, or a key the backend's policy refuses.
+    """
+    from collections.abc import Mapping
+
+    from .base import check_provider_params
+    from .registry import SOURCE_REGISTRY, discover_sources
+
+    if provider_params is None:
+        return {}
+    if not isinstance(provider_params, Mapping):
+        raise TypeError(
+            "provider_params must be a mapping, got "
+            f"{type(provider_params).__name__}"
+        )
+    order = tuple(order)
+    if not per_backend:
+        (name,) = order
+        by_backend = {name: provider_params}
+    else:
+        flat = [
+            k
+            for k, v in provider_params.items()
+            if not isinstance(k, str) or not isinstance(v, Mapping) or k not in order
+        ]
+        if flat:
+            if all(isinstance(v, Mapping) for v in provider_params.values()):
+                raise ValueError(
+                    f"provider_params names {flat} but the generation order is "
+                    f"{order}: give params only for backends in the order"
+                )
+            raise ValueError(
+                "provider_params for a generation that may try several backend(s) "
+                f"{order} must be given per backend, as "
+                "{backend_name: {native_name: value}} (or name one backend=); got a "
+                f"flat dict with key(s) {flat}"
+            )
+        by_backend = dict(provider_params)
+    discover_sources()
+    out = {}
+    for name, params in by_backend.items():
+        config = (SOURCE_REGISTRY.get(name) or {}).get("config") or {}
+        out[name] = check_provider_params(
+            params, policy=config.get("provider_params")
+        )
+    return out
+
+
 def generate_in_order(
     prompt: str,
     order,
     *,
     paid_ok: bool = True,
     intended_use=None,
+    provider_params: "Optional[dict]" = None,
     **kwargs,
 ) -> "tuple[IngestReport, str, list]":
     """Run :func:`generate` through ``order`` until a backend produces a result.
@@ -697,6 +770,8 @@ def generate_in_order(
             :data:`foley.licensing.DEFAULT_INTENDED_USE` (commercial); a single
             backend is judged only when a use is passed (else used as asked, its
             licence gated downstream as before).
+        provider_params: Per backend, ``{backend_name: {native_name: value}}`` (see
+            :func:`provider_params_by_backend`): each backend tried gets only its own.
         **kwargs: Everything else :func:`generate` takes (affordances included).
 
     Returns:
@@ -721,7 +796,13 @@ def generate_in_order(
             refusal = generation_rights_refusal(order[0], intended_use)
             if refusal is not None:
                 raise SourceConfigurationError(refusal)
-        return generate(prompt, backend=order[0], **kwargs), order[0], []
+        report = generate(
+            prompt,
+            backend=order[0],
+            provider_params=(provider_params or {}).get(order[0]),
+            **kwargs,
+        )
+        return report, order[0], []
 
     discover_sources()
     use = intended_use_for(intended_use)
@@ -747,7 +828,12 @@ def generate_in_order(
             skipped.append(f"{name}: no key set")
             continue
         try:
-            report = generate(prompt, backend=name, **kwargs)
+            report = generate(
+                prompt,
+                backend=name,
+                provider_params=(provider_params or {}).get(name),
+                **kwargs,
+            )
         except skippable as exc:
             if last:
                 exc.skipped_backends = skipped

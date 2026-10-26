@@ -111,7 +111,9 @@ class WikimediaCommonsAdapter:
             prop="imageinfo",
             iiprop=_IMAGEINFO,
         )
-        data = self.invoke_native(**merge_provider_params(params, provider_params))
+        data = self.invoke_native(
+            **merge_provider_params(params, provider_params, policy=self.config.get("provider_params"))
+        )
         pages = sorted(
             ((data.get("query") or {}).get("pages") or {}).values(),
             key=lambda p: p.get("index", 0),  # the search rank

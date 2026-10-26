@@ -59,6 +59,14 @@ SOURCE_CONFIG = {
             "PDM-1.0",
         ],
     },
+    # What a caller's ``provider_params`` (#61) may not do: ``q`` (the query and the
+    # licensed clause) is ANDed onto as one group; the fields and output the
+    # licence check parses are foley's.
+    "provider_params": {
+        "append": {"q": " AND "},
+        "reserved": ["fl[]", "output"],
+        "priced": [],
+    },
     "pricing": {
         "unit": "free",
         "amount_usd": 0.0,

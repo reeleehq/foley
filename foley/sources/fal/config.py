@@ -361,5 +361,27 @@ _MEDIUM = SOURCE_CONFIGS[1]
 _MEDIUM["param_map"] = copy.deepcopy(_SMALL["param_map"])
 _MEDIUM["supported_affordances"] = list(_SMALL["supported_affordances"])
 
+#: What a caller's ``provider_params`` (#61) may not do on any fal endpoint: switch on
+#: prompt expansion (it rewrites the prompt foley screened and records), switch off the
+#: safety checker, or ask for more samples (billed per sample).
+_FAL_RESERVED = ("enable_prompt_expansion", "enable_safety_checker", "num_samples")
+
+for _config in SOURCE_CONFIGS:
+    # One policy row per source (see foley.sources.base.merge_provider_params): the
+    # prompt field and the fixed arguments are foley's; the duration field decides the
+    # price foley estimated and reserved.
+    _pm = _config["param_map"]
+    _config["provider_params"] = {
+        "append": {},
+        "reserved": sorted(
+            {
+                _pm["prompt"]["native_name"],
+                *_FAL_RESERVED,
+                *(_config["native_defaults"].get("fixed_arguments") or {}),
+            }
+        ),
+        "priced": [(_pm.get("duration") or {}).get("native_name") or "duration"],
+    }
+
 #: The fal source names, in the order above (the first is the recommended one).
 FAL_SOURCES = tuple(c["name"] for c in SOURCE_CONFIGS)

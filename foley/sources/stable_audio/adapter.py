@@ -163,7 +163,9 @@ class StableAudioAdapter:
             "negative_prompt": negative_prompt,
             "num_waveforms_per_prompt": nd["num_waveforms_per_prompt"],
         }
-        native = merge_provider_params(native, provider_params)
+        native = merge_provider_params(
+            native, provider_params, policy=self.config.get("provider_params")
+        )
 
         audio_bytes, sample_rate = self.invoke_native(prompt, native=native, seed=seed)
 

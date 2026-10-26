@@ -653,9 +653,53 @@ def test_add_from_passes_provider_params_to_search(library):
         adapter=_adapter(transport),
         provider_params={"filter": BRIGHT},
     )
-    assert BRIGHT in transport.calls[0].params["filter"]
-    assert not any("provider_params" in n for n in report.notes)  # not dropped
+    licence = SOURCE_CONFIG["param_map"]["license"]["to_native"]
+    assert transport.calls[0].params["filter"] == f"{licence} ({BRIGHT})"
     assert report.ingested
+
+
+def test_an_or_in_the_filter_stays_inside_the_and_clause():
+    transport = _transport()
+    _adapter(transport).search(
+        "rain", provider_params={"filter": 'tag:x OR license:"Attribution NonCommercial"'}
+    )
+    licence = SOURCE_CONFIG["param_map"]["license"]["to_native"]
+    assert transport.calls[0].params["filter"] == (
+        f'{licence} (tag:x OR license:"Attribution NonCommercial")'
+    )
+    for escape in ("x) OR (license:*", 'x ")" ) OR (license:*', "x\\"):
+        with pytest.raises(ValueError, match="unbalanced"):
+            _adapter(_transport()).search("rain", provider_params={"filter": escape})
+
+
+@pytest.mark.parametrize("fields", ["id,name", "", None, "id"])
+def test_a_fields_override_cannot_drop_the_licence_fields(fields):
+    """``fields`` is append-only: the licence and AI-preference fields always go."""
+    transport = _transport()
+    cands = _adapter(transport).search("rain", provider_params={"fields": fields})
+    sent = transport.calls[0].params["fields"].split(",")
+    required = SOURCE_CONFIG["fields"].split(",")
+    assert sent[: len(required)] == required
+    for name in ("id", "license", "gen_ai_preference", "username", "url", "previews"):
+        assert name in required
+    assert cands and cands[0].sound.license.gen_ai_preference == SOUND_12345.get(
+        "gen_ai_preference"
+    )
+
+
+@pytest.mark.parametrize("key", ["query", "token"])
+def test_reserved_search_params_raise(key):
+    transport = _transport()
+    with pytest.raises(ValueError, match=f"provider_params\\[{key!r}\\] is reserved"):
+        _adapter(transport).search("rain", provider_params={key: "x"})
+    assert transport.calls == []
+
+
+def test_provider_params_keys_must_be_str():
+    transport = _transport()
+    with pytest.raises(TypeError, match="keys must be str"):
+        _adapter(transport).search("rain", provider_params={1: "x"})
+    assert transport.calls == []
 
 
 def test_candidates_carry_the_item_json_as_transient_raw():
