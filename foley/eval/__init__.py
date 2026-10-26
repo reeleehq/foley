@@ -18,11 +18,16 @@ function-local so ``import foley`` stays dol-only.
 from __future__ import annotations
 
 from .baseline import (
+    DEFAULT_FIT_BASELINE_PATH,
+    check_fit_baseline,
+    write_fit_baseline,
     DEFAULT_TOLERANCE,
     is_stale,
     load_baseline,
     write_baseline,
 )
+from . import bradley_terry, panel
+from .panel_page import render_panel_html
 from .fidelity import (
     FidelityResult,
     FidelityStamp,
@@ -90,6 +95,9 @@ __all__ = [
     "write_baseline",
     "is_stale",
     "DEFAULT_TOLERANCE",
+    "DEFAULT_FIT_BASELINE_PATH",
+    "write_fit_baseline",
+    "check_fit_baseline",
     # --- Tier-2 (#10b): fit harness ---
     "FitReport",
     "run_fit_eval",
@@ -105,6 +113,10 @@ __all__ = [
     "AlphaResult",
     "ALPHA_RELIABLE",
     "ALPHA_TENTATIVE",
+    # --- Tier-2 (#49): the human panel behind the calibration ---
+    "bradley_terry",
+    "panel",
+    "render_panel_html",
     # --- Tier-2 (#10b): generation fidelity ---
     "frechet_distance",
     "kernel_audio_distance",

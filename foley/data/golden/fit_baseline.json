@@ -1,0 +1,23 @@
+{
+  "metric": "fit_precision",
+  "value": 0.95092,
+  "tolerance": 0.02,
+  "run": {
+    "judge": "StringOverlapJudge",
+    "embedder": "foley-eval/hashing-bow-v1",
+    "level": "judge",
+    "sample": null,
+    "seed": 0,
+    "k": 10
+  },
+  "corpus": {
+    "name": "ring0",
+    "manifest_sha256": "96425592d301e762d840dd9d8aa23688cea14835d44714e6385387bd69a7185a"
+  },
+  "golden": {
+    "revision": "gld-v2",
+    "n_items": 156,
+    "seed_sha256": "bf5a611b38a4ab79a79fa1542369d6627d18f730a7ce34b72d11c666e69e6ee0"
+  },
+  "updated_at": "2026-10-26"
+}
