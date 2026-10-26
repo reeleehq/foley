@@ -10,7 +10,7 @@ np = pytest.importorskip("numpy")
 pytest.importorskip("soundfile")
 
 import foley  # noqa: E402
-from foley.audio import encode  # noqa: E402
+from foley.audio import encode, load  # noqa: E402
 from foley.runtime import ModelNotCached, offline  # noqa: E402
 from foley.sources.base import SourceConfigurationError  # noqa: E402
 from foley.sources.stable_audio_3.adapter import (  # noqa: E402
@@ -60,8 +60,9 @@ def test_argv_is_built_from_the_unified_affordances(home):
         "1.0",
     )
     assert _arg(cmd, "--dit") == "sm-sfx" and _arg(cmd, "--seed") == "7"
+    assert "--prompt=a door creak" in cmd
     assert "--negative-prompt" not in cmd
-    assert clip.audio_bytes[:4] == b"RIFF" or clip.audio_bytes[:4] == b"fLaC"
+    assert load(clip.audio_bytes)[1] == SR
     lic = clip.candidate.sound.license
     assert lic.generation_seed == 7 and lic.license_id == "Stability-Community"
 
@@ -140,7 +141,6 @@ def test_the_local_default_precedes_stable_audio_open_in_the_order():
         == order.index("stable_audio")
         == len(order) - 1
     )
-    assert g.DEFAULT_GENERATE_BACKEND == "stable_audio_3"
     from foley.sources.registry import SOURCE_REGISTRY, discover_sources
 
     discover_sources()

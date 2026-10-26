@@ -67,10 +67,6 @@ DEFAULT_GENERATE_ORDER = (
     "stable_audio",
 )
 
-#: The local default: free, on the CPU, no GPU and no token (#72). The order falls back
-#: to ``stable_audio`` (Stable Audio Open 1.0, which needs a GPU) when it is not set up.
-DEFAULT_GENERATE_BACKEND = "stable_audio_3"
-
 #: Env var pinning ONE default backend (no fallback), e.g. ``fal_stable_audio_3``.
 #: Naming a paid backend here is the operator asking for it.
 GENERATE_BACKEND_ENV = "FOLEY_GENERATE_BACKEND"

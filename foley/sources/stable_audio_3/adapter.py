@@ -46,7 +46,13 @@ _SEED_MAX = 2**31 - 1  # the script's own range
 def _run_process(cmd, *, cwd, env, timeout) -> "tuple[int, str]":
     """The default runner: a subprocess, stderr captured (stdout is progress noise)."""
     proc = subprocess.run(
-        cmd, cwd=cwd, env=env, timeout=timeout, capture_output=True, text=True
+        cmd,
+        cwd=cwd,
+        env=env,
+        timeout=timeout,
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,  # the script prompts on a missing flag: never wait on a tty
     )
     return proc.returncode, proc.stderr
 
@@ -65,14 +71,14 @@ def sa3_home(config: Optional[dict] = None) -> Path:
     return Path(os.environ.get(nd["home_env"]) or nd["home_default"]).expanduser()
 
 
-def runtime_ready(config: Optional[dict] = None) -> bool:
+def runtime_ready(
+    config: Optional[dict] = None, *, home: Optional[Path] = None
+) -> bool:
     """Whether the checkout and its virtualenv are in place (weights download on first use)."""
-    tflite = (
-        sa3_home(config) / (config or SOURCE_CONFIG)["native_defaults"]["tflite_subdir"]
-    )
-    return (tflite / "scripts" / "sa3_tflite.py").exists() and _venv_python(
-        tflite
-    ).exists()
+    nd = (config or SOURCE_CONFIG)["native_defaults"]
+    tflite = (home or sa3_home(config)) / nd["tflite_subdir"]
+    scripts = tflite / "scripts" / "sa3_tflite.py"
+    return scripts.exists() and _venv_python(tflite).exists()
 
 
 def setup_hint(config: Optional[dict] = None) -> str:
@@ -130,12 +136,11 @@ class StableAudio3Adapter:
         nd = self.config["native_defaults"]
         notes = _unsupported_notes(loop=loop, output_format=output_format, **kw)
         cfg = native_adherence(self.config, prompt_influence, notes)
-        if negative_prompt and cfg <= 1.0:
+        if negative_prompt:  # only acts above CFG 1, and the model is distilled for 1
             notes.append(
-                "negative_prompt not applied: it only acts when CFG is above 1, and "
-                f"{self.name} is distilled for CFG {cfg}"
+                f"negative_prompt not applied: {self.name} is distilled for CFG {cfg}, "
+                "where a negative prompt has no effect"
             )
-            negative_prompt = None
         seconds = min(
             max(
                 duration if duration is not None else nd["duration_default_s"],
@@ -149,7 +154,6 @@ class StableAudio3Adapter:
             "steps": steps if steps is not None else nd["num_inference_steps_default"],
             "cfg": cfg,
             "seed": seed,
-            "negative_prompt": negative_prompt,
         }
         audio_bytes = self._render(prompt, native)
 
@@ -171,10 +175,7 @@ class StableAudio3Adapter:
     def _tflite_dir(self) -> Path:
         """The TFLite build inside the checkout, or the setup instructions."""
         tflite = self._home / self.config["native_defaults"]["tflite_subdir"]
-        if not (
-            (tflite / "scripts" / "sa3_tflite.py").exists()
-            and _venv_python(tflite).exists()
-        ):
+        if not runtime_ready(self.config, home=self._home):
             raise SourceConfigurationError(
                 f"{self.name}: the Stable Audio 3 TFLite runtime is not set up at "
                 f"{tflite} (set ${self.config['native_defaults']['home_env']} to use "
@@ -192,15 +193,13 @@ class StableAudio3Adapter:
             str(tflite / "scripts" / "sa3_tflite.py"),
             "--dit", nd["dit"],
             "--decoder", nd["decoder"],
-            "--prompt", prompt,
+            f"--prompt={prompt}",  # '=' form: a prompt starting with '-' is not a flag
             "--seconds", str(native["seconds"]),
             "--steps", str(native["steps"]),
             "--cfg", str(native["cfg"]),
             "--seed", str(native["seed"]),
             "--out", str(out),
         ]  # fmt: skip
-        if native["negative_prompt"]:
-            cmd += ["--negative-prompt", native["negative_prompt"]]
         return cmd
 
     def _render(self, prompt: str, native: dict) -> bytes:
@@ -224,10 +223,10 @@ class StableAudio3Adapter:
                 tail = (stderr or "").strip().splitlines()[-3:]
                 if not online:
                     raise ModelNotCached(
-                        f"{self.name}: generation failed offline, most likely because "
-                        "the weights are not on this machine and foley will not download "
-                        "them inside offline(). Fetch them once while online: "
-                        f"`{setup_hint(self.config)}`. Last output: {' | '.join(tail)}"
+                        f"{self.name}: generation failed offline. If the weights are not on this machine, "
+                        "note that foley will not download them inside offline(); fetch "
+                        "them once while online: "
+                        f"`{setup_hint(self.config)}`. The script said: {' | '.join(tail)}"
                     )
                 raise RuntimeError(
                     f"{self.name}: the Stable Audio 3 script exited with code {code}: "
