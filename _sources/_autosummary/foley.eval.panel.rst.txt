@@ -1,0 +1,43 @@
+foley.eval.panel
+================
+
+.. automodule:: foley.eval.panel
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      GRADE_LABELS
+      MUSHRA_REFERENCE_MIN
+      MUSHRA_GRADE_BOUNDS
+      MIN_RATERS
+      Z95
+      Key
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      calibrate_against_judge
+      check_answer
+      grade_tasks
+      load_key
+      load_responses
+      load_tasks
+      mushra_scores
+      mushra_tasks
+      mushra_to_grade
+      pairwise_comparisons
+      pairwise_tasks
+      rating_units
+      save_tasks
+      screen_mushra
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Stimulus
+      Task
+   

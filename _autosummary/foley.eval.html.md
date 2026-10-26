@@ -18,34 +18,37 @@ function-local so `import foley` stays dol-only.
 
 ### Functions
 
-| [`ndcg_at_k`](#foley.eval.ndcg_at_k)(qrels_q, run_q[, k])                    | Normalized DCG at `k` with linear gains (0.0 when no graded answer).                                                                                     |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`recall_at_k`](#foley.eval.recall_at_k)(qrels_q, run_q[, k, rel_lvl])         | Fraction of ALL relevant docs (grade ≥ `rel_lvl`) retrieved in the top-`k`.                                                                              |
-| [`precision_at_k`](#foley.eval.precision_at_k)(qrels_q, run_q[, k, rel_lvl])      | Fraction of the top-`k` that is relevant (denominator is literal `k`).                                                                                   |
-| [`average_precision_at_k`](#foley.eval.average_precision_at_k)(qrels_q, run_q[, k, ...])  | Average precision (trec_eval `map`: divide by TOTAL relevant, not `min(R,k)`).                                                                           |
-| [`mrr_at_k`](#foley.eval.mrr_at_k)(qrels_q, run_q[, k, rel_lvl])            | Reciprocal rank of the first relevant doc in the top-`k` (0.0 if none).                                                                                  |
-| [`mean_over_queries`](#foley.eval.mean_over_queries)(values)                         | Macro-average of per-query metric values (0.0 for an empty list).                                                                                        |
-| [`build_run`](#foley.eval.build_run)(candidates)                             | Turn an ordered `search()` result into a run row with distinct scores.                                                                                   |
-| [`evaluate_run`](#foley.eval.evaluate_run)(run, qrels, \*[, k, metrics, ...])   | Score a `run` against `qrels`, returning a [`RetrievalReport`](#foley.eval.RetrievalReport).                                             |
-| [`load_golden`](#foley.eval.load_golden)([path])                               | Load and validate the frozen golden set from `path` (JSON list).                                                                                         |
-| [`to_qrels`](#foley.eval.to_qrels)(golden)                                  | Flatten the golden set into TREC qrels: `{query_id: {clip_id: grade}}`.                                                                                  |
-| [`build_eval_library`](#foley.eval.build_eval_library)(\*[, embedder, manifest_path]) | Build the ephemeral Ring-0 eval library (stem ids + injected caption vectors).                                                                           |
-| [`run_ring0_retrieval_eval`](#foley.eval.run_ring0_retrieval_eval)(\*[, k, ...])            | Score the golden set's queries against the Ring-0 library — the gate input.                                                                              |
-| [`load_baseline`](#foley.eval.load_baseline)([path])                             | Load the committed baseline dict from `path`.                                                                                                            |
-| [`write_baseline`](#foley.eval.write_baseline)(report, \*[, path, metric, ...])   | Write a fresh baseline from `report` (the `--update-baseline` action).                                                                                   |
-| [`is_stale`](#foley.eval.is_stale)(baseline, \*, seed_path, manifest_path)  | True if the baseline's fixture stamps no longer match the fixtures on disk.                                                                              |
-| [`run_fit_eval`](#foley.eval.run_fit_eval)(\*[, golden, golden_path, ...])      | Run the Tier-2 fit eval over a stratified golden sample → a [`FitReport`](#foley.eval.FitReport).                                  |
-| [`fit_precision`](#foley.eval.fit_precision)(matches, relevants)                 | Fraction of judge-accepted candidates that are actually gold-relevant.                                                                                   |
-| [`fit_recall`](#foley.eval.fit_recall)(matches, relevants)                    | `TP / (TP + FN)` — of the gold-relevant candidates, how many the judge confirmed.                                                                        |
-| [`fit_f1`](#foley.eval.fit_f1)(matches, relevants)                        | The harmonic mean of [`fit_precision()`](#foley.eval.fit_precision) and [`fit_recall()`](#foley.eval.fit_recall). |
-| [`stratified_sample`](#foley.eval.stratified_sample)(units, \*, strata_keys, ...)    | Deterministic seeded stratified draw over `units` — the cost gate.                                                                                       |
-| [`krippendorff_alpha`](#foley.eval.krippendorff_alpha)(reliability_data, \*[, ...])   | Krippendorff's α over `(raters × units)` ratings (`nan` = missing).                                                                                      |
-| [`percent_agreement`](#foley.eval.percent_agreement)(reliability_data)               | Raw pairwise percent agreement, reported ALONGSIDE α (report 08 §2.3).                                                                                   |
-| [`reliability_band`](#foley.eval.reliability_band)(alpha)                           | Map an α (or κ) to Krippendorff's benchmark band.                                                                                                        |
-| [`calibrate_judge_vs_human`](#foley.eval.calibrate_judge_vs_human)(human_grades, ...)       | Compute judge-vs-human agreement and the promotion verdict (report 08 §2.3).                                                                             |
-| [`frechet_distance`](#foley.eval.frechet_distance)(x_ref, x_gen)                    | Fréchet distance between two embedding sets (the FAD formula).                                                                                           |
-| [`kernel_audio_distance`](#foley.eval.kernel_audio_distance)(x_ref, x_gen, \*[, ...])    | Kernel Audio Distance — the unbiased RBF-MMD² between two embedding sets.                                                                                |
-| [`generation_fidelity`](#foley.eval.generation_fidelity)(ref_wavs, gen_wavs, \*, ...)  | Embed two wav sets through an injected embedder and compute FAD or KAD.                                                                                  |
+| [`ndcg_at_k`](#foley.eval.ndcg_at_k)(qrels_q, run_q[, k])                     | Normalized DCG at `k` with linear gains (0.0 when no graded answer).                                                                                     |
+|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`recall_at_k`](#foley.eval.recall_at_k)(qrels_q, run_q[, k, rel_lvl])          | Fraction of ALL relevant docs (grade ≥ `rel_lvl`) retrieved in the top-`k`.                                                                              |
+| [`precision_at_k`](#foley.eval.precision_at_k)(qrels_q, run_q[, k, rel_lvl])       | Fraction of the top-`k` that is relevant (denominator is literal `k`).                                                                                   |
+| [`average_precision_at_k`](#foley.eval.average_precision_at_k)(qrels_q, run_q[, k, ...])   | Average precision (trec_eval `map`: divide by TOTAL relevant, not `min(R,k)`).                                                                           |
+| [`mrr_at_k`](#foley.eval.mrr_at_k)(qrels_q, run_q[, k, rel_lvl])             | Reciprocal rank of the first relevant doc in the top-`k` (0.0 if none).                                                                                  |
+| [`mean_over_queries`](#foley.eval.mean_over_queries)(values)                          | Macro-average of per-query metric values (0.0 for an empty list).                                                                                        |
+| [`build_run`](#foley.eval.build_run)(candidates)                              | Turn an ordered `search()` result into a run row with distinct scores.                                                                                   |
+| [`evaluate_run`](#foley.eval.evaluate_run)(run, qrels, \*[, k, metrics, ...])    | Score a `run` against `qrels`, returning a [`RetrievalReport`](#foley.eval.RetrievalReport).                                             |
+| [`load_golden`](#foley.eval.load_golden)([path])                                | Load and validate the frozen golden set from `path` (JSON list).                                                                                         |
+| [`to_qrels`](#foley.eval.to_qrels)(golden)                                   | Flatten the golden set into TREC qrels: `{query_id: {clip_id: grade}}`.                                                                                  |
+| [`build_eval_library`](#foley.eval.build_eval_library)(\*[, embedder, manifest_path])  | Build the ephemeral Ring-0 eval library (stem ids + injected caption vectors).                                                                           |
+| [`run_ring0_retrieval_eval`](#foley.eval.run_ring0_retrieval_eval)(\*[, k, ...])             | Score the golden set's queries against the Ring-0 library — the gate input.                                                                              |
+| [`load_baseline`](#foley.eval.load_baseline)([path])                              | Load the committed baseline dict from `path`.                                                                                                            |
+| [`write_baseline`](#foley.eval.write_baseline)(report, \*[, path, metric, ...])    | Write a fresh baseline from `report` (the `--update-baseline` action).                                                                                   |
+| [`is_stale`](#foley.eval.is_stale)(baseline, \*, seed_path, manifest_path)   | True if the baseline's fixture stamps no longer match the fixtures on disk.                                                                              |
+| [`write_fit_baseline`](#foley.eval.write_fit_baseline)(report, \*[, path, level, ...]) | Write a fresh Tier-2 fit baseline from a [`FitReport`](foley.eval.fit.html.md#foley.eval.fit.FitReport).                            |
+| [`check_fit_baseline`](#foley.eval.check_fit_baseline)(report, baseline, \*[, ...])    | Gate `report` against a committed fit baseline: `(passed, message)`.                                                                                     |
+| [`run_fit_eval`](#foley.eval.run_fit_eval)(\*[, golden, golden_path, ...])       | Run the Tier-2 fit eval over a stratified golden sample → a [`FitReport`](#foley.eval.FitReport).                                  |
+| [`fit_precision`](#foley.eval.fit_precision)(matches, relevants)                  | Fraction of judge-accepted candidates that are actually gold-relevant.                                                                                   |
+| [`fit_recall`](#foley.eval.fit_recall)(matches, relevants)                     | `TP / (TP + FN)` — of the gold-relevant candidates, how many the judge confirmed.                                                                        |
+| [`fit_f1`](#foley.eval.fit_f1)(matches, relevants)                         | The harmonic mean of [`fit_precision()`](#foley.eval.fit_precision) and [`fit_recall()`](#foley.eval.fit_recall). |
+| [`stratified_sample`](#foley.eval.stratified_sample)(units, \*, strata_keys, ...)     | Deterministic seeded stratified draw over `units` — the cost gate.                                                                                       |
+| [`krippendorff_alpha`](#foley.eval.krippendorff_alpha)(reliability_data, \*[, ...])    | Krippendorff's α over `(raters × units)` ratings (`nan` = missing).                                                                                      |
+| [`percent_agreement`](#foley.eval.percent_agreement)(reliability_data)                | Raw pairwise percent agreement, reported ALONGSIDE α (report 08 §2.3).                                                                                   |
+| [`reliability_band`](#foley.eval.reliability_band)(alpha)                            | Map an α (or κ) to Krippendorff's benchmark band.                                                                                                        |
+| [`calibrate_judge_vs_human`](#foley.eval.calibrate_judge_vs_human)(human_grades, ...)        | Compute judge-vs-human agreement and the promotion verdict (report 08 §2.3).                                                                             |
+| [`render_panel_html`](#foley.eval.render_panel_html)(tasks, \*[, title])              | One self-contained HTML page for the blind `tasks` (see the module docstring).                                                                           |
+| [`frechet_distance`](#foley.eval.frechet_distance)(x_ref, x_gen)                     | Fréchet distance between two embedding sets (the FAD formula).                                                                                           |
+| [`kernel_audio_distance`](#foley.eval.kernel_audio_distance)(x_ref, x_gen, \*[, ...])     | Kernel Audio Distance — the unbiased RBF-MMD² between two embedding sets.                                                                                |
+| [`generation_fidelity`](#foley.eval.generation_fidelity)(ref_wavs, gen_wavs, \*, ...)   | Embed two wav sets through an injected embedder and compute FAD or KAD.                                                                                  |
 
 ### Classes
 
@@ -263,6 +266,19 @@ reliable band — the model judge may then be trusted unattended on that slice.
 * **Returns:**
   An [`AlphaResult`](#foley.eval.AlphaResult).
 
+### foley.eval.check_fit_baseline(report, baseline, , level='judge', sample=None, seed_path=None, manifest_path=None)
+
+Gate `report` against a committed fit baseline: `(passed, message)`.
+
+Passes when `fit_precision >= value - tolerance`. A report measured under a different
+judge, embedder, rung, sample, seed or `k` than the baseline’s `run` is not
+comparable and **fails** with a message saying so (re-stamp with
+`foley eval-fit --update-baseline`), never a silent pass. So does a golden set that
+no longer matches the baseline’s stamp, when `seed_path` and `manifest_path` are given.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.eval.evaluate_run(run, qrels, , k=10, metrics=('ndcg@10', 'recall@10', 'map@10', 'mrr@10'), rel_lvl=1)
 
 Score a `run` against `qrels`, returning a [`RetrievalReport`](#foley.eval.RetrievalReport).
@@ -461,6 +477,16 @@ Map an α (or κ) to Krippendorff’s benchmark band.
   `'reliable'` (α ≥ 0.8), `'tentative'` (0.667 ≤ α < 0.8), else
   `'revise-rubric'`.
 
+### foley.eval.render_panel_html(tasks, , title='Listening panel')
+
+One self-contained HTML page for the blind `tasks` (see the module docstring).
+
+The tasks are embedded as JSON, so the page needs nothing but the audio files their
+`clip` paths name. Save the result next to the audio and open or host it.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 ### foley.eval.run_fit_eval(, golden=None, golden_path=PosixPath('/home/runner/work/foley/foley/foley/data/golden/seed.json'), sample=None, strata_keys=('family', 'diegetic'), fit_judge=None, embedder=None, level=VerifyLevel.judge, seed=0, k=10, llm=None)
 
 Run the Tier-2 fit eval over a stratified golden sample → a [`FitReport`](#foley.eval.FitReport).
@@ -550,14 +576,30 @@ generation (bumped when the frozen set is regrown).
 * **Returns:**
   The baseline dict that was written.
 
+### foley.eval.write_fit_baseline(report, , path=PosixPath('/home/runner/work/foley/foley/foley/data/golden/fit_baseline.json'), level='judge', sample=None, tolerance=0.02, seed_path, manifest_path, updated_at, n_items, revision='gld-v1')
+
+Write a fresh Tier-2 fit baseline from a [`FitReport`](foley.eval.fit.html.md#foley.eval.fit.FitReport).
+
+The sibling of [`write_baseline()`](#foley.eval.write_baseline): the committed number is `fit_precision` with the
+same fixture stamps (so a golden-set edit is detected) plus the run it was measured
+under (judge, embedder, rung, sample, seed, `k`). The committed file is stamped on the
+hermetic path (the deterministic fake judge, no network); re-stamp it with a real judge
+once its numbers are stable, which records that judge in `run`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### Modules
 
-| [`baseline`](foley.eval.baseline.html.md#module-foley.eval.baseline)         | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                           |
-|----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| [`embedder`](foley.eval.embedder.html.md#module-foley.eval.embedder)         | A deterministic, numpy-only text embedder for the retrieval eval gate.                         |
-| [`fidelity`](foley.eval.fidelity.html.md#module-foley.eval.fidelity)         | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).    |
-| [`fit`](foley.eval.fit.html.md#module-foley.eval.fit)                   | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5). |
-| [`golden`](foley.eval.golden.html.md#module-foley.eval.golden)             | The frozen golden set + the deterministic Ring-0 retrieval harness.                            |
-| [`prompt_match`](foley.eval.prompt_match.html.md#module-foley.eval.prompt_match) | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).        |
-| [`reliability`](foley.eval.reliability.html.md#module-foley.eval.reliability)   | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.         |
-| [`retrieval`](foley.eval.retrieval.html.md#module-foley.eval.retrieval)       | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                    |
+| [`bradley_terry`](foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)   | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                             |
+|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| [`panel`](foley.eval.panel.html.md#module-foley.eval.panel)                   | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49). |
+| [`baseline`](foley.eval.baseline.html.md#module-foley.eval.baseline)             | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                  |
+| [`embedder`](foley.eval.embedder.html.md#module-foley.eval.embedder)             | A deterministic, numpy-only text embedder for the retrieval eval gate.                                |
+| [`fidelity`](foley.eval.fidelity.html.md#module-foley.eval.fidelity)             | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).           |
+| [`fit`](foley.eval.fit.html.md#module-foley.eval.fit)                       | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).        |
+| [`golden`](foley.eval.golden.html.md#module-foley.eval.golden)                 | The frozen golden set + the deterministic Ring-0 retrieval harness.                                   |
+| [`panel_page`](foley.eval.panel_page.html.md#module-foley.eval.panel_page)         | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.        |
+| [`prompt_match`](foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)     | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).               |
+| [`reliability`](foley.eval.reliability.html.md#module-foley.eval.reliability)       | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                |
+| [`retrieval`](foley.eval.retrieval.html.md#module-foley.eval.retrieval)           | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                           |

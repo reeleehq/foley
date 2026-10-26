@@ -1,0 +1,12 @@
+foley.eval.panel\_page
+======================
+
+.. automodule:: foley.eval.panel_page
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      render_panel_html
+   

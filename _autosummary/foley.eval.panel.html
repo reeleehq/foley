@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="alternate" type="text/markdown" href="foley.eval.panel.html.md">
+<link rel="describedby" href="../llms.txt" type="text/markdown">
+<link rel="alternate" type="text/markdown" href="foley.eval.panel.html.md">
+<link rel="describedby" href="llms.txt">
+    <title>foley.eval.panel &#8212; foley</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=e39d37f2" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../_static/documentation_options.js?v=73f2ab08"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/foley.eval.panel';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="foley.eval.baseline" href="foley.eval.baseline.html" />
+    <link rel="prev" title="foley.eval.bradley_terry" href="foley.eval.bradley_terry.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.52" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">foley</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="foley.html">foley</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="foley.repair.html">foley.repair</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.audio.html">foley.audio</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.index.html">foley.index</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.taxonomy.html">foley.index.taxonomy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.embedders.html">foley.index.embedders</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.indexes.html">foley.index.indexes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.ingest.html">foley.index.ingest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.library.html">foley.index.library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.onnx_clap.html">foley.index.onnx_clap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.protocols.html">foley.index.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.search.html">foley.index.search</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.taggers.html">foley.index.taggers</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.obs.html">foley.obs</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.recorder.html">foley.obs.recorder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.redact.html">foley.obs.redact</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.run_artifact.html">foley.obs.run_artifact</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.trace.html">foley.obs.trace</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.agent.html">foley.agent</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.decompose.html">foley.agent.decompose</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.llm.html">foley.agent.llm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.local_llm.html">foley.agent.local_llm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.mcp.html">foley.agent.mcp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.policy.html">foley.agent.policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.preview.html">foley.agent.preview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.protocols.html">foley.agent.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.refine.html">foley.agent.refine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.session.html">foley.agent.session</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.tools.html">foley.agent.tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.verify.html">foley.agent.verify</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.weave.html">foley.weave</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.align.html">foley.weave.align</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.anchor.html">foley.weave.anchor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.master.html">foley.weave.master</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.mix.html">foley.weave.mix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.protocols.html">foley.weave.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.reaction.html">foley.weave.reaction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.requirements.html">foley.weave.requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.timeline.html">foley.weave.timeline</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="foley.eval.html">foley.eval</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.bradley_terry.html">foley.eval.bradley_terry</a></li>
+<li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">foley.eval.panel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.baseline.html">foley.eval.baseline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.embedder.html">foley.eval.embedder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.fidelity.html">foley.eval.fidelity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.fit.html">foley.eval.fit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.golden.html">foley.eval.golden</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.panel_page.html">foley.eval.panel_page</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.prompt_match.html">foley.eval.prompt_match</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.reliability.html">foley.eval.reliability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.retrieval.html">foley.eval.retrieval</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.provenance.html">foley.provenance</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.provenance.credits.html">foley.provenance.credits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.provenance.disclosure.html">foley.provenance.disclosure</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.agent_kit.html">foley.agent_kit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.base.html">foley.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.cli.html">foley.cli</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.cost.html">foley.cost</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.level.html">foley.level</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.licensing.html">foley.licensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.prompt_match.html">foley.prompt_match</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.qc.html">foley.qc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.requirements.html">foley.requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.runtime.html">foley.runtime</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.sources.html">foley.sources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.base.html">foley.sources.base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.bbc_remarc.html">foley.sources.bbc_remarc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.clotho.html">foley.sources.clotho</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.elevenlabs.html">foley.sources.elevenlabs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.fal.html">foley.sources.fal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.foleyset.html">foley.sources.foleyset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.freesound.html">foley.sources.freesound</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.fsd50k.html">foley.sources.fsd50k</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.http.html">foley.sources.http</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.internet_archive.html">foley.sources.internet_archive</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.openverse.html">foley.sources.openverse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.pull.html">foley.sources.pull</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.registry.html">foley.sources.registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.resilience.html">foley.sources.resilience</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.sonniss.html">foley.sources.sonniss</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.stable_audio.html">foley.sources.stable_audio</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.stable_audio_3.html">foley.sources.stable_audio_3</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.wikimedia_commons.html">foley.sources.wikimedia_commons</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.stores.html">foley.stores</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="foley.html" class="nav-link">foley</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="foley.eval.html" class="nav-link">foley.eval</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">foley.eval.panel</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-foley.eval.panel">
+<span id="foley-eval-panel"></span><h1>foley.eval.panel<a class="headerlink" href="#module-foley.eval.panel" title="Link to this heading">#</a></h1>
+<p>Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49).</p>
+<p>A model judge is only trusted once it agrees with people (<a class="reference internal" href="foley.eval.reliability.html#module-foley.eval.reliability" title="foley.eval.reliability"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.eval.reliability</span></code></a>). This
+module is the manual-first path that produces those people’s judgements; the panel itself is
+run by a person. Three task kinds, one flow:</p>
+<ol class="arabic">
+<li><p><strong>Build</strong> blind tasks from what you want judged: <a class="reference internal" href="#foley.eval.panel.grade_tasks" title="foley.eval.panel.grade_tasks"><code class="xref py py-func docutils literal notranslate"><span class="pre">grade_tasks()</span></code></a> (rate one clip 0-3 for
+a prompt: the scale the judge-vs-human α uses), <a class="reference internal" href="#foley.eval.panel.pairwise_tasks" title="foley.eval.panel.pairwise_tasks"><code class="xref py py-func docutils literal notranslate"><span class="pre">pairwise_tasks()</span></code></a> (2AFC: which of two
+fits better; feeds <a class="reference internal" href="foley.eval.bradley_terry.html#module-foley.eval.bradley_terry" title="foley.eval.bradley_terry"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.eval.bradley_terry</span></code></a>), <a class="reference internal" href="#foley.eval.panel.mushra_tasks" title="foley.eval.panel.mushra_tasks"><code class="xref py py-func docutils literal notranslate"><span class="pre">mushra_tasks()</span></code></a> (rate several
+systems 0-100 against a reference, with a hidden copy of the reference and a low anchor, in
+the style of ITU-R BS.1534). Sides and order are shuffled with a <code class="docutils literal notranslate"><span class="pre">seed</span></code>; stimulus ids are
+opaque. <a class="reference internal" href="#foley.eval.panel.save_tasks" title="foley.eval.panel.save_tasks"><code class="xref py py-func docutils literal notranslate"><span class="pre">save_tasks()</span></code></a> copies every clip to <code class="docutils literal notranslate"><span class="pre">audio/&lt;stimulus</span> <span class="pre">id&gt;&lt;ext&gt;</span></code> (so neither a
+file name nor the hidden reference’s path gives it away) and writes <code class="docutils literal notranslate"><span class="pre">tasks.json</span></code> (what
+raters get) and <code class="docutils literal notranslate"><span class="pre">key.json</span></code> (which system each stimulus is; keep it from the raters).</p></li>
+<li><p><strong>Run</strong> it: <code class="xref py py-func docutils literal notranslate"><span class="pre">render_panel_html()</span></code> writes one self-contained page (audio, forms, a
+“download responses” button) to open in a browser or host anywhere static; or send
+<code class="docutils literal notranslate"><span class="pre">tasks.json</span></code> to raters and collect the same <code class="docutils literal notranslate"><span class="pre">responses.jsonl</span></code> by any means. A response is
+one JSON line: <code class="docutils literal notranslate"><span class="pre">{&quot;rater&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;task&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;answer&quot;:</span> <span class="pre">...}</span></code> (the answer shape is per kind,
+see <a class="reference internal" href="#foley.eval.panel.check_answer" title="foley.eval.panel.check_answer"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_answer()</span></code></a>).</p></li>
+<li><p><strong>Analyse</strong>: <a class="reference internal" href="#foley.eval.panel.pairwise_comparisons" title="foley.eval.panel.pairwise_comparisons"><code class="xref py py-func docutils literal notranslate"><span class="pre">pairwise_comparisons()</span></code></a> -&gt; <code class="docutils literal notranslate"><span class="pre">bradley_terry.fit</span></code>;
+<a class="reference internal" href="#foley.eval.panel.screen_mushra" title="foley.eval.panel.screen_mushra"><code class="xref py py-func docutils literal notranslate"><span class="pre">screen_mushra()</span></code></a> (the hidden-reference rule of ITU-R BS.1534 only; the standard’s</p>
+<blockquote>
+<div><p>mid-range anchor rule is not implemented) and <a class="reference internal" href="#foley.eval.panel.mushra_scores" title="foley.eval.panel.mushra_scores"><code class="xref py py-func docutils literal notranslate"><span class="pre">mushra_scores()</span></code></a>; <a class="reference internal" href="#foley.eval.panel.rating_units" title="foley.eval.panel.rating_units"><code class="xref py py-func docutils literal notranslate"><span class="pre">rating_units()</span></code></a> -&gt;</p>
+</div></blockquote>
+<dl class="simple">
+<dt><a class="reference internal" href="#foley.eval.panel.calibrate_against_judge" title="foley.eval.panel.calibrate_against_judge"><code class="xref py py-func docutils literal notranslate"><span class="pre">calibrate_against_judge()</span></code></a>, which returns the human-human and judge-vs-human</dt><dd><p>Krippendorff α (<a class="reference internal" href="foley.eval.reliability.html#foley.eval.reliability.calibrate_judge_vs_human" title="foley.eval.reliability.calibrate_judge_vs_human"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.eval.reliability.calibrate_judge_vs_human()</span></code></a>) to put in the
+calibration report.</p>
+</dd>
+</dl>
+</li>
+</ol>
+<p>Pure stdlib apart from the numpy used in the analysis functions.</p>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.panel.GRADE_LABELS" title="foley.eval.panel.GRADE_LABELS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GRADE_LABELS</span></code></a></p></td>
+<td><p>The ordinal fit scale of the judge-vs-human calibration, and what each grade means.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.panel.MUSHRA_REFERENCE_MIN" title="foley.eval.panel.MUSHRA_REFERENCE_MIN"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MUSHRA_REFERENCE_MIN</span></code></a></p></td>
+<td><p>drop a rater who scores the hidden reference under <code class="docutils literal notranslate"><span class="pre">MUSHRA_REFERENCE_MIN</span></code> in more than <code class="docutils literal notranslate"><span class="pre">MUSHRA_MAX_VIOLATION_RATE</span></code> of the trials.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.panel.MUSHRA_GRADE_BOUNDS" title="foley.eval.panel.MUSHRA_GRADE_BOUNDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MUSHRA_GRADE_BOUNDS</span></code></a></p></td>
+<td><p>MUSHRA 0-100 scores binned to the 0-3 grade scale (lower bound of each grade).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.panel.MIN_RATERS" title="foley.eval.panel.MIN_RATERS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MIN_RATERS</span></code></a></p></td>
+<td><p>A judge is only &quot;promoted&quot; on at least this many raters and rated units; below that α says little (and a panel with no variation in its grades gives α = 1 by construction).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.panel.Z95" title="foley.eval.panel.Z95"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Z95</span></code></a></p></td>
+<td><p>The z of a 95% normal interval on a mean score.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.panel.Key" title="foley.eval.panel.Key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Key</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">key</span></code> maps a stimulus id to <code class="docutils literal notranslate"><span class="pre">{&quot;role&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;system&quot;:</span> <span class="pre">...}</span></code> (never shown to raters).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.panel.calibrate_against_judge" title="foley.eval.panel.calibrate_against_judge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibrate_against_judge</span></code></a>(units, judge_grades, *)</p></td>
+<td><p>Human-human and judge-vs-human agreement, ready for the calibration report.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.panel.check_answer" title="foley.eval.panel.check_answer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_answer</span></code></a>(task, answer)</p></td>
+<td><p>Raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> unless <code class="docutils literal notranslate"><span class="pre">answer</span></code> has the shape <code class="docutils literal notranslate"><span class="pre">task.kind</span></code> takes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.panel.grade_tasks" title="foley.eval.panel.grade_tasks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">grade_tasks</span></code></a>(units)</p></td>
+<td><p>Tasks that ask for a 0-3 grade; <code class="docutils literal notranslate"><span class="pre">units</span></code> are <code class="docutils literal notranslate"><span class="pre">(unit_id,</span> <span class="pre">prompt,</span> <span class="pre">clip,</span> <span class="pre">system)</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.panel.load_key" title="foley.eval.panel.load_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_key</span></code></a>(path)</p></td>
+<td><p>Read <code class="docutils literal notranslate"><span class="pre">key.json</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.panel.load_responses" title="foley.eval.panel.load_responses"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_responses</span></code></a>(path, tasks)</p></td>
+<td><p>Read <code class="docutils literal notranslate"><span class="pre">responses.jsonl</span></code> (one <code class="docutils literal notranslate"><span class="pre">{&quot;rater&quot;,</span> <span class="pre">&quot;task&quot;,</span> <span class="pre">&quot;answer&quot;}</span></code> per line), validated.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.panel.load_tasks" title="foley.eval.panel.load_tasks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_tasks</span></code></a>(path)</p></td>
+<td><p>Read <code class="docutils literal notranslate"><span class="pre">tasks.json</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.panel.mushra_scores" title="foley.eval.panel.mushra_scores"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mushra_scores</span></code></a>(tasks, key, responses, *[, raters])</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{system:</span> <span class="pre">(mean,</span> <span class="pre">ci_low,</span> <span class="pre">ci_high)}</span></code> over MUSHRA answers (95% normal interval).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.panel.mushra_tasks" title="foley.eval.panel.mushra_tasks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mushra_tasks</span></code></a>(trials, *[, seed])</p></td>
+<td><p>MUSHRA-style tasks; <code class="docutils literal notranslate"><span class="pre">trials</span></code> are <code class="docutils literal notranslate"><span class="pre">(unit_id,</span> <span class="pre">prompt,</span> <span class="pre">reference_clip,</span> <span class="pre">[(clip,</span> <span class="pre">system),</span> <span class="pre">...],</span> <span class="pre">anchor_clip)</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.panel.mushra_to_grade" title="foley.eval.panel.mushra_to_grade"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mushra_to_grade</span></code></a>(score, *[, bounds])</p></td>
+<td><p>A 0-100 score as a 0-3 grade (the highest grade whose lower bound the score reaches).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.panel.pairwise_comparisons" title="foley.eval.panel.pairwise_comparisons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pairwise_comparisons</span></code></a>(tasks, key, responses)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(winner_system,</span> <span class="pre">loser_system)</span></code> for every non-tie 2AFC answer (feed <code class="docutils literal notranslate"><span class="pre">bradley_terry.fit</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.panel.pairwise_tasks" title="foley.eval.panel.pairwise_tasks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pairwise_tasks</span></code></a>(comparisons, *[, seed])</p></td>
+<td><p>2AFC tasks; <code class="docutils literal notranslate"><span class="pre">comparisons</span></code> are <code class="docutils literal notranslate"><span class="pre">(prompt,</span> <span class="pre">(clip_a,</span> <span class="pre">system_a),</span> <span class="pre">(clip_b,</span> <span class="pre">system_b))</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.panel.rating_units" title="foley.eval.panel.rating_units"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rating_units</span></code></a>(tasks, key, responses)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{unit:</span> <span class="pre">{rater:</span> <span class="pre">grade}}</span></code> from the grade and MUSHRA answers (the calibration feed).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.panel.save_tasks" title="foley.eval.panel.save_tasks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save_tasks</span></code></a>(tasks, key, directory, *[, audio_dir])</p></td>
+<td><p>Write the panel folder: <code class="docutils literal notranslate"><span class="pre">tasks.json</span></code> (for raters), <code class="docutils literal notranslate"><span class="pre">key.json</span></code> (keep private), the audio.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.panel.screen_mushra" title="foley.eval.panel.screen_mushra"><code class="xref py py-obj docutils literal notranslate"><span class="pre">screen_mushra</span></code></a>(tasks, key, responses, *[, ...])</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(accepted_raters,</span> <span class="pre">{rejected_rater:</span> <span class="pre">violation_rate})</span></code> by the hidden-reference rule.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.panel.Stimulus" title="foley.eval.panel.Stimulus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Stimulus</span></code></a>(id, clip)</p></td>
+<td><p>One clip a rater hears: an opaque <code class="docutils literal notranslate"><span class="pre">id</span></code> and the audio <code class="docutils literal notranslate"><span class="pre">clip</span></code> (a path or URL).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.panel.Task" title="foley.eval.panel.Task"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Task</span></code></a>(id, kind, prompt, stimuli[, unit, ...])</p></td>
+<td><p>One judgement: <code class="docutils literal notranslate"><span class="pre">kind</span></code>, the <code class="docutils literal notranslate"><span class="pre">prompt</span></code> shown, the <code class="docutils literal notranslate"><span class="pre">stimuli</span></code> (shuffled), and a <code class="docutils literal notranslate"><span class="pre">unit</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.panel.GRADE_LABELS">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">GRADE_LABELS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{0:</span> <span class="pre">'wrong:</span> <span class="pre">not</span> <span class="pre">the</span> <span class="pre">sound</span> <span class="pre">asked</span> <span class="pre">for',</span> <span class="pre">1:</span> <span class="pre">'related:</span> <span class="pre">same</span> <span class="pre">family,</span> <span class="pre">clearly</span> <span class="pre">off',</span> <span class="pre">2:</span> <span class="pre">'acceptable:</span> <span class="pre">usable</span> <span class="pre">for</span> <span class="pre">the</span> <span class="pre">moment',</span> <span class="pre">3:</span> <span class="pre">'ideal:</span> <span class="pre">exactly</span> <span class="pre">right'}</span></span><a class="headerlink" href="#foley.eval.panel.GRADE_LABELS" title="Link to this definition">#</a></dt>
+<dd><p>The ordinal fit scale of the judge-vs-human calibration, and what each grade means.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.panel.Key">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">Key</span></span><a class="headerlink" href="#foley.eval.panel.Key" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">key</span></code> maps a stimulus id to <code class="docutils literal notranslate"><span class="pre">{&quot;role&quot;:</span> <span class="pre">...,</span> <span class="pre">&quot;system&quot;:</span> <span class="pre">...}</span></code> (never shown to raters).</p>
+<p>alias of <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.panel.MIN_RATERS">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">MIN_RATERS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></span><a class="headerlink" href="#foley.eval.panel.MIN_RATERS" title="Link to this definition">#</a></dt>
+<dd><p>A judge is only “promoted” on at least this many raters and rated units; below that α
+says little (and a panel with no variation in its grades gives α = 1 by construction).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.panel.MUSHRA_GRADE_BOUNDS">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">MUSHRA_GRADE_BOUNDS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(0,</span> <span class="pre">25,</span> <span class="pre">60,</span> <span class="pre">85)</span></span><a class="headerlink" href="#foley.eval.panel.MUSHRA_GRADE_BOUNDS" title="Link to this definition">#</a></dt>
+<dd><p>MUSHRA 0-100 scores binned to the 0-3 grade scale (lower bound of each grade).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.panel.MUSHRA_REFERENCE_MIN">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">MUSHRA_REFERENCE_MIN</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">90</span></span><a class="headerlink" href="#foley.eval.panel.MUSHRA_REFERENCE_MIN" title="Link to this definition">#</a></dt>
+<dd><p>drop a rater who scores the hidden reference under
+<code class="docutils literal notranslate"><span class="pre">MUSHRA_REFERENCE_MIN</span></code> in more than <code class="docutils literal notranslate"><span class="pre">MUSHRA_MAX_VIOLATION_RATE</span></code> of the trials.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Post-screening (ITU-R BS.1534)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.eval.panel.Stimulus">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">Stimulus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#Stimulus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.Stimulus" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One clip a rater hears: an opaque <code class="docutils literal notranslate"><span class="pre">id</span></code> and the audio <code class="docutils literal notranslate"><span class="pre">clip</span></code> (a path or URL).</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.eval.panel.Task">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">Task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stimuli</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#Task"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.Task" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One judgement: <code class="docutils literal notranslate"><span class="pre">kind</span></code>, the <code class="docutils literal notranslate"><span class="pre">prompt</span></code> shown, the <code class="docutils literal notranslate"><span class="pre">stimuli</span></code> (shuffled), and a <code class="docutils literal notranslate"><span class="pre">unit</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">unit</span></code> names what is judged (a golden-set unit id); judge-vs-human calibration joins on it.
+MUSHRA tasks also carry the visible <code class="docutils literal notranslate"><span class="pre">reference</span></code> clip.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.panel.Z95">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">Z95</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1.96</span></span><a class="headerlink" href="#foley.eval.panel.Z95" title="Link to this definition">#</a></dt>
+<dd><p>The z of a 95% normal interval on a mean score.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.calibrate_against_judge">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">calibrate_against_judge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">units</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">judge_grades</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ordinal'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_raters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_units</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#calibrate_against_judge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.calibrate_against_judge" title="Link to this definition">#</a></dt>
+<dd><p>Human-human and judge-vs-human agreement, ready for the calibration report.</p>
+<p>The judge is compared with the humans’ <strong>consensus</strong> (the per-unit median grade), never
+as one more rater next to all of them: with many humans who agree with each other, a
+judge added as a row would borrow their agreement and look reliable whatever it says.
+<code class="docutils literal notranslate"><span class="pre">per_rater</span></code> is α of the judge against each person alone.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>units</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]]</span>) – <a class="reference internal" href="#foley.eval.panel.rating_units" title="foley.eval.panel.rating_units"><code class="xref py py-func docutils literal notranslate"><span class="pre">rating_units()</span></code></a>’ <code class="docutils literal notranslate"><span class="pre">{unit:</span> <span class="pre">{rater:</span> <span class="pre">grade}}</span></code>.</p></li>
+<li><p><strong>judge_grades</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</span>) – The model judge’s <code class="docutils literal notranslate"><span class="pre">{unit:</span> <span class="pre">grade}</span></code> for the same units.</p></li>
+<li><p><strong>min_raters</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Fewer raters than this and nothing is promoted.</p></li>
+<li><p><strong>min_units</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Fewer units rated by at least two people than this and nothing is promoted.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>AlphaResult | None, “judge_vs_human”: AlphaResult | None,
+“per_rater”: {rater: alpha}, “n_units”: …, “raters”: […], “insufficient”: […]}``.
+<code class="docutils literal notranslate"><span class="pre">human_alpha</span></code> is the humans’ own α (it needs two raters and a unit both rated);
+<code class="docutils literal notranslate"><span class="pre">judge_vs_human</span></code> is the judge against the consensus. An <code class="docutils literal notranslate"><span class="pre">AlphaResult</span></code> is never
+<code class="docutils literal notranslate"><span class="pre">promoted</span></code> while <code class="docutils literal notranslate"><span class="pre">insufficient</span></code> is non-empty: too few raters, too few doubly-rated
+units, or human (or judge) grades that do not vary (α is 1 by construction then).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.check_answer">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">check_answer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">answer</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#check_answer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.check_answer" title="Link to this definition">#</a></dt>
+<dd><p>Raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> unless <code class="docutils literal notranslate"><span class="pre">answer</span></code> has the shape <code class="docutils literal notranslate"><span class="pre">task.kind</span></code> takes.</p>
+<p><code class="docutils literal notranslate"><span class="pre">grade</span></code>: an int in 0-3. <code class="docutils literal notranslate"><span class="pre">2afc</span></code>: a stimulus id of the task, or <code class="docutils literal notranslate"><span class="pre">None</span></code> for a tie.
+<code class="docutils literal notranslate"><span class="pre">mushra</span></code>: <code class="docutils literal notranslate"><span class="pre">{stimulus_id:</span> <span class="pre">score</span> <span class="pre">0-100}</span></code> covering every stimulus.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.grade_tasks">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">grade_tasks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">units</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#grade_tasks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.grade_tasks" title="Link to this definition">#</a></dt>
+<dd><p>Tasks that ask for a 0-3 grade; <code class="docutils literal notranslate"><span class="pre">units</span></code> are <code class="docutils literal notranslate"><span class="pre">(unit_id,</span> <span class="pre">prompt,</span> <span class="pre">clip,</span> <span class="pre">system)</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="#foley.eval.panel.Task" title="foley.eval.panel.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></a>], <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.load_key">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">load_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#load_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.load_key" title="Link to this definition">#</a></dt>
+<dd><p>Read <code class="docutils literal notranslate"><span class="pre">key.json</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.load_responses">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">load_responses</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tasks</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#load_responses"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.load_responses" title="Link to this definition">#</a></dt>
+<dd><p>Read <code class="docutils literal notranslate"><span class="pre">responses.jsonl</span></code> (one <code class="docutils literal notranslate"><span class="pre">{&quot;rater&quot;,</span> <span class="pre">&quot;task&quot;,</span> <span class="pre">&quot;answer&quot;}</span></code> per line), validated.</p>
+<p>A rater answering the same task twice keeps the last answer. Raters are told apart by
+name only: two people using the same name are merged, so give every rater a unique one.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.load_tasks">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">load_tasks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#load_tasks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.load_tasks" title="Link to this definition">#</a></dt>
+<dd><p>Read <code class="docutils literal notranslate"><span class="pre">tasks.json</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="#foley.eval.panel.Task" title="foley.eval.panel.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.mushra_scores">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">mushra_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tasks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">responses</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">raters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#mushra_scores"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.mushra_scores" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">{system:</span> <span class="pre">(mean,</span> <span class="pre">ci_low,</span> <span class="pre">ci_high)}</span></code> over MUSHRA answers (95% normal interval).</p>
+<p>Only <code class="docutils literal notranslate"><span class="pre">raters</span></code> (default: those <a class="reference internal" href="#foley.eval.panel.screen_mushra" title="foley.eval.panel.screen_mushra"><code class="xref py py-func docutils literal notranslate"><span class="pre">screen_mushra()</span></code></a> accepts). The hidden reference and
+anchor are reported under their own names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.mushra_tasks">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">mushra_tasks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trials</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#mushra_tasks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.mushra_tasks" title="Link to this definition">#</a></dt>
+<dd><p>MUSHRA-style tasks; <code class="docutils literal notranslate"><span class="pre">trials</span></code> are <code class="docutils literal notranslate"><span class="pre">(unit_id,</span> <span class="pre">prompt,</span> <span class="pre">reference_clip,</span> <span class="pre">[(clip,</span> <span class="pre">system),</span> <span class="pre">...],</span> <span class="pre">anchor_clip)</span></code>.</p>
+<p>Each task shows the reference, and the systems plus a hidden copy of the reference and
+(if <code class="docutils literal notranslate"><span class="pre">anchor_clip</span></code> is given) a low-quality anchor, in shuffled order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="#foley.eval.panel.Task" title="foley.eval.panel.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></a>], <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.mushra_to_grade">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">mushra_to_grade</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">score</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">25,</span> <span class="pre">60,</span> <span class="pre">85)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#mushra_to_grade"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.mushra_to_grade" title="Link to this definition">#</a></dt>
+<dd><p>A 0-100 score as a 0-3 grade (the highest grade whose lower bound the score reaches).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.pairwise_comparisons">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">pairwise_comparisons</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tasks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">responses</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#pairwise_comparisons"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.pairwise_comparisons" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">(winner_system,</span> <span class="pre">loser_system)</span></code> for every non-tie 2AFC answer (feed <code class="docutils literal notranslate"><span class="pre">bradley_terry.fit</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.pairwise_tasks">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">pairwise_tasks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comparisons</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#pairwise_tasks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.pairwise_tasks" title="Link to this definition">#</a></dt>
+<dd><p>2AFC tasks; <code class="docutils literal notranslate"><span class="pre">comparisons</span></code> are <code class="docutils literal notranslate"><span class="pre">(prompt,</span> <span class="pre">(clip_a,</span> <span class="pre">system_a),</span> <span class="pre">(clip_b,</span> <span class="pre">system_b))</span></code>.</p>
+<p>Which clip is on the left is shuffled per task from <code class="docutils literal notranslate"><span class="pre">seed</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="#foley.eval.panel.Task" title="foley.eval.panel.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></a>], <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.rating_units">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">rating_units</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tasks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">responses</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#rating_units"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.rating_units" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">{unit:</span> <span class="pre">{rater:</span> <span class="pre">grade}}</span></code> from the grade and MUSHRA answers (the calibration feed).</p>
+<p>A unit is <code class="docutils literal notranslate"><span class="pre">&quot;&lt;task.unit&gt;|&lt;system&gt;&quot;</span></code> for both kinds (one golden unit judged for two systems
+is two units); a MUSHRA score is binned by <a class="reference internal" href="#foley.eval.panel.mushra_to_grade" title="foley.eval.panel.mushra_to_grade"><code class="xref py py-func docutils literal notranslate"><span class="pre">mushra_to_grade()</span></code></a>. The hidden
+reference and anchor are not units.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.save_tasks">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">save_tasks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tasks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">directory</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">audio_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'audio'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#save_tasks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.save_tasks" title="Link to this definition">#</a></dt>
+<dd><p>Write the panel folder: <code class="docutils literal notranslate"><span class="pre">tasks.json</span></code> (for raters), <code class="docutils literal notranslate"><span class="pre">key.json</span></code> (keep private), the audio.</p>
+<p>Every clip (a local file) is copied to <code class="docutils literal notranslate"><span class="pre">&lt;directory&gt;/&lt;audio_dir&gt;/&lt;stimulus</span> <span class="pre">id&gt;&lt;ext&gt;</span></code> and the
+tasks written point at the copies, so a file name never names the system and the hidden
+reference does not share a path with the visible one. The returned tasks are those
+rewritten ones (hand them to <a class="reference internal" href="foley.eval.panel_page.html#foley.eval.panel_page.render_panel_html" title="foley.eval.panel_page.render_panel_html"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.eval.panel_page.render_panel_html()</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError" title="(in Python v3.15)"><strong>FileNotFoundError</strong></a> – A clip is not a local file (fetch it first).</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – Task ids repeat, or the clips are in more than one format (the extension
+    would give a system away).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="#foley.eval.panel.Task" title="foley.eval.panel.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.panel.screen_mushra">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.panel.</span></span><span class="sig-name descname"><span class="pre">screen_mushra</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tasks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">responses</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">90</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_violation_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.15</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/panel.html#screen_mushra"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.panel.screen_mushra" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">(accepted_raters,</span> <span class="pre">{rejected_rater:</span> <span class="pre">violation_rate})</span></code> by the hidden-reference rule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="foley.eval.bradley_terry.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">foley.eval.bradley_terry</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="foley.eval.baseline.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">foley.eval.baseline</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.GRADE_LABELS"><code class="docutils literal notranslate"><span class="pre">GRADE_LABELS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.Key"><code class="docutils literal notranslate"><span class="pre">Key</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.MIN_RATERS"><code class="docutils literal notranslate"><span class="pre">MIN_RATERS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.MUSHRA_GRADE_BOUNDS"><code class="docutils literal notranslate"><span class="pre">MUSHRA_GRADE_BOUNDS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.MUSHRA_REFERENCE_MIN"><code class="docutils literal notranslate"><span class="pre">MUSHRA_REFERENCE_MIN</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.Stimulus"><code class="docutils literal notranslate"><span class="pre">Stimulus</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.Task"><code class="docutils literal notranslate"><span class="pre">Task</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.Z95"><code class="docutils literal notranslate"><span class="pre">Z95</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.calibrate_against_judge"><code class="docutils literal notranslate"><span class="pre">calibrate_against_judge()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.check_answer"><code class="docutils literal notranslate"><span class="pre">check_answer()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.grade_tasks"><code class="docutils literal notranslate"><span class="pre">grade_tasks()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.load_key"><code class="docutils literal notranslate"><span class="pre">load_key()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.load_responses"><code class="docutils literal notranslate"><span class="pre">load_responses()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.load_tasks"><code class="docutils literal notranslate"><span class="pre">load_tasks()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.mushra_scores"><code class="docutils literal notranslate"><span class="pre">mushra_scores()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.mushra_tasks"><code class="docutils literal notranslate"><span class="pre">mushra_tasks()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.mushra_to_grade"><code class="docutils literal notranslate"><span class="pre">mushra_to_grade()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.pairwise_comparisons"><code class="docutils literal notranslate"><span class="pre">pairwise_comparisons()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.pairwise_tasks"><code class="docutils literal notranslate"><span class="pre">pairwise_tasks()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.rating_units"><code class="docutils literal notranslate"><span class="pre">rating_units()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.save_tasks"><code class="docutils literal notranslate"><span class="pre">save_tasks()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.panel.screen_mushra"><code class="docutils literal notranslate"><span class="pre">screen_mushra()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/_autosummary/foley.eval.panel.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=440a2162"></script>
+    <script src="../_static/documentation_options.js?v=73f2ab08"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.51" />
+  <meta name="docsearch:version" content="0.0.52" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -367,11 +367,14 @@
 </ul>
 </details></li>
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="foley.eval.html">foley.eval</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.bradley_terry.html">foley.eval.bradley_terry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.panel.html">foley.eval.panel</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.baseline.html">foley.eval.baseline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.embedder.html">foley.eval.embedder</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fidelity.html">foley.eval.fidelity</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fit.html">foley.eval.fit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.golden.html">foley.eval.golden</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.panel_page.html">foley.eval.panel_page</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.prompt_match.html">foley.eval.prompt_match</a></li>
 <li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">foley.eval.reliability</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.retrieval.html">foley.eval.retrieval</a></li>
@@ -508,16 +511,19 @@ this module keeps <code class="docutils literal notranslate"><span class="pre">i
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.reliability.calibrate_judge_vs_human" title="foley.eval.reliability.calibrate_judge_vs_human"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibrate_judge_vs_human</span></code></a>(human_grades, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.reliability.alpha_result" title="foley.eval.reliability.alpha_result"><code class="xref py py-obj docutils literal notranslate"><span class="pre">alpha_result</span></code></a>(reliability_data, *[, level])</p></td>
+<td><p>An <a class="reference internal" href="#foley.eval.reliability.AlphaResult" title="foley.eval.reliability.AlphaResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">AlphaResult</span></code></a> for any <code class="docutils literal notranslate"><span class="pre">(raters</span> <span class="pre">×</span> <span class="pre">units)</span></code> matrix (<code class="docutils literal notranslate"><span class="pre">nan</span></code> = missing).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.reliability.calibrate_judge_vs_human" title="foley.eval.reliability.calibrate_judge_vs_human"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calibrate_judge_vs_human</span></code></a>(human_grades, ...)</p></td>
 <td><p>Compute judge-vs-human agreement and the promotion verdict (report 08 §2.3).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.reliability.krippendorff_alpha" title="foley.eval.reliability.krippendorff_alpha"><code class="xref py py-obj docutils literal notranslate"><span class="pre">krippendorff_alpha</span></code></a>(reliability_data, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.reliability.krippendorff_alpha" title="foley.eval.reliability.krippendorff_alpha"><code class="xref py py-obj docutils literal notranslate"><span class="pre">krippendorff_alpha</span></code></a>(reliability_data, *[, ...])</p></td>
 <td><p>Krippendorff's α over <code class="docutils literal notranslate"><span class="pre">(raters</span> <span class="pre">×</span> <span class="pre">units)</span></code> ratings (<code class="docutils literal notranslate"><span class="pre">nan</span></code> = missing).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.reliability.percent_agreement" title="foley.eval.reliability.percent_agreement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">percent_agreement</span></code></a>(reliability_data)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.reliability.percent_agreement" title="foley.eval.reliability.percent_agreement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">percent_agreement</span></code></a>(reliability_data)</p></td>
 <td><p>Raw pairwise percent agreement, reported ALONGSIDE α (report 08 §2.3).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.reliability.reliability_band" title="foley.eval.reliability.reliability_band"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reliability_band</span></code></a>(alpha)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.reliability.reliability_band" title="foley.eval.reliability.reliability_band"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reliability_band</span></code></a>(alpha)</p></td>
 <td><p>Map an α (or κ) to Krippendorff's benchmark band.</p></td>
 </tr>
 </tbody>
@@ -547,6 +553,19 @@ this module keeps <code class="docutils literal notranslate"><span class="pre">i
 unattended use only once its agreement with the human raters reaches the
 <a class="reference internal" href="#foley.eval.reliability.ALPHA_RELIABLE" title="foley.eval.reliability.ALPHA_RELIABLE"><code class="xref py py-data docutils literal notranslate"><span class="pre">ALPHA_RELIABLE</span></code></a> band.</p>
 <dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.eval.reliability.alpha_result">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.reliability.</span></span><span class="sig-name descname"><span class="pre">alpha_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reliability_data</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ordinal'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/reliability.html#alpha_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.reliability.alpha_result" title="Link to this definition">#</a></dt>
+<dd><p>An <a class="reference internal" href="#foley.eval.reliability.AlphaResult" title="foley.eval.reliability.AlphaResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">AlphaResult</span></code></a> for any <code class="docutils literal notranslate"><span class="pre">(raters</span> <span class="pre">×</span> <span class="pre">units)</span></code> matrix (<code class="docutils literal notranslate"><span class="pre">nan</span></code> = missing).</p>
+<p>The one place α, its band and the promotion rule are put together: used for the
+judge-vs-human matrix here and for human-only agreement in <a class="reference internal" href="foley.eval.panel.html#module-foley.eval.panel" title="foley.eval.panel"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.eval.panel</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#foley.eval.reliability.AlphaResult" title="foley.eval.reliability.AlphaResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">AlphaResult</span></code></a></span></p>
+</dd>
 </dl>
 </dd></dl>
 
@@ -687,6 +706,7 @@ tolerated (units with &lt; 2 ratings are dropped, no imputation). Pure numpy.</p
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.reliability.ALPHA_RELIABLE"><code class="docutils literal notranslate"><span class="pre">ALPHA_RELIABLE</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.reliability.AlphaResult"><code class="docutils literal notranslate"><span class="pre">AlphaResult</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.reliability.alpha_result"><code class="docutils literal notranslate"><span class="pre">alpha_result()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.reliability.calibrate_judge_vs_human"><code class="docutils literal notranslate"><span class="pre">calibrate_judge_vs_human()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.reliability.krippendorff_alpha"><code class="docutils literal notranslate"><span class="pre">krippendorff_alpha()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.reliability.percent_agreement"><code class="docutils literal notranslate"><span class="pre">percent_agreement()</span></code></a></li>

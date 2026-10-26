@@ -52,11 +52,14 @@
 - [foley.weave.requirements](_autosummary/foley.weave.requirements.html.md): System-dependency onboarding for WEAVE’s optional upgrade paths (accompy-style).
 - [foley.weave.timeline](_autosummary/foley.weave.timeline.html.md): The sound-design timeline as an editable document — hydrate, edit, caption.
 - [foley.eval](_autosummary/foley.eval.html.md): Tier-1 retrieval evaluation — metrics, a frozen golden set, and the nDCG gate.
+- [foley.eval.bradley_terry](_autosummary/foley.eval.bradley_terry.html.md): Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).
+- [foley.eval.panel](_autosummary/foley.eval.panel.html.md): Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49)...
 - [foley.eval.baseline](_autosummary/foley.eval.baseline.html.md): The committed nDCG baseline — the PR gate’s SSOT + staleness stamps.
 - [foley.eval.embedder](_autosummary/foley.eval.embedder.html.md): A deterministic, numpy-only text embedder for the retrieval eval gate.
 - [foley.eval.fidelity](_autosummary/foley.eval.fidelity.html.md): Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).
 - [foley.eval.fit](_autosummary/foley.eval.fit.html.md): Tier-2 fit evaluation — “does the accepted clip actually match the intent?” (report 08 §2/§5).
 - [foley.eval.golden](_autosummary/foley.eval.golden.html.md): The frozen golden set + the deterministic Ring-0 retrieval harness.
+- [foley.eval.panel_page](_autosummary/foley.eval.panel_page.html.md): A self-contained listening page for a human panel (#49): open it in a browser, rate, download.
 - [foley.eval.prompt_match](_autosummary/foley.eval.prompt_match.html.md): Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).
 - [foley.eval.reliability](_autosummary/foley.eval.reliability.html.md): Inter-rater reliability — Krippendorff’s α + the judge-vs-human calibration guardrail.
 - [foley.eval.retrieval](_autosummary/foley.eval.retrieval.html.md): Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.
@@ -110,7 +113,7 @@
 - [foley.sources.wikimedia_commons.config](_autosummary/foley.sources.wikimedia_commons.config.html.md): &#96;SOURCE_CONFIG&#96; for the Wikimedia Commons retrieve source (#79 · report 14 §3.3).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 12:55 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 13:23 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

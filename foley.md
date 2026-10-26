@@ -1,4 +1,4 @@
-> built 2026-10-26 12:55 UTC from f3f27ee (main) · foley 0.0.51. Details: build_info.json
+> built 2026-10-26 13:23 UTC from 8e306d9 (main) · foley 0.0.52. Details: build_info.json
 
 # index.html.md
 
@@ -3112,24 +3112,49 @@ silently-shifted corpus. Re-baselining is a deliberate, reviewable one-line diff
 
 ### Module Attributes
 
-| [`DEFAULT_BASELINE_PATH`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.DEFAULT_BASELINE_PATH)   | Package data dir (ships in the wheel); the baseline lives beside the seed.        |
-|--------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| [`DEFAULT_TOLERANCE`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.DEFAULT_TOLERANCE)       | The regression tolerance from report 08 §5 (Δ [nDCG@10](mailto:nDCG@10) ≥ −0.02). |
+| [`DEFAULT_BASELINE_PATH`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.DEFAULT_BASELINE_PATH)     | Package data dir (ships in the wheel); the baseline lives beside the seed.        |
+|----------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| [`DEFAULT_FIT_BASELINE_PATH`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.DEFAULT_FIT_BASELINE_PATH) | The committed Tier-2 fit baseline, beside the nDCG one.                           |
+| [`DEFAULT_TOLERANCE`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.DEFAULT_TOLERANCE)         | The regression tolerance from report 08 §5 (Δ [nDCG@10](mailto:nDCG@10) ≥ −0.02). |
+| [`FIT_METRIC`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.FIT_METRIC)                | The fit metric the Tier-2 baseline gates.                                         |
 
 ### Functions
 
-| [`is_stale`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.is_stale)(baseline, \*, seed_path, manifest_path)   | True if the baseline's fixture stamps no longer match the fixtures on disk.   |
-|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
-| [`load_baseline`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.load_baseline)([path])                              | Load the committed baseline dict from `path`.                                 |
-| [`write_baseline`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.write_baseline)(report, \*[, path, metric, ...])    | Write a fresh baseline from `report` (the `--update-baseline` action).        |
+| [`check_fit_baseline`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.check_fit_baseline)(report, baseline, \*[, ...])    | Gate `report` against a committed fit baseline: `(passed, message)`.                                                          |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| [`is_stale`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.is_stale)(baseline, \*, seed_path, manifest_path)   | True if the baseline's fixture stamps no longer match the fixtures on disk.                                                   |
+| [`load_baseline`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.load_baseline)([path])                              | Load the committed baseline dict from `path`.                                                                                 |
+| [`write_baseline`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.write_baseline)(report, \*[, path, metric, ...])    | Write a fresh baseline from `report` (the `--update-baseline` action).                                                        |
+| [`write_fit_baseline`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.write_fit_baseline)(report, \*[, path, level, ...]) | Write a fresh Tier-2 fit baseline from a [`FitReport`](_autosummary/foley.eval.fit.html.md#foley.eval.fit.FitReport). |
 
 ### foley.eval.baseline.DEFAULT_BASELINE_PATH *= PosixPath('/home/runner/work/foley/foley/foley/data/golden/baseline.json')*
 
 Package data dir (ships in the wheel); the baseline lives beside the seed.
 
+### foley.eval.baseline.DEFAULT_FIT_BASELINE_PATH *= PosixPath('/home/runner/work/foley/foley/foley/data/golden/fit_baseline.json')*
+
+The committed Tier-2 fit baseline, beside the nDCG one.
+
 ### foley.eval.baseline.DEFAULT_TOLERANCE *= 0.02*
 
 The regression tolerance from report 08 §5 (Δ [nDCG@10](mailto:nDCG@10) ≥ −0.02).
+
+### foley.eval.baseline.FIT_METRIC *= 'fit_precision'*
+
+The fit metric the Tier-2 baseline gates.
+
+### foley.eval.baseline.check_fit_baseline(report, baseline, , level='judge', sample=None, seed_path=None, manifest_path=None)
+
+Gate `report` against a committed fit baseline: `(passed, message)`.
+
+Passes when `fit_precision >= value - tolerance`. A report measured under a different
+judge, embedder, rung, sample, seed or `k` than the baseline’s `run` is not
+comparable and **fails** with a message saying so (re-stamp with
+`foley eval-fit --update-baseline`), never a silent pass. So does a golden set that
+no longer matches the baseline’s stamp, when `seed_path` and `manifest_path` are given.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.eval.baseline.is_stale(baseline, , seed_path, manifest_path)
 
@@ -3158,6 +3183,106 @@ generation (bumped when the frozen set is regrown).
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 * **Returns:**
   The baseline dict that was written.
+
+### foley.eval.baseline.write_fit_baseline(report, , path=PosixPath('/home/runner/work/foley/foley/foley/data/golden/fit_baseline.json'), level='judge', sample=None, tolerance=0.02, seed_path, manifest_path, updated_at, n_items, revision='gld-v1')
+
+Write a fresh Tier-2 fit baseline from a [`FitReport`](_autosummary/foley.eval.fit.html.md#foley.eval.fit.FitReport).
+
+The sibling of [`write_baseline()`](_autosummary/foley.eval.baseline.html.md#foley.eval.baseline.write_baseline): the committed number is `fit_precision` with the
+same fixture stamps (so a golden-set edit is detected) plus the run it was measured
+under (judge, embedder, rung, sample, seed, `k`). The committed file is stamped on the
+hermetic path (the deterministic fake judge, no network); re-stamp it with a real judge
+once its numbers are stable, which records that judge in `run`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+
+# _autosummary/foley.eval.bradley_terry.html.md
+
+# foley.eval.bradley_terry
+
+Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).
+
+A 2AFC panel (“which of these two clips fits the prompt better?”) gives win counts between
+pairs of systems (a backend, a judge, a prompt style). Bradley-Terry turns them into one
+strength per item: `P(i beats j) = s_i / (s_i + s_j)`. Strengths are reported on the log
+scale, centred on 0, so a difference of `d` means odds `e**d` that the higher one wins.
+
+With comparisons that fall into disconnected groups the strengths of different groups are not
+comparable (`connected` is `False`), whatever the prior. Bootstrap intervals resample single
+judgements, ignoring that one rater’s judgements are correlated; treat them as optimistic.
+
+Fitted by the MM (minorise-maximise) iteration of Hunter (2004). A small `prior` of virtual
+games (one half-win each way against every other item) keeps the estimate finite when an item
+never wins or never loses, which a small panel often produces; set `prior=0` for the plain
+maximum-likelihood fit (it can diverge on such data). Pure numpy, deterministic; bootstrap
+intervals take an explicit `seed`.
+
+### Module Attributes
+
+| [`DEFAULT_PRIOR`](_autosummary/foley.eval.bradley_terry.html.md#foley.eval.bradley_terry.DEFAULT_PRIOR)   | Virtual half-wins each way between every pair of items (the Bayesian regulariser).   |
+|------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+
+### Functions
+
+| [`fit`](_autosummary/foley.eval.bradley_terry.html.md#foley.eval.bradley_terry.fit)(comparisons, \*[, prior, max_iter, tol, ...])   | Fit Bradley-Terry strengths to `(winner, loser)` comparisons.                |
+|------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| [`win_matrix`](_autosummary/foley.eval.bradley_terry.html.md#foley.eval.bradley_terry.win_matrix)(comparisons)                             | `(items, wins)` from `(winner, loser)` pairs; `wins[i][j]` = times i beat j. |
+
+### Classes
+
+| [`BradleyTerry`](_autosummary/foley.eval.bradley_terry.html.md#foley.eval.bradley_terry.BradleyTerry)(items, scores, n_comparisons, ...)   | Fitted strengths: `items[i]` has log-strength `scores[i]` (mean 0).   |
+|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------|
+
+### *class* foley.eval.bradley_terry.BradleyTerry(items, scores, n_comparisons, converged, connected, ci=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Fitted strengths: `items[i]` has log-strength `scores[i]` (mean 0).
+
+#### p_win(a, b)
+
+The fitted probability that `a` beats `b`.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### ranking()
+
+Items from strongest to weakest.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.eval.bradley_terry.DEFAULT_PRIOR *= 0.5*
+
+Virtual half-wins each way between every pair of items (the Bayesian regulariser).
+
+### foley.eval.bradley_terry.fit(comparisons, , prior=0.5, max_iter=1000, tol=1e-10, bootstrap=0, ci=0.95, seed=0)
+
+Fit Bradley-Terry strengths to `(winner, loser)` comparisons.
+
+* **Parameters:**
+  * **comparisons** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – One `(winner, loser)` pair per judgement (ties are left out).
+  * **prior** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Virtual half-wins each way between every pair (see the module docstring).
+  * **max_iter** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – MM iteration cap.
+  * **tol** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Stop when the largest log-strength change is under this.
+  * **bootstrap** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – If positive, resample the judgements this many times (seeded) and add
+    percentile intervals at level `ci` to the result.
+  * **ci** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The interval level.
+  * **seed** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The bootstrap RNG seed.
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – With fewer than two distinct items, or a comparison of an item with itself.
+* **Return type:**
+  [`BradleyTerry`](_autosummary/foley.eval.bradley_terry.html.md#foley.eval.bradley_terry.BradleyTerry)
+
+### foley.eval.bradley_terry.win_matrix(comparisons)
+
+`(items, wins)` from `(winner, loser)` pairs; `wins[i][j]` = times i beat j.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)], [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]]
 
 
 # _autosummary/foley.eval.embedder.html.md
@@ -3653,34 +3778,37 @@ function-local so `import foley` stays dol-only.
 
 ### Functions
 
-| [`ndcg_at_k`](_autosummary/foley.eval.html.md#foley.eval.ndcg_at_k)(qrels_q, run_q[, k])                    | Normalized DCG at `k` with linear gains (0.0 when no graded answer).                                                                                     |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`recall_at_k`](_autosummary/foley.eval.html.md#foley.eval.recall_at_k)(qrels_q, run_q[, k, rel_lvl])         | Fraction of ALL relevant docs (grade ≥ `rel_lvl`) retrieved in the top-`k`.                                                                              |
-| [`precision_at_k`](_autosummary/foley.eval.html.md#foley.eval.precision_at_k)(qrels_q, run_q[, k, rel_lvl])      | Fraction of the top-`k` that is relevant (denominator is literal `k`).                                                                                   |
-| [`average_precision_at_k`](_autosummary/foley.eval.html.md#foley.eval.average_precision_at_k)(qrels_q, run_q[, k, ...])  | Average precision (trec_eval `map`: divide by TOTAL relevant, not `min(R,k)`).                                                                           |
-| [`mrr_at_k`](_autosummary/foley.eval.html.md#foley.eval.mrr_at_k)(qrels_q, run_q[, k, rel_lvl])            | Reciprocal rank of the first relevant doc in the top-`k` (0.0 if none).                                                                                  |
-| [`mean_over_queries`](_autosummary/foley.eval.html.md#foley.eval.mean_over_queries)(values)                         | Macro-average of per-query metric values (0.0 for an empty list).                                                                                        |
-| [`build_run`](_autosummary/foley.eval.html.md#foley.eval.build_run)(candidates)                             | Turn an ordered `search()` result into a run row with distinct scores.                                                                                   |
-| [`evaluate_run`](_autosummary/foley.eval.html.md#foley.eval.evaluate_run)(run, qrels, \*[, k, metrics, ...])   | Score a `run` against `qrels`, returning a [`RetrievalReport`](_autosummary/foley.eval.html.md#foley.eval.RetrievalReport).                                             |
-| [`load_golden`](_autosummary/foley.eval.html.md#foley.eval.load_golden)([path])                               | Load and validate the frozen golden set from `path` (JSON list).                                                                                         |
-| [`to_qrels`](_autosummary/foley.eval.html.md#foley.eval.to_qrels)(golden)                                  | Flatten the golden set into TREC qrels: `{query_id: {clip_id: grade}}`.                                                                                  |
-| [`build_eval_library`](_autosummary/foley.eval.html.md#foley.eval.build_eval_library)(\*[, embedder, manifest_path]) | Build the ephemeral Ring-0 eval library (stem ids + injected caption vectors).                                                                           |
-| [`run_ring0_retrieval_eval`](_autosummary/foley.eval.html.md#foley.eval.run_ring0_retrieval_eval)(\*[, k, ...])            | Score the golden set's queries against the Ring-0 library — the gate input.                                                                              |
-| [`load_baseline`](_autosummary/foley.eval.html.md#foley.eval.load_baseline)([path])                             | Load the committed baseline dict from `path`.                                                                                                            |
-| [`write_baseline`](_autosummary/foley.eval.html.md#foley.eval.write_baseline)(report, \*[, path, metric, ...])   | Write a fresh baseline from `report` (the `--update-baseline` action).                                                                                   |
-| [`is_stale`](_autosummary/foley.eval.html.md#foley.eval.is_stale)(baseline, \*, seed_path, manifest_path)  | True if the baseline's fixture stamps no longer match the fixtures on disk.                                                                              |
-| [`run_fit_eval`](_autosummary/foley.eval.html.md#foley.eval.run_fit_eval)(\*[, golden, golden_path, ...])      | Run the Tier-2 fit eval over a stratified golden sample → a [`FitReport`](_autosummary/foley.eval.html.md#foley.eval.FitReport).                                  |
-| [`fit_precision`](_autosummary/foley.eval.html.md#foley.eval.fit_precision)(matches, relevants)                 | Fraction of judge-accepted candidates that are actually gold-relevant.                                                                                   |
-| [`fit_recall`](_autosummary/foley.eval.html.md#foley.eval.fit_recall)(matches, relevants)                    | `TP / (TP + FN)` — of the gold-relevant candidates, how many the judge confirmed.                                                                        |
-| [`fit_f1`](_autosummary/foley.eval.html.md#foley.eval.fit_f1)(matches, relevants)                        | The harmonic mean of [`fit_precision()`](_autosummary/foley.eval.html.md#foley.eval.fit_precision) and [`fit_recall()`](_autosummary/foley.eval.html.md#foley.eval.fit_recall). |
-| [`stratified_sample`](_autosummary/foley.eval.html.md#foley.eval.stratified_sample)(units, \*, strata_keys, ...)    | Deterministic seeded stratified draw over `units` — the cost gate.                                                                                       |
-| [`krippendorff_alpha`](_autosummary/foley.eval.html.md#foley.eval.krippendorff_alpha)(reliability_data, \*[, ...])   | Krippendorff's α over `(raters × units)` ratings (`nan` = missing).                                                                                      |
-| [`percent_agreement`](_autosummary/foley.eval.html.md#foley.eval.percent_agreement)(reliability_data)               | Raw pairwise percent agreement, reported ALONGSIDE α (report 08 §2.3).                                                                                   |
-| [`reliability_band`](_autosummary/foley.eval.html.md#foley.eval.reliability_band)(alpha)                           | Map an α (or κ) to Krippendorff's benchmark band.                                                                                                        |
-| [`calibrate_judge_vs_human`](_autosummary/foley.eval.html.md#foley.eval.calibrate_judge_vs_human)(human_grades, ...)       | Compute judge-vs-human agreement and the promotion verdict (report 08 §2.3).                                                                             |
-| [`frechet_distance`](_autosummary/foley.eval.html.md#foley.eval.frechet_distance)(x_ref, x_gen)                    | Fréchet distance between two embedding sets (the FAD formula).                                                                                           |
-| [`kernel_audio_distance`](_autosummary/foley.eval.html.md#foley.eval.kernel_audio_distance)(x_ref, x_gen, \*[, ...])    | Kernel Audio Distance — the unbiased RBF-MMD² between two embedding sets.                                                                                |
-| [`generation_fidelity`](_autosummary/foley.eval.html.md#foley.eval.generation_fidelity)(ref_wavs, gen_wavs, \*, ...)  | Embed two wav sets through an injected embedder and compute FAD or KAD.                                                                                  |
+| [`ndcg_at_k`](_autosummary/foley.eval.html.md#foley.eval.ndcg_at_k)(qrels_q, run_q[, k])                     | Normalized DCG at `k` with linear gains (0.0 when no graded answer).                                                                                     |
+|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`recall_at_k`](_autosummary/foley.eval.html.md#foley.eval.recall_at_k)(qrels_q, run_q[, k, rel_lvl])          | Fraction of ALL relevant docs (grade ≥ `rel_lvl`) retrieved in the top-`k`.                                                                              |
+| [`precision_at_k`](_autosummary/foley.eval.html.md#foley.eval.precision_at_k)(qrels_q, run_q[, k, rel_lvl])       | Fraction of the top-`k` that is relevant (denominator is literal `k`).                                                                                   |
+| [`average_precision_at_k`](_autosummary/foley.eval.html.md#foley.eval.average_precision_at_k)(qrels_q, run_q[, k, ...])   | Average precision (trec_eval `map`: divide by TOTAL relevant, not `min(R,k)`).                                                                           |
+| [`mrr_at_k`](_autosummary/foley.eval.html.md#foley.eval.mrr_at_k)(qrels_q, run_q[, k, rel_lvl])             | Reciprocal rank of the first relevant doc in the top-`k` (0.0 if none).                                                                                  |
+| [`mean_over_queries`](_autosummary/foley.eval.html.md#foley.eval.mean_over_queries)(values)                          | Macro-average of per-query metric values (0.0 for an empty list).                                                                                        |
+| [`build_run`](_autosummary/foley.eval.html.md#foley.eval.build_run)(candidates)                              | Turn an ordered `search()` result into a run row with distinct scores.                                                                                   |
+| [`evaluate_run`](_autosummary/foley.eval.html.md#foley.eval.evaluate_run)(run, qrels, \*[, k, metrics, ...])    | Score a `run` against `qrels`, returning a [`RetrievalReport`](_autosummary/foley.eval.html.md#foley.eval.RetrievalReport).                                             |
+| [`load_golden`](_autosummary/foley.eval.html.md#foley.eval.load_golden)([path])                                | Load and validate the frozen golden set from `path` (JSON list).                                                                                         |
+| [`to_qrels`](_autosummary/foley.eval.html.md#foley.eval.to_qrels)(golden)                                   | Flatten the golden set into TREC qrels: `{query_id: {clip_id: grade}}`.                                                                                  |
+| [`build_eval_library`](_autosummary/foley.eval.html.md#foley.eval.build_eval_library)(\*[, embedder, manifest_path])  | Build the ephemeral Ring-0 eval library (stem ids + injected caption vectors).                                                                           |
+| [`run_ring0_retrieval_eval`](_autosummary/foley.eval.html.md#foley.eval.run_ring0_retrieval_eval)(\*[, k, ...])             | Score the golden set's queries against the Ring-0 library — the gate input.                                                                              |
+| [`load_baseline`](_autosummary/foley.eval.html.md#foley.eval.load_baseline)([path])                              | Load the committed baseline dict from `path`.                                                                                                            |
+| [`write_baseline`](_autosummary/foley.eval.html.md#foley.eval.write_baseline)(report, \*[, path, metric, ...])    | Write a fresh baseline from `report` (the `--update-baseline` action).                                                                                   |
+| [`is_stale`](_autosummary/foley.eval.html.md#foley.eval.is_stale)(baseline, \*, seed_path, manifest_path)   | True if the baseline's fixture stamps no longer match the fixtures on disk.                                                                              |
+| [`write_fit_baseline`](_autosummary/foley.eval.html.md#foley.eval.write_fit_baseline)(report, \*[, path, level, ...]) | Write a fresh Tier-2 fit baseline from a [`FitReport`](_autosummary/foley.eval.fit.html.md#foley.eval.fit.FitReport).                            |
+| [`check_fit_baseline`](_autosummary/foley.eval.html.md#foley.eval.check_fit_baseline)(report, baseline, \*[, ...])    | Gate `report` against a committed fit baseline: `(passed, message)`.                                                                                     |
+| [`run_fit_eval`](_autosummary/foley.eval.html.md#foley.eval.run_fit_eval)(\*[, golden, golden_path, ...])       | Run the Tier-2 fit eval over a stratified golden sample → a [`FitReport`](_autosummary/foley.eval.html.md#foley.eval.FitReport).                                  |
+| [`fit_precision`](_autosummary/foley.eval.html.md#foley.eval.fit_precision)(matches, relevants)                  | Fraction of judge-accepted candidates that are actually gold-relevant.                                                                                   |
+| [`fit_recall`](_autosummary/foley.eval.html.md#foley.eval.fit_recall)(matches, relevants)                     | `TP / (TP + FN)` — of the gold-relevant candidates, how many the judge confirmed.                                                                        |
+| [`fit_f1`](_autosummary/foley.eval.html.md#foley.eval.fit_f1)(matches, relevants)                         | The harmonic mean of [`fit_precision()`](_autosummary/foley.eval.html.md#foley.eval.fit_precision) and [`fit_recall()`](_autosummary/foley.eval.html.md#foley.eval.fit_recall). |
+| [`stratified_sample`](_autosummary/foley.eval.html.md#foley.eval.stratified_sample)(units, \*, strata_keys, ...)     | Deterministic seeded stratified draw over `units` — the cost gate.                                                                                       |
+| [`krippendorff_alpha`](_autosummary/foley.eval.html.md#foley.eval.krippendorff_alpha)(reliability_data, \*[, ...])    | Krippendorff's α over `(raters × units)` ratings (`nan` = missing).                                                                                      |
+| [`percent_agreement`](_autosummary/foley.eval.html.md#foley.eval.percent_agreement)(reliability_data)                | Raw pairwise percent agreement, reported ALONGSIDE α (report 08 §2.3).                                                                                   |
+| [`reliability_band`](_autosummary/foley.eval.html.md#foley.eval.reliability_band)(alpha)                            | Map an α (or κ) to Krippendorff's benchmark band.                                                                                                        |
+| [`calibrate_judge_vs_human`](_autosummary/foley.eval.html.md#foley.eval.calibrate_judge_vs_human)(human_grades, ...)        | Compute judge-vs-human agreement and the promotion verdict (report 08 §2.3).                                                                             |
+| [`render_panel_html`](_autosummary/foley.eval.html.md#foley.eval.render_panel_html)(tasks, \*[, title])              | One self-contained HTML page for the blind `tasks` (see the module docstring).                                                                           |
+| [`frechet_distance`](_autosummary/foley.eval.html.md#foley.eval.frechet_distance)(x_ref, x_gen)                     | Fréchet distance between two embedding sets (the FAD formula).                                                                                           |
+| [`kernel_audio_distance`](_autosummary/foley.eval.html.md#foley.eval.kernel_audio_distance)(x_ref, x_gen, \*[, ...])     | Kernel Audio Distance — the unbiased RBF-MMD² between two embedding sets.                                                                                |
+| [`generation_fidelity`](_autosummary/foley.eval.html.md#foley.eval.generation_fidelity)(ref_wavs, gen_wavs, \*, ...)   | Embed two wav sets through an injected embedder and compute FAD or KAD.                                                                                  |
 
 ### Classes
 
@@ -3898,6 +4026,19 @@ reliable band — the model judge may then be trusted unattended on that slice.
 * **Returns:**
   An [`AlphaResult`](_autosummary/foley.eval.html.md#foley.eval.AlphaResult).
 
+### foley.eval.check_fit_baseline(report, baseline, , level='judge', sample=None, seed_path=None, manifest_path=None)
+
+Gate `report` against a committed fit baseline: `(passed, message)`.
+
+Passes when `fit_precision >= value - tolerance`. A report measured under a different
+judge, embedder, rung, sample, seed or `k` than the baseline’s `run` is not
+comparable and **fails** with a message saying so (re-stamp with
+`foley eval-fit --update-baseline`), never a silent pass. So does a golden set that
+no longer matches the baseline’s stamp, when `seed_path` and `manifest_path` are given.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.eval.evaluate_run(run, qrels, , k=10, metrics=('ndcg@10', 'recall@10', 'map@10', 'mrr@10'), rel_lvl=1)
 
 Score a `run` against `qrels`, returning a [`RetrievalReport`](_autosummary/foley.eval.html.md#foley.eval.RetrievalReport).
@@ -4096,6 +4237,16 @@ Map an α (or κ) to Krippendorff’s benchmark band.
   `'reliable'` (α ≥ 0.8), `'tentative'` (0.667 ≤ α < 0.8), else
   `'revise-rubric'`.
 
+### foley.eval.render_panel_html(tasks, , title='Listening panel')
+
+One self-contained HTML page for the blind `tasks` (see the module docstring).
+
+The tasks are embedded as JSON, so the page needs nothing but the audio files their
+`clip` paths name. Save the result next to the audio and open or host it.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 ### foley.eval.run_fit_eval(, golden=None, golden_path=PosixPath('/home/runner/work/foley/foley/foley/data/golden/seed.json'), sample=None, strata_keys=('family', 'diegetic'), fit_judge=None, embedder=None, level=VerifyLevel.judge, seed=0, k=10, llm=None)
 
 Run the Tier-2 fit eval over a stratified golden sample → a [`FitReport`](_autosummary/foley.eval.html.md#foley.eval.FitReport).
@@ -4185,17 +4336,319 @@ generation (bumped when the frozen set is regrown).
 * **Returns:**
   The baseline dict that was written.
 
+### foley.eval.write_fit_baseline(report, , path=PosixPath('/home/runner/work/foley/foley/foley/data/golden/fit_baseline.json'), level='judge', sample=None, tolerance=0.02, seed_path, manifest_path, updated_at, n_items, revision='gld-v1')
+
+Write a fresh Tier-2 fit baseline from a [`FitReport`](_autosummary/foley.eval.fit.html.md#foley.eval.fit.FitReport).
+
+The sibling of [`write_baseline()`](_autosummary/foley.eval.html.md#foley.eval.write_baseline): the committed number is `fit_precision` with the
+same fixture stamps (so a golden-set edit is detected) plus the run it was measured
+under (judge, embedder, rung, sample, seed, `k`). The committed file is stamped on the
+hermetic path (the deterministic fake judge, no network); re-stamp it with a real judge
+once its numbers are stable, which records that judge in `run`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### Modules
 
-| [`baseline`](_autosummary/foley.eval.baseline.html.md#module-foley.eval.baseline)         | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                           |
-|----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| [`embedder`](_autosummary/foley.eval.embedder.html.md#module-foley.eval.embedder)         | A deterministic, numpy-only text embedder for the retrieval eval gate.                         |
-| [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)         | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).    |
-| [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit)                   | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5). |
-| [`golden`](_autosummary/foley.eval.golden.html.md#module-foley.eval.golden)             | The frozen golden set + the deterministic Ring-0 retrieval harness.                            |
-| [`prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match) | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).        |
-| [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)   | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.         |
-| [`retrieval`](_autosummary/foley.eval.retrieval.html.md#module-foley.eval.retrieval)       | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                    |
+| [`bradley_terry`](_autosummary/foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)   | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                             |
+|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| [`panel`](_autosummary/foley.eval.panel.html.md#module-foley.eval.panel)                   | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49). |
+| [`baseline`](_autosummary/foley.eval.baseline.html.md#module-foley.eval.baseline)             | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                  |
+| [`embedder`](_autosummary/foley.eval.embedder.html.md#module-foley.eval.embedder)             | A deterministic, numpy-only text embedder for the retrieval eval gate.                                |
+| [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)             | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).           |
+| [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit)                       | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).        |
+| [`golden`](_autosummary/foley.eval.golden.html.md#module-foley.eval.golden)                 | The frozen golden set + the deterministic Ring-0 retrieval harness.                                   |
+| [`panel_page`](_autosummary/foley.eval.panel_page.html.md#module-foley.eval.panel_page)         | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.        |
+| [`prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)     | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).               |
+| [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)       | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                |
+| [`retrieval`](_autosummary/foley.eval.retrieval.html.md#module-foley.eval.retrieval)           | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                           |
+
+
+# _autosummary/foley.eval.panel.html.md
+
+# foley.eval.panel
+
+Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49).
+
+A model judge is only trusted once it agrees with people ([`foley.eval.reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)). This
+module is the manual-first path that produces those people’s judgements; the panel itself is
+run by a person. Three task kinds, one flow:
+
+1. **Build** blind tasks from what you want judged: [`grade_tasks()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.grade_tasks) (rate one clip 0-3 for
+   a prompt: the scale the judge-vs-human α uses), [`pairwise_tasks()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.pairwise_tasks) (2AFC: which of two
+   fits better; feeds [`foley.eval.bradley_terry`](_autosummary/foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)), [`mushra_tasks()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.mushra_tasks) (rate several
+   systems 0-100 against a reference, with a hidden copy of the reference and a low anchor, in
+   the style of ITU-R BS.1534). Sides and order are shuffled with a `seed`; stimulus ids are
+   opaque. [`save_tasks()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.save_tasks) copies every clip to `audio/<stimulus id><ext>` (so neither a
+   file name nor the hidden reference’s path gives it away) and writes `tasks.json` (what
+   raters get) and `key.json` (which system each stimulus is; keep it from the raters).
+2. **Run** it: `render_panel_html()` writes one self-contained page (audio, forms, a
+   “download responses” button) to open in a browser or host anywhere static; or send
+   `tasks.json` to raters and collect the same `responses.jsonl` by any means. A response is
+   one JSON line: `{"rater": ..., "task": ..., "answer": ...}` (the answer shape is per kind,
+   see [`check_answer()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.check_answer)).
+3. **Analyse**: [`pairwise_comparisons()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.pairwise_comparisons) -> `bradley_terry.fit`;
+   [`screen_mushra()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.screen_mushra) (the hidden-reference rule of ITU-R BS.1534 only; the standard’s
+   > mid-range anchor rule is not implemented) and [`mushra_scores()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.mushra_scores); [`rating_units()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.rating_units) ->
+
+   [`calibrate_against_judge()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.calibrate_against_judge), which returns the human-human and judge-vs-human
+   : Krippendorff α ([`foley.eval.reliability.calibrate_judge_vs_human()`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.calibrate_judge_vs_human)) to put in the
+     calibration report.
+
+Pure stdlib apart from the numpy used in the analysis functions.
+
+### Module Attributes
+
+| [`GRADE_LABELS`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.GRADE_LABELS)         | The ordinal fit scale of the judge-vs-human calibration, and what each grade means.                                                                                          |
+|-----------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`MUSHRA_REFERENCE_MIN`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.MUSHRA_REFERENCE_MIN) | drop a rater who scores the hidden reference under `MUSHRA_REFERENCE_MIN` in more than `MUSHRA_MAX_VIOLATION_RATE` of the trials.                                            |
+| [`MUSHRA_GRADE_BOUNDS`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.MUSHRA_GRADE_BOUNDS)  | MUSHRA 0-100 scores binned to the 0-3 grade scale (lower bound of each grade).                                                                                               |
+| [`MIN_RATERS`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.MIN_RATERS)           | A judge is only "promoted" on at least this many raters and rated units; below that α says little (and a panel with no variation in its grades gives α = 1 by construction). |
+| [`Z95`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.Z95)                  | The z of a 95% normal interval on a mean score.                                                                                                                              |
+| [`Key`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.Key)                  | `key` maps a stimulus id to `{"role": ..., "system": ...}` (never shown to raters).                                                                                          |
+
+### Functions
+
+| [`calibrate_against_judge`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.calibrate_against_judge)(units, judge_grades, \*)   | Human-human and judge-vs-human agreement, ready for the calibration report.                               |
+|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| [`check_answer`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.check_answer)(task, answer)                         | Raise `ValueError` unless `answer` has the shape `task.kind` takes.                                       |
+| [`grade_tasks`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.grade_tasks)(units)                                 | Tasks that ask for a 0-3 grade; `units` are `(unit_id, prompt, clip, system)`.                            |
+| [`load_key`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.load_key)(path)                                     | Read `key.json`.                                                                                          |
+| [`load_responses`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.load_responses)(path, tasks)                        | Read `responses.jsonl` (one `{"rater", "task", "answer"}` per line), validated.                           |
+| [`load_tasks`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.load_tasks)(path)                                   | Read `tasks.json`.                                                                                        |
+| [`mushra_scores`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.mushra_scores)(tasks, key, responses, \*[, raters]) | `{system: (mean, ci_low, ci_high)}` over MUSHRA answers (95% normal interval).                            |
+| [`mushra_tasks`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.mushra_tasks)(trials, \*[, seed])                   | MUSHRA-style tasks; `trials` are `(unit_id, prompt, reference_clip, [(clip, system), ...], anchor_clip)`. |
+| [`mushra_to_grade`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.mushra_to_grade)(score, \*[, bounds])               | A 0-100 score as a 0-3 grade (the highest grade whose lower bound the score reaches).                     |
+| [`pairwise_comparisons`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.pairwise_comparisons)(tasks, key, responses)        | `(winner_system, loser_system)` for every non-tie 2AFC answer (feed `bradley_terry.fit`).                 |
+| [`pairwise_tasks`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.pairwise_tasks)(comparisons, \*[, seed])            | 2AFC tasks; `comparisons` are `(prompt, (clip_a, system_a), (clip_b, system_b))`.                         |
+| [`rating_units`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.rating_units)(tasks, key, responses)                | `{unit: {rater: grade}}` from the grade and MUSHRA answers (the calibration feed).                        |
+| [`save_tasks`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.save_tasks)(tasks, key, directory, \*[, audio_dir]) | Write the panel folder: `tasks.json` (for raters), `key.json` (keep private), the audio.                  |
+| [`screen_mushra`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.screen_mushra)(tasks, key, responses, \*[, ...])    | `(accepted_raters, {rejected_rater: violation_rate})` by the hidden-reference rule.                       |
+
+### Classes
+
+| [`Stimulus`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.Stimulus)(id, clip)                           | One clip a rater hears: an opaque `id` and the audio `clip` (a path or URL).       |
+|-----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|
+| [`Task`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.Task)(id, kind, prompt, stimuli[, unit, ...]) | One judgement: `kind`, the `prompt` shown, the `stimuli` (shuffled), and a `unit`. |
+
+### foley.eval.panel.GRADE_LABELS *= {0: 'wrong: not the sound asked for', 1: 'related: same family, clearly off', 2: 'acceptable: usable for the moment', 3: 'ideal: exactly right'}*
+
+The ordinal fit scale of the judge-vs-human calibration, and what each grade means.
+
+### foley.eval.panel.Key
+
+`key` maps a stimulus id to `{"role": ..., "system": ...}` (never shown to raters).
+
+alias of [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.eval.panel.MIN_RATERS *= 3*
+
+A judge is only “promoted” on at least this many raters and rated units; below that α
+says little (and a panel with no variation in its grades gives α = 1 by construction).
+
+### foley.eval.panel.MUSHRA_GRADE_BOUNDS *= (0, 25, 60, 85)*
+
+MUSHRA 0-100 scores binned to the 0-3 grade scale (lower bound of each grade).
+
+### foley.eval.panel.MUSHRA_REFERENCE_MIN *= 90*
+
+drop a rater who scores the hidden reference under
+`MUSHRA_REFERENCE_MIN` in more than `MUSHRA_MAX_VIOLATION_RATE` of the trials.
+
+* **Type:**
+  Post-screening (ITU-R BS.1534)
+
+### *class* foley.eval.panel.Stimulus(id, clip)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One clip a rater hears: an opaque `id` and the audio `clip` (a path or URL).
+
+### *class* foley.eval.panel.Task(id, kind, prompt, stimuli, unit='', reference=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One judgement: `kind`, the `prompt` shown, the `stimuli` (shuffled), and a `unit`.
+
+`unit` names what is judged (a golden-set unit id); judge-vs-human calibration joins on it.
+MUSHRA tasks also carry the visible `reference` clip.
+
+### foley.eval.panel.Z95 *= 1.96*
+
+The z of a 95% normal interval on a mean score.
+
+### foley.eval.panel.calibrate_against_judge(units, judge_grades, , level='ordinal', min_raters=3, min_units=50)
+
+Human-human and judge-vs-human agreement, ready for the calibration report.
+
+The judge is compared with the humans’ **consensus** (the per-unit median grade), never
+as one more rater next to all of them: with many humans who agree with each other, a
+judge added as a row would borrow their agreement and look reliable whatever it says.
+`per_rater` is α of the judge against each person alone.
+
+* **Parameters:**
+  * **units** ([`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`int`](https://docs.python.org/3/builtins/functions.html#int)]]) – [`rating_units()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.rating_units)’ `{unit: {rater: grade}}`.
+  * **judge_grades** ([`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`int`](https://docs.python.org/3/builtins/functions.html#int)]) – The model judge’s `{unit: grade}` for the same units.
+  * **min_raters** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Fewer raters than this and nothing is promoted.
+  * **min_units** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Fewer units rated by at least two people than this and nothing is promoted.
+* **Returns:**
+  AlphaResult | None, “judge_vs_human”: AlphaResult | None,
+  “per_rater”: {rater: alpha}, “n_units”: …, “raters”: […], “insufficient”: […]}\`\`.
+  `human_alpha` is the humans’ own α (it needs two raters and a unit both rated);
+  `judge_vs_human` is the judge against the consensus. An `AlphaResult` is never
+  `promoted` while `insufficient` is non-empty: too few raters, too few doubly-rated
+  units, or human (or judge) grades that do not vary (α is 1 by construction then).
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.eval.panel.check_answer(task, answer)
+
+Raise `ValueError` unless `answer` has the shape `task.kind` takes.
+
+`grade`: an int in 0-3. `2afc`: a stimulus id of the task, or `None` for a tie.
+`mushra`: `{stimulus_id: score 0-100}` covering every stimulus.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.eval.panel.grade_tasks(units)
+
+Tasks that ask for a 0-3 grade; `units` are `(unit_id, prompt, clip, system)`.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Task`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.Task)], [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.eval.panel.load_key(path)
+
+Read `key.json`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.eval.panel.load_responses(path, tasks)
+
+Read `responses.jsonl` (one `{"rater", "task", "answer"}` per line), validated.
+
+A rater answering the same task twice keeps the last answer. Raters are told apart by
+name only: two people using the same name are merged, so give every rater a unique one.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.eval.panel.load_tasks(path)
+
+Read `tasks.json`.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Task`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.Task)]
+
+### foley.eval.panel.mushra_scores(tasks, key, responses, , raters=None)
+
+`{system: (mean, ci_low, ci_high)}` over MUSHRA answers (95% normal interval).
+
+Only `raters` (default: those [`screen_mushra()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.screen_mushra) accepts). The hidden reference and
+anchor are reported under their own names.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
+### foley.eval.panel.mushra_tasks(trials, , seed=0)
+
+MUSHRA-style tasks; `trials` are `(unit_id, prompt, reference_clip, [(clip, system), ...], anchor_clip)`.
+
+Each task shows the reference, and the systems plus a hidden copy of the reference and
+(if `anchor_clip` is given) a low-quality anchor, in shuffled order.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Task`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.Task)], [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.eval.panel.mushra_to_grade(score, , bounds=(0, 25, 60, 85))
+
+A 0-100 score as a 0-3 grade (the highest grade whose lower bound the score reaches).
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+### foley.eval.panel.pairwise_comparisons(tasks, key, responses)
+
+`(winner_system, loser_system)` for every non-tie 2AFC answer (feed `bradley_terry.fit`).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.eval.panel.pairwise_tasks(comparisons, , seed=0)
+
+2AFC tasks; `comparisons` are `(prompt, (clip_a, system_a), (clip_b, system_b))`.
+
+Which clip is on the left is shuffled per task from `seed`.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Task`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.Task)], [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.eval.panel.rating_units(tasks, key, responses)
+
+`{unit: {rater: grade}}` from the grade and MUSHRA answers (the calibration feed).
+
+A unit is `"<task.unit>|<system>"` for both kinds (one golden unit judged for two systems
+is two units); a MUSHRA score is binned by [`mushra_to_grade()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.mushra_to_grade). The hidden
+reference and anchor are not units.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`int`](https://docs.python.org/3/builtins/functions.html#int)]]
+
+### foley.eval.panel.save_tasks(tasks, key, directory, , audio_dir='audio')
+
+Write the panel folder: `tasks.json` (for raters), `key.json` (keep private), the audio.
+
+Every clip (a local file) is copied to `<directory>/<audio_dir>/<stimulus id><ext>` and the
+tasks written point at the copies, so a file name never names the system and the hidden
+reference does not share a path with the visible one. The returned tasks are those
+rewritten ones (hand them to [`foley.eval.panel_page.render_panel_html()`](_autosummary/foley.eval.panel_page.html.md#foley.eval.panel_page.render_panel_html)).
+
+* **Raises:**
+  * [**FileNotFoundError**](https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError) – A clip is not a local file (fetch it first).
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – Task ids repeat, or the clips are in more than one format (the extension
+        would give a system away).
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path), [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Task`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.Task)]]
+
+### foley.eval.panel.screen_mushra(tasks, key, responses, , reference_min=90, max_violation_rate=0.15)
+
+`(accepted_raters, {rejected_rater: violation_rate})` by the hidden-reference rule.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+
+# _autosummary/foley.eval.panel_page.html.md
+
+# foley.eval.panel_page
+
+A self-contained listening page for a human panel (#49): open it in a browser, rate, download.
+
+[`render_panel_html()`](_autosummary/foley.eval.panel_page.html.md#foley.eval.panel_page.render_panel_html) turns the blind tasks of [`foley.eval.panel`](_autosummary/foley.eval.panel.html.md#module-foley.eval.panel) into one static HTML
+file with no dependencies: audio players, the answer widget of each task kind (a 0-3 grade, a
+2AFC choice, MUSHRA sliders), progress kept in the browser’s local storage so a reload does not
+lose it, and a “Download responses” button that saves `responses.jsonl` in the format
+[`foley.eval.panel.load_responses()`](_autosummary/foley.eval.panel.html.md#foley.eval.panel.load_responses) reads. The page holds no key and no system names. Clips
+are referenced by the paths in the tasks, relative to where the page is served (copy the audio
+next to it, or use URLs).
+
+### Functions
+
+| [`render_panel_html`](_autosummary/foley.eval.panel_page.html.md#foley.eval.panel_page.render_panel_html)(tasks, \*[, title])   | One self-contained HTML page for the blind `tasks` (see the module docstring).   |
+|------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+
+### foley.eval.panel_page.render_panel_html(tasks, , title='Listening panel')
+
+One self-contained HTML page for the blind `tasks` (see the module docstring).
+
+The tasks are embedded as JSON, so the page needs nothing but the audio files their
+`clip` paths name. Save the result next to the audio and open or host it.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 
 # _autosummary/foley.eval.prompt_match.html.md
@@ -4310,11 +4763,12 @@ this module keeps `import foley` dol-only (the same discipline as
 
 ### Functions
 
-| [`calibrate_judge_vs_human`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.calibrate_judge_vs_human)(human_grades, ...)     | Compute judge-vs-human agreement and the promotion verdict (report 08 §2.3).   |
-|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| [`krippendorff_alpha`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.krippendorff_alpha)(reliability_data, \*[, ...]) | Krippendorff's α over `(raters × units)` ratings (`nan` = missing).            |
-| [`percent_agreement`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.percent_agreement)(reliability_data)             | Raw pairwise percent agreement, reported ALONGSIDE α (report 08 §2.3).         |
-| [`reliability_band`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.reliability_band)(alpha)                         | Map an α (or κ) to Krippendorff's benchmark band.                              |
+| [`alpha_result`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.alpha_result)(reliability_data, \*[, level])     | An [`AlphaResult`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.AlphaResult) for any `(raters × units)` matrix (`nan` = missing).   |
+|--------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| [`calibrate_judge_vs_human`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.calibrate_judge_vs_human)(human_grades, ...)     | Compute judge-vs-human agreement and the promotion verdict (report 08 §2.3).                                           |
+| [`krippendorff_alpha`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.krippendorff_alpha)(reliability_data, \*[, ...]) | Krippendorff's α over `(raters × units)` ratings (`nan` = missing).                                                    |
+| [`percent_agreement`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.percent_agreement)(reliability_data)             | Raw pairwise percent agreement, reported ALONGSIDE α (report 08 §2.3).                                                 |
+| [`reliability_band`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.reliability_band)(alpha)                         | Map an α (or κ) to Krippendorff's benchmark band.                                                                      |
 
 ### Classes
 
@@ -4334,6 +4788,16 @@ A judge-vs-human calibration record (surfaced as `FitReport.calibration`).
 Codifies the promotion rule in one legible object: a model judge is `promoted` to
 unattended use only once its agreement with the human raters reaches the
 [`ALPHA_RELIABLE`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.ALPHA_RELIABLE) band.
+
+### foley.eval.reliability.alpha_result(reliability_data, , level='ordinal')
+
+An [`AlphaResult`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.AlphaResult) for any `(raters × units)` matrix (`nan` = missing).
+
+The one place α, its band and the promotion rule are put together: used for the
+judge-vs-human matrix here and for human-only agreement in [`foley.eval.panel`](_autosummary/foley.eval.panel.html.md#module-foley.eval.panel).
+
+* **Return type:**
+  [`AlphaResult`](_autosummary/foley.eval.reliability.html.md#foley.eval.reliability.AlphaResult)
 
 ### foley.eval.reliability.calibrate_judge_vs_human(human_grades, judge_grades, , level='ordinal')
 
@@ -13115,7 +13579,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'tudum', 'netflix chime', 'netflix sound', 'netflix intro', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'tudum', 'netflix chime', 'netflix sound', 'ta dum', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel bong', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -19107,18 +19571,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-26 12:55 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/f3f27eeddce266a90a9b4852d20bdf2b1e8aa7f3"><code>f3f27ee</code></a> on branch <code>main</code>, for **foley 0.0.51** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 13:23 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/8e306d9668baf3116eedd66f9507bf98c68c7f95"><code>8e306d9</code></a> on branch <code>main</code>, for **foley 0.0.52** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.51) is behind the latest release on PyPI (0.0.52): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.52) is behind the latest release on PyPI (0.0.53): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/f3f27eeddce266a90a9b4852d20bdf2b1e8aa7f3"><code>f3f27eeddce266a90a9b4852d20bdf2b1e8aa7f3</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/8e306d9668baf3116eedd66f9507bf98c68c7f95"><code>8e306d9668baf3116eedd66f9507bf98c68c7f95</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -19129,9 +19593,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40326017198">40326017198</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40329811743">40329811743</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>f3f27eeddce266a90a9b4852d20bdf2b1e8aa7f3</code> (in the history of the built commit) |
+| Event commit | <code>8e306d9668baf3116eedd66f9507bf98c68c7f95</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -19156,13 +19620,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.52/">0.0.52</a>, newer than the documented version (0.0.51).
+Latest release: <a href="https://pypi.org/project/foley/0.0.53/">0.0.53</a>, newer than the documented version (0.0.52).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout f3f27eeddce266a90a9b4852d20bdf2b1e8aa7f3
+git checkout 8e306d9668baf3116eedd66f9507bf98c68c7f95
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

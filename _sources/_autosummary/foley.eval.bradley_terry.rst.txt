@@ -1,0 +1,25 @@
+foley.eval.bradley\_terry
+=========================
+
+.. automodule:: foley.eval.bradley_terry
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DEFAULT_PRIOR
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      fit
+      win_matrix
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BradleyTerry
+   

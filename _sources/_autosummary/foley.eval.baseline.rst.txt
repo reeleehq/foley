@@ -9,13 +9,17 @@ foley.eval.baseline
    .. autosummary::
    
       DEFAULT_BASELINE_PATH
+      DEFAULT_FIT_BASELINE_PATH
       DEFAULT_TOLERANCE
+      FIT_METRIC
    
    .. rubric:: Functions
 
    .. autosummary::
    
+      check_fit_baseline
       is_stale
       load_baseline
       write_baseline
+      write_fit_baseline
    

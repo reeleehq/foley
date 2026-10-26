@@ -23,6 +23,8 @@ foley.eval
       load_baseline
       write_baseline
       is_stale
+      write_fit_baseline
+      check_fit_baseline
       run_fit_eval
       fit_precision
       fit_recall
@@ -32,6 +34,7 @@ foley.eval
       percent_agreement
       reliability_band
       calibrate_judge_vs_human
+      render_panel_html
       frechet_distance
       kernel_audio_distance
       generation_fidelity
@@ -54,11 +57,14 @@ foley.eval
    :toctree:
    :recursive:
 
+   bradley_terry
+   panel
    baseline
    embedder
    fidelity
    fit
    golden
+   panel_page
    prompt_match
    reliability
    retrieval
