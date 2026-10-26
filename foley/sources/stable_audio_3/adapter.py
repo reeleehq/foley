@@ -45,7 +45,7 @@ _SEED_MAX = 2**31 - 1  # the script's own range
 
 #: What the script's traceback names when huggingface_hub, forbidden to download
 #: (HF_HUB_OFFLINE=1), finds a weight file missing from the local cache.
-_WEIGHTS_MISSING = "LocalEntryNotFoundError"
+_WEIGHTS_MISSING = ("LocalEntryNotFoundError", "FileNotFoundError")
 
 
 def _run_process(cmd, *, cwd, env, timeout) -> "tuple[int, str]":
@@ -229,7 +229,7 @@ class StableAudio3Adapter:
             if code != 0 or not out.exists():
                 tail = (stderr or "").strip().splitlines()[-3:]
                 said = " | ".join(tail)
-                if not online and _WEIGHTS_MISSING in (stderr or ""):
+                if not online and any(m in (stderr or "") for m in _WEIGHTS_MISSING):
                     raise ModelNotCached(
                         f"{self.name}: the weights are not on this machine, and foley "
                         "will not download them inside offline(). Fetch them once while "

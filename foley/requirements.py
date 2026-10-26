@@ -66,7 +66,9 @@ def _derive_runtime_requirements() -> "dict[str, Requirement]":
         runtime = entry["config"].get("runtime")
         if not runtime:
             continue
-        hint = _resolve(runtime["setup"])()
+        hint = _resolve(runtime["setup"])(entry["config"])
+        if runtime["name"] in reqs:
+            raise ValueError(f"two sources declare the runtime {runtime['name']!r}")
         reqs[runtime["name"]] = Requirement(
             name=runtime["name"],
             purpose=runtime["purpose"],
@@ -85,7 +87,7 @@ def _runtime_ready(name: str) -> bool:
     for entry in SOURCE_REGISTRY.values():
         runtime = entry["config"].get("runtime") or {}
         if runtime.get("name") == name:
-            return bool(_resolve(runtime["ready"])())
+            return bool(_resolve(runtime["ready"])(entry["config"]))
     return False
 
 
@@ -169,7 +171,12 @@ def build_requirements() -> "dict[str, Requirement]":
     )  # FREESOUND_API_KEY / ELEVENLABS_API_KEY / …
     reqs[_ANTHROPIC_KEY.name] = _ANTHROPIC_KEY
     reqs.update(_IMPORTABLE_REQUIREMENTS)  # py2mcp
-    reqs.update(_derive_runtime_requirements())
+    for name, req in _derive_runtime_requirements().items():
+        if name in reqs:
+            raise ValueError(
+                f"runtime requirement {name!r} collides with another requirement"
+            )
+        reqs[name] = req
     return reqs
 
 
