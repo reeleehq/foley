@@ -64,7 +64,22 @@ def prompt_match(prompt: str, audio_bytes: bytes, *, embedder, fallback=None) ->
             retry = _check(prompt, audio_bytes, second)
             if retry["status"] != UNCHECKED:
                 return retry
+            result = {
+                **result,
+                "reason": f"{result['reason']}; fallback {retry.get('model', 'embedder')}: "
+                f"{retry['reason']}",
+            }
     return result
+
+
+def calibrated_threshold(
+    model_id: str, override: Optional[float] = None, *, provisional: float
+) -> float:
+    """An embedder's prompt-match threshold: its override, else the calibration, else ``provisional``."""
+    if override is not None:
+        return override
+    found = threshold_for(model_id)
+    return provisional if found is None else found
 
 
 def _could_not_run(embedder, result: dict) -> bool:

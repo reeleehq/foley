@@ -901,7 +901,7 @@ def _small_host_embedder():
     """The ONNX CLAP embedder (:mod:`foley.index.onnx_clap`), or ``None`` without its extra."""
     import importlib.util
 
-    if any(importlib.util.find_spec(m) is None for m in ("onnxruntime", "tokenizers")):
+    if any(importlib.util.find_spec(m) is None for m in ("onnxruntime", "tokenizers", "huggingface_hub")):
         return None
     from ..index.onnx_clap import OnnxClapEmbedder
 
@@ -912,6 +912,7 @@ def _prompt_verdict(prompt, audio_bytes, library, notes: list) -> dict:
     """The prompt-match verdict for the clip (:func:`foley.prompt_match.prompt_match`), noted."""
     from ..prompt_match import UNCHECKED, note_for, prompt_match
 
+    reason = "no embedder"
     try:
         embedder = library.embedder
     except Exception as exc:  # noqa: BLE001 - no embedder here: say so

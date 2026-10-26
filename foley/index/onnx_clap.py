@@ -46,7 +46,9 @@ _N_MELS = 64
 _FMIN, _FMAX = 50.0, 14_000.0
 _MAX_SAMPLES = 480_000  # 10 s
 _LOG_FLOOR = 1e-10
-_MAX_TEXT_TOKENS = 77
+_MAX_TEXT_TOKENS = (
+    512  # the model's position limit (the HF processor does not truncate)
+)
 
 
 _SLANEY_BREAK_HZ = 1000.0
@@ -163,14 +165,14 @@ class OnnxClapEmbedder:
     @property
     def prompt_match_threshold(self) -> float:
         """The calibrated threshold of the quantised model (provisional until calibrated)."""
-        from ..prompt_match import threshold_for
-
-        if self._prompt_match_threshold is not None:
-            return self._prompt_match_threshold
+        from ..prompt_match import calibrated_threshold
         from .embedders import PROVISIONAL_PROMPT_MATCH_THRESHOLD
 
-        found = threshold_for(self.model_id)
-        return PROVISIONAL_PROMPT_MATCH_THRESHOLD if found is None else found
+        return calibrated_threshold(
+            self.model_id,
+            self._prompt_match_threshold,
+            provisional=PROVISIONAL_PROMPT_MATCH_THRESHOLD,
+        )
 
     @staticmethod
     def _file(name: str) -> str:

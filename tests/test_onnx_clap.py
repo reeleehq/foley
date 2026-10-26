@@ -155,3 +155,86 @@ def test_a_fallback_is_not_tried_for_an_embedder_that_never_compares_text_with_a
     assert (
         prompt_match("x", _clip(), embedder=None, fallback=boom)["status"] == UNCHECKED
     )
+
+
+# --- the wiring in generate(): _prompt_verdict -------------------------------------
+
+
+def _generate_module():
+    import sys
+
+    import foley.sources.generate  # noqa: F401
+
+    return sys.modules["foley.sources.generate"]
+
+
+class _Lib:
+    def __init__(self, embedder=None, error=None):
+        self._e, self._error = embedder, error
+
+    @property
+    def embedder(self):
+        if self._error:
+            raise self._error
+        return self._e
+
+
+def test_generate_falls_back_when_the_library_embedder_cannot_run(monkeypatch):
+    g = _generate_module()
+    small = _embedder(audio_vec=[1, 0], text_vec=[1, 0], prompt_match_threshold=0.15)
+    monkeypatch.setattr(g, "_small_host_embedder", lambda: small)
+    notes = []
+    got = g._prompt_verdict("x", _clip(), _Lib(_Broken()), notes)
+    assert got["status"] == MATCH and got["model"] == ONNX_CLAP_MODEL_ID
+    assert "prompt match: ok" in notes[0]
+
+
+def test_generate_falls_back_when_the_library_embedder_cannot_be_built(monkeypatch):
+    g = _generate_module()
+    small = _embedder(audio_vec=[1, 0], text_vec=[1, 0], prompt_match_threshold=0.15)
+    monkeypatch.setattr(g, "_small_host_embedder", lambda: small)
+    got = g._prompt_verdict("x", _clip(), _Lib(error=ImportError("no torch")), [])
+    assert got["status"] == MATCH
+
+
+def test_generate_without_any_embedder_says_why(monkeypatch):
+    g = _generate_module()
+    monkeypatch.setattr(g, "_small_host_embedder", lambda: None)
+    got = g._prompt_verdict("x", _clip(), _Lib(error=ImportError("no torch")), [])
+    assert got["status"] == UNCHECKED and "no torch" in got["reason"]
+
+
+def test_both_reasons_survive_when_the_fallback_also_fails():
+    got = prompt_match("x", _clip(), embedder=_Broken(), fallback=lambda: _Broken2())
+    assert got["status"] == UNCHECKED
+    assert "transformers" in got["reason"] and "fallback" in got["reason"]
+
+
+class _Broken2(_Broken):
+    model_id = "second"
+
+    def embed_audio(self, wav, sr):
+        raise RuntimeError("model file missing")
+
+    embed_text = embed_audio
+
+
+def test_the_small_host_embedder_needs_its_extra(monkeypatch):
+    import importlib.util
+
+    g = _generate_module()
+    g._small_host_embedder.cache_clear()
+    real = importlib.util.find_spec
+    monkeypatch.setattr(
+        importlib.util,
+        "find_spec",
+        lambda n, *a: None if n == "onnxruntime" else real(n, *a),
+    )
+    assert g._small_host_embedder() is None
+    g._small_host_embedder.cache_clear()
+
+
+def test_a_library_whose_embedder_is_none_is_unchecked(monkeypatch):
+    g = _generate_module()
+    monkeypatch.setattr(g, "_small_host_embedder", lambda: None)
+    assert g._prompt_verdict("x", _clip(), _Lib(None), [])["status"] == UNCHECKED
