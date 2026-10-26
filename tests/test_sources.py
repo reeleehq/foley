@@ -260,3 +260,56 @@ def test_bbc_remarc_forbids_commercial_and_ai_training():
     assert lic.license_id == "RemArc"
     assert lic.commercial_ok is False
     assert lic.ai_training_ok is False
+
+
+# ---------------------------------------------------------------------------
+# capabilities + list_backends + ledger (#60)
+# ---------------------------------------------------------------------------
+def test_list_backends_supports_seed_and_kind():
+    import foley
+
+    seeded = foley.list_backends(supports="seed")
+    assert "stable_audio" in seeded and "stable_audio_3" in seeded
+    assert "elevenlabs" not in seeded and "freesound" not in seeded
+    assert foley.list_backends(kind="retrieve", supports="seed") == []
+    assert "freesound" in foley.list_backends(kind="retrieve")
+    assert set(foley.list_backends(supports=["seed", "negative_prompt"])) <= set(seeded)
+
+
+def test_list_backends_flags_and_fake():
+    import foley
+    from foley.sources.registry import SOURCE_REGISTRY, register_source
+
+    register_source(
+        "fake_capab",
+        {
+            "name": "fake_capab",
+            "kind": "generate",
+            "data_egress": "local",
+            "supported_affordances": ["prompt", "loop"],
+            "capabilities": {"watermarked": True, "sample_rate": 16000},
+        },
+        adapter=object(),
+    )
+    try:
+        view = foley.capabilities_of(SOURCE_REGISTRY["fake_capab"]["config"])
+        assert view["loopable"] and view["offline_capable"] and not view["deterministic"]
+        assert view["sample_rate"] == 16000
+        assert "fake_capab" in foley.list_backends(supports=["loopable", "watermarked"])
+        assert "fake_capab" in foley.list_backends(supports="loop")
+        assert "fake_capab" not in foley.list_backends(supports="deterministic")
+    finally:
+        SOURCE_REGISTRY.pop("fake_capab", None)
+
+
+def test_ledger_computes_planned_from_registry():
+    import foley
+
+    led = foley.ledger()
+    assert "stable_audio" in led["implemented"]
+    assert {t["name"] for t in led["planned"]} >= {"epidemic_sound"}
+    assert not {t["name"] for t in led["planned"]} & set(led["implemented"])
+    # a planned target that is now registered drops out of 'planned'
+    led = foley.ledger(targets=[{"name": "freesound", "kind": "retrieve", "note": ""}])
+    assert led["planned"] == []
+    assert foley.capability_report()["backends"]["implemented"]

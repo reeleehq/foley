@@ -270,11 +270,13 @@ def capability_report(*, runtime=None) -> dict:
         runtime: A :class:`foley.runtime.RuntimeConfig` (default: the active one).
 
     Returns:
-        ``{keys, extras, system, offline, sources, llm, degraded_tools}`` — all
+        ``{keys, extras, system, offline, sources, backends, llm, degraded_tools}`` — all
         JSON-safe. ``llm`` is the provider the SELECT rungs resolve to right now
         (see :func:`foley.agent.llm.resolve_llm`), or the reason it cannot resolve.
+        ``backends`` is :func:`foley.ledger` (per-source capabilities + planned targets).
     """
     from .runtime import current_runtime
+    from .sources.capabilities import ledger
     from .sources.registry import list_sources
 
     cfg = runtime or current_runtime()
@@ -292,6 +294,7 @@ def capability_report(*, runtime=None) -> dict:
         "system": groups["binary"],
         "offline": cfg.offline,
         "sources": list_sources(egress_allow=cfg.data_egress_allow),
+        "backends": ledger(),
         "llm": _resolved_llm(),
         "degraded_tools": sorted(degraded),
     }
