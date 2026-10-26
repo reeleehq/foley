@@ -34,6 +34,7 @@ from ..base import (
     SourceConfigurationError,
     generated_license,
     native_adherence,
+    unsupported_notes,
 )
 from .config import SOURCE_CONFIG
 
@@ -41,6 +42,10 @@ from .config import SOURCE_CONFIG
 Runner = Callable[..., "tuple[int, str]"]
 
 _SEED_MAX = 2**31 - 1  # the script's own range
+
+#: What the script's traceback names when huggingface_hub, forbidden to download
+#: (HF_HUB_OFFLINE=1), finds a weight file missing from the local cache.
+_WEIGHTS_MISSING = "LocalEntryNotFoundError"
 
 
 def _run_process(cmd, *, cwd, env, timeout) -> "tuple[int, str]":
@@ -134,7 +139,9 @@ class StableAudio3Adapter:
         ``seed=None`` draws a random seed, recorded in the clip's provenance.
         """
         nd = self.config["native_defaults"]
-        notes = _unsupported_notes(loop=loop, output_format=output_format, **kw)
+        notes = unsupported_notes(
+            self.config, loop=loop, output_format=output_format, **kw
+        )
         cfg = native_adherence(self.config, prompt_influence, notes)
         if negative_prompt:  # only acts above CFG 1, and the model is distilled for 1
             notes.append(
@@ -221,37 +228,17 @@ class StableAudio3Adapter:
             )
             if code != 0 or not out.exists():
                 tail = (stderr or "").strip().splitlines()[-3:]
-                if not online:
+                said = " | ".join(tail)
+                if not online and _WEIGHTS_MISSING in (stderr or ""):
                     raise ModelNotCached(
-                        f"{self.name}: generation failed offline. If the weights are not on this machine, "
-                        "note that foley will not download them inside offline(); fetch "
-                        "them once while online: "
-                        f"`{setup_hint(self.config)}`. The script said: {' | '.join(tail)}"
+                        f"{self.name}: the weights are not on this machine, and foley "
+                        "will not download them inside offline(). Fetch them once while "
+                        f"online: `{setup_hint(self.config)}`. The script said: {said}"
                     )
                 raise RuntimeError(
-                    f"{self.name}: the Stable Audio 3 script exited with code {code}: "
-                    f"{' | '.join(tail)}"
+                    f"{self.name}: the Stable Audio 3 script exited with code {code}: {said}"
                 )
             return out.read_bytes()
-
-
-def _unsupported_notes(*, loop: bool, output_format: str, **kw) -> list:
-    """Notes for affordances the model has no native parameter for."""
-    notes = []
-    if loop:
-        notes.append(
-            "loop has no native Stable Audio 3 param (a future WEAVE crossfade); ignored"
-        )
-    if output_format and output_format != "wav":
-        notes.append(
-            f"output_format {output_format!r} is applied by the audio layer, not the model; ignored"
-        )
-    notes += [
-        f"affordance {name!r} is not a known Stable Audio 3 param; ignored"
-        for name, value in kw.items()
-        if value is not None
-    ]
-    return notes
 
 
 #: Registry convention (arioso): the loader imports ``adapter.Adapter``.

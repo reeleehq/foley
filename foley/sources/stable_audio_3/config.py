@@ -18,6 +18,14 @@ SOURCE_CONFIG = {
     "display_name": "Stable Audio 3 Small-SFX (local, TFLite CPU)",
     "website": "https://github.com/Stability-AI/stable-audio-3/tree/main/optimized/tflite",
     "auth": None,  # the optimized weights are ungated: no token
+    # Read by foley.requirements: probed by check_requirements, with the setup command.
+    "runtime": {
+        "name": "stable-audio-3-tflite",
+        "purpose": "the local Stable Audio 3 Small-SFX generator (CPU, no GPU, no token)",
+        "url": "https://github.com/Stability-AI/stable-audio-3/tree/main/optimized/tflite",
+        "ready": "foley.sources.stable_audio_3.adapter:runtime_ready",
+        "setup": "foley.sources.stable_audio_3.adapter:setup_hint",
+    },
     "dependencies": [],
     "optional_dependencies": [],  # the checkout's own venv carries ai_edge_litert etc.
     "param_map": {
