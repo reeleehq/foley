@@ -58,6 +58,7 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 __all__ = [
     "check_prompt_influence",
     "check_provider_params",
+    "require_params_mapping",
     "merge_provider_params",
     "recorded_params",
     "native_adherence",
@@ -157,6 +158,15 @@ def native_adherence(
     raise ValueError(f"{config['name']}: unknown prompt_influence coerce {coerce!r}")
 
 
+def require_params_mapping(provider_params) -> None:
+    """Raise ``TypeError`` unless ``provider_params`` is a mapping (#61)."""
+    if not isinstance(provider_params, Mapping):
+        raise TypeError(
+            "provider_params must be a mapping of native names to values, got "
+            f"{type(provider_params).__name__}"
+        )
+
+
 def check_provider_params(
     provider_params: Optional[Mapping] = None, *, policy: Optional[Mapping] = None
 ) -> dict:
@@ -187,11 +197,7 @@ def check_provider_params(
     """
     if provider_params is None:
         return {}
-    if not isinstance(provider_params, Mapping):
-        raise TypeError(
-            "provider_params must be a mapping of native names to values, got "
-            f"{type(provider_params).__name__}"
-        )
+    require_params_mapping(provider_params)
     if policy is None and provider_params:
         raise ValueError(
             "this source declares no provider_params policy, so it cannot take "

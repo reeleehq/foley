@@ -91,10 +91,12 @@ def _add_from(
     # The one dispatch path (#53): call-time egress check + the unsupported-parameter
     # policy over the extra search affordances; every drop is a report note.
     search_kw, search_notes = plan_search(
-        source, config, affordances, on_unsupported=on_unsupported
+        source,
+        config,
+        affordances,
+        on_unsupported=on_unsupported,
+        provider_params=provider_params,
     )
-    if provider_params is not None:  # untranslated: the adapter merges it (#61)
-        search_kw["provider_params"] = provider_params
 
     from ..obs.recorder import current_run
     from ..obs.trace import GENAI

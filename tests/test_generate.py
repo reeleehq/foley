@@ -1658,6 +1658,21 @@ def test_provider_params_keys_must_be_str(library):
     assert transport.calls == []
 
 
+def test_a_single_named_backend_unwraps_its_own_provider_params_entry():
+    from foley.sources.generate import provider_params_by_backend
+
+    wrapped = {"elevenlabs": {"loop": True}}
+    assert provider_params_by_backend(wrapped, ("elevenlabs",), per_backend=False) == {
+        "elevenlabs": {"loop": True}
+    }
+    for bad in ({"elevenlabs": {"loop": True}, "x": 1}, {"stable_audio": {"steps": 8}}):
+        with pytest.raises(ValueError, match="flat dict of native names"):
+            provider_params_by_backend(bad, ("elevenlabs",), per_backend=False)
+    for per_backend in (True, False):
+        with pytest.raises(TypeError, match="must be a mapping"):
+            provider_params_by_backend([1], ("elevenlabs",), per_backend=per_backend)
+
+
 def test_a_multi_backend_generate_takes_provider_params_per_backend():
     from foley.sources.generate import provider_params_by_backend
 
