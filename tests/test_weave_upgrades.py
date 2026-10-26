@@ -149,81 +149,6 @@ def test_c2pa_sign_sets_flags_and_stores_signed_asset(monkeypatch):
     assert store["mix1.c2pa.wav"] == b"SIGNED-C2PA"
 
 
-def _c2pa_es256_signer():
-    """A C2PA-conformant self-signed ES256 signer (end-entity + CA chain) via from_callback."""
-    import datetime
-
-    c2pa = pytest.importorskip("c2pa")
-    pytest.importorskip("cryptography")
-    from cryptography import x509
-    from cryptography.hazmat.primitives import hashes, serialization
-    from cryptography.hazmat.primitives.asymmetric import ec
-    from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
-    from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
-
-    t0, t1 = datetime.datetime(2020, 1, 1), datetime.datetime(2035, 1, 1)
-    ca_key = ec.generate_private_key(ec.SECP256R1())
-    ca_name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "foley-test-ca")])
-    ca = (
-        x509.CertificateBuilder()
-        .subject_name(ca_name)
-        .issuer_name(ca_name)
-        .public_key(ca_key.public_key())
-        .serial_number(1)
-        .not_valid_before(t0)
-        .not_valid_after(t1)
-        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
-        .add_extension(
-            x509.KeyUsage(False, False, False, False, False, True, True, False, False),
-            critical=True,
-        )
-        .add_extension(
-            x509.SubjectKeyIdentifier.from_public_key(ca_key.public_key()),
-            critical=False,
-        )
-        .sign(ca_key, hashes.SHA256())
-    )
-    ee_key = ec.generate_private_key(ec.SECP256R1())
-    ee_name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "foley-test-signer")])
-    ee = (
-        x509.CertificateBuilder()
-        .subject_name(ee_name)
-        .issuer_name(ca_name)
-        .public_key(ee_key.public_key())
-        .serial_number(2)
-        .not_valid_before(t0)
-        .not_valid_after(t1)
-        .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
-        .add_extension(
-            x509.KeyUsage(True, False, False, False, False, False, False, False, False),
-            critical=True,
-        )
-        .add_extension(
-            x509.ExtendedKeyUsage([ExtendedKeyUsageOID.EMAIL_PROTECTION]), critical=True
-        )
-        .add_extension(
-            x509.SubjectKeyIdentifier.from_public_key(ee_key.public_key()),
-            critical=False,
-        )
-        .add_extension(
-            x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()),
-            critical=False,
-        )
-        .sign(ca_key, hashes.SHA256())
-    )
-    chain = ee.public_bytes(serialization.Encoding.PEM) + ca.public_bytes(
-        serialization.Encoding.PEM
-    )
-
-    def sign_cb(data: bytes) -> bytes:
-        r, s = decode_dss_signature(ee_key.sign(data, ec.ECDSA(hashes.SHA256())))
-        return r.to_bytes(32, "big") + s.to_bytes(32, "big")
-
-    return c2pa.Signer.from_callback(
-        sign_cb, c2pa.C2paSigningAlg.ES256, chain.decode("ascii"), None
-    )
-
-
 def test_c2pa_real_sign_embed_and_readback():
     """End-to-end: foley signs+embeds a real C2PA manifest over the mix and c2pa reads it back."""
     c2pa = pytest.importorskip("c2pa")
@@ -233,7 +158,10 @@ def test_c2pa_real_sign_embed_and_readback():
     from foley import weave
     from foley.base import LicenseRecord, SoundRecord
 
-    signer = _c2pa_es256_signer()
+    from foley.provenance import make_c2pa_signer, make_self_signed_c2pa_certs
+
+    pytest.importorskip("cryptography")
+    signer = make_c2pa_signer(*make_self_signed_c2pa_certs())
     rec = SoundRecord(
         id="s1",
         caption="rain",
