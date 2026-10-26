@@ -1,0 +1,21 @@
+foley.eval.prompt\_match
+========================
+
+.. automodule:: foley.eval.prompt_match
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      calibrate_threshold
+      load_labelled_dir
+      save_threshold
+      score_pairs
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Calibration
+   

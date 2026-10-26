@@ -42,7 +42,7 @@ only the stdlib; install the capability you use via the matching extra
 | [`KeywordIndex`](#foley.index.KeywordIndex)(\*args, \*\*kwargs)                  | BM25 / full-text index over each sound's tags + caption.                    |
 | [`Tagger`](#foley.index.Tagger)(\*args, \*\*kwargs)                        | Map a clip to `(label, score)` pairs against a label vocabulary.            |
 | [`Captioner`](#foley.index.Captioner)(\*args, \*\*kwargs)                     | Produce one natural-language sentence describing a clip (report 03).        |
-| [`ClapEmbedder`](#foley.index.ClapEmbedder)([model_id, device])                  | LAION-CLAP text<->audio embedder (the default retrieval engine).            |
+| [`ClapEmbedder`](#foley.index.ClapEmbedder)([model_id, device, ...])             | LAION-CLAP text<->audio embedder (the default retrieval engine).            |
 | [`ClapZeroShotTagger`](#foley.index.ClapZeroShotTagger)(\*[, embedder, labels, ...])   | Zero-shot tagger: score a clip against a label set via CLAP cosine.         |
 | [`PannsTagger`](#foley.index.PannsTagger)(\*[, device, threshold])              | PANNs CNN14 supervised tagger over the 527 AudioSet classes (`foley[tag]`). |
 | [`IngestResult`](#foley.index.IngestResult)(id, status[, record, qc, ...])       | The outcome of ingesting one clip.                                          |
@@ -81,7 +81,7 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
 
-### *class* foley.index.ClapEmbedder(model_id='laion/larger_clap_general', , device=None)
+### *class* foley.index.ClapEmbedder(model_id='laion/larger_clap_general', , device=None, prompt_match_threshold=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -138,12 +138,13 @@ Embed one or more query strings -> `(n_texts, dim)` L2-normalized.
 * **Return type:**
   `ndarray`
 
-#### prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+#### *property* prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)*
 
-Cosine similarity under which a generated clip is flagged as not matching its
-prompt ([`foley.prompt_match.prompt_match()`](foley.prompt_match.html.md#foley.prompt_match.prompt_match)). Provisional: LAION-CLAP puts
-matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
-this value is not yet calibrated on a labelled set of foley generations.
+Cosine similarity under which a generated clip is flagged as not matching its prompt.
+
+Calibrated per checkpoint on a labelled set ([`foley.eval.prompt_match`](foley.eval.prompt_match.html.md#module-foley.eval.prompt_match),
+`foley/data/prompt_match/thresholds.json`); a checkpoint nobody has calibrated
+gets `PROVISIONAL_PROMPT_MATCH_THRESHOLD`.
 
 ### *class* foley.index.ClapZeroShotTagger(, embedder=None, labels=None, prompt='this is a sound of {label}', threshold=0.0)
 

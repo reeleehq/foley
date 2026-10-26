@@ -8,6 +8,7 @@ foley.prompt\_match
 
    .. autosummary::
    
+      THRESHOLDS_PATH
       MATCH
       MISMATCH
       UNCHECKED
@@ -16,6 +17,8 @@ foley.prompt\_match
 
    .. autosummary::
    
+      load_thresholds
       note_for
       prompt_match
+      threshold_for
    

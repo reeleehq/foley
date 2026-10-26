@@ -59,5 +59,6 @@ foley.eval
    fidelity
    fit
    golden
+   prompt_match
    reliability
    retrieval

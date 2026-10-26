@@ -182,7 +182,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`QCReport`](#foley.QCReport)(duration_s, sample_rate, channels, ...)  | Per-clip Tier-0 QC result.                                                                                                           |
 | [`SoundLibrary`](#foley.SoundLibrary)(\*[, sounds, meta, vindex, ...])     | A searchable, license-aware library of sounds (the foley INDEX façade).                                                              |
 | [`Embedder`](#foley.Embedder)(\*args, \*\*kwargs)                      | A joint text<->audio embedding space (CLAP by default).                                                                              |
-| [`ClapEmbedder`](#foley.ClapEmbedder)([model_id, device])                  | LAION-CLAP text<->audio embedder (the default retrieval engine).                                                                     |
+| [`ClapEmbedder`](#foley.ClapEmbedder)([model_id, device, ...])             | LAION-CLAP text<->audio embedder (the default retrieval engine).                                                                     |
 | [`VectorIndex`](#foley.VectorIndex)(\*args, \*\*kwargs)                   | Approximate-nearest-neighbour store over embedding vectors.                                                                          |
 | [`KeywordIndex`](#foley.KeywordIndex)(\*args, \*\*kwargs)                  | BM25 / full-text index over each sound's tags + caption.                                                                             |
 | [`MemoryIndex`](#foley.MemoryIndex)(\*[, dim])                            | In-memory vector + keyword index (numpy cosine + compact BM25).                                                                      |
@@ -434,7 +434,7 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
 
-### *class* foley.ClapEmbedder(model_id='laion/larger_clap_general', , device=None)
+### *class* foley.ClapEmbedder(model_id='laion/larger_clap_general', , device=None, prompt_match_threshold=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -491,12 +491,13 @@ Embed one or more query strings -> `(n_texts, dim)` L2-normalized.
 * **Return type:**
   `ndarray`
 
-#### prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+#### *property* prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)*
 
-Cosine similarity under which a generated clip is flagged as not matching its
-prompt ([`foley.prompt_match.prompt_match()`](foley.prompt_match.html.md#foley.prompt_match.prompt_match)). Provisional: LAION-CLAP puts
-matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
-this value is not yet calibrated on a labelled set of foley generations.
+Cosine similarity under which a generated clip is flagged as not matching its prompt.
+
+Calibrated per checkpoint on a labelled set ([`foley.eval.prompt_match`](foley.eval.prompt_match.html.md#module-foley.eval.prompt_match),
+`foley/data/prompt_match/thresholds.json`); a checkpoint nobody has calibrated
+gets `PROVISIONAL_PROMPT_MATCH_THRESHOLD`.
 
 ### *class* foley.ClapZeroShotTagger(, embedder=None, labels=None, prompt='this is a sound of {label}', threshold=0.0)
 

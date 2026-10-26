@@ -552,11 +552,12 @@ generation (bumped when the frozen set is regrown).
 
 ### Modules
 
-| [`baseline`](foley.eval.baseline.html.md#module-foley.eval.baseline)       | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                           |
-|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| [`embedder`](foley.eval.embedder.html.md#module-foley.eval.embedder)       | A deterministic, numpy-only text embedder for the retrieval eval gate.                         |
-| [`fidelity`](foley.eval.fidelity.html.md#module-foley.eval.fidelity)       | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).    |
-| [`fit`](foley.eval.fit.html.md#module-foley.eval.fit)                 | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5). |
-| [`golden`](foley.eval.golden.html.md#module-foley.eval.golden)           | The frozen golden set + the deterministic Ring-0 retrieval harness.                            |
-| [`reliability`](foley.eval.reliability.html.md#module-foley.eval.reliability) | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.         |
-| [`retrieval`](foley.eval.retrieval.html.md#module-foley.eval.retrieval)     | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                    |
+| [`baseline`](foley.eval.baseline.html.md#module-foley.eval.baseline)         | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                           |
+|----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| [`embedder`](foley.eval.embedder.html.md#module-foley.eval.embedder)         | A deterministic, numpy-only text embedder for the retrieval eval gate.                         |
+| [`fidelity`](foley.eval.fidelity.html.md#module-foley.eval.fidelity)         | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).    |
+| [`fit`](foley.eval.fit.html.md#module-foley.eval.fit)                   | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5). |
+| [`golden`](foley.eval.golden.html.md#module-foley.eval.golden)             | The frozen golden set + the deterministic Ring-0 retrieval harness.                            |
+| [`prompt_match`](foley.eval.prompt_match.html.md#module-foley.eval.prompt_match) | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).        |
+| [`reliability`](foley.eval.reliability.html.md#module-foley.eval.reliability)   | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.         |
+| [`retrieval`](foley.eval.retrieval.html.md#module-foley.eval.retrieval)       | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                    |

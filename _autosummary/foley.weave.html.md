@@ -52,7 +52,7 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 |---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
 | [`RenderResult`](#foley.weave.RenderResult)(audio, sr, timeline, master_report) | The output of [`render()`](#foley.weave.render): the mastered mix + the hydrated (re-renderable) timeline. |
 | [`RenderCache`](#foley.weave.RenderCache)                                      | Per-layer render memo (`bus_hash -> stereo bus array`) for incremental re-render.                                                  |
-| [`FullRender`](#foley.weave.FullRender)()                                     | Default [`ApplyStrategy`](#foley.weave.ApplyStrategy) — the full per-item DSP chain (report 06 §3-4).             |
+| [`FullRender`](#foley.weave.FullRender)(\*[, level_clips])                    | Default [`ApplyStrategy`](#foley.weave.ApplyStrategy) — the full per-item DSP chain (report 06 §3-4).             |
 | [`PlaceOnly`](#foley.weave.PlaceOnly)()                                      | Dry [`ApplyStrategy`](#foley.weave.ApplyStrategy) — declicked placement, no gain/pan/distance/reverb.             |
 | [`Aligner`](#foley.weave.Aligner)(\*args, \*\*kwargs)                      | Narration audio + its transcript → word-level timestamps (forced alignment).                                                       |
 | [`ApplyStrategy`](#foley.weave.ApplyStrategy)(\*args, \*\*kwargs)                | How ONE hydrated item's clip is placed onto its layer bus (report 10 §4.2).                                                        |
@@ -86,7 +86,9 @@ full per-item DSP chain (fit-duration → gain/pan/distance/reverb → declick �
 overlay), while [`PlaceOnly`](#foley.weave.PlaceOnly) does a dry declicked
 overlay (fast preview / DSP-free fallback). `item` is already anchor-resolved
 (`item.placement.onset` is in seconds); `bus` and `clip` are stereo
-`float32` working arrays at `sample_rate`.
+`float32` working arrays at `sample_rate`. A strategy with settings that change
+its output should expose them as a `cache_key` string: the [`RenderCache`](#foley.weave.RenderCache)
+keys on it (default: the class name).
 
 ### *class* foley.weave.FakeAligner
 
@@ -106,15 +108,22 @@ Return an evenly-spaced word timeline for `transcript` over `audio`’s duration
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
-### *class* foley.weave.FullRender
+### *class* foley.weave.FullRender(, level_clips=True)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 Default [`ApplyStrategy`](#foley.weave.ApplyStrategy) — the full per-item DSP chain (report 06 §3-4).
 
-`fit-duration` (loop/trim) → distance → reverb send → constant-power pan →
+`fit-duration` (loop/trim) → `level` (measured loudness to the reference,
+[`foley.level.reference_gain_db()`](foley.level.html.md#foley.level.reference_gain_db), on what will be heard) → distance → reverb send → constant-power pan →
 declick → gain (base layer level + item `gain_db`) → overlay at the resolved
-onset.
+onset. Levelling first means the layer gains act on clips of equal loudness, whatever
+level each was generated or recorded at (#111); `level_clips=False` renders the
+clips as stored.
+
+#### *property* cache_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+What distinguishes this strategy’s output in [`RenderCache`](#foley.weave.RenderCache) keys.
 
 ### *class* foley.weave.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0)
 

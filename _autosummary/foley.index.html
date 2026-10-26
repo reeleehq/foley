@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=eb4c61eb"></script>
+    <script src="../_static/documentation_options.js?v=4f34e5f2"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.46" />
+  <meta name="docsearch:version" content="0.0.47" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -371,6 +371,7 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fidelity.html">foley.eval.fidelity</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fit.html">foley.eval.fit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.golden.html">foley.eval.golden</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.prompt_match.html">foley.eval.prompt_match</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.reliability.html">foley.eval.reliability</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.retrieval.html">foley.eval.retrieval</a></li>
 </ul>
@@ -561,7 +562,7 @@ only the stdlib; install the capability you use via the matching extra
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.Captioner" title="foley.index.Captioner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Captioner</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Produce one natural-language sentence describing a clip (report 03).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.ClapEmbedder" title="foley.index.ClapEmbedder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClapEmbedder</span></code></a>([model_id, device])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.ClapEmbedder" title="foley.index.ClapEmbedder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClapEmbedder</span></code></a>([model_id, device, ...])</p></td>
 <td><p>LAION-CLAP text&lt;-&gt;audio embedder (the default retrieval engine).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.ClapZeroShotTagger" title="foley.index.ClapZeroShotTagger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClapZeroShotTagger</span></code></a>(*[, embedder, labels, ...])</p></td>
@@ -632,7 +633,7 @@ ingest, and <code class="xref py py-attr docutils literal notranslate"><span cla
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.index.ClapEmbedder">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.index.</span></span><span class="sig-name descname"><span class="pre">ClapEmbedder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'laion/larger_clap_general'</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/embedders.html#ClapEmbedder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.ClapEmbedder" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.index.</span></span><span class="sig-name descname"><span class="pre">ClapEmbedder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'laion/larger_clap_general'</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_match_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/embedders.html#ClapEmbedder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.ClapEmbedder" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>LAION-CLAP text&lt;-&gt;audio embedder (the default retrieval engine).</p>
 <p>Returns <strong>L2-normalized</strong> <code class="docutils literal notranslate"><span class="pre">float32</span></code> embeddings so a plain inner product is
@@ -706,13 +707,13 @@ via <a class="reference internal" href="foley.audio.html#module-foley.audio" tit
 </dl>
 </dd></dl>
 
-<dl class="py attribute">
+<dl class="py property">
 <dt class="sig sig-object py" id="foley.index.ClapEmbedder.prompt_match_threshold">
-<span class="sig-name descname"><span class="pre">prompt_match_threshold</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.2</span></span><a class="headerlink" href="#foley.index.ClapEmbedder.prompt_match_threshold" title="Link to this definition">#</a></dt>
-<dd><p>Cosine similarity under which a generated clip is flagged as not matching its
-prompt (<a class="reference internal" href="foley.prompt_match.html#foley.prompt_match.prompt_match" title="foley.prompt_match.prompt_match"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.prompt_match.prompt_match()</span></code></a>). Provisional: LAION-CLAP puts
-matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
-this value is not yet calibrated on a labelled set of foley generations.</p>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">prompt_match_threshold</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><a class="headerlink" href="#foley.index.ClapEmbedder.prompt_match_threshold" title="Link to this definition">#</a></dt>
+<dd><p>Cosine similarity under which a generated clip is flagged as not matching its prompt.</p>
+<p>Calibrated per checkpoint on a labelled set (<a class="reference internal" href="foley.eval.prompt_match.html#module-foley.eval.prompt_match" title="foley.eval.prompt_match"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.eval.prompt_match</span></code></a>,
+<code class="docutils literal notranslate"><span class="pre">foley/data/prompt_match/thresholds.json</span></code>); a checkpoint nobody has calibrated
+gets <code class="xref py py-data docutils literal notranslate"><span class="pre">PROVISIONAL_PROMPT_MATCH_THRESHOLD</span></code>.</p>
 </dd></dl>
 
 </dd></dl>

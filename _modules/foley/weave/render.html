@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=eb4c61eb"></script>
+    <script src="../../../_static/documentation_options.js?v=4f34e5f2"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.46" />
+  <meta name="docsearch:version" content="0.0.47" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -746,6 +746,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Layer</span><span class="p">,</span> <span class="n">SoundDesignTimeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..level</span><span class="w"> </span><span class="kn">import</span> <span class="n">REFERENCE_PEAK_CEILING_DBFS</span><span class="p">,</span> <span class="n">reference_gain_db</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.align</span><span class="w"> </span><span class="kn">import</span> <span class="n">_default_aligner</span><span class="p">,</span> <span class="n">aligner_name</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.master</span><span class="w"> </span><span class="kn">import</span> <span class="n">MasterReport</span><span class="p">,</span> <span class="n">master</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.mix</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -819,10 +820,21 @@ window.runMermaid = runMermaid;</script>
 <span class="k">class</span><span class="w"> </span><span class="nc">FullRender</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Default :class:`ApplyStrategy` — the full per-item DSP chain (report 06 §3-4).</span>
 
-<span class="sd">    ``fit-duration`` (loop/trim) → distance → reverb send → constant-power pan →</span>
+<span class="sd">    ``fit-duration`` (loop/trim) → ``level`` (measured loudness to the reference,</span>
+<span class="sd">    :func:`foley.level.reference_gain_db`, on what will be heard) → distance → reverb send → constant-power pan →</span>
 <span class="sd">    declick → gain (base layer level + item ``gain_db``) → overlay at the resolved</span>
-<span class="sd">    onset.</span>
+<span class="sd">    onset. Levelling first means the layer gains act on clips of equal loudness, whatever</span>
+<span class="sd">    level each was generated or recorded at (#111); ``level_clips=False`` renders the</span>
+<span class="sd">    clips as stored.</span>
 <span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">level_clips</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">level_clips</span> <span class="o">=</span> <span class="n">level_clips</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cache_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""What distinguishes this strategy's output in :class:`RenderCache` keys."""</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(level_clips=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">level_clips</span><span class="si">}</span><span class="s2">)"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="s2">"TimelineItem"</span><span class="p">,</span> <span class="n">bus</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">clip</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span>
@@ -830,11 +842,18 @@ window.runMermaid = runMermaid;</script>
         <span class="n">p</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">processing</span>
         <span class="n">pl</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">placement</span>
         <span class="n">clip</span> <span class="o">=</span> <span class="n">fit_duration</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">duration</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">pl</span><span class="o">.</span><span class="n">loop</span><span class="p">)</span>
+        <span class="n">layer_gain_db</span> <span class="o">=</span> <span class="n">LAYER_GAIN_DB</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">layer</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">level_clips</span>
+        <span class="p">):</span>  <span class="c1"># on what will be heard (looped/trimmed), peak after layer gain</span>
+            <span class="n">ceiling</span> <span class="o">=</span> <span class="n">REFERENCE_PEAK_CEILING_DBFS</span> <span class="o">-</span> <span class="n">layer_gain_db</span>
+            <span class="n">gain</span> <span class="o">=</span> <span class="n">reference_gain_db</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">peak_ceiling_dbfs</span><span class="o">=</span><span class="n">ceiling</span><span class="p">)</span>
+            <span class="n">clip</span> <span class="o">=</span> <span class="n">clip</span> <span class="o">*</span> <span class="n">db_to_lin</span><span class="p">(</span><span class="n">gain</span><span class="p">)</span>
         <span class="n">clip</span> <span class="o">=</span> <span class="n">apply_distance</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">distance</span><span class="p">)</span>
         <span class="n">clip</span> <span class="o">=</span> <span class="n">reverb_send</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">reverb_send</span><span class="p">)</span>
         <span class="n">stereo</span> <span class="o">=</span> <span class="n">constant_power_pan</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">pan</span><span class="p">)</span>
         <span class="n">stereo</span> <span class="o">=</span> <span class="n">declick</span><span class="p">(</span><span class="n">stereo</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">fade_in</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">fade_in</span><span class="p">,</span> <span class="n">fade_out</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">fade_out</span><span class="p">)</span>
-        <span class="n">gain</span> <span class="o">=</span> <span class="n">db_to_lin</span><span class="p">(</span><span class="n">LAYER_GAIN_DB</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">layer</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">gain_db</span><span class="p">)</span>
+        <span class="n">gain</span> <span class="o">=</span> <span class="n">db_to_lin</span><span class="p">(</span><span class="n">layer_gain_db</span> <span class="o">+</span> <span class="n">p</span><span class="o">.</span><span class="n">gain_db</span><span class="p">)</span>
         <span class="n">stereo</span> <span class="o">=</span> <span class="n">stereo</span> <span class="o">*</span> <span class="n">gain</span>
         <span class="k">return</span> <span class="n">overlay</span><span class="p">(</span><span class="n">bus</span><span class="p">,</span> <span class="n">stereo</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">onset</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">))</span></div>
 
@@ -908,7 +927,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Covers everything that affects the *pre-duck* bus: the strategy, sample rate,</span>
 <span class="sd">    bus length, and each item's clip + resolved placement + processing.</span>
 <span class="sd">    """</span>
-    <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">type</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">sr</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="s2">"cache_key"</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">strategy</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">sr</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
     <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
         <span class="n">pl</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">placement</span><span class="p">,</span> <span class="n">it</span><span class="o">.</span><span class="n">processing</span>
         <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>

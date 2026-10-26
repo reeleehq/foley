@@ -9,6 +9,10 @@ foley.level
    .. autosummary::
    
       LevelSpec
+      REFERENCE_PEAK_CEILING_DBFS
+      SHORT_CLIP_PEAK_DBFS
+      MAX_REFERENCE_BOOST_DB
+      SILENT_PEAK_DBFS
    
    .. rubric:: Functions
 
@@ -16,6 +20,7 @@ foley.level
    
       class_target_lufs
       level_bytes
+      reference_gain_db
       require_loudness_meter
       resolve_target_lufs
    

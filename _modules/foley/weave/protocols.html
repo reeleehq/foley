@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=eb4c61eb"></script>
+    <script src="../../../_static/documentation_options.js?v=4f34e5f2"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.46" />
+  <meta name="docsearch:version" content="0.0.47" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -780,7 +780,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    overlay), while :class:`~foley.weave.render.PlaceOnly` does a dry declicked</span>
 <span class="sd">    overlay (fast preview / DSP-free fallback). ``item`` is already anchor-resolved</span>
 <span class="sd">    (``item.placement.onset`` is in seconds); ``bus`` and ``clip`` are stereo</span>
-<span class="sd">    ``float32`` working arrays at ``sample_rate``.</span>
+<span class="sd">    ``float32`` working arrays at ``sample_rate``. A strategy with settings that change</span>
+<span class="sd">    its output should expose them as a ``cache_key`` string: the :class:`RenderCache`</span>
+<span class="sd">    keys on it (default: the class name).</span>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span>

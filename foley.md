@@ -1,4 +1,4 @@
-> built 2026-10-26 11:03 UTC from 2d3b2a3 (main) · foley 0.0.46. Details: build_info.json
+> built 2026-10-26 11:42 UTC from bb9808e (main) · foley 0.0.47. Details: build_info.json
 
 # index.html.md
 
@@ -40,7 +40,9 @@ hits = foley.search("distant thunder rumble", k=10)  # commercial use is the def
 # needs foley[stable-audio] and the gated stabilityai/stable-audio-open-1.0 weights
 # (accept its license on Hugging Face, set HF_TOKEN); backend="elevenlabs" needs
 # ELEVENLABS_API_KEY and is paid
-clip = foley.generate("a single wooden door creak", backend="stable_audio_3", duration=3)  # local, CPU; setup: foley.check_requirements(verbose=True)
+clip = foley.generate(
+    "a single wooden door creak", backend="stable_audio_3", duration=3
+)  # local, CPU; setup: foley.check_requirements(verbose=True)
 
 # No GPU? The fal-hosted backends (foley[fal] + FAL_KEY; paid, priced before the call):
 # Stable Audio 3 Small-SFX at $0.0206 a clip, commercial use under $1M revenue
@@ -4185,14 +4187,101 @@ generation (bumped when the frozen set is regrown).
 
 ### Modules
 
-| [`baseline`](_autosummary/foley.eval.baseline.html.md#module-foley.eval.baseline)       | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                           |
-|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| [`embedder`](_autosummary/foley.eval.embedder.html.md#module-foley.eval.embedder)       | A deterministic, numpy-only text embedder for the retrieval eval gate.                         |
-| [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)       | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).    |
-| [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit)                 | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5). |
-| [`golden`](_autosummary/foley.eval.golden.html.md#module-foley.eval.golden)           | The frozen golden set + the deterministic Ring-0 retrieval harness.                            |
-| [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability) | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.         |
-| [`retrieval`](_autosummary/foley.eval.retrieval.html.md#module-foley.eval.retrieval)     | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                    |
+| [`baseline`](_autosummary/foley.eval.baseline.html.md#module-foley.eval.baseline)         | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                           |
+|----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| [`embedder`](_autosummary/foley.eval.embedder.html.md#module-foley.eval.embedder)         | A deterministic, numpy-only text embedder for the retrieval eval gate.                         |
+| [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)         | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).    |
+| [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit)                   | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5). |
+| [`golden`](_autosummary/foley.eval.golden.html.md#module-foley.eval.golden)             | The frozen golden set + the deterministic Ring-0 retrieval harness.                            |
+| [`prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match) | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).        |
+| [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)   | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.         |
+| [`retrieval`](_autosummary/foley.eval.retrieval.html.md#module-foley.eval.retrieval)       | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                    |
+
+
+# _autosummary/foley.eval.prompt_match.html.md
+
+# foley.eval.prompt_match
+
+Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).
+
+[`foley.prompt_match.prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match) flags a generated clip whose CLAP similarity to
+its own prompt is under a threshold. That threshold depends on the checkpoint, so it is
+measured, not guessed: given prompts and the clips generated for them, every prompt is
+scored against every clip. A clip generated for its prompt is a *match*; the same clip
+scored against another prompt is a *mismatch* (the failure the check exists for: a clean
+clip of the wrong thing). [`calibrate_threshold()`](_autosummary/foley.eval.prompt_match.html.md#foley.eval.prompt_match.calibrate_threshold) picks the cut that best separates
+the two and reports precision and recall of the **mismatch** call; [`save_threshold()`](_autosummary/foley.eval.prompt_match.html.md#foley.eval.prompt_match.save_threshold)
+records it per checkpoint in `foley/data/prompt_match/thresholds.json`, which
+[`foley.prompt_match.threshold_for()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.threshold_for) (and so [`foley.index.embedders.ClapEmbedder`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.ClapEmbedder)) reads.
+
+The labels are only as good as the clips: a “match” is a clip generated for the prompt,
+not one a person listened to, so a generation that missed its prompt counts as a match
+and pulls the threshold down. Put by-ear labels in the manifest (`"match": false` on a
+clip) to correct that. Pure numpy/stdlib apart from the embedder passed in.
+
+### Functions
+
+| [`calibrate_threshold`](_autosummary/foley.eval.prompt_match.html.md#foley.eval.prompt_match.calibrate_threshold)(scores)                       | The threshold under which a clip is called a mismatch, maximising balanced accuracy.   |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| [`load_labelled_dir`](_autosummary/foley.eval.prompt_match.html.md#foley.eval.prompt_match.load_labelled_dir)(directory)                      | The `score_pairs` items of a directory holding `manifest.json` and its clips.          |
+| [`save_threshold`](_autosummary/foley.eval.prompt_match.html.md#foley.eval.prompt_match.save_threshold)(model_id, calibration, \*, source) | Record `calibration` for `model_id` (`source`: what set it was measured on).           |
+| [`score_pairs`](_autosummary/foley.eval.prompt_match.html.md#foley.eval.prompt_match.score_pairs)(embedder, items)                      | Every prompt against every clip: `[(cosine, is_match), ...]`.                          |
+
+### Classes
+
+| [`Calibration`](_autosummary/foley.eval.prompt_match.html.md#foley.eval.prompt_match.Calibration)(threshold, precision, recall, ...)   | A measured threshold and what it achieves on the labelled set.   |
+|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
+
+### *class* foley.eval.prompt_match.Calibration(threshold, precision, recall, f1, match_kept, auc, n_match, n_mismatch, match_mean, mismatch_mean)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A measured threshold and what it achieves on the labelled set.
+
+### foley.eval.prompt_match.calibrate_threshold(scores)
+
+The threshold under which a clip is called a mismatch, maximising balanced accuracy.
+
+Balanced accuracy (the mean of the share of mismatches caught and the share of matches
+kept) because the set has far more mismatch pairs (n² - n) than matches (n): plain F1
+would be won by a threshold that flags most good clips. A false alarm costs a listen,
+a miss costs a wrong sound in the film; this weighs them equally, and [`Calibration`](_autosummary/foley.eval.prompt_match.html.md#foley.eval.prompt_match.Calibration)
+reports precision and recall so the trade can be re-struck.
+
+* **Parameters:**
+  **scores** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]) – `[(similarity, is_match), ...]` from [`score_pairs()`](_autosummary/foley.eval.prompt_match.html.md#foley.eval.prompt_match.score_pairs).
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If either class is empty.
+* **Return type:**
+  [`Calibration`](_autosummary/foley.eval.prompt_match.html.md#foley.eval.prompt_match.Calibration)
+
+### foley.eval.prompt_match.load_labelled_dir(directory)
+
+The `score_pairs` items of a directory holding `manifest.json` and its clips.
+
+The manifest is a list of `{"prompt": ..., "file": ..., "match": true}` (`match`
+defaults to true; set it false for a clip a listener rejected for its prompt).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]
+
+### foley.eval.prompt_match.save_threshold(model_id, calibration, , source, path=PosixPath('/home/runner/work/foley/foley/foley/data/prompt_match/thresholds.json'))
+
+Record `calibration` for `model_id` (`source`: what set it was measured on).
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.eval.prompt_match.score_pairs(embedder, items)
+
+Every prompt against every clip: `[(cosine, is_match), ...]`.
+
+`items` is `[(prompt, clip_bytes, clip_matches_prompt), ...]`. Pair `(i, i)` is a
+match when its flag is true (a clip a listener rejected counts as a mismatch); pair `(i, j)` with `i != j` is a mismatch (clip `j`
+was made for another prompt). Embeddings are computed once per prompt and per clip.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]
 
 
 # _autosummary/foley.eval.reliability.html.md
@@ -4630,7 +4719,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`QCReport`](_autosummary/foley.html.md#foley.QCReport)(duration_s, sample_rate, channels, ...)  | Per-clip Tier-0 QC result.                                                                                                           |
 | [`SoundLibrary`](_autosummary/foley.html.md#foley.SoundLibrary)(\*[, sounds, meta, vindex, ...])     | A searchable, license-aware library of sounds (the foley INDEX façade).                                                              |
 | [`Embedder`](_autosummary/foley.html.md#foley.Embedder)(\*args, \*\*kwargs)                      | A joint text<->audio embedding space (CLAP by default).                                                                              |
-| [`ClapEmbedder`](_autosummary/foley.html.md#foley.ClapEmbedder)([model_id, device])                  | LAION-CLAP text<->audio embedder (the default retrieval engine).                                                                     |
+| [`ClapEmbedder`](_autosummary/foley.html.md#foley.ClapEmbedder)([model_id, device, ...])             | LAION-CLAP text<->audio embedder (the default retrieval engine).                                                                     |
 | [`VectorIndex`](_autosummary/foley.html.md#foley.VectorIndex)(\*args, \*\*kwargs)                   | Approximate-nearest-neighbour store over embedding vectors.                                                                          |
 | [`KeywordIndex`](_autosummary/foley.html.md#foley.KeywordIndex)(\*args, \*\*kwargs)                  | BM25 / full-text index over each sound's tags + caption.                                                                             |
 | [`MemoryIndex`](_autosummary/foley.html.md#foley.MemoryIndex)(\*[, dim])                            | In-memory vector + keyword index (numpy cosine + compact BM25).                                                                      |
@@ -4882,7 +4971,7 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
 
-### *class* foley.ClapEmbedder(model_id='laion/larger_clap_general', , device=None)
+### *class* foley.ClapEmbedder(model_id='laion/larger_clap_general', , device=None, prompt_match_threshold=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -4939,12 +5028,13 @@ Embed one or more query strings -> `(n_texts, dim)` L2-normalized.
 * **Return type:**
   `ndarray`
 
-#### prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+#### *property* prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)*
 
-Cosine similarity under which a generated clip is flagged as not matching its
-prompt ([`foley.prompt_match.prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)). Provisional: LAION-CLAP puts
-matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
-this value is not yet calibrated on a labelled set of foley generations.
+Cosine similarity under which a generated clip is flagged as not matching its prompt.
+
+Calibrated per checkpoint on a labelled set ([`foley.eval.prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match),
+`foley/data/prompt_match/thresholds.json`); a checkpoint nobody has calibrated
+gets `PROVISIONAL_PROMPT_MATCH_THRESHOLD`.
 
 ### *class* foley.ClapZeroShotTagger(, embedder=None, labels=None, prompt='this is a sound of {label}', threshold=0.0)
 
@@ -8007,10 +8097,11 @@ stdlib; the ~1.7 GB checkpoint loads on the first `embed_*` call.
 
 ### Module Attributes
 
-| [`DEFAULT_CLAP_MODEL_ID`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.DEFAULT_CLAP_MODEL_ID)   | The default CLAP checkpoint (LAION, Apache-2.0, general/environmental sound).   |
-|--------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`CLAP_SAMPLE_RATE`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.CLAP_SAMPLE_RATE)        | Sample rate CLAP expects at its audio input (report 04 §1.2).                   |
-| [`DEFAULT_CLAP_DIM`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.DEFAULT_CLAP_DIM)        | `projection_dim=512`).                                                          |
+| [`DEFAULT_CLAP_MODEL_ID`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.DEFAULT_CLAP_MODEL_ID)              | The default CLAP checkpoint (LAION, Apache-2.0, general/environmental sound).   |
+|-------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| [`CLAP_SAMPLE_RATE`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.CLAP_SAMPLE_RATE)                   | Sample rate CLAP expects at its audio input (report 04 §1.2).                   |
+| [`DEFAULT_CLAP_DIM`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.DEFAULT_CLAP_DIM)                   | `projection_dim=512`).                                                          |
+| [`PROVISIONAL_PROMPT_MATCH_THRESHOLD`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.PROVISIONAL_PROMPT_MATCH_THRESHOLD) | The prompt-match threshold of a checkpoint with no calibration on record.       |
 
 ### Functions
 
@@ -8019,14 +8110,14 @@ stdlib; the ~1.7 GB checkpoint loads on the first `embed_*` call.
 
 ### Classes
 
-| [`ClapEmbedder`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.ClapEmbedder)([model_id, device])   | LAION-CLAP text<->audio embedder (the default retrieval engine).   |
-|-------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| [`ClapEmbedder`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.ClapEmbedder)([model_id, device, ...])   | LAION-CLAP text<->audio embedder (the default retrieval engine).   |
+|------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
 
 ### foley.index.embedders.CLAP_SAMPLE_RATE *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 48000*
 
 Sample rate CLAP expects at its audio input (report 04 §1.2).
 
-### *class* foley.index.embedders.ClapEmbedder(model_id='laion/larger_clap_general', , device=None)
+### *class* foley.index.embedders.ClapEmbedder(model_id='laion/larger_clap_general', , device=None, prompt_match_threshold=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -8083,12 +8174,13 @@ Embed one or more query strings -> `(n_texts, dim)` L2-normalized.
 * **Return type:**
   `ndarray`
 
-#### prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+#### *property* prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)*
 
-Cosine similarity under which a generated clip is flagged as not matching its
-prompt ([`foley.prompt_match.prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)). Provisional: LAION-CLAP puts
-matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
-this value is not yet calibrated on a labelled set of foley generations.
+Cosine similarity under which a generated clip is flagged as not matching its prompt.
+
+Calibrated per checkpoint on a labelled set ([`foley.eval.prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match),
+`foley/data/prompt_match/thresholds.json`); a checkpoint nobody has calibrated
+gets [`PROVISIONAL_PROMPT_MATCH_THRESHOLD`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.PROVISIONAL_PROMPT_MATCH_THRESHOLD).
 
 ### foley.index.embedders.DEFAULT_CLAP_DIM *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 512*
 
@@ -8100,6 +8192,12 @@ this value is not yet calibrated on a labelled set of foley generations.
 ### foley.index.embedders.DEFAULT_CLAP_MODEL_ID *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'laion/larger_clap_general'*
 
 The default CLAP checkpoint (LAION, Apache-2.0, general/environmental sound).
+
+### foley.index.embedders.PROVISIONAL_PROMPT_MATCH_THRESHOLD *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+
+The prompt-match threshold of a checkpoint with no calibration on record. LAION-CLAP
+puts matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15; this is
+a guess between them, not a measurement.
 
 ### foley.index.embedders.default_embedder()
 
@@ -8157,7 +8255,7 @@ only the stdlib; install the capability you use via the matching extra
 | [`KeywordIndex`](_autosummary/foley.index.html.md#foley.index.KeywordIndex)(\*args, \*\*kwargs)                  | BM25 / full-text index over each sound's tags + caption.                    |
 | [`Tagger`](_autosummary/foley.index.html.md#foley.index.Tagger)(\*args, \*\*kwargs)                        | Map a clip to `(label, score)` pairs against a label vocabulary.            |
 | [`Captioner`](_autosummary/foley.index.html.md#foley.index.Captioner)(\*args, \*\*kwargs)                     | Produce one natural-language sentence describing a clip (report 03).        |
-| [`ClapEmbedder`](_autosummary/foley.index.html.md#foley.index.ClapEmbedder)([model_id, device])                  | LAION-CLAP text<->audio embedder (the default retrieval engine).            |
+| [`ClapEmbedder`](_autosummary/foley.index.html.md#foley.index.ClapEmbedder)([model_id, device, ...])             | LAION-CLAP text<->audio embedder (the default retrieval engine).            |
 | [`ClapZeroShotTagger`](_autosummary/foley.index.html.md#foley.index.ClapZeroShotTagger)(\*[, embedder, labels, ...])   | Zero-shot tagger: score a clip against a label set via CLAP cosine.         |
 | [`PannsTagger`](_autosummary/foley.index.html.md#foley.index.PannsTagger)(\*[, device, threshold])              | PANNs CNN14 supervised tagger over the 527 AudioSet classes (`foley[tag]`). |
 | [`IngestResult`](_autosummary/foley.index.html.md#foley.index.IngestResult)(id, status[, record, qc, ...])       | The outcome of ingesting one clip.                                          |
@@ -8196,7 +8294,7 @@ The result of resolving free tags/caption/labels to a UCS CatID.
 `subcategory` feeds `ucs_subcategory` on
 ingest, and `ucs_catid` on the query side.
 
-### *class* foley.index.ClapEmbedder(model_id='laion/larger_clap_general', , device=None)
+### *class* foley.index.ClapEmbedder(model_id='laion/larger_clap_general', , device=None, prompt_match_threshold=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -8253,12 +8351,13 @@ Embed one or more query strings -> `(n_texts, dim)` L2-normalized.
 * **Return type:**
   `ndarray`
 
-#### prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+#### *property* prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)*
 
-Cosine similarity under which a generated clip is flagged as not matching its
-prompt ([`foley.prompt_match.prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)). Provisional: LAION-CLAP puts
-matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
-this value is not yet calibrated on a labelled set of foley generations.
+Cosine similarity under which a generated clip is flagged as not matching its prompt.
+
+Calibrated per checkpoint on a labelled set ([`foley.eval.prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match),
+`foley/data/prompt_match/thresholds.json`); a checkpoint nobody has calibrated
+gets `PROVISIONAL_PROMPT_MATCH_THRESHOLD`.
 
 ### *class* foley.index.ClapZeroShotTagger(, embedder=None, labels=None, prompt='this is a sound of {label}', threshold=0.0)
 
@@ -11254,26 +11353,36 @@ Two cases are left unchanged and said so, never amplified: a clip too short to
 measure (under one 400 ms gating block: a click, a page flick) and a near-silent one.
 
 [`foley.generate()`](_autosummary/foley.html.md#foley.generate) levels a clip when asked (`level='sfx_fg'`, a
-[`Layer`](_autosummary/foley.base.html.md#foley.base.Layer), or a LUFS number). It does not by default: the WEAVE
-render applies the layer gains itself to the clip as stored, so a library clip
-levelled to its class target would be attenuated twice. Levelling exported clips for
-listening, or a library weave normalises by measured loudness, are the uses.
+[`Layer`](_autosummary/foley.base.html.md#foley.base.Layer), or a LUFS number), for export and listening. It does not by
+default: the library keeps clips as generated, and the WEAVE render brings every clip to
+the reference loudness itself (below), so a stored clip’s level does not matter to the mix.
+
+**The WEAVE render levels by measurement** ([`reference_gain_db()`](_autosummary/foley.level.html.md#foley.level.reference_gain_db), used by
+[`foley.weave.render.FullRender`](_autosummary/foley.weave.html.md#foley.weave.FullRender)): each clip is first brought to the reference
+loudness, then the layer gain is applied, so a hot ElevenLabs clip and a quiet Stable
+Audio one land at the same place in the mix and `generate(level=...)` stays an export
+tool. A clip too short for a loudness reading is levelled by its peak instead.
 
 Zero-dependency import: `numpy`, `pyloudnorm` and `soundfile` load inside the
 functions.
 
 ### Module Attributes
 
-| [`LevelSpec`](_autosummary/foley.level.html.md#foley.level.LevelSpec)   | a layer (or its name) for its class target, or a LUFS value.   |
-|--------------------------------------------------------------|----------------------------------------------------------------|
+| [`LevelSpec`](_autosummary/foley.level.html.md#foley.level.LevelSpec)                   | a layer (or its name) for its class target, or a LUFS value.                                                             |
+|------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| [`REFERENCE_PEAK_CEILING_DBFS`](_autosummary/foley.level.html.md#foley.level.REFERENCE_PEAK_CEILING_DBFS) | Sample-peak ceiling (dBFS) the levelled clip must stay under.                                                            |
+| [`SHORT_CLIP_PEAK_DBFS`](_autosummary/foley.level.html.md#foley.level.SHORT_CLIP_PEAK_DBFS)        | Where a clip too short for a loudness reading (a click, a page flick) puts its sample peak.                              |
+| [`MAX_REFERENCE_BOOST_DB`](_autosummary/foley.level.html.md#foley.level.MAX_REFERENCE_BOOST_DB)      | The most a clip is boosted to reach the reference (dB), so a near-silent clip's noise floor is not raised without bound. |
+| [`SILENT_PEAK_DBFS`](_autosummary/foley.level.html.md#foley.level.SILENT_PEAK_DBFS)            | A clip whose sample peak is under this (dBFS) is silent for levelling purposes.                                          |
 
 ### Functions
 
-| [`class_target_lufs`](_autosummary/foley.level.html.md#foley.level.class_target_lufs)(layer)         | The integrated-loudness target (LUFS) for a clip of `layer`.                                                                         |
-|-----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| [`level_bytes`](_autosummary/foley.level.html.md#foley.level.level_bytes)(audio_bytes, target) | Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.                                                     |
-| [`require_loudness_meter`](_autosummary/foley.level.html.md#foley.level.require_loudness_meter)()         | Raise `ImportError` (with the install line) when `pyloudnorm` is missing.                                                            |
-| [`resolve_target_lufs`](_autosummary/foley.level.html.md#foley.level.resolve_target_lufs)(spec)        | A `level=` value as a LUFS target: a number as is, a layer via [`class_target_lufs()`](_autosummary/foley.level.html.md#foley.level.class_target_lufs). |
+| [`class_target_lufs`](_autosummary/foley.level.html.md#foley.level.class_target_lufs)(layer)                        | The integrated-loudness target (LUFS) for a clip of `layer`.                                                                         |
+|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| [`level_bytes`](_autosummary/foley.level.html.md#foley.level.level_bytes)(audio_bytes, target)                | Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.                                                     |
+| [`reference_gain_db`](_autosummary/foley.level.html.md#foley.level.reference_gain_db)(clip, sample_rate, \*[, ...]) | The gain (dB) that brings `clip` to the reference loudness; `0.0` if it cannot.                                                      |
+| [`require_loudness_meter`](_autosummary/foley.level.html.md#foley.level.require_loudness_meter)()                        | Raise `ImportError` (with the install line) when `pyloudnorm` is missing.                                                            |
+| [`resolve_target_lufs`](_autosummary/foley.level.html.md#foley.level.resolve_target_lufs)(spec)                       | A `level=` value as a LUFS target: a number as is, a layer via [`class_target_lufs()`](_autosummary/foley.level.html.md#foley.level.class_target_lufs). |
 
 ### foley.level.LevelSpec
 
@@ -11283,6 +11392,27 @@ a layer (or its name) for its class target, or a LUFS value.
   What `level=` accepts
 
 alias of [`Layer`](_autosummary/foley.base.html.md#foley.base.Layer) | [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+### foley.level.MAX_REFERENCE_BOOST_DB *= 36.0*
+
+The most a clip is boosted to reach the reference (dB), so a near-silent clip’s noise
+floor is not raised without bound. The 29 dB spread seen on a real film fits inside.
+
+### foley.level.REFERENCE_PEAK_CEILING_DBFS *= -1.0*
+
+Sample-peak ceiling (dBFS) the levelled clip must stay under. The render passes this
+*after* the layer gain (see [`foley.weave.render.FullRender`](_autosummary/foley.weave.html.md#foley.weave.FullRender)), so a loud transient
+is not held back by headroom the layer gain is about to take anyway.
+
+### foley.level.SHORT_CLIP_PEAK_DBFS *= -6.0*
+
+Where a clip too short for a loudness reading (a click, a page flick) puts its sample
+peak. Provisional: the peak a typical one-shot has when its integrated loudness is the
+reference (about 10 dB of crest above -16 LUFS).
+
+### foley.level.SILENT_PEAK_DBFS *= -80.0*
+
+A clip whose sample peak is under this (dBFS) is silent for levelling purposes.
 
 ### foley.level.class_target_lufs(layer)
 
@@ -11315,6 +11445,25 @@ Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.
   bytes unchanged, `applied=None` and `measured_lufs=None`.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
+### foley.level.reference_gain_db(clip, sample_rate, , reference_lufs=None, peak_ceiling_dbfs=-1.0, short_peak_dbfs=-6.0, max_boost_db=36.0)
+
+The gain (dB) that brings `clip` to the reference loudness; `0.0` if it cannot.
+
+Integrated loudness (BS.1770, gated) is measured and the gain is
+`reference_lufs - measured`. A clip too short to measure is levelled by
+its sample peak (to `short_peak_dbfs`) instead; one that is long enough but below the
+loudness gate is near-silent and left alone. Either way the gain is capped so the
+clip’s sample peak stays at or under `peak_ceiling_dbfs` and the boost at
+`max_boost_db`; a silent or non-finite clip gets `0.0`. Pure and deterministic.
+
+* **Parameters:**
+  * **clip** – Mono or multichannel samples, time on axis 0.
+  * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
+  * **reference_lufs** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The loudness every clip is brought to (default: foley’s
+    reference programme loudness, `foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### foley.level.require_loudness_meter()
 
@@ -12450,16 +12599,19 @@ Zero-dependency import: `numpy` and the embedder’s own stack load inside.
 
 ### Module Attributes
 
-| [`MATCH`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.MATCH)     | the clip matches its prompt, does not, or was not checked.   |
-|------------------------------------------------------------|--------------------------------------------------------------|
-| [`MISMATCH`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.MISMATCH)  | the clip matches its prompt, does not, or was not checked.   |
-| [`UNCHECKED`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.UNCHECKED) | the clip matches its prompt, does not, or was not checked.   |
+| [`THRESHOLDS_PATH`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.THRESHOLDS_PATH)   | Where the per-checkpoint calibrated thresholds live (package data, so they ship in the wheel).   |
+|--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| [`MATCH`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.MATCH)             | the clip matches its prompt, does not, or was not checked.                                       |
+| [`MISMATCH`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.MISMATCH)          | the clip matches its prompt, does not, or was not checked.                                       |
+| [`UNCHECKED`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.UNCHECKED)         | the clip matches its prompt, does not, or was not checked.                                       |
 
 ### Functions
 
-| [`note_for`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.note_for)(result)                                | The one-line candidate note for a [`prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match) result.   |
-|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
-| [`prompt_match`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)(prompt, audio_bytes, \*, embedder) | Score `audio_bytes` against `prompt` with `embedder`; never raises.                                         |
+| [`load_thresholds`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.load_thresholds)([path])                         | `{model_id: calibration dict}`; empty when nothing has been calibrated.                                   |
+|--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| [`note_for`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.note_for)(result)                                | The one-line candidate note for a [`prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match) result. |
+| [`prompt_match`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)(prompt, audio_bytes, \*, embedder) | Score `audio_bytes` against `prompt` with `embedder`; never raises.                                       |
+| [`threshold_for`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.threshold_for)(model_id, \*[, path])             | The calibrated threshold of checkpoint `model_id`, or `None`.                                             |
 
 ### foley.prompt_match.MATCH *= 'match'*
 
@@ -12475,12 +12627,24 @@ the clip matches its prompt, does not, or was not checked.
 * **Type:**
   `status` values
 
+### foley.prompt_match.THRESHOLDS_PATH *= PosixPath('/home/runner/work/foley/foley/foley/data/prompt_match/thresholds.json')*
+
+Where the per-checkpoint calibrated thresholds live (package data, so they ship in the
+wheel). Written by [`foley.eval.prompt_match.save_threshold()`](_autosummary/foley.eval.prompt_match.html.md#foley.eval.prompt_match.save_threshold).
+
 ### foley.prompt_match.UNCHECKED *= 'unchecked'*
 
 the clip matches its prompt, does not, or was not checked.
 
 * **Type:**
   `status` values
+
+### foley.prompt_match.load_thresholds(path=PosixPath('/home/runner/work/foley/foley/foley/data/prompt_match/thresholds.json'))
+
+`{model_id: calibration dict}`; empty when nothing has been calibrated.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### foley.prompt_match.note_for(result)
 
@@ -12509,6 +12673,13 @@ Score `audio_bytes` against `prompt` with `embedder`; never raises.
 >>> prompt_match("a door creak", b"", embedder=None)["status"]
 'unchecked'
 ```
+
+### foley.prompt_match.threshold_for(model_id, , path=PosixPath('/home/runner/work/foley/foley/foley/data/prompt_match/thresholds.json'))
+
+The calibrated threshold of checkpoint `model_id`, or `None`.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 
 # _autosummary/foley.provenance.credits.html.md
@@ -12819,7 +12990,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'tudum', 'ta-dum', 'netflix chime', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'tudum', 'netflix intro', 'ta dum', 'ta-dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel jingle', 'intel bong', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -17348,7 +17519,7 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 |---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
 | [`RenderResult`](_autosummary/foley.weave.html.md#foley.weave.RenderResult)(audio, sr, timeline, master_report) | The output of [`render()`](_autosummary/foley.weave.html.md#foley.weave.render): the mastered mix + the hydrated (re-renderable) timeline. |
 | [`RenderCache`](_autosummary/foley.weave.html.md#foley.weave.RenderCache)                                      | Per-layer render memo (`bus_hash -> stereo bus array`) for incremental re-render.                                                  |
-| [`FullRender`](_autosummary/foley.weave.html.md#foley.weave.FullRender)()                                     | Default [`ApplyStrategy`](_autosummary/foley.weave.html.md#foley.weave.ApplyStrategy) — the full per-item DSP chain (report 06 §3-4).             |
+| [`FullRender`](_autosummary/foley.weave.html.md#foley.weave.FullRender)(\*[, level_clips])                    | Default [`ApplyStrategy`](_autosummary/foley.weave.html.md#foley.weave.ApplyStrategy) — the full per-item DSP chain (report 06 §3-4).             |
 | [`PlaceOnly`](_autosummary/foley.weave.html.md#foley.weave.PlaceOnly)()                                      | Dry [`ApplyStrategy`](_autosummary/foley.weave.html.md#foley.weave.ApplyStrategy) — declicked placement, no gain/pan/distance/reverb.             |
 | [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner)(\*args, \*\*kwargs)                      | Narration audio + its transcript → word-level timestamps (forced alignment).                                                       |
 | [`ApplyStrategy`](_autosummary/foley.weave.html.md#foley.weave.ApplyStrategy)(\*args, \*\*kwargs)                | How ONE hydrated item's clip is placed onto its layer bus (report 10 §4.2).                                                        |
@@ -17382,7 +17553,9 @@ full per-item DSP chain (fit-duration → gain/pan/distance/reverb → declick �
 overlay), while [`PlaceOnly`](_autosummary/foley.weave.html.md#foley.weave.PlaceOnly) does a dry declicked
 overlay (fast preview / DSP-free fallback). `item` is already anchor-resolved
 (`item.placement.onset` is in seconds); `bus` and `clip` are stereo
-`float32` working arrays at `sample_rate`.
+`float32` working arrays at `sample_rate`. A strategy with settings that change
+its output should expose them as a `cache_key` string: the [`RenderCache`](_autosummary/foley.weave.html.md#foley.weave.RenderCache)
+keys on it (default: the class name).
 
 ### *class* foley.weave.FakeAligner
 
@@ -17402,15 +17575,22 @@ Return an evenly-spaced word timeline for `transcript` over `audio`’s duration
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
-### *class* foley.weave.FullRender
+### *class* foley.weave.FullRender(, level_clips=True)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 Default [`ApplyStrategy`](_autosummary/foley.weave.html.md#foley.weave.ApplyStrategy) — the full per-item DSP chain (report 06 §3-4).
 
-`fit-duration` (loop/trim) → distance → reverb send → constant-power pan →
+`fit-duration` (loop/trim) → `level` (measured loudness to the reference,
+[`foley.level.reference_gain_db()`](_autosummary/foley.level.html.md#foley.level.reference_gain_db), on what will be heard) → distance → reverb send → constant-power pan →
 declick → gain (base layer level + item `gain_db`) → overlay at the resolved
-onset.
+onset. Levelling first means the layer gains act on clips of equal loudness, whatever
+level each was generated or recorded at (#111); `level_clips=False` renders the
+clips as stored.
+
+#### *property* cache_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+What distinguishes this strategy’s output in [`RenderCache`](_autosummary/foley.weave.html.md#foley.weave.RenderCache) keys.
 
 ### *class* foley.weave.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0)
 
@@ -18119,7 +18299,9 @@ full per-item DSP chain (fit-duration → gain/pan/distance/reverb → declick �
 overlay), while [`PlaceOnly`](_autosummary/foley.weave.html.md#foley.weave.PlaceOnly) does a dry declicked
 overlay (fast preview / DSP-free fallback). `item` is already anchor-resolved
 (`item.placement.onset` is in seconds); `bus` and `clip` are stereo
-`float32` working arrays at `sample_rate`.
+`float32` working arrays at `sample_rate`. A strategy with settings that change
+its output should expose them as a `cache_key` string: the `RenderCache`
+keys on it (default: the class name).
 
 
 # _autosummary/foley.weave.reaction.html.md
@@ -18449,18 +18631,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-26 11:03 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/2d3b2a3592dfaee1cb225a619138a79c24ff2269"><code>2d3b2a3</code></a> on branch <code>main</code>, for **foley 0.0.46** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 11:42 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/bb9808ef5e67d77ebef42c3d19234ae1b99ed786"><code>bb9808e</code></a> on branch <code>main</code>, for **foley 0.0.47** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.46) is behind the latest release on PyPI (0.0.47): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.47) is behind the latest release on PyPI (0.0.48): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/2d3b2a3592dfaee1cb225a619138a79c24ff2269"><code>2d3b2a3592dfaee1cb225a619138a79c24ff2269</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/bb9808ef5e67d77ebef42c3d19234ae1b99ed786"><code>bb9808ef5e67d77ebef42c3d19234ae1b99ed786</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -18471,9 +18653,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40311901703">40311901703</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40316867932">40316867932</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>2d3b2a3592dfaee1cb225a619138a79c24ff2269</code> (in the history of the built commit) |
+| Event commit | <code>bb9808ef5e67d77ebef42c3d19234ae1b99ed786</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -18498,13 +18680,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.47/">0.0.47</a>, newer than the documented version (0.0.46).
+Latest release: <a href="https://pypi.org/project/foley/0.0.48/">0.0.48</a>, newer than the documented version (0.0.47).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 2d3b2a3592dfaee1cb225a619138a79c24ff2269
+git checkout bb9808ef5e67d77ebef42c3d19234ae1b99ed786
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

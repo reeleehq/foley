@@ -22,16 +22,19 @@ Zero-dependency import: `numpy` and the embedder’s own stack load inside.
 
 ### Module Attributes
 
-| [`MATCH`](#foley.prompt_match.MATCH)     | the clip matches its prompt, does not, or was not checked.   |
-|------------------------------------------------------------|--------------------------------------------------------------|
-| [`MISMATCH`](#foley.prompt_match.MISMATCH)  | the clip matches its prompt, does not, or was not checked.   |
-| [`UNCHECKED`](#foley.prompt_match.UNCHECKED) | the clip matches its prompt, does not, or was not checked.   |
+| [`THRESHOLDS_PATH`](#foley.prompt_match.THRESHOLDS_PATH)   | Where the per-checkpoint calibrated thresholds live (package data, so they ship in the wheel).   |
+|--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| [`MATCH`](#foley.prompt_match.MATCH)             | the clip matches its prompt, does not, or was not checked.                                       |
+| [`MISMATCH`](#foley.prompt_match.MISMATCH)          | the clip matches its prompt, does not, or was not checked.                                       |
+| [`UNCHECKED`](#foley.prompt_match.UNCHECKED)         | the clip matches its prompt, does not, or was not checked.                                       |
 
 ### Functions
 
-| [`note_for`](#foley.prompt_match.note_for)(result)                                | The one-line candidate note for a [`prompt_match()`](#foley.prompt_match.prompt_match) result.   |
-|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
-| [`prompt_match`](#foley.prompt_match.prompt_match)(prompt, audio_bytes, \*, embedder) | Score `audio_bytes` against `prompt` with `embedder`; never raises.                                         |
+| [`load_thresholds`](#foley.prompt_match.load_thresholds)([path])                         | `{model_id: calibration dict}`; empty when nothing has been calibrated.                                   |
+|--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| [`note_for`](#foley.prompt_match.note_for)(result)                                | The one-line candidate note for a [`prompt_match()`](#foley.prompt_match.prompt_match) result. |
+| [`prompt_match`](#foley.prompt_match.prompt_match)(prompt, audio_bytes, \*, embedder) | Score `audio_bytes` against `prompt` with `embedder`; never raises.                                       |
+| [`threshold_for`](#foley.prompt_match.threshold_for)(model_id, \*[, path])             | The calibrated threshold of checkpoint `model_id`, or `None`.                                             |
 
 ### foley.prompt_match.MATCH *= 'match'*
 
@@ -47,12 +50,24 @@ the clip matches its prompt, does not, or was not checked.
 * **Type:**
   `status` values
 
+### foley.prompt_match.THRESHOLDS_PATH *= PosixPath('/home/runner/work/foley/foley/foley/data/prompt_match/thresholds.json')*
+
+Where the per-checkpoint calibrated thresholds live (package data, so they ship in the
+wheel). Written by [`foley.eval.prompt_match.save_threshold()`](foley.eval.prompt_match.html.md#foley.eval.prompt_match.save_threshold).
+
 ### foley.prompt_match.UNCHECKED *= 'unchecked'*
 
 the clip matches its prompt, does not, or was not checked.
 
 * **Type:**
   `status` values
+
+### foley.prompt_match.load_thresholds(path=PosixPath('/home/runner/work/foley/foley/foley/data/prompt_match/thresholds.json'))
+
+`{model_id: calibration dict}`; empty when nothing has been calibrated.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### foley.prompt_match.note_for(result)
 
@@ -81,3 +96,10 @@ Score `audio_bytes` against `prompt` with `embedder`; never raises.
 >>> prompt_match("a door creak", b"", embedder=None)["status"]
 'unchecked'
 ```
+
+### foley.prompt_match.threshold_for(model_id, , path=PosixPath('/home/runner/work/foley/foley/foley/data/prompt_match/thresholds.json'))
+
+The calibrated threshold of checkpoint `model_id`, or `None`.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]

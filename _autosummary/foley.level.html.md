@@ -19,26 +19,36 @@ Two cases are left unchanged and said so, never amplified: a clip too short to
 measure (under one 400 ms gating block: a click, a page flick) and a near-silent one.
 
 [`foley.generate()`](foley.html.md#foley.generate) levels a clip when asked (`level='sfx_fg'`, a
-[`Layer`](foley.base.html.md#foley.base.Layer), or a LUFS number). It does not by default: the WEAVE
-render applies the layer gains itself to the clip as stored, so a library clip
-levelled to its class target would be attenuated twice. Levelling exported clips for
-listening, or a library weave normalises by measured loudness, are the uses.
+[`Layer`](foley.base.html.md#foley.base.Layer), or a LUFS number), for export and listening. It does not by
+default: the library keeps clips as generated, and the WEAVE render brings every clip to
+the reference loudness itself (below), so a stored clip’s level does not matter to the mix.
+
+**The WEAVE render levels by measurement** ([`reference_gain_db()`](#foley.level.reference_gain_db), used by
+[`foley.weave.render.FullRender`](foley.weave.html.md#foley.weave.FullRender)): each clip is first brought to the reference
+loudness, then the layer gain is applied, so a hot ElevenLabs clip and a quiet Stable
+Audio one land at the same place in the mix and `generate(level=...)` stays an export
+tool. A clip too short for a loudness reading is levelled by its peak instead.
 
 Zero-dependency import: `numpy`, `pyloudnorm` and `soundfile` load inside the
 functions.
 
 ### Module Attributes
 
-| [`LevelSpec`](#foley.level.LevelSpec)   | a layer (or its name) for its class target, or a LUFS value.   |
-|--------------------------------------------------------------|----------------------------------------------------------------|
+| [`LevelSpec`](#foley.level.LevelSpec)                   | a layer (or its name) for its class target, or a LUFS value.                                                             |
+|------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| [`REFERENCE_PEAK_CEILING_DBFS`](#foley.level.REFERENCE_PEAK_CEILING_DBFS) | Sample-peak ceiling (dBFS) the levelled clip must stay under.                                                            |
+| [`SHORT_CLIP_PEAK_DBFS`](#foley.level.SHORT_CLIP_PEAK_DBFS)        | Where a clip too short for a loudness reading (a click, a page flick) puts its sample peak.                              |
+| [`MAX_REFERENCE_BOOST_DB`](#foley.level.MAX_REFERENCE_BOOST_DB)      | The most a clip is boosted to reach the reference (dB), so a near-silent clip's noise floor is not raised without bound. |
+| [`SILENT_PEAK_DBFS`](#foley.level.SILENT_PEAK_DBFS)            | A clip whose sample peak is under this (dBFS) is silent for levelling purposes.                                          |
 
 ### Functions
 
-| [`class_target_lufs`](#foley.level.class_target_lufs)(layer)         | The integrated-loudness target (LUFS) for a clip of `layer`.                                                                         |
-|-----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-| [`level_bytes`](#foley.level.level_bytes)(audio_bytes, target) | Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.                                                     |
-| [`require_loudness_meter`](#foley.level.require_loudness_meter)()         | Raise `ImportError` (with the install line) when `pyloudnorm` is missing.                                                            |
-| [`resolve_target_lufs`](#foley.level.resolve_target_lufs)(spec)        | A `level=` value as a LUFS target: a number as is, a layer via [`class_target_lufs()`](#foley.level.class_target_lufs). |
+| [`class_target_lufs`](#foley.level.class_target_lufs)(layer)                        | The integrated-loudness target (LUFS) for a clip of `layer`.                                                                         |
+|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| [`level_bytes`](#foley.level.level_bytes)(audio_bytes, target)                | Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.                                                     |
+| [`reference_gain_db`](#foley.level.reference_gain_db)(clip, sample_rate, \*[, ...]) | The gain (dB) that brings `clip` to the reference loudness; `0.0` if it cannot.                                                      |
+| [`require_loudness_meter`](#foley.level.require_loudness_meter)()                        | Raise `ImportError` (with the install line) when `pyloudnorm` is missing.                                                            |
+| [`resolve_target_lufs`](#foley.level.resolve_target_lufs)(spec)                       | A `level=` value as a LUFS target: a number as is, a layer via [`class_target_lufs()`](#foley.level.class_target_lufs). |
 
 ### foley.level.LevelSpec
 
@@ -48,6 +58,27 @@ a layer (or its name) for its class target, or a LUFS value.
   What `level=` accepts
 
 alias of [`Layer`](foley.base.html.md#foley.base.Layer) | [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+### foley.level.MAX_REFERENCE_BOOST_DB *= 36.0*
+
+The most a clip is boosted to reach the reference (dB), so a near-silent clip’s noise
+floor is not raised without bound. The 29 dB spread seen on a real film fits inside.
+
+### foley.level.REFERENCE_PEAK_CEILING_DBFS *= -1.0*
+
+Sample-peak ceiling (dBFS) the levelled clip must stay under. The render passes this
+*after* the layer gain (see [`foley.weave.render.FullRender`](foley.weave.html.md#foley.weave.FullRender)), so a loud transient
+is not held back by headroom the layer gain is about to take anyway.
+
+### foley.level.SHORT_CLIP_PEAK_DBFS *= -6.0*
+
+Where a clip too short for a loudness reading (a click, a page flick) puts its sample
+peak. Provisional: the peak a typical one-shot has when its integrated loudness is the
+reference (about 10 dB of crest above -16 LUFS).
+
+### foley.level.SILENT_PEAK_DBFS *= -80.0*
+
+A clip whose sample peak is under this (dBFS) is silent for levelling purposes.
 
 ### foley.level.class_target_lufs(layer)
 
@@ -80,6 +111,25 @@ Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.
   bytes unchanged, `applied=None` and `measured_lufs=None`.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
+### foley.level.reference_gain_db(clip, sample_rate, , reference_lufs=None, peak_ceiling_dbfs=-1.0, short_peak_dbfs=-6.0, max_boost_db=36.0)
+
+The gain (dB) that brings `clip` to the reference loudness; `0.0` if it cannot.
+
+Integrated loudness (BS.1770, gated) is measured and the gain is
+`reference_lufs - measured`. A clip too short to measure is levelled by
+its sample peak (to `short_peak_dbfs`) instead; one that is long enough but below the
+loudness gate is near-silent and left alone. Either way the gain is capped so the
+clip’s sample peak stays at or under `peak_ceiling_dbfs` and the boost at
+`max_boost_db`; a silent or non-finite clip gets `0.0`. Pure and deterministic.
+
+* **Parameters:**
+  * **clip** – Mono or multichannel samples, time on axis 0.
+  * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
+  * **reference_lufs** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The loudness every clip is brought to (default: foley’s
+    reference programme loudness, `foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### foley.level.require_loudness_meter()
 

@@ -17,10 +17,11 @@ stdlib; the ~1.7 GB checkpoint loads on the first `embed_*` call.
 
 ### Module Attributes
 
-| [`DEFAULT_CLAP_MODEL_ID`](#foley.index.embedders.DEFAULT_CLAP_MODEL_ID)   | The default CLAP checkpoint (LAION, Apache-2.0, general/environmental sound).   |
-|--------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`CLAP_SAMPLE_RATE`](#foley.index.embedders.CLAP_SAMPLE_RATE)        | Sample rate CLAP expects at its audio input (report 04 §1.2).                   |
-| [`DEFAULT_CLAP_DIM`](#foley.index.embedders.DEFAULT_CLAP_DIM)        | `projection_dim=512`).                                                          |
+| [`DEFAULT_CLAP_MODEL_ID`](#foley.index.embedders.DEFAULT_CLAP_MODEL_ID)              | The default CLAP checkpoint (LAION, Apache-2.0, general/environmental sound).   |
+|-------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| [`CLAP_SAMPLE_RATE`](#foley.index.embedders.CLAP_SAMPLE_RATE)                   | Sample rate CLAP expects at its audio input (report 04 §1.2).                   |
+| [`DEFAULT_CLAP_DIM`](#foley.index.embedders.DEFAULT_CLAP_DIM)                   | `projection_dim=512`).                                                          |
+| [`PROVISIONAL_PROMPT_MATCH_THRESHOLD`](#foley.index.embedders.PROVISIONAL_PROMPT_MATCH_THRESHOLD) | The prompt-match threshold of a checkpoint with no calibration on record.       |
 
 ### Functions
 
@@ -29,14 +30,14 @@ stdlib; the ~1.7 GB checkpoint loads on the first `embed_*` call.
 
 ### Classes
 
-| [`ClapEmbedder`](#foley.index.embedders.ClapEmbedder)([model_id, device])   | LAION-CLAP text<->audio embedder (the default retrieval engine).   |
-|-------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| [`ClapEmbedder`](#foley.index.embedders.ClapEmbedder)([model_id, device, ...])   | LAION-CLAP text<->audio embedder (the default retrieval engine).   |
+|------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
 
 ### foley.index.embedders.CLAP_SAMPLE_RATE *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 48000*
 
 Sample rate CLAP expects at its audio input (report 04 §1.2).
 
-### *class* foley.index.embedders.ClapEmbedder(model_id='laion/larger_clap_general', , device=None)
+### *class* foley.index.embedders.ClapEmbedder(model_id='laion/larger_clap_general', , device=None, prompt_match_threshold=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -93,12 +94,13 @@ Embed one or more query strings -> `(n_texts, dim)` L2-normalized.
 * **Return type:**
   `ndarray`
 
-#### prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+#### *property* prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)*
 
-Cosine similarity under which a generated clip is flagged as not matching its
-prompt ([`foley.prompt_match.prompt_match()`](foley.prompt_match.html.md#foley.prompt_match.prompt_match)). Provisional: LAION-CLAP puts
-matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
-this value is not yet calibrated on a labelled set of foley generations.
+Cosine similarity under which a generated clip is flagged as not matching its prompt.
+
+Calibrated per checkpoint on a labelled set ([`foley.eval.prompt_match`](foley.eval.prompt_match.html.md#module-foley.eval.prompt_match),
+`foley/data/prompt_match/thresholds.json`); a checkpoint nobody has calibrated
+gets [`PROVISIONAL_PROMPT_MATCH_THRESHOLD`](#foley.index.embedders.PROVISIONAL_PROMPT_MATCH_THRESHOLD).
 
 ### foley.index.embedders.DEFAULT_CLAP_DIM *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 512*
 
@@ -110,6 +112,12 @@ this value is not yet calibrated on a labelled set of foley generations.
 ### foley.index.embedders.DEFAULT_CLAP_MODEL_ID *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'laion/larger_clap_general'*
 
 The default CLAP checkpoint (LAION, Apache-2.0, general/environmental sound).
+
+### foley.index.embedders.PROVISIONAL_PROMPT_MATCH_THRESHOLD *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+
+The prompt-match threshold of a checkpoint with no calibration on record. LAION-CLAP
+puts matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15; this is
+a guess between them, not a measurement.
 
 ### foley.index.embedders.default_embedder()
 

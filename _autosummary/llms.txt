@@ -54,6 +54,7 @@
 - [foley.eval.fidelity](foley.eval.fidelity.html.md): Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).
 - [foley.eval.fit](foley.eval.fit.html.md): Tier-2 fit evaluation — “does the accepted clip actually match the intent?” (report 08 §2/§5).
 - [foley.eval.golden](foley.eval.golden.html.md): The frozen golden set + the deterministic Ring-0 retrieval harness.
+- [foley.eval.prompt_match](foley.eval.prompt_match.html.md): Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).
 - [foley.eval.reliability](foley.eval.reliability.html.md): Inter-rater reliability — Krippendorff’s α + the judge-vs-human calibration guardrail.
 - [foley.eval.retrieval](foley.eval.retrieval.html.md): Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.
 - [foley.provenance](foley.provenance.html.md): Provenance layer for foley — attribution/credits (and, later, disclosure).
