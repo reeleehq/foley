@@ -10,6 +10,7 @@ foley.provenance.disclosure
    
       DEFAULT_WATERMARK_MESSAGE
       IPTC_TRAINED_ALGORITHMIC_MEDIA
+      C2PA_CREATED
       TRADEMARK_REGISTRY
    
    .. rubric:: Functions
@@ -17,7 +18,9 @@ foley.provenance.disclosure
    .. autosummary::
    
       art50_checklist
+      as_c2pa_ingredient
       build_content_credential
+      build_mix_credential
       detect_watermark
       resolve_watermarker
       scan_prompt

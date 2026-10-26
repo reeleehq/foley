@@ -5,21 +5,21 @@ orphan: true
 
 # About this build
 
-This documentation was built on **2026-10-26 20:15 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/7cbe4a671c05f50a698624939db8bf79ef897423"><code>7cbe4a6</code></a> on branch <code>main</code>, for **foley 0.0.63** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 20:47 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/ad695983f6002b1fc12fd6d579514ab6f52c6e3c"><code>ad69598</code></a> on branch <code>main</code>, for **foley 0.0.63** (from <code>pyproject.toml</code>).
 
 :::{warning}
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.63) is ahead of the latest release on PyPI (0.0.62): these docs describe unreleased code.
+- The documented version (0.0.63) is behind the latest release on PyPI (0.0.64): `pip install foley` gives newer code than these docs describe.
 :::
 
 ## Source
 
 | | |
 |---|---|
-| Commit | <a href="https://github.com/reeleehq/foley/commit/7cbe4a671c05f50a698624939db8bf79ef897423"><code>7cbe4a671c05f50a698624939db8bf79ef897423</code></a> |
+| Commit | <a href="https://github.com/reeleehq/foley/commit/ad695983f6002b1fc12fd6d579514ab6f52c6e3c"><code>ad695983f6002b1fc12fd6d579514ab6f52c6e3c</code></a> |
 | Branch | <code>main</code> |
-| Tags at this commit | <code>0.0.63</code> |
+| Tags at this commit | none |
 | Working tree | clean |
 | Remote | <code>https://github.com/reeleehq/foley</code> |
 
@@ -28,9 +28,9 @@ The documentation and the package may be misaligned:
 | | |
 |---|---|
 | Repository | <code>reeleehq/foley</code> |
-| Run | <a href="https://github.com/reeleehq/foley/actions/runs/40393333429">40393333429</a> |
+| Run | <a href="https://github.com/reeleehq/foley/actions/runs/40398503973">40398503973</a> |
 | Ref | <code>refs/heads/main</code> |
-| Event commit | <code>baed775c70a5f6efc712604fac95737370bd9752</code> (in the history of the built commit) |
+| Event commit | <code>ad695983f6002b1fc12fd6d579514ab6f52c6e3c</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -55,13 +55,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.62/">0.0.62</a>, older than the documented version (0.0.63).
+Latest release: <a href="https://pypi.org/project/foley/0.0.64/">0.0.64</a>, newer than the documented version (0.0.63).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 7cbe4a671c05f50a698624939db8bf79ef897423
+git checkout ad695983f6002b1fc12fd6d579514ab6f52c6e3c
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

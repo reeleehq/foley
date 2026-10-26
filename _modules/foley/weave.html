@@ -914,118 +914,6 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">lic</span><span class="p">,</span> <span class="s2">"is_ai_generated"</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_ref_of</span><span class="p">(</span><span class="n">record</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""The record's content id (for a credential ingredient's asset ref)."""</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span>
-        <span class="nb">getattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">"id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">"sound"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="s2">"id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="ow">or</span> <span class="s2">"asset"</span>
-    <span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_foley_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""foley's installed version (``'unknown'`` if not resolvable)."""</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
-
-        <span class="k">return</span> <span class="n">version</span><span class="p">(</span><span class="s2">"foley"</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
-        <span class="k">return</span> <span class="s2">"unknown"</span>
-
-
-<span class="c1">#: C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).</span>
-<span class="n">_C2PA_CREATED</span> <span class="o">=</span> <span class="s2">"c2pa.created"</span>
-<span class="n">_C2PA_PLACED</span> <span class="o">=</span> <span class="s2">"c2pa.placed"</span>
-<span class="n">_C2PA_COMPONENT_OF</span> <span class="o">=</span> <span class="s2">"componentOf"</span>
-<span class="n">_INGREDIENT_ID_PREFIX</span> <span class="o">=</span> <span class="s2">"foley:ingredient:"</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_as_c2pa_ingredient</span><span class="p">(</span><span class="n">credential</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A per-sound content credential, declared as a C2PA ``componentOf`` ingredient.</span>
-
-<span class="sd">    Adds (never removes) the fields ``c2pa.Builder`` reads from an ingredient — ``title``,</span>
-<span class="sd">    ``format``, ``relationship`` and a manifest-unique ``instance_id`` (the handle a</span>
-<span class="sd">    ``c2pa.placed`` action's ``ingredientIds`` resolves) — so the sidecar keeps the full</span>
-<span class="sd">    per-sound credential while the signed manifest gets a valid ingredient.</span>
-<span class="sd">    """</span>
-    <span class="n">manifest</span> <span class="o">=</span> <span class="n">credential</span><span class="p">[</span><span class="s2">"manifest"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="o">**</span><span class="n">credential</span><span class="p">,</span>
-        <span class="s2">"title"</span><span class="p">:</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span>
-        <span class="s2">"format"</span><span class="p">:</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"format"</span><span class="p">],</span>
-        <span class="s2">"relationship"</span><span class="p">:</span> <span class="n">_C2PA_COMPONENT_OF</span><span class="p">,</span>
-        <span class="s2">"instance_id"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_INGREDIENT_ID_PREFIX</span><span class="si">}{</span><span class="n">index</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">credential</span><span class="p">[</span><span class="s1">'asset_ref'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-    <span class="p">}</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_build_mix_credential</span><span class="p">(</span>
-    <span class="n">records</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">asset_id</span><span class="p">,</span> <span class="n">ai_disclosed</span><span class="p">,</span> <span class="n">watermark_meta</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">"wav"</span>
-<span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Build the MIX-level C2PA-shaped content credential (report 07 / #9b, re-asserted here).</span>
-
-<span class="sd">    Reuses :func:`foley.provenance.disclosure.build_content_credential` per ingredient</span>
-<span class="sd">    (so the credential shape never forks between the per-sound sidecar and the mix</span>
-<span class="sd">    manifest) and asserts a ``c2pa.created`` composite with one ``c2pa.placed`` per</span>
-<span class="sd">    ingredient, plus an EU AI Act Art. 50 disclosure when any ingredient is AI-generated.</span>
-
-<span class="sd">    C2PA requires every ``c2pa.placed`` action to reference its ingredient</span>
-<span class="sd">    (``assertion.action.ingredientMismatch`` otherwise), so each per-sound credential is</span>
-<span class="sd">    declared as a ``componentOf`` ingredient (via :func:`_as_c2pa_ingredient`) and its</span>
-<span class="sd">    ``placed`` action names it through ``parameters.ingredientIds``. A mix with no</span>
-<span class="sd">    (credentialed) ingredient asserts ``c2pa.created`` alone.</span>
-<span class="sd">    """</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">disclosure</span>
-
-    <span class="n">ingredients</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">cred</span> <span class="o">=</span> <span class="n">disclosure</span><span class="o">.</span><span class="n">build_content_credential</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">asset_id</span><span class="o">=</span><span class="n">_ref_of</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-            <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">"no credential for </span><span class="si">%r</span><span class="s2">; omitted from the mix manifest"</span><span class="p">,</span>
-                <span class="n">_ref_of</span><span class="p">(</span><span class="n">r</span><span class="p">),</span>
-                <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="k">continue</span>  <span class="c1"># an ingredient without a credential is neither declared nor placed</span>
-        <span class="n">ingredients</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_as_c2pa_ingredient</span><span class="p">(</span><span class="n">cred</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">ingredients</span><span class="p">)))</span>
-    <span class="n">source_type</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">disclosure</span><span class="o">.</span><span class="n">IPTC_TRAINED_ALGORITHMIC_MEDIA</span>
-        <span class="k">if</span> <span class="n">ai_disclosed</span>
-        <span class="k">else</span> <span class="n">disclosure</span><span class="o">.</span><span class="n">IPTC_DIGITAL_CREATION</span>
-    <span class="p">)</span>
-    <span class="n">actions</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">"action"</span><span class="p">:</span> <span class="n">_C2PA_CREATED</span><span class="p">,</span> <span class="s2">"digitalSourceType"</span><span class="p">:</span> <span class="n">source_type</span><span class="p">}]</span> <span class="o">+</span> <span class="p">[</span>
-        <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="n">_C2PA_PLACED</span><span class="p">,</span> <span class="s2">"parameters"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"ingredientIds"</span><span class="p">:</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="s2">"instance_id"</span><span class="p">]]}}</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ingredients</span>
-    <span class="p">]</span>
-    <span class="n">assertions</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">"label"</span><span class="p">:</span> <span class="s2">"c2pa.actions"</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"actions"</span><span class="p">:</span> <span class="n">actions</span><span class="p">}}]</span>
-    <span class="k">if</span> <span class="n">ai_disclosed</span><span class="p">:</span>
-        <span class="n">assertions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-            <span class="p">{</span>
-                <span class="s2">"label"</span><span class="p">:</span> <span class="s2">"foley.ai_disclosure"</span><span class="p">,</span>
-                <span class="s2">"data"</span><span class="p">:</span> <span class="p">{</span>
-                    <span class="s2">"contains_ai_generated"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                    <span class="s2">"eu_ai_act_art50"</span><span class="p">:</span> <span class="s2">"disclosed"</span><span class="p">,</span>
-                    <span class="s2">"watermark"</span><span class="p">:</span> <span class="n">watermark_meta</span><span class="p">,</span>
-                <span class="p">},</span>
-            <span class="p">}</span>
-        <span class="p">)</span>
-    <span class="n">manifest</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">"claim_generator_info"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"foley"</span><span class="p">,</span> <span class="s2">"version"</span><span class="p">:</span> <span class="n">_foley_version</span><span class="p">()}],</span>
-        <span class="s2">"format"</span><span class="p">:</span> <span class="n">disclosure</span><span class="o">.</span><span class="n">_MIME_BY_FORMAT</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">fmt</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="s2">"audio/wav"</span><span class="p">),</span>
-        <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"foley sound-design mix"</span><span class="p">,</span>
-        <span class="s2">"ingredients"</span><span class="p">:</span> <span class="n">ingredients</span><span class="p">,</span>
-        <span class="s2">"assertions"</span><span class="p">:</span> <span class="n">assertions</span><span class="p">,</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">"$schema"</span><span class="p">:</span> <span class="n">disclosure</span><span class="o">.</span><span class="n">CONTENT_CREDENTIAL_SCHEMA</span><span class="p">,</span>
-        <span class="s2">"signed"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="s2">"embedded"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="s2">"asset_ref"</span><span class="p">:</span> <span class="n">asset_id</span><span class="p">,</span>
-        <span class="s2">"asset_hash"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="s2">"manifest"</span><span class="p">:</span> <span class="n">manifest</span><span class="p">,</span>
-    <span class="p">}</span>
-
-
 <span class="k">def</span><span class="w"> </span><span class="nf">_c2pa_sign_wav</span><span class="p">(</span><span class="n">wav_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">manifest</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">signer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Promote ``manifest`` into a signed, EMBEDDED C2PA manifest over ``wav_bytes``.</span>
 
@@ -1120,9 +1008,9 @@ window.runMermaid = runMermaid;</script>
     <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"audio"</span><span class="p">:</span> <span class="n">audio</span><span class="p">,</span> <span class="s2">"watermark"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"content_credential"</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
     <span class="n">ai_records</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span> <span class="k">if</span> <span class="n">_is_ai</span><span class="p">(</span><span class="n">r</span><span class="p">)]</span>
     <span class="n">effective</span> <span class="o">=</span> <span class="n">watermark</span> <span class="k">if</span> <span class="n">watermark</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">ai_records</span><span class="p">)</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">..provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">disclosure</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">disclosure</span>
 
+    <span class="k">try</span><span class="p">:</span>
         <span class="n">wm</span> <span class="o">=</span> <span class="n">disclosure</span><span class="o">.</span><span class="n">resolve_watermarker</span><span class="p">(</span><span class="n">effective</span><span class="p">,</span> <span class="n">watermarker</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
         <span class="n">wm</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># fail-safe: e.g. watermark=True but AudioSeal absent</span>
@@ -1139,7 +1027,7 @@ window.runMermaid = runMermaid;</script>
         <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
             <span class="n">out</span><span class="p">[</span><span class="s2">"watermark"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># fail-safe: keep the un-watermarked mix</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">cred</span> <span class="o">=</span> <span class="n">_build_mix_credential</span><span class="p">(</span>
+        <span class="n">cred</span> <span class="o">=</span> <span class="n">disclosure</span><span class="o">.</span><span class="n">build_mix_credential</span><span class="p">(</span>
             <span class="n">records</span><span class="p">,</span>
             <span class="n">asset_id</span><span class="o">=</span><span class="n">asset_id</span><span class="p">,</span>
             <span class="n">ai_disclosed</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">ai_records</span><span class="p">),</span>
@@ -1147,8 +1035,6 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span>
         <span class="n">out</span><span class="p">[</span><span class="s2">"content_credential"</span><span class="p">]</span> <span class="o">=</span> <span class="n">cred</span>
         <span class="k">if</span> <span class="n">provenance_store</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">from</span><span class="w"> </span><span class="nn">..provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">disclosure</span>
-
             <span class="n">disclosure</span><span class="o">.</span><span class="n">write_content_credential</span><span class="p">(</span><span class="n">provenance_store</span><span class="p">,</span> <span class="n">asset_id</span><span class="p">,</span> <span class="n">cred</span><span class="p">)</span>
         <span class="n">_sign_and_embed</span><span class="p">(</span>
             <span class="n">out</span><span class="p">[</span><span class="s2">"audio"</span><span class="p">],</span>

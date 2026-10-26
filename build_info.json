@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-26T20:15:52Z",
+  "built_at": "2026-10-26T20:47:54Z",
   "package": {
     "name": "foley",
     "version": "0.0.63",
@@ -9,26 +9,24 @@
   },
   "git": {
     "available": true,
-    "commit": "7cbe4a671c05f50a698624939db8bf79ef897423",
-    "short_commit": "7cbe4a6",
+    "commit": "ad695983f6002b1fc12fd6d579514ab6f52c6e3c",
+    "short_commit": "ad69598",
     "branch": "main",
-    "tags": [
-      "0.0.63"
-    ],
+    "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/reeleehq/foley",
-    "commit_url": "https://github.com/reeleehq/foley/commit/7cbe4a671c05f50a698624939db8bf79ef897423",
+    "commit_url": "https://github.com/reeleehq/foley/commit/ad695983f6002b1fc12fd6d579514ab6f52c6e3c",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "reeleehq/foley",
-    "sha": "baed775c70a5f6efc712604fac95737370bd9752",
+    "sha": "ad695983f6002b1fc12fd6d579514ab6f52c6e3c",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "40393333429",
-    "run_url": "https://github.com/reeleehq/foley/actions/runs/40393333429",
+    "run_id": "40398503973",
+    "run_url": "https://github.com/reeleehq/foley/actions/runs/40398503973",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -58,20 +56,20 @@
   },
   "site": {
     "modules_documented": 107,
-    "objects_documented": 1452
+    "objects_documented": 1455
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.62",
-    "relation": "ahead",
+    "latest": "0.0.64",
+    "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 7cbe4a671c05f50a698624939db8bf79ef897423\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout ad695983f6002b1fc12fd6d579514ab6f52c6e3c\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": false,
     "notes": [
-      "The documented version (0.0.63) is ahead of the latest release on PyPI (0.0.62): these docs describe unreleased code."
+      "The documented version (0.0.63) is behind the latest release on PyPI (0.0.64): `pip install foley` gives newer code than these docs describe."
     ]
   }
 }
