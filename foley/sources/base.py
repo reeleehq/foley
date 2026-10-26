@@ -159,7 +159,7 @@ def native_adherence(
 
 
 def require_params_mapping(provider_params) -> None:
-    """``provider_params`` itself if it is a mapping, else a ``TypeError`` (#61)."""
+    """Raise ``TypeError`` unless ``provider_params`` is a mapping (#61)."""
     if not isinstance(provider_params, Mapping):
         raise TypeError(
             "provider_params must be a mapping of native names to values, got "
