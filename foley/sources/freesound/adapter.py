@@ -57,19 +57,16 @@ def _raw_id(source_id: str) -> str:
 def _bst_category(config: dict, ucs_category: str) -> Optional[str]:
     """The Broad Sound Taxonomy top-level name for a UCS CatID or category, else ``None``.
 
-    ``None`` (no pre-filter) for a value that is neither a CatID in the UCS table nor a
-    known category: a coarse pre-filter must never hide sounds on a guess.
+    Only the categories the config maps. ``None`` (no pre-filter) for anything else: a
+    coarse pre-filter must never hide sounds on a guess.
     """
     from ...index.taxonomy import default_ucs_table
 
-    spec = config["param_map"]["ucs_category"]
     row = default_ucs_table().get(ucs_category)
     category = (row.category if row is not None else ucs_category).upper()
-    known = {r.category.upper() for r in default_ucs_table()}
-    mapping = spec["bst_category_by_ucs_category"]
-    if category in mapping:
-        return mapping[category]
-    return spec["bst_default_category"] if category in known else None
+    return config["param_map"]["ucs_category"]["bst_category_by_ucs_category"].get(
+        category
+    )
 
 
 def _preview_url(item: dict) -> Optional[str]:

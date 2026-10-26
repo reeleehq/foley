@@ -577,8 +577,7 @@ def test_similar_to_sends_the_native_param_with_either_id_form():
     [
         ("AMBIENCE", "Soundscapes"),
         ("ambience", "Soundscapes"),
-        ("WEATHRain", "Sound effects"),  # a CatID resolves through the UCS table
-        ("DOORS", "Sound effects"),
+        ("MUSIC", "Music"),
     ],
 )
 def test_ucs_category_becomes_a_bst_category_prefilter(ucs, bst):
@@ -587,9 +586,11 @@ def test_ucs_category_becomes_a_bst_category_prefilter(ucs, bst):
     assert f'category:"{bst}"' in transport.calls[0].params["filter"]
 
 
-def test_an_unrecognised_ucs_category_sends_no_prefilter():
+@pytest.mark.parametrize("ucs", ["NOPE", "WEATHRain", "WEATHER", "DOORS", 'x" OR a:"b'])
+def test_an_unmapped_ucs_category_sends_no_prefilter(ucs):
+    """Rain may be filed as a sound effect or a soundscape: no guess, no filter."""
     transport = _transport()
-    _adapter(transport).search("rain", license=None, ucs_category="NOPE")
+    _adapter(transport).search("rain", license=None, ucs_category=ucs)
     assert "filter" not in transport.calls[0].params
 
 
@@ -606,3 +607,11 @@ def test_the_new_affordances_flow_through_add_from(library):
     params = transport.calls[0].params
     assert params["similar_to"] == "1"
     assert 'category:"Soundscapes"' in params["filter"]
+
+
+def test_cc_by_3_0_is_admitted_and_get_resolves_a_cc_by_id():
+    item = _by_item("http://creativecommons.org/licenses/by/3.0/", id_=555)
+    adapter = _adapter(_transport(item=item, search_page={"results": [item]}))
+    (cand,) = adapter.search("rain", license="cc-by")
+    assert cand.sound.license.license_id == "CC-BY-3.0"
+    assert adapter.get("freesound:555").license.license_id == "CC-BY-3.0"

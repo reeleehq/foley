@@ -52,8 +52,9 @@ SOURCE_CONFIG = {
         # "More like this" (Freesound's native ``similar_to``: a sound id).
         "similar_to": {"native_name": "similar_to"},
         # A coarse pre-filter on the Broad Sound Taxonomy's top level (#78). Only the
-        # five top-level names are used: the subcategory names are not pinned here.
-        # A UCS category or CatID that is not recognised sends no pre-filter.
+        # five top-level names are used (the subcategory names are not pinned here) and
+        # only for the UCS categories that name one unambiguously; any other category
+        # (rain may be filed as a sound effect or a soundscape) sends no pre-filter.
         "ucs_category": {
             "native_name": "filter",
             "to_native": 'category:"{category}"',
@@ -62,7 +63,6 @@ SOURCE_CONFIG = {
                 "MUSIC": "Music",
                 "VOICES": "Speech",
             },
-            "bst_default_category": "Sound effects",
         },
     },
     "supported_affordances": [
