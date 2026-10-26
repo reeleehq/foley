@@ -256,7 +256,7 @@ def test_add_from_indexes_by_reference(library):
     [
         "https://creativecommons.org/licenses/by-sa/4.0/",  # -> unknown
         "https://creativecommons.org/licenses/by-nc/4.0/",  # -> CC-BY-NC (not accepted)
-        "https://creativecommons.org/licenses/by/4.0/",  # -> CC-BY (not in #5 allowlist)
+        "https://creativecommons.org/licenses/by/4.0/",  # -> CC-BY (only on request, #78)
     ],
 )
 def test_non_cc0_is_dropped_fail_closed(library, license_value):
@@ -285,7 +285,9 @@ def test_keep_gate_drops_accepted_but_noncommercial(library):
 
     # ...it survives search, but add_from's fail-closed keep(commercial) drops it
     assert len(adapter.search("rain", license=None)) == 1
-    report = add_from("freesound", query="rain", library=library, adapter=adapter)
+    report = add_from(
+        "freesound", query="rain", license=None, library=library, adapter=adapter
+    )
     assert [r.status for r in report.results] == ["skipped_license"]
     assert len(library.sounds) == 0
 
@@ -475,3 +477,141 @@ def test_discovery_config_import_stays_light():
     )
     proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert proc.returncode == 0, proc.stderr
+
+
+# ---------------------------------------------------------------------------
+# CC-BY admitted when the caller can attribute (#78): SA / ND / NC stay out
+# ---------------------------------------------------------------------------
+
+BY_4 = "https://creativecommons.org/licenses/by/4.0/"
+
+
+def _by_item(license_value=BY_4, id_=777):
+    item = dict(SOUND_12345)
+    item.update(id=id_, license=license_value, url=f"https://freesound.org/s/{id_}/")
+    return item
+
+
+def test_attribution_search_asks_for_cc0_and_attribution_only():
+    transport = _transport()
+    _adapter(transport).search("rain", license="cc-by")
+    flt = transport.calls[0].params["filter"]
+    assert '"Creative Commons 0" OR "Attribution"' in flt
+    assert "NonCommercial" not in flt
+
+
+def test_cc_by_is_admitted_on_request_with_credit_fields():
+    page = {"count": 1, "results": [_by_item()]}
+    adapter = _adapter(_transport(item=_by_item(), search_page=page))
+    (cand,) = adapter.search("rain", license="cc-by")
+    lic = cand.sound.license
+    assert lic.license_id == "CC-BY-4.0"
+    assert lic.requires_attribution
+    assert lic.cache_bytes_ok is False  # the TOS applies to every Freesound licence
+
+
+def test_cc_by_is_not_returned_by_the_default_cc0_search():
+    page = {"count": 1, "results": [_by_item()]}
+    adapter = _adapter(_transport(item=_by_item(), search_page=page))
+    assert adapter.search("rain") == []
+
+
+@pytest.mark.parametrize(
+    "license_value",
+    [
+        "https://creativecommons.org/licenses/by-sa/4.0/",
+        "https://creativecommons.org/licenses/by-nd/4.0/",
+        "https://creativecommons.org/licenses/by-nc/4.0/",
+        "https://creativecommons.org/licenses/by-nc-sa/3.0/",
+        "https://creativecommons.org/licenses/sampling+/1.0/",
+        "https://creativecommons.org/licenses/by/2.0/de/",
+    ],
+)
+def test_sa_nd_nc_and_ports_stay_fail_closed_even_when_attribution_is_asked(
+    license_value,
+):
+    item = _by_item(license_value, id_=888)
+    adapter = _adapter(_transport(item=item, search_page={"results": [item]}))
+    assert adapter.search("rain", license="cc-by") == []
+    assert adapter.search("rain", license=None) == []
+
+
+def test_add_from_keeps_cc_by_only_for_a_caller_that_can_attribute(library):
+    from foley.base import IntendedUse
+
+    item = _by_item()
+    adapter = _adapter(_transport(item=item, search_page={"results": [item]}))
+    cannot = add_from(
+        "freesound",
+        query="rain",
+        license="cc-by",
+        intended_use=IntendedUse(commercial=True, publish=True, can_attribute=False),
+        library=library,
+        adapter=adapter,
+    )
+    assert [r.status for r in cannot.results] == ["skipped_license"]
+    assert len(library.sounds) == 0
+
+    can = add_from(
+        "freesound", query="rain", license="cc-by", library=library, adapter=adapter
+    )
+    assert len(can.ingested) == 1
+    rec = can.ingested[0].record
+    assert rec.id == "freesound:777"
+    assert rec.license.license_id == "CC-BY-4.0"
+    assert rec.license.requires_attribution
+
+
+def test_similar_to_sends_the_native_param_with_either_id_form():
+    for given in ("12345", "freesound:12345"):
+        transport = _transport()
+        _adapter(transport).search("rain", similar_to=given)
+        assert transport.calls[0].params["similar_to"] == "12345"
+    transport = _transport()
+    _adapter(transport).search("rain")
+    assert "similar_to" not in transport.calls[0].params
+
+
+@pytest.mark.parametrize(
+    "ucs, bst",
+    [
+        ("AMBIENCE", "Soundscapes"),
+        ("ambience", "Soundscapes"),
+        ("MUSIC", "Music"),
+    ],
+)
+def test_ucs_category_becomes_a_bst_category_prefilter(ucs, bst):
+    transport = _transport()
+    _adapter(transport).search("rain", ucs_category=ucs)
+    assert f'category:"{bst}"' in transport.calls[0].params["filter"]
+
+
+@pytest.mark.parametrize("ucs", ["NOPE", "WEATHRain", "WEATHER", "DOORS", 'x" OR a:"b'])
+def test_an_unmapped_ucs_category_sends_no_prefilter(ucs):
+    """Rain may be filed as a sound effect or a soundscape: no guess, no filter."""
+    transport = _transport()
+    _adapter(transport).search("rain", license=None, ucs_category=ucs)
+    assert "filter" not in transport.calls[0].params
+
+
+def test_the_new_affordances_flow_through_add_from(library):
+    transport = _transport()
+    add_from(
+        "freesound",
+        query="rain",
+        similar_to="freesound:1",
+        ucs_category="AMBIENCE",
+        library=library,
+        adapter=_adapter(transport),
+    )
+    params = transport.calls[0].params
+    assert params["similar_to"] == "1"
+    assert 'category:"Soundscapes"' in params["filter"]
+
+
+def test_cc_by_3_0_is_admitted_and_get_resolves_a_cc_by_id():
+    item = _by_item("http://creativecommons.org/licenses/by/3.0/", id_=555)
+    adapter = _adapter(_transport(item=item, search_page={"results": [item]}))
+    (cand,) = adapter.search("rain", license="cc-by")
+    assert cand.sound.license.license_id == "CC-BY-3.0"
+    assert adapter.get("freesound:555").license.license_id == "CC-BY-3.0"

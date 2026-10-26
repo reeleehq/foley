@@ -5,7 +5,8 @@ Stdlib-only and declarative — imports nothing heavy, so
 unified foley query vocabulary onto Freesound's native params, declares the
 token-auth env var, the APIv2 endpoints, the rate limits, and — crucially — the
 **license block**: ``cache_bytes_ok=False`` (the Freesound API TOS forbids caching
-the bytes, even for CC0) and a CC0-only ``accepted_license_ids`` allowlist for #5.
+the bytes, even for CC0) and an ``accepted_license_ids`` allowlist of CC0 plus CC-BY (admitted when the caller
+can attribute, #78; SA, ND and NC stay fail-closed).
 
 The ``cache_bytes_ok=False`` fact is a top-level property of the *source* (the TOS
 constraint is invariant across every Freesound CC variant), distinct from the
@@ -39,14 +40,40 @@ SOURCE_CONFIG = {
             "native_name": "filter",
             "to_native": "duration:[{lo} TO {hi}]",
         },
-        # CC0-only for #5; pushed into the server-side Solr filter
+        # CC0 alone (the default) or CC0 + Attribution (``license`` other than 'cc0',
+        # #78); pushed into the server-side Solr filter. "Attribution NonCommercial" is
+        # never asked for.
         "license": {
             "native_name": "filter",
             "to_native": 'license:"Creative Commons 0"',
+            "to_native_attribution": 'license:("Creative Commons 0" OR "Attribution")',
         },
         "sort": {"native_name": "sort"},
+        # "More like this" (Freesound's native ``similar_to``: a sound id).
+        "similar_to": {"native_name": "similar_to"},
+        # A coarse pre-filter on the Broad Sound Taxonomy's top level (#78). Only the
+        # five top-level names are used (the subcategory names are not pinned here) and
+        # only for the UCS categories that name one unambiguously; any other category
+        # (rain may be filed as a sound effect or a soundscape) sends no pre-filter.
+        "ucs_category": {
+            "native_name": "filter",
+            "to_native": 'category:"{category}"',
+            "bst_category_by_ucs_category": {
+                "AMBIENCE": "Soundscapes",
+                "MUSIC": "Music",
+                "VOICES": "Speech",
+            },
+        },
     },
-    "supported_affordances": ["query", "k", "duration_range", "license", "sort"],
+    "supported_affordances": [
+        "query",
+        "k",
+        "duration_range",
+        "license",
+        "sort",
+        "similar_to",
+        "ucs_category",
+    ],
     "on_unsupported_param": "warn",
     "api": {
         "base_url": "https://freesound.org/apiv2",
@@ -68,7 +95,9 @@ SOURCE_CONFIG = {
     "license": {
         "default_license_id": "CC0-1.0",
         "cache_bytes_ok": False,  # TOS: never cache Freesound bytes, even CC0
-        "accepted_license_ids": ["CC0-1.0"],  # #5 allowlist; generalize later
+        # Freesound serves CC0 and CC BY 3.0 / 4.0 (+ NC, SA, ND, which stay out).
+        "accepted_license_ids": ["CC0-1.0", "CC-BY-3.0", "CC-BY-4.0"],
+        "cc0_license_ids": ["CC0-1.0"],  # what ``license='cc0'`` keeps
     },
     # The token-tier API is free to call (commercial use of the API is negotiated
     # separately with UPF; see report 14 and the maintainer's open question).

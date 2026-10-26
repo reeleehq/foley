@@ -154,7 +154,7 @@ foley/
     base.py            # Sound, Candidate, SoundRecord, LicenseRecord, AFFORDANCES
     sources/           # source adapters (config.py + adapter.py each)
         registry.py    #   adapter auto-discovery + lazy loading
-        freesound/     #   retrieve (CC0-filtered) — the anchor
+        freesound/     #   retrieve (CC0, CC-BY on request) — the anchor
         stable_audio/  #   generate (local, default)
         elevenlabs/    #   generate (hosted, default)
         ...            #   bulk corpora (FSD50K, Clotho, BBC REMArc, Sonniss, FoleySet); no pro-API stubs yet
