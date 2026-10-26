@@ -169,7 +169,21 @@ def save_tasks(
 
     Raises:
         FileNotFoundError: A clip is not a local file (fetch it first).
+        ValueError: Task ids repeat, or the clips are in more than one format (the extension
+            would give a system away).
     """
+    ids = [t.id for t in tasks]
+    if len(set(ids)) != len(ids):
+        raise ValueError("task ids are not unique (two task lists were combined?)")
+    clips = [s.clip for t in tasks for s in t.stimuli] + [
+        t.reference for t in tasks if t.reference
+    ]
+    suffixes = {Path(c).suffix.lower() for c in clips}
+    if len(suffixes) > 1:
+        raise ValueError(
+            f"the clips have mixed formats {sorted(suffixes)}: a file extension would tell "
+            "the systems apart; convert them to one format first"
+        )
     root = Path(directory)
     audio = root / audio_dir
     audio.mkdir(parents=True, exist_ok=True)
@@ -398,6 +412,12 @@ def rating_units(
     return units
 
 
+def _consensus(grades: "Iterable[int]") -> int:
+    """The median human grade, rounded down on a tie between two grades (the cautious side)."""
+    ordered = sorted(grades)
+    return ordered[(len(ordered) - 1) // 2]
+
+
 def calibrate_against_judge(
     units: "Mapping[str, Mapping[str, int]]",
     judge_grades: "Mapping[str, int]",
@@ -408,22 +428,28 @@ def calibrate_against_judge(
 ) -> dict:
     """Human-human and judge-vs-human agreement, ready for the calibration report.
 
+    The judge is compared with the humans' **consensus** (the per-unit median grade), never
+    as one more rater next to all of them: with many humans who agree with each other, a
+    judge added as a row would borrow their agreement and look reliable whatever it says.
+    ``per_rater`` is α of the judge against each person alone.
+
     Args:
         units: :func:`rating_units`' ``{unit: {rater: grade}}``.
         judge_grades: The model judge's ``{unit: grade}`` for the same units.
         min_raters: Fewer raters than this and nothing is promoted.
-        min_units: Fewer units (judged and rated by people) than this and nothing is promoted.
+        min_units: Fewer units rated by at least two people than this and nothing is promoted.
 
     Returns:
         ``{"human_alpha": AlphaResult | None, "judge_vs_human": AlphaResult | None,
-        "n_units": ..., "raters": [...], "insufficient": [reasons]}``. ``human_alpha`` needs
-        two or more raters; ``judge_vs_human`` needs a judge grade on at least two rated units.
-        An ``AlphaResult`` is never ``promoted`` while ``insufficient`` is non-empty: too few
-        raters or units, or grades that do not vary (α is 1 by construction then).
+        "per_rater": {rater: alpha}, "n_units": ..., "raters": [...], "insufficient": [...]}``.
+        ``human_alpha`` is the humans' own α (it needs two raters and a unit both rated);
+        ``judge_vs_human`` is the judge against the consensus. An ``AlphaResult`` is never
+        ``promoted`` while ``insufficient`` is non-empty: too few raters, too few doubly-rated
+        units, or human (or judge) grades that do not vary (α is 1 by construction then).
     """
     import numpy as np
 
-    from .reliability import alpha_result, calibrate_judge_vs_human
+    from .reliability import alpha_result, calibrate_judge_vs_human, krippendorff_alpha
 
     raters = sorted({r for row in units.values() for r in row})
     shared = sorted(u for u in units if u in judge_grades)
@@ -433,24 +459,35 @@ def calibrate_against_judge(
             if rater in units[unit]:
                 human[i, j] = units[unit][rater]
     judge = np.array([float(judge_grades[u]) for u in shared])
+    consensus = np.array([_consensus(units[u].values()) for u in shared], dtype=float)
+    doubly_rated = int((np.sum(~np.isnan(human), axis=0) >= 2).sum())
+
     insufficient = []
     if len(raters) < min_raters:
         insufficient.append(f"{len(raters)} raters, need {min_raters}")
-    if len(shared) < min_units:
-        insufficient.append(f"{len(shared)} units, need {min_units}")
-    if (
-        len({g for row in units.values() for g in row.values()} | set(judge.tolist()))
-        < 2
-    ):
-        insufficient.append("the grades do not vary")
+    if doubly_rated < min_units:
+        insufficient.append(
+            f"{doubly_rated} units rated by two or more people, need {min_units}"
+        )
+    if len({g for row in units.values() for g in row.values()}) < 2:
+        insufficient.append("the human grades do not vary")
+    if len(set(judge.tolist())) < 2:
+        insufficient.append("the judge grades do not vary")
+
     result: dict = {
-        "human_alpha": None, "judge_vs_human": None,
+        "human_alpha": None, "judge_vs_human": None, "per_rater": {},
         "n_units": len(shared), "raters": raters, "insufficient": insufficient,
     }  # fmt: skip
     if len(raters) >= 2 and shared:
         result["human_alpha"] = alpha_result(human, level=level)
     if len(shared) >= 2 and raters:
-        result["judge_vs_human"] = calibrate_judge_vs_human(human, judge, level=level)
+        result["judge_vs_human"] = calibrate_judge_vs_human(
+            consensus, judge, level=level
+        )
+        for i, rater in enumerate(raters):
+            pair = np.vstack([human[i], judge])
+            if (~np.isnan(human[i])).sum() >= 2:
+                result["per_rater"][rater] = krippendorff_alpha(pair, level=level)
     if insufficient:
         for name in ("human_alpha", "judge_vs_human"):
             if result[name] is not None:

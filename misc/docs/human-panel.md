@@ -20,7 +20,7 @@ _, _, blind = panel.save_tasks(tasks, key, "panel/")   # copies every clip to pa
 open("panel/index.html", "w").write(render_panel_html(blind, title="Foley fit panel"))
 ```
 
-`save_tasks` copies each clip (a local file) to `panel/audio/<stimulus id><ext>`, so no file name or path gives a system away, and the hidden MUSHRA reference does not share a path with the visible one. Order and sides are shuffled from a seed; the page and `tasks.json` never contain a system name. Every rater sees the items in the same order.
+`save_tasks` refuses clips in mixed formats (an extension would give a system away) and repeated task ids, and copies each clip (a local file) to `panel/audio/<stimulus id><ext>`, so no file name or path gives a system away, and the hidden MUSHRA reference does not share a path with the visible one. Order and sides are shuffled from a seed; the page and `tasks.json` never contain a system name. Every rater sees the items in the same order.
 
 ## 3. Run it
 
@@ -46,7 +46,7 @@ cal = panel.calibrate_against_judge(units, judge_grades)     # {unit: grade} fro
 report = dataclasses.replace(fit_report, calibration=dataclasses.asdict(cal["judge_vs_human"]))
 ```
 
-`cal["human_alpha"]` is the humans' own agreement: if it is under 0.667, fix the rubric before judging the judge. `cal["judge_vs_human"].promoted` is true when the judge reaches α of 0.8.
+`cal["human_alpha"]` is the humans' own agreement: if it is under 0.667, fix the rubric before judging the judge. `cal["judge_vs_human"]` compares the judge with the humans' consensus (the per-unit median), not as one more rater, so many agreeing humans cannot lend it their agreement; `.promoted` is true when it reaches α of 0.8 and `cal["insufficient"]` is empty. `cal["per_rater"]` is the judge against each person alone.
 
 ## 5. The fit baseline
 

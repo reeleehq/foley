@@ -324,7 +324,7 @@ def test_a_judge_is_not_promoted_on_too_few_raters_units_or_no_variation():
     flat_units = {u: {"ann": 2, "bo": 2, "cy": 2} for u in judge}
     flat = panel.calibrate_against_judge(flat_units, {u: 2 for u in judge}, min_units=1)
     assert (
-        "the grades do not vary" in flat["insufficient"]
+        "the human grades do not vary" in flat["insufficient"]
         and not flat["judge_vs_human"].promoted
     )
 
@@ -335,3 +335,49 @@ def test_bradley_terry_reports_islands_and_refuses_a_winless_item_without_a_prio
     assert bt.fit([("a", "b"), ("b", "c")]).connected
     with pytest.raises(ValueError, match="prior"):
         bt.fit([("a", "b")] * 3, prior=0)
+
+
+def test_a_random_judge_is_not_promoted_however_many_humans_agree_with_each_other():
+    rng = np.random.default_rng(0)
+    truth = rng.integers(0, 4, 60)
+    units = {f"u{i}|s": {f"r{k}": int(truth[i]) for k in range(10)} for i in range(60)}
+    random_judge = {f"u{i}|s": int(g) for i, g in enumerate(rng.integers(0, 4, 60))}
+    off = panel.calibrate_against_judge(units, random_judge)
+    assert off["human_alpha"].alpha == pytest.approx(1.0)
+    assert off["judge_vs_human"].alpha < 0.4 and not off["judge_vs_human"].promoted
+    perfect = panel.calibrate_against_judge(
+        units, {u: next(iter(r.values())) for u, r in units.items()}
+    )
+    assert perfect["judge_vs_human"].promoted and not perfect["insufficient"]
+    assert set(perfect["per_rater"]) == {f"r{k}" for k in range(10)}
+
+
+def test_disjoint_raters_or_flat_human_grades_do_not_promote():
+    disjoint = {f"u{i}|s": {f"r{i % 3}": i % 4} for i in range(60)}
+    out = panel.calibrate_against_judge(disjoint, {u: 1 for u in disjoint}, min_units=1)
+    assert (
+        any("two or more people" in r for r in out["insufficient"])
+        or out["human_alpha"] is None
+    )
+    flat = {f"u{i}|s": {"a": 2, "b": 2, "c": 2} for i in range(60)}
+    varied_judge = {f"u{i}|s": i % 4 for i in range(60)}
+    out = panel.calibrate_against_judge(flat, varied_judge)
+    assert "the human grades do not vary" in out["insufficient"]
+    assert not out["human_alpha"].promoted and not out["judge_vs_human"].promoted
+
+
+def test_mixed_clip_formats_and_repeated_task_ids_are_refused(tmp_path):
+    (tmp_path / "a.wav").write_bytes(b"a")
+    (tmp_path / "b.mp3").write_bytes(b"b")
+    tasks, key = panel.grade_tasks(
+        [
+            ("u1", "p", str(tmp_path / "a.wav"), "s"),
+            ("u2", "p", str(tmp_path / "b.mp3"), "t"),
+        ]
+    )
+    with pytest.raises(ValueError, match="mixed formats"):
+        panel.save_tasks(tasks, key, tmp_path / "out")
+    same, k1 = panel.grade_tasks([("u1", "p", str(tmp_path / "a.wav"), "s")])
+    again, k2 = panel.grade_tasks([("u2", "p", str(tmp_path / "a.wav"), "s")])
+    with pytest.raises(ValueError, match="not unique"):
+        panel.save_tasks(same + again, {**k1, **k2}, tmp_path / "out2")
