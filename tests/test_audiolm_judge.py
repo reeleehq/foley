@@ -29,9 +29,7 @@ def _candidate_with_audio(tmp_path, caption="a dog barking"):
         id="c",
         uri=str(path),
         caption=caption,
-        license=LicenseRecord(
-            source="test", license_id="CC0-1.0", rights_verified=True
-        ),
+        license=LicenseRecord(source="test", license_id="CC0-1.0", rights_verified=True),
     )
     c = Candidate(sound=rec)
     c.license_ok = True
@@ -50,11 +48,7 @@ def test_audiolm_judge_fake_pipeline(tmp_path):
 
     judge = AudioLMJudge(pipeline=fake_pipeline, tau=0.5)
     v = judge.judge(SoundEvent(query="a dog barking"), c, level=VerifyLevel.listen)
-    assert (
-        v.match is True
-        and v.confidence == pytest.approx(0.87)
-        and v.level is VerifyLevel.listen
-    )
+    assert v.match is True and v.confidence == pytest.approx(0.87) and v.level is VerifyLevel.listen
     assert "a dog barking" in captured["prompt"]
     assert judge.last_response == {"p_yes": 0.87}  # stashed for the GenAI span
 
@@ -63,9 +57,7 @@ def test_audiolm_judge_below_tau_rejects(tmp_path):
     """P(yes) below tau → no match."""
     c = _candidate_with_audio(tmp_path)
     judge = AudioLMJudge(pipeline=lambda p, w, s: {"p_yes": 0.2}, tau=0.5)
-    assert (
-        judge.judge(SoundEvent(query="x"), c, level=VerifyLevel.listen).match is False
-    )
+    assert judge.judge(SoundEvent(query="x"), c, level=VerifyLevel.listen).match is False
 
 
 def test_audiolm_judge_parses_text_output(tmp_path):

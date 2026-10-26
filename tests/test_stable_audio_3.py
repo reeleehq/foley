@@ -193,9 +193,7 @@ def test_provider_params_override_flags_and_add_new_ones(home):
     lic = clip.candidate.sound.license
     assert lic.generation_seed == 9
     assert lic.generation_params["provider_params"] == {
-        "steps": 12,
-        "seed": 9,
-        "sampler": "dpm",
+        "steps": 12, "seed": 9, "sampler": "dpm"
     }
 
 
@@ -215,9 +213,7 @@ def test_foley_flags_come_last_so_an_abbreviation_cannot_override_them(home):
         "x", provider_params={"ou": "/tmp/elsewhere.wav", "di": "lg"}
     )
     cmd = run.calls[0]["cmd"]
-    assert cmd.index("--ou") < cmd.index("--out") and cmd.index("--di") < cmd.index(
-        "--dit"
-    )
+    assert cmd.index("--ou") < cmd.index("--out") and cmd.index("--di") < cmd.index("--dit")
     assert _arg(cmd, "--out") != "/tmp/elsewhere.wav"  # argparse keeps the last
 
 
@@ -244,10 +240,7 @@ def test_provider_flag_abbreviations_cannot_override_core_flags(tmp_path):
 
     a = sa3.Adapter()
     cmd = a._command(
-        tmp_path,
-        "p",
-        {"see": 7, "seconds": 2.0, "steps": 8, "cfg": 1.0, "seed": 3},
-        tmp_path / "o.wav",
+        tmp_path, "p", {"see": 7, "seconds": 2.0, "steps": 8, "cfg": 1.0, "seed": 3}, tmp_path / "o.wav"
     )
     assert cmd.index("--see") < cmd.index("--seed")
     assert cmd[cmd.index("--seed") + 1] == "3"

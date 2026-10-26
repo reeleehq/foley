@@ -27,9 +27,7 @@ def test_master_hits_podcast_target_within_tol():
 
 def test_master_streaming_target():
     sr = 48000
-    _, report = master(
-        _sine_stereo(200, 3.0, sr, 0.05), sr, MASTER_PROFILES["streaming"]
-    )
+    _, report = master(_sine_stereo(200, 3.0, sr, 0.05), sr, MASTER_PROFILES["streaming"])
     assert abs(report.output_lufs - (-14.0)) < 0.5
 
 

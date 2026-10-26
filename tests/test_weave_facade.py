@@ -32,9 +32,7 @@ class _Lib:
 
         self._to_working = to_working
         self._wsr = WORKING_SAMPLE_RATE
-        door = (0.5 * np.sin(2 * np.pi * 300 * np.arange(int(0.2 * SR)) / SR)).astype(
-            "float32"
-        )
+        door = (0.5 * np.sin(2 * np.pi * 300 * np.arange(int(0.2 * SR)) / SR)).astype("float32")
         self.arrays = {"door": (door, SR)}
         lic = LicenseRecord(
             source="stable_audio" if ai else "user",
@@ -46,9 +44,7 @@ class _Lib:
 
     def array(self, ref, *, sr=None, mono=True):
         s, o = self.arrays[ref]
-        return self._to_working(
-            s, o, mono=mono, target_sr=self._wsr if sr is None else sr
-        )
+        return self._to_working(s, o, mono=mono, target_sr=self._wsr if sr is None else sr)
 
     def __getitem__(self, k):
         return self.records[k]
@@ -61,10 +57,7 @@ def _tl():
     return SoundDesignTimeline(
         items=[
             TimelineItem(
-                clip_ref="door",
-                onset="on 'door'",
-                gain=-6.0,
-                layer=Layer.sfx_fg,
+                clip_ref="door", onset="on 'door'", gain=-6.0, layer=Layer.sfx_fg,
                 event={"query": "door creak"},
             )
         ]
@@ -189,31 +182,22 @@ def test_provenance_store_persists_sidecar():
 
 
 def test_master_profile_selection():
-    assert (
-        _weave(library=_Lib(), master="streaming").master_report["target_lufs"] == -14.0
-    )
+    assert _weave(library=_Lib(), master="streaming").master_report["target_lufs"] == -14.0
 
 
 def test_plain_mapping_library_with_raw_narration():
     """A plain dict library (no .array) + raw ndarray narration must not crash (regression)."""
-    door = (0.5 * np.sin(2 * np.pi * 300 * np.arange(int(0.2 * SR)) / SR)).astype(
-        "float32"
-    )
+    door = (0.5 * np.sin(2 * np.pi * 300 * np.arange(int(0.2 * SR)) / SR)).astype("float32")
     lib = {"door": (door, SR)}  # plain mapping of ref -> (samples, sr); no .array
     tl = SoundDesignTimeline(
         items=[
             TimelineItem(
-                clip_ref="door",
-                onset="on 'door'",
-                gain=-6.0,
-                layer=Layer.sfx_fg,
+                clip_ref="door", onset="on 'door'", gain=-6.0, layer=Layer.sfx_fg,
                 event={"query": "door creak"},
             )
         ]
     )
-    r = foley.weave(
-        _voice(), tl, library=lib, transcript=TRANSCRIPT, aligner=FakeAligner()
-    )
+    r = foley.weave(_voice(), tl, library=lib, transcript=TRANSCRIPT, aligner=FakeAligner())
     assert isinstance(r, WeaveResult) and r.audio.shape == (2 * SR, 2)
     assert "[door creak]" in r.captions_vtt  # captions still derive from item labels
 

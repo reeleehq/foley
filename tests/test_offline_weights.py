@@ -47,11 +47,8 @@ def fake_diffusers(monkeypatch):
                 )
             raise AssertionError("would download weights from the Hub")
 
-    monkeypatch.setitem(
-        sys.modules,
-        "diffusers",
-        types.SimpleNamespace(StableAudioPipeline=StableAudioPipeline),
-    )
+    monkeypatch.setitem(sys.modules, "diffusers", types.SimpleNamespace(
+        StableAudioPipeline=StableAudioPipeline))
     return calls
 
 
@@ -60,20 +57,13 @@ def test_stable_audio_does_not_download_under_offline(fake_diffusers, fake_embed
     from foley.sources.stable_audio.adapter import StableAudioAdapter
 
     idx = MemoryIndex(dim=fake_embedder.dim)
-    lib = SoundLibrary(
-        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
-    )
+    lib = SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
     with foley.offline():
         with pytest.raises(ModelNotCached, match="stable-audio-open-1.0"):
-            foley.generate(
-                "a door creaks",
-                backend="stable_audio",
-                adapter=StableAudioAdapter(),
-                library=lib,
-            )
-    assert fake_diffusers == [
-        {"torch_dtype": fake_diffusers[0]["torch_dtype"], "local_files_only": True}
-    ]
+            foley.generate("a door creaks", backend="stable_audio",
+                           adapter=StableAudioAdapter(), library=lib)
+    assert fake_diffusers == [{"torch_dtype": fake_diffusers[0]["torch_dtype"],
+                               "local_files_only": True}]
 
 
 def test_online_loads_are_unchanged(fake_diffusers):
@@ -89,11 +79,8 @@ def test_panns_is_refused_before_its_wget(tmp_path, monkeypatch):
 
     monkeypatch.setattr(taggers, "PANNS_DATA_DIR", str(tmp_path / "panns_data"))
     imported = []
-    monkeypatch.setitem(
-        sys.modules,
-        "panns_inference",
-        types.SimpleNamespace(AudioTagging=lambda **kw: imported.append(kw)),
-    )
+    monkeypatch.setitem(sys.modules, "panns_inference", types.SimpleNamespace(
+        AudioTagging=lambda **kw: imported.append(kw)))
     with foley.offline():
         with pytest.raises(ModelNotCached, match="PANNs"):
             taggers.PannsTagger()._model
@@ -109,22 +96,14 @@ def test_an_offline_ingest_without_weights_raises_once(tmp_path):
     from foley.index.embedders import ClapEmbedder
 
     for i in range(3):
-        sf.write(
-            tmp_path / f"c{i}.wav", np.zeros(8000, dtype=np.float32) + 0.1 * i, 16000
-        )
+        sf.write(tmp_path / f"c{i}.wav", np.zeros(8000, dtype=np.float32) + 0.1 * i, 16000)
     emb = ClapEmbedder(NOT_CACHED)
-    lib = SoundLibrary(
-        sounds={},
-        meta={},
-        vindex=MemoryIndex(dim=512),
-        kindex=MemoryIndex(dim=512),
-        embedder=emb,
-    )
+    lib = SoundLibrary(sounds={}, meta={}, vindex=MemoryIndex(dim=512),
+                       kindex=MemoryIndex(dim=512), embedder=emb)
     with foley.offline():
         with pytest.raises(ModelNotCached):
-            foley.ingest(
-                tmp_path, library=lib, do_supervised=False, do_zeroshot=False, qc=False
-            )
+            foley.ingest(tmp_path, library=lib, do_supervised=False, do_zeroshot=False,
+                         qc=False)
 
 
 def _downloading_loader(calls):
@@ -147,9 +126,8 @@ def test_audioseal_does_not_download_under_offline(monkeypatch):
     from foley.provenance import disclosure
 
     calls = []
-    fake = types.SimpleNamespace(
-        AudioSeal=types.SimpleNamespace(load_generator=_downloading_loader(calls))
-    )
+    fake = types.SimpleNamespace(AudioSeal=types.SimpleNamespace(
+        load_generator=_downloading_loader(calls)))
     monkeypatch.setitem(sys.modules, "audioseal", fake)
     wm = disclosure.AudioSealWatermarker.__new__(disclosure.AudioSealWatermarker)
     with foley.offline():
@@ -163,17 +141,13 @@ def test_whisperx_does_not_download_under_offline(monkeypatch):
     from foley.weave import align
 
     calls = []
-    fake = types.SimpleNamespace(
-        load_model=_downloading_loader(calls),
-        load_align_model=_downloading_loader(calls),
-    )
+    fake = types.SimpleNamespace(load_model=_downloading_loader(calls),
+                                 load_align_model=_downloading_loader(calls))
     monkeypatch.setitem(sys.modules, "whisperx", fake)
     aligner = align.WhisperXAligner(model_size="base", device="cpu", batch_size=1)
     with foley.offline():
         with pytest.raises(ModelNotCached, match="whisperX"):
-            aligner.word_timeline(
-                np.zeros(16000, dtype=np.float32), 16000, transcript="hi"
-            )
+            aligner.word_timeline(np.zeros(16000, dtype=np.float32), 16000, transcript="hi")
 
 
 def test_mcp_tools_run_under_the_servers_offline_posture():
@@ -194,15 +168,11 @@ def test_mcp_tools_run_under_the_servers_offline_posture():
     assert seen == [True]
 
 
-def test_find_warns_when_generation_weights_are_missing_offline(
-    fake_diffusers, fake_embedder
-):
+def test_find_warns_when_generation_weights_are_missing_offline(fake_diffusers, fake_embedder):
     from foley.index import MemoryIndex, SoundLibrary
 
     idx = MemoryIndex(dim=fake_embedder.dim)
-    empty = SoundLibrary(
-        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
-    )
+    empty = SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
     foley.obs.configure(run_store={})
     try:
         with foley.offline(), pytest.warns(UserWarning, match="not in the local cache"):
@@ -227,17 +197,13 @@ def test_a_cached_model_that_fails_to_load_is_not_called_missing(monkeypatch):
     from foley import runtime
     from foley.runtime import load_pretrained
 
-    monkeypatch.setattr(
-        runtime, "_repo_in_hf_cache", lambda model_id: True
-    )  # it IS cached
+    monkeypatch.setattr(runtime, "_repo_in_hf_cache", lambda model_id: True)  # it IS cached
 
     def corrupt(model_id, **kw):
         raise OSError("Unable to load weights from pytorch checkpoint file for 'x/y'")
 
     with foley.offline():
-        with pytest.raises(
-            ModelNotCached, match="in the local cache but failed to load"
-        ) as exc:
+        with pytest.raises(ModelNotCached, match="in the local cache but failed to load") as exc:
             load_pretrained(corrupt, "x/y")
     assert "Unable to load weights" in str(exc.value.__cause__)
     assert "--force-download" in str(exc.value)
@@ -384,11 +350,8 @@ def test_whisperx_gets_local_files_only_offline(monkeypatch):
         seen["local_files_only"] = local_files_only
         raise OSError("not cached")
 
-    monkeypatch.setitem(
-        sys.modules,
-        "whisperx",
-        types.SimpleNamespace(load_model=load_model, load_align_model=lambda **k: None),
-    )
+    monkeypatch.setitem(sys.modules, "whisperx", types.SimpleNamespace(
+        load_model=load_model, load_align_model=lambda **k: None))
     with foley.offline(), pytest.raises(OSError):
         align.WhisperXAligner().word_timeline(np.zeros(1600, dtype=np.float32), 16000)
     assert seen == {"local_files_only": True}

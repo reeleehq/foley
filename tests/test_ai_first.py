@@ -39,8 +39,7 @@ def _demo_lib():
 
 def test_score_plan_only_returns_timeline_and_rationale():
     res = foley.score(
-        ["The heavy oak door creaked.", "Rain fell and thunder rolled."],
-        library=_demo_lib(),
+        ["The heavy oak door creaked.", "Rain fell and thunder rolled."], library=_demo_lib()
     )
     assert res.weave is None  # no audio → plan only
     assert res.n_sounds == len(res.events) == len(res.timeline.items)

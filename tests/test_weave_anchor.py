@@ -53,13 +53,9 @@ def test_resolve_word_onset():
 
 
 def test_resolve_word_preroll_clamped():
-    onset, _ = resolve_anchor(
-        Placement(anchor=Anchor.word, ref="door", pre_roll=0.3), WT
-    )
+    onset, _ = resolve_anchor(Placement(anchor=Anchor.word, ref="door", pre_roll=0.3), WT)
     assert abs(onset - 0.2) < 1e-9
-    onset2, _ = resolve_anchor(
-        Placement(anchor=Anchor.word, ref="the", pre_roll=1.0), WT
-    )
+    onset2, _ = resolve_anchor(Placement(anchor=Anchor.word, ref="the", pre_roll=1.0), WT)
     assert onset2 == 0.0  # clamped at 0
 
 

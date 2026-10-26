@@ -98,9 +98,7 @@ class FakeTransport:
 
     def __call__(self, method, url, *, params=None, headers=None):
         self.calls.append(
-            SimpleNamespace(
-                method=method, url=url, params=params or {}, headers=headers or {}
-            )
+            SimpleNamespace(method=method, url=url, params=params or {}, headers=headers or {})
         )
         for needle, resp in self.routes:
             if needle in url:
@@ -124,9 +122,7 @@ def _transport(*, download_bytes=None, item=SOUND_12345, search_page=SEARCH_PAGE
 def library(fake_embedder):
     """A fresh in-memory FakeEmbedder-backed library (no CLAP, no disk)."""
     idx = MemoryIndex(dim=fake_embedder.dim)
-    return SoundLibrary(
-        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
-    )
+    return SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
 
 
 def _adapter(transport, *, config=None):
@@ -218,9 +214,7 @@ def test_download_uses_known_preview_url_without_extra_instance_fetch():
 def test_add_from_indexes_by_reference(library):
     transport = _transport()
     adapter = _adapter(transport)
-    report = add_from(
-        "freesound", query="rain", library=library, adapter=adapter, limit=5
-    )
+    report = add_from("freesound", query="rain", library=library, adapter=adapter, limit=5)
 
     assert len(report.ingested) == 1
     rec = report.ingested[0].record
@@ -284,9 +278,7 @@ def test_keep_gate_drops_accepted_but_noncommercial(library):
     """Layer-2 defense: a license on the allowlist but failing intended-use is skipped."""
     # widen the allowlist to admit CC-BY-NC past the per-item guard...
     config = dict(SOURCE_CONFIG)
-    config["license"] = dict(
-        SOURCE_CONFIG["license"], accepted_license_ids=["CC0-1.0", "CC-BY-NC-4.0"]
-    )
+    config["license"] = dict(SOURCE_CONFIG["license"], accepted_license_ids=["CC0-1.0", "CC-BY-NC-4.0"])
     item = _non_cc0_item("https://creativecommons.org/licenses/by-nc/4.0/")
     page = {"count": 1, "results": [item]}
     adapter = _adapter(_transport(item=item, search_page=page), config=config)
@@ -373,23 +365,17 @@ def test_missing_api_key_is_a_clear_error(monkeypatch):
 
 def test_search_maps_label_form_license():
     item = dict(SOUND_12345, license="Creative Commons 0")  # the live search label form
-    adapter = _adapter(
-        _transport(item=item, search_page={"count": 1, "results": [item]})
-    )
+    adapter = _adapter(_transport(item=item, search_page={"count": 1, "results": [item]}))
     cands = adapter.search("rain", license="cc0")
     assert len(cands) == 1
     assert cands[0].sound.license.license_id == "CC0-1.0"
     assert cands[0].sound.license.rights_verified is True
 
 
-@pytest.mark.parametrize(
-    "label", ["Attribution", "Attribution NonCommercial", "Sampling+"]
-)
+@pytest.mark.parametrize("label", ["Attribution", "Attribution NonCommercial", "Sampling+"])
 def test_label_form_non_cc0_is_dropped_fail_closed(label):
     item = _non_cc0_item(label)
-    adapter = _adapter(
-        _transport(item=item, search_page={"count": 1, "results": [item]})
-    )
+    adapter = _adapter(_transport(item=item, search_page={"count": 1, "results": [item]}))
     assert adapter.search("rain", license="cc0") == []
 
 
@@ -408,9 +394,7 @@ def test_search_non_200_raises_with_detail():
 
 def test_download_missing_preview_raises_lookup():
     item = dict(SOUND_12345, previews={})  # sound instance exposes no preview
-    adapter = _adapter(
-        _transport(item=item, search_page={"count": 1, "results": [item]})
-    )
+    adapter = _adapter(_transport(item=item, search_page={"count": 1, "results": [item]}))
     with pytest.raises(LookupError):
         adapter.download("12345")
 
@@ -445,24 +429,17 @@ def test_add_from_one_bad_hit_does_not_abort_batch(library):
         SOUND_12345,
         id=777,
         url="https://freesound.org/s/777/",
-        previews={
-            "preview-hq-mp3": "https://cdn.freesound.org/previews/77/777-bad.mp3"
-        },
+        previews={"preview-hq-mp3": "https://cdn.freesound.org/previews/77/777-bad.mp3"},
     )
     page = {"count": 2, "results": [bad, SOUND_12345]}
     transport = FakeTransport(
         [
             ("/search/text/", FakeResponse(200, page, b"")),
             ("777-bad.mp3", FakeResponse(404, {"detail": "gone"}, b"")),  # bad hit 404s
-            (
-                "cdn.freesound.org",
-                FakeResponse(200, None, _flac(_tone(440))),
-            ),  # good hit
+            ("cdn.freesound.org", FakeResponse(200, None, _flac(_tone(440)))),  # good hit
         ]
     )
-    report = add_from(
-        "freesound", query="rain", library=library, adapter=_adapter(transport)
-    )
+    report = add_from("freesound", query="rain", library=library, adapter=_adapter(transport))
     assert "error" in {r.status for r in report.results}  # the bad hit recorded
     assert len(report.ingested) == 1  # the good hit still stored
     assert report.ingested[0].record.id == "freesound:12345"
@@ -472,9 +449,7 @@ def test_add_from_search_error_returns_report_not_exception(library):
     transport = FakeTransport(
         [("/search/text/", FakeResponse(429, {"detail": "throttled"}, b""))]
     )
-    report = add_from(
-        "freesound", query="rain", library=library, adapter=_adapter(transport)
-    )
+    report = add_from("freesound", query="rain", library=library, adapter=_adapter(transport))
     assert [r.status for r in report.results] == ["error"]  # inspectable, not raised
     assert len(library) == 0
 
@@ -651,13 +626,8 @@ BRIGHT = "ac_brightness:[50 TO 100]"
 
 def test_provider_params_filter_is_appended_and_licence_still_enforced():
     """Acceptance (#61): a Freesound-only filter passes without editing foley."""
-    page = dict(
-        SEARCH_PAGE,
-        results=[
-            SOUND_12345,
-            _non_cc0_item("http://creativecommons.org/licenses/by-nc/4.0/"),
-        ],
-    )
+    page = dict(SEARCH_PAGE, results=[SOUND_12345, _non_cc0_item(
+        "http://creativecommons.org/licenses/by-nc/4.0/")])
     transport = _transport(search_page=page)
     cands = _adapter(transport).search(
         "rain", provider_params={"filter": BRIGHT, "group_by_pack": 1}
@@ -691,8 +661,7 @@ def test_add_from_passes_provider_params_to_search(library):
 def test_an_or_in_the_filter_stays_inside_the_and_clause():
     transport = _transport()
     _adapter(transport).search(
-        "rain",
-        provider_params={"filter": 'tag:x OR license:"Attribution NonCommercial"'},
+        "rain", provider_params={"filter": 'tag:x OR license:"Attribution NonCommercial"'}
     )
     licence = SOURCE_CONFIG["param_map"]["license"]["to_native"]
     assert transport.calls[0].params["filter"] == (
@@ -754,9 +723,7 @@ def test_candidates_carry_the_item_json_as_transient_raw():
 
 def test_invoke_native_returns_the_parsed_json():
     transport = _transport()
-    data = _adapter(transport).invoke_native(
-        "/search/text/", query="rain", filter=BRIGHT
-    )
+    data = _adapter(transport).invoke_native("/search/text/", query="rain", filter=BRIGHT)
     assert data == SEARCH_PAGE
     assert transport.calls[0].params == {"query": "rain", "filter": BRIGHT}
     assert transport.calls[0].headers["Authorization"].endswith("test-token")

@@ -73,9 +73,7 @@ def test_explicit_corpora_allowlist_overrides_rings():
 
 
 def test_license_id_from_url_maps_cc_families():
-    assert _license_id_from_url(
-        "http://creativecommons.org/publicdomain/zero/1.0/"
-    ) == (
+    assert _license_id_from_url("http://creativecommons.org/publicdomain/zero/1.0/") == (
         "CC0-1.0",
         True,
     )
@@ -93,9 +91,7 @@ def test_license_id_from_url_maps_cc_families():
         "CC-BY-NC-4.0",
         True,
     )
-    assert _license_id_from_url(
-        "http://creativecommons.org/licenses/sampling+/1.0/"
-    ) == (
+    assert _license_id_from_url("http://creativecommons.org/licenses/sampling+/1.0/") == (
         "CC-Sampling+-1.0",
         True,
     )
@@ -145,34 +141,21 @@ def test_license_id_from_url_nd_sa_variants_fail_closed():
 def _fsd50k_corpus(tmp_path):
     """A synthetic FSD50K tree: clips-info JSON + 4 placeholder wavs."""
     info = {
-        "111": {
-            "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-            "uploader": "zoe",
-        },
-        "222": {
-            "license": "https://creativecommons.org/licenses/by/4.0/",
-            "uploader": "amy",
-        },
-        "333": {
-            "license": "https://creativecommons.org/licenses/by-nc/4.0/",
-            "uploader": "ben",
-        },
+        "111": {"license": "http://creativecommons.org/publicdomain/zero/1.0/", "uploader": "zoe"},
+        "222": {"license": "https://creativecommons.org/licenses/by/4.0/", "uploader": "amy"},
+        "333": {"license": "https://creativecommons.org/licenses/by-nc/4.0/", "uploader": "ben"},
         # 444 deliberately absent from metadata -> fail-closed unknown
     }
     meta_dir = tmp_path / "FSD50K.metadata"
     meta_dir.mkdir(parents=True)
     (meta_dir / "dev_clips_info_FSD50K.json").write_text(json.dumps(info))
-    _touch_wavs(
-        tmp_path / "FSD50K.dev_audio", ["111.wav", "222.wav", "333.wav", "444.wav"]
-    )
+    _touch_wavs(tmp_path / "FSD50K.dev_audio", ["111.wav", "222.wav", "333.wav", "444.wav"])
     return tmp_path
 
 
 def test_fsd50k_resolves_per_clip_license(tmp_path):
     root = _fsd50k_corpus(tmp_path)
-    by_id = {
-        s.source_id: FSD50K.resolve_license(s) for s in FSD50K.iter_clips(str(root))
-    }
+    by_id = {s.source_id: FSD50K.resolve_license(s) for s in FSD50K.iter_clips(str(root))}
     assert set(by_id) == {"111", "222", "333", "444"}
 
     cc0 = by_id["111"]
@@ -300,10 +283,7 @@ def test_list_backends_supports_seed_and_kind():
     both = foley.list_backends(supports=["seed", "negative_prompt"])
     assert "stable_audio" in both and "fal_mirelo" in both
     assert "fal_sonilo" not in foley.list_backends(supports="seed")
-    assert foley.list_backends(supports="offline_capable") == [
-        "stable_audio",
-        "stable_audio_3",
-    ]
+    assert foley.list_backends(supports="offline_capable") == ["stable_audio", "stable_audio_3"]
     assert foley.capabilities_of(SOURCE("freesound"))["deterministic"] is None
     assert foley.capabilities_of(SOURCE("stable_audio_3"))["sample_rate"] == 44100
 
@@ -338,9 +318,7 @@ def test_list_backends_flags_and_fake():
     )
     try:
         view = foley.capabilities_of(SOURCE_REGISTRY["fake_capab"]["config"])
-        assert (
-            view["loopable"] and view["offline_capable"] and not view["deterministic"]
-        )
+        assert view["loopable"] and view["offline_capable"] and not view["deterministic"]
         assert view["sample_rate"] == 16000
         assert "fake_capab" in foley.list_backends(supports=["loopable", "watermarked"])
         assert "fake_capab" in foley.list_backends(supports="loop")

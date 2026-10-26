@@ -146,18 +146,10 @@ def test_all_five_facades_noop_when_disabled(library, tmp_path):
     d = {}
     obs.configure(run_store=d)
     # generate + search + similar + add_from + ingest, all with obs OFF
-    foley.generate(
-        "x creak",
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        provenance_store={},
-    )
+    foley.generate("x creak", backend="stable_audio", library=library, adapter=_sa_adapter(), provenance_store={})
     library.search("creak", k=3)
     library.similar(library.search("creak", k=1)[0].sound.id, k=2)
-    foley.add_from(
-        "fake", query="creak", library=library, adapter=FakeRetrieveAdapter()
-    )
+    foley.add_from("fake", query="creak", library=library, adapter=FakeRetrieveAdapter())
     (tmp_path / "a.wav").write_bytes(encode(_mono_tone(), SR))
     foley.ingest(str(tmp_path), library=library)
     assert d == {}  # nothing emitted while disabled
@@ -188,10 +180,7 @@ def test_run_manifest_json_round_trip():
     m = RunManifest(
         run_id="r1",
         op="generate",
-        spans=[
-            SpanRecord(name="root", span_id="s0"),
-            SpanRecord(name="child", span_id="s1", parent_id="s0"),
-        ],
+        spans=[SpanRecord(name="root", span_id="s0"), SpanRecord(name="child", span_id="s1", parent_id="s0")],
         result_ids=["a", "b"],
     )
     rt = RunManifest.from_json(m.to_json())
@@ -202,9 +191,7 @@ def test_run_manifest_json_round_trip():
 def test_manifest_built_independent_of_tracer(library, tmp_path):
     clock, ids = _counters()
     d = {}
-    obs.enable(
-        prefer_otel=False, run_store=d, clock=clock, id_factory=ids, now=lambda: None
-    )
+    obs.enable(prefer_otel=False, run_store=d, clock=clock, id_factory=ids, now=lambda: None)
     for i in range(2):
         (tmp_path / f"f{i}.wav").write_bytes(encode(_mono_tone(freq=300 + 60 * i), SR))
     foley.ingest(str(tmp_path), library=library)
@@ -228,11 +215,8 @@ def test_generate_emits_run_manifest(library):
     d = {}
     obs.enable(prefer_otel=False, run_store=d)
     cand = foley.generate(
-        "a wooden door creak",
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        provenance_store={},
+        "a wooden door creak", backend="stable_audio", library=library,
+        adapter=_sa_adapter(), provenance_store={},
     )
     (m,) = d.values()
     assert m["op"] == "generate"
@@ -247,11 +231,8 @@ def test_generate_prompt_is_redacted(library):
     d = {}
     obs.enable(prefer_otel=False, run_store=d)
     foley.generate(
-        "the confidential narration secret",
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        provenance_store={},
+        "the confidential narration secret", backend="stable_audio", library=library,
+        adapter=_sa_adapter(), provenance_store={},
     )
     (m,) = d.values()
     # inputs.prompt + seeds[*].prompt are hash dicts; the raw text is nowhere
@@ -262,13 +243,7 @@ def test_generate_prompt_is_redacted(library):
 
 
 def test_search_manifest_has_candidate_scores_and_redacts_query(library):
-    foley.generate(
-        "a creak",
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        provenance_store={},
-    )
+    foley.generate("a creak", backend="stable_audio", library=library, adapter=_sa_adapter(), provenance_store={})
     d = {}
     obs.enable(prefer_otel=False, run_store=d)
     library.search("secret query text", k=3)
@@ -276,20 +251,13 @@ def test_search_manifest_has_candidate_scores_and_redacts_query(library):
     assert m["op"] == "search"
     assert isinstance(m["inputs"]["query"], dict)  # redacted
     assert "secret query text" not in json.dumps(m)
-    assert m["candidate_scores"] and set(m["candidate_scores"][0]) >= {
-        "id",
-        "clap",
-        "bm25",
-        "rrf",
-    }
+    assert m["candidate_scores"] and set(m["candidate_scores"][0]) >= {"id", "clap", "bm25", "rrf"}
 
 
 def test_add_from_manifest_redacts_query_and_has_disclosure(library):
     d = {}
     obs.enable(prefer_otel=False, run_store=d)
-    foley.add_from(
-        "fake", query="a private query", library=library, adapter=FakeRetrieveAdapter()
-    )
+    foley.add_from("fake", query="a private query", library=library, adapter=FakeRetrieveAdapter())
     (m,) = d.values()
     assert m["op"] == "add_from"
     assert isinstance(m["inputs"]["query"], dict)
@@ -307,13 +275,7 @@ def test_add_from_manifest_redacts_query_and_has_disclosure(library):
 def test_run_scope_aggregates_into_single_manifest(library):
     d = {}
     with obs.run("find", prefer_otel=False, run_store=d):
-        foley.generate(
-            "a creak",
-            backend="stable_audio",
-            library=library,
-            adapter=_sa_adapter(),
-            provenance_store={},
-        )
+        foley.generate("a creak", backend="stable_audio", library=library, adapter=_sa_adapter(), provenance_store={})
         library.search("creak", k=3)
     assert len(d) == 1  # ONE manifest, not two
     (m,) = d.values()
@@ -331,23 +293,11 @@ def test_determinism_byte_stable_manifest(library):
     def one_run():
         clock, ids = _counters()
         d = {}
-        obs.enable(
-            prefer_otel=False,
-            run_store=d,
-            clock=clock,
-            id_factory=ids,
-            now=lambda: None,
-        )
+        obs.enable(prefer_otel=False, run_store=d, clock=clock, id_factory=ids, now=lambda: None)
         library.search("creak", k=3)
         return json.dumps(next(iter(d.values())), sort_keys=True)
 
-    foley.generate(
-        "a creak",
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        provenance_store={},
-    )
+    foley.generate("a creak", backend="stable_audio", library=library, adapter=_sa_adapter(), provenance_store={})
     assert one_run() == one_run()  # identical config + op => byte-identical manifest
 
 
@@ -380,12 +330,8 @@ def test_redact_text_modes():
     assert redact_text("x", mode=RedactionMode.full) == "x"
     h = redact_text("hello", mode=RedactionMode.hash)
     assert set(h) == {"sha256", "len"} and h["len"] == 5 and "preview" not in h
-    assert redact_text("hello", mode=RedactionMode.hash, salt="a") != redact_text(
-        "hello", mode=RedactionMode.hash, salt="b"
-    )
-    assert redact_text("hello", mode=RedactionMode.hash) == redact_text(
-        "hello", mode=RedactionMode.hash
-    )  # stable
+    assert redact_text("hello", mode=RedactionMode.hash, salt="a") != redact_text("hello", mode=RedactionMode.hash, salt="b")
+    assert redact_text("hello", mode=RedactionMode.hash) == redact_text("hello", mode=RedactionMode.hash)  # stable
 
 
 def test_redact_manifest_emit_time_net():
@@ -411,9 +357,7 @@ def test_make_run_store_roundtrip_and_id_escaping(tmp_path):
     store["weird/../id"] = {"op": "x"}  # a crafted id must be stored + listed safely
     assert store["deadbeef" * 8] == {"op": "search"}
     assert "weird/../id" in list(store)
-    assert make_run_store(tmp_path / "runs")["weird/../id"] == {
-        "op": "x"
-    }  # survives re-open
+    assert make_run_store(tmp_path / "runs")["weird/../id"] == {"op": "x"}  # survives re-open
 
 
 # ---------------------------------------------------------------------------
@@ -435,11 +379,8 @@ def test_backend_exception_does_not_leak_prompt(library):
     obs.enable(prefer_otel=False, run_store=d)
     # the workhorse swallows the synth error into an error IngestResult + emits a manifest
     generate_backend(
-        "confidential secret narration",
-        backend="stable_audio",
-        library=library,
-        adapter=_LeakyGenAdapter(),
-        provenance_store={},
+        "confidential secret narration", backend="stable_audio", library=library,
+        adapter=_LeakyGenAdapter(), provenance_store={},
     )
     (m,) = d.values()
     assert "confidential secret narration" not in json.dumps(m)  # HIGH-leak regression
@@ -461,9 +402,7 @@ def test_raising_facade_under_obs_emits_error_manifest_and_resets(fake_embedder)
             return fake_embedder.embed_audio(wav, sr)
 
     idx = MemoryIndex(dim=fake_embedder.dim)
-    badlib = SoundLibrary(
-        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=BoomEmbedder()
-    )
+    badlib = SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=BoomEmbedder())
     d = {}
     obs.enable(prefer_otel=False, run_store=d)
     with pytest.raises(RuntimeError):

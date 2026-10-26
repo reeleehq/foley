@@ -49,22 +49,10 @@ def test_bearer_asgi_gate():
     assert sent[0]["status"] == 401 and seen == []
     # wrong token → 401
     sent.clear()
-    _run(
-        mw(
-            {"type": "http", "headers": [(b"authorization", b"Bearer nope")]},
-            receive,
-            send,
-        )
-    )
+    _run(mw({"type": "http", "headers": [(b"authorization", b"Bearer nope")]}, receive, send))
     assert sent[0]["status"] == 401 and seen == []
     # correct token → passes through to the app
-    _run(
-        mw(
-            {"type": "http", "headers": [(b"authorization", b"Bearer secret")]},
-            receive,
-            send,
-        )
-    )
+    _run(mw({"type": "http", "headers": [(b"authorization", b"Bearer secret")]}, receive, send))
     assert seen == ["http"]
     # non-HTTP scopes (lifespan) pass through untouched
     _run(mw({"type": "lifespan"}, receive, send))
@@ -90,86 +78,45 @@ class _FakeClient:
             "R",
             (),
             {
-                "choices": [
-                    type("C", (), {"message": type("M", (), {"content": content})()})()
-                ],
+                "choices": [type("C", (), {"message": type("M", (), {"content": content})()})()],
                 "model": "fake-local",
             },
         )()
-        self.chat = type(
-            "Chat",
-            (),
-            {"completions": type("Cmp", (), {"create": staticmethod(create)})()},
-        )()
+        self.chat = type("Chat", (), {"completions": type("Cmp", (), {"create": staticmethod(create)})()})()
 
 
 def test_local_llm_decomposer_parses_events(monkeypatch):
-    monkeypatch.setenv(
-        "FOLEY_APPROVE_UNKNOWN_COST", "1"
-    )  # a real rung: cost unknown (#57)
+    monkeypatch.setenv("FOLEY_APPROVE_UNKNOWN_COST", "1")  # a real rung: cost unknown (#57)
     from foley.agent.local_llm import LocalLLMDecomposer
 
     client = _FakeClient(
         json.dumps(
             {
                 "events": [
-                    {
-                        "query": "rain",
-                        "layer": "ambience",
-                        "diegetic": True,
-                        "salience": "high",
-                        "audioset": ["Rain"],
-                    },
-                    {
-                        "query": "door",
-                        "layer": "sfx_fg",
-                        "diegetic": True,
-                        "salience": "medium",
-                        "audioset": ["Door"],
-                    },
+                    {"query": "rain", "layer": "ambience", "diegetic": True, "salience": "high", "audioset": ["Rain"]},
+                    {"query": "door", "layer": "sfx_fg", "diegetic": True, "salience": "medium", "audioset": ["Door"]},
                 ]
             }
         )
     )
-    events = LocalLLMDecomposer(client=client).decompose(
-        "it rained and a door shut", max_events=5
-    )
+    events = LocalLLMDecomposer(client=client).decompose("it rained and a door shut", max_events=5)
     assert [e.query for e in events] == ["rain", "door"]
 
 
 def test_local_llm_judge_and_refiner(monkeypatch):
-    monkeypatch.setenv(
-        "FOLEY_APPROVE_UNKNOWN_COST", "1"
-    )  # a real rung: cost unknown (#57)
+    monkeypatch.setenv("FOLEY_APPROVE_UNKNOWN_COST", "1")  # a real rung: cost unknown (#57)
     from foley.agent.local_llm import LocalLLMJudge, LocalLLMRefiner
-    from foley.base import (
-        Candidate,
-        LicenseRecord,
-        SoundEvent,
-        SoundRecord,
-        VerifyLevel,
-    )
+    from foley.base import Candidate, LicenseRecord, SoundEvent, SoundRecord, VerifyLevel
 
-    rec = SoundRecord(
-        id="x",
-        caption="steady rain",
-        tags=["rain"],
-        license=LicenseRecord(source="t", license_id="CC0-1.0"),
-    )
+    rec = SoundRecord(id="x", caption="steady rain", tags=["rain"], license=LicenseRecord(source="t", license_id="CC0-1.0"))
     event = SoundEvent(query="rain on a window", audioset=["Rain"])
-    verdict = LocalLLMJudge(
-        client=_FakeClient(
-            json.dumps({"match": True, "confidence": 0.88, "reason": "rain"})
-        )
-    ).judge(event, Candidate(sound=rec), level=VerifyLevel.judge)
+    verdict = LocalLLMJudge(client=_FakeClient(json.dumps({"match": True, "confidence": 0.88, "reason": "rain"}))).judge(
+        event, Candidate(sound=rec), level=VerifyLevel.judge
+    )
     assert verdict.match is True and abs(verdict.confidence - 0.88) < 1e-9
     assert verdict.level == VerifyLevel.judge
 
-    refiner = LocalLLMRefiner(
-        client=_FakeClient(
-            json.dumps({"paraphrases": ["rain", "heavy rain", "downpour"]})
-        )
-    )
+    refiner = LocalLLMRefiner(client=_FakeClient(json.dumps({"paraphrases": ["rain", "heavy rain", "downpour"]})))
     out = refiner.refine("rain", n=3)
     assert out[0] == "rain" and "downpour" in out and len(out) <= 3
 

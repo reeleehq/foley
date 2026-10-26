@@ -69,12 +69,7 @@ def _rec(sid, caption, tags=(), *, verified=True, commercial=True, voice=False):
         contains_recognizable_voice=voice,
     )
     return SoundRecord(
-        id=sid,
-        caption=caption,
-        tags=list(tags),
-        duration_s=2.0,
-        uri=f"test://{sid}",
-        license=lic,
+        id=sid, caption=caption, tags=list(tags), duration_s=2.0, uri=f"test://{sid}", license=lic
     )
 
 
@@ -170,9 +165,7 @@ def test_license_gate_before_verify():
             return self._inner.judge(event, candidate, level=level)
 
     spy = SpyJudge()
-    cands = foley.find(
-        "A dog barked.", library=lib, judge=spy, budget=Budget(allow_generate=False)
-    )
+    cands = foley.find("A dog barked.", library=lib, judge=spy, budget=Budget(allow_generate=False))
     out_ids = {c.sound.id for c in cands}
     assert "bad_dog" not in out_ids
     assert "good_dog" in out_ids
@@ -194,9 +187,7 @@ def test_gate_ordering_invariant(monkeypatch):
 
     monkeypatch.setattr("foley.agent.policy.keep_sound", spy_keep)
     monkeypatch.setattr("foley.agent.tools.verify_match", spy_verify)
-    lib = _lib(
-        [_rec("d1", "a dog barking", ["dog"]), _rec("d2", "a dog barking", ["dog"])]
-    )
+    lib = _lib([_rec("d1", "a dog barking", ["dog"]), _rec("d2", "a dog barking", ["dog"])])
     foley.find("A dog barked.", library=lib, budget=Budget(allow_generate=False))
     assert "keep" in order and "verify" in order
     assert order.index("verify") > max(i for i, x in enumerate(order) if x == "keep")
@@ -218,9 +209,7 @@ def test_gate_failclosed_on_error(monkeypatch):
 def test_conservative_intended_use_default():
     """intended_use=None → a conservative IntendedUse; a voice-flagged sound is rejected."""
     lib = _lib([_rec("v", "a dog barking", ["dog"], voice=True)])
-    cands = foley.find(
-        "A dog barked.", library=lib, budget=Budget(allow_generate=False)
-    )
+    cands = foley.find("A dog barked.", library=lib, budget=Budget(allow_generate=False))
     assert cands == []  # the only candidate is gate-rejected (recognizable voice)
 
 
@@ -242,51 +231,21 @@ def test_decide_single_branch():
     non = SoundEvent(query="tension drone", diegetic=False)
     hi, lo = _verified("a", 0.9), _verified("b", 0.3)
 
-    assert (
-        decide(ev, [hi], [hi], tau_retrieve=0.5, budget=Budget(), loop=0).action
-        is DecideAction.USE
-    )
-    assert (
-        decide(
-            ev, [lo], [lo], tau_retrieve=0.5, budget=Budget(max_refine_loops=1), loop=0
-        ).action
-        is DecideAction.REFINE
-    )
-    assert (
-        decide(
-            ev, [], [], tau_retrieve=0.5, budget=Budget(max_refine_loops=0), loop=0
-        ).action
-        is DecideAction.GENERATE
-    )
-    assert (
-        decide(
-            ev,
-            [],
-            [],
-            tau_retrieve=0.5,
-            budget=Budget(max_refine_loops=0, allow_generate=False),
-            loop=0,
-        ).action
-        is DecideAction.DROP
-    )
+    assert decide(ev, [hi], [hi], tau_retrieve=0.5, budget=Budget(), loop=0).action is DecideAction.USE
+    assert decide(ev, [lo], [lo], tau_retrieve=0.5, budget=Budget(max_refine_loops=1), loop=0).action is DecideAction.REFINE
+    assert decide(ev, [], [], tau_retrieve=0.5, budget=Budget(max_refine_loops=0), loop=0).action is DecideAction.GENERATE
+    assert decide(ev, [], [], tau_retrieve=0.5, budget=Budget(max_refine_loops=0, allow_generate=False), loop=0).action is DecideAction.DROP
     # non-diegetic biases GENERATE even with a confident retrieval match
-    assert (
-        decide(non, [hi], [hi], tau_retrieve=0.5, budget=Budget(), loop=0).action
-        is DecideAction.GENERATE
-    )
+    assert decide(non, [hi], [hi], tau_retrieve=0.5, budget=Budget(), loop=0).action is DecideAction.GENERATE
 
 
 def test_decide_is_pure(monkeypatch):
     """decide() never calls keep_sound/search/generate, and asserts its precondition."""
     for target in ("foley.agent.policy.keep_sound",):
-        monkeypatch.setattr(
-            target, lambda *a, **k: pytest.fail("decide called keep_sound")
-        )
+        monkeypatch.setattr(target, lambda *a, **k: pytest.fail("decide called keep_sound"))
     ev = SoundEvent(query="x")
     hi = _verified("a", 0.9)
-    decide(
-        ev, [hi], [hi], tau_retrieve=0.5, budget=Budget(), loop=0
-    )  # no side-effect calls
+    decide(ev, [hi], [hi], tau_retrieve=0.5, budget=Budget(), loop=0)  # no side-effect calls
     ungated = _candidate("u", "u")  # license_ok None, no verdict
     with pytest.raises(AssertionError):
         decide(ev, [ungated], [], tau_retrieve=0.5, budget=Budget(), loop=0)
@@ -342,8 +301,7 @@ def test_generate_fallback_reverified_and_gated(monkeypatch):
 
     def fake_generate(prompt, *, library=None, **kw):
         return Candidate(
-            sound=_rec("gen", prompt, [prompt], verified=True),
-            origin=CandidateOrigin.generated,
+            sound=_rec("gen", prompt, [prompt], verified=True), origin=CandidateOrigin.generated
         )
 
     monkeypatch.setattr("foley.agent.policy.keep_sound", spy_keep)
@@ -358,11 +316,7 @@ def test_generate_fallback_reverified_and_gated(monkeypatch):
     )
     gen = [c for c in cands if c.origin is CandidateOrigin.generated]
     assert gen and gen[0].sound.id == "gen"
-    assert (
-        gen[0].license_ok is True
-        and gen[0].verdict is not None
-        and gen[0].verdict.match
-    )
+    assert gen[0].license_ok is True and gen[0].verdict is not None and gen[0].verdict.match
     assert seen["keep"] >= 1 and seen["verify"] >= 1  # re-gated + re-verified
 
 
@@ -387,8 +341,7 @@ def test_generate_skipped_dup_still_gated(monkeypatch):
     def dup(prompt, *, library=None, **kw):
         # a bare Candidate as generate() returns on skipped_dup (event/verdict/license unset)
         return Candidate(
-            sound=_rec("dup", prompt, [prompt], verified=True),
-            origin=CandidateOrigin.generated,
+            sound=_rec("dup", prompt, [prompt], verified=True), origin=CandidateOrigin.generated
         )
 
     monkeypatch.setattr(foley, "generate", dup)
@@ -504,11 +457,7 @@ def test_plan_is_sparse(library):
         tl = foley.plan(cands, transcript="the door opened")
         assert tl.run_manifest_ref == run.manifest.run_id
     rain = next(it for it in tl.items if it.clip_ref == "rain")
-    assert (
-        rain.layer is Layer.ambience
-        and rain.loop is True
-        and isinstance(rain.onset, str)
-    )
+    assert rain.layer is Layer.ambience and rain.loop is True and isinstance(rain.onset, str)
     # SPARSE = every WEAVE-resolved field stays at its default (anchor resolution and
     # per-item processing are the render's job, not plan()'s).
     for it in tl.items:
@@ -516,10 +465,7 @@ def test_plan_is_sparse(library):
         assert it.id is None and it.event is None and it.enabled is True
     assert tl.word_timeline == [] and tl.narration_ref is None
     rt = SoundDesignTimeline.from_dict(tl.to_dict())
-    assert (
-        isinstance(rt.items[0], TimelineItem)
-        and rt.run_manifest_ref == tl.run_manifest_ref
-    )
+    assert isinstance(rt.items[0], TimelineItem) and rt.run_manifest_ref == tl.run_manifest_ref
 
 
 def test_stream_equals_list(library):
@@ -567,8 +513,7 @@ def test_generate_under_clap_verify(monkeypatch):
 
     def fake_gen(prompt, *, library=None, **kw):
         return Candidate(
-            sound=_rec("gen", prompt, [prompt], verified=True),
-            origin=CandidateOrigin.generated,
+            sound=_rec("gen", prompt, [prompt], verified=True), origin=CandidateOrigin.generated
         )
 
     monkeypatch.setattr(foley, "generate", fake_gen)
@@ -601,33 +546,19 @@ class _FakeAnthropic:
         block = types.SimpleNamespace(type="text", text=self._payload)
         usage = types.SimpleNamespace(input_tokens=123, output_tokens=45)
         return types.SimpleNamespace(
-            content=[block],
-            model="claude-opus-4-8",
-            usage=usage,
-            stop_reason="end_turn",
+            content=[block], model="claude-opus-4-8", usage=usage, stop_reason="end_turn"
         )
 
 
 def test_anthropic_decomposer_offline(monkeypatch):
     """AnthropicDecomposer round-trips a canned payload and records the GenAI span — no network."""
-    monkeypatch.setenv(
-        "FOLEY_APPROVE_UNKNOWN_COST", "1"
-    )  # a real rung: cost unknown (#57)
+    monkeypatch.setenv("FOLEY_APPROVE_UNKNOWN_COST", "1")  # a real rung: cost unknown (#57)
     import json
 
     from foley.obs.trace import GENAI
 
     payload = json.dumps(
-        {
-            "events": [
-                {
-                    "query": "a dog barking",
-                    "layer": "sfx_fg",
-                    "diegetic": True,
-                    "salience": "high",
-                }
-            ]
-        }
+        {"events": [{"query": "a dog barking", "layer": "sfx_fg", "diegetic": True, "salience": "high"}]}
     )
     dec = AnthropicDecomposer(client=_FakeAnthropic(payload))
     events = dec.decompose("A dog barked", max_events=6)
@@ -645,31 +576,21 @@ def test_anthropic_decomposer_offline(monkeypatch):
 
     with foley.obs.run("t") as run:
         with run.span("llm") as sp:
-            decompose_context(
-                "A dog barked",
-                decomposer=AnthropicDecomposer(client=_FakeAnthropic(payload)),
-                _span=sp,
-            )
+            decompose_context("A dog barked", decomposer=AnthropicDecomposer(client=_FakeAnthropic(payload)), _span=sp)
     span = next(s for s in run.manifest.spans if s.name == "llm")
     assert span.attributes.get(GENAI["input_tokens"]) == 123
     assert span.attributes.get(GENAI["response_model"]) == "claude-opus-4-8"
-    assert span.attributes.get(GENAI["finish_reasons"]) == [
-        "end_turn"
-    ]  # semconv: string[]
+    assert span.attributes.get(GENAI["finish_reasons"]) == ["end_turn"]  # semconv: string[]
 
 
 def test_anthropic_judge_offline(monkeypatch):
     """AnthropicJudge round-trips a canned verdict and uses the right model — no network."""
-    monkeypatch.setenv(
-        "FOLEY_APPROVE_UNKNOWN_COST", "1"
-    )  # a real rung: cost unknown (#57)
+    monkeypatch.setenv("FOLEY_APPROVE_UNKNOWN_COST", "1")  # a real rung: cost unknown (#57)
     import json
 
     from foley.agent.verify import AnthropicJudge
 
-    payload = json.dumps(
-        {"match": True, "confidence": 0.88, "reason": "a real door creak"}
-    )
+    payload = json.dumps({"match": True, "confidence": 0.88, "reason": "a real door creak"})
     j = AnthropicJudge(client=_FakeAnthropic(payload))
     c = _candidate("d", "a dog barking")
     c.license_ok = True
@@ -682,16 +603,12 @@ def test_anthropic_judge_offline(monkeypatch):
 
 def test_anthropic_refiner_offline(monkeypatch):
     """AnthropicRefiner round-trips a canned paraphrase list, query-first + deduped."""
-    monkeypatch.setenv(
-        "FOLEY_APPROVE_UNKNOWN_COST", "1"
-    )  # a real rung: cost unknown (#57)
+    monkeypatch.setenv("FOLEY_APPROVE_UNKNOWN_COST", "1")  # a real rung: cost unknown (#57)
     import json
 
     from foley.agent.refine import AnthropicRefiner
 
-    payload = json.dumps(
-        {"paraphrases": ["a dog barking", "dog woofing", "canine bark"]}
-    )
+    payload = json.dumps({"paraphrases": ["a dog barking", "dog woofing", "canine bark"]})
     r = AnthropicRefiner(client=_FakeAnthropic(payload))
     out = r.refine("a dog barking", n=3)
     assert out[0] == "a dog barking" and len(out) == len(set(out)) <= 3
@@ -703,9 +620,7 @@ def test_ci_stays_hermetic():
     """The `agent` extra is deliberately NOT in the CI install set (guards hermetic CI)."""
     import pathlib
 
-    tomllib = pytest.importorskip(
-        "tomllib"
-    )  # stdlib on 3.11+; the CI 3.12 leg runs this guard
+    tomllib = pytest.importorskip("tomllib")  # stdlib on 3.11+; the CI 3.12 leg runs this guard
 
     root = pathlib.Path(__file__).resolve().parent.parent
     data = tomllib.loads((root / "pyproject.toml").read_text())

@@ -56,9 +56,7 @@ def test_mcp_generate_returns_the_generated_sound_id(mcp_wired, monkeypatch):
     monkeypatch.setattr(foley, "generate", lambda prompt, **kw: cand)
     out = mcp.foley_generate("a wooden door creak", backend="stable_audio")
     assert out["ok"] is True
-    assert out["sound_ids"] == [
-        "door"
-    ]  # pre-fix: always [] (read .results off a Candidate)
+    assert out["sound_ids"] == ["door"]  # pre-fix: always [] (read .results off a Candidate)
 
 
 def test_mcp_generate_failure_returns_json_not_exception(mcp_wired, monkeypatch):
@@ -84,9 +82,7 @@ def test_obs_run_scope_suppressed_under_offline():
         with foley.obs.run("find", run_store=d) as rec:
             with rec.span("x"):
                 pass
-    assert (
-        d == {}
-    )  # nothing recorded/emitted under offline — pre-fix run() forced obs ON
+    assert d == {}  # nothing recorded/emitted under offline — pre-fix run() forced obs ON
 
 
 def test_obs_run_scope_still_emits_when_not_offline():
@@ -99,7 +95,7 @@ def test_obs_run_scope_still_emits_when_not_offline():
 # --- #4 — SqliteVecIndex.bm25 tolerates FTS5-special query characters ----------------
 
 
-_FTS5_SPECIAL = ("thunder: distant", 'glass "break', "cat AND", "foo(bar", "a:b:c")
+_FTS5_SPECIAL = ('thunder: distant', 'glass "break', "cat AND", "foo(bar", "a:b:c")
 
 
 def test_fts5_or_match_neutralizes_metacharacters_on_real_fts5():
@@ -192,17 +188,11 @@ def test_otio_export_preserves_overlapping_onsets():
     tl = SoundDesignTimeline(
         items=[
             TimelineItem(
-                clip_ref="a",
-                onset="0",
-                layer=Layer.sfx_fg,
-                id="a",
+                clip_ref="a", onset="0", layer=Layer.sfx_fg, id="a",
                 placement=Placement(anchor=Anchor.absolute, onset=1.0),
             ),
             TimelineItem(
-                clip_ref="b",
-                onset="0",
-                layer=Layer.sfx_fg,
-                id="b",
+                clip_ref="b", onset="0", layer=Layer.sfx_fg, id="b",
                 placement=Placement(anchor=Anchor.absolute, onset=1.4),
             ),
         ]
@@ -214,9 +204,7 @@ def test_otio_export_preserves_overlapping_onsets():
             if isinstance(child, otio.schema.Clip):
                 starts[child.name] = track.range_of_child(child).start_time.to_seconds()
     assert abs(starts["a"] - 1.0) < 0.02
-    assert (
-        abs(starts["b"] - 1.4) < 0.02
-    )  # pre-fix: b silently pushed to ~2.0 (playhead)
+    assert abs(starts["b"] - 1.4) < 0.02  # pre-fix: b silently pushed to ~2.0 (playhead)
 
 
 # --- #8 — nudge() resolves the symbolic anchor against word_timeline -----------------
@@ -231,11 +219,7 @@ def test_nudge_resolves_symbolic_anchor_against_word_timeline():
         {"word": "door", "start": 1.0, "end": 1.4},
     ]
     tl = SoundDesignTimeline(
-        items=[
-            TimelineItem(
-                clip_ref="door", onset="on 'door'", layer=Layer.sfx_fg, id="d1"
-            )
-        ],
+        items=[TimelineItem(clip_ref="door", onset="on 'door'", layer=Layer.sfx_fg, id="d1")],
         word_timeline=wt,
     )
     out = nudge(tl, "d1", 0.25)
@@ -286,9 +270,7 @@ def test_status_reports_effective_redaction_mode(mcp_wired):
 
     foley.obs.configure(redaction_mode=RedactionMode.off)
     st = mcp.foley_status()
-    assert (
-        st["redaction_mode"] == "off"
-    )  # effective recorder mode, not the RuntimeConfig
+    assert st["redaction_mode"] == "off"  # effective recorder mode, not the RuntimeConfig
 
 
 # --- #11 — license_id_from_cc_url: NonCommercial labels never fail open --------------
@@ -304,10 +286,7 @@ def test_noncommercial_labels_map_to_nc_not_plain_by():
     # the NC flag is genuinely non-commercial (pre-fix mapped to CC-BY-4.0 → commercial_ok)
     assert derive_license_flags("CC-BY-NC-4.0").commercial_ok is False
     # ND/SA compounds still fail closed (the guard runs before the NC needle)
-    assert license_id_from_cc_url("Attribution-NonCommercial-NoDerivatives") == (
-        "unknown",
-        False,
-    )
+    assert license_id_from_cc_url("Attribution-NonCommercial-NoDerivatives") == ("unknown", False)
 
 
 # --- #12 — resolve_master returns an independent copy --------------------------------
@@ -325,11 +304,7 @@ def test_resolve_master_returns_independent_copy():
 
 
 def test_token_bucket_daily_cap_rolls_over_after_a_day():
-    from foley.sources.resilience import (
-        SECONDS_PER_DAY,
-        SourceUnavailable,
-        _TokenBucket,
-    )
+    from foley.sources.resilience import SECONDS_PER_DAY, SourceUnavailable, _TokenBucket
 
     clk = [0.0]
     bucket = _TokenBucket(per_day=2, clock=lambda: clk[0])

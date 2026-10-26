@@ -24,18 +24,11 @@ def _tl():
     return SoundDesignTimeline(
         items=[
             TimelineItem(
-                clip_ref="door",
-                onset="on 'door'",
-                gain=-6.0,
-                layer=Layer.sfx_fg,
+                clip_ref="door", onset="on 'door'", gain=-6.0, layer=Layer.sfx_fg,
                 event={"query": "door creak"},
             ),
             TimelineItem(
-                clip_ref="rain",
-                onset=None,
-                gain=-18.0,
-                layer=Layer.ambience,
-                loop=True,
+                clip_ref="rain", onset=None, gain=-18.0, layer=Layer.ambience, loop=True,
                 event={"query": "rain"},
             ),
         ],
@@ -55,9 +48,7 @@ def test_hydrate_resolves_and_is_idempotent():
 
 def test_hydrate_does_not_clobber_preset_placement():
     tl = _tl()
-    tl.items[0] = replace(
-        tl.items[0], placement=Placement(anchor=Anchor.absolute, onset=5.0)
-    )
+    tl.items[0] = replace(tl.items[0], placement=Placement(anchor=Anchor.absolute, onset=5.0))
     h = hydrate(tl, WT)
     door = next(i for i in h.items if i.clip_ref == "door")
     assert door.placement.anchor is Anchor.absolute and door.placement.onset == 5.0
@@ -75,9 +66,7 @@ def test_edit_transforms_are_pure_new_timelines():
     swapped = swap_clip(h, door_id, "creak2")
     assert swapped is not h
     assert next(i for i in swapped.items if i.id == door_id).clip_ref == "creak2"
-    assert (
-        next(i for i in h.items if i.id == door_id).clip_ref == "door"
-    )  # original intact
+    assert next(i for i in h.items if i.id == door_id).clip_ref == "door"  # original intact
 
     nudged = nudge(h, door_id, 0.25)
     assert next(i for i in nudged.items if i.id == door_id).placement.onset == 0.75

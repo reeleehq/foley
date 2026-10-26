@@ -194,27 +194,14 @@ def test_audioset_map_rejects_unknown_catid(tmp_path):
 def test_ucs_table_merges_json_drop_over_seed(tmp_path):
     # a JSON drop overrides a seed row and adds a new one (open/closed)
     drop = [
-        {
-            "catid": "DOORWood",
-            "category": "DOORS",
-            "subcategory": "Wood",
-            "synonyms": ["portal"],
-            "confident": True,
-        },
-        {
-            "catid": "SPACEHum",
-            "category": "SPACE",
-            "subcategory": "Hum",
-            "synonyms": ["space hum", "sci-fi drone"],
-            "confident": True,
-        },
+        {"catid": "DOORWood", "category": "DOORS", "subcategory": "Wood",
+         "synonyms": ["portal"], "confident": True},
+        {"catid": "SPACEHum", "category": "SPACE", "subcategory": "Hum",
+         "synonyms": ["space hum", "sci-fi drone"], "confident": True},
     ]
     (tmp_path / "ucs_full.json").write_text(json.dumps(drop))
     table = load_ucs_table(data_dir=tmp_path)
     assert "SPACEHum" in table
-    res = resolve_catid(
-        caption="a sci-fi drone hum",
-        table=table,
-        audioset_map=load_audioset_ucs_map(table=table),
-    )
+    res = resolve_catid(caption="a sci-fi drone hum", table=table,
+                        audioset_map=load_audioset_ucs_map(table=table))
     assert res.catid == "SPACEHum"

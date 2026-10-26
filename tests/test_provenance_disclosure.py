@@ -126,10 +126,7 @@ def _force_no_audioseal(monkeypatch):
 
 def test_scan_prompt_trademark_hits():
     assert disclosure.scan_prompt("play the THX deep note").potential_trademark
-    assert (
-        "Netflix Ta-dum"
-        in disclosure.scan_prompt("the netflix ta-dum intro").trademark_hits
-    )
+    assert "Netflix Ta-dum" in disclosure.scan_prompt("the netflix ta-dum intro").trademark_hits
     assert disclosure.scan_prompt("the intel bong jingle").potential_trademark
 
 
@@ -199,13 +196,7 @@ def test_generate_refuses_recognizable_voice(library):
 
 def test_generate_invalid_on_flagged_raises_value_error(library):
     with pytest.raises(ValueError, match="on_flagged"):
-        generate_backend(
-            "creak",
-            backend="stable_audio",
-            library=library,
-            adapter=_sa_adapter(),
-            on_flagged="nope",
-        )
+        generate_backend("creak", backend="stable_audio", library=library, adapter=_sa_adapter(), on_flagged="nope")
 
 
 # ---------------------------------------------------------------------------
@@ -228,10 +219,7 @@ def test_warn_mode_flags_record_and_keep_drops(library, monkeypatch):
     assert any("warn mode" in n for n in report.ingested[0].notes)
     # layer-2 fail-closed: keep() refuses it for a normal use, admits with the opt-in
     assert keep(rec.license, IntendedUse(commercial=True)) is False
-    assert (
-        keep(rec.license, IntendedUse(commercial=True, allow_voice_or_trademark=True))
-        is True
-    )
+    assert keep(rec.license, IntendedUse(commercial=True, allow_voice_or_trademark=True)) is True
 
 
 # ---------------------------------------------------------------------------
@@ -274,13 +262,7 @@ def test_watermark_before_ingest_sets_field_and_id(library):
 
 def test_watermark_deterministic_dedup(library):
     wm = FakeWatermarker()
-    kw = dict(
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        watermarker=wm,
-        provenance_store={},
-    )
+    kw = dict(backend="stable_audio", library=library, adapter=_sa_adapter(), watermarker=wm, provenance_store={})
     r1 = generate_backend("creak", **kw)
     assert r1.results[0].status in ("pass", "warn")
     r2 = generate_backend("creak", **kw)
@@ -290,22 +272,8 @@ def test_watermark_deterministic_dedup(library):
 
 def test_watermarking_changes_content_identity(library):
     # watermark=False (raw) vs a watermarker on identical adapter bytes -> different ids
-    raw = generate_backend(
-        "creak",
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        watermark=False,
-        provenance_store={},
-    )
-    marked = generate_backend(
-        "creak",
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        watermarker=FakeWatermarker(),
-        provenance_store={},
-    )
+    raw = generate_backend("creak", backend="stable_audio", library=library, adapter=_sa_adapter(), watermark=False, provenance_store={})
+    marked = generate_backend("creak", backend="stable_audio", library=library, adapter=_sa_adapter(), watermarker=FakeWatermarker(), provenance_store={})
     assert raw.ingested[0].record.id != marked.ingested[0].record.id
     assert len(library) == 2
 
@@ -349,9 +317,7 @@ def test_content_credential_training_mining_allowed_for_permissive_license():
     from foley.sources.base import api_license
 
     lic = api_license(source="freesound", license_id="CC0-1.0", rights_verified=True)
-    cc = disclosure.build_content_credential(
-        SoundRecord(id="x", license=lic), asset_id="x"
-    )
+    cc = disclosure.build_content_credential(SoundRecord(id="x", license=lic), asset_id="x")
     entries = next(
         a["data"]["entries"]
         for a in cc["manifest"]["assertions"]
@@ -364,11 +330,7 @@ def test_content_credential_written_without_provenance_extra(library, monkeypatc
     _force_no_audioseal(monkeypatch)
     pstore: dict = {}
     report = generate_backend(
-        "a creak",
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        provenance_store=pstore,
+        "a creak", backend="stable_audio", library=library, adapter=_sa_adapter(), provenance_store=pstore
     )
     rec = report.ingested[0].record
     assert rec.license.watermark is None  # no audioseal => no mark
@@ -380,9 +342,7 @@ def test_content_credential_written_without_provenance_extra(library, monkeypatc
 def test_build_content_credential_non_ai_uses_digital_creation():
     from foley.sources.base import api_license
 
-    lic = api_license(
-        source="freesound", license_id="CC0-1.0", rights_verified=True, source_id="1"
-    )
+    lic = api_license(source="freesound", license_id="CC0-1.0", rights_verified=True, source_id="1")
     rec = SoundRecord(id="x", license=lic, caption="rain")
     cc = disclosure.build_content_credential(rec, asset_id="x")
     action = cc["manifest"]["assertions"][0]["data"]["actions"][0]
@@ -453,12 +413,7 @@ def test_watermark_required_but_unavailable_raises(library, monkeypatch):
     _force_no_audioseal(monkeypatch)
     with pytest.raises(disclosure.WatermarkUnavailable):
         generate_backend(
-            "creak",
-            backend="stable_audio",
-            library=library,
-            adapter=_sa_adapter(),
-            watermark=True,
-            provenance_store={},
+            "creak", backend="stable_audio", library=library, adapter=_sa_adapter(), watermark=True, provenance_store={}
         )
     assert len(library) == 0
 
@@ -466,13 +421,7 @@ def test_watermark_required_but_unavailable_raises(library, monkeypatch):
 def test_public_generate_forwards_disclosure_kwargs(library, monkeypatch):
     _force_no_audioseal(monkeypatch)
     with pytest.raises(TrademarkRefusal):
-        foley.generate(
-            "the thx deep note",
-            backend="stable_audio",
-            library=library,
-            adapter=_sa_adapter(),
-            provenance_store={},
-        )
+        foley.generate("the thx deep note", backend="stable_audio", library=library, adapter=_sa_adapter(), provenance_store={})
 
 
 # ---------------------------------------------------------------------------
@@ -491,12 +440,8 @@ class RaisingWatermarker:
 def test_watermark_embed_failure_degrades_gracefully(library):
     pstore: dict = {}
     report = generate_backend(
-        "a creak",
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        watermarker=RaisingWatermarker(),
-        provenance_store=pstore,
+        "a creak", backend="stable_audio", library=library, adapter=_sa_adapter(),
+        watermarker=RaisingWatermarker(), provenance_store=pstore,
     )
     rec = report.ingested[0].record  # still stored despite the watermark failure
     assert rec.license.watermark is None
@@ -515,13 +460,8 @@ def test_watermark_embed_failure_degrades_gracefully(library):
 def test_generate_store_false_writes_no_sidecar(library):
     pstore: dict = {}
     report = generate_backend(
-        "a creak",
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        watermarker=FakeWatermarker(),
-        provenance_store=pstore,
-        store=False,
+        "a creak", backend="stable_audio", library=library, adapter=_sa_adapter(),
+        watermarker=FakeWatermarker(), provenance_store=pstore, store=False,
     )
     assert len(library) == 0
     assert pstore == {}  # no content-credential sidecar for a preview
@@ -534,21 +474,14 @@ def test_multi_category_scan_and_refuse_precedence(library):
     assert scan.potential_trademark and scan.contains_recognizable_voice
     # refuse precedence: trademark wins when both fire
     with pytest.raises(TrademarkRefusal):
-        generate_backend(
-            prompt, backend="stable_audio", library=library, adapter=_sa_adapter()
-        )
+        generate_backend(prompt, backend="stable_audio", library=library, adapter=_sa_adapter())
 
 
 def test_warn_mode_stamps_both_flags(library):
     prompt = "the netflix ta-dum in the voice of Morgan Freeman"
     report = generate_backend(
-        prompt,
-        backend="stable_audio",
-        library=library,
-        adapter=_sa_adapter(),
-        provenance_store={},
-        on_flagged="warn",
-        watermark=False,
+        prompt, backend="stable_audio", library=library, adapter=_sa_adapter(),
+        provenance_store={}, on_flagged="warn", watermark=False,
     )
     rec = report.ingested[0].record
     assert rec.license.potential_trademark and rec.license.contains_recognizable_voice
@@ -614,9 +547,7 @@ def test_real_audioseal_roundtrip_and_determinism():
     pytest.importorskip("audioseal")
     pytest.importorskip("torch")
     pytest.importorskip("torchaudio")
-    clip = encode(
-        _stereo_tone(seconds=2.0).T, SR
-    )  # (N, 2) time-first, like the adapter
+    clip = encode(_stereo_tone(seconds=2.0).T, SR)  # (N, 2) time-first, like the adapter
     wmr = disclosure.AudioSealWatermarker()
     res1 = wmr.embed(clip)
     prob, recovered = disclosure.detect_watermark(res1.audio_bytes)

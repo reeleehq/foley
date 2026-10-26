@@ -54,18 +54,10 @@ def _library():
         ("thunder", "distant thunder rumble in a storm"),
     ]:
         lic = LicenseRecord(
-            source="test",
-            license_id="CC0-1.0",
-            commercial_ok=True,
-            rights_verified=True,
+            source="test", license_id="CC0-1.0", commercial_ok=True, rights_verified=True
         )
         rec = SoundRecord(
-            id=sid,
-            caption=caption,
-            tags=[sid],
-            duration_s=2.0,
-            uri=f"test://{sid}",
-            license=lic,
+            id=sid, caption=caption, tags=[sid], duration_s=2.0, uri=f"test://{sid}", license=lic
         )
         lib.add(rec, vector=emb.embed_text(caption)[0])
     return lib
@@ -186,9 +178,7 @@ def test_offline_blocks_the_paid_llm(every_key_set, monkeypatch):
         with pytest.raises(EgressBlocked, match="anthropic"):
             foley.find(DEMO, library=_library(), llm="anthropic")
         monkeypatch.setenv("FOLEY_LLM_BASE_URL", "http://llm.example.com/v1")
-        assert (
-            resolve_llm() == "fake"
-        )  # a remote endpoint is never the implicit default
+        assert resolve_llm() == "fake"  # a remote endpoint is never the implicit default
         with pytest.raises(EgressBlocked, match="local"):
             resolve_llm("local")  # and asked for explicitly, it is external
         monkeypatch.setenv("FOLEY_LLM_BASE_URL", "http://127.0.0.1:11434/v1")

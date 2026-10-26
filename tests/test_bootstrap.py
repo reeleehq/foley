@@ -24,9 +24,7 @@ SR = 16_000
 @pytest.fixture
 def library(fake_embedder):
     idx = MemoryIndex(dim=fake_embedder.dim)
-    return SoundLibrary(
-        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
-    )
+    return SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
 
 
 def _write_wav(path, *, freq: float, dur: float = 0.5):
@@ -41,18 +39,9 @@ def _fsd50k_dir(tmp_path):
     """Real synthetic FSD50K: distinct tones + a per-clip license JSON."""
     root = tmp_path / "fsd50k"
     info = {
-        "111": {
-            "license": "http://creativecommons.org/publicdomain/zero/1.0/",
-            "uploader": "zoe",
-        },
-        "222": {
-            "license": "https://creativecommons.org/licenses/by/4.0/",
-            "uploader": "amy",
-        },
-        "333": {
-            "license": "https://creativecommons.org/licenses/by-nc/4.0/",
-            "uploader": "ben",
-        },
+        "111": {"license": "http://creativecommons.org/publicdomain/zero/1.0/", "uploader": "zoe"},
+        "222": {"license": "https://creativecommons.org/licenses/by/4.0/", "uploader": "amy"},
+        "333": {"license": "https://creativecommons.org/licenses/by-nc/4.0/", "uploader": "ben"},
         # 444 absent -> unknown, fail-closed
     }
     meta = root / "FSD50K.metadata"
@@ -100,7 +89,9 @@ def test_ring2_admitted_with_explicit_consent(library, tmp_path):
     assert report.summary()["ingested"] == 3
     assert len(library) == 3
     # every admitted clip records the operator's consent for the audit trail
-    assert all(any("consent recorded" in n for n in r.notes) for r in report.ingested)
+    assert all(
+        any("consent recorded" in n for n in r.notes) for r in report.ingested
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -119,10 +110,7 @@ def test_ring1_commercial_filter_drops_nc_and_unknown(library, tmp_path):
     skipped = {r.id: r for r in report.results if r.status == "skipped_license"}
     # CC0 (111) + CC-BY (222) admitted; CC-BY-NC (333) + unknown (444) dropped
     assert len(library) == 2
-    assert {r.record.license.license_id for r in report.ingested} <= {
-        "CC0-1.0",
-        "CC-BY-4.0",
-    }
+    assert {r.record.license.license_id for r in report.ingested} <= {"CC0-1.0", "CC-BY-4.0"}
     assert set(skipped) == {"333", "444"}
     # provenance is still surfaced for the dropped clips
     assert all(s.notes for s in skipped.values())

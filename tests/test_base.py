@@ -208,9 +208,7 @@ def test_candidate_nested_roundtrip():
     cand = Candidate(
         sound=_rich_sound_record(),
         origin=CandidateOrigin.retrieved,
-        event=SoundEvent(
-            query="door creak", layer=Layer.sfx_fg, salience=Salience.high
-        ),
+        event=SoundEvent(query="door creak", layer=Layer.sfx_fg, salience=Salience.high),
         clap_score=0.72,
         verdict=Verdict(match=True, confidence=0.9, level=VerifyLevel.listen),
         license_ok=True,
@@ -361,9 +359,7 @@ def test_keep_rejects_training_when_not_allowed():
 def test_keep_enforces_revenue_cap():
     rec = apply_license_flags(
         LicenseRecord(
-            source="stable_audio",
-            license_id="Stability-Community",
-            rights_verified=True,
+            source="stable_audio", license_id="Stability-Community", rights_verified=True
         )
     )
     assert rec.revenue_cap_usd == 1_000_000

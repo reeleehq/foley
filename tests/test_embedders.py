@@ -37,11 +37,7 @@ requires_clap = pytest.mark.skipif(
 
 
 def test_default_dim_and_model_id_known_without_loading():
-    from foley.index.embedders import (
-        DEFAULT_CLAP_DIM,
-        DEFAULT_CLAP_MODEL_ID,
-        ClapEmbedder,
-    )
+    from foley.index.embedders import DEFAULT_CLAP_DIM, DEFAULT_CLAP_MODEL_ID, ClapEmbedder
 
     emb = ClapEmbedder()
     assert emb.model_id == DEFAULT_CLAP_MODEL_ID

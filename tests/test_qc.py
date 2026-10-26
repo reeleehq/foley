@@ -360,9 +360,7 @@ def test_measure_lufs_is_the_audio_meter_with_none_contract():
     assert measure_lufs(x, sr) == pytest.approx(audio.integrated_lufs(x, sr))
     assert measure_lufs(x, sr, meter=lambda s, r: -25.0) == -25.0
     assert measure_lufs(x[: sr // 10], sr) is None  # shorter than a gating block
-    assert (
-        measure_lufs(x, sr, meter=lambda s, r: -90.0) is None
-    )  # at/below the gate floor
+    assert measure_lufs(x, sr, meter=lambda s, r: -90.0) is None  # at/below the gate floor
     bad = x.copy()
     bad[5] = np.nan
     assert measure_lufs(bad, sr) is None

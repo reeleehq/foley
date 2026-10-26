@@ -43,9 +43,7 @@ class FakeTagger:
 @pytest.fixture
 def library(fake_embedder):
     idx = MemoryIndex(dim=fake_embedder.dim)
-    return SoundLibrary(
-        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
-    )
+    return SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
 
 
 # ---------------------------------------------------------------------------
@@ -56,11 +54,8 @@ def library(fake_embedder):
 def test_ingest_one_stores_by_value_and_indexes(library):
     data = _flac(_tone(440))
     result = ingest_one(
-        data,
-        library=library,
-        tagger=FakeTagger(["dog", "bark"]),
-        do_zeroshot=False,
-        do_caption=False,
+        data, library=library, tagger=FakeTagger(["dog", "bark"]),
+        do_zeroshot=False, do_caption=False,
     )
     assert result.status in ("pass", "warn")
     rec = result.record
@@ -83,11 +78,8 @@ def test_ingest_one_stores_by_value_and_indexes(library):
 
 def test_ingest_one_quarantines_silent_clip(library):
     result = ingest_one(
-        _flac(np.zeros(SR, dtype=np.float32)),
-        library=library,
-        do_supervised=False,
-        do_zeroshot=False,
-        do_caption=False,
+        _flac(np.zeros(SR, dtype=np.float32)), library=library,
+        do_supervised=False, do_zeroshot=False, do_caption=False,
     )
     assert result.status == "quarantined"
     assert result.record is None
@@ -97,12 +89,10 @@ def test_ingest_one_quarantines_silent_clip(library):
 
 def test_ingest_one_dedups_identical_content(library):
     data = _flac(_tone(330))
-    first = ingest_one(
-        data, library=library, do_supervised=False, do_zeroshot=False, do_caption=False
-    )
-    second = ingest_one(
-        data, library=library, do_supervised=False, do_zeroshot=False, do_caption=False
-    )
+    first = ingest_one(data, library=library, do_supervised=False,
+                       do_zeroshot=False, do_caption=False)
+    second = ingest_one(data, library=library, do_supervised=False,
+                        do_zeroshot=False, do_caption=False)
     assert first.status in ("pass", "warn")
     assert second.status == "skipped_dup"
     assert len(library) == 1
@@ -111,10 +101,7 @@ def test_ingest_one_dedups_identical_content(library):
 def test_ingest_one_supervised_skips_gracefully_when_dep_missing(library):
     # default PANNs tagger without foley[tag] installed => note, not a crash
     result = ingest_one(
-        _flac(_tone(440)),
-        library=library,
-        do_zeroshot=False,
-        do_caption=False,
+        _flac(_tone(440)), library=library, do_zeroshot=False, do_caption=False,
         # no tagger injected => default_tagger() (PannsTagger) -> ImportError path
     )
     assert result.status in ("pass", "warn")
@@ -128,12 +115,8 @@ def test_ingest_one_respects_explicit_license(library):
         LicenseRecord(source="freesound", license_id="CC0-1.0")
     )  # CC0 => cache_bytes_ok True => stored by-value with the provided data
     result = ingest_one(
-        _flac(_tone(440)),
-        library=library,
-        license=lic,
-        do_supervised=False,
-        do_zeroshot=False,
-        do_caption=False,
+        _flac(_tone(440)), library=library, license=lic,
+        do_supervised=False, do_zeroshot=False, do_caption=False,
     )
     assert result.record.license.source == "freesound"
     assert result.record.storage_mode == StorageMode.by_value
@@ -141,12 +124,8 @@ def test_ingest_one_respects_explicit_license(library):
 
 def test_ingest_one_no_store_assembles_without_adding(library):
     result = ingest_one(
-        _flac(_tone(440)),
-        library=library,
-        store=False,
-        do_supervised=False,
-        do_zeroshot=False,
-        do_caption=False,
+        _flac(_tone(440)), library=library, store=False,
+        do_supervised=False, do_zeroshot=False, do_caption=False,
     )
     assert result.record is not None
     assert len(library) == 0  # nothing added
@@ -166,10 +145,7 @@ def test_ingest_folder_reports_mixed_outcomes(library, tmp_path):
     (tmp_path / "notes.txt").write_text("ignore me")  # non-audio, skipped by walker
 
     report = ingest_folder(
-        tmp_path,
-        library=library,
-        do_supervised=False,
-        do_zeroshot=False,
+        tmp_path, library=library, do_supervised=False, do_zeroshot=False,
         do_caption=False,
     )
     assert isinstance(report, IngestReport)
@@ -189,9 +165,8 @@ def test_ingest_folder_single_file(library, tmp_path):
 
     fp = tmp_path / "one.wav"
     sf.write(fp, _tone(440), SR)
-    report = ingest_folder(
-        fp, library=library, do_supervised=False, do_zeroshot=False, do_caption=False
-    )
+    report = ingest_folder(fp, library=library, do_supervised=False,
+                           do_zeroshot=False, do_caption=False)
     assert report.summary()["ingested"] == 1
 
 
@@ -210,9 +185,8 @@ def test_sound_id_is_pcm_based_not_the_flac_container(library):
     from foley.stores import content_key
 
     data = _flac(_tone(440))
-    result = ingest_one(
-        data, library=library, do_supervised=False, do_zeroshot=False, do_caption=False
-    )
+    result = ingest_one(data, library=library, do_supervised=False,
+                        do_zeroshot=False, do_caption=False)
     decoded, _ = load(data)
     assert result.id == _audio_identity(decoded)  # id == canonical-PCM hash
     assert result.id != content_key(data)  # NOT the FLAC-container hash
@@ -225,13 +199,8 @@ def test_ingest_report_round_trips_through_json(library, tmp_path):
 
     sf.write(tmp_path / "a.wav", _tone(440), SR)
     sf.write(tmp_path / "b.wav", np.zeros(SR, dtype=np.float32), SR)  # quarantined
-    report = ingest_folder(
-        tmp_path,
-        library=library,
-        do_supervised=False,
-        do_zeroshot=False,
-        do_caption=False,
-    )
+    report = ingest_folder(tmp_path, library=library, do_supervised=False,
+                           do_zeroshot=False, do_caption=False)
     reloaded = IngestReport.from_dict(json.loads(json.dumps(report.to_dict())))
     # the accessors work on the reloaded report (results are real IngestResults)
     assert reloaded.summary() == report.summary()
@@ -244,10 +213,8 @@ def test_zeroshot_uses_the_librarys_embedder(library):
     # embedding spaces: the default tagger is bound to lib.embedder, so tags are
     # produced (no dim-mismatch crash, no "skipped" note)
     result = ingest_one(
-        _flac(_tone(440)),
-        library=library,
-        do_supervised=False,
-        do_caption=False,  # do_zeroshot defaults True
+        _flac(_tone(440)), library=library,
+        do_supervised=False, do_caption=False,  # do_zeroshot defaults True
     )
     assert result.status in ("pass", "warn")
     assert result.record.tags  # zero-shot tags were produced
@@ -269,12 +236,8 @@ def test_ingest_by_reference_license_indexes_in_place(library, tmp_path):
         overrides={"cache_bytes_ok": False},
     )
     result = ingest_one(
-        str(fp),
-        library=library,
-        license=by_ref,
-        do_supervised=False,
-        do_zeroshot=False,
-        do_caption=False,
+        str(fp), library=library, license=by_ref,
+        do_supervised=False, do_zeroshot=False, do_caption=False,
     )
     rec = result.record
     assert rec.storage_mode == StorageMode.by_reference
