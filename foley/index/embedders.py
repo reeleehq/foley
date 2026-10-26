@@ -61,12 +61,13 @@ class ClapEmbedder:
         ``foley/data/prompt_match/thresholds.json``); a checkpoint nobody has calibrated
         gets :data:`PROVISIONAL_PROMPT_MATCH_THRESHOLD`.
         """
-        from ..prompt_match import threshold_for
+        from ..prompt_match import calibrated_threshold
 
-        if self._prompt_match_threshold is not None:
-            return self._prompt_match_threshold
-        found = threshold_for(self.model_id)
-        return PROVISIONAL_PROMPT_MATCH_THRESHOLD if found is None else found
+        return calibrated_threshold(
+            self.model_id,
+            self._prompt_match_threshold,
+            provisional=PROVISIONAL_PROMPT_MATCH_THRESHOLD,
+        )
 
     def __init__(
         self,

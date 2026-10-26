@@ -36,7 +36,7 @@ THRESHOLDS_PATH = (
 MATCH, MISMATCH, UNCHECKED = "match", "mismatch", "unchecked"
 
 
-def prompt_match(prompt: str, audio_bytes: bytes, *, embedder) -> dict:
+def prompt_match(prompt: str, audio_bytes: bytes, *, embedder, fallback=None) -> dict:
     """Score ``audio_bytes`` against ``prompt`` with ``embedder``; never raises.
 
     Args:
@@ -44,6 +44,10 @@ def prompt_match(prompt: str, audio_bytes: bytes, *, embedder) -> dict:
         audio_bytes: The clip (any format ``soundfile`` decodes).
         embedder: A text-audio embedder (``embed_text`` / ``embed_audio``, L2-normalised
             vectors) carrying ``prompt_match_threshold``; anything else is ``unchecked``.
+        fallback: A callable returning a second embedder (or ``None``), tried only when
+            ``embedder`` was meant to check but could not run (it failed to load or
+            embed: a small host without ``transformers``). Its own threshold applies and
+            its model is named in the result. The default ``None`` tries nothing else.
 
     Returns:
         A JSON-safe dict: ``status`` (``match`` | ``mismatch`` | ``unchecked``), and
@@ -53,6 +57,41 @@ def prompt_match(prompt: str, audio_bytes: bytes, *, embedder) -> dict:
     >>> prompt_match("a door creak", b"", embedder=None)["status"]
     'unchecked'
     """
+    result = _check(prompt, audio_bytes, embedder)
+    if fallback is not None and _could_not_run(embedder, result):
+        second = fallback()
+        if second is not None:
+            retry = _check(prompt, audio_bytes, second)
+            if retry["status"] != UNCHECKED:
+                return retry
+            result = {
+                **result,
+                "reason": f"{result['reason']}; fallback {retry.get('model', 'embedder')}: "
+                f"{retry['reason']}",
+            }
+    return result
+
+
+def calibrated_threshold(
+    model_id: str, override: Optional[float] = None, *, provisional: float
+) -> float:
+    """An embedder's prompt-match threshold: its override, else the calibration, else ``provisional``."""
+    if override is not None:
+        return override
+    found = threshold_for(model_id)
+    return provisional if found is None else found
+
+
+def _could_not_run(embedder, result: dict) -> bool:
+    """Whether ``embedder`` was meant to check (it has a threshold) yet came back unchecked."""
+    return (
+        result["status"] == UNCHECKED
+        and getattr(embedder, "prompt_match_threshold", None) is not None
+    )
+
+
+def _check(prompt: str, audio_bytes: bytes, embedder) -> dict:
+    """One embedder's verdict (the body of :func:`prompt_match`)."""
     threshold = getattr(embedder, "prompt_match_threshold", None)
     if embedder is None or threshold is None:
         what = "no embedder" if embedder is None else type(embedder).__name__
