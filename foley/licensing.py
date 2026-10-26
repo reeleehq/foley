@@ -168,7 +168,7 @@ DEFAULT_CC_VERSION = "4.0"
 _NEUTRAL_TOKENS = frozenset(
     {
         "http", "https", "www", "creativecommons.org", "creativecommons", "org",
-        "licenses", "licence", "license", "legalcode", "deed", "deed.en", "en",
+        "licenses", "licence", "license", "legalcode", "deed", "en",
         "cc", "creative", "commons", "international", "unported", "generic",
         "public", "version",
     }
@@ -180,9 +180,49 @@ _NC_TOKENS = frozenset({"nc", "noncommercial", "commercial"})  # any mention res
 _BY_TOKENS = frozenset({"by", "attribution"})
 
 
+#: Language codes CC publishes deeds in. A closed set on purpose: ``sa``, ``nd``, ``nc``
+#: and ``no`` are also language codes but are restriction / negation words, so they are
+#: never neutral.
+_DEED_LANGUAGES = frozenset(
+    "ar bg ca cs da de el en es et eu fi fr gl he hr hu id it ja ko lt lv nl pl pt ro "
+    "ru sl sv tr uk zh".split()
+)
+
+#: The version of the families whose URL may end in a language segment (CC0, PDM).
+_LANGUAGE_PATH_VERSION = "1.0"
+
+
 def _cc_tokens(text: str) -> "list[str]":
-    """Lower-case word tokens of a CC URL or label (``by-nc/3.0`` → ``by nc 3.0``)."""
-    return re.findall(r"[a-z0-9.+]+", text.lower().replace("creativecommons.org", " "))
+    """Lower-case word tokens of a CC URL or label (``by-nc/3.0`` → ``by nc 3.0``).
+
+    A deed page's language (``deed.fr``) is dropped: it says nothing about the rights.
+    ``deed.sa`` is kept as ``deed sa`` so the restriction checks still see ``sa``.
+    """
+    text = text.lower().replace("creativecommons.org", " ").replace("deed.", "deed ")
+    words = [w.strip(".") for w in re.findall(r"[a-z0-9.+]+", text)]
+    tokens = [w for w in words if w]
+    return [
+        t
+        for i, t in enumerate(tokens)
+        if not (i and tokens[i - 1] == "deed" and t in _DEED_LANGUAGES)
+    ]
+
+
+def _without_path_language(url: str, tokens: "list[str]") -> "list[str]":
+    """Drop a trailing language segment of a CC0 / Public Domain Mark URL.
+
+    ``/mark/1.0/es`` is the deed in another language. Only for these 1.0 families and
+    only a known language code: after a ``by`` version the same segment is a
+    jurisdiction port (``/by/3.0/de``) that changes the terms.
+    """
+    if (
+        "/" in url
+        and len(tokens) > 2
+        and tokens[-2] == _LANGUAGE_PATH_VERSION
+        and tokens[-1] in _DEED_LANGUAGES
+    ):
+        return tokens[:-1]
+    return tokens
 
 
 def _has_phrase(tokens: "list[str]", *phrase: str) -> bool:
@@ -232,9 +272,10 @@ def license_id_from_cc_url(url: Optional[str]) -> "tuple[str, bool]":
     ):
         return "unknown", False
     if "publicdomain" in toks or _has_phrase(tokens, "public", "domain"):
-        if "zero" in toks:
+        tokens = _without_path_language(url, tokens)
+        if toks & {"zero", "cc0"}:
             return _only_known(
-                tokens, {"publicdomain", "zero", "public", "domain"}, "CC0-1.0"
+                tokens, {"publicdomain", "zero", "cc0", "public", "domain", "universal", "dedication"}, "CC0-1.0"
             )
         # 'mark' or a bare public-domain claim, never verified. A label that adds a word
         # ("not public domain", "public domain in the US only") negates or limits the
@@ -248,7 +289,9 @@ def license_id_from_cc_url(url: Optional[str]) -> "tuple[str, bool]":
         or _has_phrase(tokens, "creative", "commons", "0")
         or _has_phrase(tokens, "creative", "commons", "zero")
     ):
-        return _only_known(tokens, {"cc0", "0", "zero"}, "CC0-1.0")
+        return _only_known(
+            _without_path_language(url, tokens), {"cc0", "0", "zero", "universal", "dedication"}, "CC0-1.0"
+        )
     if toks & {"sampling", "sampling+"}:
         return _only_known(
             tokens, {"sampling", "sampling+", "plus"}, "CC-Sampling+-1.0"
@@ -280,7 +323,9 @@ def _only_known(
     leftover = [
         t
         for t in tokens
-        if t not in allowed and t not in _NEUTRAL_TOKENS and t not in versions
+        if t not in allowed
+        and t not in _NEUTRAL_TOKENS
+        and t not in versions
     ]
     if leftover or len(set(versions)) > 1:
         return "unknown", False
