@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=78cc6f98"></script>
+    <script src="../../../_static/documentation_options.js?v=dcb4eb81"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.44" />
+  <meta name="docsearch:version" content="0.0.45" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -745,6 +745,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimpleNamespace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">urlparse</span>
 
@@ -843,18 +844,6 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="c1">#: Anthropic first-party prices, USD per million tokens ``(input, output)``. Source: the</span>
-<span class="c1">#: Claude API model table (claude-api reference, cached 2026-09-25). A model not listed</span>
-<span class="c1">#: here has an unknown price, so its calls need the run's approval.</span>
-<span class="n">ANTHROPIC_PRICES_PER_MTOK</span><span class="p">:</span> <span class="s2">"dict[str, tuple[float, float]]"</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">"claude-opus-4-8"</span><span class="p">:</span> <span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">25.0</span><span class="p">),</span>
-    <span class="s2">"claude-opus-5"</span><span class="p">:</span> <span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">25.0</span><span class="p">),</span>
-    <span class="s2">"claude-opus-5-5"</span><span class="p">:</span> <span class="p">(</span><span class="mf">4.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">),</span>
-    <span class="s2">"claude-sonnet-5-5"</span><span class="p">:</span> <span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">),</span>
-    <span class="s2">"claude-haiku-4-5"</span><span class="p">:</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">),</span>
-<span class="p">}</span>
-<span class="n">PRICES_SEEN</span> <span class="o">=</span> <span class="s2">"2026-09-25"</span>
-
 <span class="c1">#: A floor on characters per token, so ``chars / CHARS_PER_TOKEN_FLOOR`` bounds the</span>
 <span class="c1">#: input tokens of any prompt (English runs ~4 chars/token; 2 leaves room for code,</span>
 <span class="c1">#: numbers and other scripts). Input bounds are computed from the real prompt.</span>
@@ -908,31 +897,39 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="mf">0.0</span>
     <span class="k">if</span> <span class="n">provider</span> <span class="o">!=</span> <span class="s2">"anthropic"</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">._genai</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_AGENT_MODEL</span>
-
-    <span class="n">prices</span> <span class="o">=</span> <span class="n">ANTHROPIC_PRICES_PER_MTOK</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">model</span> <span class="ow">or</span> <span class="n">DEFAULT_AGENT_MODEL</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">prices</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>
     <span class="n">chars</span> <span class="o">=</span> <span class="n">input_chars</span>
     <span class="k">if</span> <span class="n">kind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">chars</span> <span class="o">+=</span> <span class="n">_rung_fixed_chars</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span> <span class="o">+</span> <span class="n">RUNG_VARIABLE_CHARS</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span>
     <span class="n">tokens_in</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="o">-</span><span class="n">chars</span> <span class="o">//</span> <span class="n">CHARS_PER_TOKEN_FLOOR</span><span class="p">)</span>
     <span class="n">tokens_out</span> <span class="o">=</span> <span class="n">max_tokens</span> <span class="k">if</span> <span class="n">max_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">max</span><span class="p">(</span><span class="n">RUNG_MAX_TOKENS</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">tokens_in</span> <span class="o">*</span> <span class="n">prices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">tokens_out</span> <span class="o">*</span> <span class="n">prices</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mf">1e6</span></div>
+    <span class="n">usage</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span><span class="n">input_tokens</span><span class="o">=</span><span class="n">tokens_in</span><span class="p">,</span> <span class="n">output_tokens</span><span class="o">=</span><span class="n">tokens_out</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_anthropic_cost</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">usage</span><span class="p">)</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_anthropic_cost</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">usage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""USD for a ``usage`` (token counts) at ``model``'s listed price, else ``None``.</span>
+
+<span class="sd">    The price table is ``falaw``'s (``falaw.llm_call_cost_usd``), the fleet's single</span>
+<span class="sd">    source for it; its ``known=False`` is ``None`` here.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">falaw</span><span class="w"> </span><span class="kn">import</span> <span class="n">llm_call_cost_usd</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">._genai</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_AGENT_MODEL</span>
+
+    <span class="n">usd</span><span class="p">,</span> <span class="n">known</span> <span class="o">=</span> <span class="n">llm_call_cost_usd</span><span class="p">(</span><span class="s2">"anthropic"</span><span class="p">,</span> <span class="n">model</span> <span class="ow">or</span> <span class="n">DEFAULT_AGENT_MODEL</span><span class="p">,</span> <span class="n">usage</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">usd</span> <span class="k">if</span> <span class="n">known</span> <span class="k">else</span> <span class="kc">None</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_usage_cost</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">response</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The actual USD cost of an Anthropic response from its ``usage``, if priceable."""</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">._genai</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_AGENT_MODEL</span>
-
     <span class="n">usage</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="s2">"usage"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="n">prices</span> <span class="o">=</span> <span class="n">ANTHROPIC_PRICES_PER_MTOK</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">model</span> <span class="ow">or</span> <span class="n">DEFAULT_AGENT_MODEL</span><span class="p">)</span>
-    <span class="n">tin</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">usage</span><span class="p">,</span> <span class="s2">"input_tokens"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="n">tout</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">usage</span><span class="p">,</span> <span class="s2">"output_tokens"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">prices</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tin</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tout</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">usage</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"input_tokens"</span><span class="p">,</span> <span class="s2">"output_tokens"</span><span class="p">)</span>
+    <span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">tin</span> <span class="o">*</span> <span class="n">prices</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">tout</span> <span class="o">*</span> <span class="n">prices</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="mf">1e6</span>
+    <span class="k">return</span> <span class="n">_anthropic_cost</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">usage</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="guard_llm_call">

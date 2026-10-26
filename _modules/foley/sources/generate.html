@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=78cc6f98"></script>
+    <script src="../../../_static/documentation_options.js?v=dcb4eb81"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.44" />
+  <meta name="docsearch:version" content="0.0.45" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -775,7 +775,12 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: fails is skipped, with the reason on the clip's notes. The paid entries are tried</span>
 <span class="c1">#: only once the operator opts in to paid generation (:func:`paid_generation_opted_in`):</span>
 <span class="c1">#: a key in the environment is not that opt-in (#58).</span>
-<span class="n">DEFAULT_GENERATE_ORDER</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"elevenlabs"</span><span class="p">,</span> <span class="s2">"fal_stable_audio_3"</span><span class="p">,</span> <span class="s2">"fal_elevenlabs"</span><span class="p">,</span> <span class="s2">"stable_audio"</span><span class="p">)</span>
+<span class="n">DEFAULT_GENERATE_ORDER</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"elevenlabs"</span><span class="p">,</span>
+    <span class="s2">"fal_stable_audio_3"</span><span class="p">,</span>
+    <span class="s2">"fal_elevenlabs"</span><span class="p">,</span>
+    <span class="s2">"stable_audio"</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1">#: The last resort when nothing in the order is configured (free, local).</span>
 <span class="n">DEFAULT_GENERATE_BACKEND</span> <span class="o">=</span> <span class="n">DEFAULT_GENERATE_ORDER</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -1309,7 +1314,9 @@ window.runMermaid = runMermaid;</script>
     <span class="n">record_generation_outcome</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">generations_cache</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"pass"</span><span class="p">,</span> <span class="s2">"warn"</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">check_prompt</span><span class="p">:</span>
-            <span class="n">post_qc</span><span class="p">[</span><span class="s2">"prompt_match"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_prompt_verdict</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">lib</span><span class="p">,</span> <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">)</span>
+            <span class="n">post_qc</span><span class="p">[</span><span class="s2">"prompt_match"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_prompt_verdict</span><span class="p">(</span>
+                <span class="n">prompt</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">lib</span><span class="p">,</span> <span class="n">clip</span><span class="o">.</span><span class="n">notes</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="n">post_qc</span><span class="p">:</span>
             <span class="n">_stamp_qc</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">post_qc</span><span class="p">,</span> <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">,</span> <span class="n">library</span><span class="o">=</span><span class="n">lib</span><span class="p">,</span> <span class="n">stored</span><span class="o">=</span><span class="n">store</span><span class="p">)</span>
 
@@ -1600,7 +1607,9 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">fixed</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_levelled_bytes</span><span class="p">(</span><span class="n">audio_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">lic</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[bytes, dict]"</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_levelled_bytes</span><span class="p">(</span>
+    <span class="n">audio_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">lic</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">level</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[bytes, dict]"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The clip levelled to ``level`` (:func:`foley.level.level_bytes`), noted and recorded.</span>
 
 <span class="sd">    Returns the bytes and the structured fact for ``qc['level']`` (target, measured</span>
@@ -1630,7 +1639,10 @@ window.runMermaid = runMermaid;</script>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">embedder</span> <span class="o">=</span> <span class="n">library</span><span class="o">.</span><span class="n">embedder</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - no embedder here: say so</span>
-        <span class="n">match</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="n">UNCHECKED</span><span class="p">,</span> <span class="s2">"reason"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"no embedder: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="n">UNCHECKED</span><span class="p">,</span>
+            <span class="s2">"reason"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"no embedder: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="p">}</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">match</span> <span class="o">=</span> <span class="n">prompt_match</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">)</span>
     <span class="n">note</span> <span class="o">=</span> <span class="n">note_for</span><span class="p">(</span><span class="n">match</span><span class="p">)</span>
