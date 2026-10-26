@@ -901,7 +901,10 @@ def _small_host_embedder():
     """The ONNX CLAP embedder (:mod:`foley.index.onnx_clap`), or ``None`` without its extra."""
     import importlib.util
 
-    if any(importlib.util.find_spec(m) is None for m in ("onnxruntime", "tokenizers", "huggingface_hub")):
+    if any(
+        importlib.util.find_spec(m) is None
+        for m in ("onnxruntime", "tokenizers", "huggingface_hub")
+    ):
         return None
     from ..index.onnx_clap import OnnxClapEmbedder
 
