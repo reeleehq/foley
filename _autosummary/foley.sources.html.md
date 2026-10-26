@@ -34,15 +34,15 @@ Three adapter kinds share the one ingest pipeline: the narrow **bulk-corpus**
 
 ### Classes
 
-| [`ClipSpec`](#foley.sources.ClipSpec)(path, source_id[, meta])              | One clip inside a local bulk corpus, described but not yet ingested.            |
-|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`CorpusAdapter`](#foley.sources.CorpusAdapter)(\*args, \*\*kwargs)              | A downloaded bulk corpus presented as an ingestable stream of clips.            |
-| [`UniformCorpus`](#foley.sources.UniformCorpus)(name, ring, ...[, ...])          | A bulk corpus where **every** clip carries the same license.                    |
-| [`ClothoEvalCorpus`](#foley.sources.ClothoEvalCorpus)(name, ring, ...[, ...])       | Ring-0 Clotho-eval adapter: per-clip Freesound licences; captions opt-in (NC).  |
-| [`Fsd50kCorpus`](#foley.sources.Fsd50kCorpus)()                                 | Ring-1 FSD50K adapter with per-clip Freesound license resolution.               |
-| [`SourceAdapter`](#foley.sources.SourceAdapter)(\*args, \*\*kwargs)              | The live/HTTP source contract (report 10 §4.2): `search` + `get` + `download`.  |
-| [`GenerateAdapter`](#foley.sources.GenerateAdapter)(\*args, \*\*kwargs)            | The generation source contract (report 10 §4.2) — a SIBLING of `SourceAdapter`. |
-| [`GeneratedClip`](#foley.sources.GeneratedClip)(audio_bytes, candidate[, notes]) | One freshly-generated sound: its transient bytes + a provisional candidate.     |
+| [`ClipSpec`](#foley.sources.ClipSpec)(path, source_id[, meta])            | One clip inside a local bulk corpus, described but not yet ingested.            |
+|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| [`CorpusAdapter`](#foley.sources.CorpusAdapter)(\*args, \*\*kwargs)            | A downloaded bulk corpus presented as an ingestable stream of clips.            |
+| [`UniformCorpus`](#foley.sources.UniformCorpus)(name, ring, ...[, ...])        | A bulk corpus where **every** clip carries the same license.                    |
+| [`ClothoEvalCorpus`](#foley.sources.ClothoEvalCorpus)(name, ring, ...[, ...])     | Ring-0 Clotho-eval adapter: per-clip Freesound licences; captions opt-in (NC).  |
+| [`Fsd50kCorpus`](#foley.sources.Fsd50kCorpus)()                               | Ring-1 FSD50K adapter with per-clip Freesound license resolution.               |
+| [`SourceAdapter`](#foley.sources.SourceAdapter)(\*args, \*\*kwargs)            | The live/HTTP source contract (report 10 §4.2): `search` + `get` + `download`.  |
+| [`GenerateAdapter`](#foley.sources.GenerateAdapter)(\*args, \*\*kwargs)          | The generation source contract (report 10 §4.2) — a SIBLING of `SourceAdapter`. |
+| [`GeneratedClip`](#foley.sources.GeneratedClip)(audio_bytes, candidate[, ...]) | One freshly-generated sound: its transient bytes + a provisional candidate.     |
 
 ### Exceptions
 
@@ -217,7 +217,7 @@ Synthesize a sound for `prompt`; return its bytes + provisional candidate.
 
 Registry / façade key — `'stable_audio'` | `'elevenlabs'` | …
 
-### *class* foley.sources.GeneratedClip(audio_bytes, candidate, notes=list())
+### *class* foley.sources.GeneratedClip(audio_bytes, candidate, notes=list(), raw=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -273,6 +273,17 @@ surface in the run report.
 
 * **Type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+#### raw
+
+What the provider returned besides the audio (#61), for a caller who needs
+a vendor field foley does not model (ElevenLabs: the status and response
+headers; fal: the response minus its audio payload), else `None`. The
+façade copies it onto the returned candidate’s transient `raw`; it is
+not kept in the generations cache, so a replayed clip has none.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 ### *exception* foley.sources.GenerationError(message, , report, status, cache_key=None)
 
@@ -409,7 +420,7 @@ Stamp the corpus’s uniform license (derived via the licensing SSOT).
 * **Return type:**
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 
-### foley.sources.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, \*\*affordances)
+### foley.sources.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -436,6 +447,12 @@ applies the by-reference storage gate from the sound’s own license.
   * **on_unsupported** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A search parameter the source cannot honour: `None`
     (default) drops it with a note in `report.notes`; `'raise'` raises
     (see `foley.sources._dispatch.translate_affordances()`).
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params of the source that foley has no
+    unified affordance for (#61), e.g. Freesound’s
+    `{"filter": "ac_brightness:[50 TO 100]"}`. Passed to the adapter’s
+    `search` untranslated (so the unsupported-parameter policy does not see
+    them) and merged over its translated params; the licence filter and the
+    fail-closed gate still apply.
   * **\*\*affordances** – Extra unified affordances forwarded to the adapter’s
     `search` (e.g. `duration_range`, `sort`).
 * **Return type:**
@@ -543,7 +560,7 @@ an already-registered name (e.g. a test double) is never overwritten.
 * **Returns:**
   The list of discovered source names.
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -629,6 +646,13 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     embedder ([`foley.prompt_match.prompt_match()`](foley.prompt_match.html.md#foley.prompt_match.prompt_match)) and put the verdict in
     `qc['prompt_match']` and the notes: a mismatch is flagged, not
     quarantined; without a capable embedder the verdict is `'unchecked'`.
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Vendor-native params foley has no unified affordance for
+    (#61), e.g. `{"num_inference_steps": 50}`. Merged by the backend over
+    its translated native params (a provider param wins), recorded in the
+    licence’s `generation_params`, and part of the generations-cache key;
+    never seen by the unsupported-parameter policy. A key the source’s
+    `provider_params` policy reserves or prices raises `ValueError`
+    before any call, so the cost estimate is the call’s.
   * **\*\*affordances** – Unified generation affordances (`duration`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see [`foley.base.GENERATION_AFFORDANCES`](foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).

@@ -55,11 +55,21 @@ Resolve one row id (a UUID) to its record.
 * **Return type:**
   [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord)
 
+#### invoke_native(path, \*\*params)
+
+GET an Openverse API `path` with native `params`; return the parsed JSON (#61).
+
+It bypasses the licence filter and the per-item licence check that
+[`search()`](#foley.sources.openverse.adapter.OpenverseAdapter.search) applies: the caller owns licence gating for what comes back.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 #### *property* notice *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
 The sentence Openverse’s terms require an app to show prominently.
 
-#### search(query, , license='cc0', k=15, \*\*kw)
+#### search(query, , license='cc0', k=15, provider_params=None, \*\*kw)
 
 Search Openverse audio for `query`; return licence-checked candidates.
 
@@ -67,5 +77,7 @@ Search Openverse audio for `query`; return licence-checked candidates.
   * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'cc0'` (default) asks for CC0 only; anything else asks for CC0,
     CC-BY and public-domain-mark rows.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max rows (anonymous limit 20).
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
+    (#61); the per-item licence check still applies.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]

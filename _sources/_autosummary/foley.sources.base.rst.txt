@@ -15,6 +15,9 @@ foley.sources.base
    .. autosummary::
    
       check_prompt_influence
+      check_provider_params
+      merge_provider_params
+      recorded_params
       native_adherence
       resolve_source_key
       using_source_accounts

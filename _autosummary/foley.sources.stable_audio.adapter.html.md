@@ -60,7 +60,7 @@ Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](foley.source
     `.device`; production omits it and the real
     `diffusers.StableAudioPipeline` lazy-loads on first generation).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
+#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound for `prompt`; return its bytes + provisional candidate.
 
@@ -80,6 +80,9 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
   * **loop** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – No native param (a future WEAVE crossfade) — warn-and-drop.
   * **output_format** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – No native param (the audio-write layer) — warn-and-drop;
     the clip is archived as FLAC by ingest regardless.
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native `StableAudioPipeline` kwargs merged over the
+    translated ones (#61; e.g. `{"num_inference_steps": 50}`), recorded
+    in `generation_params`.
   * **\*\*kw** – Extra/unknown affordances (warn-and-dropped).
 * **Return type:**
   [`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip)
@@ -87,3 +90,13 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
   A [`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip) (`origin=generated`,
   `license_id='Stability-Community'`, `is_ai_generated=True`,
   `generation_seed` captured).
+
+#### invoke_native(prompt, , native, seed=None)
+
+Run the pipeline with native kwargs and return `(encoded_bytes, sample_rate)`.
+
+The public entry below foley’s translation (#61): `native` goes to the
+`StableAudioPipeline` call as is (`guidance_scale`, `audio_end_in_s`, …).
+No licence record is built and no dispatch-layer check runs (cost, egress): a
+caller of this method owns those. Builds a per-device `torch.Generator` only when `seed` is set (so a
+`seed=None` generation never imports torch — the fake-pipeline test path).

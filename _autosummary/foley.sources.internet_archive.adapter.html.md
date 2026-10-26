@@ -55,12 +55,25 @@ Resolve one item identifier to its record.
 * **Return type:**
   [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord)
 
-#### search(query, , license=None, k=15, \*\*kw)
+#### invoke_native(url, \*\*params)
+
+GET an Internet Archive `url` with native `params`; return the parsed JSON (#61).
+
+It bypasses the licence filter and the per-item licence check that
+[`search()`](#foley.sources.internet_archive.adapter.InternetArchiveAdapter.search) applies: the caller owns licence gating for what comes back.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### search(query, , license=None, k=15, provider_params=None, \*\*kw)
 
 Search archive audio for `query`; return candidates (all unverified).
 
 `license='cc0'` keeps CC0 items only; any other value keeps every accepted
 licence. The query always asks for items with a `licenseurl`.
+`provider_params` are native advancedsearch params merged over the
+translated ones (#61); a `q` is ANDed onto foley’s as one group, never
+replaces it (the config’s `provider_params` policy).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]

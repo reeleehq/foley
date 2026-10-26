@@ -85,17 +85,34 @@ The account a call is made on, for the generations cache (`'operator'` or a fing
 
 The fal key (see the class docstring for the order); raises if none.
 
-#### generate(prompt, \*\*affordances)
+#### generate(prompt, , provider_params=None, \*\*affordances)
 
 Generate a sound for `prompt` on this source’s fal endpoint.
 
 `affordances` are the canonical ones the dispatch layer kept (translated,
 clamped, noted); see `foley.sources._dispatch.plan_generation()`.
+`provider_params` (#61) are native endpoint arguments merged over the
+translated ones and recorded in `generation_params`. The clip’s `raw` is
+the endpoint’s response (its audio is a URL, not the bytes).
 
 * **Raises:**
   [**SourceConfigurationError**](foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If no fal key is available (before any call).
 * **Return type:**
   [`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip)
+
+#### invoke_native(arguments)
+
+Call this source’s fal endpoint with native `arguments`; return `(audio, response)`.
+
+The public entry below foley’s translation (#61): `arguments` are sent as
+is (no fixed arguments or default duration are added). No licence record is
+built and no dispatch-layer gate (cost authorization, egress, the generations
+cache) runs here: a caller of this method owns them, and pays for the call.
+
+* **Raises:**
+  [**SourceConfigurationError**](foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If no fal key is available (before any call).
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 #### native_arguments(prompt, \*\*affordances)
 

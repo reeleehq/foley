@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=2bfb35b6"></script>
+    <script src="../../../_static/documentation_options.js?v=c3e19674"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.57" />
+  <meta name="docsearch:version" content="0.0.58" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -757,7 +757,14 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextvars</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextVar</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TYPE_CHECKING</span><span class="p">,</span>
+    <span class="n">Iterator</span><span class="p">,</span>
+    <span class="n">Mapping</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">,</span>
+    <span class="n">Protocol</span><span class="p">,</span>
+    <span class="n">runtime_checkable</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">AcquisitionMethod</span><span class="p">,</span> <span class="n">LicenseRecord</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_license_flags</span>
@@ -767,6 +774,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">"check_prompt_influence"</span><span class="p">,</span>
+    <span class="s2">"check_provider_params"</span><span class="p">,</span>
+    <span class="s2">"merge_provider_params"</span><span class="p">,</span>
+    <span class="s2">"recorded_params"</span><span class="p">,</span>
     <span class="s2">"native_adherence"</span><span class="p">,</span>
     <span class="s2">"resolve_source_key"</span><span class="p">,</span>
     <span class="s2">"using_source_accounts"</span><span class="p">,</span>
@@ -870,6 +880,186 @@ window.runMermaid = runMermaid;</script>
         <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">coerce</span><span class="p">[</span><span class="s2">"lo"</span><span class="p">]),</span> <span class="nb">float</span><span class="p">(</span><span class="n">coerce</span><span class="p">[</span><span class="s2">"hi"</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">lo</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">prompt_influence</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span><span class="p">)</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">config</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2">: unknown prompt_influence coerce </span><span class="si">{</span><span class="n">coerce</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="check_provider_params">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.check_provider_params">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_provider_params</span><span class="p">(</span>
+    <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``provider_params`` as a plain dict, checked against a source's ``policy`` (#61).</span>
+
+<span class="sd">    ``policy`` is the source's ``SOURCE_CONFIG["provider_params"]`` row (see</span>
+<span class="sd">    :func:`merge_provider_params`). Every key must be a ``str``; a ``reserved`` key</span>
+<span class="sd">    (one that decides what foley screened, recorded or wrote: the prompt, an output</span>
+<span class="sd">    path, the model) and a ``priced`` key (one that changes what the call costs, which</span>
+<span class="sd">    foley estimated and reserved from its own request) are refused, before anything</span>
+<span class="sd">    is sent or paid for.</span>
+
+<span class="sd">    &gt;&gt;&gt; check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})</span>
+<span class="sd">    {'steps': 8}</span>
+<span class="sd">    &gt;&gt;&gt; check_provider_params({"prompt": "x"}, policy={"reserved": ["prompt"]})</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: provider_params['prompt'] is reserved: foley sets it (it decides what is screened, recorded or written); use the unified argument instead</span>
+<span class="sd">    &gt;&gt;&gt; check_provider_params({1: "x"})</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    TypeError: provider_params keys must be str (native parameter names), got int: 1</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.</span>
+<span class="sd">        ValueError: If a key is ``reserved`` or ``priced`` by the policy, or the</span>
+<span class="sd">            source declares no policy at all.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">provider_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">provider_params</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="s2">"provider_params must be a mapping of native names to values, got "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">provider_params</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">policy</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">provider_params</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"this source declares no provider_params policy, so it cannot take "</span>
+            <span class="sa">f</span><span class="s2">"provider_params (got </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="n">provider_params</span><span class="p">))</span><span class="si">}</span><span class="s2">)"</span>
+        <span class="p">)</span>
+    <span class="n">policy</span> <span class="o">=</span> <span class="n">policy</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">reserved</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">policy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"reserved"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">())</span>
+    <span class="n">priced</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">policy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"priced"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">())</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">provider_params</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">"provider_params keys must be str (native parameter names), got "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">reserved</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"provider_params[</span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">] is reserved: foley sets it (it decides what "</span>
+                <span class="s2">"is screened, recorded or written); use the unified argument instead"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">priced</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"provider_params[</span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">] changes the price of the call, which foley "</span>
+                <span class="s2">"estimates and reserves from its own request: use the unified "</span>
+                <span class="s2">"argument (e.g. duration=) or the source config instead"</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">provider_params</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_append_spec</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, bool]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``(joiner, grouped)`` of a policy ``append`` row (a joiner str means grouped)."""</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">spec</span><span class="p">,</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="n">spec</span><span class="p">[</span><span class="s2">"joiner"</span><span class="p">],</span> <span class="nb">bool</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"group"</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_grouped</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Refuse a value that could escape the ``(...)`` group it is wrapped in.</span>
+
+<span class="sd">    Parentheses outside double quotes (a backslash escapes) must balance and never</span>
+<span class="sd">    close more than they opened, so ``x) OR (license:*`` cannot widen the clause.</span>
+<span class="sd">    """</span>
+    <span class="n">depth</span><span class="p">,</span> <span class="n">quoted</span><span class="p">,</span> <span class="n">escaped</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">escaped</span><span class="p">:</span>
+            <span class="n">escaped</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">:</span>
+            <span class="n">escaped</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s1">'"'</span><span class="p">:</span>
+            <span class="n">quoted</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">quoted</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">quoted</span> <span class="ow">and</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">"("</span><span class="p">:</span>
+            <span class="n">depth</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">quoted</span> <span class="ow">and</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">")"</span><span class="p">:</span>
+            <span class="n">depth</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">depth</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>
+    <span class="k">if</span> <span class="n">depth</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">quoted</span> <span class="ow">or</span> <span class="n">escaped</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"provider_params[</span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">] has unbalanced parentheses or quotes: it is "</span>
+            <span class="sa">f</span><span class="s2">"appended as one group and may not close it (</span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">)"</span>
+        <span class="p">)</span>
+
+
+<div class="viewcode-block" id="merge_provider_params">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.merge_provider_params">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">merge_provider_params</span><span class="p">(</span>
+    <span class="n">native</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">policy</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``native`` with the caller's vendor-native ``provider_params`` merged on top (#61).</span>
+
+<span class="sd">    The escape hatch for a vendor parameter foley has no unified affordance for (a</span>
+<span class="sd">    Freesound ``ac_brightness`` filter, an ElevenLabs body field): it is merged AFTER</span>
+<span class="sd">    foley's translation, so a provider param overrides the translated native one of</span>
+<span class="sd">    the same name. ``policy`` is the source's ``SOURCE_CONFIG["provider_params"]``</span>
+<span class="sd">    row, the one place a source says what a caller may not do:</span>
+
+<span class="sd">    * ``append`` — ``{key: joiner}``: the caller's value is appended to foley's as</span>
+<span class="sd">      ``{joiner}({value})`` (so an ``OR`` inside it cannot widen foley's clause; a</span>
+<span class="sd">      value that would close the group is refused), never replacing it; ``None`` or</span>
+<span class="sd">      an empty value is skipped. ``{key: {"joiner": ",", "group": False}}`` appends a</span>
+<span class="sd">      list item instead (Freesound's ``fields``).</span>
+<span class="sd">    * ``reserved`` / ``priced`` — keys refused (see :func:`check_provider_params`).</span>
+
+<span class="sd">    A pure function: ``native`` is not mutated.</span>
+
+<span class="sd">    &gt;&gt;&gt; policy = {"append": {"filter": " "}}</span>
+<span class="sd">    &gt;&gt;&gt; merge_provider_params({"filter": 'license:"CC0"', "page_size": 15},</span>
+<span class="sd">    ...                       {"filter": "a:1 OR b:2", "page_size": 5}, policy=policy)</span>
+<span class="sd">    {'filter': 'license:"CC0" (a:1 OR b:2)', 'page_size': 5}</span>
+<span class="sd">    &gt;&gt;&gt; merge_provider_params({"steps": 8}, None)</span>
+<span class="sd">    {'steps': 8}</span>
+<span class="sd">    &gt;&gt;&gt; merge_provider_params({}, [("steps", 8)])</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    TypeError: provider_params must be a mapping of native names to values, got list</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.</span>
+<span class="sd">        ValueError: For a reserved or priced key, or an appended value that would</span>
+<span class="sd">            escape its group.</span>
+<span class="sd">    """</span>
+    <span class="n">extra</span> <span class="o">=</span> <span class="n">check_provider_params</span><span class="p">(</span><span class="n">provider_params</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
+    <span class="n">append</span> <span class="o">=</span> <span class="p">(</span><span class="n">policy</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"append"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">native</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">extra</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">append</span><span class="p">:</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">continue</span>  <span class="c1"># nothing to append</span>
+        <span class="n">joiner</span><span class="p">,</span> <span class="n">grouped</span> <span class="o">=</span> <span class="n">_append_spec</span><span class="p">(</span><span class="n">append</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">grouped</span><span class="p">:</span>
+            <span class="n">_check_grouped</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">)"</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="k">if</span> <span class="n">base</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}{</span><span class="n">joiner</span><span class="si">}{</span><span class="n">value</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<div class="viewcode-block" id="recorded_params">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.recorded_params">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">recorded_params</span><span class="p">(</span><span class="n">sent</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The ``generation_params`` a generator records: the native params it ``sent``</span>
+<span class="sd">    (provider params already merged in), plus a ``provider_params`` entry listing what</span>
+<span class="sd">    the caller supplied, when anything was (#61).</span>
+
+<span class="sd">    &gt;&gt;&gt; recorded_params({"steps": 50}, {"steps": 50})</span>
+<span class="sd">    {'steps': 50, 'provider_params': {'steps': 50}}</span>
+<span class="sd">    &gt;&gt;&gt; recorded_params({"steps": 8})</span>
+<span class="sd">    {'steps': 8}</span>
+<span class="sd">    """</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">sent</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">provider_params</span><span class="p">:</span>
+        <span class="n">out</span><span class="p">[</span><span class="s2">"provider_params"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">provider_params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
 
 
 
@@ -1218,11 +1408,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            :func:`foley.sources.generate.generate` façade folds these into the</span>
 <span class="sd">            stored :class:`~foley.index.ingest.IngestResult`\\ 's ``notes`` so they</span>
 <span class="sd">            surface in the run report.</span>
+<span class="sd">        raw: What the provider returned besides the audio (#61), for a caller who needs</span>
+<span class="sd">            a vendor field foley does not model (ElevenLabs: the status and response</span>
+<span class="sd">            headers; fal: the response minus its audio payload), else ``None``. The</span>
+<span class="sd">            façade copies it onto the returned candidate's transient ``raw``; it is</span>
+<span class="sd">            not kept in the generations cache, so a replayed clip has none.</span>
 <span class="sd">    """</span>
 
     <span class="n">audio_bytes</span><span class="p">:</span> <span class="nb">bytes</span>
     <span class="n">candidate</span><span class="p">:</span> <span class="s2">"Candidate"</span>
-    <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span></div>
+    <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">raw</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 

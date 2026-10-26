@@ -145,6 +145,11 @@ library would have served. A plain attribute, never serialized (like
 * **Type:**
   The archive bytes of a clip assembled but not stored (`store=False`)
 
+#### raw *= None*
+
+What the provider returned besides the audio of a generation (#61; see
+[`foley.sources.base.GeneratedClip.raw`](foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)). A plain attribute, never serialized.
+
 ### foley.index.ingest.LEGACY_SELECTORS *= {'has-license-url': <function has_license_url>, 'legacy-elevenlabs': <function is_legacy_elevenlabs>, 'legacy-user-owned': <function is_legacy_default_user_owned>}*
 
 Named selections for [`restamp_rights()`](#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`).

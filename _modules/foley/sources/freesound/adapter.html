@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=2bfb35b6"></script>
+    <script src="../../../../_static/documentation_options.js?v=c3e19674"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.57" />
+  <meta name="docsearch:version" content="0.0.58" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -752,7 +752,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">...base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Candidate</span><span class="p">,</span> <span class="n">CandidateOrigin</span><span class="p">,</span> <span class="n">SoundRecord</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ai_scope_from_gen_ai_preference</span><span class="p">,</span> <span class="n">license_id_from_cc_url</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">api_license</span><span class="p">,</span> <span class="n">resolve_source_key</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">api_license</span><span class="p">,</span> <span class="n">merge_provider_params</span><span class="p">,</span> <span class="n">resolve_source_key</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..http</span><span class="w"> </span><span class="kn">import</span> <span class="n">Transport</span><span class="p">,</span> <span class="n">requests_transport</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_CONFIG</span>
 
@@ -876,6 +876,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">sort</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">similar_to</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">ucs_category</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[Candidate]"</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Search Freesound for ``query``; return license-clean candidates.</span>
@@ -895,12 +896,19 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            similar_to: A Freesound sound id (either id form): "more like this one".</span>
 <span class="sd">            ucs_category: A UCS CatID or category, mapped to a coarse Broad Sound</span>
 <span class="sd">                Taxonomy ``category`` pre-filter (no filter if it is not recognised).</span>
+<span class="sd">            provider_params: Native Freesound search params foley has no affordance</span>
+<span class="sd">                for, merged over the translated ones (#61), e.g.</span>
+<span class="sd">                ``{"filter": "ac_brightness:[50 TO 100]"}``. Per the config's</span>
+<span class="sd">                ``provider_params`` policy, a ``filter`` is appended to foley's as one</span>
+<span class="sd">                group (the licence filter cannot be replaced or widened), ``fields`` are</span>
+<span class="sd">                appended to foley's (the licence fields cannot be dropped), and</span>
+<span class="sd">                ``query`` is refused; the per-item licence re-check still applies.</span>
 <span class="sd">            **kw: Ignored extra affordances (``on_unsupported_param='warn'``).</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Up to ``k`` :class:`~foley.base.Candidate`\\ s (``origin=retrieved``),</span>
-<span class="sd">            each carrying a by-reference :class:`~foley.base.LicenseRecord` and a</span>
-<span class="sd">            transient ``preview_uri``.</span>
+<span class="sd">            each carrying a by-reference :class:`~foley.base.LicenseRecord`, a</span>
+<span class="sd">            transient ``preview_uri`` and the item JSON it was parsed from as ``raw``.</span>
 <span class="sd">        """</span>
         <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"query"</span><span class="p">:</span> <span class="n">query</span><span class="p">,</span>
@@ -935,9 +943,12 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">similar_to</span><span class="p">:</span>
             <span class="n">native</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"similar_to"</span><span class="p">][</span><span class="s2">"native_name"</span><span class="p">]</span>
             <span class="n">params</span><span class="p">[</span><span class="n">native</span><span class="p">]</span> <span class="o">=</span> <span class="n">_raw_id</span><span class="p">(</span><span class="n">similar_to</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">merge_provider_params</span><span class="p">(</span>
+            <span class="n">params</span><span class="p">,</span> <span class="n">provider_params</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"provider_params"</span><span class="p">)</span>
+        <span class="p">)</span>
 
-        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_json</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"api"</span><span class="p">][</span><span class="s2">"search_endpoint"</span><span class="p">][</span><span class="s2">"path"</span><span class="p">]),</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">invoke_native</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"api"</span><span class="p">][</span><span class="s2">"search_endpoint"</span><span class="p">][</span><span class="s2">"path"</span><span class="p">],</span> <span class="o">**</span><span class="n">params</span>
         <span class="p">)</span>
         <span class="n">only</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"license"</span><span class="p">][</span><span class="s2">"cc0_license_ids"</span><span class="p">]</span> <span class="k">if</span> <span class="n">license</span> <span class="o">==</span> <span class="s2">"cc0"</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="n">candidates</span><span class="p">:</span> <span class="s2">"list[Candidate]"</span> <span class="o">=</span> <span class="p">[]</span>
@@ -993,6 +1004,23 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">url</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">LookupError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Freesound sound </span><span class="si">{</span><span class="n">rid</span><span class="si">}</span><span class="s2"> exposes no downloadable preview."</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_bytes</span><span class="p">(</span><span class="n">url</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FreesoundAdapter.invoke_native">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.freesound.adapter.html#foley.sources.freesound.adapter.FreesoundAdapter.invoke_native">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">invoke_native</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""GET a Freesound APIv2 ``path`` with native ``params``; return the parsed JSON.</span>
+
+<span class="sd">        The public escape hatch below foley's translation (#61), e.g.</span>
+<span class="sd">        ``invoke_native("/search/", query="rain", filter="ac_brightness:[50 TO 100]")``.</span>
+<span class="sd">        It bypasses the licence filter and the per-item licence re-check that</span>
+<span class="sd">        :meth:`search` applies: the caller owns licence gating for what it gets back</span>
+<span class="sd">        (and the dispatch layer's egress check is not run either).</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RuntimeError: On a non-200 response (with Freesound's ``detail``).</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_json</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_url</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">)</span></div>
 
 
     <span class="c1"># -- item -&gt; license-checked Candidate ----------------------------------</span>
@@ -1052,11 +1080,13 @@ window.runMermaid = runMermaid;</script>
         <span class="n">preview</span> <span class="o">=</span> <span class="n">_preview_url</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">preview</span><span class="p">:</span>  <span class="c1"># remember it so download(id) needs no extra instance fetch</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_preview_cache</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">raw_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">preview</span>
-        <span class="k">return</span> <span class="n">Candidate</span><span class="p">(</span>
+        <span class="n">cand</span> <span class="o">=</span> <span class="n">Candidate</span><span class="p">(</span>
             <span class="n">sound</span><span class="o">=</span><span class="n">record</span><span class="p">,</span>
             <span class="n">origin</span><span class="o">=</span><span class="n">CandidateOrigin</span><span class="o">.</span><span class="n">retrieved</span><span class="p">,</span>
             <span class="n">preview_uri</span><span class="o">=</span><span class="n">preview</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span>
+        <span class="n">cand</span><span class="o">.</span><span class="n">raw</span> <span class="o">=</span> <span class="n">item</span>  <span class="c1"># transient (never serialized): the vendor fields foley skips</span>
+        <span class="k">return</span> <span class="n">cand</span></div>
 
 
 

@@ -88,7 +88,20 @@ Resolve one Freesound id (`'12345'` or `'freesound:12345'`) to a record.
 * **Return type:**
   [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord)
 
-#### search(query, , license='cc0', k=15, duration_range=None, sort=None, similar_to=None, ucs_category=None, \*\*kw)
+#### invoke_native(path, \*\*params)
+
+GET a Freesound APIv2 `path` with native `params`; return the parsed JSON.
+
+The public escape hatch below foley’s translation (#61), e.g.
+`invoke_native("/search/", query="rain", filter="ac_brightness:[50 TO 100]")`.
+It bypasses the licence filter and the per-item licence re-check that
+[`search()`](#foley.sources.freesound.adapter.FreesoundAdapter.search) applies: the caller owns licence gating for what it gets back
+(and the dispatch layer’s egress check is not run either).
+
+* **Raises:**
+  [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – On a non-200 response (with Freesound’s `detail`).
+
+#### search(query, , license='cc0', k=15, duration_range=None, sort=None, similar_to=None, ucs_category=None, provider_params=None, \*\*kw)
 
 Search Freesound for `query`; return license-clean candidates.
 
@@ -107,10 +120,17 @@ before it becomes a candidate.
   * **similar_to** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A Freesound sound id (either id form): “more like this one”.
   * **ucs_category** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A UCS CatID or category, mapped to a coarse Broad Sound
     Taxonomy `category` pre-filter (no filter if it is not recognised).
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native Freesound search params foley has no affordance
+    for, merged over the translated ones (#61), e.g.
+    `{"filter": "ac_brightness:[50 TO 100]"}`. Per the config’s
+    `provider_params` policy, a `filter` is appended to foley’s as one
+    group (the licence filter cannot be replaced or widened), `fields` are
+    appended to foley’s (the licence fields cannot be dropped), and
+    `query` is refused; the per-item licence re-check still applies.
   * **\*\*kw** – Ignored extra affordances (`on_unsupported_param='warn'`).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]
 * **Returns:**
   Up to `k` [`Candidate`](foley.base.html.md#foley.base.Candidate)s (`origin=retrieved`),
-  each carrying a by-reference [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) and a
-  transient `preview_uri`.
+  each carrying a by-reference [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), a
+  transient `preview_uri` and the item JSON it was parsed from as `raw`.

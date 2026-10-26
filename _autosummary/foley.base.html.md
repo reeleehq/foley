@@ -139,6 +139,17 @@ serialized: `to_dict`/`to_json` stay byte-free (cf. `IngestReport.exception`).
 `copy`/`deepcopy`/`pickle` keep it; `dataclasses.replace` and a
 `from_dict` round trip drop it.
 
+#### raw *= None*
+
+the item JSON a retrieve
+source parsed it from (Freesound), or what a generator returned besides the
+audio (see [`foley.sources.base.GeneratedClip.raw`](foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)), else `None`. Like
+`audio_bytes`, a plain class attribute, NOT a dataclass field: it is never
+serialized, so it never reaches the meta store however large it is.
+
+* **Type:**
+  The provider’s own payload for this candidate (#61)
+
 ### *class* foley.base.CandidateOrigin(\*values)
 
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)

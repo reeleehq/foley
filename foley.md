@@ -1,4 +1,4 @@
-> built 2026-10-26 16:18 UTC from d91c80f (main) · foley 0.0.57. Details: build_info.json
+> built 2026-10-26 16:53 UTC from f66c8c0 (main) · foley 0.0.58. Details: build_info.json
 
 # index.html.md
 
@@ -2701,6 +2701,17 @@ stored). A plain class attribute, NOT a dataclass field, so it is never
 serialized: `to_dict`/`to_json` stay byte-free (cf. `IngestReport.exception`).
 `copy`/`deepcopy`/`pickle` keep it; `dataclasses.replace` and a
 `from_dict` round trip drop it.
+
+#### raw *= None*
+
+the item JSON a retrieve
+source parsed it from (Freesound), or what a generator returned besides the
+audio (see [`foley.sources.base.GeneratedClip.raw`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)), else `None`. Like
+`audio_bytes`, a plain class attribute, NOT a dataclass field: it is never
+serialized, so it never reaches the meta store however large it is.
+
+* **Type:**
+  The provider’s own payload for this candidate (#61)
 
 ### *class* foley.base.CandidateOrigin(\*values)
 
@@ -5449,6 +5460,17 @@ serialized: `to_dict`/`to_json` stay byte-free (cf. `IngestReport.exception`).
 `copy`/`deepcopy`/`pickle` keep it; `dataclasses.replace` and a
 `from_dict` round trip drop it.
 
+#### raw *= None*
+
+the item JSON a retrieve
+source parsed it from (Freesound), or what a generator returned besides the
+audio (see [`foley.sources.base.GeneratedClip.raw`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)), else `None`. Like
+`audio_bytes`, a plain class attribute, NOT a dataclass field: it is never
+serialized, so it never reaches the meta store however large it is.
+
+* **Type:**
+  The provider’s own payload for this candidate (#61)
+
 ### *class* foley.CandidateOrigin(\*values)
 
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
@@ -5899,6 +5921,11 @@ library would have served. A plain attribute, never serialized (like
 
 * **Type:**
   The archive bytes of a clip assembled but not stored (`store=False`)
+
+#### raw *= None*
+
+What the provider returned besides the audio of a generation (#61; see
+[`foley.sources.base.GeneratedClip.raw`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)). A plain attribute, never serialized.
 
 ### *class* foley.IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False)
 
@@ -6824,7 +6851,7 @@ reproducible run-artifact join, plus the fail-safe provenance re-assertion.
 What the caller should know about how the mix was made, e.g. that word timings
 are estimates because no forced aligner is installed (#65).
 
-### foley.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, \*\*affordances)
+### foley.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -6851,6 +6878,12 @@ applies the by-reference storage gate from the sound’s own license.
   * **on_unsupported** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A search parameter the source cannot honour: `None`
     (default) drops it with a note in `report.notes`; `'raise'` raises
     (see `foley.sources._dispatch.translate_affordances()`).
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params of the source that foley has no
+    unified affordance for (#61), e.g. Freesound’s
+    `{"filter": "ac_brightness:[50 TO 100]"}`. Passed to the adapter’s
+    `search` untranslated (so the unsupported-parameter policy does not see
+    them) and merged over its translated params; the licence filter and the
+    fail-closed gate still apply.
   * **\*\*affordances** – Extra unified affordances forwarded to the adapter’s
     `search` (e.g. `duration_range`, `sort`).
 * **Return type:**
@@ -7453,7 +7486,7 @@ RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
 
   FusedHit\`s, each carrying its raw component scores.
 
-### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, \*\*affordances)
+### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, provider_params=None, \*\*affordances)
 
 Generate a sound effect for `prompt` and add it to the library (by-value).
 
@@ -7537,6 +7570,17 @@ training uses).
     walked (default: commercial): a backend whose licence cannot serve it is
     skipped before anything is paid for. A single named backend is used as
     asked (its licence is gated downstream by [`keep()`](_autosummary/foley.html.md#foley.keep)).
+  * **provider_params** – Vendor-native params foley has no unified affordance for
+    (#61). For a named `backend`, a flat dict, e.g.
+    `{"num_inference_steps": 50}`; when the call may try several backends
+    (`backend` unnamed, `'auto'` or a list), per backend, e.g.
+    `{"stable_audio": {"num_inference_steps": 50}}` (a flat dict raises),
+    and each backend gets only its own. Merged by the backend over its
+    translated native params (a provider param wins), recorded in the
+    licence’s `generation_params`, and part of the generations-cache key.
+    A key the backend’s config `provider_params` policy reserves (the
+    prompt, an output path) or prices (`duration`, the model) raises
+    `ValueError` before anything is paid for: use the unified argument.
   * **\*\*affordances** – Unified generation affordances (`duration`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see `GENERATION_AFFORDANCES`).
@@ -9144,6 +9188,11 @@ library would have served. A plain attribute, never serialized (like
 * **Type:**
   The archive bytes of a clip assembled but not stored (`store=False`)
 
+#### raw *= None*
+
+What the provider returned besides the audio of a generation (#61; see
+[`foley.sources.base.GeneratedClip.raw`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)). A plain attribute, never serialized.
+
 ### *class* foley.index.KeywordIndex(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -10389,6 +10438,11 @@ library would have served. A plain attribute, never serialized (like
 
 * **Type:**
   The archive bytes of a clip assembled but not stored (`store=False`)
+
+#### raw *= None*
+
+What the provider returned besides the audio of a generation (#61; see
+[`foley.sources.base.GeneratedClip.raw`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)). A plain attribute, never serialized.
 
 ### foley.index.ingest.LEGACY_SELECTORS *= {'has-license-url': <function has_license_url>, 'legacy-elevenlabs': <function is_legacy_elevenlabs>, 'legacy-user-owned': <function is_legacy_default_user_owned>}*
 
@@ -13675,7 +13729,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'ta-dum', 'netflix intro', 'netflix sound', 'tudum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'tudum', 'ta-dum', 'netflix intro', 'ta dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -14937,33 +14991,36 @@ so the derived permission flags stay single-sourced.
 
 ### Functions
 
-| [`check_prompt_influence`](_autosummary/foley.sources.base.html.md#foley.sources.base.check_prompt_influence)(value)                     | Raise `ValueError` unless `value` is `None` or a real number in `0..1`.                                                                            |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`native_adherence`](_autosummary/foley.sources.base.html.md#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                        |
-| [`resolve_source_key`](_autosummary/foley.sources.base.html.md#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var(s).                                                                            |
-| [`using_source_accounts`](_autosummary/foley.sources.base.html.md#foley.sources.base.using_source_accounts)(\*\*accounts)               | Bind per-request source accounts (a key, and what goes with it) for a `with` block.                                                                |
-| [`bound_source_account`](_autosummary/foley.sources.base.html.md#foley.sources.base.bound_source_account)(source)                      | The account bound for `source` in this context, or `None` when no key is bound.                                                                    |
-| [`key_fingerprint`](_autosummary/foley.sources.base.html.md#foley.sources.base.key_fingerprint)(key)                              | A short, one-way id for an API key: tells accounts apart without keeping the key.                                                                  |
-| [`source_account_id`](_autosummary/foley.sources.base.html.md#foley.sources.base.source_account_id)(config[, api_key])              | Which account a call to the source is made on: `'operator'`, or a key's fingerprint.                                                               |
-| [`bulk_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])  | Build a bulk-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                   |
-| [`per_clip_license_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])     | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                      |
-| [`license_from_clip_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.license_from_clip_meta)(source, spec)              | Build a clip's rights record from [`per_clip_license_meta()`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta) fields (fail-closed).                   |
-| [`api_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])   | Build an API-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                   |
-| [`generated_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.generated_license)(\*, source, license_id, ...)    | Build an AI-generated [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped. |
-| [`register_corpus`](_autosummary/foley.sources.base.html.md#foley.sources.base.register_corpus)(adapter)                          | Register `adapter` in [`CORPUS_REGISTRY`](_autosummary/foley.sources.base.html.md#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                 |
-| [`ring_of`](_autosummary/foley.sources.base.html.md#foley.sources.base.ring_of)(name)                                     | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                               |
-| [`corpora_in_rings`](_autosummary/foley.sources.base.html.md#foley.sources.base.corpora_in_rings)(rings)                           | Registered adapters whose ring is in `rings` (sorted by name).                                                                                     |
-| [`select_corpora`](_autosummary/foley.sources.base.html.md#foley.sources.base.select_corpora)(\*[, rings, corpora])              | Resolve the adapters a bootstrap run should touch.                                                                                                 |
+| [`check_prompt_influence`](_autosummary/foley.sources.base.html.md#foley.sources.base.check_prompt_influence)(value)                     | Raise `ValueError` unless `value` is `None` or a real number in `0..1`.                                                                                                                                 |
+|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`check_provider_params`](_autosummary/foley.sources.base.html.md#foley.sources.base.check_provider_params)([provider_params, policy])  | `provider_params` as a plain dict, checked against a source's `policy` (#61).                                                                                                                           |
+| [`merge_provider_params`](_autosummary/foley.sources.base.html.md#foley.sources.base.merge_provider_params)(native[, ...])              | `native` with the caller's vendor-native `provider_params` merged on top (#61).                                                                                                                         |
+| [`recorded_params`](_autosummary/foley.sources.base.html.md#foley.sources.base.recorded_params)(sent[, provider_params])          | The `generation_params` a generator records: the native params it `sent` (provider params already merged in), plus a `provider_params` entry listing what the caller supplied, when anything was (#61). |
+| [`native_adherence`](_autosummary/foley.sources.base.html.md#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                                                                             |
+| [`resolve_source_key`](_autosummary/foley.sources.base.html.md#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var(s).                                                                                                                                 |
+| [`using_source_accounts`](_autosummary/foley.sources.base.html.md#foley.sources.base.using_source_accounts)(\*\*accounts)               | Bind per-request source accounts (a key, and what goes with it) for a `with` block.                                                                                                                     |
+| [`bound_source_account`](_autosummary/foley.sources.base.html.md#foley.sources.base.bound_source_account)(source)                      | The account bound for `source` in this context, or `None` when no key is bound.                                                                                                                         |
+| [`key_fingerprint`](_autosummary/foley.sources.base.html.md#foley.sources.base.key_fingerprint)(key)                              | A short, one-way id for an API key: tells accounts apart without keeping the key.                                                                                                                       |
+| [`source_account_id`](_autosummary/foley.sources.base.html.md#foley.sources.base.source_account_id)(config[, api_key])              | Which account a call to the source is made on: `'operator'`, or a key's fingerprint.                                                                                                                    |
+| [`bulk_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.bulk_license)(\*, source, license_id, ...[, ...])  | Build a bulk-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
+| [`per_clip_license_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta)(license_url, \*[, ...])     | The `ClipSpec.meta` rights fields for a clip that carries its own CC licence.                                                                                                                           |
+| [`license_from_clip_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.license_from_clip_meta)(source, spec)              | Build a clip's rights record from [`per_clip_license_meta()`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta) fields (fail-closed).                                                                        |
+| [`api_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])   | Build an API-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
+| [`generated_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.generated_license)(\*, source, license_id, ...)    | Build an AI-generated [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.                                                      |
+| [`register_corpus`](_autosummary/foley.sources.base.html.md#foley.sources.base.register_corpus)(adapter)                          | Register `adapter` in [`CORPUS_REGISTRY`](_autosummary/foley.sources.base.html.md#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                                                                      |
+| [`ring_of`](_autosummary/foley.sources.base.html.md#foley.sources.base.ring_of)(name)                                     | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                                                                                    |
+| [`corpora_in_rings`](_autosummary/foley.sources.base.html.md#foley.sources.base.corpora_in_rings)(rings)                           | Registered adapters whose ring is in `rings` (sorted by name).                                                                                                                                          |
+| [`select_corpora`](_autosummary/foley.sources.base.html.md#foley.sources.base.select_corpora)(\*[, rings, corpora])              | Resolve the adapters a bootstrap run should touch.                                                                                                                                                      |
 
 ### Classes
 
-| [`ClipSpec`](_autosummary/foley.sources.base.html.md#foley.sources.base.ClipSpec)(path, source_id[, meta])              | One clip inside a local bulk corpus, described but not yet ingested.            |
-|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`CorpusAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.CorpusAdapter)(\*args, \*\*kwargs)              | A downloaded bulk corpus presented as an ingestable stream of clips.            |
-| [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)(\*args, \*\*kwargs)              | The live/HTTP source contract (report 10 §4.2): `search` + `get` + `download`.  |
-| [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)(\*args, \*\*kwargs)            | The generation source contract (report 10 §4.2) — a SIBLING of `SourceAdapter`. |
-| [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip)(audio_bytes, candidate[, notes]) | One freshly-generated sound: its transient bytes + a provisional candidate.     |
-| [`UniformCorpus`](_autosummary/foley.sources.base.html.md#foley.sources.base.UniformCorpus)(name, ring, ...[, ...])          | A bulk corpus where **every** clip carries the same license.                    |
+| [`ClipSpec`](_autosummary/foley.sources.base.html.md#foley.sources.base.ClipSpec)(path, source_id[, meta])            | One clip inside a local bulk corpus, described but not yet ingested.            |
+|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| [`CorpusAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.CorpusAdapter)(\*args, \*\*kwargs)            | A downloaded bulk corpus presented as an ingestable stream of clips.            |
+| [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)(\*args, \*\*kwargs)            | The live/HTTP source contract (report 10 §4.2): `search` + `get` + `download`.  |
+| [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)(\*args, \*\*kwargs)          | The generation source contract (report 10 §4.2) — a SIBLING of `SourceAdapter`. |
+| [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip)(audio_bytes, candidate[, ...]) | One freshly-generated sound: its transient bytes + a provisional candidate.     |
+| [`UniformCorpus`](_autosummary/foley.sources.base.html.md#foley.sources.base.UniformCorpus)(name, ring, ...[, ...])        | A bulk corpus where **every** clip carries the same license.                    |
 
 ### Exceptions
 
@@ -15084,7 +15141,7 @@ Synthesize a sound for `prompt`; return its bytes + provisional candidate.
 
 Registry / façade key — `'stable_audio'` | `'elevenlabs'` | …
 
-### *class* foley.sources.base.GeneratedClip(audio_bytes, candidate, notes=list())
+### *class* foley.sources.base.GeneratedClip(audio_bytes, candidate, notes=list(), raw=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -15140,6 +15197,17 @@ surface in the run report.
 
 * **Type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+#### raw
+
+What the provider returned besides the audio (#61), for a caller who needs
+a vendor field foley does not model (ElevenLabs: the status and response
+headers; fal: the response minus its audio payload), else `None`. The
+façade copies it onto the returned candidate’s transient `raw`; it is
+not kept in the generations cache, so a replayed clip has none.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 ### *class* foley.sources.base.SourceAdapter(\*args, \*\*kwargs)
 
@@ -15312,6 +15380,37 @@ than coerced: `True` would silently mean the maximum.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
+### foley.sources.base.check_provider_params(provider_params=None, , policy=None)
+
+`provider_params` as a plain dict, checked against a source’s `policy` (#61).
+
+`policy` is the source’s `SOURCE_CONFIG["provider_params"]` row (see
+[`merge_provider_params()`](_autosummary/foley.sources.base.html.md#foley.sources.base.merge_provider_params)). Every key must be a `str`; a `reserved` key
+(one that decides what foley screened, recorded or wrote: the prompt, an output
+path, the model) and a `priced` key (one that changes what the call costs, which
+foley estimated and reserved from its own request) are refused, before anything
+is sent or paid for.
+
+```pycon
+>>> check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})
+{'steps': 8}
+>>> check_provider_params({"prompt": "x"}, policy={"reserved": ["prompt"]})
+Traceback (most recent call last):
+...
+ValueError: provider_params['prompt'] is reserved: foley sets it (it decides what is screened, recorded or written); use the unified argument instead
+>>> check_provider_params({1: "x"})
+Traceback (most recent call last):
+...
+TypeError: provider_params keys must be str (native parameter names), got int: 1
+```
+
+* **Raises:**
+  * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If `provider_params` is not a mapping, or a key is not a `str`.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If a key is `reserved` or `priced` by the policy, or the
+        source declares no policy at all.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### foley.sources.base.corpora_in_rings(rings)
 
 Registered adapters whose ring is in `rings` (sorted by name).
@@ -15384,6 +15483,45 @@ Build a clip’s rights record from [`per_clip_license_meta()`](_autosummary/fol
 * **Return type:**
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 
+### foley.sources.base.merge_provider_params(native, provider_params=None, , policy=None)
+
+`native` with the caller’s vendor-native `provider_params` merged on top (#61).
+
+The escape hatch for a vendor parameter foley has no unified affordance for (a
+Freesound `ac_brightness` filter, an ElevenLabs body field): it is merged AFTER
+foley’s translation, so a provider param overrides the translated native one of
+the same name. `policy` is the source’s `SOURCE_CONFIG["provider_params"]`
+row, the one place a source says what a caller may not do:
+
+* `append` — `{key: joiner}`: the caller’s value is appended to foley’s as
+  `{joiner}({value})` (so an `OR` inside it cannot widen foley’s clause; a
+  value that would close the group is refused), never replacing it; `None` or
+  an empty value is skipped. `{key: {"joiner": ",", "group": False}}` appends a
+  list item instead (Freesound’s `fields`).
+* `reserved` / `priced` — keys refused (see [`check_provider_params()`](_autosummary/foley.sources.base.html.md#foley.sources.base.check_provider_params)).
+
+A pure function: `native` is not mutated.
+
+```pycon
+>>> policy = {"append": {"filter": " "}}
+>>> merge_provider_params({"filter": 'license:"CC0"', "page_size": 15},
+...                       {"filter": "a:1 OR b:2", "page_size": 5}, policy=policy)
+{'filter': 'license:"CC0" (a:1 OR b:2)', 'page_size': 5}
+>>> merge_provider_params({"steps": 8}, None)
+{'steps': 8}
+>>> merge_provider_params({}, [("steps", 8)])
+Traceback (most recent call last):
+...
+TypeError: provider_params must be a mapping of native names to values, got list
+```
+
+* **Raises:**
+  * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If `provider_params` is not a mapping, or a key is not a `str`.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For a reserved or priced key, or an appended value that would
+        escape its group.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### foley.sources.base.native_adherence(config, prompt_influence, notes)
 
 Map foley’s unified `prompt_influence` (0..1) onto a source’s native scale.
@@ -15414,6 +15552,22 @@ Clotho): the licence string goes through the one CC mapper
 ([`license_id_from_cc_url()`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url) — version kept, unknown fails
 closed), and the string itself is kept as `license_url` so the credit links the
 deed the clip was released under. Read back by [`license_from_clip_meta()`](_autosummary/foley.sources.base.html.md#foley.sources.base.license_from_clip_meta).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.sources.base.recorded_params(sent, provider_params=None)
+
+The `generation_params` a generator records: the native params it `sent`
+(provider params already merged in), plus a `provider_params` entry listing what
+the caller supplied, when anything was (#61).
+
+```pycon
+>>> recorded_params({"steps": 50}, {"steps": 50})
+{'steps': 50, 'provider_params': {'steps': 50}}
+>>> recorded_params({"steps": 8})
+{'steps': 8}
+```
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -15760,7 +15914,7 @@ The account a call is made on, for the generations cache (`'operator'` or a fing
 
 The ElevenLabs token (constructor, else a bound key, else `$ELEVENLABS_API_KEY`).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
+#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound effect for `prompt`; return its bytes + provisional candidate.
 
@@ -15779,14 +15933,33 @@ Generate a sound effect for `prompt`; return its bytes + provisional candidate.
     translated to the native enum; `wav` is the lossless `pcm_48000`
     wrapped in a WAV header here, falling back to MP3 (with a note) if
     the account’s plan refuses PCM. Ingest re-archives to FLAC.
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native request fields merged over the translated ones
+    (#61): JSON body fields, except `output_format`, which replaces the
+    native format sent as the URL query param. Recorded in
+    `generation_params`.
   * **\*\*kw** – Extra/unknown affordances (warn-and-dropped).
 * **Return type:**
   [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip)
 * **Returns:**
   A [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip) (`origin=generated`,
-  `license_id` = the account plan, `is_ai_generated=True`).
+  `license_id` = the account plan, `is_ai_generated=True`), its `raw`
+  the response’s status code and headers.
 * **Raises:**
   [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If the plan is unknown (before any API call).
+
+#### invoke_native(, params, body)
+
+POST native `params` (URL query) and `body` (JSON) to the SFX endpoint.
+
+The public entry below foley’s translation (#61): returns the transport’s
+response as is (`.content` holds the audio bytes, `.headers` the
+metadata). No plan/licence check and no dispatch-layer gate (cost
+authorization, egress, the generations cache) runs here: a caller of this
+method owns them, and pays for the call.
+
+* **Raises:**
+  [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – On a non-200 (an `unbilled` error carrying
+      `status_code` and the best-effort `detail`).
 
 #### *property* plan *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
@@ -15942,17 +16115,34 @@ The account a call is made on, for the generations cache (`'operator'` or a fing
 
 The fal key (see the class docstring for the order); raises if none.
 
-#### generate(prompt, \*\*affordances)
+#### generate(prompt, , provider_params=None, \*\*affordances)
 
 Generate a sound for `prompt` on this source’s fal endpoint.
 
 `affordances` are the canonical ones the dispatch layer kept (translated,
 clamped, noted); see `foley.sources._dispatch.plan_generation()`.
+`provider_params` (#61) are native endpoint arguments merged over the
+translated ones and recorded in `generation_params`. The clip’s `raw` is
+the endpoint’s response (its audio is a URL, not the bytes).
 
 * **Raises:**
   [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If no fal key is available (before any call).
 * **Return type:**
   [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip)
+
+#### invoke_native(arguments)
+
+Call this source’s fal endpoint with native `arguments`; return `(audio, response)`.
+
+The public entry below foley’s translation (#61): `arguments` are sent as
+is (no fixed arguments or default duration are added). No licence record is
+built and no dispatch-layer gate (cost authorization, egress, the generations
+cache) runs here: a caller of this method owns them, and pays for the call.
+
+* **Raises:**
+  [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If no fal key is available (before any call).
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 #### native_arguments(prompt, \*\*affordances)
 
@@ -16202,7 +16392,20 @@ Resolve one Freesound id (`'12345'` or `'freesound:12345'`) to a record.
 * **Return type:**
   [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)
 
-#### search(query, , license='cc0', k=15, duration_range=None, sort=None, similar_to=None, ucs_category=None, \*\*kw)
+#### invoke_native(path, \*\*params)
+
+GET a Freesound APIv2 `path` with native `params`; return the parsed JSON.
+
+The public escape hatch below foley’s translation (#61), e.g.
+`invoke_native("/search/", query="rain", filter="ac_brightness:[50 TO 100]")`.
+It bypasses the licence filter and the per-item licence re-check that
+[`search()`](_autosummary/foley.sources.freesound.adapter.html.md#foley.sources.freesound.adapter.FreesoundAdapter.search) applies: the caller owns licence gating for what it gets back
+(and the dispatch layer’s egress check is not run either).
+
+* **Raises:**
+  [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – On a non-200 response (with Freesound’s `detail`).
+
+#### search(query, , license='cc0', k=15, duration_range=None, sort=None, similar_to=None, ucs_category=None, provider_params=None, \*\*kw)
 
 Search Freesound for `query`; return license-clean candidates.
 
@@ -16221,13 +16424,20 @@ before it becomes a candidate.
   * **similar_to** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A Freesound sound id (either id form): “more like this one”.
   * **ucs_category** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A UCS CatID or category, mapped to a coarse Broad Sound
     Taxonomy `category` pre-filter (no filter if it is not recognised).
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native Freesound search params foley has no affordance
+    for, merged over the translated ones (#61), e.g.
+    `{"filter": "ac_brightness:[50 TO 100]"}`. Per the config’s
+    `provider_params` policy, a `filter` is appended to foley’s as one
+    group (the licence filter cannot be replaced or widened), `fields` are
+    appended to foley’s (the licence fields cannot be dropped), and
+    `query` is refused; the per-item licence re-check still applies.
   * **\*\*kw** – Ignored extra affordances (`on_unsupported_param='warn'`).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
 * **Returns:**
   Up to `k` [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)s (`origin=retrieved`),
-  each carrying a by-reference [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) and a
-  transient `preview_uri`.
+  each carrying a by-reference [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), a
+  transient `preview_uri` and the item JSON it was parsed from as `raw`.
 
 
 # _autosummary/foley.sources.freesound.config.html.md
@@ -16390,15 +16600,15 @@ Three adapter kinds share the one ingest pipeline: the narrow **bulk-corpus**
 
 ### Classes
 
-| [`ClipSpec`](_autosummary/foley.sources.html.md#foley.sources.ClipSpec)(path, source_id[, meta])              | One clip inside a local bulk corpus, described but not yet ingested.            |
-|-------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`CorpusAdapter`](_autosummary/foley.sources.html.md#foley.sources.CorpusAdapter)(\*args, \*\*kwargs)              | A downloaded bulk corpus presented as an ingestable stream of clips.            |
-| [`UniformCorpus`](_autosummary/foley.sources.html.md#foley.sources.UniformCorpus)(name, ring, ...[, ...])          | A bulk corpus where **every** clip carries the same license.                    |
-| [`ClothoEvalCorpus`](_autosummary/foley.sources.html.md#foley.sources.ClothoEvalCorpus)(name, ring, ...[, ...])       | Ring-0 Clotho-eval adapter: per-clip Freesound licences; captions opt-in (NC).  |
-| [`Fsd50kCorpus`](_autosummary/foley.sources.html.md#foley.sources.Fsd50kCorpus)()                                 | Ring-1 FSD50K adapter with per-clip Freesound license resolution.               |
-| [`SourceAdapter`](_autosummary/foley.sources.html.md#foley.sources.SourceAdapter)(\*args, \*\*kwargs)              | The live/HTTP source contract (report 10 §4.2): `search` + `get` + `download`.  |
-| [`GenerateAdapter`](_autosummary/foley.sources.html.md#foley.sources.GenerateAdapter)(\*args, \*\*kwargs)            | The generation source contract (report 10 §4.2) — a SIBLING of `SourceAdapter`. |
-| [`GeneratedClip`](_autosummary/foley.sources.html.md#foley.sources.GeneratedClip)(audio_bytes, candidate[, notes]) | One freshly-generated sound: its transient bytes + a provisional candidate.     |
+| [`ClipSpec`](_autosummary/foley.sources.html.md#foley.sources.ClipSpec)(path, source_id[, meta])            | One clip inside a local bulk corpus, described but not yet ingested.            |
+|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| [`CorpusAdapter`](_autosummary/foley.sources.html.md#foley.sources.CorpusAdapter)(\*args, \*\*kwargs)            | A downloaded bulk corpus presented as an ingestable stream of clips.            |
+| [`UniformCorpus`](_autosummary/foley.sources.html.md#foley.sources.UniformCorpus)(name, ring, ...[, ...])        | A bulk corpus where **every** clip carries the same license.                    |
+| [`ClothoEvalCorpus`](_autosummary/foley.sources.html.md#foley.sources.ClothoEvalCorpus)(name, ring, ...[, ...])     | Ring-0 Clotho-eval adapter: per-clip Freesound licences; captions opt-in (NC).  |
+| [`Fsd50kCorpus`](_autosummary/foley.sources.html.md#foley.sources.Fsd50kCorpus)()                               | Ring-1 FSD50K adapter with per-clip Freesound license resolution.               |
+| [`SourceAdapter`](_autosummary/foley.sources.html.md#foley.sources.SourceAdapter)(\*args, \*\*kwargs)            | The live/HTTP source contract (report 10 §4.2): `search` + `get` + `download`.  |
+| [`GenerateAdapter`](_autosummary/foley.sources.html.md#foley.sources.GenerateAdapter)(\*args, \*\*kwargs)          | The generation source contract (report 10 §4.2) — a SIBLING of `SourceAdapter`. |
+| [`GeneratedClip`](_autosummary/foley.sources.html.md#foley.sources.GeneratedClip)(audio_bytes, candidate[, ...]) | One freshly-generated sound: its transient bytes + a provisional candidate.     |
 
 ### Exceptions
 
@@ -16573,7 +16783,7 @@ Synthesize a sound for `prompt`; return its bytes + provisional candidate.
 
 Registry / façade key — `'stable_audio'` | `'elevenlabs'` | …
 
-### *class* foley.sources.GeneratedClip(audio_bytes, candidate, notes=list())
+### *class* foley.sources.GeneratedClip(audio_bytes, candidate, notes=list(), raw=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -16629,6 +16839,17 @@ surface in the run report.
 
 * **Type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+#### raw
+
+What the provider returned besides the audio (#61), for a caller who needs
+a vendor field foley does not model (ElevenLabs: the status and response
+headers; fal: the response minus its audio payload), else `None`. The
+façade copies it onto the returned candidate’s transient `raw`; it is
+not kept in the generations cache, so a replayed clip has none.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 ### *exception* foley.sources.GenerationError(message, , report, status, cache_key=None)
 
@@ -16765,7 +16986,7 @@ Stamp the corpus’s uniform license (derived via the licensing SSOT).
 * **Return type:**
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 
-### foley.sources.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, \*\*affordances)
+### foley.sources.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -16792,6 +17013,12 @@ applies the by-reference storage gate from the sound’s own license.
   * **on_unsupported** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A search parameter the source cannot honour: `None`
     (default) drops it with a note in `report.notes`; `'raise'` raises
     (see `foley.sources._dispatch.translate_affordances()`).
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params of the source that foley has no
+    unified affordance for (#61), e.g. Freesound’s
+    `{"filter": "ac_brightness:[50 TO 100]"}`. Passed to the adapter’s
+    `search` untranslated (so the unsupported-parameter policy does not see
+    them) and merged over its translated params; the licence filter and the
+    fail-closed gate still apply.
   * **\*\*affordances** – Extra unified affordances forwarded to the adapter’s
     `search` (e.g. `duration_range`, `sort`).
 * **Return type:**
@@ -16899,7 +17126,7 @@ an already-registered name (e.g. a test double) is never overwritten.
 * **Returns:**
   The list of discovered source names.
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -16985,6 +17212,13 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     embedder ([`foley.prompt_match.prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)) and put the verdict in
     `qc['prompt_match']` and the notes: a mismatch is flagged, not
     quarantined; without a capable embedder the verdict is `'unchecked'`.
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Vendor-native params foley has no unified affordance for
+    (#61), e.g. `{"num_inference_steps": 50}`. Merged by the backend over
+    its translated native params (a provider param wins), recorded in the
+    licence’s `generation_params`, and part of the generations-cache key;
+    never seen by the unsupported-parameter policy. A key the source’s
+    `provider_params` policy reserves or prices raises `ValueError`
+    before any call, so the cost estimate is the call’s.
   * **\*\*affordances** – Unified generation affordances (`duration`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see [`foley.base.GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).
@@ -17316,12 +17550,25 @@ Resolve one item identifier to its record.
 * **Return type:**
   [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)
 
-#### search(query, , license=None, k=15, \*\*kw)
+#### invoke_native(url, \*\*params)
+
+GET an Internet Archive `url` with native `params`; return the parsed JSON (#61).
+
+It bypasses the licence filter and the per-item licence check that
+[`search()`](_autosummary/foley.sources.internet_archive.adapter.html.md#foley.sources.internet_archive.adapter.InternetArchiveAdapter.search) applies: the caller owns licence gating for what comes back.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### search(query, , license=None, k=15, provider_params=None, \*\*kw)
 
 Search archive audio for `query`; return candidates (all unverified).
 
 `license='cc0'` keeps CC0 items only; any other value keeps every accepted
 licence. The query always asks for items with a `licenseurl`.
+`provider_params` are native advancedsearch params merged over the
+translated ones (#61); a `q` is ANDed onto foley’s as one group, never
+replaces it (the config’s `provider_params` policy).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
@@ -17425,11 +17672,21 @@ Resolve one row id (a UUID) to its record.
 * **Return type:**
   [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)
 
+#### invoke_native(path, \*\*params)
+
+GET an Openverse API `path` with native `params`; return the parsed JSON (#61).
+
+It bypasses the licence filter and the per-item licence check that
+[`search()`](_autosummary/foley.sources.openverse.adapter.html.md#foley.sources.openverse.adapter.OpenverseAdapter.search) applies: the caller owns licence gating for what comes back.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 #### *property* notice *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
 The sentence Openverse’s terms require an app to show prominently.
 
-#### search(query, , license='cc0', k=15, \*\*kw)
+#### search(query, , license='cc0', k=15, provider_params=None, \*\*kw)
 
 Search Openverse audio for `query`; return licence-checked candidates.
 
@@ -17437,6 +17694,8 @@ Search Openverse audio for `query`; return licence-checked candidates.
   * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'cc0'` (default) asks for CC0 only; anything else asks for CC0,
     CC-BY and public-domain-mark rows.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max rows (anonymous limit 20).
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
+    (#61); the per-item licence check still applies.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
 
@@ -17512,7 +17771,7 @@ remote by-reference sound; that is the contract).
 | [`add_from`](_autosummary/foley.sources.pull.html.md#foley.sources.pull.add_from)(source, \*, query[, license, limit, ...])   | Search a live `source` and ingest its license-clean hits into `library`.   |
 |-------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
 
-### foley.sources.pull.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, \*\*affordances)
+### foley.sources.pull.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -17539,6 +17798,12 @@ applies the by-reference storage gate from the sound’s own license.
   * **on_unsupported** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A search parameter the source cannot honour: `None`
     (default) drops it with a note in `report.notes`; `'raise'` raises
     (see `foley.sources._dispatch.translate_affordances()`).
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params of the source that foley has no
+    unified affordance for (#61), e.g. Freesound’s
+    `{"filter": "ac_brightness:[50 TO 100]"}`. Passed to the adapter’s
+    `search` untranslated (so the unsupported-parameter policy does not see
+    them) and merged over its translated params; the licence filter and the
+    fail-closed gate still apply.
   * **\*\*affordances** – Extra unified affordances forwarded to the adapter’s
     `search` (e.g. `duration_range`, `sort`).
 * **Return type:**
@@ -17873,7 +18138,7 @@ Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](_autosummary
     `.device`; production omits it and the real
     `diffusers.StableAudioPipeline` lazy-loads on first generation).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
+#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound for `prompt`; return its bytes + provisional candidate.
 
@@ -17893,6 +18158,9 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
   * **loop** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – No native param (a future WEAVE crossfade) — warn-and-drop.
   * **output_format** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – No native param (the audio-write layer) — warn-and-drop;
     the clip is archived as FLAC by ingest regardless.
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native `StableAudioPipeline` kwargs merged over the
+    translated ones (#61; e.g. `{"num_inference_steps": 50}`), recorded
+    in `generation_params`.
   * **\*\*kw** – Extra/unknown affordances (warn-and-dropped).
 * **Return type:**
   [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip)
@@ -17900,6 +18168,16 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
   A [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip) (`origin=generated`,
   `license_id='Stability-Community'`, `is_ai_generated=True`,
   `generation_seed` captured).
+
+#### invoke_native(prompt, , native, seed=None)
+
+Run the pipeline with native kwargs and return `(encoded_bytes, sample_rate)`.
+
+The public entry below foley’s translation (#61): `native` goes to the
+`StableAudioPipeline` call as is (`guidance_scale`, `audio_end_in_s`, …).
+No licence record is built and no dispatch-layer check runs (cost, egress): a
+caller of this method owns those. Builds a per-device `torch.Generator` only when `seed` is set (so a
+`seed=None` generation never imports torch — the fake-pipeline test path).
 
 
 # _autosummary/foley.sources.stable_audio.config.html.md
@@ -18016,16 +18294,33 @@ Local Stable Audio 3 Small-SFX adapter (a [`GenerateAdapter`](_autosummary/foley
   * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – The process boundary (see [`Runner`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.Runner)); defaults to a subprocess.
   * **home** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]) – The Stability checkout; defaults to [`sa3_home()`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.sa3_home).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
+#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound for `prompt` on the CPU; return its bytes + provisional candidate.
 
 `duration` is clamped to the model’s 1..120 s (default 10 s); the model renders
 whole latent frames, so the clip may differ from it by a few milliseconds.
 `seed=None` draws a random seed, recorded in the clip’s provenance.
+`provider_params` (#61) are native script flags merged over the translated
+ones (`seconds`, `steps`, `cfg`, `seed`; any other key is passed as
+`--<key> <value>`) and recorded in `generation_params`; the config’s
+`provider_params` policy refuses the prompt, output path and model flags.
 
 * **Return type:**
   [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip)
+
+#### invoke_native(prompt, native)
+
+Run the script with native flags into a temp file; return the WAV bytes it wrote.
+
+The public entry below foley’s translation (#61): each `native` key (the
+script’s `seconds` / `steps` / `cfg` / `seed`, or any other flag) becomes
+a `--<key> <value>` flag, followed by foley’s own `--dit` / `--decoder` /
+`--prompt` / `--out`. No licence record is built and no dispatch-layer check
+runs (cost, egress): a caller owns those.
+
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
 
 ### foley.sources.stable_audio_3.adapter.runtime_ready(config=None, , home=None)
 
@@ -18151,7 +18446,17 @@ Resolve one file (page id) to its record.
 * **Return type:**
   [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)
 
-#### search(query, , license='cc0', k=15, \*\*kw)
+#### invoke_native(\*\*params)
+
+Call the MediaWiki `action=query` API with native `params`; return its JSON (#61).
+
+It bypasses the licence filter and the per-item licence check that
+[`search()`](_autosummary/foley.sources.wikimedia_commons.adapter.html.md#foley.sources.wikimedia_commons.adapter.WikimediaCommonsAdapter.search) applies: the caller owns licence gating for what comes back.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### search(query, , license='cc0', k=15, provider_params=None, \*\*kw)
 
 Search Commons audio for `query`; return licence-checked candidates.
 
@@ -18159,6 +18464,8 @@ Search Commons audio for `query`; return licence-checked candidates.
   * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'cc0'` (default) keeps CC0 files only; anything else (`None`,
     `'cc-by'`) also keeps CC-BY and the unverified public-domain claims.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max files requested (the API’s limit is 50).
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
+    (#61); the per-item licence check still applies.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
 
@@ -19894,7 +20201,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-26 16:18 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/d91c80f01b500fa95e0f8d10ec035336a3c87811"><code>d91c80f</code></a> on branch <code>main</code>, for **foley 0.0.57** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 16:53 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/f66c8c069b7136c9d633b5ea0b7f5cf2ac52e9a7"><code>f66c8c0</code></a> on branch <code>main</code>, for **foley 0.0.58** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -19903,7 +20210,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/d91c80f01b500fa95e0f8d10ec035336a3c87811"><code>d91c80f01b500fa95e0f8d10ec035336a3c87811</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/f66c8c069b7136c9d633b5ea0b7f5cf2ac52e9a7"><code>f66c8c069b7136c9d633b5ea0b7f5cf2ac52e9a7</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -19914,9 +20221,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40357541986">40357541986</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40362868549">40362868549</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>d91c80f01b500fa95e0f8d10ec035336a3c87811</code> (in the history of the built commit) |
+| Event commit | <code>f66c8c069b7136c9d633b5ea0b7f5cf2ac52e9a7</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -19941,13 +20248,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.57/">0.0.57</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.58/">0.0.58</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout d91c80f01b500fa95e0f8d10ec035336a3c87811
+git checkout f66c8c069b7136c9d633b5ea0b7f5cf2ac52e9a7
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

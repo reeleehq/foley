@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=2bfb35b6"></script>
+    <script src="../_static/documentation_options.js?v=c3e19674"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.57" />
+  <meta name="docsearch:version" content="0.0.58" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -617,16 +617,37 @@ classifies errors itself).</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="foley.sources.fal.adapter.FalAdapter.generate">
-<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">affordances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/fal/adapter.html#FalAdapter.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.fal.adapter.FalAdapter.generate" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">affordances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/fal/adapter.html#FalAdapter.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.fal.adapter.FalAdapter.generate" title="Link to this definition">#</a></dt>
 <dd><p>Generate a sound for <code class="docutils literal notranslate"><span class="pre">prompt</span></code> on this source’s fal endpoint.</p>
 <p><code class="docutils literal notranslate"><span class="pre">affordances</span></code> are the canonical ones the dispatch layer kept (translated,
-clamped, noted); see <code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources._dispatch.plan_generation()</span></code>.</p>
+clamped, noted); see <code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources._dispatch.plan_generation()</span></code>.
+<code class="docutils literal notranslate"><span class="pre">provider_params</span></code> (#61) are native endpoint arguments merged over the
+translated ones and recorded in <code class="docutils literal notranslate"><span class="pre">generation_params</span></code>. The clip’s <code class="docutils literal notranslate"><span class="pre">raw</span></code> is
+the endpoint’s response (its audio is a URL, not the bytes).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="foley.sources.base.html#foley.sources.base.SourceConfigurationError" title="foley.sources.base.SourceConfigurationError"><strong>SourceConfigurationError</strong></a> – If no fal key is available (before any call).</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.sources.base.html#foley.sources.base.GeneratedClip" title="foley.sources.base.GeneratedClip"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeneratedClip</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.sources.fal.adapter.FalAdapter.invoke_native">
+<span class="sig-name descname"><span class="pre">invoke_native</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/fal/adapter.html#FalAdapter.invoke_native"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.fal.adapter.FalAdapter.invoke_native" title="Link to this definition">#</a></dt>
+<dd><p>Call this source’s fal endpoint with native <code class="docutils literal notranslate"><span class="pre">arguments</span></code>; return <code class="docutils literal notranslate"><span class="pre">(audio,</span> <span class="pre">response)</span></code>.</p>
+<p>The public entry below foley’s translation (#61): <code class="docutils literal notranslate"><span class="pre">arguments</span></code> are sent as
+is (no fixed arguments or default duration are added). No licence record is
+built and no dispatch-layer gate (cost authorization, egress, the generations
+cache) runs here: a caller of this method owns them, and pays for the call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="foley.sources.base.html#foley.sources.base.SourceConfigurationError" title="foley.sources.base.SourceConfigurationError"><strong>SourceConfigurationError</strong></a> – If no fal key is available (before any call).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -761,6 +782,7 @@ docstring: foley’s generations cache owns replay). The audio is downloaded by
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.account_id"><code class="docutils literal notranslate"><span class="pre">FalAdapter.account_id()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.api_key"><code class="docutils literal notranslate"><span class="pre">FalAdapter.api_key</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.generate"><code class="docutils literal notranslate"><span class="pre">FalAdapter.generate()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.invoke_native"><code class="docutils literal notranslate"><span class="pre">FalAdapter.invoke_native()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.native_arguments"><code class="docutils literal notranslate"><span class="pre">FalAdapter.native_arguments()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.request_salt"><code class="docutils literal notranslate"><span class="pre">FalAdapter.request_salt()</span></code></a></li>
 </ul>

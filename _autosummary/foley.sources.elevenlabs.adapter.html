@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=2bfb35b6"></script>
+    <script src="../_static/documentation_options.js?v=c3e19674"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.57" />
+  <meta name="docsearch:version" content="0.0.58" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -582,7 +582,7 @@ env’s (#98).</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="foley.sources.elevenlabs.adapter.ElevenLabsAdapter.generate">
-<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_influence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">negative_prompt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'wav'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/elevenlabs/adapter.html#ElevenLabsAdapter.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.generate" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt_influence</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">negative_prompt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">steps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'wav'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/elevenlabs/adapter.html#ElevenLabsAdapter.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.generate" title="Link to this definition">#</a></dt>
 <dd><p>Generate a sound effect for <code class="docutils literal notranslate"><span class="pre">prompt</span></code>; return its bytes + provisional candidate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -601,6 +601,10 @@ non-default value warns-and-drops (recorded in the clip notes);
 translated to the native enum; <code class="docutils literal notranslate"><span class="pre">wav</span></code> is the lossless <code class="docutils literal notranslate"><span class="pre">pcm_48000</span></code>
 wrapped in a WAV header here, falling back to MP3 (with a note) if
 the account’s plan refuses PCM. Ingest re-archives to FLAC.</p></li>
+<li><p><strong>provider_params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span>) – Native request fields merged over the translated ones
+(#61): JSON body fields, except <code class="docutils literal notranslate"><span class="pre">output_format</span></code>, which replaces the
+native format sent as the URL query param. Recorded in
+<code class="docutils literal notranslate"><span class="pre">generation_params</span></code>.</p></li>
 <li><p><strong>**kw</strong> – Extra/unknown affordances (warn-and-dropped).</p></li>
 </ul>
 </dd>
@@ -609,10 +613,28 @@ the account’s plan refuses PCM. Ingest re-archives to FLAC.</p></li>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>A <a class="reference internal" href="foley.sources.base.html#foley.sources.base.GeneratedClip" title="foley.sources.base.GeneratedClip"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeneratedClip</span></code></a> (<code class="docutils literal notranslate"><span class="pre">origin=generated</span></code>,
-<code class="docutils literal notranslate"><span class="pre">license_id</span></code> = the account plan, <code class="docutils literal notranslate"><span class="pre">is_ai_generated=True</span></code>).</p>
+<code class="docutils literal notranslate"><span class="pre">license_id</span></code> = the account plan, <code class="docutils literal notranslate"><span class="pre">is_ai_generated=True</span></code>), its <code class="docutils literal notranslate"><span class="pre">raw</span></code>
+the response’s status code and headers.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.15)"><strong>RuntimeError</strong></a> – If the plan is unknown (before any API call).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.sources.elevenlabs.adapter.ElevenLabsAdapter.invoke_native">
+<span class="sig-name descname"><span class="pre">invoke_native</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/elevenlabs/adapter.html#ElevenLabsAdapter.invoke_native"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.invoke_native" title="Link to this definition">#</a></dt>
+<dd><p>POST native <code class="docutils literal notranslate"><span class="pre">params</span></code> (URL query) and <code class="docutils literal notranslate"><span class="pre">body</span></code> (JSON) to the SFX endpoint.</p>
+<p>The public entry below foley’s translation (#61): returns the transport’s
+response as is (<code class="docutils literal notranslate"><span class="pre">.content</span></code> holds the audio bytes, <code class="docutils literal notranslate"><span class="pre">.headers</span></code> the
+metadata). No plan/licence check and no dispatch-layer gate (cost
+authorization, egress, the generations cache) runs here: a caller of this
+method owns them, and pays for the call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.15)"><strong>RuntimeError</strong></a> – On a non-200 (an <code class="docutils literal notranslate"><span class="pre">unbilled</span></code> error carrying
+    <code class="docutils literal notranslate"><span class="pre">status_code</span></code> and the best-effort <code class="docutils literal notranslate"><span class="pre">detail</span></code>).</p>
 </dd>
 </dl>
 </dd></dl>
@@ -692,6 +714,7 @@ bound without a plan is refused rather than labelled with the operator’s.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.account_id"><code class="docutils literal notranslate"><span class="pre">ElevenLabsAdapter.account_id()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.api_key"><code class="docutils literal notranslate"><span class="pre">ElevenLabsAdapter.api_key</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.generate"><code class="docutils literal notranslate"><span class="pre">ElevenLabsAdapter.generate()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.invoke_native"><code class="docutils literal notranslate"><span class="pre">ElevenLabsAdapter.invoke_native()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.plan"><code class="docutils literal notranslate"><span class="pre">ElevenLabsAdapter.plan</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.elevenlabs.adapter.ElevenLabsAdapter.request_salt"><code class="docutils literal notranslate"><span class="pre">ElevenLabsAdapter.request_salt()</span></code></a></li>
 </ul>

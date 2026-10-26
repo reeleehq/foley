@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=2bfb35b6"></script>
+    <script src="../_static/documentation_options.js?v=c3e19674"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.57" />
+  <meta name="docsearch:version" content="0.0.58" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -1415,6 +1415,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">level</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">check_prompt</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">intended_use</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">provider_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Generate a sound effect for ``prompt`` and add it to the library (by-value).</span>
@@ -1499,6 +1500,17 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            walked (default: commercial): a backend whose licence cannot serve it is</span>
 <span class="sd">            skipped before anything is paid for. A single named backend is used as</span>
 <span class="sd">            asked (its licence is gated downstream by :func:`keep`).</span>
+<span class="sd">        provider_params: Vendor-native params foley has no unified affordance for</span>
+<span class="sd">            (#61). For a named ``backend``, a flat dict, e.g.</span>
+<span class="sd">            ``{"num_inference_steps": 50}``; when the call may try several backends</span>
+<span class="sd">            (``backend`` unnamed, ``'auto'`` or a list), per backend, e.g.</span>
+<span class="sd">            ``{"stable_audio": {"num_inference_steps": 50}}`` (a flat dict raises),</span>
+<span class="sd">            and each backend gets only its own. Merged by the backend over its</span>
+<span class="sd">            translated native params (a provider param wins), recorded in the</span>
+<span class="sd">            licence's ``generation_params``, and part of the generations-cache key.</span>
+<span class="sd">            A key the backend's config ``provider_params`` policy reserves (the</span>
+<span class="sd">            prompt, an output path) or prices (``duration``, the model) raises</span>
+<span class="sd">            ``ValueError`` before anything is paid for: use the unified argument.</span>
 <span class="sd">        **affordances: Unified generation affordances (``duration``,</span>
 <span class="sd">            ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,</span>
 <span class="sd">            ``output_format`` — see :data:`GENERATION_AFFORDANCES`).</span>
@@ -1535,6 +1547,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">generate_backend_order</span><span class="p">,</span>
         <span class="n">generate_in_order</span><span class="p">,</span>
         <span class="n">paid_generation_opted_in</span><span class="p">,</span>
+        <span class="n">provider_params_by_backend</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">paid_ok</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># a named backend or order is the caller asking for it</span>
@@ -1555,6 +1568,14 @@ window.runMermaid = runMermaid;</script>
         <span class="n">order</span> <span class="o">=</span> <span class="p">(</span><span class="n">backend</span><span class="p">,)</span>  <span class="c1"># named: that backend, no fallback</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">order</span><span class="p">,</span> <span class="n">paid_ok</span> <span class="o">=</span> <span class="n">generate_backend_order</span><span class="p">(),</span> <span class="n">paid_generation_opted_in</span><span class="p">()</span>
+    <span class="c1"># Native params are one vendor's: an order that may try several backends takes</span>
+    <span class="c1"># them per backend, and each backend gets only its own (#61).</span>
+    <span class="n">may_fall_back</span> <span class="o">=</span> <span class="n">adapter</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">or</span> <span class="n">backend</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"auto"</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">by_backend</span> <span class="o">=</span> <span class="n">provider_params_by_backend</span><span class="p">(</span>
+        <span class="n">provider_params</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">per_backend</span><span class="o">=</span><span class="n">may_fall_back</span>
+    <span class="p">)</span>
     <span class="k">with</span> <span class="n">spend_scope</span><span class="p">(</span><span class="n">budget</span><span class="p">):</span>
         <span class="n">report</span><span class="p">,</span> <span class="n">backend</span><span class="p">,</span> <span class="n">skipped</span> <span class="o">=</span> <span class="n">generate_in_order</span><span class="p">(</span>
             <span class="n">prompt</span><span class="p">,</span>
@@ -1573,6 +1594,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">repair</span><span class="o">=</span><span class="n">repair</span><span class="p">,</span>
             <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
             <span class="n">check_prompt</span><span class="o">=</span><span class="n">check_prompt</span><span class="p">,</span>
+            <span class="n">provider_params</span><span class="o">=</span><span class="n">by_backend</span><span class="p">,</span>
             <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span>
@@ -1603,11 +1625,12 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_with_call_facts</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Copy a generation's notes, cost and (for a preview) bytes from its ingest result."""</span>
+<span class="w">    </span><span class="sd">"""Copy a generation's notes, cost, raw payload and (for a preview) bytes from its ingest result."""</span>
     <span class="n">candidate</span><span class="o">.</span><span class="n">notes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">notes</span><span class="p">)</span>
     <span class="n">candidate</span><span class="o">.</span><span class="n">cost_estimate_usd</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">cost_estimate_usd</span>
     <span class="n">candidate</span><span class="o">.</span><span class="n">cost_actual_usd</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">cost_actual_usd</span>
     <span class="n">candidate</span><span class="o">.</span><span class="n">audio_bytes</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">audio_bytes</span>  <span class="c1"># set only by store=False (#107)</span>
+    <span class="n">candidate</span><span class="o">.</span><span class="n">raw</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">raw</span>  <span class="c1"># the provider's payload beside the audio (#61)</span>
     <span class="k">return</span> <span class="n">candidate</span>
 
 

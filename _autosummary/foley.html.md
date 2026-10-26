@@ -404,6 +404,17 @@ serialized: `to_dict`/`to_json` stay byte-free (cf. `IngestReport.exception`).
 `copy`/`deepcopy`/`pickle` keep it; `dataclasses.replace` and a
 `from_dict` round trip drop it.
 
+#### raw *= None*
+
+the item JSON a retrieve
+source parsed it from (Freesound), or what a generator returned besides the
+audio (see [`foley.sources.base.GeneratedClip.raw`](foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)), else `None`. Like
+`audio_bytes`, a plain class attribute, NOT a dataclass field: it is never
+serialized, so it never reaches the meta store however large it is.
+
+* **Type:**
+  The provider’s own payload for this candidate (#61)
+
 ### *class* foley.CandidateOrigin(\*values)
 
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
@@ -854,6 +865,11 @@ library would have served. A plain attribute, never serialized (like
 
 * **Type:**
   The archive bytes of a clip assembled but not stored (`store=False`)
+
+#### raw *= None*
+
+What the provider returned besides the audio of a generation (#61; see
+[`foley.sources.base.GeneratedClip.raw`](foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)). A plain attribute, never serialized.
 
 ### *class* foley.IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False)
 
@@ -1779,7 +1795,7 @@ reproducible run-artifact join, plus the fail-safe provenance re-assertion.
 What the caller should know about how the mix was made, e.g. that word timings
 are estimates because no forced aligner is installed (#65).
 
-### foley.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, \*\*affordances)
+### foley.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -1806,6 +1822,12 @@ applies the by-reference storage gate from the sound’s own license.
   * **on_unsupported** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A search parameter the source cannot honour: `None`
     (default) drops it with a note in `report.notes`; `'raise'` raises
     (see `foley.sources._dispatch.translate_affordances()`).
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params of the source that foley has no
+    unified affordance for (#61), e.g. Freesound’s
+    `{"filter": "ac_brightness:[50 TO 100]"}`. Passed to the adapter’s
+    `search` untranslated (so the unsupported-parameter policy does not see
+    them) and merged over its translated params; the licence filter and the
+    fail-closed gate still apply.
   * **\*\*affordances** – Extra unified affordances forwarded to the adapter’s
     `search` (e.g. `duration_range`, `sort`).
 * **Return type:**
@@ -2408,7 +2430,7 @@ RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
 
   FusedHit\`s, each carrying its raw component scores.
 
-### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, \*\*affordances)
+### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, provider_params=None, \*\*affordances)
 
 Generate a sound effect for `prompt` and add it to the library (by-value).
 
@@ -2492,6 +2514,17 @@ training uses).
     walked (default: commercial): a backend whose licence cannot serve it is
     skipped before anything is paid for. A single named backend is used as
     asked (its licence is gated downstream by [`keep()`](#foley.keep)).
+  * **provider_params** – Vendor-native params foley has no unified affordance for
+    (#61). For a named `backend`, a flat dict, e.g.
+    `{"num_inference_steps": 50}`; when the call may try several backends
+    (`backend` unnamed, `'auto'` or a list), per backend, e.g.
+    `{"stable_audio": {"num_inference_steps": 50}}` (a flat dict raises),
+    and each backend gets only its own. Merged by the backend over its
+    translated native params (a provider param wins), recorded in the
+    licence’s `generation_params`, and part of the generations-cache key.
+    A key the backend’s config `provider_params` policy reserves (the
+    prompt, an output path) or prices (`duration`, the model) raises
+    `ValueError` before anything is paid for: use the unified argument.
   * **\*\*affordances** – Unified generation affordances (`duration`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see `GENERATION_AFFORDANCES`).

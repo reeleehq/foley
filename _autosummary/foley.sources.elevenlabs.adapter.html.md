@@ -70,7 +70,7 @@ The account a call is made on, for the generations cache (`'operator'` or a fing
 
 The ElevenLabs token (constructor, else a bound key, else `$ELEVENLABS_API_KEY`).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
+#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound effect for `prompt`; return its bytes + provisional candidate.
 
@@ -89,14 +89,33 @@ Generate a sound effect for `prompt`; return its bytes + provisional candidate.
     translated to the native enum; `wav` is the lossless `pcm_48000`
     wrapped in a WAV header here, falling back to MP3 (with a note) if
     the account’s plan refuses PCM. Ingest re-archives to FLAC.
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native request fields merged over the translated ones
+    (#61): JSON body fields, except `output_format`, which replaces the
+    native format sent as the URL query param. Recorded in
+    `generation_params`.
   * **\*\*kw** – Extra/unknown affordances (warn-and-dropped).
 * **Return type:**
   [`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip)
 * **Returns:**
   A [`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip) (`origin=generated`,
-  `license_id` = the account plan, `is_ai_generated=True`).
+  `license_id` = the account plan, `is_ai_generated=True`), its `raw`
+  the response’s status code and headers.
 * **Raises:**
   [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If the plan is unknown (before any API call).
+
+#### invoke_native(, params, body)
+
+POST native `params` (URL query) and `body` (JSON) to the SFX endpoint.
+
+The public entry below foley’s translation (#61): returns the transport’s
+response as is (`.content` holds the audio bytes, `.headers` the
+metadata). No plan/licence check and no dispatch-layer gate (cost
+authorization, egress, the generations cache) runs here: a caller of this
+method owns them, and pays for the call.
+
+* **Raises:**
+  [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – On a non-200 (an `unbilled` error carrying
+      `status_code` and the best-effort `detail`).
 
 #### *property* plan *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 

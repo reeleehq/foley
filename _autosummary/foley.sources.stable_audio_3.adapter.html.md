@@ -60,16 +60,33 @@ Local Stable Audio 3 Small-SFX adapter (a [`GenerateAdapter`](foley.sources.base
   * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – The process boundary (see [`Runner`](#foley.sources.stable_audio_3.adapter.Runner)); defaults to a subprocess.
   * **home** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]) – The Stability checkout; defaults to [`sa3_home()`](#foley.sources.stable_audio_3.adapter.sa3_home).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', \*\*kw)
+#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound for `prompt` on the CPU; return its bytes + provisional candidate.
 
 `duration` is clamped to the model’s 1..120 s (default 10 s); the model renders
 whole latent frames, so the clip may differ from it by a few milliseconds.
 `seed=None` draws a random seed, recorded in the clip’s provenance.
+`provider_params` (#61) are native script flags merged over the translated
+ones (`seconds`, `steps`, `cfg`, `seed`; any other key is passed as
+`--<key> <value>`) and recorded in `generation_params`; the config’s
+`provider_params` policy refuses the prompt, output path and model flags.
 
 * **Return type:**
   [`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip)
+
+#### invoke_native(prompt, native)
+
+Run the script with native flags into a temp file; return the WAV bytes it wrote.
+
+The public entry below foley’s translation (#61): each `native` key (the
+script’s `seconds` / `steps` / `cfg` / `seed`, or any other flag) becomes
+a `--<key> <value>` flag, followed by foley’s own `--dit` / `--decoder` /
+`--prompt` / `--out`. No licence record is built and no dispatch-layer check
+runs (cost, egress): a caller owns those.
+
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
 
 ### foley.sources.stable_audio_3.adapter.runtime_ready(config=None, , home=None)
 

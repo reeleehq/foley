@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=2bfb35b6"></script>
+    <script src="../../../../_static/documentation_options.js?v=c3e19674"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.57" />
+  <meta name="docsearch:version" content="0.0.58" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -750,7 +750,9 @@ window.runMermaid = runMermaid;</script>
     <span class="n">GeneratedClip</span><span class="p">,</span>
     <span class="n">SourceConfigurationError</span><span class="p">,</span>
     <span class="n">generated_license</span><span class="p">,</span>
+    <span class="n">merge_provider_params</span><span class="p">,</span>
     <span class="n">native_adherence</span><span class="p">,</span>
+    <span class="n">recorded_params</span><span class="p">,</span>
     <span class="n">unsupported_notes</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_CONFIG</span>
@@ -824,6 +826,10 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="c1">#: The flags foley itself sets and records (they must win over any abbreviation).</span>
+<span class="n">_CORE_FLAGS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"seconds"</span><span class="p">,</span> <span class="s2">"steps"</span><span class="p">,</span> <span class="s2">"cfg"</span><span class="p">,</span> <span class="s2">"seed"</span><span class="p">})</span>
+
+
 <div class="viewcode-block" id="StableAudio3Adapter">
 <a class="viewcode-back" href="../../../../_autosummary/foley.sources.stable_audio_3.adapter.html#foley.sources.stable_audio_3.adapter.StableAudio3Adapter">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">StableAudio3Adapter</span><span class="p">:</span>
@@ -860,6 +866,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">output_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"wav"</span><span class="p">,</span>
+        <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GeneratedClip</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Generate a sound for ``prompt`` on the CPU; return its bytes + provisional candidate.</span>
@@ -867,6 +874,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        ``duration`` is clamped to the model's 1..120 s (default 10 s); the model renders</span>
 <span class="sd">        whole latent frames, so the clip may differ from it by a few milliseconds.</span>
 <span class="sd">        ``seed=None`` draws a random seed, recorded in the clip's provenance.</span>
+<span class="sd">        ``provider_params`` (#61) are native script flags merged over the translated</span>
+<span class="sd">        ones (``seconds``, ``steps``, ``cfg``, ``seed``; any other key is passed as</span>
+<span class="sd">        ``--&lt;key&gt; &lt;value&gt;``) and recorded in ``generation_params``; the config's</span>
+<span class="sd">        ``provider_params`` policy refuses the prompt, output path and model flags.</span>
 <span class="sd">        """</span>
         <span class="n">nd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">]</span>
         <span class="n">notes</span> <span class="o">=</span> <span class="n">unsupported_notes</span><span class="p">(</span>
@@ -892,7 +903,11 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"cfg"</span><span class="p">:</span> <span class="n">cfg</span><span class="p">,</span>
             <span class="s2">"seed"</span><span class="p">:</span> <span class="n">seed</span><span class="p">,</span>
         <span class="p">}</span>
-        <span class="n">audio_bytes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">native</span><span class="p">)</span>
+        <span class="n">native</span> <span class="o">=</span> <span class="n">merge_provider_params</span><span class="p">(</span>
+            <span class="n">native</span><span class="p">,</span> <span class="n">provider_params</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"provider_params"</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">native</span><span class="p">[</span><span class="s2">"seed"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">native</span><span class="p">[</span><span class="s2">"seed"</span><span class="p">])</span>  <span class="c1"># what is sent is what is recorded</span>
+        <span class="n">audio_bytes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">invoke_native</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">native</span><span class="p">)</span>
 
         <span class="n">lic</span> <span class="o">=</span> <span class="n">generated_license</span><span class="p">(</span>
             <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -900,8 +915,10 @@ window.runMermaid = runMermaid;</script>
             <span class="n">generator_model</span><span class="o">=</span><span class="n">nd</span><span class="p">[</span><span class="s2">"generator_version"</span><span class="p">],</span>
             <span class="n">generator_version</span><span class="o">=</span><span class="n">nd</span><span class="p">[</span><span class="s2">"generator_version"</span><span class="p">],</span>
             <span class="n">generation_prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
-            <span class="n">generation_seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>
-            <span class="n">generation_params</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">native</span><span class="p">,</span> <span class="n">model_id</span><span class="o">=</span><span class="n">nd</span><span class="p">[</span><span class="s2">"model_id"</span><span class="p">],</span> <span class="n">dit</span><span class="o">=</span><span class="n">nd</span><span class="p">[</span><span class="s2">"dit"</span><span class="p">]),</span>
+            <span class="n">generation_seed</span><span class="o">=</span><span class="n">native</span><span class="p">[</span><span class="s2">"seed"</span><span class="p">],</span>  <span class="c1"># the seed sent (a provider seed wins)</span>
+            <span class="n">generation_params</span><span class="o">=</span><span class="n">recorded_params</span><span class="p">(</span>
+                <span class="nb">dict</span><span class="p">(</span><span class="n">native</span><span class="p">,</span> <span class="n">model_id</span><span class="o">=</span><span class="n">nd</span><span class="p">[</span><span class="s2">"model_id"</span><span class="p">],</span> <span class="n">dit</span><span class="o">=</span><span class="n">nd</span><span class="p">[</span><span class="s2">"dit"</span><span class="p">]),</span> <span class="n">provider_params</span>
+            <span class="p">),</span>
         <span class="p">)</span>
         <span class="n">record</span> <span class="o">=</span> <span class="n">SoundRecord</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">:pending"</span><span class="p">,</span> <span class="n">license</span><span class="o">=</span><span class="n">lic</span><span class="p">,</span> <span class="n">caption</span><span class="o">=</span><span class="n">prompt</span><span class="p">)</span>
         <span class="n">candidate</span> <span class="o">=</span> <span class="n">Candidate</span><span class="p">(</span><span class="n">sound</span><span class="o">=</span><span class="n">record</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="n">CandidateOrigin</span><span class="o">.</span><span class="n">generated</span><span class="p">)</span>
@@ -926,22 +943,32 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="p">,</span> <span class="n">tflite</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">native</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="n">Path</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
         <span class="n">nd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">]</span>
-        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="nb">str</span><span class="p">(</span><span class="n">_venv_python</span><span class="p">(</span><span class="n">tflite</span><span class="p">)),</span>
-            <span class="nb">str</span><span class="p">(</span><span class="n">tflite</span> <span class="o">/</span> <span class="s2">"scripts"</span> <span class="o">/</span> <span class="s2">"sa3_tflite.py"</span><span class="p">),</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">_venv_python</span><span class="p">(</span><span class="n">tflite</span><span class="p">)),</span> <span class="nb">str</span><span class="p">(</span><span class="n">tflite</span> <span class="o">/</span> <span class="s2">"scripts"</span> <span class="o">/</span> <span class="s2">"sa3_tflite.py"</span><span class="p">)]</span>
+        <span class="c1"># Provider-only flags first, then foley's own: argparse keeps the last value</span>
+        <span class="c1"># and accepts abbreviations, so no extra key (``--see``, ``--ou``) can</span>
+        <span class="c1"># override what foley sends and records.</span>
+        <span class="n">ordered</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">native</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_CORE_FLAGS</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">ordered</span><span class="p">:</span>
+            <span class="n">cmd</span> <span class="o">+=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"--</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">native</span><span class="p">[</span><span class="n">key</span><span class="p">])]</span>
+        <span class="n">cmd</span> <span class="o">+=</span> <span class="p">[</span>
             <span class="s2">"--dit"</span><span class="p">,</span> <span class="n">nd</span><span class="p">[</span><span class="s2">"dit"</span><span class="p">],</span>
             <span class="s2">"--decoder"</span><span class="p">,</span> <span class="n">nd</span><span class="p">[</span><span class="s2">"decoder"</span><span class="p">],</span>
             <span class="sa">f</span><span class="s2">"--prompt=</span><span class="si">{</span><span class="n">prompt</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>  <span class="c1"># '=' form: a prompt starting with '-' is not a flag</span>
-            <span class="s2">"--seconds"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">native</span><span class="p">[</span><span class="s2">"seconds"</span><span class="p">]),</span>
-            <span class="s2">"--steps"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">native</span><span class="p">[</span><span class="s2">"steps"</span><span class="p">]),</span>
-            <span class="s2">"--cfg"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">native</span><span class="p">[</span><span class="s2">"cfg"</span><span class="p">]),</span>
-            <span class="s2">"--seed"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">native</span><span class="p">[</span><span class="s2">"seed"</span><span class="p">]),</span>
             <span class="s2">"--out"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">out</span><span class="p">),</span>
         <span class="p">]</span>  <span class="c1"># fmt: skip</span>
         <span class="k">return</span> <span class="n">cmd</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">native</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Run the script into a temp file and return the WAV bytes it wrote."""</span>
+<div class="viewcode-block" id="StableAudio3Adapter.invoke_native">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.stable_audio_3.adapter.html#foley.sources.stable_audio_3.adapter.StableAudio3Adapter.invoke_native">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">invoke_native</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">native</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Run the script with native flags into a temp file; return the WAV bytes it wrote.</span>
+
+<span class="sd">        The public entry below foley's translation (#61): each ``native`` key (the</span>
+<span class="sd">        script's ``seconds`` / ``steps`` / ``cfg`` / ``seed``, or any other flag) becomes</span>
+<span class="sd">        a ``--&lt;key&gt; &lt;value&gt;`` flag, followed by foley's own ``--dit`` / ``--decoder`` /</span>
+<span class="sd">        ``--prompt`` / ``--out``. No licence record is built and no dispatch-layer check</span>
+<span class="sd">        runs (cost, egress): a caller owns those.</span>
+<span class="sd">        """</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">...runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">EXTERNAL</span><span class="p">,</span> <span class="n">ModelNotCached</span><span class="p">,</span> <span class="n">current_runtime</span>
 
         <span class="n">tflite</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tflite_dir</span><span class="p">()</span>
@@ -970,6 +997,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: the Stable Audio 3 script exited with code </span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">said</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
             <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span></div>
+</div>
 
 
 

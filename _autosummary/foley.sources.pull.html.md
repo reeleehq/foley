@@ -20,7 +20,7 @@ remote by-reference sound; that is the contract).
 | [`add_from`](#foley.sources.pull.add_from)(source, \*, query[, license, limit, ...])   | Search a live `source` and ingest its license-clean hits into `library`.   |
 |-------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
 
-### foley.sources.pull.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, \*\*affordances)
+### foley.sources.pull.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -47,6 +47,12 @@ applies the by-reference storage gate from the sound’s own license.
   * **on_unsupported** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A search parameter the source cannot honour: `None`
     (default) drops it with a note in `report.notes`; `'raise'` raises
     (see `foley.sources._dispatch.translate_affordances()`).
+  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params of the source that foley has no
+    unified affordance for (#61), e.g. Freesound’s
+    `{"filter": "ac_brightness:[50 TO 100]"}`. Passed to the adapter’s
+    `search` untranslated (so the unsupported-parameter policy does not see
+    them) and merged over its translated params; the licence filter and the
+    fail-closed gate still apply.
   * **\*\*affordances** – Extra unified affordances forwarded to the adapter’s
     `search` (e.g. `duration_range`, `sort`).
 * **Return type:**

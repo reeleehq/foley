@@ -365,6 +365,11 @@ library would have served. A plain attribute, never serialized (like
 * **Type:**
   The archive bytes of a clip assembled but not stored (`store=False`)
 
+#### raw *= None*
+
+What the provider returned besides the audio of a generation (#61; see
+[`foley.sources.base.GeneratedClip.raw`](foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)). A plain attribute, never serialized.
+
 ### *class* foley.index.KeywordIndex(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
