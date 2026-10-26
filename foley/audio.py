@@ -64,6 +64,7 @@ DEFAULT_LOUDNESS_TARGET_LUFS: float = LUFS_PODCAST
 TRUE_PEAK_MAX_DBTP: float = -1.0  # ceiling after loudness normalization
 LUFS_GATE_FLOOR: float = -70.0  # pyloudnorm near-silent gate; flag, don't amplify
 LUFS_MIN_BLOCK_S: float = 0.4  # BS.1770 gating block; shorter clips can't be measured
+SILENT_PEAK_DBFS: float = -80.0  # a clip whose sample peak is under this is silent
 
 #: A source ``load`` can decode: a filesystem path, raw encoded bytes, or an
 #: already-open binary file-like object (e.g. ``io.BytesIO``).
@@ -386,6 +387,86 @@ def limit_true_peak(
     return samples * (10.0 ** (gain_db / 20.0)), gain_db
 
 
+def integrated_lufs(
+    samples: "ndarray", sample_rate: int, *, min_block_s: float = LUFS_MIN_BLOCK_S
+) -> float:
+    """Integrated loudness (LUFS, BS.1770-4) of ``samples``; ``-inf`` when too short to gate.
+
+    The one measurer :func:`loudness_gain_db` and the WEAVE master share. The length
+    guard uses ``math.ceil`` (not ``int(round)``) to mirror pyloudnorm's float threshold
+    ``n < block_size*rate`` at every sample rate, including rates where ``0.4*sr`` is
+    not integral; identical to ``int(round)`` at all standard (÷5) rates.
+
+    Lazy dependency: ``pyloudnorm``.
+    """
+    import pyloudnorm as pyln
+
+    if samples.shape[0] < math.ceil(min_block_s * sample_rate):
+        return float("-inf")
+    return float(pyln.Meter(sample_rate).integrated_loudness(samples))
+
+
+def loudness_gain_db(
+    samples: "ndarray",
+    sample_rate: int,
+    *,
+    target_lufs: float,
+    peak_ceiling_dbfs: float = TRUE_PEAK_MAX_DBTP,
+    short_peak_dbfs: Optional[float] = None,
+    max_boost_db: Optional[float] = None,
+    min_block_s: float = LUFS_MIN_BLOCK_S,
+    gate_floor_lufs: float = LUFS_GATE_FLOOR,
+    silent_peak_dbfs: float = SILENT_PEAK_DBFS,
+) -> tuple[float, float]:
+    """The one loudness-gain rule: ``(gain_db, measured_lufs)`` to bring a clip to a target.
+
+    The policy for short, near-silent and high-crest clips lives here, and
+    :func:`loudness_normalize` and :func:`foley.level.reference_gain_db` both apply it:
+
+    * a silent (peak at or under ``silent_peak_dbfs``) or non-finite clip: ``0.0``;
+    * integrated loudness (BS.1770-4, gated) at or under ``gate_floor_lufs``:
+      near-silent, ``0.0`` (flag, don't amplify);
+    * a clip shorter than one gating block (``min_block_s``) cannot be measured
+      (``measured = -inf``): with ``short_peak_dbfs`` it is levelled by its sample peak
+      to that level, without it ``0.0``;
+    * otherwise ``target_lufs - measured``;
+
+    and a non-zero gain is capped so the sample peak stays at or under
+    ``peak_ceiling_dbfs`` (a high-crest clip is held back) and, when ``max_boost_db`` is
+    given, the boost at that many dB. Pure and deterministic.
+
+    Returns:
+        ``(gain_db, measured_lufs)``; ``measured_lufs`` is ``-inf`` for a clip too short
+        to measure, a value at or under :data:`LUFS_GATE_FLOOR` for a near-silent one.
+
+    Lazy dependencies: ``pyloudnorm`` (+ ``numpy``).
+    """
+    import numpy as np
+
+    x = np.asarray(samples, dtype=np.float64)
+    if x.size == 0 or not np.isfinite(x).all():
+        return 0.0, float("-inf")
+    peak = float(np.max(np.abs(x)))
+    peak_db = 20.0 * math.log10(peak) if peak > 0 else float("-inf")
+    if peak_db <= silent_peak_dbfs:
+        return 0.0, float("-inf")
+
+    measured = integrated_lufs(x, sample_rate, min_block_s=min_block_s)
+    if measured == float("-inf") and x.shape[0] < math.ceil(min_block_s * sample_rate):
+        if short_peak_dbfs is None:
+            return 0.0, measured  # too short to gate; flag, don't amplify
+        wanted = short_peak_dbfs - peak_db
+    elif measured <= gate_floor_lufs:  # near-silent: flag, don't amplify
+        return 0.0, measured
+    else:
+        wanted = target_lufs - measured
+
+    gain = min(wanted, peak_ceiling_dbfs - peak_db)
+    if max_boost_db is not None:
+        gain = min(gain, max_boost_db)
+    return float(gain), measured
+
+
 def loudness_normalize(
     samples: "ndarray",
     sample_rate: int,
@@ -398,11 +479,12 @@ def loudness_normalize(
 
     Integrated loudness is measured (ITU-R BS.1770-4 / EBU R128), the signal is
     scaled to ``target_lufs``, and finally attenuated so its sample peak sits at
-    or below ``peak_ceiling_dbfs``. Two inputs are returned **unchanged** (flag
-    them, don't amplify): near-silent input (measured loudness at or below
-    ``LUFS_GATE_FLOOR``), and a clip shorter than one BS.1770 gating block
-    (``min_block_s``) — which ``pyloudnorm`` cannot measure and would otherwise
-    raise ``ValueError`` on (routine for one-shots: clicks, blips, gunshots).
+    or below ``peak_ceiling_dbfs``: the gain is :func:`loudness_gain_db`. Inputs are
+    returned **unchanged** (flag them, don't amplify) when silent or non-finite,
+    near-silent (measured loudness at or below ``LUFS_GATE_FLOOR``), or shorter than one
+    BS.1770 gating block (``min_block_s``) — which ``pyloudnorm`` cannot measure and
+    would otherwise raise ``ValueError`` on (routine for one-shots: clicks, blips,
+    gunshots).
 
     Args:
         samples: Working array (mono or multichannel, time on axis 0 — the layout
@@ -425,27 +507,16 @@ def loudness_normalize(
 
     Lazy dependencies: ``pyloudnorm`` (+ ``numpy``).
     """
-    import numpy as np
-    import pyloudnorm as pyln
-
-    # math.ceil (not int(round)) exactly mirrors pyloudnorm's float threshold
-    # n < block_size*rate at every sample rate, incl. rates where 0.4*sr is not
-    # integral; identical to int(round) at all standard (÷5) rates.
-    if samples.shape[0] < math.ceil(min_block_s * sample_rate):
-        return samples, float("-inf")  # too short to gate; flag, don't amplify
-
-    meter = pyln.Meter(sample_rate)
-    measured = float(meter.integrated_loudness(samples))
-    if measured <= LUFS_GATE_FLOOR:  # near-silent: flag, don't amplify
+    gain_db, measured = loudness_gain_db(
+        samples,
+        sample_rate,
+        target_lufs=target_lufs,
+        peak_ceiling_dbfs=peak_ceiling_dbfs,
+        min_block_s=min_block_s,
+    )
+    if measured <= LUFS_GATE_FLOOR:  # silent, too short or near-silent: unchanged
         return samples, measured
-
-    normalized = pyln.normalize.loudness(samples, measured, target_lufs)
-
-    ceiling = 10.0 ** (peak_ceiling_dbfs / 20.0)
-    peak = float(np.max(np.abs(normalized)))
-    if peak > ceiling:
-        normalized = normalized * (ceiling / peak)
-    return normalized, measured
+    return samples * (10.0 ** (gain_db / 20.0)), measured
 
 
 def to_working(

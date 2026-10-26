@@ -129,3 +129,8 @@ def test_the_render_cache_tells_the_two_strategies_apart():
         Layer.sfx_fg
     ]
     assert not np.array_equal(on, off)
+
+
+def test_a_clip_the_meter_rejects_leaves_its_level_alone():
+    six_channels = np.tile(_tone(1.0, 0.1)[:, None], (1, 6))
+    assert reference_gain_db(six_channels, SR) == 0.0

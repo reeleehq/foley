@@ -327,3 +327,64 @@ def test_load_can_resample_and_downmix_on_read(tmp_path):
     assert out_sr == 48_000
     assert y.ndim == 1
     assert abs(y.shape[0] - int(0.5 * 48_000)) <= 3
+
+
+# ---------------------------------------------------------------------------
+# loudness_gain_db: the one rule loudness_normalize and reference_gain_db share
+# ---------------------------------------------------------------------------
+
+
+def test_loudness_gain_db_lands_a_quiet_clip_on_target():
+    pyln = pytest.importorskip("pyloudnorm")
+    sr = 48_000
+    y = _sine(sr=sr, dur=2.0, amp=0.01)
+    gain, measured = audio.loudness_gain_db(y, sr, target_lufs=-30.0)
+    after = pyln.Meter(sr).integrated_loudness(y.astype(np.float64) * 10 ** (gain / 20))
+    assert after == pytest.approx(-30.0, abs=0.05)
+    assert gain == pytest.approx(-30.0 - measured)
+
+
+def test_loudness_gain_db_holds_a_high_crest_clip_at_the_ceiling():
+    pytest.importorskip("pyloudnorm")
+    sr = 48_000
+    y = _sine(sr=sr, dur=1.0, amp=0.01)
+    y[sr // 2] = 0.9  # a spike: boosting to the target would clip it
+    gain, _ = audio.loudness_gain_db(y, sr, target_lufs=audio.LUFS_PODCAST)
+    assert gain == pytest.approx(audio.TRUE_PEAK_MAX_DBTP - 20 * np.log10(0.9), abs=1e-4)
+
+
+def test_loudness_gain_db_caps_the_boost():
+    pytest.importorskip("pyloudnorm")
+    sr = 48_000
+    y = _sine(sr=sr, dur=1.0, amp=0.001)
+    gain, _ = audio.loudness_gain_db(y, sr, target_lufs=-16.0, max_boost_db=6.0)
+    assert gain == 6.0
+
+
+def test_loudness_gain_db_gate_floor_is_a_keyword():
+    pytest.importorskip("pyloudnorm")
+    sr = 48_000
+    y = _sine(sr=sr, dur=1.0, amp=0.05)
+    _, measured = audio.loudness_gain_db(y, sr, target_lufs=-16.0)
+    assert audio.loudness_gain_db(
+        y, sr, target_lufs=-16.0, gate_floor_lufs=measured + 1.0
+    ) == (0.0, pytest.approx(measured))
+
+
+def test_loudness_gain_db_short_clip_policy_is_one_switch():
+    pytest.importorskip("pyloudnorm")
+    sr = 48_000
+    y = _sine(sr=sr, dur=0.1, amp=0.5)
+    assert audio.loudness_gain_db(y, sr, target_lufs=-16.0) == (0.0, float("-inf"))
+    gain, measured = audio.loudness_gain_db(
+        y, sr, target_lufs=-16.0, short_peak_dbfs=-6.0
+    )
+    assert measured == float("-inf")
+    assert 20 * np.log10(0.5) + gain == pytest.approx(-6.0)
+
+
+def test_loudness_gain_db_leaves_silent_and_non_finite_clips_alone():
+    pytest.importorskip("pyloudnorm")
+    sr = 48_000
+    assert audio.loudness_gain_db(np.zeros(sr), sr, target_lufs=-16.0)[0] == 0.0
+    assert audio.loudness_gain_db(np.full(sr, np.nan), sr, target_lufs=-16.0)[0] == 0.0
