@@ -2,18 +2,20 @@
 
 # About this build
 
-This documentation was built on **2026-10-26 19:56 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/e32243b96183eece71d107bf9ce7f04bca519051"><code>e32243b</code></a> on branch <code>main</code>, for **foley 0.0.62** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 20:15 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/7cbe4a671c05f50a698624939db8bf79ef897423"><code>7cbe4a6</code></a> on branch <code>main</code>, for **foley 0.0.63** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.63) is ahead of the latest release on PyPI (0.0.62): these docs describe unreleased code.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/e32243b96183eece71d107bf9ce7f04bca519051"><code>e32243b96183eece71d107bf9ce7f04bca519051</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/7cbe4a671c05f50a698624939db8bf79ef897423"><code>7cbe4a671c05f50a698624939db8bf79ef897423</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
-| Tags at this commit | none                                                                                                                                                  |
+| Tags at this commit | <code>0.0.63</code>                                                                                                                                   |
 | Working tree        | clean                                                                                                                                                 |
 | Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
@@ -22,9 +24,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40390714963">40390714963</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40393333429">40393333429</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>cdd16af577ae259c756fd547701c69d8e3540aa7</code> (in the history of the built commit) |
+| Event commit | <code>baed775c70a5f6efc712604fac95737370bd9752</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -49,13 +51,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.62/">0.0.62</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.62/">0.0.62</a>, older than the documented version (0.0.63).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout e32243b96183eece71d107bf9ce7f04bca519051
+git checkout 7cbe4a671c05f50a698624939db8bf79ef897423
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
