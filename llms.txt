@@ -65,7 +65,9 @@
 - [foley.base](_autosummary/foley.base.html.md): Canonical data models for foley — the single source of truth (SSOT) types.
 - [foley.cli](_autosummary/foley.cli.html.md): The &#96;foley&#96; command-line interface (stdlib &#96;argparse&#96;, zero new deps).
 - [foley.cost](_autosummary/foley.cost.html.md): Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).
+- [foley.level](_autosummary/foley.level.html.md): Level a clip to a stated loudness target for its class, so relative levels are sane.
 - [foley.licensing](_autosummary/foley.licensing.html.md): License policy for foley: the license_id -&gt; flag-set SSOT, flag derivation
+- [foley.prompt_match](_autosummary/foley.prompt_match.html.md): Does a generated clip sound like what was asked for? A text-audio check, or an honest “unchecked”.
 - [foley.qc](_autosummary/foley.qc.html.md): Tier-0 deterministic audio QC for foley (research report 08 §3).
 - [foley.requirements](_autosummary/foley.requirements.html.md): Onboarding — check what foley needs, tell the user how to get it (accompy-style, #12).
 - [foley.runtime](_autosummary/foley.runtime.html.md): Runtime posture — local-first / offline mode as one verifiable contract (#12, report 12).
@@ -94,7 +96,7 @@
 - [foley.sources.stable_audio.config](_autosummary/foley.sources.stable_audio.config.html.md): &#96;SOURCE_CONFIG&#96; for the local Stable Audio Open 1.0 generator (report 02 · 07 · 10 §4.1).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-25 06:37 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 02:37 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

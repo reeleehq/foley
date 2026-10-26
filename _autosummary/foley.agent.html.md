@@ -30,7 +30,7 @@ verify + generate aggregate into a single reproducible run-manifest.
 | [`verify_match`](#foley.agent.verify_match)(event, candidate, \*[, level, ...])    | Verify `candidate` against `event` up to rung `level` (AND-confirming ladder).            |
 | [`gate_candidates`](#foley.agent.gate_candidates)(candidates, intended_use)           | Fail-closed license gate — run BEFORE verification/ranking (invariant #3).                |
 | [`decide`](#foley.agent.decide)(event, kept, verified, \*, ...)              | The single generate-vs-retrieve branch — a PURE function (report 05 §4).                  |
-| [`generate_sound`](#foley.agent.generate_sound)(query, \*[, backend, library])       | Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.   |
+| [`generate_sound`](#foley.agent.generate_sound)(query, \*[, backend, library, ...])  | Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.   |
 | [`place_in_timeline`](#foley.agent.place_in_timeline)(clip, \*[, onset, gain, ...])     | Emit the SPARSE per-item plan subset (`clip_ref·onset·gain·layer·loop`) — no more.        |
 
 ### Classes
@@ -453,10 +453,12 @@ its survivors are license-clean.
 * **Returns:**
   The license-clean sublist (each with `license_ok is True`), order preserved.
 
-### foley.agent.generate_sound(query, , backend='auto', library=None)
+### foley.agent.generate_sound(query, , backend='auto', library=None, intended_use=None)
 
 Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.
 
+`backend='auto'` walks the generation order, passing over backends whose licence
+cannot serve `intended_use` (default: commercial) before anything is paid for.
 Returns a `Candidate` (`origin=generated`); raises the `GenerationError`
 hierarchy on refusal / no-result (caught fail-closed by `_generate_and_reverify()`).
 

@@ -543,7 +543,7 @@ an already-registered name (e.g. a test double) is never overwritten.
 * **Returns:**
   The list of discovered source names.
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -571,11 +571,16 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description.
-  * **backend** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A registered generate-source name. `None` (default):
-    `default_generate_backend()` (`$FOLEY_GENERATE_BACKEND`, else the
-    local `'stable_audio'`). Hosted: `'elevenlabs'`, and the fal
-    endpoints `'fal_stable_audio_3'` | `'fal_elevenlabs'` |
-    `'fal_sonilo'` | `'fal_mmaudio'` (`foley[fal]` + `$FAL_KEY`).
+  * **backend** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – 
+
+    A registered generate-source name. `None` (default):
+    `default_generate_backend()`, the first backend the generation order
+    would try (a paid one only once paid generation is opted in), with \*\*no
+    fallback\*\*: this workhorse runs one backend; the fallback through the order
+    is `generate_in_order()`, which the public [`foley.generate()`](foley.html.md#foley.generate) uses.
+    Hosted: `'elevenlabs'`, and the fal endpoints `'fal_stable_audio_3'` |
+    `'fal_elevenlabs'` | `'fal_sonilo'` | `'fal_mmaudio'` (`foley[fal]`
+    + `$FAL_KEY`).
   * **library** – Target [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
     process-wide default library).
   * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, synthesize + enrich but do not add to the library
@@ -615,6 +620,15 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     repair runs before the watermark and the id, so the stored bytes, the
     content-hash id and the credential all describe the repaired clip; the
     generations cache keeps the bytes as received.
+  * **level** – Level the clip to a loudness target before it is stored: a layer
+    (`'sfx_fg'`, `'ambience'`, … , its class target, see
+    [`foley.level.class_target_lufs()`](foley.level.html.md#foley.level.class_target_lufs)) or a LUFS number. `None` (default)
+    stores it at the level it was generated at (the WEAVE render applies the
+    layer gains itself). Recorded in the licence’s `transformations`.
+  * **check_prompt** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Score the clip against its prompt with the library’s text-audio
+    embedder ([`foley.prompt_match.prompt_match()`](foley.prompt_match.html.md#foley.prompt_match.prompt_match)) and put the verdict in
+    `qc['prompt_match']` and the notes: a mismatch is flagged, not
+    quarantined; without a capable embedder the verdict is `'unchecked'`.
   * **\*\*affordances** – Unified generation affordances (`duration`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see [`foley.base.GENERATION_AFFORDANCES`](foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).

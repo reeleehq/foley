@@ -44,7 +44,7 @@ so the derived permission flags stay single-sourced.
 | [`check_prompt_influence`](#foley.sources.base.check_prompt_influence)(value)                     | Raise `ValueError` unless `value` is `None` or a real number in `0..1`.                                                                            |
 |----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`native_adherence`](#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                        |
-| [`resolve_source_key`](#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var.                                                                               |
+| [`resolve_source_key`](#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var(s).                                                                            |
 | [`using_source_accounts`](#foley.sources.base.using_source_accounts)(\*\*accounts)               | Bind per-request source accounts (a key, and what goes with it) for a `with` block.                                                                |
 | [`bound_source_account`](#foley.sources.base.bound_source_account)(source)                      | The account bound for `source` in this context, or `None` when no key is bound.                                                                    |
 | [`key_fingerprint`](#foley.sources.base.key_fingerprint)(key)                              | A short, one-way id for an API key: tells accounts apart without keeping the key.                                                                  |
@@ -533,11 +533,12 @@ Register `adapter` in [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY) (
 
 ### foley.sources.base.resolve_source_key(config, api_key=None)
 
-A source’s API token: `api_key`, else a bound key, else its env var.
+A source’s API token: `api_key`, else a bound key, else its env var(s).
 
 The chain is the fleet’s facade kit (`ocracy.kit.resolve_credential`), so a
 server can bind a per-request key with `ocracy.kit.using_credentials(<source>=key)`.
-`config["auth"]` names the env var and the sign-up URL.
+`config["auth"]` names the env var (and its fleet aliases, see
+`auth_env_vars()`) and the sign-up URL.
 
 * **Raises:**
   [**SourceConfigurationError**](#foley.sources.base.SourceConfigurationError) – Naming the env var and where to get a key.

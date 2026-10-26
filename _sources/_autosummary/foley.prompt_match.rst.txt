@@ -1,0 +1,21 @@
+foley.prompt\_match
+===================
+
+.. automodule:: foley.prompt_match
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      MATCH
+      MISMATCH
+      UNCHECKED
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      note_for
+      prompt_match
+   

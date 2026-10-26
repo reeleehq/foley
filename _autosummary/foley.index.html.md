@@ -138,6 +138,13 @@ Embed one or more query strings -> `(n_texts, dim)` L2-normalized.
 * **Return type:**
   `ndarray`
 
+#### prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+
+Cosine similarity under which a generated clip is flagged as not matching its
+prompt ([`foley.prompt_match.prompt_match()`](foley.prompt_match.html.md#foley.prompt_match.prompt_match)). Provisional: LAION-CLAP puts
+matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
+this value is not yet calibrated on a labelled set of foley generations.
+
 ### *class* foley.index.ClapZeroShotTagger(, embedder=None, labels=None, prompt='this is a sound of {label}', threshold=0.0)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)

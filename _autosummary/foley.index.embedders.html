@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=b345ff55"></script>
+    <script src="../_static/documentation_options.js?v=78cc6f98"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.43" />
+  <meta name="docsearch:version" content="0.0.44" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -384,7 +384,9 @@
 <li class="toctree-l2"><a class="reference internal" href="foley.base.html">foley.base</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cli.html">foley.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cost.html">foley.cost</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.level.html">foley.level</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.licensing.html">foley.licensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.prompt_match.html">foley.prompt_match</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.qc.html">foley.qc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.requirements.html">foley.requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.runtime.html">foley.runtime</a></li>
@@ -603,6 +605,15 @@ via <a class="reference internal" href="foley.audio.html#module-foley.audio" tit
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.index.embedders.ClapEmbedder.prompt_match_threshold">
+<span class="sig-name descname"><span class="pre">prompt_match_threshold</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0.2</span></span><a class="headerlink" href="#foley.index.embedders.ClapEmbedder.prompt_match_threshold" title="Link to this definition">#</a></dt>
+<dd><p>Cosine similarity under which a generated clip is flagged as not matching its
+prompt (<a class="reference internal" href="foley.prompt_match.html#foley.prompt_match.prompt_match" title="foley.prompt_match.prompt_match"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.prompt_match.prompt_match()</span></code></a>). Provisional: LAION-CLAP puts
+matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
+this value is not yet calibrated on a labelled set of foley generations.</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py data">
@@ -692,6 +703,7 @@ via <a class="reference internal" href="foley.audio.html#module-foley.audio" tit
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id0"><code class="docutils literal notranslate"><span class="pre">ClapEmbedder.dim</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.embedders.ClapEmbedder.embed_audio"><code class="docutils literal notranslate"><span class="pre">ClapEmbedder.embed_audio()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.embedders.ClapEmbedder.embed_text"><code class="docutils literal notranslate"><span class="pre">ClapEmbedder.embed_text()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.embedders.ClapEmbedder.prompt_match_threshold"><code class="docutils literal notranslate"><span class="pre">ClapEmbedder.prompt_match_threshold</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.embedders.DEFAULT_CLAP_DIM"><code class="docutils literal notranslate"><span class="pre">DEFAULT_CLAP_DIM</span></code></a></li>

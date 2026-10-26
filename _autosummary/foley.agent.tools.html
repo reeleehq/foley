@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=b345ff55"></script>
+    <script src="../_static/documentation_options.js?v=78cc6f98"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.43" />
+  <meta name="docsearch:version" content="0.0.44" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -384,7 +384,9 @@
 <li class="toctree-l2"><a class="reference internal" href="foley.base.html">foley.base</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cli.html">foley.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cost.html">foley.cost</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.level.html">foley.level</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.licensing.html">foley.licensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.prompt_match.html">foley.prompt_match</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.qc.html">foley.qc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.requirements.html">foley.requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.runtime.html">foley.runtime</a></li>
@@ -498,7 +500,7 @@ generation-error hierarchy are imported lazily inside the functions that call th
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.agent.tools.find" title="foley.agent.tools.find"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find</span></code></a>(context, *[, max_events, seconds, ...])</p></td>
 <td><p>The headline: a narrative context → verified, license-clean sound candidates.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.tools.generate_sound" title="foley.agent.tools.generate_sound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_sound</span></code></a>(query, *[, backend, library])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.tools.generate_sound" title="foley.agent.tools.generate_sound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_sound</span></code></a>(query, *[, backend, library, ...])</p></td>
 <td><p>Generate a clip for <code class="docutils literal notranslate"><span class="pre">query</span></code> (the fallback tool) — a thin wrapper over <code class="docutils literal notranslate"><span class="pre">foley.generate</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.agent.tools.place_in_timeline" title="foley.agent.tools.place_in_timeline"><code class="xref py py-obj docutils literal notranslate"><span class="pre">place_in_timeline</span></code></a>(clip, *[, onset, gain, ...])</p></td>
@@ -584,9 +586,11 @@ deterministic fake). A key being present never opts in to paid calls.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.agent.tools.generate_sound">
-<span class="sig-prename descclassname"><span class="pre">foley.agent.tools.</span></span><span class="sig-name descname"><span class="pre">generate_sound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/tools.html#generate_sound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.tools.generate_sound" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">foley.agent.tools.</span></span><span class="sig-name descname"><span class="pre">generate_sound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intended_use</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/tools.html#generate_sound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.tools.generate_sound" title="Link to this definition">#</a></dt>
 <dd><p>Generate a clip for <code class="docutils literal notranslate"><span class="pre">query</span></code> (the fallback tool) — a thin wrapper over <code class="docutils literal notranslate"><span class="pre">foley.generate</span></code>.</p>
-<p>Returns a <code class="xref py py-class docutils literal notranslate"><span class="pre">Candidate</span></code> (<code class="docutils literal notranslate"><span class="pre">origin=generated</span></code>); raises the <code class="docutils literal notranslate"><span class="pre">GenerationError</span></code>
+<p><code class="docutils literal notranslate"><span class="pre">backend='auto'</span></code> walks the generation order, passing over backends whose licence
+cannot serve <code class="docutils literal notranslate"><span class="pre">intended_use</span></code> (default: commercial) before anything is paid for.
+Returns a <code class="xref py py-class docutils literal notranslate"><span class="pre">Candidate</span></code> (<code class="docutils literal notranslate"><span class="pre">origin=generated</span></code>); raises the <code class="docutils literal notranslate"><span class="pre">GenerationError</span></code>
 hierarchy on refusal / no-result (caught fail-closed by <code class="xref py py-func docutils literal notranslate"><span class="pre">_generate_and_reverify()</span></code>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>

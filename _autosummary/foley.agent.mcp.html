@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=b345ff55"></script>
+    <script src="../_static/documentation_options.js?v=78cc6f98"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.43" />
+  <meta name="docsearch:version" content="0.0.44" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -384,7 +384,9 @@
 <li class="toctree-l2"><a class="reference internal" href="foley.base.html">foley.base</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cli.html">foley.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cost.html">foley.cost</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.level.html">foley.level</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.licensing.html">foley.licensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.prompt_match.html">foley.prompt_match</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.qc.html">foley.qc</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.requirements.html">foley.requirements</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.runtime.html">foley.runtime</a></li>
@@ -652,8 +654,11 @@ rehydrate them by id. Returns compact candidate rows.</p>
 <dt class="sig sig-object py" id="foley.agent.mcp.foley_generate">
 <span class="sig-prename descclassname"><span class="pre">foley.agent.mcp.</span></span><span class="sig-name descname"><span class="pre">foley_generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commercial_ok</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/mcp.html#foley_generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.mcp.foley_generate" title="Link to this definition">#</a></dt>
 <dd><p>Generate a sound from a text prompt (local backends only when offline).</p>
-<p><code class="docutils literal notranslate"><span class="pre">backend='auto'</span></code> is the host’s default (<code class="docutils literal notranslate"><span class="pre">$FOLEY_GENERATE_BACKEND</span></code>, else the local
-Stable Audio Open); name one to choose (<code class="docutils literal notranslate"><span class="pre">fal_stable_audio_3</span></code>, <code class="docutils literal notranslate"><span class="pre">elevenlabs</span></code>, …).</p>
+<p><code class="docutils literal notranslate"><span class="pre">backend='auto'</span></code> tries the host’s generation order (ElevenLabs direct first, then
+the fal backends, then the local Stable Audio Open; the paid ones only when the
+host opted in with <code class="docutils literal notranslate"><span class="pre">$FOLEY_GENERATE_PAID=1</span></code>; <code class="docutils literal notranslate"><span class="pre">$FOLEY_GENERATE_ORDER</span></code> /
+<code class="docutils literal notranslate"><span class="pre">$FOLEY_GENERATE_BACKEND</span></code> change it), skipping what is not configured or not
+allowed offline; name one to choose (<code class="docutils literal notranslate"><span class="pre">fal_stable_audio_3</span></code>, <code class="docutils literal notranslate"><span class="pre">elevenlabs</span></code>, …).</p>
 <p>A clip QC would quarantine for a clipped run just over the gate is repaired and
 stored (the repair is in the result’s notes). A refused generation’s dict carries
 <code class="docutils literal notranslate"><span class="pre">cache_key</span></code>: where its paid bytes are in the generations cache

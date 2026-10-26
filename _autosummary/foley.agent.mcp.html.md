@@ -102,8 +102,11 @@ rehydrate them by id. Returns compact candidate rows.
 
 Generate a sound from a text prompt (local backends only when offline).
 
-`backend='auto'` is the host’s default (`$FOLEY_GENERATE_BACKEND`, else the local
-Stable Audio Open); name one to choose (`fal_stable_audio_3`, `elevenlabs`, …).
+`backend='auto'` tries the host’s generation order (ElevenLabs direct first, then
+the fal backends, then the local Stable Audio Open; the paid ones only when the
+host opted in with `$FOLEY_GENERATE_PAID=1`; `$FOLEY_GENERATE_ORDER` /
+`$FOLEY_GENERATE_BACKEND` change it), skipping what is not configured or not
+allowed offline; name one to choose (`fal_stable_audio_3`, `elevenlabs`, …).
 
 A clip QC would quarantine for a clipped run just over the gate is repaired and
 stored (the repair is in the result’s notes). A refused generation’s dict carries

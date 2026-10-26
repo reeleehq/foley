@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=b345ff55"></script>
+    <script src="../../../_static/documentation_options.js?v=78cc6f98"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.43" />
+  <meta name="docsearch:version" content="0.0.44" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -765,20 +765,118 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SourceConfigurationError</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_source</span>
 
-<span class="c1">#: The backend :func:`foley.generate` uses when none is named (free, local).</span>
-<span class="n">DEFAULT_GENERATE_BACKEND</span> <span class="o">=</span> <span class="s2">"stable_audio"</span>
+<span class="c1">#: The order :func:`foley.generate` tries backends in when none is named. ElevenLabs</span>
+<span class="c1">#: direct comes first: on a paid plan its clips come out of the monthly allowance</span>
+<span class="c1">#: (then $0.002/s, the same per-second price as the fal route) under the plan's own</span>
+<span class="c1">#: licence (commercial, royalty-free), where the fal route's licence is unverified.</span>
+<span class="c1">#: fal's Stable Audio 3 (commercial under $1M revenue) and fal's ElevenLabs follow, and</span>
+<span class="c1">#: the local Stable Audio Open (free, needs a GPU and its weights) is last. A backend</span>
+<span class="c1">#: that is not configured (no key, no plan), not reachable (offline), or whose call</span>
+<span class="c1">#: fails is skipped, with the reason on the clip's notes. The paid entries are tried</span>
+<span class="c1">#: only once the operator opts in to paid generation (:func:`paid_generation_opted_in`):</span>
+<span class="c1">#: a key in the environment is not that opt-in (#58).</span>
+<span class="n">DEFAULT_GENERATE_ORDER</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"elevenlabs"</span><span class="p">,</span> <span class="s2">"fal_stable_audio_3"</span><span class="p">,</span> <span class="s2">"fal_elevenlabs"</span><span class="p">,</span> <span class="s2">"stable_audio"</span><span class="p">)</span>
 
-<span class="c1">#: Env var naming the default backend instead (e.g. ``fal_stable_audio_3`` on a host</span>
-<span class="c1">#: with no GPU). Naming a paid backend here is the operator asking for it.</span>
+<span class="c1">#: The last resort when nothing in the order is configured (free, local).</span>
+<span class="n">DEFAULT_GENERATE_BACKEND</span> <span class="o">=</span> <span class="n">DEFAULT_GENERATE_ORDER</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+<span class="c1">#: Env var pinning ONE default backend (no fallback), e.g. ``fal_stable_audio_3``.</span>
+<span class="c1">#: Naming a paid backend here is the operator asking for it.</span>
 <span class="n">GENERATE_BACKEND_ENV</span> <span class="o">=</span> <span class="s2">"FOLEY_GENERATE_BACKEND"</span>
+
+<span class="c1">#: Env var replacing the order: comma-separated backend names (``elevenlabs,fal_sonilo``).</span>
+<span class="c1">#: Setting it is the operator naming backends, so its paid entries are tried.</span>
+<span class="n">GENERATE_ORDER_ENV</span> <span class="o">=</span> <span class="s2">"FOLEY_GENERATE_ORDER"</span>
+
+<span class="c1">#: Env var opting in to the paid entries of :data:`DEFAULT_GENERATE_ORDER` (``1``).</span>
+<span class="n">GENERATE_PAID_ENV</span> <span class="o">=</span> <span class="s2">"FOLEY_GENERATE_PAID"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">paid_generation_opted_in</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether an unnamed generation may use the paid backends of its order.</span>
+
+<span class="sd">    Yes when the operator said so: ``$FOLEY_GENERATE_PAID=1``, or an order or a backend</span>
+<span class="sd">    named in ``$FOLEY_GENERATE_ORDER`` / ``$FOLEY_GENERATE_BACKEND``. A provider key in</span>
+<span class="sd">    the environment is not consent to spend (#58): keys are set for other tools too.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">GENERATE_BACKEND_ENV</span><span class="p">)</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">GENERATE_ORDER_ENV</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">GENERATE_PAID_ENV</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"1"</span><span class="p">,</span> <span class="s2">"true"</span><span class="p">,</span> <span class="s2">"yes"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">backend_is_paid</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether a call to ``backend`` may cost money (its pricing is not ``free``)."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">_is_paid</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
+
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="n">entry</span> <span class="o">=</span> <span class="n">SOURCE_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">entry</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">_is_paid</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s2">"config"</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_backend_order</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, ...]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The backends an unnamed generation tries, in order.</span>
+
+<span class="sd">    ``$FOLEY_GENERATE_BACKEND`` pins one (a one-element order: no fallback); else</span>
+<span class="sd">    ``$FOLEY_GENERATE_ORDER`` (comma-separated); else :data:`DEFAULT_GENERATE_ORDER`.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+    <span class="n">pinned</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">GENERATE_BACKEND_ENV</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">pinned</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">pinned</span><span class="p">,)</span>
+    <span class="n">listed</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">GENERATE_ORDER_ENV</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">listed</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">names</span> <span class="ow">or</span> <span class="n">DEFAULT_GENERATE_ORDER</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">backend_has_key</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether ``backend`` needs no key, or its key is set (an env var or a bound key).</span>
+
+<span class="sd">    A cheap readiness check that makes no call: a missing plan, extra or model weights</span>
+<span class="sd">    still refuse at plan time, and the generation order then moves on.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">ocracy.kit</span><span class="w"> </span><span class="kn">import</span> <span class="n">current_credentials</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">auth_env_vars</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
+
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="n">entry</span> <span class="o">=</span> <span class="n">SOURCE_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">entry</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="n">auth_env_vars</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s2">"config"</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">names</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">bool</span><span class="p">(</span>
+        <span class="n">current_credentials</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">first_runnable_backend</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">paid_ok</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The first of ``order`` with its key set (and free, unless ``paid_ok``), else its last."""</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">name</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">order</span>
+            <span class="k">if</span> <span class="n">backend_has_key</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">paid_ok</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">backend_is_paid</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="p">),</span>
+        <span class="n">order</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">default_generate_backend</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""The generate backend used when none is named: ``$FOLEY_GENERATE_BACKEND``, else</span>
-<span class="sd">    :data:`DEFAULT_GENERATE_BACKEND` (the local Stable Audio Open)."""</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-
-    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">GENERATE_BACKEND_ENV</span><span class="p">)</span> <span class="ow">or</span> <span class="n">DEFAULT_GENERATE_BACKEND</span>
+<span class="w">    </span><span class="sd">"""The backend an unnamed generation tries first (:func:`first_runnable_backend` of</span>
+<span class="sd">    :func:`generate_backend_order`, paid ones only once opted in). What</span>
+<span class="sd">    :func:`foley.estimate` prices and the rights pre-check judges for ``backend='auto'``."""</span>
+    <span class="k">return</span> <span class="n">first_runnable_backend</span><span class="p">(</span>
+        <span class="n">generate_backend_order</span><span class="p">(),</span> <span class="n">paid_ok</span><span class="o">=</span><span class="n">paid_generation_opted_in</span><span class="p">()</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">generation_rights_refusal</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -928,6 +1026,8 @@ window.runMermaid = runMermaid;</script>
     <span class="n">reuse_cached</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">generations_cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">repair</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">level</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">check_prompt</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IngestReport</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Generate a sound via ``backend`` and ingest it (by-value) into ``library``.</span>
@@ -957,10 +1057,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Args:</span>
 <span class="sd">        prompt: The natural-language sound description.</span>
 <span class="sd">        backend: A registered generate-source name. ``None`` (default):</span>
-<span class="sd">            :func:`default_generate_backend` (``$FOLEY_GENERATE_BACKEND``, else the</span>
-<span class="sd">            local ``'stable_audio'``). Hosted: ``'elevenlabs'``, and the fal</span>
-<span class="sd">            endpoints ``'fal_stable_audio_3'`` | ``'fal_elevenlabs'`` |</span>
-<span class="sd">            ``'fal_sonilo'`` | ``'fal_mmaudio'`` (``foley[fal]`` + ``$FAL_KEY``).</span>
+<span class="sd">            :func:`default_generate_backend`, the first backend the generation order</span>
+<span class="sd">            would try (a paid one only once paid generation is opted in), with **no</span>
+<span class="sd">            fallback**: this workhorse runs one backend; the fallback through the order</span>
+<span class="sd">            is :func:`generate_in_order`, which the public :func:`foley.generate` uses.</span>
+<span class="sd">            Hosted: ``'elevenlabs'``, and the fal endpoints ``'fal_stable_audio_3'`` |</span>
+<span class="sd">            ``'fal_elevenlabs'`` | ``'fal_sonilo'`` | ``'fal_mmaudio'`` (``foley[fal]``</span>
+<span class="sd">            + ``$FAL_KEY``).</span>
 <span class="sd">        library: Target :class:`~foley.index.library.SoundLibrary` (default: the</span>
 <span class="sd">            process-wide default library).</span>
 <span class="sd">        store: If ``False``, synthesize + enrich but do not add to the library</span>
@@ -1000,6 +1103,15 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            repair runs before the watermark and the id, so the stored bytes, the</span>
 <span class="sd">            content-hash id and the credential all describe the repaired clip; the</span>
 <span class="sd">            generations cache keeps the bytes as received.</span>
+<span class="sd">        level: Level the clip to a loudness target before it is stored: a layer</span>
+<span class="sd">            (``'sfx_fg'``, ``'ambience'``, … , its class target, see</span>
+<span class="sd">            :func:`foley.level.class_target_lufs`) or a LUFS number. ``None`` (default)</span>
+<span class="sd">            stores it at the level it was generated at (the WEAVE render applies the</span>
+<span class="sd">            layer gains itself). Recorded in the licence's ``transformations``.</span>
+<span class="sd">        check_prompt: Score the clip against its prompt with the library's text-audio</span>
+<span class="sd">            embedder (:func:`foley.prompt_match.prompt_match`) and put the verdict in</span>
+<span class="sd">            ``qc['prompt_match']`` and the notes: a mismatch is flagged, not</span>
+<span class="sd">            quarantined; without a capable embedder the verdict is ``'unchecked'``.</span>
 <span class="sd">        **affordances: Unified generation affordances (``duration``,</span>
 <span class="sd">            ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,</span>
 <span class="sd">            ``output_format`` — see :data:`foley.base.GENERATION_AFFORDANCES`).</span>
@@ -1044,6 +1156,12 @@ window.runMermaid = runMermaid;</script>
     <span class="c1"># Resolve the watermarker fail-fast: watermark=True without foley[provenance]</span>
     <span class="c1"># errors BEFORE spending on generation.</span>
     <span class="n">wm</span> <span class="o">=</span> <span class="n">disclosure</span><span class="o">.</span><span class="n">resolve_watermarker</span><span class="p">(</span><span class="n">watermark</span><span class="p">,</span> <span class="n">watermarker</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># a bad level= must fail before anything is paid for</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..level</span><span class="w"> </span><span class="kn">import</span> <span class="n">require_loudness_meter</span><span class="p">,</span> <span class="n">resolve_target_lufs</span>
+
+        <span class="n">resolve_target_lufs</span><span class="p">(</span><span class="n">level</span><span class="p">)</span>
+        <span class="n">require_loudness_meter</span><span class="p">()</span>
 
     <span class="n">lib</span> <span class="o">=</span> <span class="n">library</span> <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_library</span><span class="p">()</span>
     <span class="n">gen</span> <span class="o">=</span> <span class="n">adapter</span> <span class="k">if</span> <span class="n">adapter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">get_source</span><span class="p">(</span><span class="n">backend</span><span class="p">)[</span><span class="s2">"adapter"</span><span class="p">]</span>
@@ -1111,6 +1229,7 @@ window.runMermaid = runMermaid;</script>
     <span class="c1"># so an undecodable response (a hosted API returning HTTP 200 with a non-audio</span>
     <span class="c1"># body) is recorded as an error, not a crash.</span>
     <span class="n">audio_bytes</span> <span class="o">=</span> <span class="n">clip</span><span class="o">.</span><span class="n">audio_bytes</span>
+    <span class="n">post_qc</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># facts decided here, stamped on the record after ingest</span>
     <span class="n">sound_id</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">pstore</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">credential</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1121,6 +1240,10 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># (the generations cache already holds the bytes as received).</span>
         <span class="k">if</span> <span class="n">repair</span><span class="p">:</span>
             <span class="n">audio_bytes</span> <span class="o">=</span> <span class="n">_repaired_bytes</span><span class="p">(</span><span class="n">audio_bytes</span><span class="p">,</span> <span class="n">lic</span><span class="p">,</span> <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">,</span> <span class="n">repair</span><span class="o">=</span><span class="n">repair</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">post_qc</span><span class="p">[</span><span class="s2">"level"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_levelled_bytes</span><span class="p">(</span>
+                <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">lic</span><span class="p">,</span> <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">level</span>
+            <span class="p">)</span>
 
         <span class="c1"># Watermark BEFORE ingest so the stored bytes carry the mark AND the</span>
         <span class="c1"># content-hash id hashes the watermarked PCM. Graceful degrade: a watermark</span>
@@ -1184,6 +1307,11 @@ window.runMermaid = runMermaid;</script>
 
     <span class="n">res</span><span class="o">.</span><span class="n">cache_key</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">content_key</span>  <span class="c1"># where the paid bytes are, whatever the outcome</span>
     <span class="n">record_generation_outcome</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">generations_cache</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"pass"</span><span class="p">,</span> <span class="s2">"warn"</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">check_prompt</span><span class="p">:</span>
+            <span class="n">post_qc</span><span class="p">[</span><span class="s2">"prompt_match"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_prompt_verdict</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">lib</span><span class="p">,</span> <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">post_qc</span><span class="p">:</span>
+            <span class="n">_stamp_qc</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">post_qc</span><span class="p">,</span> <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">,</span> <span class="n">library</span><span class="o">=</span><span class="n">lib</span><span class="p">,</span> <span class="n">stored</span><span class="o">=</span><span class="n">store</span><span class="p">)</span>
 
     <span class="c1"># Write the content-credential sidecar ONLY for a freshly stored clip — a</span>
     <span class="c1"># quarantined (QC-failed), duplicate, or errored generation was never added to the</span>
@@ -1206,6 +1334,160 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">report</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">estimate_order</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The most one generation can cost through ``backend``: a name, an order, or ``None``.</span>
+
+<span class="sd">    ``None`` / ``'auto'`` is the generation order (:func:`generate_backend_order`, its</span>
+<span class="sd">    paid entries only once opted in). An order bills at most one backend (a backend is</span>
+<span class="sd">    passed over only when nothing was billed, see :func:`generate_in_order`), but which</span>
+<span class="sd">    one depends on who answers, so the bound is the dearest backend the order would try.</span>
+<span class="sd">    ``None`` (unknown) when any of them is unknown.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnsupportedParameter</span><span class="p">,</span> <span class="n">estimate_generation</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="n">order</span><span class="p">,</span> <span class="n">paid_ok</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">backend</span><span class="p">),</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">order</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"backend= is an empty sequence: name at least one backend"</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">backend</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"auto"</span><span class="p">):</span>
+        <span class="n">order</span><span class="p">,</span> <span class="n">paid_ok</span> <span class="o">=</span> <span class="n">generate_backend_order</span><span class="p">(),</span> <span class="n">paid_generation_opted_in</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">estimate_generation</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">estimate_generation</span><span class="p">(</span><span class="n">order</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)</span>
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="n">tried</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">name</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">SOURCE_REGISTRY</span>
+        <span class="ow">and</span> <span class="p">(</span>
+            <span class="n">i</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+            <span class="ow">or</span> <span class="p">((</span><span class="n">paid_ok</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">backend_is_paid</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="ow">and</span> <span class="n">backend_has_key</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">tried</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">estimate_generation</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">))</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">UnsupportedParameter</span><span class="p">,</span> <span class="n">SourceConfigurationError</span><span class="p">):</span>
+            <span class="k">continue</span>  <span class="c1"># the order would pass it over before any call</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">prices</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">prices</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_in_order</span><span class="p">(</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">order</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">paid_ok</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">intended_use</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[IngestReport, str, list]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Run :func:`generate` through ``order`` until a backend produces a result.</span>
+
+<span class="sd">    The fallback mechanism behind an unnamed :func:`foley.generate`. With more than</span>
+<span class="sd">    one backend in ``order``, a backend is skipped, and the next one tried, when:</span>
+
+<span class="sd">    * it is not a registered generate source, or it is paid and ``paid_ok`` is false,</span>
+<span class="sd">      or its key is not set (no call is made; the last backend is tried regardless of</span>
+<span class="sd">      its key, so a lone or local one still reports its own error);</span>
+<span class="sd">    * its output could not serve ``intended_use`` (:func:`generation_rights_refusal`,</span>
+<span class="sd">      decided before anything is paid for; this applies to the last one too);</span>
+<span class="sd">    * it refuses before any provider call (not configured: a missing plan or extra;</span>
+<span class="sd">      offline; a meaning-carrying parameter it cannot honour);</span>
+<span class="sd">    * the provider answered its request with an HTTP error status</span>
+<span class="sd">      (:func:`~foley.sources._dispatch.provider_refused`): nothing was billed, and the</span>
+<span class="sd">      reservation was released.</span>
+
+<span class="sd">    Anything else is final, because it may have been billed or is about the sound: a</span>
+<span class="sd">    read timeout or an undecodable response, a QC quarantine, a rights refusal at</span>
+<span class="sd">    ingest, a budget refusal (the run's cap holds across the whole order). So at most</span>
+<span class="sd">    one billed call is made per generation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        prompt: The sound description.</span>
+<span class="sd">        order: Backend names, in the order to try them.</span>
+<span class="sd">        paid_ok: ``False`` skips the paid backends (but the last), without a call.</span>
+<span class="sd">        intended_use: The :class:`~foley.base.IntendedUse` the clip must serve. With</span>
+<span class="sd">            more than one backend it defaults to</span>
+<span class="sd">            :data:`foley.licensing.DEFAULT_INTENDED_USE` (commercial); a single</span>
+<span class="sd">            backend is judged only when a use is passed (else used as asked, its</span>
+<span class="sd">            licence gated downstream as before).</span>
+<span class="sd">        **kwargs: Everything else :func:`generate` takes (affordances included).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``(report, backend, skipped)``: the report of the backend that ran, its name,</span>
+<span class="sd">        and one ``"&lt;backend&gt;: &lt;reason&gt;"`` line per backend skipped before it.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        SourceConfigurationError: When every backend was skipped before a call (the</span>
+<span class="sd">            message lists why), or whatever the last backend tried raised, with</span>
+<span class="sd">            ``skipped_backends`` set on the exception to the lines for the backends</span>
+<span class="sd">            skipped before it.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">intended_use_for</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnsupportedParameter</span><span class="p">,</span> <span class="n">provider_refused</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
+
+    <span class="n">order</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">order</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"a generation order needs at least one backend"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">intended_use</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># asked for a use: judge it before paying</span>
+            <span class="n">refusal</span> <span class="o">=</span> <span class="n">generation_rights_refusal</span><span class="p">(</span><span class="n">order</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">intended_use</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">refusal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">SourceConfigurationError</span><span class="p">(</span><span class="n">refusal</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">order</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="n">order</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">[]</span>
+
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="n">use</span> <span class="o">=</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">intended_use</span><span class="p">)</span>
+    <span class="n">skippable</span> <span class="o">=</span> <span class="p">(</span><span class="n">SourceConfigurationError</span><span class="p">,</span> <span class="n">EgressBlocked</span><span class="p">,</span> <span class="n">UnsupportedParameter</span><span class="p">)</span>
+    <span class="n">skipped</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">order</span><span class="p">):</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="n">i</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">entry</span> <span class="o">=</span> <span class="n">SOURCE_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">entry</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">entry</span><span class="p">[</span><span class="s2">"config"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"kind"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"generate"</span><span class="p">:</span>
+            <span class="n">skipped</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: not a registered generate source"</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">refusal</span> <span class="o">=</span> <span class="n">generation_rights_refusal</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">use</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">refusal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">skipped</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: its licence does not fit this use"</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">last</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">paid_ok</span> <span class="ow">and</span> <span class="n">backend_is_paid</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+            <span class="n">skipped</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: paid, and paid generation is not opted in "</span>
+                <span class="sa">f</span><span class="s2">"($</span><span class="si">{</span><span class="n">GENERATE_PAID_ENV</span><span class="si">}</span><span class="s2">=1, or name the backend)"</span>
+            <span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">last</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">backend_has_key</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+            <span class="n">skipped</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: no key set"</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">report</span> <span class="o">=</span> <span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">skippable</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">last</span><span class="p">:</span>
+                <span class="n">exc</span><span class="o">.</span><span class="n">skipped_backends</span> <span class="o">=</span> <span class="n">skipped</span>
+                <span class="k">raise</span>
+            <span class="n">skipped</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">last</span>
+            <span class="ow">and</span> <span class="n">res</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">"error"</span>
+            <span class="ow">and</span> <span class="n">provider_refused</span><span class="p">(</span><span class="n">report</span><span class="o">.</span><span class="n">exception</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">skipped</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: the provider refused the request (</span><span class="si">{</span><span class="n">res</span><span class="o">.</span><span class="n">error</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">return</span> <span class="n">report</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">skipped</span>
+    <span class="k">raise</span> <span class="n">SourceConfigurationError</span><span class="p">(</span>
+        <span class="s2">"no backend in the generation order could run; nothing was generated: "</span>
+        <span class="o">+</span> <span class="s2">"; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">skipped</span><span class="p">)</span>
+    <span class="p">)</span>
+
+
 <span class="c1">#: Non-affordance keyword params of :func:`_generate` (the rest are GENERATION_AFFORDANCES).</span>
 <span class="n">_GENERATE_KNOWN</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
     <span class="p">{</span>
@@ -1221,6 +1503,8 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"reuse_cached"</span><span class="p">,</span>
         <span class="s2">"generations_cache"</span><span class="p">,</span>
         <span class="s2">"repair"</span><span class="p">,</span>
+        <span class="s2">"level"</span><span class="p">,</span>
+        <span class="s2">"check_prompt"</span><span class="p">,</span>
     <span class="p">}</span>
 <span class="p">)</span>
 
@@ -1314,6 +1598,59 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">fixed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">audio_bytes</span><span class="p">:</span>  <span class="c1"># repaired and cleared: the clip is now a derivative</span>
         <span class="n">lic</span><span class="o">.</span><span class="n">transformations</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">applied</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">fixed</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_levelled_bytes</span><span class="p">(</span><span class="n">audio_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">lic</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[bytes, dict]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The clip levelled to ``level`` (:func:`foley.level.level_bytes`), noted and recorded.</span>
+
+<span class="sd">    Returns the bytes and the structured fact for ``qc['level']`` (target, measured</span>
+<span class="sd">    loudness before, whether it was applied), so a later stage that normalises by</span>
+<span class="sd">    loudness can tell a clip was already levelled.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..level</span><span class="w"> </span><span class="kn">import</span> <span class="n">level_bytes</span><span class="p">,</span> <span class="n">resolve_target_lufs</span>
+
+    <span class="n">levelled</span><span class="p">,</span> <span class="n">applied</span><span class="p">,</span> <span class="n">measured</span> <span class="o">=</span> <span class="n">level_bytes</span><span class="p">(</span><span class="n">audio_bytes</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span>
+    <span class="n">fact</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"target_lufs"</span><span class="p">:</span> <span class="n">resolve_target_lufs</span><span class="p">(</span><span class="n">level</span><span class="p">),</span>
+        <span class="s2">"measured_lufs_before"</span><span class="p">:</span> <span class="n">measured</span><span class="p">,</span>
+        <span class="s2">"applied"</span><span class="p">:</span> <span class="n">applied</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">applied</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"level </span><span class="si">{</span><span class="n">level</span><span class="si">!r}</span><span class="s2">: unchanged (too short or too quiet to measure)"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">fact</span>
+    <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">applied</span><span class="p">)</span>
+    <span class="n">lic</span><span class="o">.</span><span class="n">transformations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">applied</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">levelled</span><span class="p">,</span> <span class="n">fact</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_prompt_verdict</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">library</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The prompt-match verdict for the clip (:func:`foley.prompt_match.prompt_match`), noted."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..prompt_match</span><span class="w"> </span><span class="kn">import</span> <span class="n">UNCHECKED</span><span class="p">,</span> <span class="n">note_for</span><span class="p">,</span> <span class="n">prompt_match</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">embedder</span> <span class="o">=</span> <span class="n">library</span><span class="o">.</span><span class="n">embedder</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - no embedder here: say so</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="n">UNCHECKED</span><span class="p">,</span> <span class="s2">"reason"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"no embedder: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">match</span> <span class="o">=</span> <span class="n">prompt_match</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">)</span>
+    <span class="n">note</span> <span class="o">=</span> <span class="n">note_for</span><span class="p">(</span><span class="n">match</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">note</span><span class="p">:</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">note</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">match</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_stamp_qc</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">facts</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">library</span><span class="p">,</span> <span class="n">stored</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Merge ``facts`` into the result's and its record's ``qc`` (re-storing the record once)."""</span>
+    <span class="n">res</span><span class="o">.</span><span class="n">qc</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">qc</span> <span class="ow">or</span> <span class="p">{}),</span> <span class="o">**</span><span class="n">facts</span><span class="p">}</span>
+    <span class="n">rec</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">record</span>
+    <span class="k">if</span> <span class="n">rec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">rec</span><span class="o">.</span><span class="n">qc</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">qc</span> <span class="ow">or</span> <span class="p">{}),</span> <span class="o">**</span><span class="n">facts</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">stored</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">library</span><span class="o">.</span><span class="n">update_record</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - the facts are still on the result</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"qc facts not saved on the stored record (</span><span class="si">{</span><span class="n">exc</span><span class="si">!r}</span><span class="s2">)"</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_metadata_captioner</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>

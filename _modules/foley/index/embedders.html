@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=b345ff55"></script>
+    <script src="../../../_static/documentation_options.js?v=78cc6f98"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.43" />
+  <meta name="docsearch:version" content="0.0.44" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -765,6 +765,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            releases are). Read by the ingest AI-use gate for sounds whose rights</span>
 <span class="sd">            holder allows only open-source models (#69).</span>
 <span class="sd">    """</span>
+
+    <span class="c1">#: Cosine similarity under which a generated clip is flagged as not matching its</span>
+    <span class="c1">#: prompt (:func:`foley.prompt_match.prompt_match`). Provisional: LAION-CLAP puts</span>
+    <span class="c1">#: matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but</span>
+    <span class="c1">#: this value is not yet calibrated on a labelled set of foley generations.</span>
+    <span class="n">prompt_match_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.2</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_CLAP_MODEL_ID</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""Create the embedder (model weights load lazily on first use).</span>

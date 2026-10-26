@@ -63,7 +63,9 @@
 - [foley.base](foley.base.html.md): Canonical data models for foley — the single source of truth (SSOT) types.
 - [foley.cli](foley.cli.html.md): The &#96;foley&#96; command-line interface (stdlib &#96;argparse&#96;, zero new deps).
 - [foley.cost](foley.cost.html.md): Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).
+- [foley.level](foley.level.html.md): Level a clip to a stated loudness target for its class, so relative levels are sane.
 - [foley.licensing](foley.licensing.html.md): License policy for foley: the license_id -&gt; flag-set SSOT, flag derivation
+- [foley.prompt_match](foley.prompt_match.html.md): Does a generated clip sound like what was asked for? A text-audio check, or an honest “unchecked”.
 - [foley.qc](foley.qc.html.md): Tier-0 deterministic audio QC for foley (research report 08 §3).
 - [foley.requirements](foley.requirements.html.md): Onboarding — check what foley needs, tell the user how to get it (accompy-style, #12).
 - [foley.runtime](foley.runtime.html.md): Runtime posture — local-first / offline mode as one verifiable contract (#12, report 12).

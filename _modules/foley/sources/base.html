@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=b345ff55"></script>
+    <script src="../../../_static/documentation_options.js?v=78cc6f98"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.43" />
+  <meta name="docsearch:version" content="0.0.44" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -873,14 +873,40 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">auth_env_vars</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, ...]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The env vars a source's key may live in, in the order they are read.</span>
+
+<span class="sd">    ``config["auth"]["env_var"]`` is the documented one; ``env_var_aliases`` lists</span>
+<span class="sd">    names the rest of the fleet reads for the same provider (ElevenLabs: ``an`` and</span>
+<span class="sd">    ``voxy`` read ``ELEVEN_API_KEY`` too), so a key set for them is found here. Empty</span>
+<span class="sd">    for a source with no key.</span>
+
+<span class="sd">    &gt;&gt;&gt; auth_env_vars({"auth": {"env_var": "A_KEY", "env_var_aliases": ["B_KEY"]}})</span>
+<span class="sd">    ('A_KEY', 'B_KEY')</span>
+<span class="sd">    &gt;&gt;&gt; auth_env_vars({"auth": None})</span>
+<span class="sd">    ()</span>
+<span class="sd">    """</span>
+    <span class="n">auth</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"auth"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">primary</span> <span class="o">=</span> <span class="n">auth</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"env_var"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">primary</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">()</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">primary</span><span class="p">,</span> <span class="o">*</span><span class="n">auth</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"env_var_aliases"</span><span class="p">,</span> <span class="p">()))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">operator_env_key</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The operator's key for a source: the first of :func:`auth_env_vars` that is set."""</span>
+    <span class="k">return</span> <span class="nb">next</span><span class="p">((</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">v</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">auth_env_vars</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">v</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+
+
 <div class="viewcode-block" id="resolve_source_key">
 <a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.resolve_source_key">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">resolve_source_key</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A source's API token: ``api_key``, else a bound key, else its env var.</span>
+<span class="w">    </span><span class="sd">"""A source's API token: ``api_key``, else a bound key, else its env var(s).</span>
 
 <span class="sd">    The chain is the fleet's facade kit (``ocracy.kit.resolve_credential``), so a</span>
 <span class="sd">    server can bind a per-request key with ``ocracy.kit.using_credentials(&lt;source&gt;=key)``.</span>
-<span class="sd">    ``config["auth"]`` names the env var and the sign-up URL.</span>
+<span class="sd">    ``config["auth"]`` names the env var (and its fleet aliases, see</span>
+<span class="sd">    :func:`auth_env_vars`) and the sign-up URL.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        SourceConfigurationError: Naming the env var and where to get a key.</span>
@@ -891,7 +917,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">resolve_credential</span><span class="p">(</span>
         <span class="n">name</span><span class="p">,</span>
         <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">,</span>
-        <span class="n">env_var</span><span class="o">=</span><span class="n">auth</span><span class="p">[</span><span class="s2">"env_var"</span><span class="p">],</span>
+        <span class="n">env_var</span><span class="o">=</span><span class="n">auth_env_vars</span><span class="p">(</span><span class="n">config</span><span class="p">),</span>
         <span class="n">guidance</span><span class="o">=</span><span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span><span class="s2">"get_key_url"</span><span class="p">:</span> <span class="n">auth</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"apply_url"</span><span class="p">)}},</span>
         <span class="n">error</span><span class="o">=</span><span class="n">SourceConfigurationError</span><span class="p">,</span>
         <span class="n">hint</span><span class="o">=</span><span class="s2">"Or pass api_key=."</span><span class="p">,</span>
@@ -983,9 +1009,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">ocracy.kit</span><span class="w"> </span><span class="kn">import</span> <span class="n">current_credentials</span>
 
-    <span class="n">env_var</span> <span class="o">=</span> <span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"auth"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"env_var"</span><span class="p">)</span>
     <span class="n">key</span> <span class="o">=</span> <span class="n">api_key</span> <span class="ow">or</span> <span class="n">current_credentials</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"name"</span><span class="p">])</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span> <span class="ow">or</span> <span class="n">key</span> <span class="o">==</span> <span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">env_var</span><span class="p">)</span> <span class="k">if</span> <span class="n">env_var</span> <span class="k">else</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span> <span class="ow">or</span> <span class="n">key</span> <span class="o">==</span> <span class="n">operator_env_key</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">"operator"</span>
     <span class="k">return</span> <span class="n">key_fingerprint</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
 

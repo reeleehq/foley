@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=b345ff55"></script>
+    <script src="../../../_static/documentation_options.js?v=78cc6f98"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.43" />
+  <meta name="docsearch:version" content="0.0.44" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1123,59 +1123,87 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Generate a sound from a text prompt (local backends only when offline).</span>
 
-<span class="sd">    ``backend='auto'`` is the host's default (``$FOLEY_GENERATE_BACKEND``, else the local</span>
-<span class="sd">    Stable Audio Open); name one to choose (``fal_stable_audio_3``, ``elevenlabs``, ...).</span>
+<span class="sd">    ``backend='auto'`` tries the host's generation order (ElevenLabs direct first, then</span>
+<span class="sd">    the fal backends, then the local Stable Audio Open; the paid ones only when the</span>
+<span class="sd">    host opted in with ``$FOLEY_GENERATE_PAID=1``; ``$FOLEY_GENERATE_ORDER`` /</span>
+<span class="sd">    ``$FOLEY_GENERATE_BACKEND`` change it), skipping what is not configured or not</span>
+<span class="sd">    allowed offline; name one to choose (``fal_stable_audio_3``, ``elevenlabs``, ...).</span>
 
 <span class="sd">    A clip QC would quarantine for a clipped run just over the gate is repaired and</span>
 <span class="sd">    stored (the repair is in the result's notes). A refused generation's dict carries</span>
 <span class="sd">    ``cache_key``: where its paid bytes are in the generations cache</span>
 <span class="sd">    (``foley.generations.get(cache_key)``, on the host — bytes never travel over MCP).</span>
 <span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationError</span><span class="p">,</span> <span class="n">generate</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">BudgetExceeded</span><span class="p">,</span> <span class="n">spend_scope</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">EXTERNAL</span><span class="p">,</span> <span class="n">EgressBlocked</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..sources.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_generate_backend</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..sources._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnsupportedParameter</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..sources.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SourceConfigurationError</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..sources.generate</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">backend_is_paid</span><span class="p">,</span>
+        <span class="n">first_runnable_backend</span><span class="p">,</span>
+        <span class="n">generate_backend_order</span><span class="p">,</span>
+        <span class="n">generation_rights_refusal</span><span class="p">,</span>
+        <span class="n">paid_generation_opted_in</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..sources.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">source_egress</span>
 
-    <span class="k">if</span> <span class="n">backend</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"auto"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="n">backend</span> <span class="o">=</span> <span class="n">default_generate_backend</span><span class="p">()</span>
+    <span class="n">use</span> <span class="o">=</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial_ok</span><span class="p">)</span>
+
     <span class="c1"># The bound server runtime may differ from the call's context (a server built with</span>
     <span class="c1"># runtime= but not run under offline_scope), so check it here too; undeclared</span>
     <span class="c1"># egress counts as external (fail-closed), as in the registry.</span>
-    <span class="n">egress</span> <span class="o">=</span> <span class="n">source_egress</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span> <span class="ow">or</span> <span class="n">EXTERNAL</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">_runtime</span><span class="p">()</span><span class="o">.</span><span class="n">allows</span><span class="p">(</span><span class="n">egress</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">allowed</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_runtime</span><span class="p">()</span><span class="o">.</span><span class="n">allows</span><span class="p">(</span><span class="n">source_egress</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="n">EXTERNAL</span><span class="p">)</span>
+
+    <span class="n">auto</span> <span class="o">=</span> <span class="n">backend</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"auto"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">generate_backend_order</span><span class="p">()</span> <span class="k">if</span> <span class="n">auto</span> <span class="k">else</span> <span class="p">(</span><span class="n">backend</span><span class="p">,)</span>
+    <span class="n">paid_ok</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">auto</span> <span class="ow">or</span> <span class="n">paid_generation_opted_in</span><span class="p">()</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+        <span class="n">name</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">order</span>
+        <span class="k">if</span> <span class="n">allowed</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">paid_ok</span> <span class="ow">or</span> <span class="n">name</span> <span class="o">==</span> <span class="n">order</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">backend_is_paid</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">order</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">"ok"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
             <span class="s2">"error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"backend </span><span class="si">{</span><span class="n">backend</span><span class="si">!r}</span><span class="s2"> is external and disallowed in offline mode"</span><span class="p">,</span>
         <span class="p">}</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationError</span><span class="p">,</span> <span class="n">generate</span>
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">first_runnable_backend</span><span class="p">(</span><span class="n">order</span><span class="p">,</span> <span class="n">paid_ok</span><span class="o">=</span><span class="n">paid_ok</span><span class="p">)</span>  <span class="c1"># reported if refused</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># a single backend is judged here; an order, per backend</span>
+        <span class="n">refusal</span> <span class="o">=</span> <span class="n">generation_rights_refusal</span><span class="p">(</span><span class="n">order</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">use</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">refusal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">"ok"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"refused"</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="n">refusal</span><span class="p">,</span> <span class="s2">"backend"</span><span class="p">:</span> <span class="n">backend</span><span class="p">}</span>
 
     <span class="c1"># The public façade returns the stored Candidate (a re-searchable, by-value</span>
     <span class="c1"># SoundRecord) and RAISES GenerationError on any non-success outcome (QC-quarantined,</span>
     <span class="c1"># rights-blocked, safety-refused, or an empty result). Surface both as JSON so the</span>
     <span class="c1"># agent gets the real generated id on success — and a structured error, never an</span>
     <span class="c1"># escaping exception, on failure — honoring the module's JSON-in/JSON-out contract.</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">BudgetExceeded</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..sources._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnsupportedParameter</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..sources.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SourceConfigurationError</span>
-
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">spend_scope</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..sources.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">generation_rights_refusal</span>
-
-    <span class="n">refusal</span> <span class="o">=</span> <span class="n">generation_rights_refusal</span><span class="p">(</span>
-        <span class="n">backend</span><span class="p">,</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial_ok</span><span class="p">)</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="n">refusal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s2">"ok"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"refused"</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="n">refusal</span><span class="p">,</span> <span class="s2">"backend"</span><span class="p">:</span> <span class="n">backend</span><span class="p">}</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">with</span> <span class="n">spend_scope</span><span class="p">(</span><span class="n">_server_budget</span><span class="p">()):</span>
-            <span class="n">cand</span> <span class="o">=</span> <span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span> <span class="n">library</span><span class="o">=</span><span class="n">_lib</span><span class="p">())</span>
+            <span class="n">cand</span> <span class="o">=</span> <span class="n">generate</span><span class="p">(</span>
+                <span class="n">prompt</span><span class="p">,</span>
+                <span class="n">backend</span><span class="o">=</span><span class="n">order</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">order</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">order</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">library</span><span class="o">=</span><span class="n">_lib</span><span class="p">(),</span>
+                <span class="n">intended_use</span><span class="o">=</span><span class="n">use</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">backend</span> <span class="o">=</span> <span class="n">cand</span><span class="o">.</span><span class="n">sound</span><span class="o">.</span><span class="n">license</span><span class="o">.</span><span class="n">source</span> <span class="ow">or</span> <span class="n">backend</span>  <span class="c1"># the one that served it</span>
     <span class="k">except</span> <span class="p">(</span>
         <span class="n">EgressBlocked</span><span class="p">,</span>
         <span class="n">BudgetExceeded</span><span class="p">,</span>
         <span class="n">SourceConfigurationError</span><span class="p">,</span>
         <span class="n">UnsupportedParameter</span><span class="p">,</span>
     <span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-        <span class="c1"># Refused before any provider call: say why, as JSON.</span>
-        <span class="k">return</span> <span class="p">{</span><span class="s2">"ok"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"refused"</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span> <span class="s2">"backend"</span><span class="p">:</span> <span class="n">backend</span><span class="p">}</span>
+        <span class="c1"># Refused before a billed call (an earlier backend in the order may have been</span>
+        <span class="c1"># refused by its provider, unbilled): say why, as JSON.</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"ok"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"refused"</span><span class="p">,</span>
+            <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span>
+            <span class="s2">"backend"</span><span class="p">:</span> <span class="n">backend</span><span class="p">,</span>
+            <span class="s2">"skipped_backends"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="s2">"skipped_backends"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="p">}</span>
     <span class="k">except</span> <span class="n">GenerationError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">"ok"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>

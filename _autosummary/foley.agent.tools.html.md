@@ -22,7 +22,7 @@ generation-error hierarchy are imported lazily inside the functions that call th
 | [`estimate_find_usd`](#foley.agent.tools.estimate_find_usd)(\*[, max_events, backend, ...])   | An upper bound on what one [`find()`](#foley.agent.tools.find) run can spend, or `None` if unknown.   |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
 | [`find`](#foley.agent.tools.find)(context, \*[, max_events, seconds, ...])       | The headline: a narrative context → verified, license-clean sound candidates.                                             |
-| [`generate_sound`](#foley.agent.tools.generate_sound)(query, \*[, backend, library])       | Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.                                   |
+| [`generate_sound`](#foley.agent.tools.generate_sound)(query, \*[, backend, library, ...])  | Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.                                   |
 | [`place_in_timeline`](#foley.agent.tools.place_in_timeline)(clip, \*[, onset, gain, ...])     | Emit the SPARSE per-item plan subset (`clip_ref·onset·gain·layer·loop`) — no more.                                        |
 | [`plan`](#foley.agent.tools.plan)(candidates, \*[, transcript])                  | Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge).                                 |
 | [`search_sounds`](#foley.agent.tools.search_sounds)(queries, \*[, k, library, filters])   | Hybrid search for one query, or a multi-query RRF-merge (the SELECT retrieval tool).                                      |
@@ -86,10 +86,12 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
   `list[Candidate]` (`stream=False`) or an `Iterator[Candidate]`
   (`stream=True`) — one verified, license-clean candidate per resolved event.
 
-### foley.agent.tools.generate_sound(query, , backend='auto', library=None)
+### foley.agent.tools.generate_sound(query, , backend='auto', library=None, intended_use=None)
 
 Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.
 
+`backend='auto'` walks the generation order, passing over backends whose licence
+cannot serve `intended_use` (default: commercial) before anything is paid for.
 Returns a `Candidate` (`origin=generated`); raises the `GenerationError`
 hierarchy on refusal / no-result (caught fail-closed by `_generate_and_reverify()`).
 

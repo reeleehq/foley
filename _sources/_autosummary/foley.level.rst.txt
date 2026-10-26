@@ -1,0 +1,21 @@
+foley.level
+===========
+
+.. automodule:: foley.level
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      LevelSpec
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      class_target_lufs
+      level_bytes
+      require_loudness_meter
+      resolve_target_lufs
+   

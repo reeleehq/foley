@@ -1,4 +1,4 @@
-> built 2026-10-25 06:37 UTC from 9d143a4 (main) · foley 0.0.43. Details: build_info.json
+> built 2026-10-26 02:37 UTC from 07caee3 (main) · foley 0.0.44. Details: build_info.json
 
 # index.html.md
 
@@ -44,7 +44,16 @@ clip = foley.generate("a single wooden door creak", backend="stable_audio", dura
 
 # No GPU? The fal-hosted backends (foley[fal] + FAL_KEY; paid, priced before the call):
 # Stable Audio 3 Small-SFX at $0.0206 a clip, commercial use under $1M revenue
-clip = foley.generate("a single wooden door creak", backend="fal_stable_audio_3", duration=3)
+clip = foley.generate(
+    "a single wooden door creak", backend="fal_stable_audio_3", duration=3
+)
+
+# Or let foley pick: with paid generation opted in (FOLEY_GENERATE_PAID=1) an unnamed
+# backend walks the generation order, ElevenLabs direct first (ELEVENLABS_API_KEY or
+# ELEVEN_API_KEY, plus FOLEY_ELEVENLABS_PLAN), then fal, then the local model; the
+# notes say which backends were skipped and why
+clip = foley.generate("a single wooden door creak", duration=3, level="sfx_fg")
+clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
 
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
@@ -282,7 +291,7 @@ verify + generate aggregate into a single reproducible run-manifest.
 | [`verify_match`](_autosummary/foley.agent.html.md#foley.agent.verify_match)(event, candidate, \*[, level, ...])    | Verify `candidate` against `event` up to rung `level` (AND-confirming ladder).            |
 | [`gate_candidates`](_autosummary/foley.agent.html.md#foley.agent.gate_candidates)(candidates, intended_use)           | Fail-closed license gate — run BEFORE verification/ranking (invariant #3).                |
 | [`decide`](_autosummary/foley.agent.html.md#foley.agent.decide)(event, kept, verified, \*, ...)              | The single generate-vs-retrieve branch — a PURE function (report 05 §4).                  |
-| [`generate_sound`](_autosummary/foley.agent.html.md#foley.agent.generate_sound)(query, \*[, backend, library])       | Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.   |
+| [`generate_sound`](_autosummary/foley.agent.html.md#foley.agent.generate_sound)(query, \*[, backend, library, ...])  | Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.   |
 | [`place_in_timeline`](_autosummary/foley.agent.html.md#foley.agent.place_in_timeline)(clip, \*[, onset, gain, ...])     | Emit the SPARSE per-item plan subset (`clip_ref·onset·gain·layer·loop`) — no more.        |
 
 ### Classes
@@ -705,10 +714,12 @@ its survivors are license-clean.
 * **Returns:**
   The license-clean sublist (each with `license_ok is True`), order preserved.
 
-### foley.agent.generate_sound(query, , backend='auto', library=None)
+### foley.agent.generate_sound(query, , backend='auto', library=None, intended_use=None)
 
 Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.
 
+`backend='auto'` walks the generation order, passing over backends whose licence
+cannot serve `intended_use` (default: commercial) before anything is paid for.
 Returns a `Candidate` (`origin=generated`); raises the `GenerationError`
 hierarchy on refusal / no-result (caught fail-closed by `_generate_and_reverify()`).
 
@@ -1158,8 +1169,11 @@ rehydrate them by id. Returns compact candidate rows.
 
 Generate a sound from a text prompt (local backends only when offline).
 
-`backend='auto'` is the host’s default (`$FOLEY_GENERATE_BACKEND`, else the local
-Stable Audio Open); name one to choose (`fal_stable_audio_3`, `elevenlabs`, …).
+`backend='auto'` tries the host’s generation order (ElevenLabs direct first, then
+the fal backends, then the local Stable Audio Open; the paid ones only when the
+host opted in with `$FOLEY_GENERATE_PAID=1`; `$FOLEY_GENERATE_ORDER` /
+`$FOLEY_GENERATE_BACKEND` change it), skipping what is not configured or not
+allowed offline; name one to choose (`fal_stable_audio_3`, `elevenlabs`, …).
 
 A clip QC would quarantine for a clipped run just over the gate is repaired and
 stored (the repair is in the result’s notes). A refused generation’s dict carries
@@ -1922,7 +1936,7 @@ generation-error hierarchy are imported lazily inside the functions that call th
 | [`estimate_find_usd`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.estimate_find_usd)(\*[, max_events, backend, ...])   | An upper bound on what one [`find()`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.find) run can spend, or `None` if unknown.   |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
 | [`find`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.find)(context, \*[, max_events, seconds, ...])       | The headline: a narrative context → verified, license-clean sound candidates.                                             |
-| [`generate_sound`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.generate_sound)(query, \*[, backend, library])       | Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.                                   |
+| [`generate_sound`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.generate_sound)(query, \*[, backend, library, ...])  | Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.                                   |
 | [`place_in_timeline`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.place_in_timeline)(clip, \*[, onset, gain, ...])     | Emit the SPARSE per-item plan subset (`clip_ref·onset·gain·layer·loop`) — no more.                                        |
 | [`plan`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.plan)(candidates, \*[, transcript])                  | Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge).                                 |
 | [`search_sounds`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.search_sounds)(queries, \*[, k, library, filters])   | Hybrid search for one query, or a multi-query RRF-merge (the SELECT retrieval tool).                                      |
@@ -1986,10 +2000,12 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
   `list[Candidate]` (`stream=False`) or an `Iterator[Candidate]`
   (`stream=True`) — one verified, license-clean candidate per resolved event.
 
-### foley.agent.tools.generate_sound(query, , backend='auto', library=None)
+### foley.agent.tools.generate_sound(query, , backend='auto', library=None, intended_use=None)
 
 Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.
 
+`backend='auto'` walks the generation order, passing over backends whose licence
+cannot serve `intended_use` (default: commercial) before anything is paid for.
 Returns a `Candidate` (`origin=generated`); raises the `GenerationError`
 hierarchy on refusal / no-result (caught fail-closed by `_generate_and_reverify()`).
 
@@ -4923,6 +4939,13 @@ Embed one or more query strings -> `(n_texts, dim)` L2-normalized.
 * **Return type:**
   `ndarray`
 
+#### prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+
+Cosine similarity under which a generated clip is flagged as not matching its
+prompt ([`foley.prompt_match.prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)). Provisional: LAION-CLAP puts
+matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
+this value is not yet calibrated on a labelled set of foley generations.
+
 ### *class* foley.ClapZeroShotTagger(, embedder=None, labels=None, prompt='this is a sound of {label}', threshold=0.0)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -6811,7 +6834,7 @@ RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
 
   FusedHit\`s, each carrying its raw component scores.
 
-### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, \*\*affordances)
+### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, \*\*affordances)
 
 Generate a sound effect for `prompt` and add it to the library (by-value).
 
@@ -6827,13 +6850,25 @@ training uses).
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description.
-  * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – A registered generate source. `None` (default) is
-    `$FOLEY_GENERATE_BACKEND`, else `"stable_audio"` (local; needs
-    `foley[stable-audio]`). Hosted: `"elevenlabs"` (`foley[elevenlabs]` +
-    `$ELEVENLABS_API_KEY`) and the fal endpoints `"fal_stable_audio_3"`
-    (Stable Audio 3 Small-SFX, commercial under $1M revenue),
-    `"fal_elevenlabs"`, `"fal_sonilo"` and `"fal_mmaudio"` (non-commercial)
-    (`foley[fal]` + `$FAL_KEY`).
+  * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)] | [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – A registered generate source, or a sequence of them to try in
+    order. `None` (default) tries the generation order
+    (`foley.sources.generate.generate_backend_order()`): ElevenLabs
+    direct first (`"elevenlabs"`: `foley[elevenlabs]`,
+    `$ELEVENLABS_API_KEY` or `$ELEVEN_API_KEY`, and
+    `$FOLEY_ELEVENLABS_PLAN`), then fal’s `"fal_stable_audio_3"` (Stable
+    Audio 3 Small-SFX, commercial under $1M revenue) and `"fal_elevenlabs"`
+    (`foley[fal]` + `$FAL_KEY`), then the local `"stable_audio"`
+    (`foley[stable-audio]`). The paid ones are tried only once paid
+    generation is opted in (`$FOLEY_GENERATE_PAID=1`; a key in the
+    environment is not consent to spend, #58), so out of the box this is the
+    free local backend. A backend with no key, not configured, offline,
+    whose licence cannot serve `intended_use`, or whose provider refused the
+    request (an HTTP error, nothing billed) is skipped, and the candidate’s
+    `notes` say why; a failure that may have been billed is final.
+    `$FOLEY_GENERATE_ORDER` (comma-separated) replaces the order;
+    `$FOLEY_GENERATE_BACKEND` pins one backend. A named backend is used
+    alone, with no fallback. Others: `"fal_sonilo"`, `"fal_mirelo"`,
+    `"fal_stable_audio_3_medium"`, `"fal_mmaudio"` (non-commercial).
   * **library** – Target library (default: the process-wide default library).
   * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, synthesize + QC a preview without adding it: the returned
     candidate’s `audio_bytes` carries the clip (the archive bytes the library
@@ -6869,6 +6904,18 @@ training uses).
     [`foley.repair.repair()`](_autosummary/foley.repair.html.md#foley.repair.repair)’s signature replaces the policy (an ffmpeg one;
     `functools.partial(foley.repair.repair, min_status=QCStatus.pass_)` also
     declicks clips QC admits with a warning, which are otherwise stored as is).
+  * **level** – Level the clip to a loudness target before storing it: a layer name
+    (`'sfx_fg'` -25 LUFS, `'ambience'` -37 LUFS, … : the WEAVE layer gains
+    under a -16 LUFS voice, see [`foley.level.class_target_lufs()`](_autosummary/foley.level.html.md#foley.level.class_target_lufs)) or a LUFS
+    number. `None` (default) keeps the generated level.
+  * **check_prompt** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Score the clip against its prompt with the library’s text-audio
+    embedder (CLAP) and flag a mismatch in the notes and
+    `sound.qc['prompt_match']`; `'unchecked'` (with the reason) when no
+    capable embedder is available. Default `True`.
+  * **intended_use** – The [`IntendedUse`](_autosummary/foley.html.md#foley.IntendedUse) the clip must serve when an order is
+    walked (default: commercial): a backend whose licence cannot serve it is
+    skipped before anything is paid for. A single named backend is used as
+    asked (its licence is gated downstream by [`keep()`](_autosummary/foley.html.md#foley.keep)).
   * **\*\*affordances** – Unified generation affordances (`duration`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see `GENERATION_AFFORDANCES`).
@@ -7927,7 +7974,9 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 | [`base`](_autosummary/foley.base.html.md#module-foley.base)                 | Canonical data models for foley — the single source of truth (SSOT) types.                                                                           |
 | [`cli`](_autosummary/foley.cli.html.md#module-foley.cli)                   | The `foley` command-line interface (stdlib `argparse`, zero new deps).                                                                               |
 | [`cost`](_autosummary/foley.cost.html.md#module-foley.cost)                 | Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).                                                                  |
+| [`level`](_autosummary/foley.level.html.md#module-foley.level)               | Level a clip to a stated loudness target for its class, so relative levels are sane.                                                                 |
 | [`licensing`](_autosummary/foley.licensing.html.md#module-foley.licensing)       | License policy for foley: the license_id -> flag-set SSOT, flag derivation (with per-source overrides), and the fail-closed candidate `keep()` gate. |
+| [`prompt_match`](_autosummary/foley.prompt_match.html.md#module-foley.prompt_match) | Does a generated clip sound like what was asked for? A text-audio check, or an honest "unchecked".                                                   |
 | [`qc`](_autosummary/foley.qc.html.md#module-foley.qc)                     | Tier-0 deterministic audio QC for foley (research report 08 §3).                                                                                     |
 | [`requirements`](_autosummary/foley.requirements.html.md#module-foley.requirements) | Onboarding — check what foley needs, tell the user how to get it (accompy-style, #12).                                                               |
 | [`runtime`](_autosummary/foley.runtime.html.md#module-foley.runtime)           | Runtime posture — local-first / offline mode as one verifiable contract (#12, report 12).                                                            |
@@ -8031,6 +8080,13 @@ Embed one or more query strings -> `(n_texts, dim)` L2-normalized.
 
 * **Return type:**
   `ndarray`
+
+#### prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+
+Cosine similarity under which a generated clip is flagged as not matching its
+prompt ([`foley.prompt_match.prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)). Provisional: LAION-CLAP puts
+matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
+this value is not yet calibrated on a labelled set of foley generations.
 
 ### foley.index.embedders.DEFAULT_CLAP_DIM *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 512*
 
@@ -8194,6 +8250,13 @@ Embed one or more query strings -> `(n_texts, dim)` L2-normalized.
 
 * **Return type:**
   `ndarray`
+
+#### prompt_match_threshold *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.2*
+
+Cosine similarity under which a generated clip is flagged as not matching its
+prompt ([`foley.prompt_match.prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)). Provisional: LAION-CLAP puts
+matching text-audio pairs around 0.3-0.5 and unrelated ones near 0-0.15, but
+this value is not yet calibrated on a labelled set of foley generations.
 
 ### *class* foley.index.ClapZeroShotTagger(, embedder=None, labels=None, prompt='this is a sound of {label}', threshold=0.0)
 
@@ -11166,6 +11229,113 @@ its CatID token is unknown (so a wrong subcategory is never emitted).
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
 
+# _autosummary/foley.level.html.md
+
+# foley.level
+
+Level a clip to a stated loudness target for its class, so relative levels are sane.
+
+A generated clip comes out at whatever level its model likes: Stable Audio 3 peaks near
+-20 dBFS, ElevenLabs much hotter, so two sounds meant to sit side by side differ by
+10 dB or more before anyone touches a fader. [`level_bytes()`](_autosummary/foley.level.html.md#foley.level.level_bytes) measures a clip’s
+integrated loudness (ITU-R BS.1770-4) and scales it to the target for its class,
+then keeps the sample peak under foley’s ceiling.
+
+The class targets are not new numbers. They are the dialogue-relative layer gains the
+WEAVE mixer already uses ([`foley.weave.mix.LAYER_GAIN_DB`](_autosummary/foley.weave.mix.html.md#foley.weave.mix.LAYER_GAIN_DB): a one-shot sits
+9 dB under the voice, an ambience bed 21 dB under) applied to a voice at the
+reference programme loudness (`foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`,
+-16 LUFS). So a levelled one-shot is at -25 LUFS and a levelled bed at -37 LUFS:
+what they would be under a voice at -16 LUFS, and how they should sound side by side.
+
+Two cases are left unchanged and said so, never amplified: a clip too short to
+measure (under one 400 ms gating block: a click, a page flick) and a near-silent one.
+
+[`foley.generate()`](_autosummary/foley.html.md#foley.generate) levels a clip when asked (`level='sfx_fg'`, a
+[`Layer`](_autosummary/foley.base.html.md#foley.base.Layer), or a LUFS number). It does not by default: the WEAVE
+render applies the layer gains itself to the clip as stored, so a library clip
+levelled to its class target would be attenuated twice. Levelling exported clips for
+listening, or a library weave normalises by measured loudness, are the uses.
+
+Zero-dependency import: `numpy`, `pyloudnorm` and `soundfile` load inside the
+functions.
+
+### Module Attributes
+
+| [`LevelSpec`](_autosummary/foley.level.html.md#foley.level.LevelSpec)   | a layer (or its name) for its class target, or a LUFS value.   |
+|--------------------------------------------------------------|----------------------------------------------------------------|
+
+### Functions
+
+| [`class_target_lufs`](_autosummary/foley.level.html.md#foley.level.class_target_lufs)(layer)         | The integrated-loudness target (LUFS) for a clip of `layer`.                                                                         |
+|-----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| [`level_bytes`](_autosummary/foley.level.html.md#foley.level.level_bytes)(audio_bytes, target) | Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.                                                     |
+| [`require_loudness_meter`](_autosummary/foley.level.html.md#foley.level.require_loudness_meter)()         | Raise `ImportError` (with the install line) when `pyloudnorm` is missing.                                                            |
+| [`resolve_target_lufs`](_autosummary/foley.level.html.md#foley.level.resolve_target_lufs)(spec)        | A `level=` value as a LUFS target: a number as is, a layer via [`class_target_lufs()`](_autosummary/foley.level.html.md#foley.level.class_target_lufs). |
+
+### foley.level.LevelSpec
+
+a layer (or its name) for its class target, or a LUFS value.
+
+* **Type:**
+  What `level=` accepts
+
+alias of [`Layer`](_autosummary/foley.base.html.md#foley.base.Layer) | [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+### foley.level.class_target_lufs(layer)
+
+The integrated-loudness target (LUFS) for a clip of `layer`.
+
+The reference voice loudness plus the layer’s dialogue-relative gain (see the
+module docstring), so it moves with both SSOTs.
+
+```pycon
+>>> class_target_lufs("sfx_fg")
+-25.0
+>>> class_target_lufs(Layer.ambience)
+-37.0
+```
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+### foley.level.level_bytes(audio_bytes, target)
+
+Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.
+
+* **Parameters:**
+  * **audio_bytes** ([`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)) – Any clip `soundfile` decodes.
+  * **target** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`Layer`](_autosummary/foley.base.html.md#foley.base.Layer), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float), [`int`](https://docs.python.org/3/builtins/functions.html#int)]) – A layer (its class target) or a LUFS number (see [`resolve_target_lufs()`](_autosummary/foley.level.html.md#foley.level.resolve_target_lufs)).
+* **Returns:**
+  the levelled clip re-encoded in foley’s FLAC
+  archive form and a one-line account of the gain applied (for the licence’s
+  `transformations`); or, for a clip too short or too quiet to measure, the
+  bytes unchanged, `applied=None` and `measured_lufs=None`.
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
+### foley.level.require_loudness_meter()
+
+Raise `ImportError` (with the install line) when `pyloudnorm` is missing.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.level.resolve_target_lufs(spec)
+
+A `level=` value as a LUFS target: a number as is, a layer via [`class_target_lufs()`](_autosummary/foley.level.html.md#foley.level.class_target_lufs).
+
+```pycon
+>>> resolve_target_lufs(-30)
+-30.0
+>>> resolve_target_lufs("stinger")
+-22.0
+```
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+
 # _autosummary/foley.licensing.html.md
 
 # foley.licensing
@@ -12252,6 +12422,93 @@ Return the effective [`Tracer`](_autosummary/foley.obs.trace.html.md#foley.obs.t
   A [`Tracer`](_autosummary/foley.obs.trace.html.md#foley.obs.trace.Tracer) (never raises).
 
 
+# _autosummary/foley.prompt_match.html.md
+
+# foley.prompt_match
+
+Does a generated clip sound like what was asked for? A text-audio check, or an honest “unchecked”.
+
+Tier-0 QC ([`foley.qc`](_autosummary/foley.qc.html.md#module-foley.qc)) catches broken audio: clipping, silence, NaN. It cannot
+catch a clean, well-levelled clip of the wrong thing, and a text-to-audio model
+produces those: asked for “a flintlock musket placed into a hand”, Stable Audio 3
+returned a sound that had nothing to do with it, and it went through unflagged. That
+is the job here: score the clip against its own prompt in a joint text-audio
+embedding space (CLAP), and flag it when the score is under the embedder’s threshold.
+
+An embedder takes part only when it says its two spaces are comparable, by carrying a
+`prompt_match_threshold` ([`foley.index.embedders.ClapEmbedder`](_autosummary/foley.index.embedders.html.md#foley.index.embedders.ClapEmbedder) does). Anything
+else, a test’s bag-of-words fake, no embedder at all, an embedder whose model cannot
+load on this host, gives `status='unchecked'` with the reason: never a silent pass.
+
+The verdict is a flag, not a quarantine: the clip is kept (it was paid for) and the
+candidate’s notes and `record.qc['prompt_match']` say it does not match, so a person
+or the SELECT agent listens before using it.
+
+Zero-dependency import: `numpy` and the embedder’s own stack load inside.
+
+### Module Attributes
+
+| [`MATCH`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.MATCH)     | the clip matches its prompt, does not, or was not checked.   |
+|------------------------------------------------------------|--------------------------------------------------------------|
+| [`MISMATCH`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.MISMATCH)  | the clip matches its prompt, does not, or was not checked.   |
+| [`UNCHECKED`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.UNCHECKED) | the clip matches its prompt, does not, or was not checked.   |
+
+### Functions
+
+| [`note_for`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.note_for)(result)                                | The one-line candidate note for a [`prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match) result.   |
+|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| [`prompt_match`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)(prompt, audio_bytes, \*, embedder) | Score `audio_bytes` against `prompt` with `embedder`; never raises.                                         |
+
+### foley.prompt_match.MATCH *= 'match'*
+
+the clip matches its prompt, does not, or was not checked.
+
+* **Type:**
+  `status` values
+
+### foley.prompt_match.MISMATCH *= 'mismatch'*
+
+the clip matches its prompt, does not, or was not checked.
+
+* **Type:**
+  `status` values
+
+### foley.prompt_match.UNCHECKED *= 'unchecked'*
+
+the clip matches its prompt, does not, or was not checked.
+
+* **Type:**
+  `status` values
+
+### foley.prompt_match.note_for(result)
+
+The one-line candidate note for a [`prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match) result.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.prompt_match.prompt_match(prompt, audio_bytes, , embedder)
+
+Score `audio_bytes` against `prompt` with `embedder`; never raises.
+
+* **Parameters:**
+  * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The text the clip was generated from.
+  * **audio_bytes** ([`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)) – The clip (any format `soundfile` decodes).
+  * **embedder** – A text-audio embedder (`embed_text` / `embed_audio`, L2-normalised
+    vectors) carrying `prompt_match_threshold`; anything else is `unchecked`.
+* **Returns:**
+  `status` (`match` | `mismatch` | `unchecked`), and
+  `score` (cosine similarity), `threshold` and `model` when checked, or
+  `reason` when not.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+```pycon
+>>> prompt_match("a door creak", b"", embedder=None)["status"]
+'unchecked'
+```
+
+
 # _autosummary/foley.provenance.credits.html.md
 
 # foley.provenance.credits
@@ -12560,7 +12817,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix chime', 'tudum', 'netflix intro', 'ta dum', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix chime', 'tudum', 'netflix intro', 'netflix sound', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -13696,7 +13953,7 @@ so the derived permission flags stay single-sourced.
 | [`check_prompt_influence`](_autosummary/foley.sources.base.html.md#foley.sources.base.check_prompt_influence)(value)                     | Raise `ValueError` unless `value` is `None` or a real number in `0..1`.                                                                            |
 |----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`native_adherence`](_autosummary/foley.sources.base.html.md#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                        |
-| [`resolve_source_key`](_autosummary/foley.sources.base.html.md#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var.                                                                               |
+| [`resolve_source_key`](_autosummary/foley.sources.base.html.md#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var(s).                                                                            |
 | [`using_source_accounts`](_autosummary/foley.sources.base.html.md#foley.sources.base.using_source_accounts)(\*\*accounts)               | Bind per-request source accounts (a key, and what goes with it) for a `with` block.                                                                |
 | [`bound_source_account`](_autosummary/foley.sources.base.html.md#foley.sources.base.bound_source_account)(source)                      | The account bound for `source` in this context, or `None` when no key is bound.                                                                    |
 | [`key_fingerprint`](_autosummary/foley.sources.base.html.md#foley.sources.base.key_fingerprint)(key)                              | A short, one-way id for an API key: tells accounts apart without keeping the key.                                                                  |
@@ -14185,11 +14442,12 @@ Register `adapter` in [`CORPUS_REGISTRY`](_autosummary/foley.sources.base.html.m
 
 ### foley.sources.base.resolve_source_key(config, api_key=None)
 
-A source’s API token: `api_key`, else a bound key, else its env var.
+A source’s API token: `api_key`, else a bound key, else its env var(s).
 
 The chain is the fleet’s facade kit (`ocracy.kit.resolve_credential`), so a
 server can bind a per-request key with `ocracy.kit.using_credentials(<source>=key)`.
-`config["auth"]` names the env var and the sign-up URL.
+`config["auth"]` names the env var (and its fleet aliases, see
+`auth_env_vars()`) and the sign-up URL.
 
 * **Raises:**
   [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – Naming the env var and where to get a key.
@@ -15558,7 +15816,7 @@ an already-registered name (e.g. a test double) is never overwritten.
 * **Returns:**
   The list of discovered source names.
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -15586,11 +15844,16 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description.
-  * **backend** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A registered generate-source name. `None` (default):
-    `default_generate_backend()` (`$FOLEY_GENERATE_BACKEND`, else the
-    local `'stable_audio'`). Hosted: `'elevenlabs'`, and the fal
-    endpoints `'fal_stable_audio_3'` | `'fal_elevenlabs'` |
-    `'fal_sonilo'` | `'fal_mmaudio'` (`foley[fal]` + `$FAL_KEY`).
+  * **backend** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – 
+
+    A registered generate-source name. `None` (default):
+    `default_generate_backend()`, the first backend the generation order
+    would try (a paid one only once paid generation is opted in), with \*\*no
+    fallback\*\*: this workhorse runs one backend; the fallback through the order
+    is `generate_in_order()`, which the public [`foley.generate()`](_autosummary/foley.html.md#foley.generate) uses.
+    Hosted: `'elevenlabs'`, and the fal endpoints `'fal_stable_audio_3'` |
+    `'fal_elevenlabs'` | `'fal_sonilo'` | `'fal_mmaudio'` (`foley[fal]`
+    + `$FAL_KEY`).
   * **library** – Target [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
     process-wide default library).
   * **store** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `False`, synthesize + enrich but do not add to the library
@@ -15630,6 +15893,15 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     repair runs before the watermark and the id, so the stored bytes, the
     content-hash id and the credential all describe the repaired clip; the
     generations cache keeps the bytes as received.
+  * **level** – Level the clip to a loudness target before it is stored: a layer
+    (`'sfx_fg'`, `'ambience'`, … , its class target, see
+    [`foley.level.class_target_lufs()`](_autosummary/foley.level.html.md#foley.level.class_target_lufs)) or a LUFS number. `None` (default)
+    stores it at the level it was generated at (the WEAVE render applies the
+    layer gains itself). Recorded in the licence’s `transformations`.
+  * **check_prompt** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Score the clip against its prompt with the library’s text-audio
+    embedder ([`foley.prompt_match.prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)) and put the verdict in
+    `qc['prompt_match']` and the notes: a mismatch is flagged, not
+    quarantined; without a capable embedder the verdict is `'unchecked'`.
   * **\*\*affordances** – Unified generation affordances (`duration`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see [`foley.base.GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).
@@ -18038,16 +18310,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-25 06:37 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/9d143a4689e9f41a3140d9af470639b9f7cd239f"><code>9d143a4</code></a> on branch <code>main</code>, for **foley 0.0.43** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 02:37 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/07caee3a612fc59c9431c14f9fbbdee73013c77d"><code>07caee3</code></a> on branch <code>main</code>, for **foley 0.0.44** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.44) is behind the latest release on PyPI (0.0.45): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/9d143a4689e9f41a3140d9af470639b9f7cd239f"><code>9d143a4689e9f41a3140d9af470639b9f7cd239f</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/07caee3a612fc59c9431c14f9fbbdee73013c77d"><code>07caee3a612fc59c9431c14f9fbbdee73013c77d</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -18058,9 +18332,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40169625299">40169625299</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40259836093">40259836093</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>9d143a4689e9f41a3140d9af470639b9f7cd239f</code> (in the history of the built commit) |
+| Event commit | <code>07caee3a612fc59c9431c14f9fbbdee73013c77d</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -18085,13 +18359,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.43/">0.0.43</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.45/">0.0.45</a>, newer than the documented version (0.0.44).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 9d143a4689e9f41a3140d9af470639b9f7cd239f
+git checkout 07caee3a612fc59c9431c14f9fbbdee73013c77d
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

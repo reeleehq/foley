@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=b345ff55"></script>
+    <script src="../../../../_static/documentation_options.js?v=78cc6f98"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.43" />
+  <meta name="docsearch:version" content="0.0.44" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -748,12 +748,14 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">...base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Candidate</span><span class="p">,</span> <span class="n">CandidateOrigin</span><span class="p">,</span> <span class="n">SoundRecord</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">actual_call_cost</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">GeneratedClip</span><span class="p">,</span>
     <span class="n">SourceConfigurationError</span><span class="p">,</span>
     <span class="n">generated_license</span><span class="p">,</span>
     <span class="n">native_adherence</span><span class="p">,</span>
     <span class="n">bound_source_account</span><span class="p">,</span>
+    <span class="n">operator_env_key</span><span class="p">,</span>
     <span class="n">resolve_source_key</span><span class="p">,</span>
     <span class="n">source_account_id</span><span class="p">,</span>
 <span class="p">)</span>
@@ -842,8 +844,13 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">"""A non-200 from ElevenLabs (still a ``RuntimeError``); carries ``status_code``.</span>
 
 <span class="sd">    ``detail`` is the body's ``detail`` (a dict in the documented shape, a string in</span>
-<span class="sd">    older responses), or ``None`` when the body is not JSON.</span>
+<span class="sd">    older responses), or ``None`` when the body is not JSON. ``unbilled``: the</span>
+<span class="sd">    endpoint is one POST that returns the audio or an error, and an error produced</span>
+<span class="sd">    no audio, so it was not charged</span>
+<span class="sd">    (:func:`foley.sources._dispatch.provider_refused`).</span>
 <span class="sd">    """</span>
+
+    <span class="n">unbilled</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status_code</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
@@ -980,7 +987,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        With no env key, an ``api_key=`` is how the operator configures foley in code,</span>
 <span class="sd">        and the operator's plan (``plan=`` or the env's) applies to it.</span>
 <span class="sd">        """</span>
-        <span class="n">env_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"auth"</span><span class="p">][</span><span class="s2">"env_var"</span><span class="p">])</span>
+        <span class="n">env_key</span> <span class="o">=</span> <span class="n">operator_env_key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span> <span class="ow">and</span> <span class="n">env_key</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span> <span class="o">!=</span> <span class="n">env_key</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ElevenLabsAdapter.account_id">
@@ -1099,6 +1106,9 @@ window.runMermaid = runMermaid;</script>
             <span class="n">caption</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">candidate</span> <span class="o">=</span> <span class="n">Candidate</span><span class="p">(</span><span class="n">sound</span><span class="o">=</span><span class="n">record</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="n">CandidateOrigin</span><span class="o">.</span><span class="n">generated</span><span class="p">)</span>
+        <span class="n">candidate</span><span class="o">.</span><span class="n">cost_actual_usd</span> <span class="o">=</span> <span class="n">actual_call_cost</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_seconds"</span><span class="p">)</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="n">GeneratedClip</span><span class="p">(</span><span class="n">audio_bytes</span><span class="o">=</span><span class="n">audio_bytes</span><span class="p">,</span> <span class="n">candidate</span><span class="o">=</span><span class="n">candidate</span><span class="p">,</span> <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">)</span></div>
 
 
@@ -1131,7 +1141,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"output_format"</span><span class="p">]</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invoke</span><span class="p">(</span>
-                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"output_format"</span><span class="p">:</span> <span class="n">native_output_format</span><span class="p">},</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"output_format"</span><span class="p">:</span> <span class="n">native_output_format</span><span class="p">},</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">notes</span><span class="o">=</span><span class="n">notes</span>
             <span class="p">),</span> <span class="n">native_output_format</span>
         <span class="k">except</span> <span class="n">_HTTPStatusError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
             <span class="n">fallback</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fallback_on_4xx"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">native_output_format</span><span class="p">)</span>
@@ -1149,7 +1159,9 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">"output_format </span><span class="si">{</span><span class="n">native_output_format</span><span class="si">!r}</span><span class="s2"> refused by ElevenLabs "</span>
                 <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">exc</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">); fell back to </span><span class="si">{</span><span class="n">fallback</span><span class="si">!r}</span><span class="s2">"</span>
             <span class="p">)</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invoke</span><span class="p">(</span><span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"output_format"</span><span class="p">:</span> <span class="n">fallback</span><span class="p">},</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">),</span> <span class="n">fallback</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invoke</span><span class="p">(</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"output_format"</span><span class="p">:</span> <span class="n">fallback</span><span class="p">},</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span> <span class="n">notes</span><span class="o">=</span><span class="n">notes</span>
+            <span class="p">),</span> <span class="n">fallback</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_wrap_pcm</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1213,11 +1225,13 @@ window.runMermaid = runMermaid;</script>
         <span class="n">hi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">][</span><span class="s2">"duration_max_s"</span><span class="p">]</span>
         <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">duration</span><span class="p">),</span> <span class="n">hi</span><span class="p">))</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_invoke</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_invoke</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""POST to the SFX endpoint and return the raw audio bytes (never JSON).</span>
 
 <span class="sd">        ``output_format`` is a URL query param (``params``); the rest is the JSON</span>
 <span class="sd">        ``body``. A non-200 raises ``RuntimeError`` with the best-effort ``detail``.</span>
+<span class="sd">        The credits the account was charged (the ``api.credits_header`` response</span>
+<span class="sd">        header, when the response carries it) are recorded in ``notes``.</span>
 <span class="sd">        """</span>
         <span class="n">endpoint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"api"</span><span class="p">][</span><span class="s2">"generate_endpoint"</span><span class="p">]</span>
         <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"api"</span><span class="p">][</span><span class="s2">"base_url"</span><span class="p">]</span> <span class="o">+</span> <span class="n">endpoint</span><span class="p">[</span><span class="s2">"path"</span><span class="p">]</span>
@@ -1233,8 +1247,20 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_safe_detail</span><span class="p">(</span><span class="n">resp</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">detail</span><span class="o">=</span><span class="n">_detail_of</span><span class="p">(</span><span class="n">resp</span><span class="p">),</span>
             <span class="p">)</span>
+        <span class="n">credits</span> <span class="o">=</span> <span class="n">_header</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"api"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"credits_header"</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">credits</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ElevenLabs charged </span><span class="si">{</span><span class="n">credits</span><span class="si">}</span><span class="s2"> credits for this call"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">content</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_header</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Response header ``name`` (case-insensitive), or ``None`` (a fake may have no headers)."""</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">resp</span><span class="p">,</span> <span class="s2">"headers"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">wanted</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">next</span><span class="p">((</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">headers</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">wanted</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
 
 
 <span class="c1">#: Registry convention (arioso): the loader imports ``adapter.Adapter``.</span>

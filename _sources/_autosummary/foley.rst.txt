@@ -185,7 +185,9 @@
    base
    cli
    cost
+   level
    licensing
+   prompt_match
    qc
    requirements
    runtime
