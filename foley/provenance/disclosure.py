@@ -39,12 +39,15 @@ from __future__ import annotations
 
 import functools
 import importlib.util
+import logging
 import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, MutableMapping, Optional, Protocol, runtime_checkable
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from ..base import Candidate, LicenseRecord, SoundRecord
+
+_log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # constants
@@ -69,6 +72,11 @@ IPTC_TRAINED_ALGORITHMIC_MEDIA = (
     "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
 )
 IPTC_DIGITAL_CREATION = "http://cv.iptc.org/newscodes/digitalsourcetype/digitalCreation"
+#: C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).
+C2PA_CREATED = "c2pa.created"
+C2PA_PLACED = "c2pa.placed"
+C2PA_COMPONENT_OF = "componentOf"
+C2PA_INGREDIENT_ID_PREFIX = "foley:ingredient:"
 
 
 # ---------------------------------------------------------------------------
@@ -592,6 +600,95 @@ def build_content_credential(
         "embedded": False,
         "asset_ref": asset_id,
         "asset_hash": asset_hash,
+        "manifest": manifest,
+    }
+
+
+def _ref_of(record) -> str:
+    """The record's content id (for a credential ingredient's asset ref)."""
+    return str(
+        getattr(record, "id", None)
+        or getattr(getattr(record, "sound", None), "id", None)
+        or "asset"
+    )
+
+
+def as_c2pa_ingredient(credential: dict, *, index: int) -> dict:
+    """A per-sound content credential, declared as a C2PA ``componentOf`` ingredient.
+
+    Adds (never removes) the fields ``c2pa.Builder`` reads from an ingredient — ``title``,
+    ``format``, ``relationship`` and a manifest-unique ``instance_id`` (the handle a
+    ``c2pa.placed`` action's ``ingredientIds`` resolves) — so the sidecar keeps the full
+    per-sound credential while the signed manifest gets a valid ingredient.
+    """
+    manifest = credential["manifest"]
+    return {
+        **credential,
+        "title": manifest["title"],
+        "format": manifest["format"],
+        "relationship": C2PA_COMPONENT_OF,
+        "instance_id": f"{C2PA_INGREDIENT_ID_PREFIX}{index}:{credential['asset_ref']}",
+    }
+
+
+def build_mix_credential(records, *, asset_id, ai_disclosed, watermark_meta, fmt="wav"):
+    """Build the MIX-level C2PA-shaped content credential (report 07 / #9b), as re-asserted by ``weave.reassert_provenance``.
+
+    Reuses :func:`build_content_credential` per ingredient (so the credential shape never
+    forks between the per-sound sidecar and the mix manifest) and asserts a
+    ``c2pa.created`` composite with one ``c2pa.placed`` per ingredient, plus an EU AI Act
+    Art. 50 disclosure when any ingredient is AI-generated.
+
+    C2PA requires every ``c2pa.placed`` action to reference its ingredient
+    (``assertion.action.ingredientMismatch`` otherwise), so each per-sound credential is
+    declared as a ``componentOf`` ingredient (via :func:`as_c2pa_ingredient`) and its
+    ``placed`` action names it through ``parameters.ingredientIds``. A mix with no
+    (credentialed) ingredient asserts ``c2pa.created`` alone.
+    """
+    ingredients = []
+    for r in records:
+        try:
+            cred = build_content_credential(r, asset_id=_ref_of(r))
+        except Exception:
+            _log.warning(
+                "no credential for %r; omitted from the mix manifest",
+                _ref_of(r),
+                exc_info=True,
+            )
+            continue  # an ingredient without a credential is neither declared nor placed
+        ingredients.append(as_c2pa_ingredient(cred, index=len(ingredients)))
+    source_type = (
+        IPTC_TRAINED_ALGORITHMIC_MEDIA if ai_disclosed else IPTC_DIGITAL_CREATION
+    )
+    actions = [{"action": C2PA_CREATED, "digitalSourceType": source_type}] + [
+        {"action": C2PA_PLACED, "parameters": {"ingredientIds": [i["instance_id"]]}}
+        for i in ingredients
+    ]
+    assertions = [{"label": "c2pa.actions", "data": {"actions": actions}}]
+    if ai_disclosed:
+        assertions.append(
+            {
+                "label": "foley.ai_disclosure",
+                "data": {
+                    "contains_ai_generated": True,
+                    "eu_ai_act_art50": "disclosed",
+                    "watermark": watermark_meta,
+                },
+            }
+        )
+    manifest = {
+        "claim_generator_info": [{"name": "foley", "version": _foley_version()}],
+        "format": _MIME_BY_FORMAT.get((fmt or "wav").lower(), "audio/wav"),
+        "title": "foley sound-design mix",
+        "ingredients": ingredients,
+        "assertions": assertions,
+    }
+    return {
+        "$schema": CONTENT_CREDENTIAL_SCHEMA,
+        "signed": False,
+        "embedded": False,
+        "asset_ref": asset_id,
+        "asset_hash": None,
         "manifest": manifest,
     }
 

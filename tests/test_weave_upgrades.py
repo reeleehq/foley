@@ -13,6 +13,7 @@ import pytest
 np = pytest.importorskip("numpy")
 
 from foley.base import MasterProfile  # noqa: E402
+from foley.provenance import disclosure  # noqa: E402
 from foley.weave.master import master  # noqa: E402
 from foley.weave.mix import (  # noqa: E402
     convolution_reverb,
@@ -168,7 +169,7 @@ def test_c2pa_real_sign_embed_and_readback():
         tags=["rain"],
         license=LicenseRecord(source="user", license_id="CC0-1.0", commercial_ok=True),
     )
-    cred = weave._build_mix_credential(
+    cred = disclosure.build_mix_credential(
         [rec], asset_id="mix1", ai_disclosed=False, watermark_meta=None
     )
     store: dict = {}

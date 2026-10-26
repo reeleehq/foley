@@ -17,7 +17,7 @@ np = pytest.importorskip("numpy")
 from cryptography.hazmat.primitives import serialization  # noqa: E402
 from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa  # noqa: E402
 
-from foley.provenance import make_c2pa_signer, make_self_signed_c2pa_certs  # noqa: E402
+from foley.provenance import disclosure, make_c2pa_signer, make_self_signed_c2pa_certs  # noqa: E402
 from foley.provenance.signing import SIGNING_ALGORITHMS, _callback_for  # noqa: E402
 
 SR = 48_000
@@ -58,7 +58,7 @@ def _sign_and_check(signer, trust_anchor: str, records=None):
     """
     from foley import weave
 
-    cred = weave._build_mix_credential(
+    cred = disclosure.build_mix_credential(
         [_rec()] if records is None else records,
         asset_id="mix1",
         ai_disclosed=False,
@@ -93,9 +93,7 @@ def test_a_signed_mix_validates_with_no_failure_codes(n_ingredients):
 
 
 def test_an_ingredient_whose_credential_fails_is_neither_declared_nor_placed():
-    from foley import weave
-
-    cred = weave._build_mix_credential(
+    cred = disclosure.build_mix_credential(
         [_rec(1), object(), _rec(2)],
         asset_id="mix1",
         ai_disclosed=False,
@@ -411,7 +409,7 @@ def test_a_failed_signing_is_logged_not_silent(caplog):
     signer = c2pa.Signer.from_callback(
         _callback_for(key, "es256"), c2pa.C2paSigningAlg.ES256, chain, None
     )
-    cred = weave._build_mix_credential(
+    cred = disclosure.build_mix_credential(
         [_rec()], asset_id="mix1", ai_disclosed=False, watermark_meta=None
     )
     with caplog.at_level("WARNING", logger="foley.weave"):
