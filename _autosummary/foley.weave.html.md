@@ -464,7 +464,8 @@ an optional keyword.
   * **watermark** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]) – `True` force a watermark, `False` never, `None` (default) auto —
     watermark iff the mix contains AI-generated audio and AudioSeal is installed.
   * **watermarker** – An injected watermarker (the DI seam; tests pass a fake).
-  * **sign_cert** – A signing cert for the (deferred) signed+embedded C2PA path.
+  * **sign_cert** – A ready `c2pa.Signer` for the signed+embedded C2PA path (build one
+    with [`foley.provenance.make_c2pa_signer()`](foley.provenance.html.md#foley.provenance.make_c2pa_signer)); omit for the sidecar only.
   * **export_captions** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `True` (default), emit WebVTT + SRT SDH captions.
   * **provenance_store** – An optional `MutableMapping` to persist the C2PA sidecar.
 * **Return type:**

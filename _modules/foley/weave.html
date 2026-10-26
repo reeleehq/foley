@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=b87b3bc5"></script>
+    <script src="../../_static/documentation_options.js?v=8f83b1af"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.55" />
+  <meta name="docsearch:version" content="0.0.56" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1000,16 +1000,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    — a ready-to-use ``c2pa`` signer the caller built for their signing identity + c2pa</span>
 <span class="sd">    version (dependency-injected, so foley pins no version-fragile signer-construction API).</span>
 
-<span class="sd">    Build one for a C2PA-conformant signing identity, e.g.::</span>
-
-<span class="sd">        signer = c2pa.Signer.from_callback(sign_cb, c2pa.C2paSigningAlg.ES256, cert_chain_pem)</span>
-<span class="sd">        # or, with a local key: c2pa.Signer.from_info(c2pa.C2paSignerInfo(</span>
-<span class="sd">        #     alg=b"es256", sign_cert=&lt;chain PEM&gt;, private_key=&lt;PKCS#8 PEM&gt;, ta_url=&lt;TSA URL&gt;))</span>
-
-<span class="sd">    where ``cert_chain_pem`` is the end-entity cert **followed by** its issuer (the C2PA cert</span>
-<span class="sd">    profile: KeyUsage=digitalSignature, EKU=emailProtection, plus Subject/Authority Key</span>
-<span class="sd">    Identifiers) and the private key is PKCS#8 (``BEGIN PRIVATE KEY``). Verified end-to-end</span>
-<span class="sd">    (sign + embed + read back) against ``c2pa-python`` — see ``tests/test_weave_upgrades.py``.</span>
+<span class="sd">    Build one with :func:`foley.provenance.make_c2pa_signer` (cert chain + key; ``foley[c2pa]``),</span>
+<span class="sd">    or :func:`foley.provenance.make_self_signed_c2pa_certs` for a throwaway dev chain.</span>
+<span class="sd">    Verified end-to-end (sign + embed + read back) against ``c2pa-python``: see</span>
+<span class="sd">    ``tests/test_provenance_signing.py``.</span>
 <span class="sd">    """</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -1182,7 +1176,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        watermark: ``True`` force a watermark, ``False`` never, ``None`` (default) auto —</span>
 <span class="sd">            watermark iff the mix contains AI-generated audio and AudioSeal is installed.</span>
 <span class="sd">        watermarker: An injected watermarker (the DI seam; tests pass a fake).</span>
-<span class="sd">        sign_cert: A signing cert for the (deferred) signed+embedded C2PA path.</span>
+<span class="sd">        sign_cert: A ready ``c2pa.Signer`` for the signed+embedded C2PA path (build one</span>
+<span class="sd">            with :func:`foley.provenance.make_c2pa_signer`); omit for the sidecar only.</span>
 <span class="sd">        export_captions: If ``True`` (default), emit WebVTT + SRT SDH captions.</span>
 <span class="sd">        provenance_store: An optional ``MutableMapping`` to persist the C2PA sidecar.</span>
 

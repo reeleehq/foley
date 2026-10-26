@@ -64,6 +64,7 @@
 - [foley.provenance](foley.provenance.html.md): Provenance layer for foley — attribution/credits (and, later, disclosure).
 - [foley.provenance.credits](foley.provenance.credits.html.md): TASL attribution / credits generator — the provenance render layer (#9a).
 - [foley.provenance.disclosure](foley.provenance.disclosure.html.md): Disclosure, watermarking &amp; safety for AI-generated audio (#9b).
+- [foley.provenance.signing](foley.provenance.signing.html.md): Build a C2PA signer from a certificate chain + private key (the #38 gotchas, solved once).
 - [foley.agent_kit](foley.agent_kit.html.md): Install foley’s shipped agent kit — the consumer skill + Claude slash command + subagent.
 - [foley.base](foley.base.html.md): Canonical data models for foley — the single source of truth (SSOT) types.
 - [foley.cli](foley.cli.html.md): The &#96;foley&#96; command-line interface (stdlib &#96;argparse&#96;, zero new deps).

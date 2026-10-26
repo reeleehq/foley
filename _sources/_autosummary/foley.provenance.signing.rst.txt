@@ -1,0 +1,23 @@
+foley.provenance.signing
+========================
+
+.. automodule:: foley.provenance.signing
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      SIGNING_ALGORITHMS
+      DEFAULT_SIGNING_ALG
+      SELF_SIGNED_COMMON_NAME
+      SELF_SIGNED_ORGANIZATION
+      SELF_SIGNED_BACKDATE_DAYS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      make_c2pa_signer
+      make_self_signed_c2pa_certs
+   

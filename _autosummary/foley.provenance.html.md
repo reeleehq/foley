@@ -17,12 +17,14 @@ reach the pure helpers via `foley.art50_checklist` / `foley.scan_prompt`.
 
 ### Functions
 
-| [`attribution_line`](#foley.provenance.attribution_line)(source, \*[, fmt])          | Render one sound's TASL attribution line.                                                                     |
-|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| [`credit_entry`](#foley.provenance.credit_entry)(record, \*[, title])            | Build a [`CreditEntry`](#foley.provenance.CreditEntry) from a record (title override optional). |
-| [`credits_for`](#foley.provenance.credits_for)(sounds, \*[, title, ...])        | Build the deduplicated [`Credits`](#foley.provenance.Credits) for the sounds used in a run. |
-| [`credits_manifest`](#foley.provenance.credits_manifest)(credits)                    | The machine-readable manifest for `credits` — a JSON-native dict.                                             |
-| [`render_credits_md`](#foley.provenance.render_credits_md)(credits, \*[, title, ...]) | Render `credits` as a deterministic `CREDITS.md` document.                                                    |
+| [`attribution_line`](#foley.provenance.attribution_line)(source, \*[, fmt])               | Render one sound's TASL attribution line.                                                                     |
+|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| [`credit_entry`](#foley.provenance.credit_entry)(record, \*[, title])                 | Build a [`CreditEntry`](#foley.provenance.CreditEntry) from a record (title override optional). |
+| [`credits_for`](#foley.provenance.credits_for)(sounds, \*[, title, ...])             | Build the deduplicated [`Credits`](#foley.provenance.Credits) for the sounds used in a run. |
+| [`credits_manifest`](#foley.provenance.credits_manifest)(credits)                         | The machine-readable manifest for `credits` — a JSON-native dict.                                             |
+| [`make_c2pa_signer`](#foley.provenance.make_c2pa_signer)(cert_chain_pem, ...[, alg, ...]) | A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.                              |
+| [`make_self_signed_c2pa_certs`](#foley.provenance.make_self_signed_c2pa_certs)(\*[, ...])            | A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` (ES256) for dev and tests.                    |
+| [`render_credits_md`](#foley.provenance.render_credits_md)(credits, \*[, title, ...])      | Render `credits` as a deterministic `CREDITS.md` document.                                                    |
 
 ### Classes
 
@@ -122,6 +124,34 @@ the `watermark` / `c2pa_manifest_ref` pass-throughs (`None` until #9b).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
+### foley.provenance.make_c2pa_signer(cert_chain_pem, private_key_pem, , alg='es256', tsa_url=None, password=None)
+
+A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.
+
+* **Parameters:**
+  * **cert_chain_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The end-entity certificate followed by its issuer(s), PEM.
+  * **private_key_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The signing key, PEM (PKCS#8 `BEGIN PRIVATE KEY` or SEC1).
+  * **alg** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – One of `SIGNING_ALGORITHMS` (default `'es256'`); it must match the key.
+  * **tsa_url** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An RFC 3161 timestamp-authority URL (`None`: no timestamp).
+  * **password** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The key’s passphrase, if it is encrypted (str or bytes).
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – An unknown `alg`, a key (or curve) that does not fit it, or a chain
+        that is not PEM or does not start with the key’s own certificate.
+  * [**ImportError**](https://docs.python.org/3/builtins/exceptions.html#ImportError) – `c2pa-python` / `cryptography` missing (`pip install 'foley[c2pa]'`).
+
+### foley.provenance.make_self_signed_c2pa_certs(, common_name='foley-dev-signer', valid_days=3650)
+
+A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` (ES256) for dev and tests.
+
+A CA plus an end-entity certificate with the profile C2PA requires. The chain is
+**not** trusted by validators; use a real CA for anything you publish. The key is
+PKCS#8 PEM.
+
+Lazy dependency: `cryptography`.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.provenance.render_credits_md(credits, , title=None, heading_level=2)
 
 Render `credits` as a deterministic `CREDITS.md` document.
@@ -138,6 +168,7 @@ Render `credits` as a deterministic `CREDITS.md` document.
 
 ### Modules
 
-| [`credits`](foley.provenance.credits.html.md#module-foley.provenance.credits)       | TASL attribution / credits generator — the provenance render layer (#9a).   |
-|------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| [`disclosure`](foley.provenance.disclosure.html.md#module-foley.provenance.disclosure) | Disclosure, watermarking & safety for AI-generated audio (#9b).             |
+| [`credits`](foley.provenance.credits.html.md#module-foley.provenance.credits)       | TASL attribution / credits generator — the provenance render layer (#9a).                  |
+|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
+| [`disclosure`](foley.provenance.disclosure.html.md#module-foley.provenance.disclosure) | Disclosure, watermarking & safety for AI-generated audio (#9b).                            |
+| [`signing`](foley.provenance.signing.html.md#module-foley.provenance.signing)       | Build a C2PA signer from a certificate chain + private key (the #38 gotchas, solved once). |

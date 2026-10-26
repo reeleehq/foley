@@ -66,6 +66,7 @@
 - [foley.provenance](_autosummary/foley.provenance.html.md): Provenance layer for foley — attribution/credits (and, later, disclosure).
 - [foley.provenance.credits](_autosummary/foley.provenance.credits.html.md): TASL attribution / credits generator — the provenance render layer (#9a).
 - [foley.provenance.disclosure](_autosummary/foley.provenance.disclosure.html.md): Disclosure, watermarking &amp; safety for AI-generated audio (#9b).
+- [foley.provenance.signing](_autosummary/foley.provenance.signing.html.md): Build a C2PA signer from a certificate chain + private key (the #38 gotchas, solved once).
 - [foley.agent_kit](_autosummary/foley.agent_kit.html.md): Install foley’s shipped agent kit — the consumer skill + Claude slash command + subagent.
 - [foley.base](_autosummary/foley.base.html.md): Canonical data models for foley — the single source of truth (SSOT) types.
 - [foley.cli](_autosummary/foley.cli.html.md): The &#96;foley&#96; command-line interface (stdlib &#96;argparse&#96;, zero new deps).
@@ -113,7 +114,7 @@
 - [foley.sources.wikimedia_commons.config](_autosummary/foley.sources.wikimedia_commons.config.html.md): &#96;SOURCE_CONFIG&#96; for the Wikimedia Commons retrieve source (#79 · report 14 §3.3).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 14:34 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 14:52 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

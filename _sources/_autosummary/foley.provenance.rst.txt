@@ -12,6 +12,8 @@ foley.provenance
       credit_entry
       credits_for
       credits_manifest
+      make_c2pa_signer
+      make_self_signed_c2pa_certs
       render_credits_md
    
    .. rubric:: Classes
@@ -29,3 +31,4 @@ foley.provenance
 
    credits
    disclosure
+   signing
