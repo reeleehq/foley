@@ -129,14 +129,18 @@ the `watermark` / `c2pa_manifest_ref` pass-throughs (`None` until #9b).
 A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.
 
 * **Parameters:**
-  * **cert_chain_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The end-entity certificate followed by its issuer(s), PEM.
+  * **cert_chain_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The end-entity certificate followed by its issuer(s), PEM. A bare
+    leaf is accepted (not enforced): C2PA validators then need the issuer among their
+    trust anchors, and it is not embedded in the manifest.
   * **private_key_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The signing key, PEM (PKCS#8 `BEGIN PRIVATE KEY` or SEC1).
   * **alg** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – One of `SIGNING_ALGORITHMS` (default `'es256'`); it must match the key.
   * **tsa_url** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An RFC 3161 timestamp-authority URL (`None`: no timestamp).
   * **password** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The key’s passphrase, if it is encrypted (str or bytes).
 * **Raises:**
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – An unknown `alg`, a key (or curve) that does not fit it, or a chain
-        that is not PEM or does not start with the key’s own certificate.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – An unknown or non-string `alg`, a key (or curve) that does not fit it,
+        a chain that is not PEM or does not start with the key’s own certificate, or an
+        end-entity certificate outside the C2PA signing profile (a CA, no digitalSignature,
+        no acceptable ExtendedKeyUsage, an invalid validity window, or an RSA key under `MIN_RSA_KEY_BITS`).
   * [**ImportError**](https://docs.python.org/3/builtins/exceptions.html#ImportError) – `c2pa-python` / `cryptography` missing (`pip install 'foley[c2pa]'`).
 
 ### foley.provenance.make_self_signed_c2pa_certs(, common_name='foley-dev-signer', valid_days=3650)

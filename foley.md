@@ -1,4 +1,4 @@
-> built 2026-10-26 17:49 UTC from 0e42f65 (main) · foley 0.0.60. Details: build_info.json
+> built 2026-10-26 19:56 UTC from e32243b (main) · foley 0.0.62. Details: build_info.json
 
 # index.html.md
 
@@ -13758,7 +13758,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta dum', 'netflix chime', 'ta-dum', 'netflix sound', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix intro', 'netflix sound', 'netflix chime', 'ta-dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel chime', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -14036,14 +14036,18 @@ the `watermark` / `c2pa_manifest_ref` pass-throughs (`None` until #9b).
 A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.
 
 * **Parameters:**
-  * **cert_chain_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The end-entity certificate followed by its issuer(s), PEM.
+  * **cert_chain_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The end-entity certificate followed by its issuer(s), PEM. A bare
+    leaf is accepted (not enforced): C2PA validators then need the issuer among their
+    trust anchors, and it is not embedded in the manifest.
   * **private_key_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The signing key, PEM (PKCS#8 `BEGIN PRIVATE KEY` or SEC1).
   * **alg** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – One of `SIGNING_ALGORITHMS` (default `'es256'`); it must match the key.
   * **tsa_url** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An RFC 3161 timestamp-authority URL (`None`: no timestamp).
   * **password** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The key’s passphrase, if it is encrypted (str or bytes).
 * **Raises:**
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – An unknown `alg`, a key (or curve) that does not fit it, or a chain
-        that is not PEM or does not start with the key’s own certificate.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – An unknown or non-string `alg`, a key (or curve) that does not fit it,
+        a chain that is not PEM or does not start with the key’s own certificate, or an
+        end-entity certificate outside the C2PA signing profile (a CA, no digitalSignature,
+        no acceptable ExtendedKeyUsage, an invalid validity window, or an RSA key under `MIN_RSA_KEY_BITS`).
   * [**ImportError**](https://docs.python.org/3/builtins/exceptions.html#ImportError) – `c2pa-python` / `cryptography` missing (`pip install 'foley[c2pa]'`).
 
 ### foley.provenance.make_self_signed_c2pa_certs(, common_name='foley-dev-signer', valid_days=3650)
@@ -14112,12 +14116,14 @@ inside the functions.
 
 ### Module Attributes
 
-| [`SIGNING_ALGORITHMS`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.SIGNING_ALGORITHMS)        | The SSOT for which algorithms [`make_c2pa_signer()`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.make_c2pa_signer) offers (PS\* = RSA-PSS).   |
-|----------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| [`DEFAULT_SIGNING_ALG`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.DEFAULT_SIGNING_ALG)       | ES256 (ECDSA P-256 / SHA-256), what C2PA tooling expects first.                                                              |
-| [`SELF_SIGNED_COMMON_NAME`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.SELF_SIGNED_COMMON_NAME)   | Defaults for [`make_self_signed_c2pa_certs()`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.make_self_signed_c2pa_certs).                                 |
-| [`SELF_SIGNED_ORGANIZATION`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.SELF_SIGNED_ORGANIZATION)  | C2PA validators require an Organization in the end-entity subject.                                                           |
-| [`SELF_SIGNED_BACKDATE_DAYS`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.SELF_SIGNED_BACKDATE_DAYS) | Back-dating so a freshly made chain is valid despite clock skew.                                                             |
+| [`SIGNING_ALGORITHMS`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.SIGNING_ALGORITHMS)        | The SSOT for which algorithms [`make_c2pa_signer()`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.make_c2pa_signer) offers (PS\* = RSA-PSS).                                                       |
+|----------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`DEFAULT_SIGNING_ALG`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.DEFAULT_SIGNING_ALG)       | ES256 (ECDSA P-256 / SHA-256), what C2PA tooling expects first.                                                                                                                  |
+| [`SELF_SIGNED_COMMON_NAME`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.SELF_SIGNED_COMMON_NAME)   | Defaults for [`make_self_signed_c2pa_certs()`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.make_self_signed_c2pa_certs).                                                                                     |
+| [`SELF_SIGNED_ORGANIZATION`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.SELF_SIGNED_ORGANIZATION)  | C2PA validators require an Organization in the end-entity subject.                                                                                                               |
+| [`SELF_SIGNED_BACKDATE_DAYS`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.SELF_SIGNED_BACKDATE_DAYS) | Back-dating so a freshly made chain is valid despite clock skew.                                                                                                                 |
+| [`MIN_RSA_KEY_BITS`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.MIN_RSA_KEY_BITS)          | A C2PA signing key must be at least this many bits when RSA (PS\* algorithms).                                                                                                   |
+| [`C2PA_SIGNING_EKU_OIDS`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.C2PA_SIGNING_EKU_OIDS)     | ExtendedKeyUsage purposes c2pa-python accepts on a signing certificate (anyExtendedKeyUsage is refused: it is not on the list, and c2pa rejects it even beside a valid purpose). |
 
 ### Functions
 
@@ -14125,12 +14131,21 @@ inside the functions.
 |------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
 | [`make_self_signed_c2pa_certs`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.make_self_signed_c2pa_certs)(\*[, ...])              | A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` (ES256) for dev and tests. |
 
+### foley.provenance.signing.C2PA_SIGNING_EKU_OIDS *= frozenset({'1.3.6.1.4.1.62558.2.1', '1.3.6.1.5.5.7.3.36', '1.3.6.1.5.5.7.3.4', '1.3.6.1.5.5.7.3.8', '1.3.6.1.5.5.7.3.9'})*
+
+ExtendedKeyUsage purposes c2pa-python accepts on a signing certificate (anyExtendedKeyUsage
+is refused: it is not on the list, and c2pa rejects it even beside a valid purpose).
+
 ### foley.provenance.signing.DEFAULT_SIGNING_ALG *= 'es256'*
 
 ES256 (ECDSA P-256 / SHA-256), what C2PA tooling expects first.
 
 * **Type:**
   Default algorithm
+
+### foley.provenance.signing.MIN_RSA_KEY_BITS *= 2048*
+
+A C2PA signing key must be at least this many bits when RSA (PS\* algorithms).
 
 ### foley.provenance.signing.SELF_SIGNED_BACKDATE_DAYS *= 1*
 
@@ -14154,14 +14169,18 @@ algorithm is a new row; `c2pa.C2paSigningAlg` must have the upper-cased name.
 A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.
 
 * **Parameters:**
-  * **cert_chain_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The end-entity certificate followed by its issuer(s), PEM.
+  * **cert_chain_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The end-entity certificate followed by its issuer(s), PEM. A bare
+    leaf is accepted (not enforced): C2PA validators then need the issuer among their
+    trust anchors, and it is not embedded in the manifest.
   * **private_key_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The signing key, PEM (PKCS#8 `BEGIN PRIVATE KEY` or SEC1).
   * **alg** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – One of [`SIGNING_ALGORITHMS`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.SIGNING_ALGORITHMS) (default `'es256'`); it must match the key.
   * **tsa_url** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An RFC 3161 timestamp-authority URL (`None`: no timestamp).
   * **password** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The key’s passphrase, if it is encrypted (str or bytes).
 * **Raises:**
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – An unknown `alg`, a key (or curve) that does not fit it, or a chain
-        that is not PEM or does not start with the key’s own certificate.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – An unknown or non-string `alg`, a key (or curve) that does not fit it,
+        a chain that is not PEM or does not start with the key’s own certificate, or an
+        end-entity certificate outside the C2PA signing profile (a CA, no digitalSignature,
+        no acceptable ExtendedKeyUsage, an invalid validity window, or an RSA key under [`MIN_RSA_KEY_BITS`](_autosummary/foley.provenance.signing.html.md#foley.provenance.signing.MIN_RSA_KEY_BITS)).
   * [**ImportError**](https://docs.python.org/3/builtins/exceptions.html#ImportError) – `c2pa-python` / `cryptography` missing (`pip install 'foley[c2pa]'`).
 
 ### foley.provenance.signing.make_self_signed_c2pa_certs(, common_name='foley-dev-signer', valid_days=3650)
@@ -20248,7 +20267,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-26 17:49 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/0e42f656fa0cbb5e1ed3faf65ae335a4b5781eba"><code>0e42f65</code></a> on branch <code>main</code>, for **foley 0.0.60** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 19:56 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/e32243b96183eece71d107bf9ce7f04bca519051"><code>e32243b</code></a> on branch <code>main</code>, for **foley 0.0.62** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -20257,7 +20276,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/0e42f656fa0cbb5e1ed3faf65ae335a4b5781eba"><code>0e42f656fa0cbb5e1ed3faf65ae335a4b5781eba</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/e32243b96183eece71d107bf9ce7f04bca519051"><code>e32243b96183eece71d107bf9ce7f04bca519051</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20268,9 +20287,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40371835408">40371835408</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40390714963">40390714963</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>0e42f656fa0cbb5e1ed3faf65ae335a4b5781eba</code> (in the history of the built commit) |
+| Event commit | <code>cdd16af577ae259c756fd547701c69d8e3540aa7</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20295,13 +20314,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.60/">0.0.60</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.62/">0.0.62</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 0e42f656fa0cbb5e1ed3faf65ae335a4b5781eba
+git checkout e32243b96183eece71d107bf9ce7f04bca519051
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

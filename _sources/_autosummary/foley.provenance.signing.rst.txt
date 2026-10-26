@@ -13,6 +13,8 @@ foley.provenance.signing
       SELF_SIGNED_COMMON_NAME
       SELF_SIGNED_ORGANIZATION
       SELF_SIGNED_BACKDATE_DAYS
+      MIN_RSA_KEY_BITS
+      C2PA_SIGNING_EKU_OIDS
    
    .. rubric:: Functions
 

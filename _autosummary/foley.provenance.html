@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=4d22d5b7"></script>
+    <script src="../_static/documentation_options.js?v=dea2dbc4"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.60" />
+  <meta name="docsearch:version" content="0.0.62" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -669,7 +669,9 @@ the <code class="docutils literal notranslate"><span class="pre">watermark</span
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>cert_chain_pem</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>]</span>) – The end-entity certificate followed by its issuer(s), PEM.</p></li>
+<li><p><strong>cert_chain_pem</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>]</span>) – The end-entity certificate followed by its issuer(s), PEM. A bare
+leaf is accepted (not enforced): C2PA validators then need the issuer among their
+trust anchors, and it is not embedded in the manifest.</p></li>
 <li><p><strong>private_key_pem</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>]</span>) – The signing key, PEM (PKCS#8 <code class="docutils literal notranslate"><span class="pre">BEGIN</span> <span class="pre">PRIVATE</span> <span class="pre">KEY</span></code> or SEC1).</p></li>
 <li><p><strong>alg</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – One of <code class="xref py py-data docutils literal notranslate"><span class="pre">SIGNING_ALGORITHMS</span></code> (default <code class="docutils literal notranslate"><span class="pre">'es256'</span></code>); it must match the key.</p></li>
 <li><p><strong>tsa_url</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – An RFC 3161 timestamp-authority URL (<code class="docutils literal notranslate"><span class="pre">None</span></code>: no timestamp).</p></li>
@@ -678,8 +680,10 @@ the <code class="docutils literal notranslate"><span class="pre">watermark</span
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
-<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – An unknown <code class="docutils literal notranslate"><span class="pre">alg</span></code>, a key (or curve) that does not fit it, or a chain
-    that is not PEM or does not start with the key’s own certificate.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – An unknown or non-string <code class="docutils literal notranslate"><span class="pre">alg</span></code>, a key (or curve) that does not fit it,
+    a chain that is not PEM or does not start with the key’s own certificate, or an
+    end-entity certificate outside the C2PA signing profile (a CA, no digitalSignature,
+    no acceptable ExtendedKeyUsage, an invalid validity window, or an RSA key under <code class="xref py py-data docutils literal notranslate"><span class="pre">MIN_RSA_KEY_BITS</span></code>).</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ImportError" title="(in Python v3.15)"><strong>ImportError</strong></a> – <code class="docutils literal notranslate"><span class="pre">c2pa-python</span></code> / <code class="docutils literal notranslate"><span class="pre">cryptography</span></code> missing (<code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">'foley[c2pa]'</span></code>).</p></li>
 </ul>
 </dd>

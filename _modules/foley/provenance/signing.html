@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=4d22d5b7"></script>
+    <script src="../../../_static/documentation_options.js?v=dea2dbc4"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.60" />
+  <meta name="docsearch:version" content="0.0.62" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -783,7 +783,16 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_pem_text</span><span class="p">(</span><span class="n">pem</span><span class="p">:</span> <span class="n">PemLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">pem</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pem</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="k">else</span> <span class="n">pem</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pem</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pem</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">UnicodeDecodeError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"cert_chain_pem is not ASCII PEM text: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pem</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"cert_chain_pem must be str or bytes, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">pem</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">pem</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_callback_for</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">alg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Callable[[bytes], bytes]"</span><span class="p">:</span>
@@ -824,8 +833,67 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">sign_ecdsa</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_check_chain_matches_key</span><span class="p">(</span><span class="n">cert_chain_pem</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Raise ``ValueError`` unless the chain is PEM, end-entity first, and holds ``key``'s cert."""</span>
+<span class="c1">#: A C2PA signing key must be at least this many bits when RSA (PS* algorithms).</span>
+<span class="n">MIN_RSA_KEY_BITS</span> <span class="o">=</span> <span class="mi">2048</span>
+
+
+<span class="c1">#: ExtendedKeyUsage purposes c2pa-python accepts on a signing certificate (anyExtendedKeyUsage</span>
+<span class="c1">#: is refused: it is not on the list, and c2pa rejects it even beside a valid purpose).</span>
+<span class="n">C2PA_SIGNING_EKU_OIDS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">"1.3.6.1.5.5.7.3.4"</span><span class="p">,</span>  <span class="c1"># emailProtection</span>
+        <span class="s2">"1.3.6.1.5.5.7.3.8"</span><span class="p">,</span>  <span class="c1"># timeStamping</span>
+        <span class="s2">"1.3.6.1.5.5.7.3.9"</span><span class="p">,</span>  <span class="c1"># OCSPSigning</span>
+        <span class="s2">"1.3.6.1.5.5.7.3.36"</span><span class="p">,</span>  <span class="c1"># documentSigning</span>
+        <span class="s2">"1.3.6.1.4.1.62558.2.1"</span><span class="p">,</span>  <span class="c1"># C2PA claim signing</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_profile_problems</span><span class="p">(</span><span class="n">cert</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What is wrong with ``cert`` as a C2PA end-entity (signing) certificate; ``[]`` if fine."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography</span><span class="w"> </span><span class="kn">import</span> <span class="n">x509</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.hazmat.primitives.asymmetric</span><span class="w"> </span><span class="kn">import</span> <span class="n">rsa</span>
+
+    <span class="n">problems</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">cert</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">get_extension_for_class</span><span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">BasicConstraints</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">ca</span><span class="p">:</span>
+            <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"it is a CA certificate (BasicConstraints ca=TRUE)"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">x509</span><span class="o">.</span><span class="n">ExtensionNotFound</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">usage</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">get_extension_for_class</span><span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">KeyUsage</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">usage</span><span class="o">.</span><span class="n">digital_signature</span><span class="p">:</span>
+            <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"KeyUsage lacks digitalSignature"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">x509</span><span class="o">.</span><span class="n">ExtensionNotFound</span><span class="p">:</span>
+        <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"it has no KeyUsage extension (digitalSignature required)"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">eku</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">extensions</span><span class="o">.</span><span class="n">get_extension_for_class</span><span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">ExtendedKeyUsage</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">purposes</span> <span class="o">=</span> <span class="p">{</span><span class="n">oid</span><span class="o">.</span><span class="n">dotted_string</span> <span class="k">for</span> <span class="n">oid</span> <span class="ow">in</span> <span class="n">eku</span><span class="p">}</span>
+        <span class="k">if</span> <span class="s2">"2.5.29.37.0"</span> <span class="ow">in</span> <span class="n">purposes</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">purposes</span> <span class="o">&amp;</span> <span class="n">C2PA_SIGNING_EKU_OIDS</span><span class="p">:</span>
+            <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">"its ExtendedKeyUsage has no C2PA-acceptable purpose, or has anyExtendedKeyUsage "</span>
+                <span class="sa">f</span><span class="s2">"(accepted: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">C2PA_SIGNING_EKU_OIDS</span><span class="p">)</span><span class="si">}</span><span class="s2">)"</span>
+            <span class="p">)</span>
+    <span class="k">except</span> <span class="n">x509</span><span class="o">.</span><span class="n">ExtensionNotFound</span><span class="p">:</span>
+        <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"it has no ExtendedKeyUsage extension"</span><span class="p">)</span>
+    <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">cert</span><span class="o">.</span><span class="n">not_valid_before_utc</span> <span class="o">&lt;=</span> <span class="n">now</span> <span class="o">&lt;=</span> <span class="n">cert</span><span class="o">.</span><span class="n">not_valid_after_utc</span><span class="p">:</span>
+        <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"it is expired or not yet valid"</span><span class="p">)</span>
+    <span class="n">public_key</span> <span class="o">=</span> <span class="n">cert</span><span class="o">.</span><span class="n">public_key</span><span class="p">()</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">public_key</span><span class="p">,</span> <span class="n">rsa</span><span class="o">.</span><span class="n">RSAPublicKey</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="n">public_key</span><span class="o">.</span><span class="n">key_size</span> <span class="o">&lt;</span> <span class="n">MIN_RSA_KEY_BITS</span>
+    <span class="p">):</span>
+        <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"its RSA key is </span><span class="si">{</span><span class="n">public_key</span><span class="o">.</span><span class="n">key_size</span><span class="si">}</span><span class="s2"> bits (&lt; </span><span class="si">{</span><span class="n">MIN_RSA_KEY_BITS</span><span class="si">}</span><span class="s2">)"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">problems</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_signing_chain</span><span class="p">(</span><span class="n">cert_chain_pem</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Raise ``ValueError`` unless the chain is PEM, end-entity first, holds ``key``'s cert,</span>
+<span class="sd">    and that certificate fits the C2PA signing profile (so signing cannot fail later, silently)."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography</span><span class="w"> </span><span class="kn">import</span> <span class="n">x509</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.hazmat.primitives.serialization</span><span class="w"> </span><span class="kn">import</span> <span class="n">Encoding</span><span class="p">,</span> <span class="n">PublicFormat</span>
 
@@ -844,6 +912,11 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"the first certificate of cert_chain_pem does not belong to the private key: "</span>
             <span class="s2">"the chain is the end-entity certificate FOLLOWED BY its issuer"</span>
         <span class="p">)</span>
+    <span class="k">if</span> <span class="n">problems</span> <span class="o">:=</span> <span class="n">_profile_problems</span><span class="p">(</span><span class="n">certs</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"the end-entity certificate is not a valid C2PA signing certificate: "</span>
+            <span class="o">+</span> <span class="s2">"; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">problems</span><span class="p">)</span>
+        <span class="p">)</span>
 
 
 <div class="viewcode-block" id="make_c2pa_signer">
@@ -859,17 +932,25 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">"""A ``c2pa.Signer`` for ``foley.weave(..., sign_cert=...)`` from a cert chain and key.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        cert_chain_pem: The end-entity certificate followed by its issuer(s), PEM.</span>
+<span class="sd">        cert_chain_pem: The end-entity certificate followed by its issuer(s), PEM. A bare</span>
+<span class="sd">            leaf is accepted (not enforced): C2PA validators then need the issuer among their</span>
+<span class="sd">            trust anchors, and it is not embedded in the manifest.</span>
 <span class="sd">        private_key_pem: The signing key, PEM (PKCS#8 ``BEGIN PRIVATE KEY`` or SEC1).</span>
 <span class="sd">        alg: One of :data:`SIGNING_ALGORITHMS` (default ``'es256'``); it must match the key.</span>
 <span class="sd">        tsa_url: An RFC 3161 timestamp-authority URL (``None``: no timestamp).</span>
 <span class="sd">        password: The key's passphrase, if it is encrypted (str or bytes).</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        ValueError: An unknown ``alg``, a key (or curve) that does not fit it, or a chain</span>
-<span class="sd">            that is not PEM or does not start with the key's own certificate.</span>
+<span class="sd">        ValueError: An unknown or non-string ``alg``, a key (or curve) that does not fit it,</span>
+<span class="sd">            a chain that is not PEM or does not start with the key's own certificate, or an</span>
+<span class="sd">            end-entity certificate outside the C2PA signing profile (a CA, no digitalSignature,</span>
+<span class="sd">            no acceptable ExtendedKeyUsage, an invalid validity window, or an RSA key under :data:`MIN_RSA_KEY_BITS`).</span>
 <span class="sd">        ImportError: ``c2pa-python`` / ``cryptography`` missing (``pip install 'foley[c2pa]'``).</span>
 <span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">alg</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"alg must be a string, one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">SIGNING_ALGORITHMS</span><span class="p">)</span><span class="si">}</span><span class="s2">; got </span><span class="si">{</span><span class="n">alg</span><span class="si">!r}</span><span class="s2">"</span>
+        <span class="p">)</span>
     <span class="n">alg</span> <span class="o">=</span> <span class="n">alg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">alg</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SIGNING_ALGORITHMS</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"alg=</span><span class="si">{</span><span class="n">alg</span><span class="si">!r}</span><span class="s2">: choose one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">SIGNING_ALGORITHMS</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -892,7 +973,7 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
     <span class="n">chain</span> <span class="o">=</span> <span class="n">_pem_text</span><span class="p">(</span><span class="n">cert_chain_pem</span><span class="p">)</span>
     <span class="n">callback</span> <span class="o">=</span> <span class="n">_callback_for</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">alg</span><span class="p">)</span>
-    <span class="n">_check_chain_matches_key</span><span class="p">(</span><span class="n">chain</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+    <span class="n">_check_signing_chain</span><span class="p">(</span><span class="n">chain</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">c2pa</span><span class="o">.</span><span class="n">Signer</span><span class="o">.</span><span class="n">from_callback</span><span class="p">(</span>
         <span class="n">callback</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">c2pa</span><span class="o">.</span><span class="n">C2paSigningAlg</span><span class="p">,</span> <span class="n">alg</span><span class="o">.</span><span class="n">upper</span><span class="p">()),</span> <span class="n">chain</span><span class="p">,</span> <span class="n">tsa_url</span>
     <span class="p">)</span></div>

@@ -27,12 +27,14 @@ inside the functions.
 
 ### Module Attributes
 
-| [`SIGNING_ALGORITHMS`](#foley.provenance.signing.SIGNING_ALGORITHMS)        | The SSOT for which algorithms [`make_c2pa_signer()`](#foley.provenance.signing.make_c2pa_signer) offers (PS\* = RSA-PSS).   |
-|----------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| [`DEFAULT_SIGNING_ALG`](#foley.provenance.signing.DEFAULT_SIGNING_ALG)       | ES256 (ECDSA P-256 / SHA-256), what C2PA tooling expects first.                                                              |
-| [`SELF_SIGNED_COMMON_NAME`](#foley.provenance.signing.SELF_SIGNED_COMMON_NAME)   | Defaults for [`make_self_signed_c2pa_certs()`](#foley.provenance.signing.make_self_signed_c2pa_certs).                                 |
-| [`SELF_SIGNED_ORGANIZATION`](#foley.provenance.signing.SELF_SIGNED_ORGANIZATION)  | C2PA validators require an Organization in the end-entity subject.                                                           |
-| [`SELF_SIGNED_BACKDATE_DAYS`](#foley.provenance.signing.SELF_SIGNED_BACKDATE_DAYS) | Back-dating so a freshly made chain is valid despite clock skew.                                                             |
+| [`SIGNING_ALGORITHMS`](#foley.provenance.signing.SIGNING_ALGORITHMS)        | The SSOT for which algorithms [`make_c2pa_signer()`](#foley.provenance.signing.make_c2pa_signer) offers (PS\* = RSA-PSS).                                                       |
+|----------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`DEFAULT_SIGNING_ALG`](#foley.provenance.signing.DEFAULT_SIGNING_ALG)       | ES256 (ECDSA P-256 / SHA-256), what C2PA tooling expects first.                                                                                                                  |
+| [`SELF_SIGNED_COMMON_NAME`](#foley.provenance.signing.SELF_SIGNED_COMMON_NAME)   | Defaults for [`make_self_signed_c2pa_certs()`](#foley.provenance.signing.make_self_signed_c2pa_certs).                                                                                     |
+| [`SELF_SIGNED_ORGANIZATION`](#foley.provenance.signing.SELF_SIGNED_ORGANIZATION)  | C2PA validators require an Organization in the end-entity subject.                                                                                                               |
+| [`SELF_SIGNED_BACKDATE_DAYS`](#foley.provenance.signing.SELF_SIGNED_BACKDATE_DAYS) | Back-dating so a freshly made chain is valid despite clock skew.                                                                                                                 |
+| [`MIN_RSA_KEY_BITS`](#foley.provenance.signing.MIN_RSA_KEY_BITS)          | A C2PA signing key must be at least this many bits when RSA (PS\* algorithms).                                                                                                   |
+| [`C2PA_SIGNING_EKU_OIDS`](#foley.provenance.signing.C2PA_SIGNING_EKU_OIDS)     | ExtendedKeyUsage purposes c2pa-python accepts on a signing certificate (anyExtendedKeyUsage is refused: it is not on the list, and c2pa rejects it even beside a valid purpose). |
 
 ### Functions
 
@@ -40,12 +42,21 @@ inside the functions.
 |------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
 | [`make_self_signed_c2pa_certs`](#foley.provenance.signing.make_self_signed_c2pa_certs)(\*[, ...])              | A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` (ES256) for dev and tests. |
 
+### foley.provenance.signing.C2PA_SIGNING_EKU_OIDS *= frozenset({'1.3.6.1.4.1.62558.2.1', '1.3.6.1.5.5.7.3.36', '1.3.6.1.5.5.7.3.4', '1.3.6.1.5.5.7.3.8', '1.3.6.1.5.5.7.3.9'})*
+
+ExtendedKeyUsage purposes c2pa-python accepts on a signing certificate (anyExtendedKeyUsage
+is refused: it is not on the list, and c2pa rejects it even beside a valid purpose).
+
 ### foley.provenance.signing.DEFAULT_SIGNING_ALG *= 'es256'*
 
 ES256 (ECDSA P-256 / SHA-256), what C2PA tooling expects first.
 
 * **Type:**
   Default algorithm
+
+### foley.provenance.signing.MIN_RSA_KEY_BITS *= 2048*
+
+A C2PA signing key must be at least this many bits when RSA (PS\* algorithms).
 
 ### foley.provenance.signing.SELF_SIGNED_BACKDATE_DAYS *= 1*
 
@@ -69,14 +80,18 @@ algorithm is a new row; `c2pa.C2paSigningAlg` must have the upper-cased name.
 A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.
 
 * **Parameters:**
-  * **cert_chain_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The end-entity certificate followed by its issuer(s), PEM.
+  * **cert_chain_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The end-entity certificate followed by its issuer(s), PEM. A bare
+    leaf is accepted (not enforced): C2PA validators then need the issuer among their
+    trust anchors, and it is not embedded in the manifest.
   * **private_key_pem** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]) – The signing key, PEM (PKCS#8 `BEGIN PRIVATE KEY` or SEC1).
   * **alg** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – One of [`SIGNING_ALGORITHMS`](#foley.provenance.signing.SIGNING_ALGORITHMS) (default `'es256'`); it must match the key.
   * **tsa_url** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An RFC 3161 timestamp-authority URL (`None`: no timestamp).
   * **password** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The key’s passphrase, if it is encrypted (str or bytes).
 * **Raises:**
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – An unknown `alg`, a key (or curve) that does not fit it, or a chain
-        that is not PEM or does not start with the key’s own certificate.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – An unknown or non-string `alg`, a key (or curve) that does not fit it,
+        a chain that is not PEM or does not start with the key’s own certificate, or an
+        end-entity certificate outside the C2PA signing profile (a CA, no digitalSignature,
+        no acceptable ExtendedKeyUsage, an invalid validity window, or an RSA key under [`MIN_RSA_KEY_BITS`](#foley.provenance.signing.MIN_RSA_KEY_BITS)).
   * [**ImportError**](https://docs.python.org/3/builtins/exceptions.html#ImportError) – `c2pa-python` / `cryptography` missing (`pip install 'foley[c2pa]'`).
 
 ### foley.provenance.signing.make_self_signed_c2pa_certs(, common_name='foley-dev-signer', valid_days=3650)
