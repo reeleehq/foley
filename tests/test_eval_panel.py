@@ -59,45 +59,71 @@ def _all_tasks():
         [("u1", "a door creak", "a.wav", "sa3"), ("u2", "rain", "b.wav", "eleven")]
     )
     p, pk = panel.pairwise_tasks(
-        [("a door creak", ("a.wav", "sa3"), ("b.wav", "eleven"))] * 6, seed=1
+        [("u1", "a door creak", ("a.wav", "sa3"), ("b.wav", "eleven"))] * 6, seed=1
     )
     m, mk = panel.mushra_tasks(
-        [("a door creak", "ref.wav", [("a.wav", "sa3"), ("b.wav", "eleven")], "anchor.wav")] * 5, seed=1
+        [("u1", "a door creak", "ref.wav", [("a.wav", "sa3"), ("b.wav", "eleven")], "anchor.wav")] * 5, seed=1
     )  # fmt: skip
     return g + p + m, {**gk, **pk, **mk}
 
 
-def test_tasks_carry_no_system_names_and_the_key_holds_them(tmp_path):
-    tasks, key = _all_tasks()
-    tasks_path, key_path = panel.save_tasks(tasks, key, tmp_path)
-    blind = tasks_path.read_text()
-    assert (
-        "sa3" not in blind and "eleven" not in blind and "hidden_reference" not in blind
-    )
-    assert panel.load_tasks(tasks_path) == tasks
+@pytest.fixture
+def clips(tmp_path):
+    """Real clip files named after their systems, as a careless user would."""
+    root = tmp_path / "renders"
+    root.mkdir()
+    for name in ("sa3_door", "eleven_door", "reference", "anchor_lowpass"):
+        (root / f"{name}.wav").write_bytes(name.encode())
+    return root
+
+
+def test_saved_tasks_carry_no_system_names_even_when_the_clips_do(tmp_path, clips):
+    tasks, key = panel.mushra_tasks(
+        [("u1", "a door creak", str(clips / "reference.wav"),
+          [(str(clips / "sa3_door.wav"), "sa3"), (str(clips / "eleven_door.wav"), "eleven")],
+          str(clips / "anchor_lowpass.wav"))] * 3, seed=1,
+    )  # fmt: skip
+    tasks_path, key_path, blind = panel.save_tasks(tasks, key, tmp_path / "panel")
+    text = tasks_path.read_text()
+    for leak in ("sa3", "eleven", "anchor", "lowpass", "hidden_reference", "renders"):
+        assert leak not in text
+    assert panel.load_tasks(tasks_path) == blind
     assert panel.load_key(key_path) == key
-    assert {v["system"] for v in key.values()} >= {
-        "sa3",
-        "eleven",
-        "hidden_reference",
-        "anchor",
-    }
+    for t in blind:  # every clip was copied under its opaque id
+        for s in t.stimuli:
+            assert (tmp_path / "panel" / s.clip).is_file() and s.id in s.clip
+    # the hidden reference does not share a path with the visible one
+    assert all(t.reference not in {s.clip for s in t.stimuli} for t in blind)
+    page = render_panel_html(blind)
+    assert "sa3" not in page and "eleven" not in page and "lowpass" not in page
+
+
+def test_a_clip_that_is_not_a_local_file_is_refused(tmp_path):
+    tasks, key = panel.grade_tasks([("u1", "p", "https://x/y.wav", "s")])
+    with pytest.raises(FileNotFoundError, match="local file"):
+        panel.save_tasks(tasks, key, tmp_path)
 
 
 def test_sides_and_order_are_shuffled_but_reproducible():
-    one, _ = panel.pairwise_tasks([("p", ("a.wav", "A"), ("b.wav", "B"))] * 40, seed=5)
-    two, _ = panel.pairwise_tasks([("p", ("a.wav", "A"), ("b.wav", "B"))] * 40, seed=5)
+    one, _ = panel.pairwise_tasks(
+        [("u", "p", ("a.wav", "A"), ("b.wav", "B"))] * 40, seed=5
+    )
+    two, _ = panel.pairwise_tasks(
+        [("u", "p", ("a.wav", "A"), ("b.wav", "B"))] * 40, seed=5
+    )
     assert one == two
     first_clips = {t.stimuli[0].clip for t in one}
     assert first_clips == {"a.wav", "b.wav"}  # both sides occur on the left
 
 
-def test_the_listening_page_embeds_blind_tasks_only():
-    tasks, _ = _all_tasks()
+def test_the_page_script_block_cannot_be_closed_or_commented_out_by_a_prompt():
+    tasks, _ = panel.grade_tasks(
+        [("u", "</script><script>x()</script> <!--", "a.wav", "s")]
+    )
     page = render_panel_html(tasks, title="Door <test>")
-    assert "sa3" not in page and "eleven" not in page and "hidden_reference" not in page
-    assert "Door &lt;test&gt;" in page and '"m0000"' in page
-    assert "</script><" not in page.split("<script>", 1)[1].rsplit("</script>", 1)[0]
+    body = page.split("<script>", 1)[1].rsplit("</script>", 1)[0]
+    assert "</script" not in body and "<!--" not in body
+    assert "Door &lt;test&gt;" in page
 
 
 # ---------------------------------------------------------------------------
@@ -121,6 +147,12 @@ def test_answers_are_validated_per_kind():
         panel.check_answer(m, {m.stimuli[0].id: 50})  # not every stimulus
     with pytest.raises(ValueError):
         panel.check_answer(m, {s.id: 101 for s in m.stimuli})
+    with pytest.raises(ValueError):
+        panel.check_answer(m, {s.id: True for s in m.stimuli})  # a bool is not a score
+    with pytest.raises(ValueError):
+        panel.check_answer(
+            p, [p.stimuli[0].id]
+        )  # unhashable: ValueError, not TypeError
 
 
 def _write(path, rows):
@@ -140,6 +172,14 @@ def test_responses_load_validated_and_the_last_answer_wins(tmp_path):
             _write(tmp_path / "r2.jsonl", [{"rater": "a", "task": "zz", "answer": 1}]),
             tasks,
         )
+    for bad_line in (
+        "[1, 2]",
+        '{"rater": 5, "task": "g0000", "answer": 1}',
+        '{"rater": "a", "task": "g0000"}',
+    ):
+        (tmp_path / "r4.jsonl").write_text(bad_line + "\n")
+        with pytest.raises(ValueError):
+            panel.load_responses(tmp_path / "r4.jsonl", tasks)
     with pytest.raises(ValueError, match="bad answer"):
         panel.load_responses(
             _write(
@@ -219,9 +259,9 @@ def test_the_panel_feeds_the_judge_vs_human_alpha():
         for t, g in zip(tasks, human)
     ]
     units = panel.rating_units(tasks, key, rows)
-    assert units["u3"] == {"ann": 3, "bo": 3}
+    assert units["u3|sa3"] == {"ann": 3, "bo": 3}
     agree = panel.calibrate_against_judge(
-        units, {f"u{i}": g for i, g in enumerate(human)}
+        units, {f"u{i}|sa3": g for i, g in enumerate(human)}, min_raters=2, min_units=10
     )
     assert agree["human_alpha"].alpha == pytest.approx(1.0)
     assert (
@@ -229,9 +269,9 @@ def test_the_panel_feeds_the_judge_vs_human_alpha():
         and agree["judge_vs_human"].promoted
     )
     random_judge = {
-        f"u{i}": g for i, g in enumerate([3, 0, 1, 2, 0, 3, 2, 1, 0, 1, 3, 2])
+        f"u{i}|sa3": g for i, g in enumerate([3, 0, 1, 2, 0, 3, 2, 1, 0, 1, 3, 2])
     }
-    off = panel.calibrate_against_judge(units, random_judge)
+    off = panel.calibrate_against_judge(units, random_judge, min_raters=2, min_units=10)
     assert off["judge_vs_human"].alpha < 0.667 and not off["judge_vs_human"].promoted
     assert off["n_units"] == 12 and off["raters"] == ["ann", "bo"]
 
@@ -242,12 +282,56 @@ def test_mushra_systems_are_rating_units_the_reference_is_not():
         tasks, key, "ann", reference_score=95, scores={"sa3": 90, "eleven": 30}
     )
     units = panel.rating_units(tasks, key, rows)
-    assert units["a door creak|sa3"] == {"ann": 3} and units["a door creak|eleven"] == {
-        "ann": 1
-    }
+    assert units["u1|sa3"] == {"ann": 3} and units["u1|eleven"] == {"ann": 1}
     assert not any("hidden" in u or "anchor" in u for u in units)
 
 
 def test_a_single_rater_has_no_human_alpha_and_too_few_units_no_judge_alpha():
-    out = panel.calibrate_against_judge({"u": {"ann": 2}}, {"u": 2})
+    out = panel.calibrate_against_judge(
+        {"u": {"ann": 2}}, {"u": 2}, min_raters=1, min_units=1
+    )
     assert out["human_alpha"] is None and out["judge_vs_human"] is None
+
+
+def test_two_systems_graded_on_one_unit_do_not_overwrite_each_other():
+    tasks, key = panel.grade_tasks(
+        [("u1", "p", "a.wav", "sa3"), ("u1", "p", "b.wav", "eleven")]
+    )
+    rows = [
+        {"rater": "ann", "task": tasks[0].id, "answer": 3},
+        {"rater": "ann", "task": tasks[1].id, "answer": 0},
+    ]
+    assert panel.rating_units(tasks, key, rows) == {
+        "u1|sa3": {"ann": 3},
+        "u1|eleven": {"ann": 0},
+    }
+
+
+def test_a_judge_is_not_promoted_on_too_few_raters_units_or_no_variation():
+    grades = [0, 1, 2, 3, 3, 2, 1, 0]
+    tasks, key = panel.grade_tasks([(f"u{i}", "p", f"{i}.wav", "s") for i in range(8)])
+    rows = [{"rater": "ann", "task": t.id, "answer": g} for t, g in zip(tasks, grades)]
+    units = panel.rating_units(tasks, key, rows)
+    judge = {f"u{i}|s": g for i, g in enumerate(grades)}
+    thin = panel.calibrate_against_judge(units, judge)  # defaults: 3 raters, 50 units
+    assert (
+        thin["judge_vs_human"].alpha == pytest.approx(1.0)
+        and not thin["judge_vs_human"].promoted
+    )
+    assert any("raters" in r for r in thin["insufficient"]) and any(
+        "units" in r for r in thin["insufficient"]
+    )
+    flat_units = {u: {"ann": 2, "bo": 2, "cy": 2} for u in judge}
+    flat = panel.calibrate_against_judge(flat_units, {u: 2 for u in judge}, min_units=1)
+    assert (
+        "the grades do not vary" in flat["insufficient"]
+        and not flat["judge_vs_human"].promoted
+    )
+
+
+def test_bradley_terry_reports_islands_and_refuses_a_winless_item_without_a_prior():
+    islands = bt.fit([("a", "b"), ("b", "a"), ("c", "d"), ("d", "c")])
+    assert not islands.connected
+    assert bt.fit([("a", "b"), ("b", "c")]).connected
+    with pytest.raises(ValueError, match="prior"):
+        bt.fit([("a", "b")] * 3, prior=0)

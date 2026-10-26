@@ -39,10 +39,13 @@ button.sec{background:transparent;color:var(--acc)}progress{width:100%}
 const TASKS = __TASKS__;
 const GRADES = __GRADES__;
 const RANGE = __RANGE__;
-const STORE = "foley-panel-" + __TASK_HASH__;
+const PANEL = "foley-panel-" + __TASK_HASH__;
 let answers = {}, rater = "", at = 0;
-try { const s = JSON.parse(localStorage.getItem(STORE) || "{}"); answers = s.answers || {}; rater = s.rater || ""; at = s.at || 0; } catch (e) {}
-function save() { try { localStorage.setItem(STORE, JSON.stringify({answers, rater, at})); } catch (e) {} }
+// Progress is kept per rater, so a second person on the same browser starts clean.
+function store() { return PANEL + ":" + rater; }
+function load() { try { const s = JSON.parse(localStorage.getItem(store()) || "{}"); answers = s.answers || {}; at = s.at || 0; } catch (e) { answers = {}; at = 0; } }
+function save() { try { localStorage.setItem(store(), JSON.stringify({answers, at})); localStorage.setItem(PANEL + ":last", rater); } catch (e) {} }
+try { rater = localStorage.getItem(PANEL + ":last") || ""; } catch (e) {}
 const app = document.getElementById("app");
 function el(tag, attrs, ...kids) {
   const n = document.createElement(tag);
@@ -54,8 +57,8 @@ function audio(src) { return el("audio", {controls: "", preload: "auto", src}); 
 function start() {
   app.replaceChildren(
     el("p", {}, "Use headphones in a quiet room. For each item, listen as often as you like, then answer."),
-    el("label", {}, "Your name or initials: ", el("input", {id: "who", value: rater})),
-    el("button", {onclick: () => { const v = document.getElementById("who").value.trim(); if (!v) return; rater = v; save(); show(); }}, at ? "Continue" : "Start"));
+    el("label", {}, "Your name (unique to you; it is saved with your answers): ", el("input", {id: "who", value: rater})),
+    el("button", {onclick: () => { const v = document.getElementById("who").value.trim(); if (!v) return; rater = v; load(); save(); show(); }}, "Start or continue"));
 }
 function show() {
   if (at >= TASKS.length) return done();
@@ -92,7 +95,7 @@ function done() {
     el("a", {href: url, download: "responses-" + rater.replace(/\\W+/g, "_") + ".jsonl"}, el("button", {}, "Download responses")),
     el("button", {class: "sec", onclick: () => { at = 0; save(); show(); }}, "Review from the start"));
 }
-rater ? show() : start();
+start();
 </script></body></html>
 """
 
@@ -107,7 +110,9 @@ def render_panel_html(tasks: Sequence[Task], *, title: str = "Listening panel") 
     from dataclasses import asdict
 
     blind = [asdict(t) for t in tasks]
-    data = json.dumps(blind).replace("</", "<\\/")  # never closes the script tag
+    data = (
+        json.dumps(blind).replace("</", "<\\/").replace("<!--", "<\\!--")
+    )  # inert in a script
     digest = hashlib.sha256(data.encode()).hexdigest()[:12]
     return (
         _PAGE.replace("__TITLE__", html.escape(title))

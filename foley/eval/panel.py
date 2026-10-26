@@ -9,15 +9,17 @@ run by a person. Three task kinds, one flow:
    fits better; feeds :mod:`foley.eval.bradley_terry`), :func:`mushra_tasks` (rate several
    systems 0-100 against a reference, with a hidden copy of the reference and a low anchor, in
    the style of ITU-R BS.1534). Sides and order are shuffled with a ``seed``; stimulus ids are
-   opaque. :func:`save_tasks` writes ``tasks.json`` (what raters get) and ``key.json`` (which
-   system each stimulus is; keep it from the raters).
+   opaque. :func:`save_tasks` copies every clip to ``audio/<stimulus id><ext>`` (so neither a
+   file name nor the hidden reference's path gives it away) and writes ``tasks.json`` (what
+   raters get) and ``key.json`` (which system each stimulus is; keep it from the raters).
 2. **Run** it: :func:`render_panel_html` writes one self-contained page (audio, forms, a
    "download responses" button) to open in a browser or host anywhere static; or send
    ``tasks.json`` to raters and collect the same ``responses.jsonl`` by any means. A response is
    one JSON line: ``{"rater": ..., "task": ..., "answer": ...}`` (the answer shape is per kind,
    see :func:`check_answer`).
 3. **Analyse**: :func:`pairwise_comparisons` -> ``bradley_terry.fit``;
-   :func:`screen_mushra` and :func:`mushra_scores`; :func:`rating_units` ->
+   :func:`screen_mushra` (the hidden-reference rule of ITU-R BS.1534 only; the standard's
+   mid-range anchor rule is not implemented) and :func:`mushra_scores`; :func:`rating_units` ->
    :func:`calibrate_against_judge`, which returns the human-human and judge-vs-human
    Krippendorff α (:func:`foley.eval.reliability.calibrate_judge_vs_human`) to put in the
    calibration report.
@@ -29,7 +31,8 @@ from __future__ import annotations
 
 import json
 import random
-from dataclasses import asdict, dataclass, field
+import shutil
+from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from typing import Iterable, Mapping, Optional, Sequence
 
@@ -50,6 +53,10 @@ MUSHRA_REFERENCE_MIN = 90
 MUSHRA_MAX_VIOLATION_RATE = 0.15
 #: MUSHRA 0-100 scores binned to the 0-3 grade scale (lower bound of each grade).
 MUSHRA_GRADE_BOUNDS = (0, 25, 60, 85)
+#: A judge is only "promoted" on at least this many raters and rated units; below that α
+#: says little (and a panel with no variation in its grades gives α = 1 by construction).
+MIN_RATERS = 3
+MIN_UNITS = 50
 #: The z of a 95% normal interval on a mean score.
 Z95 = 1.96
 ROLE_SYSTEM, ROLE_REFERENCE, ROLE_ANCHOR = "system", "reference", "anchor"
@@ -109,7 +116,7 @@ def pairwise_tasks(
     """
     rng = random.Random(seed)
     tasks, key = [], {}
-    for prompt, a, b in comparisons:
+    for unit, prompt, a, b in comparisons:
         tid = f"p{len(tasks):04d}"
         pair = [a, b]
         rng.shuffle(pair)
@@ -118,23 +125,23 @@ def pairwise_tasks(
             sid = f"{tid}-{k}"
             stimuli.append(Stimulus(sid, clip))
             key[sid] = {"role": ROLE_SYSTEM, "system": system}
-        tasks.append(Task(tid, PAIRWISE, prompt, tuple(stimuli), prompt))
+        tasks.append(Task(tid, PAIRWISE, prompt, tuple(stimuli), unit))
     return tasks, key
 
 
 def mushra_tasks(
-    trials: "Iterable[tuple[str, str, Sequence[tuple[str, str]], Optional[str]]]",
+    trials: "Iterable[tuple[str, str, str, Sequence[tuple[str, str]], Optional[str]]]",
     *,
     seed: int = 0,
 ) -> "tuple[list[Task], dict]":
-    """MUSHRA-style tasks; ``trials`` are ``(prompt, reference_clip, [(clip, system), ...], anchor_clip)``.
+    """MUSHRA-style tasks; ``trials`` are ``(unit_id, prompt, reference_clip, [(clip, system), ...], anchor_clip)``.
 
     Each task shows the reference, and the systems plus a hidden copy of the reference and
     (if ``anchor_clip`` is given) a low-quality anchor, in shuffled order.
     """
     rng = random.Random(seed)
     tasks, key = [], {}
-    for prompt, reference, systems, anchor in trials:
+    for unit, prompt, reference, systems, anchor in trials:
         tid = f"m{len(tasks):04d}"
         items = [(clip, ROLE_SYSTEM, system) for clip, system in systems]
         items.append((reference, ROLE_REFERENCE, HIDDEN_REFERENCE))
@@ -146,18 +153,47 @@ def mushra_tasks(
             sid = f"{tid}-{k}"
             stimuli.append(Stimulus(sid, clip))
             key[sid] = {"role": role, "system": system}
-        tasks.append(Task(tid, MUSHRA, prompt, tuple(stimuli), prompt, reference))
+        tasks.append(Task(tid, MUSHRA, prompt, tuple(stimuli), unit, reference))
     return tasks, key
 
 
-def save_tasks(tasks: Sequence[Task], key: Key, directory) -> "tuple[Path, Path]":
-    """Write ``tasks.json`` (for raters) and ``key.json`` (keep private) into ``directory``."""
+def save_tasks(
+    tasks: Sequence[Task], key: Key, directory, *, audio_dir: str = "audio"
+) -> "tuple[Path, Path, list[Task]]":
+    """Write the panel folder: ``tasks.json`` (for raters), ``key.json`` (keep private), the audio.
+
+    Every clip (a local file) is copied to ``<directory>/<audio_dir>/<stimulus id><ext>`` and the
+    tasks written point at the copies, so a file name never names the system and the hidden
+    reference does not share a path with the visible one. The returned tasks are those
+    rewritten ones (hand them to :func:`foley.eval.panel_page.render_panel_html`).
+
+    Raises:
+        FileNotFoundError: A clip is not a local file (fetch it first).
+    """
     root = Path(directory)
-    root.mkdir(parents=True, exist_ok=True)
+    audio = root / audio_dir
+    audio.mkdir(parents=True, exist_ok=True)
+
+    def anonymise(clip: str, name: str) -> str:
+        src = Path(clip)
+        if not src.is_file():
+            raise FileNotFoundError(f"panel clip {clip!r} is not a local file")
+        dest = audio / f"{name}{src.suffix}"
+        shutil.copyfile(src, dest)
+        return f"{audio_dir}/{dest.name}"
+
+    blind = [
+        replace(
+            t,
+            stimuli=tuple(Stimulus(s.id, anonymise(s.clip, s.id)) for s in t.stimuli),
+            reference=anonymise(t.reference, f"{t.id}-ref") if t.reference else None,
+        )
+        for t in tasks
+    ]
     tasks_path, key_path = root / "tasks.json", root / "key.json"
-    tasks_path.write_text(json.dumps([asdict(t) for t in tasks], indent=1) + "\n")
+    tasks_path.write_text(json.dumps([asdict(t) for t in blind], indent=1) + "\n")
     key_path.write_text(json.dumps(dict(key), indent=1, sort_keys=True) + "\n")
-    return tasks_path, key_path
+    return tasks_path, key_path, blind
 
 
 def load_tasks(path) -> "list[Task]":
@@ -180,6 +216,10 @@ def load_key(path) -> dict:
     return json.loads(Path(path).read_text())
 
 
+def _is_number(x) -> bool:
+    return isinstance(x, (int, float)) and not isinstance(x, bool)
+
+
 def check_answer(task: Task, answer) -> None:
     """Raise ``ValueError`` unless ``answer`` has the shape ``task.kind`` takes.
 
@@ -194,15 +234,13 @@ def check_answer(task: Task, answer) -> None:
             and answer in GRADE_LABELS
         )
     elif task.kind == PAIRWISE:
-        ok = answer is None or answer in ids
+        ok = answer is None or (isinstance(answer, str) and answer in ids)
     elif task.kind == MUSHRA:
         lo, hi = MUSHRA_RANGE
         ok = (
             isinstance(answer, dict)
             and set(answer) == ids
-            and all(
-                isinstance(v, (int, float)) and lo <= v <= hi for v in answer.values()
-            )
+            and all(_is_number(v) and lo <= v <= hi for v in answer.values())
         )
     else:
         raise ValueError(f"unknown task kind {task.kind!r}; use one of {KINDS}")
@@ -213,7 +251,8 @@ def check_answer(task: Task, answer) -> None:
 def load_responses(path, tasks: Sequence[Task]) -> "list[dict]":
     """Read ``responses.jsonl`` (one ``{"rater", "task", "answer"}`` per line), validated.
 
-    A rater answering the same task twice keeps the last answer.
+    A rater answering the same task twice keeps the last answer. Raters are told apart by
+    name only: two people using the same name are merged, so give every rater a unique one.
     """
     by_id = {t.id: t for t in tasks}
     latest: dict = {}
@@ -221,8 +260,16 @@ def load_responses(path, tasks: Sequence[Task]) -> "list[dict]":
         if not line.strip():
             continue
         row = json.loads(line)
-        if row.get("task") not in by_id or not row.get("rater"):
-            raise ValueError(f"{path}:{n}: unknown task or missing rater: {row}")
+        if (
+            not isinstance(row, dict)
+            or row.get("task") not in by_id
+            or not isinstance(row.get("rater"), str)
+            or not row["rater"].strip()
+            or "answer" not in row
+        ):
+            raise ValueError(
+                f"{path}:{n}: unknown task, missing rater or answer: {row}"
+            )
         check_answer(by_id[row["task"]], row["answer"])
         latest[(row["rater"], row["task"])] = row
     return list(latest.values())
@@ -332,8 +379,8 @@ def rating_units(
 ) -> "dict[str, dict[str, int]]":
     """``{unit: {rater: grade}}`` from the grade and MUSHRA answers (the calibration feed).
 
-    A grade task's unit is ``task.unit``; a MUSHRA stimulus of a system is the unit
-    ``"<task.unit>|<system>"`` with its score binned by :func:`mushra_to_grade`. The hidden
+    A unit is ``"<task.unit>|<system>"`` for both kinds (one golden unit judged for two systems
+    is two units); a MUSHRA score is binned by :func:`mushra_to_grade`. The hidden
     reference and anchor are not units.
     """
     by_id = _tasks_by_id(tasks)
@@ -341,7 +388,8 @@ def rating_units(
     for r in responses:
         task = by_id[r["task"]]
         if task.kind == GRADE:
-            units.setdefault(task.unit, {})[r["rater"]] = r["answer"]
+            system = key[task.stimuli[0].id]["system"]
+            units.setdefault(f"{task.unit}|{system}", {})[r["rater"]] = r["answer"]
         elif task.kind == MUSHRA:
             for sid, score in r["answer"].items():
                 if key[sid]["role"] == ROLE_SYSTEM:
@@ -355,28 +403,27 @@ def calibrate_against_judge(
     judge_grades: "Mapping[str, int]",
     *,
     level: str = "ordinal",
+    min_raters: int = MIN_RATERS,
+    min_units: int = MIN_UNITS,
 ) -> dict:
     """Human-human and judge-vs-human agreement, ready for the calibration report.
 
     Args:
         units: :func:`rating_units`' ``{unit: {rater: grade}}``.
         judge_grades: The model judge's ``{unit: grade}`` for the same units.
+        min_raters: Fewer raters than this and nothing is promoted.
+        min_units: Fewer units (judged and rated by people) than this and nothing is promoted.
 
     Returns:
         ``{"human_alpha": AlphaResult | None, "judge_vs_human": AlphaResult | None,
-        "n_units": ..., "raters": [...]}``. ``human_alpha`` needs two or more raters;
-        ``judge_vs_human`` needs a judge grade on at least two rated units.
+        "n_units": ..., "raters": [...], "insufficient": [reasons]}``. ``human_alpha`` needs
+        two or more raters; ``judge_vs_human`` needs a judge grade on at least two rated units.
+        An ``AlphaResult`` is never ``promoted`` while ``insufficient`` is non-empty: too few
+        raters or units, or grades that do not vary (α is 1 by construction then).
     """
     import numpy as np
 
-    from .reliability import (
-        ALPHA_RELIABLE,
-        AlphaResult,
-        calibrate_judge_vs_human,
-        krippendorff_alpha,
-        percent_agreement,
-        reliability_band,
-    )
+    from .reliability import alpha_result, calibrate_judge_vs_human
 
     raters = sorted({r for row in units.values() for r in row})
     shared = sorted(u for u in units if u in judge_grades)
@@ -386,19 +433,26 @@ def calibrate_against_judge(
             if rater in units[unit]:
                 human[i, j] = units[unit][rater]
     judge = np.array([float(judge_grades[u]) for u in shared])
+    insufficient = []
+    if len(raters) < min_raters:
+        insufficient.append(f"{len(raters)} raters, need {min_raters}")
+    if len(shared) < min_units:
+        insufficient.append(f"{len(shared)} units, need {min_units}")
+    if (
+        len({g for row in units.values() for g in row.values()} | set(judge.tolist()))
+        < 2
+    ):
+        insufficient.append("the grades do not vary")
     result: dict = {
-        "human_alpha": None,
-        "judge_vs_human": None,
-        "n_units": len(shared),
-        "raters": raters,
-    }
+        "human_alpha": None, "judge_vs_human": None,
+        "n_units": len(shared), "raters": raters, "insufficient": insufficient,
+    }  # fmt: skip
     if len(raters) >= 2 and shared:
-        alpha = krippendorff_alpha(human, level=level)
-        result["human_alpha"] = AlphaResult(
-            alpha=alpha, level=level, n_units=int((np.sum(~np.isnan(human), axis=0) >= 2).sum()),
-            n_raters=len(raters), percent_agreement=percent_agreement(human),
-            band=reliability_band(alpha), promoted=alpha >= ALPHA_RELIABLE,
-        )  # fmt: skip
+        result["human_alpha"] = alpha_result(human, level=level)
     if len(shared) >= 2 and raters:
         result["judge_vs_human"] = calibrate_judge_vs_human(human, judge, level=level)
+    if insufficient:
+        for name in ("human_alpha", "judge_vs_human"):
+            if result[name] is not None:
+                result[name] = replace(result[name], promoted=False)
     return result

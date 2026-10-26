@@ -199,7 +199,6 @@ def _fit_baseline_command(args, report) -> int:
     from .eval.baseline import (
         DEFAULT_FIT_BASELINE_PATH,
         check_fit_baseline,
-        is_stale,
         load_baseline,
         write_fit_baseline,
     )
@@ -229,12 +228,13 @@ def _fit_baseline_command(args, report) -> int:
         )
         return 0
     baseline = load_baseline(DEFAULT_FIT_BASELINE_PATH)
-    if is_stale(baseline, seed_path=seed_path, manifest_path=RING0_CORPUS_PATH):
-        print(
-            "fit baseline stale: the golden set changed; run `foley eval-fit --update-baseline`"
-        )
     ok, message = check_fit_baseline(
-        report, baseline, level=args.level, sample=args.sample
+        report,
+        baseline,
+        level=args.level,
+        sample=args.sample,
+        seed_path=seed_path,
+        manifest_path=RING0_CORPUS_PATH,
     )
     print(f"{message} -> {'PASS' if ok else 'FAIL'}")
     return 0 if ok else 1

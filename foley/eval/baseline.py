@@ -163,20 +163,36 @@ def write_fit_baseline(
 
 
 def check_fit_baseline(
-    report, baseline: dict, *, level: str = "judge", sample=None
+    report,
+    baseline: dict,
+    *,
+    level: str = "judge",
+    sample=None,
+    seed_path=None,
+    manifest_path=None,
 ) -> "tuple[bool, str]":
     """Gate ``report`` against a committed fit baseline: ``(passed, message)``.
 
     Passes when ``fit_precision >= value - tolerance``. A report measured under a different
     judge, embedder, rung, sample, seed or ``k`` than the baseline's ``run`` is not
     comparable and **fails** with a message saying so (re-stamp with
-    ``foley eval-fit --update-baseline``), never a silent pass.
+    ``foley eval-fit --update-baseline``), never a silent pass. So does a golden set that
+    no longer matches the baseline's stamp, when ``seed_path`` and ``manifest_path`` are given.
     """
     run = _fit_run(report, level=level, sample=sample)
     differs = [k for k in _FIT_RUN_KEYS if baseline.get("run", {}).get(k) != run[k]]
     value, tol = baseline["value"], baseline["tolerance"]
     current = getattr(report, FIT_METRIC)
     summary = f"{FIT_METRIC}: current={current:.4f} baseline={value:.4f} floor={value - tol:.4f}"
+    if (
+        seed_path is not None
+        and manifest_path is not None
+        and is_stale(baseline, seed_path=seed_path, manifest_path=manifest_path)
+    ):
+        return (
+            False,
+            f"{summary}; stale: the golden set changed since the baseline was stamped",
+        )
     if differs:
         return False, (
             f"{summary}; not comparable: the baseline was measured with a different "

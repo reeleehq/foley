@@ -95,3 +95,16 @@ def test_the_cli_gates_and_restamps(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("foley.eval.baseline.DEFAULT_FIT_BASELINE_PATH", other)
     assert cli.main(["eval-fit", "--update-baseline"]) == 0
     assert json.loads(other.read_text())["metric"] == "fit_precision"
+
+
+def test_a_changed_golden_set_fails_the_gate_instead_of_warning(report, tmp_path):
+    baseline = load_baseline(DEFAULT_FIT_BASELINE_PATH)
+    edited = tmp_path / "seed.json"
+    edited.write_text(DEFAULT_GOLDEN_PATH.read_text() + " ")
+    ok, message = check_fit_baseline(
+        report, baseline, seed_path=edited, manifest_path=RING0_CORPUS_PATH
+    )
+    assert not ok and "stale" in message
+    assert check_fit_baseline(
+        report, baseline, seed_path=DEFAULT_GOLDEN_PATH, manifest_path=RING0_CORPUS_PATH
+    )[0]

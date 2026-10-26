@@ -5,6 +5,10 @@ pairs of systems (a backend, a judge, a prompt style). Bradley-Terry turns them 
 strength per item: ``P(i beats j) = s_i / (s_i + s_j)``. Strengths are reported on the log
 scale, centred on 0, so a difference of ``d`` means odds ``e**d`` that the higher one wins.
 
+With comparisons that fall into disconnected groups the strengths of different groups are not
+comparable (``connected`` is ``False``), whatever the prior. Bootstrap intervals resample single
+judgements, ignoring that one rater's judgements are correlated; treat them as optimistic.
+
 Fitted by the MM (minorise-maximise) iteration of Hunter (2004). A small ``prior`` of virtual
 games (one half-win each way against every other item) keeps the estimate finite when an item
 never wins or never loses, which a small panel often produces; set ``prior=0`` for the plain
@@ -33,6 +37,7 @@ class BradleyTerry:
     scores: "tuple[float, ...]"
     n_comparisons: int
     converged: bool
+    connected: bool  # False: the comparison graph has islands, so scores across them are not comparable
     ci: "Optional[tuple[tuple[float, float], ...]]" = None  # per item, if bootstrapped
 
     def ranking(self) -> "list[str]":
@@ -95,6 +100,10 @@ def fit(
     if len(items) < 2:
         raise ValueError("Bradley-Terry needs at least two distinct items")
     scores, converged = _fit_wins(np.array(wins), prior, max_iter, tol)
+    if not np.isfinite(scores).all():
+        raise ValueError(
+            "an item never wins (or never loses), so its strength is not finite; use prior > 0"
+        )
     bounds = None
     if bootstrap > 0:
         rng = np.random.default_rng(seed)
@@ -114,8 +123,22 @@ def fit(
         scores=tuple(float(s) for s in scores),
         n_comparisons=len(comparisons),
         converged=converged,
+        connected=_connected(wins),
         ci=bounds,
     )
+
+
+def _connected(wins) -> bool:
+    """Whether every item is linked to every other through some comparison."""
+    n = len(wins)
+    seen, stack = {0}, [0]
+    while stack:
+        i = stack.pop()
+        for j in range(n):
+            if j not in seen and (wins[i][j] or wins[j][i]):
+                seen.add(j)
+                stack.append(j)
+    return len(seen) == n
 
 
 def _fit_wins(wins, prior: float, max_iter: int, tol: float):
@@ -129,13 +152,17 @@ def _fit_wins(wins, prior: float, max_iter: int, tol: float):
     p = np.ones(n)
     converged = False
     for _ in range(max_iter):
+        if not np.isfinite(p).all() or (p <= 0).any():
+            break  # a winless item at prior 0: no finite fit (the caller raises)
         denom = (games / (p[:, None] + p[None, :])).sum(axis=1)
-        new = total_wins / denom
-        new = new / np.exp(np.mean(np.log(new)))  # fix the scale: geometric mean 1
-        done = np.max(np.abs(np.log(new) - np.log(p))) < tol
+        with np.errstate(divide="ignore", invalid="ignore"):
+            new = total_wins / denom
+            new = new / np.exp(np.mean(np.log(new)))  # fix the scale: geometric mean 1
+            done = np.max(np.abs(np.log(new) - np.log(p))) < tol
         p = new
         if done:
             converged = True
             break
-    log_p = np.log(p)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        log_p = np.log(p)
     return log_p - log_p.mean(), converged

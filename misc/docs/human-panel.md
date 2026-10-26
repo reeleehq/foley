@@ -6,25 +6,25 @@ A model judge (the fit judge behind `foley eval-fit`) is only trusted unattended
 
 - **Grade** (`panel.grade_tasks`): "how well does this clip fit the prompt?", 0 wrong, 1 related, 2 acceptable, 3 ideal. This is the scale the judge-vs-human α uses, so a calibration needs these (or MUSHRA scores, which are binned to it).
 - **2AFC** (`panel.pairwise_tasks`): "which of these two fits better?" Compares systems (two backends, two prompt styles). Feeds `bradley_terry.fit` for a ranking with intervals.
-- **MUSHRA-style** (`panel.mushra_tasks`): rate several systems 0-100 against a reference, with a hidden copy of the reference and a low-quality anchor. Raters who score the hidden reference under 90 in more than 15% of trials are dropped (ITU-R BS.1534 post-screening).
+- **MUSHRA-style** (`panel.mushra_tasks`): rate several systems 0-100 against a reference, with a hidden copy of the reference and a low-quality anchor. Raters who score the hidden reference under 90 in more than 15% of trials are dropped (the hidden-reference rule of ITU-R BS.1534 post-screening; the standard's mid-range anchor rule is not implemented).
 
-Aim for at least 3 raters and 50 or more units for a grade calibration; α is unstable below that.
+A grade calibration needs at least 3 raters and 50 rated units, and grades that vary: `calibrate_against_judge` never marks a judge `promoted` below those (`MIN_RATERS`, `MIN_UNITS`, overridable), because α is meaningless on thinner data. A unit is `<unit_id>|<system>`: the judge's grades are keyed the same way.
 
 ## 2. Build the tasks
 
 ```python
 from foley.eval import panel, render_panel_html
 
-tasks, key = panel.grade_tasks([(unit_id, prompt, "audio/u1.wav", "sa3"), ...])
-panel.save_tasks(tasks, key, "panel/")          # tasks.json for raters, key.json: keep private
-open("panel/index.html", "w").write(render_panel_html(tasks, title="Foley fit panel"))
+tasks, key = panel.grade_tasks([(unit_id, prompt, "renders/u1.wav", "sa3"), ...])
+_, _, blind = panel.save_tasks(tasks, key, "panel/")   # copies every clip to panel/audio/<opaque id>
+open("panel/index.html", "w").write(render_panel_html(blind, title="Foley fit panel"))
 ```
 
-Copy the clips to `panel/audio/` (the page uses the paths in the tasks). Order and sides are shuffled from a seed; stimulus ids are opaque; the page and `tasks.json` never contain a system name.
+`save_tasks` copies each clip (a local file) to `panel/audio/<stimulus id><ext>`, so no file name or path gives a system away, and the hidden MUSHRA reference does not share a path with the visible one. Order and sides are shuffled from a seed; the page and `tasks.json` never contain a system name. Every rater sees the items in the same order.
 
 ## 3. Run it
 
-Host `panel/` anywhere static, or send raters the folder to open `index.html`. Raters use headphones, enter a name, answer every item, and press "Download responses". Collect their `responses-<name>.jsonl` files into one (`cat`). A response line is `{"rater": ..., "task": ..., "answer": ...}`; the answer is an int 0-3 (grade), a stimulus id or `null` for a tie (2AFC), or `{stimulus_id: score}` (MUSHRA). Progress is kept in the browser, so a reload does not lose answers.
+Host `panel/` anywhere static, or send raters the folder to open `index.html`. Raters use headphones, enter a name (unique: two people with the same name are merged), answer every item, and press "Download responses". Collect their `responses-<name>.jsonl` files into one (`cat`). A response line is `{"rater": ..., "task": ..., "answer": ...}`; the answer is an int 0-3 (grade), a stimulus id or `null` for a tie (2AFC), or `{stimulus_id: score}` (MUSHRA). Progress is kept in the browser per rater name, so a reload does not lose answers and a second person on the same machine starts clean.
 
 ## 4. Analyse and feed the calibration
 
