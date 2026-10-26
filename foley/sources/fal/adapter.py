@@ -257,19 +257,12 @@ class FalAdapter:
 
 
 def _actual_cost(config: dict, args: dict) -> Optional[float]:
-    """What the call just made costs at the declared price, for the duration actually sent.
-
-    The same pricing as the estimate (:func:`foley.cost.estimate_call`), so the two
-    cannot disagree on the rule; ``None`` (unknown) when a per-second endpoint was
-    left to choose its own length.
-    """
-    from ...cost import estimate_call
+    """What the call just made costs, for the duration actually sent (see
+    :func:`foley.cost.actual_call_cost`)."""
+    from ...cost import actual_call_cost
 
     name = (config["param_map"].get("duration") or {}).get("native_name")
-    seconds = args.get(name) if name else None
-    if seconds is None and (config.get("pricing") or {}).get("unit") == "per_second":
-        return None
-    return estimate_call(config, duration=seconds)
+    return actual_call_cost(config, duration=args.get(name) if name else None)
 
 
 def _integral(config: dict, native: dict) -> dict:

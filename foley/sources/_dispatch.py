@@ -235,6 +235,26 @@ def _canonical_affordances(config: dict, affordances: dict) -> dict:
     return {k: canonical(k, v) for k, v in out.items() if v is not None}
 
 
+def provider_refused(exc: BaseException) -> bool:
+    """Whether ``exc`` is the provider refusing a request it did not bill.
+
+    Only an adapter can know that, so it says so: the exception carries
+    ``unbilled = True`` (ElevenLabs direct: an HTTP error status on its single POST,
+    which produced nothing). Such a request's reservation is released and the
+    generation order may try the next backend. Anything else that fails after the
+    request was sent (a read timeout, an undecodable 200 body, a 5xx on a queue
+    source's result fetch after the job ran) may have been billed, and is final.
+
+    >>> class Refused(Exception):
+    ...     unbilled = True
+    >>> class Fetch502(Exception):
+    ...     status_code = 502
+    >>> provider_refused(Refused()), provider_refused(Fetch502()), provider_refused(TimeoutError())
+    (True, False, False)
+    """
+    return getattr(exc, "unbilled", False) is True
+
+
 def _is_paid(config: dict) -> bool:
     pricing = config.get("pricing") or {}
     return pricing.get("unit") != "free"
@@ -382,6 +402,10 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
             f"{plan.backend!r} needs an optional dependency that is not installed "
             f"({exc.name or exc}): pip install 'foley[{_extra_of(plan)}]'"
         ) from exc
+    except Exception as exc:
+        if provider_refused(exc):
+            release(reserved)  # the provider answered with an error: nothing billed
+        raise
     # Any other failure keeps the reservation: the request may have been sent and
     # billed (a read timeout after the server accepted it).
     clip.notes = [*plan.notes, *clip.notes]

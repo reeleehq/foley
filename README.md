@@ -42,6 +42,13 @@ clip = foley.generate(
     "a single wooden door creak", backend="fal_stable_audio_3", duration=3
 )
 
+# Or let foley pick: with paid generation opted in (FOLEY_GENERATE_PAID=1) an unnamed
+# backend walks the generation order, ElevenLabs direct first (ELEVENLABS_API_KEY or
+# ELEVEN_API_KEY, plus FOLEY_ELEVENLABS_PLAN), then fal, then the local model; the
+# notes say which backends were skipped and why
+clip = foley.generate("a single wooden door creak", duration=3, level="sfx_fg")
+clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
+
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
 foley.add_from(

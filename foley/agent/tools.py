@@ -102,16 +102,20 @@ def _rrf_merge(result_lists: "list[list[Candidate]]", k: int) -> "list[Candidate
     return ordered[:k]
 
 
-def generate_sound(query: str, *, backend: str = "auto", library=None) -> Candidate:
+def generate_sound(
+    query: str, *, backend: str = "auto", library=None, intended_use=None
+) -> Candidate:
     """Generate a clip for ``query`` (the fallback tool) — a thin wrapper over ``foley.generate``.
 
+    ``backend='auto'`` walks the generation order, passing over backends whose licence
+    cannot serve ``intended_use`` (default: commercial) before anything is paid for.
     Returns a :class:`Candidate` (``origin=generated``); raises the ``GenerationError``
     hierarchy on refusal / no-result (caught fail-closed by :func:`_generate_and_reverify`).
     """
     import foley  # lazy: avoids the foley → foley.agent import cycle at module load
 
     kw = {} if backend == "auto" else {"backend": backend}
-    return foley.generate(query, library=library, **kw)
+    return foley.generate(query, library=library, intended_use=intended_use, **kw)
 
 
 def place_in_timeline(
@@ -233,24 +237,30 @@ def _generate_and_reverify(
 
     from ..sources.base import SourceConfigurationError
 
-    from ..sources.generate import default_generate_backend, generation_rights_refusal
+    from ..sources.generate import generation_rights_refusal
 
-    name = default_generate_backend() if backend == "auto" else backend
-    refusal = generation_rights_refusal(name, intended_use)
+    # A named backend is judged here; 'auto' is judged per backend by the order.
+    refusal = (
+        None if backend == "auto" else generation_rights_refusal(backend, intended_use)
+    )
     if refusal is not None:
         import warnings
 
         warnings.warn(f"generation skipped: {refusal}", UserWarning, stacklevel=2)
         return None
     try:
-        gc = generate_sound(event.query, backend=backend, library=library)
+        gc = generate_sound(
+            event.query, backend=backend, library=library, intended_use=intended_use
+        )
     except (BudgetExceeded, SourceConfigurationError) as exc:
         # Generation is find's optional fallback: an exhausted enclosing budget, or a
         # backend that is not set up (no key, no plan, extra not installed), skips it —
         # loudly, since nothing was generated — and find falls back to retrieval.
         import warnings
 
-        warnings.warn(f"generation skipped: {exc}", UserWarning, stacklevel=2)
+        skipped = getattr(exc, "skipped_backends", None)
+        extra = f" (skipped first: {'; '.join(skipped)})" if skipped else ""
+        warnings.warn(f"generation skipped: {exc}{extra}", UserWarning, stacklevel=2)
         return None
     except EgressBlocked as exc:
         # Offline: an external backend, or a local one whose weights are not cached.
@@ -462,17 +472,15 @@ def estimate_find_usd(
     rung, and one re-verification per generation. Injected rungs are the caller's to
     meter (their real calls are still checked one by one).
     """
-    from ..sources._dispatch import estimate_generation
     from .llm import RUNG_MAX_TOKENS, llm_call_estimate, resolve_llm
 
     injected = injected or {}
     provider = resolve_llm(llm)
     per_gen = 0.0
     if max_generations:
-        from ..sources.generate import default_generate_backend
+        from ..sources.generate import estimate_order
 
-        name = default_generate_backend() if backend == "auto" else backend
-        per_gen = estimate_generation(name)
+        per_gen = estimate_order(backend)
     calls = {
         "decomposer": 0 if injected.get("decomposer") else 1,
         "refiner": 0 if injected.get("refiner") else max_events * max_refine_loops,

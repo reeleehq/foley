@@ -29,6 +29,8 @@ SOURCE_CONFIG = {
     "auth": {
         "type": "token",
         "env_var": "ELEVENLABS_API_KEY",
+        # The rest of the fleet (an, voxy) also reads ELEVEN_API_KEY for this provider.
+        "env_var_aliases": ("ELEVEN_API_KEY",),
         "header": "xi-api-key",  # 'xi-api-key: <key>' (keeps the key out of URLs)
         "apply_url": "https://elevenlabs.io/app/settings/api-keys",
     },
@@ -73,12 +75,13 @@ SOURCE_CONFIG = {
                 "subscription_required",
                 "output_format_not_allowed",
             ],
-            # Raw PCM layout per native enum: 16-bit little-endian. The channel count
-            # is not documented for the SFX endpoint: until a live call confirms it,
-            # verified=False and a clip whose layout the byte length cannot confirm
-            # (no duration requested) carries a note saying mono was assumed.
+            # Raw PCM layout per native enum: 16-bit little-endian, headerless
+            # (content-type audio/pcm). Stereo, verified live 2026-10-26 (#95): a
+            # 1.0 s request returned 192,000 bytes (48,000 x 2 ch x 2 B), and five
+            # studio clips of 1.5-8 s all implied 2 ch; a paid plan was not refused
+            # PCM. The byte-length check still corrects a clip that disagrees.
             "pcm": {
-                "pcm_48000": {"sample_rate": 48000, "channels": 1, "verified": False}
+                "pcm_48000": {"sample_rate": 48000, "channels": 2, "verified": True}
             },
         },
     },
@@ -102,6 +105,9 @@ SOURCE_CONFIG = {
     "api": {
         "base_url": "https://api.elevenlabs.io",  # overridable for data-residency
         "generate_endpoint": {"method": "POST", "path": "/v1/sound-generation"},
+        # The response header carrying the credits the call was charged (seen live
+        # 2026-10-26: 10 credits for a 1.0 s clip); recorded as a note per clip.
+        "credits_header": "character-cost",
     },
     "output": {"default_format": "mp3", "returns": "bytes", "storage": "by_value"},
     # MANDATORY license block (foley-dev-add-source) — the SSOT seed. cache_bytes_ok
@@ -119,13 +125,18 @@ SOURCE_CONFIG = {
         "cache_bytes_ok": True,
     },
     "commercial_ok": None,  # decided by the plan's LICENSE_FLAGS row
-    # falaw-style price (foley.cost.estimate_call): $0.12 per minute of audio. With the
+    # falaw-style price (foley.cost.estimate_call): $0.12 per minute of audio, the API
+    # pay-as-you-go rate, which is also the overage rate on every paid plan; a paid
+    # plan's monthly allowance is consumed first, so the marginal cost is 0 until it
+    # runs out and this is an upper bound. Same per-second price as the fal route
+    # (fal_elevenlabs), with the plan's licence instead of an unverified one, which is
+    # why it comes first in foley.sources.generate.DEFAULT_GENERATE_ORDER. With the
     # duration left to the model, the estimate is the 30 s maximum (an upper bound).
     "pricing": {
         "unit": "per_second",
         "amount_usd": 0.002,
-        "source": "ElevenLabs pricing via foley report 13 [4]",
-        "seen": "2026-10-03",
+        "source": "https://elevenlabs.io/pricing/api (Sound Effects: $0.12 per minute)",
+        "seen": "2026-10-26",
     },
     "rate": {"per_min": 60},
     # A 'wav' request answered by the MP3 fallback replays that MP3 for a day (so an

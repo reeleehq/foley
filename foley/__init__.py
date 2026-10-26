@@ -665,7 +665,7 @@ def _warn_if_hidden(hidden) -> None:
 def generate(
     prompt: str,
     *,
-    backend: "str | None" = None,
+    backend: "str | tuple[str, ...] | list[str] | None" = None,
     library=None,
     store: bool = True,
     adapter=None,
@@ -677,6 +677,9 @@ def generate(
     reuse_cached: bool = True,
     budget=None,
     repair=True,
+    level=None,
+    check_prompt: bool = True,
+    intended_use=None,
     **affordances,
 ):
     """Generate a sound effect for ``prompt`` and add it to the library (by-value).
@@ -693,13 +696,25 @@ def generate(
 
     Args:
         prompt: The natural-language sound description.
-        backend: A registered generate source. ``None`` (default) is
-            ``$FOLEY_GENERATE_BACKEND``, else ``"stable_audio"`` (local; needs
-            ``foley[stable-audio]``). Hosted: ``"elevenlabs"`` (``foley[elevenlabs]`` +
-            ``$ELEVENLABS_API_KEY``) and the fal endpoints ``"fal_stable_audio_3"``
-            (Stable Audio 3 Small-SFX, commercial under $1M revenue),
-            ``"fal_elevenlabs"``, ``"fal_sonilo"`` and ``"fal_mmaudio"`` (non-commercial)
-            (``foley[fal]`` + ``$FAL_KEY``).
+        backend: A registered generate source, or a sequence of them to try in
+            order. ``None`` (default) tries the generation order
+            (:func:`foley.sources.generate.generate_backend_order`): ElevenLabs
+            direct first (``"elevenlabs"``: ``foley[elevenlabs]``,
+            ``$ELEVENLABS_API_KEY`` or ``$ELEVEN_API_KEY``, and
+            ``$FOLEY_ELEVENLABS_PLAN``), then fal's ``"fal_stable_audio_3"`` (Stable
+            Audio 3 Small-SFX, commercial under $1M revenue) and ``"fal_elevenlabs"``
+            (``foley[fal]`` + ``$FAL_KEY``), then the local ``"stable_audio"``
+            (``foley[stable-audio]``). The paid ones are tried only once paid
+            generation is opted in (``$FOLEY_GENERATE_PAID=1``; a key in the
+            environment is not consent to spend, #58), so out of the box this is the
+            free local backend. A backend with no key, not configured, offline,
+            whose licence cannot serve ``intended_use``, or whose provider refused the
+            request (an HTTP error, nothing billed) is skipped, and the candidate's
+            ``notes`` say why; a failure that may have been billed is final.
+            ``$FOLEY_GENERATE_ORDER`` (comma-separated) replaces the order;
+            ``$FOLEY_GENERATE_BACKEND`` pins one backend. A named backend is used
+            alone, with no fallback. Others: ``"fal_sonilo"``, ``"fal_mirelo"``,
+            ``"fal_stable_audio_3_medium"``, ``"fal_mmaudio"`` (non-commercial).
         library: Target library (default: the process-wide default library).
         store: If ``False``, synthesize + QC a preview without adding it: the returned
             candidate's ``audio_bytes`` carries the clip (the archive bytes the library
@@ -735,6 +750,18 @@ def generate(
             :func:`foley.repair.repair`'s signature replaces the policy (an ffmpeg one;
             ``functools.partial(foley.repair.repair, min_status=QCStatus.pass_)`` also
             declicks clips QC admits with a warning, which are otherwise stored as is).
+        level: Level the clip to a loudness target before storing it: a layer name
+            (``'sfx_fg'`` -25 LUFS, ``'ambience'`` -37 LUFS, … : the WEAVE layer gains
+            under a -16 LUFS voice, see :func:`foley.level.class_target_lufs`) or a LUFS
+            number. ``None`` (default) keeps the generated level.
+        check_prompt: Score the clip against its prompt with the library's text-audio
+            embedder (CLAP) and flag a mismatch in the notes and
+            ``sound.qc['prompt_match']``; ``'unchecked'`` (with the reason) when no
+            capable embedder is available. Default ``True``.
+        intended_use: The :class:`IntendedUse` the clip must serve when an order is
+            walked (default: commercial): a backend whose licence cannot serve it is
+            skipped before anything is paid for. A single named backend is used as
+            asked (its licence is gated downstream by :func:`keep`).
         **affordances: Unified generation affordances (``duration``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`GENERATION_AFFORDANCES`).
@@ -766,14 +793,33 @@ def generate(
             not on this machine.
     """
     from .cost import spend_scope
-    from .sources.generate import default_generate_backend
+    from .sources.generate import (
+        default_generate_backend,
+        generate_backend_order,
+        generate_in_order,
+        paid_generation_opted_in,
+    )
 
-    if backend in (None, "", "auto"):
-        backend = default_generate_backend()
+    paid_ok = True  # a named backend or order is the caller asking for it
+    if adapter is not None:  # an injected adapter is one backend, named by its config
+        if isinstance(backend, (list, tuple)):
+            raise ValueError("adapter= is one backend: pass a single backend= name")
+        named = (getattr(adapter, "config", None) or {}).get("name")
+        order = (backend if backend not in (None, "", "auto") else named or default_generate_backend(),)
+    elif isinstance(backend, (list, tuple)):
+        order = tuple(backend)  # the caller's own order
+        if not order:
+            raise ValueError("backend= is an empty sequence: name at least one backend")
+    elif backend not in (None, "", "auto"):
+        order = (backend,)  # named: that backend, no fallback
+    else:
+        order, paid_ok = generate_backend_order(), paid_generation_opted_in()
     with spend_scope(budget):
-        report = _generate_backend(
+        report, backend, skipped = generate_in_order(
             prompt,
-            backend=backend,
+            order,
+            paid_ok=paid_ok,
+            intended_use=intended_use,
             library=library,
             store=store,
             adapter=adapter,
@@ -784,9 +830,13 @@ def generate(
             on_unsupported=on_unsupported,
             reuse_cached=reuse_cached,
             repair=repair,
+            level=level,
+            check_prompt=check_prompt,
             **affordances,
         )
     results = report.results
+    if results and skipped:
+        results[0].notes[:0] = [f"generation order: skipped {line}" for line in skipped]
     res = results[0] if results else None
     if res is None:
         raise GenerationError(
@@ -801,8 +851,9 @@ def generate(
         cand = Candidate(sound=lib[res.id], origin=CandidateOrigin.generated)
         return _with_call_facts(cand, res)
     cause = res.error or "; ".join(res.notes) or res.status
+    tried = f" (skipped first: {'; '.join(skipped)})" if skipped else ""
     raise GenerationError(
-        f"generation via {backend!r} yielded no stored sound ({res.status}): {cause}",
+        f"generation via {backend!r} yielded no stored sound ({res.status}): {cause}{tried}",
         report=report,
         status=res.status,
         cache_key=res.cache_key,
@@ -903,12 +954,9 @@ def estimate(verb: str, **kwargs):
             _get(name)
         return estimate_call(SOURCE_REGISTRY[name]["config"])
     if verb == "generate":
-        from .sources.generate import default_generate_backend
+        from .sources.generate import estimate_order
 
-        backend = kwargs.pop("backend", None)
-        if backend in (None, "", "auto"):
-            backend = default_generate_backend()
-        return estimate_generation(backend, **kwargs)
+        return estimate_order(kwargs.pop("backend", None), **kwargs)
     if verb in ("find", "score"):
         keys = ("max_events", "backend", "llm", "k", "verify", "max_refine_loops")
         kw = {key: kwargs[key] for key in keys if key in kwargs}

@@ -377,59 +377,87 @@ def foley_generate(
 ) -> dict:
     """Generate a sound from a text prompt (local backends only when offline).
 
-    ``backend='auto'`` is the host's default (``$FOLEY_GENERATE_BACKEND``, else the local
-    Stable Audio Open); name one to choose (``fal_stable_audio_3``, ``elevenlabs``, ...).
+    ``backend='auto'`` tries the host's generation order (ElevenLabs direct first, then
+    the fal backends, then the local Stable Audio Open; the paid ones only when the
+    host opted in with ``$FOLEY_GENERATE_PAID=1``; ``$FOLEY_GENERATE_ORDER`` /
+    ``$FOLEY_GENERATE_BACKEND`` change it), skipping what is not configured or not
+    allowed offline; name one to choose (``fal_stable_audio_3``, ``elevenlabs``, ...).
 
     A clip QC would quarantine for a clipped run just over the gate is repaired and
     stored (the repair is in the result's notes). A refused generation's dict carries
     ``cache_key``: where its paid bytes are in the generations cache
     (``foley.generations.get(cache_key)``, on the host — bytes never travel over MCP).
     """
+    from .. import GenerationError, generate
+    from ..cost import BudgetExceeded, spend_scope
     from ..runtime import EXTERNAL, EgressBlocked
-    from ..sources.generate import default_generate_backend
+    from ..sources._dispatch import UnsupportedParameter
+    from ..sources.base import SourceConfigurationError
+    from ..sources.generate import (
+        backend_is_paid,
+        first_runnable_backend,
+        generate_backend_order,
+        generation_rights_refusal,
+        paid_generation_opted_in,
+    )
     from ..sources.registry import source_egress
 
-    if backend in ("auto", "", None):
-        backend = default_generate_backend()
+    use = intended_use_for(commercial_ok=commercial_ok)
+
     # The bound server runtime may differ from the call's context (a server built with
     # runtime= but not run under offline_scope), so check it here too; undeclared
     # egress counts as external (fail-closed), as in the registry.
-    egress = source_egress(backend) or EXTERNAL
-    if not _runtime().allows(egress):
+    def allowed(name):
+        return _runtime().allows(source_egress(name) or EXTERNAL)
+
+    auto = backend in ("auto", "", None)
+    order = generate_backend_order() if auto else (backend,)
+    paid_ok = not auto or paid_generation_opted_in()
+    order = tuple(
+        name
+        for name in order
+        if allowed(name) and (paid_ok or name == order[-1] or not backend_is_paid(name))
+    )
+    if not order:
         return {
             "ok": False,
             "error": f"backend {backend!r} is external and disallowed in offline mode",
         }
-    from .. import GenerationError, generate
+    backend = first_runnable_backend(order, paid_ok=paid_ok)  # reported if refused
+    if len(order) == 1:  # a single backend is judged here; an order, per backend
+        refusal = generation_rights_refusal(order[0], use)
+        if refusal is not None:
+            return {"ok": False, "status": "refused", "error": refusal, "backend": backend}
 
     # The public façade returns the stored Candidate (a re-searchable, by-value
     # SoundRecord) and RAISES GenerationError on any non-success outcome (QC-quarantined,
     # rights-blocked, safety-refused, or an empty result). Surface both as JSON so the
     # agent gets the real generated id on success — and a structured error, never an
     # escaping exception, on failure — honoring the module's JSON-in/JSON-out contract.
-    from ..cost import BudgetExceeded
-    from ..sources._dispatch import UnsupportedParameter
-    from ..sources.base import SourceConfigurationError
-
-    from ..cost import spend_scope
-    from ..sources.generate import generation_rights_refusal
-
-    refusal = generation_rights_refusal(
-        backend, intended_use_for(commercial_ok=commercial_ok)
-    )
-    if refusal is not None:
-        return {"ok": False, "status": "refused", "error": refusal, "backend": backend}
     try:
         with spend_scope(_server_budget()):
-            cand = generate(prompt, backend=backend, library=_lib())
+            cand = generate(
+                prompt,
+                backend=order if len(order) > 1 else order[0],
+                library=_lib(),
+                intended_use=use,
+            )
+        backend = cand.sound.license.source or backend  # the one that served it
     except (
         EgressBlocked,
         BudgetExceeded,
         SourceConfigurationError,
         UnsupportedParameter,
     ) as exc:
-        # Refused before any provider call: say why, as JSON.
-        return {"ok": False, "status": "refused", "error": str(exc), "backend": backend}
+        # Refused before a billed call (an earlier backend in the order may have been
+        # refused by its provider, unbilled): say why, as JSON.
+        return {
+            "ok": False,
+            "status": "refused",
+            "error": str(exc),
+            "backend": backend,
+            "skipped_backends": getattr(exc, "skipped_backends", None),
+        }
     except GenerationError as exc:
         return {
             "ok": False,
