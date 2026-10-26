@@ -163,6 +163,16 @@ def _isolate_from_paid_apis(monkeypatch, request, _provider_key_env_vars):
 
 
 @pytest.fixture(autouse=True)
+def _no_local_sa3_runtime(monkeypatch, tmp_path):
+    """Point the local Stable Audio 3 source at an empty dir: a test never runs the real model.
+
+    A developer machine may have the runtime installed (#72); an unnamed ``generate`` in a
+    test would then start a CPU render of a model instead of reaching its fake.
+    """
+    monkeypatch.setenv("FOLEY_SA3_DIR", str(tmp_path / "no-sa3"))
+
+
+@pytest.fixture(autouse=True)
 def _in_memory_generations_cache(monkeypatch):
     """Keep paid-generation caching (#59) off the developer's real data dir."""
     from foley.sources import _dispatch

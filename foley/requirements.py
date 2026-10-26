@@ -42,6 +42,31 @@ _IMPORTABLE_REQUIREMENTS = {
     ),
 }
 
+
+def _sa3_requirement() -> Requirement:
+    """The local Stable Audio 3 CPU runtime (#72): a checkout plus its virtualenv.
+
+    Not a pip extra, so it is probed by ``probe="sa3_runtime"``; built on demand because
+    its setup command names the checkout directory.
+    """
+    from .sources.stable_audio_3.adapter import setup_hint
+
+    hint = setup_hint()
+    return Requirement(
+        name="stable-audio-3-tflite",
+        purpose="the local Stable Audio 3 Small-SFX generator (CPU, no GPU, no token)",
+        url="https://github.com/Stability-AI/stable-audio-3/tree/main/optimized/tflite",
+        install={"darwin": hint, "linux": hint},
+        probe="sa3_runtime",
+    )
+
+
+def _sa3_runtime_ready(_name: str) -> bool:
+    from .sources.stable_audio_3.adapter import runtime_ready
+
+    return runtime_ready()
+
+
 #: How each ``probe`` kind checks availability.
 _PROBES = {
     "binary": lambda name: shutil.which(name) is not None,
@@ -49,6 +74,7 @@ _PROBES = {
         any(os.environ.get(v) for v in _key_env_vars(name)) or _key_is_bound(name)
     ),
     "importable": lambda name: importlib.util.find_spec(name) is not None,
+    "sa3_runtime": _sa3_runtime_ready,
 }
 
 
@@ -121,6 +147,8 @@ def build_requirements() -> "dict[str, Requirement]":
     )  # FREESOUND_API_KEY / ELEVENLABS_API_KEY / …
     reqs[_ANTHROPIC_KEY.name] = _ANTHROPIC_KEY
     reqs.update(_IMPORTABLE_REQUIREMENTS)  # py2mcp
+    sa3 = _sa3_requirement()
+    reqs[sa3.name] = sa3
     return reqs
 
 

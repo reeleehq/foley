@@ -270,7 +270,7 @@ def test_estimates_are_honest_upper_bounds():
 def test_default_backend_comes_from_the_env(monkeypatch):
     from foley.sources.generate import default_generate_backend
 
-    assert default_generate_backend() == "stable_audio"
+    assert default_generate_backend() == "stable_audio_3"
     monkeypatch.setenv("FOLEY_GENERATE_BACKEND", "fal_stable_audio_3")
     assert default_generate_backend() == "fal_stable_audio_3"
     assert foley.estimate("generate") == pytest.approx(0.0206)
