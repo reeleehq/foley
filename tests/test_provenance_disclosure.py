@@ -20,7 +20,6 @@ import io
 import re
 import subprocess
 import sys
-from types import SimpleNamespace
 
 import pytest
 
@@ -43,30 +42,14 @@ from foley.sources.generate import (  # noqa: E402
 )
 from foley.sources.stable_audio.adapter import StableAudioAdapter  # noqa: E402
 
+from ._fakes import FakePipeline, stereo_tone  # noqa: E402
+
 SR = 44_100
 
 
 # ---------------------------------------------------------------------------
 # fakes (torch-free)
 # ---------------------------------------------------------------------------
-
-
-def _stereo_tone(freq=440.0, seconds=1.0, amp=0.4):
-    t = np.arange(int(SR * seconds), dtype=np.float32) / SR
-    mono = (amp * np.sin(2 * np.pi * freq * t)).astype(np.float32)
-    return np.stack([mono, mono])
-
-
-class FakePipeline:
-    def __init__(self):
-        self.vae = SimpleNamespace(sampling_rate=SR)
-        self.device = "cpu"
-        self.calls = []
-        self._audio = _stereo_tone()
-
-    def __call__(self, **kwargs):
-        self.calls.append(kwargs)
-        return SimpleNamespace(audios=[self._audio])
 
 
 class FakeWatermarker:
@@ -547,7 +530,7 @@ def test_real_audioseal_roundtrip_and_determinism():
     pytest.importorskip("audioseal")
     pytest.importorskip("torch")
     pytest.importorskip("torchaudio")
-    clip = encode(_stereo_tone(seconds=2.0).T, SR)  # (N, 2) time-first, like the adapter
+    clip = encode(stereo_tone(seconds=2.0).T, SR)  # (N, 2) time-first, like the adapter
     wmr = disclosure.AudioSealWatermarker()
     res1 = wmr.embed(clip)
     prob, recovered = disclosure.detect_watermark(res1.audio_bytes)

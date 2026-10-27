@@ -24,6 +24,8 @@ from foley.sources.registry import SOURCE_REGISTRY, _declared_configs  # noqa: E
 from foley.sources.stable_audio.adapter import StableAudioAdapter  # noqa: E402
 from foley.sources.stable_audio_3.adapter import StableAudio3Adapter  # noqa: E402
 
+from ._fakes import FakePipeline, make_sa3_home  # noqa: E402
+
 SR = 44_100
 
 
@@ -43,11 +45,7 @@ def _fal(name):
 
 
 def _stable_audio3(*, tmp_path, **_):
-    tflite = tmp_path / "optimized" / "tflite"
-    (tflite / "scripts").mkdir(parents=True)
-    (tflite / "scripts" / "sa3_tflite.py").write_text("")
-    (tflite / ".venv" / "bin").mkdir(parents=True)
-    (tflite / ".venv" / "bin" / "python").write_text("")
+    make_sa3_home(tmp_path)
 
     def runner(cmd, *, cwd, env, timeout):
         seed = int(cmd[cmd.index("--seed") + 1])
@@ -70,15 +68,10 @@ def _stable_audio(*, monkeypatch, **_):
         sys.modules, "torch", types.SimpleNamespace(Generator=Generator)
     )
 
-    class Pipe:
-        device = "cpu"
-        vae = types.SimpleNamespace(sampling_rate=SR)
-
-        def __call__(self, *, generator, **_):
-            wave = _noise(generator.seed)
-            return types.SimpleNamespace(audios=[np.stack([wave, wave])])
-
-    return StableAudioAdapter(pipeline=Pipe())
+    pipe = FakePipeline(
+        audio_fn=lambda *, generator, **_: np.stack([_noise(generator.seed)] * 2),
+    )
+    return StableAudioAdapter(pipeline=pipe)
 
 
 FAKES = {

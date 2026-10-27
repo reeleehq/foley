@@ -58,6 +58,8 @@ from foley.sources.stable_audio.adapter import StableAudioAdapter  # noqa: E402
 
 import foley  # noqa: E402
 
+from ._fakes import FakePipeline  # noqa: E402
+
 SR = 44_100
 
 
@@ -69,12 +71,6 @@ SR = 44_100
 def _mono_tone(freq=440.0, seconds=1.0, amp=0.4):
     t = np.arange(int(SR * seconds), dtype=np.float32) / SR
     return (amp * np.sin(2 * np.pi * freq * t)).astype(np.float32)
-
-
-def _stereo_tone(freq=440.0, seconds=1.0, amp=0.4):
-    """Channel-FIRST ``(2, N)`` — the Stable Audio Open output layout."""
-    mono = _mono_tone(freq, seconds, amp)
-    return np.stack([mono, mono])
 
 
 def _silent(seconds=1.0):
@@ -119,24 +115,6 @@ class FakeTransport:
         if self._response is not None:
             return self._response
         return FakeResponse(200, None, _flac(_mono_tone()))
-
-
-class FakePipeline:
-    """A stand-in for ``diffusers.StableAudioPipeline`` — records call kwargs.
-
-    ``audio`` defaults to a healthy stereo tone; inject channel-distinct or silent
-    audio to exercise the transpose orientation / QC-quarantine paths.
-    """
-
-    def __init__(self, *, sr=SR, audio=None):
-        self.vae = SimpleNamespace(sampling_rate=sr)
-        self.device = "cpu"
-        self.calls = []
-        self._audio = _stereo_tone() if audio is None else audio
-
-    def __call__(self, **kwargs):
-        self.calls.append(kwargs)
-        return SimpleNamespace(audios=[self._audio])
 
 
 @pytest.fixture(autouse=True)
