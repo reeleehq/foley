@@ -696,7 +696,11 @@ def _find_events(
 
 
 def plan(
-    candidates: "list[Candidate]", *, transcript: "Optional[str]" = None
+    candidates: "list[Candidate]",
+    *,
+    transcript: "Optional[str]" = None,
+    intended_use: "Optional[IntendedUse]" = None,
+    library=None,
 ) -> SoundDesignTimeline:
     """Fold verified candidates into the SPARSE :class:`SoundDesignTimeline` (the SELECT→WEAVE bridge).
 
@@ -705,10 +709,31 @@ def plan(
     reserved #8 ``plan_ref`` slot is filled when called inside an active ``foley.obs``
     run scope (``None``-safe otherwise).
 
+    **Rights intent (#208).** Every candidate is re-checked where it is placed, on the
+    library's current record when ``library`` has its id (else the candidate's own):
+    with an explicit ``intended_use`` the gate is fail-closed and a sound the intent
+    does not keep refuses the plan (:class:`~foley.licensing.LicenseRefusal`, naming
+    each id and reason). With ``None`` nothing is refused yet, but a ``FutureWarning``
+    names what :data:`~foley.licensing.DEFAULT_INTENDED_USE` would refuse: a future
+    release gates by default.
+
     Args:
         candidates: The candidates returned by :func:`find`.
         transcript: Optional narration transcript (WEAVE resolves the reference).
+        intended_use: The rights intent the plan is for (``None``: warn only).
+        library: The library whose current records are judged (default: each
+            candidate's own record).
+
+    Raises:
+        LicenseRefusal: If ``intended_use`` is given and refuses a placed sound.
     """
+    from ..licensing import check_placed
+
+    check_placed(
+        {c.sound.id: _current_record(library, c.sound) for c in candidates},
+        intended_use,
+        what="foley.plan",
+    )
     run = current_run()
     run_id = getattr(getattr(run, "manifest", None), "run_id", None)
     items = [
@@ -727,3 +752,13 @@ def plan(
     )
     run.set_plan_ref({"n_items": len(items), "run_manifest_ref": run_id})
     return timeline
+
+
+def _current_record(library, record):
+    """``library``'s record for ``record.id`` when it has one, else ``record`` itself."""
+    if library is None:
+        return record
+    try:
+        return library[record.id]
+    except LookupError:
+        return record

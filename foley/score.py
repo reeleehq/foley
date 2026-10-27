@@ -177,10 +177,20 @@ def score(
                         reason=(v.reason if (v is not None and v.reason) else "chosen"),
                     )
                 )
-        timeline = plan(all_candidates, transcript=full_transcript)
+        timeline = plan(
+            all_candidates,
+            transcript=full_transcript,
+            intended_use=use,
+            library=library,
+        )
         woven = None
         if do_weave:
-            wk = {"master": master, "transcript": full_transcript, **weave_kwargs}
+            wk = {
+                "master": master,
+                "transcript": full_transcript,
+                "intended_use": use,
+                **weave_kwargs,
+            }
             if library is not None:
                 wk["library"] = library
             woven = _weave(audio, timeline, **wk)
