@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=461c1127"></script>
+    <script src="../_static/documentation_options.js?v=e264953e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.76" />
+  <meta name="docsearch:version" content="0.0.77" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -1230,7 +1230,9 @@ row, the one place a source says what a caller may not do:</p>
 value that would close the group is refused), never replacing it; <code class="docutils literal notranslate"><span class="pre">None</span></code> or
 an empty value is skipped. <code class="docutils literal notranslate"><span class="pre">{key:</span> <span class="pre">{&quot;joiner&quot;:</span> <span class="pre">&quot;,&quot;,</span> <span class="pre">&quot;group&quot;:</span> <span class="pre">False}}</span></code> appends a
 list item instead (Freesound’s <code class="docutils literal notranslate"><span class="pre">fields</span></code>).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">reserved</span></code> / <code class="docutils literal notranslate"><span class="pre">priced</span></code> — keys refused (see <a class="reference internal" href="#foley.sources.base.check_provider_params" title="foley.sources.base.check_provider_params"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_provider_params()</span></code></a>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reserved</span></code> / <code class="docutils literal notranslate"><span class="pre">priced</span></code> / <code class="docutils literal notranslate"><span class="pre">paging</span></code> — keys refused (see
+<a class="reference internal" href="#foley.sources.base.check_provider_params" title="foley.sources.base.check_provider_params"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_provider_params()</span></code></a>; <code class="docutils literal notranslate"><span class="pre">paging</span></code> is derived by
+<code class="xref py py-func docutils literal notranslate"><span class="pre">provider_params_policy()</span></code>).</p></li>
 </ul>
 <p>A pure function: <code class="docutils literal notranslate"><span class="pre">native</span></code> is not mutated.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">policy</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"append"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"filter"</span><span class="p">:</span> <span class="s2">" "</span><span class="p">}}</span>

@@ -1,4 +1,4 @@
-> built 2026-10-27 05:19 UTC from fc77484 (main) · foley 0.0.76. Details: build_info.json
+> built 2026-10-27 05:36 UTC from 75d0cf5 (main) · foley 0.0.77. Details: build_info.json
 
 # index.html.md
 
@@ -64,8 +64,12 @@ clip = foley.generate("", backend="fal_mirelo_v2a", video="shot.mp4", duration_s
 # Non-commercial V2A, named only: fal_mmaudio_v2a (CC BY-NC), fal_thinksound (research
 # only), fal_hunyuan_foley (no grant in the EU, UK or KR: say where it is used)
 use = foley.IntendedUse(commercial=False, territory="US")  # every place it is shown
-clip = foley.generate("rain on a tin roof", backend="fal_hunyuan_foley", video="shot.mp4",
-                      intended_use=use)
+clip = foley.generate(
+    "rain on a tin roof",
+    backend="fal_hunyuan_foley",
+    video="shot.mp4",
+    intended_use=use,
+)
 
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
@@ -7105,6 +7109,10 @@ applies the by-reference storage gate from the sound’s own license.
   An [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport) — inspect `.ingested` for the
   stored records (each `storage_mode == by_reference` for Freesound) and
   `.summary()` for counts, exactly like [`foley.ingest()`](_autosummary/foley.html.md#foley.ingest).
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – A search argument the source refuses before any call, e.g. a
+        `page` past its result window (Openverse serves ~240 results a query).
+  * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – A missing key or optional dependency.
 
 ### foley.apply_license_flags(record, , overrides=None)
 
@@ -14041,7 +14049,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'ta-dum', 'netflix intro', 'ta dum', 'tudum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'tudum', 'netflix chime', 'ta-dum', 'ta dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -15897,7 +15905,9 @@ row, the one place a source says what a caller may not do:
   value that would close the group is refused), never replacing it; `None` or
   an empty value is skipped. `{key: {"joiner": ",", "group": False}}` appends a
   list item instead (Freesound’s `fields`).
-* `reserved` / `priced` — keys refused (see [`check_provider_params()`](_autosummary/foley.sources.base.html.md#foley.sources.base.check_provider_params)).
+* `reserved` / `priced` / `paging` — keys refused (see
+  [`check_provider_params()`](_autosummary/foley.sources.base.html.md#foley.sources.base.check_provider_params); `paging` is derived by
+  `provider_params_policy()`).
 
 A pure function: `native` is not mutated.
 
@@ -17478,6 +17488,10 @@ applies the by-reference storage gate from the sound’s own license.
   An [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport) — inspect `.ingested` for the
   stored records (each `storage_mode == by_reference` for Freesound) and
   `.summary()` for counts, exactly like [`foley.ingest()`](_autosummary/foley.html.md#foley.ingest).
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – A search argument the source refuses before any call, e.g. a
+        `page` past its result window (Openverse serves ~240 results a query).
+  * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – A missing key or optional dependency.
 
 ### foley.sources.api_license(, source, license_id, rights_verified, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
 
@@ -18283,6 +18297,10 @@ applies the by-reference storage gate from the sound’s own license.
   An [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport) — inspect `.ingested` for the
   stored records (each `storage_mode == by_reference` for Freesound) and
   `.summary()` for counts, exactly like [`foley.ingest()`](_autosummary/foley.html.md#foley.ingest).
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – A search argument the source refuses before any call, e.g. a
+        `page` past its result window (Openverse serves ~240 results a query).
+  * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – A missing key or optional dependency.
 
 
 # _autosummary/foley.sources.registry.html.md
@@ -20860,7 +20878,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 05:19 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/fc774845be8f9d8f73a61252d119c82f88b49f4c"><code>fc77484</code></a> on branch <code>main</code>, for **foley 0.0.76** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 05:36 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/75d0cf5391bd20d19eaa9a00f256a796c8622b6b"><code>75d0cf5</code></a> on branch <code>main</code>, for **foley 0.0.77** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -20869,7 +20887,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/fc774845be8f9d8f73a61252d119c82f88b49f4c"><code>fc774845be8f9d8f73a61252d119c82f88b49f4c</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/75d0cf5391bd20d19eaa9a00f256a796c8622b6b"><code>75d0cf5391bd20d19eaa9a00f256a796c8622b6b</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20880,9 +20898,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40454503216">40454503216</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40456075723">40456075723</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>fc774845be8f9d8f73a61252d119c82f88b49f4c</code> (in the history of the built commit) |
+| Event commit | <code>75d0cf5391bd20d19eaa9a00f256a796c8622b6b</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20907,13 +20925,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.76/">0.0.76</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.77/">0.0.77</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout fc774845be8f9d8f73a61252d119c82f88b49f4c
+git checkout 75d0cf5391bd20d19eaa9a00f256a796c8622b6b
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

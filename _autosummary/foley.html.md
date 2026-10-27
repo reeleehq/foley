@@ -1889,6 +1889,10 @@ applies the by-reference storage gate from the sound’s own license.
   An [`IngestReport`](foley.index.ingest.html.md#foley.index.ingest.IngestReport) — inspect `.ingested` for the
   stored records (each `storage_mode == by_reference` for Freesound) and
   `.summary()` for counts, exactly like [`foley.ingest()`](#foley.ingest).
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – A search argument the source refuses before any call, e.g. a
+        `page` past its result window (Openverse serves ~240 results a query).
+  * [**SourceConfigurationError**](foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – A missing key or optional dependency.
 
 ### foley.apply_license_flags(record, , overrides=None)
 

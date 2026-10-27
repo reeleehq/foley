@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="_static/documentation_options.js?v=461c1127"></script>
+    <script src="_static/documentation_options.js?v=e264953e"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.76" />
+  <meta name="docsearch:version" content="0.0.77" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -392,8 +392,12 @@ for what’s next. Follow along in <a class="reference internal" href="#misc/doc
 <span class="c1"># Non-commercial V2A, named only: fal_mmaudio_v2a (CC BY-NC), fal_thinksound (research</span>
 <span class="c1"># only), fal_hunyuan_foley (no grant in the EU, UK or KR: say where it is used)</span>
 <span class="n">use</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">IntendedUse</span><span class="p">(</span><span class="n">commercial</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">territory</span><span class="o">=</span><span class="s2">"US"</span><span class="p">)</span>  <span class="c1"># every place it is shown</span>
-<span class="n">clip</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">"rain on a tin roof"</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">"fal_hunyuan_foley"</span><span class="p">,</span> <span class="n">video</span><span class="o">=</span><span class="s2">"shot.mp4"</span><span class="p">,</span>
-                      <span class="n">intended_use</span><span class="o">=</span><span class="n">use</span><span class="p">)</span>
+<span class="n">clip</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+    <span class="s2">"rain on a tin roof"</span><span class="p">,</span>
+    <span class="n">backend</span><span class="o">=</span><span class="s2">"fal_hunyuan_foley"</span><span class="p">,</span>
+    <span class="n">video</span><span class="o">=</span><span class="s2">"shot.mp4"</span><span class="p">,</span>
+    <span class="n">intended_use</span><span class="o">=</span><span class="n">use</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1"># Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)</span>
 <span class="n">foley</span><span class="o">.</span><span class="n">ingest</span><span class="p">(</span><span class="s2">"~/my_sounds/"</span><span class="p">,</span> <span class="n">license</span><span class="o">=</span><span class="s2">"user-owned"</span><span class="p">)</span>  <span class="c1"># omit it and rights stay unknown</span>
@@ -539,7 +543,7 @@ what’s degraded. Full docs: <strong><a class="reference external" href="https:
 </section>
 </section>
 
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-27 05:19 UTC from <a href="https://github.com/reeleehq/foley/commit/fc774845be8f9d8f73a61252d119c82f88b49f4c">fc77484</a> (main) · foley 0.0.76 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-27 05:36 UTC from <a href="https://github.com/reeleehq/foley/commit/75d0cf5391bd20d19eaa9a00f256a796c8622b6b">75d0cf5</a> (main) · foley 0.0.77 · <a href="about-this-build.html">about this build</a></p>
 
                 </article>
               

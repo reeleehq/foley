@@ -552,7 +552,9 @@ row, the one place a source says what a caller may not do:
   value that would close the group is refused), never replacing it; `None` or
   an empty value is skipped. `{key: {"joiner": ",", "group": False}}` appends a
   list item instead (Freesound’s `fields`).
-* `reserved` / `priced` — keys refused (see [`check_provider_params()`](#foley.sources.base.check_provider_params)).
+* `reserved` / `priced` / `paging` — keys refused (see
+  [`check_provider_params()`](#foley.sources.base.check_provider_params); `paging` is derived by
+  `provider_params_policy()`).
 
 A pure function: `native` is not mutated.
 

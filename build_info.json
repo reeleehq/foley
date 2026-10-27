@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-27T05:19:53Z",
+  "built_at": "2026-10-27T05:36:39Z",
   "package": {
     "name": "foley",
-    "version": "0.0.76",
+    "version": "0.0.77",
     "display_name": "foley",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "fc774845be8f9d8f73a61252d119c82f88b49f4c",
-    "short_commit": "fc77484",
+    "commit": "75d0cf5391bd20d19eaa9a00f256a796c8622b6b",
+    "short_commit": "75d0cf5",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/reeleehq/foley",
-    "commit_url": "https://github.com/reeleehq/foley/commit/fc774845be8f9d8f73a61252d119c82f88b49f4c",
+    "commit_url": "https://github.com/reeleehq/foley/commit/75d0cf5391bd20d19eaa9a00f256a796c8622b6b",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "reeleehq/foley",
-    "sha": "fc774845be8f9d8f73a61252d119c82f88b49f4c",
+    "sha": "75d0cf5391bd20d19eaa9a00f256a796c8622b6b",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "40454503216",
-    "run_url": "https://github.com/reeleehq/foley/actions/runs/40454503216",
+    "run_id": "40456075723",
+    "run_url": "https://github.com/reeleehq/foley/actions/runs/40456075723",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -60,11 +60,11 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.76",
+    "latest": "0.0.77",
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout fc774845be8f9d8f73a61252d119c82f88b49f4c\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 75d0cf5391bd20d19eaa9a00f256a796c8622b6b\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,
