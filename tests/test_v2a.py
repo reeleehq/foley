@@ -545,3 +545,38 @@ def test_the_extracted_wav_has_a_real_header(tmp_path):
                     "-c:a", "aac", str(mp4)], check=True)
     with wave.open(io.BytesIO(video_mod.audio_track(mp4.read_bytes()))) as w:
         assert w.getnframes() / w.getframerate() == pytest.approx(2.0, abs=0.15)
+
+
+# #172: the probe seam, mixing's probe by default, and a sniffed temporary suffix
+
+
+def test_video_seconds_reads_through_the_probe_seam(tmp_path):
+    seen = []
+    assert video_mod.video_seconds(b"\x1a\x45\xdf\xa3webm",
+                                   probe=lambda p: seen.append(p) or 7.5) == 7.5
+    assert seen[0].endswith(".webm")  # the bytes went to a file named by their format
+    for unreadable in (lambda p: None, lambda p: 0.0, lambda p: 1 / 0):
+        assert video_mod.video_seconds(b"x", probe=unreadable) is None
+
+
+def test_the_default_probe_is_mixings_else_ffprobe(monkeypatch):
+    import sys
+
+    mixing_probe = pytest.importorskip("mixing.video.shot_boundaries").probe_duration
+    assert video_mod.default_probe() is mixing_probe
+    monkeypatch.setitem(sys.modules, "mixing.video.shot_boundaries", None)
+    assert video_mod.default_probe() is video_mod.ffprobe_seconds
+
+
+def test_the_default_probe_reads_a_real_video(tmp_path):
+    exe = video_mod.ffmpeg_path()
+    if exe is None:
+        pytest.skip("no ffmpeg")
+    import subprocess
+
+    out = tmp_path / "clip.webm"
+    subprocess.run([exe, "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i",
+                    "color=c=black:s=32x32:d=2", "-c:v", "libvpx", str(out)],
+                   check=True, capture_output=True)  # fmt: skip
+    seconds = video_mod.video_seconds(out.read_bytes())  # bytes: sniffed as .webm
+    assert seconds == pytest.approx(2.0, abs=0.1)

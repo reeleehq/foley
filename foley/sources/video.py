@@ -9,10 +9,11 @@ here, once, for every V2A backend:
   (``sha256:<hex>`` of the bytes or of the file), never its path, so a moved file hits
   the cache and an edited one cannot; a remote URL is keyed as the URL.
 * :func:`video_seconds`: its length, for a backend priced per second of the video
-  (``ffprobe`` when on ``PATH``; ``None`` when it cannot be read, which prices the call
-  as an unknown cost, needing approval).
+  (``probe=``; default :func:`default_probe`: mixing's ``probe_duration`` when mixing's
+  video stack is installed, else ``ffprobe`` on ``PATH``; ``None`` when it cannot be
+  read, which prices the call as an unknown cost, needing approval).
 * :func:`local_video_file`: a local file for an uploader (bytes are written to a
-  temporary file).
+  temporary file whose suffix is sniffed from them: :func:`video_suffix`).
 * :func:`audio_track`: the audio of a backend's muxed video answer (MMAudio,
   ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via
   ``ffmpeg`` (:func:`ffmpeg_path`).
@@ -20,7 +21,7 @@ here, once, for every V2A backend:
   manifest): the video replaced by its key, so neither its bytes nor a local path
   (nor an upload's capability URL) is ever written down.
 
-Stdlib only.
+Stdlib only (mixing is used when installed, never required).
 """
 
 from __future__ import annotations
@@ -32,7 +33,7 @@ import os
 import shutil
 import subprocess
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Optional, Union
 
@@ -44,6 +45,18 @@ URL_SCHEMES = ("http://", "https://", "data:")
 _HASH_CHUNK = 1 << 20
 #: The most :func:`audio_track` lets ffmpeg run (s).
 AUDIO_TRACK_TIMEOUT_S = 120.0
+#: The most :func:`ffprobe_seconds` lets ffprobe run (s).
+PROBE_TIMEOUT_S = 30.0
+#: ``(magic, suffix)`` of the containers :func:`video_suffix` recognises by their first
+#: bytes. ISO BMFF (mp4/mov) is told by its ``ftyp`` brand, EBML (mkv/webm) by its
+#: doctype, AVI by its RIFF form type.
+_ISO_BRAND_SUFFIX = {b"qt  ": ".mov"}
+_EBML_MAGIC, _EBML_DOCTYPE_SUFFIX = b"\x1a\x45\xdf\xa3", {b"webm": ".webm"}
+_SNIFF_BYTES = 64  # an EBML header names its doctype well within these
+#: The suffix of bytes no magic matches (and of every other ISO BMFF brand).
+DEFAULT_VIDEO_SUFFIX = ".mp4"
+#: ``video -> seconds | None``: how :func:`video_seconds` reads a local file's length.
+Probe = Callable[[str], Optional[float]]
 
 
 def is_url(video: VideoInput) -> bool:
@@ -104,11 +117,43 @@ def _file_key(path: str, mtime_ns: int, size: int) -> str:
     return "sha256:" + digest.hexdigest()
 
 
+def video_suffix(data: bytes) -> str:
+    r"""The file suffix of encoded video ``data``, sniffed from its first bytes.
+
+    An uploader (and ffmpeg) names the format by the suffix, so a WebM written as
+    ``.mp4`` goes out mislabelled. Anything unrecognised is ``.mp4``.
+
+    >>> video_suffix(b"\x00\x00\x00\x18ftypqt  \x00"), video_suffix(b"\x00\x00\x00\x18ftypisom")
+    ('.mov', '.mp4')
+    >>> video_suffix(b"\x1a\x45\xdf\xa3\x9f\x42\x82\x84webm"), video_suffix(b"\x1a\x45\xdf\xa3")
+    ('.webm', '.mkv')
+    >>> video_suffix(b"RIFF\x00\x00\x00\x00AVI "), video_suffix(b"OggS"), video_suffix(b"?")
+    ('.avi', '.ogv', '.mp4')
+    """
+    head = bytes(data[:_SNIFF_BYTES])
+    if head[4:8] == b"ftyp":
+        return _ISO_BRAND_SUFFIX.get(head[8:12], DEFAULT_VIDEO_SUFFIX)
+    if head.startswith(_EBML_MAGIC):
+        doctype = next((d for d in _EBML_DOCTYPE_SUFFIX if d in head), None)
+        return _EBML_DOCTYPE_SUFFIX.get(doctype, ".mkv")
+    if head.startswith(b"RIFF") and head[8:12] == b"AVI ":
+        return ".avi"
+    if head.startswith(b"OggS"):
+        return ".ogv"
+    return DEFAULT_VIDEO_SUFFIX
+
+
 @contextlib.contextmanager
-def local_video_file(video: VideoInput) -> Iterator[str]:
-    """A local path holding ``video`` (bytes are written to a temporary file)."""
+def local_video_file(
+    video: VideoInput, *, suffix: Optional[str] = None
+) -> Iterator[str]:
+    """A local path holding ``video`` (bytes are written to a temporary file).
+
+    ``suffix`` names the temporary file's format; default: :func:`video_suffix` of the
+    bytes. A path is yielded as is.
+    """
     if isinstance(video, (bytes, bytearray)):
-        fd, path = tempfile.mkstemp(suffix=".mp4")
+        fd, path = tempfile.mkstemp(suffix=suffix or video_suffix(video))
         try:
             with os.fdopen(fd, "wb") as f:
                 f.write(video)
@@ -166,30 +211,54 @@ def audio_track(
     return wav
 
 
-def video_seconds(
-    video: VideoInput, *, ffprobe: Optional[str] = None
-) -> Optional[float]:
-    """The length of a local ``video`` in seconds, or ``None`` when it cannot be read.
-
-    Read by ``ffprobe`` (``ffprobe=`` names the binary; default: the one on ``PATH``).
-    A URL is not fetched to measure it: ``None``.
-    """
-    if is_url(video):
-        return None
+def ffprobe_seconds(path: str, *, ffprobe: Optional[str] = None) -> Optional[float]:
+    """The length of the video file at ``path`` by ``ffprobe`` (default: the one on
+    ``PATH``), or ``None`` when there is none or it cannot read it."""
     exe = ffprobe or shutil.which("ffprobe")
     if exe is None:
         return None
+    try:
+        out = subprocess.run(
+            [exe, "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=noprint_wrappers=1:nokey=1", path],
+            capture_output=True, text=True, timeout=PROBE_TIMEOUT_S,
+        )  # fmt: skip
+        return float(out.stdout.strip())
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+
+
+def default_probe() -> Probe:
+    """mixing's ``probe_duration`` (``ffmpeg -i`` through mixing's ffmpeg resolver, so no
+    ``ffprobe`` on ``PATH`` is needed) when mixing's video stack imports, else
+    :func:`ffprobe_seconds`."""
+    try:
+        from mixing.video.shot_boundaries import probe_duration
+    except Exception:  # noqa: BLE001 - mixing (or its video extra) is not installed
+        return ffprobe_seconds
+    return probe_duration
+
+
+def video_seconds(
+    video: VideoInput, *, probe: Optional[Probe] = None
+) -> Optional[float]:
+    """The length of a local ``video`` in seconds, or ``None`` when it cannot be read.
+
+    ``probe(path) -> seconds | None`` reads it (default: :func:`default_probe`); a
+    probe that raises counts as unreadable. A URL is not fetched to measure it:
+    ``None``.
+
+    >>> video_seconds(b"...", probe=lambda path: 4.5)
+    4.5
+    >>> video_seconds("https://x/clip.mp4", probe=lambda path: 4.5) is None
+    True
+    """
+    if is_url(video):
+        return None
+    probe = probe or default_probe()
     with local_video_file(video) as path:
         try:
-            out = subprocess.run(
-                [exe, "-v", "error", "-show_entries", "format=duration",
-                 "-of", "default=noprint_wrappers=1:nokey=1", path],
-                capture_output=True, text=True, timeout=30,
-            )  # fmt: skip
-        except (OSError, subprocess.SubprocessError):
+            seconds = probe(path)
+        except Exception:  # noqa: BLE001 - no ffmpeg, an unreadable file: unknown length
             return None
-    try:
-        seconds = float(out.stdout.strip())
-    except ValueError:
-        return None
-    return seconds if seconds > 0 else None
+    return float(seconds) if seconds and seconds > 0 else None
