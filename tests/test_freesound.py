@@ -727,3 +727,30 @@ def test_invoke_native_returns_the_parsed_json():
     assert data == SEARCH_PAGE
     assert transport.calls[0].params == {"query": "rain", "filter": BRIGHT}
     assert transport.calls[0].headers["Authorization"].endswith("test-token")
+
+
+# ---------------------------------------------------------------------------
+# license= is a licence id (#131)
+# ---------------------------------------------------------------------------
+
+
+def test_a_cc0_licence_id_keeps_cc0_only_and_sends_the_cc0_filter():
+    page = {"count": 1, "results": [_by_item()]}
+    transport = _transport(item=_by_item(), search_page=page)
+    assert _adapter(transport).search("rain", license="CC0-1.0") == []
+    flt = transport.calls[0].params["filter"]
+    assert 'license:"Creative Commons 0"' in flt and "Attribution" not in flt
+
+
+def test_a_cc_by_licence_id_keeps_that_licence_only():
+    page = {"count": 1, "results": [_by_item()]}
+    adapter = _adapter(_transport(item=_by_item(), search_page=page))
+    got = adapter.search("rain", license="CC-BY-4.0")
+    assert [c.sound.license.license_id for c in got] == ["CC-BY-4.0"]
+    assert adapter.search("rain", license="CC-BY-3.0") == []
+
+
+def test_license_none_admits_every_accepted_licence():
+    page = {"count": 1, "results": [_by_item()]}
+    adapter = _adapter(_transport(item=_by_item(), search_page=page))
+    assert len(adapter.search("rain", license=None)) == 1

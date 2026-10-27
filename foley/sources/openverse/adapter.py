@@ -2,7 +2,7 @@
 
 ``search`` calls ``/v1/audio/`` (anonymous: ``page_size`` ≤ 20, Freesound and Jamendo rows
 excluded, see the config) with the licence filter pushed into the query, then re-checks
-each row's licence fail-closed through :func:`foley.sources._keyless.license_for_item`
+each row's licence fail-closed through :func:`foley.sources._license_gate.license_for_item`
 (Openverse does not verify licences: a row's licence is the one its origin provider
 reported, trusted like Freesound's own field; the landing page is the check for anything
 that matters). The terms' "made using Openverse" notice is stamped on each licence record
@@ -16,7 +16,8 @@ from __future__ import annotations
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
-from .._keyless import get_bytes, get_json, license_for_item, raw_id
+from .._keyless import get_bytes, get_json, raw_id
+from .._license_gate import is_cc0_only, license_for_item, wanted_license_ids
 from ..base import api_license, merge_provider_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -73,18 +74,22 @@ class OpenverseAdapter:
         """Search Openverse audio for ``query``; return licence-checked candidates.
 
         Args:
-            license: ``'cc0'`` (default) asks for CC0 only; anything else asks for CC0,
-                CC-BY and public-domain-mark rows.
+            license: A licence id (``'cc0'`` is an alias for CC0-1.0) keeps only rows
+                under it, and CC0 alone uses the CC0-only native filter; ``None`` asks for
+                CC0, CC-BY and public-domain-mark rows.
             k: Max rows (anonymous limit 20).
             provider_params: Native search params merged over the translated ones
                 (#61); the per-item licence check still applies.
         """
         api = self.config["api"]
         filters = api["license_filter"]
+        wanted = wanted_license_ids(self.config, license)
         params = {
             "q": query[: api["max_query_chars"]],
             "page_size": min(int(k), api["max_page_size"]),
-            "license": filters["cc0"] if license == "cc0" else filters["default"],
+            "license": filters["cc0"]
+            if is_cc0_only(self.config, wanted)
+            else filters["default"],
         }
         excluded = [
             s
@@ -96,7 +101,6 @@ class OpenverseAdapter:
         params = merge_provider_params(
             params, provider_params, policy=self.config.get("provider_params")
         )
-        wanted = self.config["license"]["cc0_license_ids"] if license == "cc0" else None
         out = []
         for row in self.invoke_native(api["search_endpoint"]["path"], **params).get(
             "results", []

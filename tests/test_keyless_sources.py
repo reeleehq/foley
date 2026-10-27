@@ -66,7 +66,7 @@ def test_commons_declares_its_own_429_waits_and_the_transport_honours_them():
 
 
 def test_licence_strings_must_agree_and_all_parse():
-    from foley.sources._keyless import license_for_item
+    from foley.sources._license_gate import license_for_item
     from foley.sources.wikimedia_commons.config import SOURCE_CONFIG as C
 
     by, sa = (

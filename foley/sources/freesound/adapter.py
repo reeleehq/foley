@@ -34,8 +34,9 @@ from __future__ import annotations
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
-from ...licensing import ai_scope_from_gen_ai_preference, license_id_from_cc_url
+from ...licensing import ai_scope_from_gen_ai_preference
 from ..base import api_license, merge_provider_params, resolve_source_key
+from .._license_gate import is_cc0_only, license_for_item, wanted_license_ids
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -165,10 +166,11 @@ class FreesoundAdapter:
         before it becomes a candidate.
 
         Args:
-            license: License constraint. ``'cc0'`` (default) sends the CC0 filter and
-                keeps CC0 alone; ``None`` sends no filter and any other value asks for
-                CC0 + Attribution; both keep what the ``accepted_license_ids``
-                allowlist holds (CC0, CC-BY), so NC / SA / ND never come back.
+            license: A licence id (``'cc0'`` is an alias for CC0-1.0, ``'cc-by'`` keeps
+                the CC-BY ids). ``'cc0'`` (default) sends the CC0 filter; another id asks
+                for CC0 + Attribution; ``None`` sends no filter. Whatever the filter, only
+                items under the asked id (and the ``accepted_license_ids`` allowlist) are
+                kept, so NC / SA / ND never come back.
             k: Max results (Freesound caps ``page_size`` at 150).
             duration_range: Optional ``(min_s, max_s)`` native duration filter.
             sort: Optional native sort key (default: Freesound relevance).
@@ -194,11 +196,12 @@ class FreesoundAdapter:
             "fields": self.config["fields"],
             "page_size": min(int(k), 150),
         }
+        only = wanted_license_ids(self.config, license)
         filters: "list[str]" = []
         license_map = self.config["param_map"]["license"]
-        if license == "cc0":
+        if is_cc0_only(self.config, only):
             filters.append(license_map["to_native"])
-        elif license is not None:
+        elif only is not None:
             filters.append(license_map["to_native_attribution"])
         if ucs_category:
             bst = _bst_category(self.config, ucs_category)
@@ -229,7 +232,6 @@ class FreesoundAdapter:
         data = self.invoke_native(
             self.config["api"]["search_endpoint"]["path"], **params
         )
-        only = self.config["license"]["cc0_license_ids"] if license == "cc0" else None
         candidates: "list[Candidate]" = []
         for item in data.get("results", []):
             cand = self._candidate_from_item(item, only=only)
@@ -309,12 +311,10 @@ class FreesoundAdapter:
         raw_id = item.get("id")
         if raw_id is None:
             return None
-        license_id, verified = license_id_from_cc_url(item.get("license"))
-        accepted = (
-            only if only is not None else self.config["license"]["accepted_license_ids"]
-        )
-        if not verified or license_id not in accepted:
+        found = license_for_item(self.config, item.get("license"), only=only)
+        if found is None or not found[1]:
             return None  # fail-closed: never index a non-accepted-license sound
+        license_id, verified = found
 
         overrides = {"cache_bytes_ok": False}  # TOS: by-reference even for CC0
         # Honor the uploader's AI-use preference (all four values, #69): CLAP-
