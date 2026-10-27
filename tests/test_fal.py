@@ -517,16 +517,61 @@ def test_a_bad_rate_or_flag_is_refused_before_any_budget(affordances):
         translate_affordances(CONFIGS["fal_stable_audio_3"], affordances)
 
 
-def test_a_rewritten_prompt_that_trips_the_safety_scan_flags_the_clip(library):
-    response = {"audio": {"url": "u"}, "seed": 5, "prompt": "the THX deep note swelling"}
-    adapter, _ = _adapter(runner=ReplayRunner(default=(_wav(), response)))
-    cand = foley.generate("a deep cinematic swell", backend="fal_stable_audio_3",
-                          adapter=adapter, library=library, expand_prompt=True,
-                          provenance_store={})
+def _expanding_adapter(used_prompt):
+    response = {"audio": {"url": "u"}, "seed": 5, "prompt": used_prompt}
+    return _adapter(runner=ReplayRunner(default=(_wav(), response)))[0]
+
+
+def test_a_flagged_rewrite_is_refused_by_default_and_flagged_under_warn(library):
+    from foley.sources.generate import GenerationError
+
+    kw = dict(backend="fal_stable_audio_3", library=library, expand_prompt=True,
+              provenance_store={})
+    with pytest.raises(GenerationError, match="safety_blocked"):
+        foley.generate("a deep cinematic swell",
+                       adapter=_expanding_adapter("the THX deep note swelling"), **kw)
+    assert library.meta == {}  # refused: nothing ingested
+    cand = foley.generate("a deep cinematic swell", on_flagged="warn",
+                          adapter=_expanding_adapter("the THX deep note swelling"),
+                          reuse_cached=False, **kw)
     lic = cand.sound.license
     assert lic.potential_trademark is True
     assert any("the prompt the backend used is flagged" in n for n in cand.notes)
     assert lic.generation_reproducible is False  # replaying runs the rewrite again
+
+
+def test_the_prompt_used_never_reaches_the_run_manifest_raw(library):
+    import json
+
+    from foley import obs
+    from foley.obs.recorder import _CURRENT_RUN
+
+    used = "a secret rewritten narration line"
+    runs = {}
+    obs.reset()
+    obs.enable(prefer_otel=False, run_store=runs)
+    try:
+        cand = foley.generate("a page turn", backend="fal_stable_audio_3",
+                              adapter=_expanding_adapter(used), library=library,
+                              expand_prompt=True, provenance_store={})
+    finally:
+        obs.reset()
+        _CURRENT_RUN.set(None)
+    ((manifest),) = runs.values()
+    seed = manifest["seeds"][cand.sound.id]
+    assert isinstance(seed["prompt_used"], dict)  # hashed, as the prompt is
+    assert used not in json.dumps(manifest)
+
+
+def test_the_prompt_used_is_in_the_credential_and_the_publish_provenance():
+    from foley.provenance.disclosure import art50_checklist, build_content_credential
+
+    rec = _expanding_adapter("a soft page turn").generate(
+        "a page turn", expand_prompt=True).candidate.sound
+    cred = build_content_credential(rec, asset_id="a")
+    gen = next(a for a in cred["manifest"]["assertions"] if a["label"] == "foley.generation")
+    assert gen["data"]["prompt_used"] == "a soft page turn"
+    assert art50_checklist(rec)["provenance"]["generation_prompt_used"] == "a soft page turn"
 
 
 def test_the_prompt_used_is_redacted_like_the_prompt():

@@ -271,7 +271,10 @@ class FalAdapter:
             )
         used_prompt = response.get("prompt") if isinstance(response, dict) else None
         if used_prompt and used_prompt != prompt:
-            notes.append(f"the endpoint reports it used the prompt {used_prompt!r}")
+            # Not quoted: notes reach the run manifest, which redacts by key only.
+            notes.append(
+                "the endpoint rewrote the prompt (recorded as generation_prompt_used)"
+            )
         lic_cfg = self.config["license"]
         lic = generated_license(
             source=self.name,

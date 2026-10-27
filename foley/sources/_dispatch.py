@@ -39,6 +39,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import numbers
 import time
 import warnings
 from dataclasses import dataclass, field
@@ -130,7 +131,7 @@ def translate_affordances(
     reject_renamed(affordances, vocabulary)
     # Validated here, at planning time, so a bad value never reserves budget.
     check_prompt_influence(affordances.get("prompt_influence"))
-    _check_rate_and_flags(affordances)
+    affordances = _checked_rate_and_flags(affordances)
     duration_s = affordances.get("duration_s")
     if duration_s is not None and not math.isfinite(float(duration_s)):
         raise ValueError(
@@ -140,22 +141,32 @@ def translate_affordances(
     return result.kwargs, result.notes
 
 
-def _check_rate_and_flags(affordances: dict) -> None:
-    """``sample_rate`` is a positive integer (not a bool) and ``expand_prompt`` a bool."""
+def _checked_rate_and_flags(affordances: dict) -> dict:
+    """``affordances`` with ``sample_rate`` as an ``int``; a bad rate or flag raises.
+
+    ``sample_rate`` must be a positive whole number of Hz (any real number type,
+    numpy's included, but not a bool or a string); ``expand_prompt`` a bool.
+    """
     rate = affordances.get("sample_rate")
-    if rate is not None and (
-        isinstance(rate, bool)
-        or not isinstance(rate, (int, float))
-        or not math.isfinite(rate)
-        or rate <= 0
-        or rate != int(rate)
-    ):
-        raise ValueError(
-            f"sample_rate must be a positive whole number of Hz, got {rate!r}"
+    if rate is not None:
+        whole = not isinstance(rate, bool) and (
+            isinstance(rate, numbers.Integral)
+            or (
+                isinstance(rate, numbers.Real)
+                and math.isfinite(rate)
+                and rate == math.floor(rate)
+            )
         )
+        whole = whole and rate > 0
+        if not whole:
+            raise ValueError(
+                f"sample_rate must be a positive whole number of Hz, got {rate!r}"
+            )
+        affordances = {**affordances, "sample_rate": int(rate)}
     flag = affordances.get("expand_prompt")
     if flag is not None and not isinstance(flag, bool):
         raise ValueError(f"expand_prompt must be True or False, got {flag!r}")
+    return affordances
 
 
 #: Part of every cache key. Bumped when the key's shape or meaning changes, so entries
@@ -262,11 +273,14 @@ def native_request(config: dict, affordances: dict) -> dict:
     param_map = config.get("param_map") or {}
     native_defaults = config.get("native_defaults") or {}
     canonical = _canonical_affordances(config, affordances)
+    # An affordance another field's enum is picked "by" (sample_rate: the format) is
+    # folded into that field, never sent on its own.
+    folded = {spec["by"] for spec in param_map.values() if spec.get("by")}
     out = {}
     for name, value in canonical.items():
-        spec = param_map.get(name) or {}
-        if spec.get("via"):  # folded into another native field (sample_rate: format)
+        if name in folded:
             continue
+        spec = param_map.get(name) or {}
         native_name = spec.get("native_name", name)
         if name == "prompt_influence" and spec:
             value = native_adherence(config, value, [])
@@ -692,7 +706,9 @@ def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
 #: the bytes themselves are the likely cause (an HTTP 200 with a non-audio body) and
 #: the next identical request generates anew. A rights refusal is decided by the
 #: request (which is in the key), so it replays rather than paying for the same "no".
-_NOT_REPLAYED = frozenset({"quarantined", "error_on_replay"})
+#: A clip refused for the prompt the backend rewrote it to (``safety_blocked``) is
+#: not: the rewrite is the backend's, and the next call may rewrite it otherwise.
+_NOT_REPLAYED = frozenset({"quarantined", "error_on_replay", "safety_blocked"})
 
 
 def _cached_clip(cache, request_key: str, notes: list, config: dict):

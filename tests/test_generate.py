@@ -1764,3 +1764,26 @@ def test_the_facade_notes_a_rate_the_backend_did_not_honour(library):
     cand = foley.generate("rain", backend="elevenlabs", adapter=_el_adapter(),
                           library=library, sample_rate=22050, provenance_store={})
     assert any("asked 22050 Hz, got" in n for n in cand.notes)
+
+
+def test_elevenlabs_direct_offers_pcm_32000_and_fal_does_not():
+    from foley.sources.fal.config import SOURCE_CONFIGS as FAL
+
+    transport = FakeTransport()
+    _el_adapter(transport).generate("rain", output_format="wav", sample_rate=32000)
+    assert transport.calls[0].params["output_format"] == "pcm_32000"
+    fal_el = next(c for c in FAL if c["name"] == "fal_elevenlabs")
+    assert 32000 not in fal_el["param_map"]["output_format"]["to_native_by_rate"]["wav"]
+
+
+def test_the_rate_note_reads_a_duplicate_clip(library):
+    # The second, identical clip is a duplicate (no new record): its rate is read.
+    import importlib
+
+    generate_module = importlib.import_module("foley.sources.generate")
+    kw = dict(backend="elevenlabs", library=library, sample_rate=22050,
+              reuse_cached=False, provenance_store={})
+    foley.generate("rain", adapter=_el_adapter(), **kw)
+    (res,) = generate_module.generate("rain", adapter=_el_adapter(), **kw).results
+    assert res.status == "skipped_dup" and res.record is None
+    assert any("asked 22050 Hz, got" in n for n in res.notes)

@@ -43,6 +43,9 @@ import copy
 from ..elevenlabs.config import MP3_BY_RATE as _EL_MP3_BY_RATE
 from ..elevenlabs.config import PCM_RATES as _EL_PCM_RATES
 
+#: ElevenLabs formats the direct API offers and fal's endpoint does not (report 17 §3).
+_FAL_EL_LACKS = frozenset({"pcm_32000", "mp3_24000_48"})
+
 #: fal's documented pricing and model pages (read 2026-10-25).
 _FAL_PRICING_SOURCE = "fal pricing API (GET /v1/models/pricing?endpoint_id=...)"
 _SEEN = "2026-10-25"
@@ -235,7 +238,6 @@ SOURCE_CONFIGS = (
                 "native_default": None,
             },
             "loop": {"native_name": "loop"},
-            "sample_rate": {"via": "output_format"},  # the rate is in the enum (#75)
             "output_format": {
                 "native_name": "output_format",
                 # fal returns pcm_* as a WAV file (checked live: RIFF header, 2 ch).
@@ -244,12 +246,19 @@ SOURCE_CONFIGS = (
                     "mp3": "mp3_44100_128",
                     "opus": "opus_48000_128",
                 },
-                # fal's enum (report 17 §3): the direct API's without pcm_32000 and
-                # mp3_24000_48.
+                # fal's enum (report 17 §3): the direct API's, less _FAL_EL_LACKS.
                 "by": "sample_rate",
                 "to_native_by_rate": {
-                    "wav": {r: f"pcm_{r}" for r in _EL_PCM_RATES if r != 32000},
-                    "mp3": {r: f for r, f in _EL_MP3_BY_RATE.items() if r != 24000},
+                    "wav": {
+                        r: f"pcm_{r}"
+                        for r in _EL_PCM_RATES
+                        if f"pcm_{r}" not in _FAL_EL_LACKS
+                    },
+                    "mp3": {
+                        r: f
+                        for r, f in _EL_MP3_BY_RATE.items()
+                        if f not in _FAL_EL_LACKS
+                    },
                     "opus": {48000: "opus_48000_128"},
                 },
             },

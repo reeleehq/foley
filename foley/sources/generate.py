@@ -507,7 +507,21 @@ def _generate(
         clip.notes.append(
             f"safety: proceeded in warn mode; flagged {list(scan.trademark_hits + scan.voice_hits)}"
         )
-    _screen_prompt_used(lic, prompt, clip.notes)
+    if _screen_prompt_used(lic, prompt, clip.notes) and on_flagged == "refuse":
+        # The rewrite was screened only after the (paid) call: refuse it here, as the
+        # gate would have, and keep the bytes reachable in the generations cache.
+        report.record(
+            IngestResult(
+                id=f"{backend}:generate",
+                status="safety_blocked",
+                notes=[*clip.notes, _REWRITE_REFUSED],
+                cache_key=plan.content_key,
+                cost_estimate_usd=clip.candidate.cost_estimate_usd,
+                cost_actual_usd=clip.candidate.cost_actual_usd,
+            )
+        )
+        record_generation_outcome(plan, "safety_blocked", cache=generations_cache)
+        return report
 
     # One try guards everything that decodes the bytes — the repair, the
     # content-credential sidecar (which decodes to pre-compute the id) and the ingest —
@@ -606,8 +620,13 @@ def _generate(
     if credential is not None and res.status in ("pass", "warn"):
         disclosure.write_content_credential(pstore, sound_id, credential)
 
-    if affordances.get("sample_rate") is not None:
-        _note_rate(int(affordances["sample_rate"]), res, audio_bytes, clip.notes)
+    if plan.affordances.get("sample_rate") is not None:  # kept: the backend takes it
+        _note_rate(
+            int(plan.affordances["sample_rate"]),
+            res,
+            audio_bytes=audio_bytes,
+            notes=clip.notes,
+        )
 
     # Surface the adapter's + disclosure notes (unsupported affordances, warn-mode
     # flag, watermark-skip) in the run report.
@@ -625,21 +644,29 @@ def _generate(
     return report
 
 
-def _screen_prompt_used(lic, prompt: str, notes: list) -> None:
+#: The note of a generation refused because the prompt the backend used was flagged.
+_REWRITE_REFUSED = (
+    "refused (on_flagged='refuse'): not ingested; the paid bytes stay in the "
+    "generations cache under cache_key (pass on_flagged='warn' to keep it flagged)"
+)
+
+
+def _screen_prompt_used(lic, prompt: str, notes: list) -> bool:
     """Flag the clip when the prompt the backend used (a rewrite) trips the safety scan.
 
     The gate before the call screened the prompt foley sent; with ``expand_prompt``
-    the backend may have used another. The call is paid, so the clip is flagged (the
-    fail-closed ``keep()`` drops it) rather than refused.
+    the backend may have used another. Its safety flags are set on ``lic`` (the
+    fail-closed ``keep()`` drops such a clip) and a note says so; the caller refuses
+    it under ``on_flagged='refuse'``. Returns whether it was flagged.
     """
     from ..provenance import disclosure
 
     used = lic.generation_prompt_used
     if not used or used == prompt:
-        return
+        return False
     scan = disclosure.scan_prompt(used)
     if not scan.flagged:
-        return
+        return False
     lic.potential_trademark = lic.potential_trademark or scan.potential_trademark
     lic.contains_recognizable_voice = (
         lic.contains_recognizable_voice or scan.contains_recognizable_voice
@@ -648,9 +675,10 @@ def _screen_prompt_used(lic, prompt: str, notes: list) -> None:
         "safety: the prompt the backend used is flagged "
         f"{list(scan.trademark_hits + scan.voice_hits)}; the clip is flagged"
     )
+    return True
 
 
-def _note_rate(requested: int, res, audio_bytes: bytes, notes: list) -> None:
+def _note_rate(requested: int, res, *, audio_bytes: bytes, notes: list) -> None:
     """Note when the clip's rate is not the ``sample_rate`` asked for."""
     actual = getattr(getattr(res, "record", None), "source_sample_rate", None)
     if actual is None:  # a duplicate or quarantined clip has no new record: read it

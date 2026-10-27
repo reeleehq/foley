@@ -56,8 +56,6 @@ SOURCE_CONFIG = {
             "native_default": None,
         },
         "loop": {"native_name": "loop", "in": "body"},  # v2 only (v2 is default)
-        # The rate is part of the native format enum (#75): see to_native_by_rate.
-        "sample_rate": {"via": "output_format"},
         "output_format": {
             "native_name": "output_format",
             "in": "query",  # a URL query param, NOT a body field
