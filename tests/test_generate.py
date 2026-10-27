@@ -615,6 +615,39 @@ def test_stable_audio_draws_and_records_a_seed_when_none_is_given(monkeypatch):
     assert again.calls[0]["generator"].seed == lic.generation_seed
 
 
+def test_stable_audio_records_the_device_and_dtype_it_ran_on():
+    """A seed reproduces only on the same device and dtype: both are recorded (#207)."""
+    pipe = FakePipeline(device="cuda:0", dtype="torch.float16")
+    params = _sa_adapter(pipe).generate("creak", seed=3).candidate.sound.license
+    params = params.generation_params
+    assert params["device"] == "cuda:0" and params["dtype"] == "float16"
+    assert params["generator_device"] == "cuda:0"  # fake_generator: the device asked
+
+
+def test_stable_audio_defaults_to_a_cpu_generator_on_any_device(monkeypatch):
+    """diffusers' advice for cross-device reproducibility: the noise is drawn on CPU (#207)."""
+    import sys
+    import types
+
+    from foley.sources.stable_audio.adapter import StableAudioAdapter
+
+    class Generator:
+        def __init__(self, device):
+            self.device = device
+
+        def manual_seed(self, seed):
+            self.seed = seed
+            return self
+
+    monkeypatch.setitem(sys.modules, "torch", types.SimpleNamespace(Generator=Generator))
+    pipe = FakePipeline(device="cuda:0", dtype="torch.float16")
+    clip = StableAudioAdapter(pipeline=pipe).generate("creak", seed=11)
+    sent = pipe.calls[0]["generator"]
+    assert (sent.device, sent.seed) == ("cpu", 11)
+    params = clip.candidate.sound.license.generation_params
+    assert (params["device"], params["generator_device"]) == ("cuda:0", "cpu")
+
+
 def test_stable_audio_with_injected_fakes_never_imports_torch():
     # the make_generator= seam: a fake pipeline + generator load no ML stack at all
     code = "\n".join(

@@ -32,11 +32,15 @@ class FakePipeline:
         sr: The sampling rate the pipeline reports (``vae.sampling_rate``).
         audio: The waveform returned (default: :func:`stereo_tone`).
         audio_fn: ``audio_fn(**kwargs) -> waveform``, overriding ``audio`` per call.
+        device, dtype: Where the pipeline runs (``pipe.device`` / ``pipe.dtype``).
     """
 
-    def __init__(self, *, sr=SR, audio=None, audio_fn=None):
+    def __init__(
+        self, *, sr=SR, audio=None, audio_fn=None, device="cpu", dtype="float32"
+    ):
         self.vae = SimpleNamespace(sampling_rate=sr)
-        self.device = "cpu"
+        self.device = device
+        self.dtype = dtype
         self.calls = []
         self._audio = stereo_tone(sr=sr) if audio is None else audio
         self._audio_fn = audio_fn
