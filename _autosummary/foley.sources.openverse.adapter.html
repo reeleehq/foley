@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=22d3c163"></script>
+    <script src="../_static/documentation_options.js?v=86ab457a"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.66" />
+  <meta name="docsearch:version" content="0.0.67" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -495,7 +495,7 @@
 <p>Openverse retrieve adapter: keyless audio search with ready attribution strings.</p>
 <p><code class="docutils literal notranslate"><span class="pre">search</span></code> calls <code class="docutils literal notranslate"><span class="pre">/v1/audio/</span></code> (anonymous: <code class="docutils literal notranslate"><span class="pre">page_size</span></code> ≤ 20, Freesound and Jamendo rows
 excluded, see the config) with the licence filter pushed into the query, then re-checks
-each row’s licence fail-closed through <code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources._keyless.license_for_item()</span></code>
+each row’s licence fail-closed through <code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources._license_gate.license_for_item()</span></code>
 (Openverse does not verify licences: a row’s licence is the one its origin provider
 reported, trusted like Freesound’s own field; the landing page is the check for anything
 that matters). The terms’ “made using Openverse” notice is stamped on each licence record
@@ -595,8 +595,9 @@ off by default: use the <code class="docutils literal notranslate"><span class="
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>license</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – <code class="docutils literal notranslate"><span class="pre">'cc0'</span></code> (default) asks for CC0 only; anything else asks for CC0,
-CC-BY and public-domain-mark rows.</p></li>
+<li><p><strong>license</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – A licence id (<code class="docutils literal notranslate"><span class="pre">'cc0'</span></code> is an alias for CC0-1.0) keeps only rows
+under it, and CC0 alone uses the CC0-only native filter; <code class="docutils literal notranslate"><span class="pre">None</span></code> asks for
+CC0, CC-BY and public-domain-mark rows.</p></li>
 <li><p><strong>k</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Max rows (anonymous limit 20).</p></li>
 <li><p><strong>provider_params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span>) – Native search params merged over the translated ones
 (#61); the per-item licence check still applies.</p></li>

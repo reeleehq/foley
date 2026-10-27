@@ -9,7 +9,7 @@ load-bearing constraints:
 
 * **CC0 by default, CC-BY on request, pushed into the query.** The CC0 filter is sent
   as the native `filter=license:"Creative Commons 0"` so other sounds never leave the
-  server (`license` other than `'cc0'` also asks for `"Attribution"`: the
+  server (a `license` other than CC0 also asks for `"Attribution"`: the
   credit-bearing sounds the [`keep()`](foley.licensing.html.md#foley.licensing.keep) gate then admits only for a
   caller that can attribute). Each returned item is *also* re-checked fail-closed
   against the `accepted_license_ids` allowlist — the server filter is a promise foley
@@ -110,10 +110,11 @@ never leave the server; every returned item is still re-checked fail-closed
 before it becomes a candidate.
 
 * **Parameters:**
-  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint. `'cc0'` (default) sends the CC0 filter and
-    keeps CC0 alone; `None` sends no filter and any other value asks for
-    CC0 + Attribution; both keep what the `accepted_license_ids`
-    allowlist holds (CC0, CC-BY), so NC / SA / ND never come back.
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A licence id (`'cc0'` is an alias for CC0-1.0, `'cc-by'` keeps
+    the CC-BY ids). `'cc0'` (default) sends the CC0 filter; another id asks
+    for CC0 + Attribution; `None` sends no filter. Whatever the filter, only
+    items under the asked id (and the `accepted_license_ids` allowlist) are
+    kept, so NC / SA / ND never come back.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max results (Freesound caps `page_size` at 150).
   * **duration_range** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – Optional `(min_s, max_s)` native duration filter.
   * **sort** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional native sort key (default: Freesound relevance).

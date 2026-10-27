@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=22d3c163"></script>
+    <script src="../_static/documentation_options.js?v=86ab457a"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.66" />
+  <meta name="docsearch:version" content="0.0.67" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -500,7 +500,7 @@ load-bearing constraints:</p>
 <ul>
 <li><p><strong>CC0 by default, CC-BY on request, pushed into the query.</strong> The CC0 filter is sent
 as the native <code class="docutils literal notranslate"><span class="pre">filter=license:&quot;Creative</span> <span class="pre">Commons</span> <span class="pre">0&quot;</span></code> so other sounds never leave the
-server (<code class="docutils literal notranslate"><span class="pre">license</span></code> other than <code class="docutils literal notranslate"><span class="pre">'cc0'</span></code> also asks for <code class="docutils literal notranslate"><span class="pre">&quot;Attribution&quot;</span></code>: the
+server (a <code class="docutils literal notranslate"><span class="pre">license</span></code> other than CC0 also asks for <code class="docutils literal notranslate"><span class="pre">&quot;Attribution&quot;</span></code>: the
 credit-bearing sounds the <a class="reference internal" href="foley.licensing.html#foley.licensing.keep" title="foley.licensing.keep"><code class="xref py py-func docutils literal notranslate"><span class="pre">keep()</span></code></a> gate then admits only for a
 caller that can attribute). Each returned item is <em>also</em> re-checked fail-closed
 against the <code class="docutils literal notranslate"><span class="pre">accepted_license_ids</span></code> allowlist — the server filter is a promise foley
@@ -638,10 +638,11 @@ before it becomes a candidate.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>license</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – License constraint. <code class="docutils literal notranslate"><span class="pre">'cc0'</span></code> (default) sends the CC0 filter and
-keeps CC0 alone; <code class="docutils literal notranslate"><span class="pre">None</span></code> sends no filter and any other value asks for
-CC0 + Attribution; both keep what the <code class="docutils literal notranslate"><span class="pre">accepted_license_ids</span></code>
-allowlist holds (CC0, CC-BY), so NC / SA / ND never come back.</p></li>
+<li><p><strong>license</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – A licence id (<code class="docutils literal notranslate"><span class="pre">'cc0'</span></code> is an alias for CC0-1.0, <code class="docutils literal notranslate"><span class="pre">'cc-by'</span></code> keeps
+the CC-BY ids). <code class="docutils literal notranslate"><span class="pre">'cc0'</span></code> (default) sends the CC0 filter; another id asks
+for CC0 + Attribution; <code class="docutils literal notranslate"><span class="pre">None</span></code> sends no filter. Whatever the filter, only
+items under the asked id (and the <code class="docutils literal notranslate"><span class="pre">accepted_license_ids</span></code> allowlist) are
+kept, so NC / SA / ND never come back.</p></li>
 <li><p><strong>k</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Max results (Freesound caps <code class="docutils literal notranslate"><span class="pre">page_size</span></code> at 150).</p></li>
 <li><p><strong>duration_range</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span>) – Optional <code class="docutils literal notranslate"><span class="pre">(min_s,</span> <span class="pre">max_s)</span></code> native duration filter.</p></li>
 <li><p><strong>sort</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – Optional native sort key (default: Freesound relevance).</p></li>

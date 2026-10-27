@@ -76,8 +76,9 @@ It bypasses the licence filter and the per-item licence check that
 Search Commons audio for `query`; return licence-checked candidates.
 
 * **Parameters:**
-  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `'cc0'` (default) keeps CC0 files only; anything else (`None`,
-    `'cc-by'`) also keeps CC-BY and the unverified public-domain claims.
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A licence id (`'cc0'` is an alias for CC0-1.0; `'cc-by'` the
+    CC-BY ids) keeps only files under it; `None` also keeps CC-BY and the
+    unverified public-domain claims.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max files requested (the API’s limit is 50).
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
     (#61); the per-item licence check still applies.
