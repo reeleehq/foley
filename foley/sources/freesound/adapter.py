@@ -7,7 +7,7 @@ load-bearing constraints:
 
 * **CC0 by default, CC-BY on request, pushed into the query.** The CC0 filter is sent
   as the native ``filter=license:"Creative Commons 0"`` so other sounds never leave the
-  server (``license`` other than ``'cc0'`` also asks for ``"Attribution"``: the
+  server (a ``license`` other than CC0 also asks for ``"Attribution"``: the
   credit-bearing sounds the :func:`~foley.licensing.keep` gate then admits only for a
   caller that can attribute). Each returned item is *also* re-checked fail-closed
   against the ``accepted_license_ids`` allowlist — the server filter is a promise foley
@@ -197,6 +197,8 @@ class FreesoundAdapter:
             "page_size": min(int(k), 150),
         }
         only = wanted_license_ids(self.config, license)
+        if only == []:  # a licence this source does not accept: nothing can match
+            return []
         filters: "list[str]" = []
         license_map = self.config["param_map"]["license"]
         if is_cc0_only(self.config, only):

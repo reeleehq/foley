@@ -12,7 +12,17 @@ Underscore-prefixed, so :func:`foley.sources.registry.discover_sources` skips it
 
 from __future__ import annotations
 
+import logging
+import re
 from typing import Optional
+
+from ..licensing import LICENSE_META
+
+_log = logging.getLogger(__name__)
+
+#: A Creative Commons / public-domain id even when foley has no metadata for it
+#: (``CC-BY-SA-4.0``): asking for it is a real request this source just cannot serve.
+_LOOKS_LIKE_CC_ID = re.compile(r"cc-[a-z]|cc0|pdm")
 
 
 def wanted_license_ids(config: dict, license: Optional[str]) -> "Optional[list[str]]":
@@ -22,7 +32,9 @@ def wanted_license_ids(config: dict, license: Optional[str]) -> "Optional[list[s
     case-insensitively against the source's ``accepted_license_ids``; ``'cc0'`` is the
     historical alias for the source's ``cc0_license_ids``, and a family prefix with a dash, such as
     ``'cc-by'``, keeps every accepted id of that family (``CC-BY-3.0``, ``CC-BY-4.0``).
-    ``None`` and ``'any'`` do not narrow. A value matching nothing the source accepts
+    ``None``, ``'any'`` and a value that is no licence id at all (``'user-owned'`` aside,
+    e.g. ``'public-domain'``) do not narrow, with a warning for the last (the historical
+    "anything but ``'cc0'``" behaviour). A real licence id the source does not accept
     gives ``[]``, so nothing is returned: fail closed, never silently broader.
 
     >>> cfg = {"license": {"accepted_license_ids": ["CC0-1.0", "CC-BY-4.0"],
@@ -38,11 +50,20 @@ def wanted_license_ids(config: dict, license: Optional[str]) -> "Optional[list[s
     section = config["license"]
     if asked == "cc0":
         return list(section["cc0_license_ids"])
+
+    def matches(license_id: str) -> bool:
+        low = license_id.lower()
+        return low == asked or ("-" in asked and low.startswith(asked + "-"))
+
+    if not (_LOOKS_LIKE_CC_ID.match(asked) or any(matches(k) for k in LICENSE_META)):
+        _log.warning(
+            "license=%r is not a licence id; not narrowing the %s search",
+            license,
+            config.get("name"),
+        )
+        return None
     return [
-        accepted
-        for accepted in section["accepted_license_ids"]
-        if accepted.lower() == asked
-        or ("-" in asked and accepted.lower().startswith(asked + "-"))
+        accepted for accepted in section["accepted_license_ids"] if matches(accepted)
     ]
 
 

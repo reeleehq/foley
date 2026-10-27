@@ -80,6 +80,9 @@ class InternetArchiveAdapter:
         translated ones (#61); a ``q`` is ANDed onto foley's as one group, never
         replaces it (the config's ``provider_params`` policy).
         """
+        only = wanted_license_ids(self.config, license)
+        if only == []:  # a licence this source does not accept: nothing can match
+            return []
         api = self.config["api"]
         params = {
             "q": f"({_lucene_escape(query)}) AND mediatype:audio AND {api['licensed_clause']}",
@@ -93,7 +96,6 @@ class InternetArchiveAdapter:
         docs = (
             self.invoke_native(api["search_url"], **params).get("response") or {}
         ).get("docs", [])
-        only = wanted_license_ids(self.config, license)
         return [
             c for c in (self._candidate(d, only=only) for d in docs) if c is not None
         ]

@@ -26,7 +26,9 @@ CONFIG = {
         ("any", None),
         ("", None),
         ("CC-BY-SA-4.0", []),  # not accepted: matches nothing (fail closed)
-        ("cc", []),  # a bare prefix of an id is not a family
+        ("user-owned", []),  # a real licence id, not one a retrieve source accepts
+        ("public-domain", None),  # not a licence id at all: no narrowing (warns)
+        ("cc", None),  # a bare prefix of an id is not a family
     ],
 )
 def test_wanted_license_ids(asked, expected):

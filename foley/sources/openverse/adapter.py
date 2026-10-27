@@ -84,6 +84,8 @@ class OpenverseAdapter:
         api = self.config["api"]
         filters = api["license_filter"]
         wanted = wanted_license_ids(self.config, license)
+        if wanted == []:  # a licence this source does not accept: nothing can match
+            return []
         params = {
             "q": query[: api["max_query_chars"]],
             "page_size": min(int(k), api["max_page_size"]),

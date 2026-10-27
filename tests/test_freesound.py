@@ -754,3 +754,12 @@ def test_license_none_admits_every_accepted_licence():
     page = {"count": 1, "results": [_by_item()]}
     adapter = _adapter(_transport(item=_by_item(), search_page=page))
     assert len(adapter.search("rain", license=None)) == 1
+
+
+def test_a_cc_by_licence_id_asks_for_cc0_and_attribution_and_a_refused_one_sends_nothing():
+    transport = _transport()
+    adapter = _adapter(transport)
+    adapter.search("rain", license="CC-BY-4.0")
+    assert '"Attribution"' in transport.calls[0].params["filter"]
+    assert adapter.search("rain", license="CC-BY-SA-4.0") == []
+    assert len(transport.calls) == 1
