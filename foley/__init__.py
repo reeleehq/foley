@@ -47,7 +47,7 @@ every later stage stands on:
       (``foley.audio``) with the key functions also re-exported here.
 
 Import cost: ``import foley`` pulls only ``dol`` (a light core dependency used by
-``foley.stores``); ``numpy``/``soundfile``/``soxr``/``librosa``/``pyloudnorm`` are
+``foley.stores``); ``numpy``/``soundfile``/``soxr``/``librosa``/``mixing.loudness`` are
 lazy-imported inside the audio/QC functions that need them (install via the
 ``foley[audio]`` extra), so a bare install imports cleanly.
 """
@@ -243,7 +243,7 @@ from .agent import (
 
 # --- weave: the WEAVE stage — weave() renders the finished, editable mix (#8) ----
 # The weave package is dol-only at import (the aligner + apply-strategy sit behind
-# DI-seam protocols with deterministic defaults; whisperx/pyloudnorm/opentimelineio/
+# DI-seam protocols with deterministic defaults; whisperx/mixing/opentimelineio/
 # audioseal/c2pa are imported lazily inside methods only). ``weave`` here is the
 # façade: the ``weave`` package is made *callable* (see foley/weave/__init__.py), so
 # ``foley.weave(narration, timeline)`` runs the façade while ``foley.weave.<submodule>``

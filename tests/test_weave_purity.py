@@ -12,7 +12,7 @@ def test_import_foley_weave_is_dol_only():
     code = (
         "import sys, foley.weave;"
         "heavy={'whisperx','opentimelineio','pyroomacoustics','scipy','c2pa',"
-        "'torch','audioseal','numpy','transformers','pyloudnorm'};"
+        "'torch','audioseal','numpy','transformers','pyloudnorm','mixing'};"
         "bad=heavy & set(sys.modules);"
         "assert not bad, bad"
     )
@@ -49,6 +49,9 @@ def test_weave_extras_declared_but_not_in_ci_install():
     for extra in ("align", "weave", "c2pa"):
         assert extra not in ci
 
-    # pyloudnorm is reused from the existing `audio`/`test` extras — NOT re-declared here
-    assert "pyloudnorm" not in od["weave"]
-    assert "pyloudnorm" in od["test"]
+    # The loudness component (mixing[loudness], foley#91) comes from the existing
+    # `audio`/`test` extras — NOT re-declared here; pyloudnorm is only a test oracle.
+    assert not any(d.startswith("mixing") for d in od["weave"])
+    assert any(d.startswith("mixing[loudness]") for d in od["audio"])
+    assert any(d.startswith("mixing[loudness]") for d in od["test"])
+    assert "pyloudnorm" not in od["audio"]

@@ -3,7 +3,7 @@
 import pytest
 
 np = pytest.importorskip("numpy")
-pytest.importorskip("pyloudnorm")
+pytest.importorskip("mixing.loudness")
 
 import foley  # noqa: E402
 from foley.base import (  # noqa: E402

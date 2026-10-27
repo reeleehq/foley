@@ -1,12 +1,12 @@
 """Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).
 
 Normalises the whole program to a :class:`~foley.base.MasterProfile` integrated-loudness
-target (ITU-R BS.1770-4 / EBU R128 via ``pyloudnorm``) and holds an inter-sample
-**true-peak** ceiling. It reuses :func:`foley.audio.loudness_normalize` (the same
-BS.1770 meter Tier-0 QC uses) for the LUFS stage and :func:`foley.qc.true_peak_dbtp`
-(oversampled) for the ceiling — so ``pyloudnorm`` comes from the existing ``audio``
-extra (no redundant dependency) and is imported function-locally, keeping ``import
-foley.weave`` dol-only.
+target (ITU-R BS.1770-4 / EBU R128) and holds an inter-sample **true-peak** ceiling. It
+reuses :func:`foley.audio.loudness_normalize` (the same BS.1770 meter Tier-0 QC uses) for
+the LUFS stage, the shared lookahead limiter (:func:`mixing.loudness.limit_peaks`,
+``true_peak=True``) for the ceiling, and :func:`foley.qc.true_peak_dbtp` (oversampled) to
+report it — all from the existing ``audio`` extra, imported function-locally, keeping
+``import foley.weave`` dol-only.
 
 The default ``engine='auto'`` masters fully in-process (portable, testable).
 ``engine='ffmpeg'`` runs the two-pass ``ffmpeg loudnorm`` "guarantee the numbers" master
@@ -69,11 +69,10 @@ def _tp(mix: "ndarray", sample_rate: int) -> float:
     return float(true_peak_dbtp(mix, sample_rate))
 
 
-def _true_peak_limit(mix: "ndarray", sample_rate: int, ceiling_db: float) -> "ndarray":
-    """Scale ``mix`` so its inter-sample true peak sits at/below ``ceiling_db``.
+def _true_peak_trim(mix: "ndarray", sample_rate: int, ceiling_db: float) -> "ndarray":
+    """Scale ``mix`` so its true peak, by foley's QC meter, sits at/below ``ceiling_db``.
 
-    The default :data:`Limiter`: a true-peak-safe *scale* (not a lookahead limiter),
-    simple, deterministic, and never raises the level.
+    A static, never-boosting safety stage; ``mix`` comes back as is when under.
     """
     import numpy as np
 
@@ -83,6 +82,31 @@ def _true_peak_limit(mix: "ndarray", sample_rate: int, ceiling_db: float) -> "nd
     if not np.isfinite(tp) or tp <= ceiling_db:
         return mix
     return mix * db_to_lin(ceiling_db - tp)
+
+
+def lookahead_true_peak_limit(
+    mix: "ndarray", sample_rate: int, ceiling_db: float
+) -> "ndarray":
+    """Hold ``mix``'s inter-sample true peak at/below ``ceiling_db`` with a lookahead limiter.
+
+    The default :data:`Limiter` (foley#91): :func:`mixing.loudness.limit_peaks` with
+    ``true_peak=True`` turns down only the peaks (the gain eases in and out over its
+    50 ms window), not the whole program. Its polyphase true-peak meter can read a
+    little under foley's FFT one (:func:`foley.qc.true_peak_dbtp`, which the master
+    report uses) on content near Nyquist, so whatever is left over that meter is then
+    trimmed statically: the ceiling holds by the number the report shows.
+    Deterministic, never raises the level; ``mix`` comes back as is (same object)
+    when nothing is over, else with the same shape and dtype.
+    """
+    from ..audio import loudness_component
+
+    frames = mix if mix.ndim == 2 else mix[:, None]  # the limiter's (n, channels)
+    limited = loudness_component().limit_peaks(
+        frames, ceiling=db_to_lin(ceiling_db), true_peak=True, fs=sample_rate
+    )
+    if limited is not frames:
+        mix = limited.reshape(mix.shape).astype(mix.dtype, copy=False)
+    return _true_peak_trim(mix, sample_rate, ceiling_db)
 
 
 def _parse_loudnorm_json(stderr: str) -> dict:
@@ -190,10 +214,11 @@ def master(
             uses the two-pass ``ffmpeg loudnorm`` "guarantee the numbers" master (report 06
             §5.4) and **fails safe** back to in-process if ffmpeg is unavailable or errors.
         limiter: The in-process true-peak stage (a :data:`Limiter`, ``(mix, sample_rate,
-            ceiling_db) -> mix``; default: a static true-peak-safe scale). The seam for a
-            lookahead limiter (foley#91). In-process engine only; the true peak in the
-            report is always measured here, never taken from the limiter.
-        meter: A :data:`foley.audio.Meter` for the loudness stages (default ``pyloudnorm``).
+            ceiling_db) -> mix``; default :func:`lookahead_true_peak_limit`). In-process
+            engine only; the true peak in the report is always measured here, never
+            taken from the limiter.
+        meter: A :data:`foley.audio.Meter` for the loudness stages (default
+            :data:`foley.audio.DEFAULT_METER`).
 
     Returns:
         ``(mastered_mix, MasterReport)``. Loudness is measured before and after so the
@@ -229,7 +254,7 @@ def master(
         peak_ceiling_dbfs=profile.true_peak_db,
         meter=meter,
     )
-    limited_mix = (limiter or _true_peak_limit)(
+    limited_mix = (limiter or lookahead_true_peak_limit)(
         normalized, sample_rate, profile.true_peak_db
     )
     limited = limited_mix is not normalized

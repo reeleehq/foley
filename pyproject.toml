@@ -65,7 +65,7 @@ audio = [
     "soundfile",
     "soxr",
     "librosa",
-    "pyloudnorm",
+    "mixing[loudness]>=0.0.64", # the shared loudness meter + lookahead limiter (#91)
 ]
 # CLAP embedder — the joint text<->audio retrieval engine (laion/larger_clap_general).
 clap = [
@@ -230,8 +230,8 @@ align = [
 # reserved pyroomacoustics/recorded-IR reverb path. `opentimelineio` is imported
 # LAZILY inside to_otio ONLY (to_edl is a pure-stdlib CMX3600 fallback, always
 # available), so `import foley.weave` stays dol-only. The default render/mix/master
-# path is pure-numpy + pyloudnorm (the existing `audio` extra — NO redundant
-# pyloudnorm here, per invariant 4). Deliberately NOT in [tool.wads.ci.install] — the
+# path is pure-numpy + mixing.loudness (the existing `audio` extra — NOT
+# re-declared here, per invariant 4). Deliberately NOT in [tool.wads.ci.install] — the
 # OTIO round-trip test is importorskip('opentimelineio')-guarded.
 weave = [
     "opentimelineio",
@@ -263,7 +263,8 @@ test = [
     "numpy",
     "soundfile",
     "soxr", # so resample/encode tests execute in CI (skipif-guarded in lean envs)
-    "pyloudnorm", # so LUFS tests execute in CI
+    "mixing[loudness]>=0.0.64", # so LUFS / master tests execute in CI
+    "pyloudnorm", # an independent BS.1770 oracle the default meter is checked against
     # NB: librosa is intentionally NOT here — it pulls numba/llvmlite, which have no
     # wheels / a hard <3.10 guard on new CPython patches and break the CI install;
     # trim_silence tests importorskip librosa and run locally via foley[audio]. The
@@ -335,7 +336,7 @@ doctest_optionflags = [
 project_name = ""
 
 # Extras the wads CI installs (`.[extras]`). "test" pulls numpy/soundfile/soxr/
-# pyloudnorm so the numpy-backed tests (base/qc/audio/search/taxonomy and the
+# mixing[loudness] so the numpy-backed tests (base/qc/audio/search/taxonomy and the
 # MemoryIndex hybrid+library path) actually run in CI. It deliberately omits
 # librosa (numba/llvmlite break the CI install) and the heavy backends
 # (lancedb/sqlite-vec/torch) — those tests importorskip/skipif-guard and run

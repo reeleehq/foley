@@ -3,7 +3,7 @@
 import pytest
 
 np = pytest.importorskip("numpy")
-pytest.importorskip("pyloudnorm")
+pytest.importorskip("mixing.loudness")
 
 from foley.base import MASTER_PROFILES  # noqa: E402
 from foley.weave.master import MasterReport, master  # noqa: E402
@@ -27,7 +27,9 @@ def test_master_hits_podcast_target_within_tol():
 
 def test_master_streaming_target():
     sr = 48000
-    _, report = master(_sine_stereo(200, 3.0, sr, 0.05), sr, MASTER_PROFILES["streaming"])
+    _, report = master(
+        _sine_stereo(200, 3.0, sr, 0.05), sr, MASTER_PROFILES["streaming"]
+    )
     assert abs(report.output_lufs - (-14.0)) < 0.5
 
 
@@ -70,3 +72,54 @@ def test_master_injected_limiter_and_meter_are_used():
         float(__import__("foley.qc", fromlist=["x"]).true_peak_dbtp(mastered, sr))
     )
     assert report.input_lufs == -20.0 and report.output_lufs == -20.0
+
+
+def _transient_program(sr, secs=6.0, seed=0):
+    """A quiet bed with a few loud, noisy hits: what a lookahead limiter is for."""
+    rng = np.random.default_rng(seed)
+    t = np.arange(int(secs * sr)) / sr
+    x = 0.05 * np.sin(2 * np.pi * 440 * t) + 0.02 * rng.normal(size=len(t))
+    hit = 0.9 * np.exp(-np.arange(2400) / 300)
+    for k in range(1, int(secs) - 1):
+        x[k * sr : k * sr + 2400] += hit * rng.normal(size=2400)
+    return np.clip(x, -1, 1).astype("float32")
+
+
+def test_lookahead_limiter_turns_down_only_the_peaks():
+    from foley.qc import true_peak_dbtp
+    from foley.weave.master import _true_peak_trim, lookahead_true_peak_limit
+
+    sr = 48000
+    mix = np.stack([_transient_program(sr)] * 2, axis=1)
+    _, static = master(mix, sr, MASTER_PROFILES["podcast"], limiter=_true_peak_trim)
+    limited, report = master(mix, sr, MASTER_PROFILES["podcast"])
+    assert report.limited is True
+    assert report.true_peak_dbtp <= -1.0 + 1e-6  # by the report's own meter
+    assert report.output_lufs > static.output_lufs + 0.5  # the bed is not turned down
+    assert limited.dtype == mix.dtype and limited.shape == mix.shape
+    mono = _transient_program(sr)
+    out = lookahead_true_peak_limit(mono, sr, -1.0)
+    assert out.shape == mono.shape and out.dtype == mono.dtype
+    assert true_peak_dbtp(out, sr) <= -1.0 + 1e-6
+
+
+def test_lookahead_limiter_returns_an_unclipped_mix_as_is():
+    from foley.weave.master import lookahead_true_peak_limit
+
+    sr = 48000
+    quiet = _sine_stereo(200, 1.0, sr, 0.1)
+    assert lookahead_true_peak_limit(quiet, sr, -1.0) is quiet
+    mono = quiet[:, 0]
+    assert lookahead_true_peak_limit(mono, sr, -1.0) is mono
+
+
+def test_master_true_peak_holds_on_near_nyquist_content():
+    # mixing's polyphase true-peak meter reads under foley's FFT one up here; the
+    # static residual trim keeps the reported ceiling honest.
+    from foley.weave.master import lookahead_true_peak_limit
+    from foley.qc import true_peak_dbtp
+
+    sr = 48000
+    noise = np.random.default_rng(1).normal(0, 0.3, sr * 2).clip(-1, 1)
+    out = lookahead_true_peak_limit(noise.astype("float32"), sr, -1.0)
+    assert true_peak_dbtp(out, sr) <= -1.0 + 1e-6
