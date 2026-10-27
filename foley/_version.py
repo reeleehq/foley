@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import functools
+from importlib.metadata import PackageNotFoundError, version
 
+
+@functools.cache
 def foley_version() -> str:
     """Installed ``foley`` distribution version, or ``'unknown'`` when not installed."""
     try:
-        from importlib.metadata import version
-
         return version("foley")
-    except Exception:  # pragma: no cover
+    except PackageNotFoundError:  # pragma: no cover
         return "unknown"

@@ -637,6 +637,8 @@ def build_mix_credential(records, *, asset_id, ai_disclosed, watermark_meta, fmt
     declared as a ``componentOf`` ingredient (via :func:`as_c2pa_ingredient`) and its
     ``placed`` action names it through ``parameters.ingredientIds``. A mix with no
     (credentialed) ingredient asserts ``c2pa.created`` alone.
+
+    Signing embeds into WAV only: a credential with a non-WAV ``fmt`` stays sidecar-only.
     """
     ingredients = []
     for r in records:

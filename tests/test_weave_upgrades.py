@@ -184,12 +184,24 @@ def test_c2pa_real_sign_embed_and_readback():
     assert manifest.get("active_manifest")
 
 
-def test_c2pa_sign_refuses_non_wav_manifest(monkeypatch):
+def test_c2pa_sign_refuses_non_wav_manifest(monkeypatch, caplog):
     from foley import weave
 
+    real = importlib.util.find_spec
+    monkeypatch.setattr(
+        importlib.util,
+        "find_spec",
+        lambda name, *a, **k: object() if name == "c2pa" else real(name, *a, **k),
+    )
+    called = []
+    monkeypatch.setattr(
+        weave, "_c2pa_sign_wav", lambda *a: called.append(a) or b"SIGNED"
+    )
     cred = {"manifest": {"format": "audio/mpeg"}, "signed": False, "embedded": False}
-    assert weave._sign_and_embed(_noise(0.01), SR, cred, cert=object()) is False
-    assert cred["signed"] is False
+    with caplog.at_level("WARNING"):
+        ok = weave._sign_and_embed(_noise(0.01), SR, cred, cert=object())
+    assert ok is False and not called and cred["signed"] is False
+    assert "supports WAV only" in caplog.text
 
 
 def test_reassert_provenance_logs_credential_failure(monkeypatch, caplog):

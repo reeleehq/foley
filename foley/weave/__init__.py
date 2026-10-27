@@ -236,7 +236,7 @@ def _sign_and_embed(
     """
     if cert is None:
         return False
-    manifest_format = credential["manifest"].get("format", _SIGNABLE_MIME)
+    manifest_format = (credential.get("manifest") or {}).get("format", _SIGNABLE_MIME)
     if manifest_format != _SIGNABLE_MIME:
         _log.warning(
             "C2PA signing supports WAV only (manifest format %r); sidecar-only",
