@@ -111,7 +111,7 @@ def test_an_ingredient_whose_credential_fails_is_neither_declared_nor_placed():
     ]
     placed = [a["parameters"]["ingredientIds"] for a in actions[1:]]
     assert placed == [[i["instance_id"]] for i in ingredients]
-    assert [i["asset_ref"] for i in ingredients] == ["s1", "s2"]
+    assert [i["foley_credential"]["asset_ref"] for i in ingredients] == ["s1", "s2"]
     chain, key = make_self_signed_c2pa_certs()
     signer = make_c2pa_signer(chain, key)
     assert _sign_and_check(signer, _ca_of(chain), [_rec(1), object(), _rec(2)]) == []
