@@ -60,6 +60,8 @@ so the derived permission flags stay single-sourced.
 | [`api_license`](#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])   | Build an API-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
 | [`generated_license`](#foley.sources.base.generated_license)(\*, source, license_id, ...)    | Build an AI-generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.                                                      |
 | [`draw_seed`](#foley.sources.base.draw_seed)()                                       | A random seed in `0..2**31-1`, for a seed-capable backend asked for none.                                                                                                                               |
+| [`derived_seed`](#foley.sources.base.derived_seed)(seed, index)                         | The seed of variation `index` of a request seeded with `seed` (#161).                                                                                                                                   |
+| [`require_count`](#foley.sources.base.require_count)(name, value, \*, minimum)           | `value` as an `int`, or `ValueError` unless it is an integer >= `minimum`.                                                                                                                              |
 | [`register_corpus`](#foley.sources.base.register_corpus)(adapter)                          | Register `adapter` in [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                                                                      |
 | [`ring_of`](#foley.sources.base.ring_of)(name)                                     | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                                                                                    |
 | [`corpora_in_rings`](#foley.sources.base.corpora_in_rings)(rings)                           | Registered adapters whose ring is in `rings` (sorted by name).                                                                                                                                          |
@@ -504,6 +506,23 @@ Registered adapters whose ring is in `rings` (sorted by name).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`CorpusAdapter`](#foley.sources.base.CorpusAdapter)]
 
+### foley.sources.base.derived_seed(seed, index)
+
+The seed of variation `index` of a request seeded with `seed` (#161).
+
+`(seed + index) % _SEED_LIMIT`: wrapped into the signed 32-bit range every local
+backend takes, so variation 0 is the request itself and each later one is a seed
+of its own. It is `seed + index` only below the limit; near it, the seed wraps
+to 0.
+
+```pycon
+>>> derived_seed(7, 0), derived_seed(7, 2), derived_seed(2**31 - 1, 1)
+(7, 9, 0)
+```
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
 ### foley.sources.base.draw_seed()
 
 A random seed in `0..2**31-1`, for a seed-capable backend asked for none.
@@ -711,6 +730,25 @@ Register `adapter` in [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY) (
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If a *different* adapter is already registered under the name.
 * **Return type:**
   [`CorpusAdapter`](#foley.sources.base.CorpusAdapter)
+
+### foley.sources.base.require_count(name, value, , minimum)
+
+`value` as an `int`, or `ValueError` unless it is an integer >= `minimum`.
+
+Any [`numbers.Integral`](https://docs.python.org/3/library/numbers.html#numbers.Integral) passes (a NumPy integer too); a `bool` does not,
+nor does a float, however whole.
+
+```pycon
+>>> require_count("n", 3, minimum=1)
+3
+>>> require_count("n", True, minimum=1)
+Traceback (most recent call last):
+...
+ValueError: n must be an integer >= 1, got True
+```
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 ### foley.sources.base.require_params_mapping(provider_params)
 

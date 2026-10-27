@@ -384,6 +384,8 @@ for what’s next. Follow along in <a class="reference internal" href="#misc/doc
 <span class="c1"># notes say which backends were skipped and why</span>
 <span class="n">clip</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="s2">"a single wooden door creak"</span><span class="p">,</span> <span class="n">duration_s</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">"sfx_fg"</span><span class="p">)</span>
 <span class="n">clip</span><span class="o">.</span><span class="n">sound</span><span class="o">.</span><span class="n">qc</span><span class="p">[</span><span class="s2">"prompt_match"</span><span class="p">]</span>  <span class="c1"># CLAP prompt-vs-audio verdict, or 'unchecked'</span>
+<span class="c1"># Several takes on one request, each stored and replayable (seeded: seed, seed+1, …)</span>
+<span class="n">takes</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">variations</span><span class="p">(</span><span class="s2">"a single wooden door creak"</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">duration_s</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 
 <span class="c1"># Sound timed to picture (video-to-audio): video= walks the V2A order (Mirelo SFX 2.0,</span>
 <span class="c1"># then Sonilo, both on fal; FOLEY_V2A_ORDER replaces it). Their fal-route output terms</span>
@@ -549,7 +551,7 @@ what’s degraded. Full docs: <strong><a class="reference external" href="https:
 </section>
 </section>
 
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-27 16:34 UTC from <a href="https://github.com/reeleehq/foley/commit/82b3c427a39eed8540affc95848692a861594917">82b3c42</a> (main) · foley 0.0.91 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-27 17:16 UTC from <a href="https://github.com/reeleehq/foley/commit/08176bd80900a344666686623c754522467188c4">08176bd</a> (main) · foley 0.0.91 · <a href="about-this-build.html">about this build</a></p>
 
                 </article>
               

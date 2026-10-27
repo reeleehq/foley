@@ -1,4 +1,4 @@
-> built 2026-10-27 16:34 UTC from 82b3c42 (main) · foley 0.0.91. Details: build_info.json
+> built 2026-10-27 17:16 UTC from 08176bd (main) · foley 0.0.91. Details: build_info.json
 
 # index.html.md
 
@@ -56,6 +56,8 @@ clip = foley.generate(
 # notes say which backends were skipped and why
 clip = foley.generate("a single wooden door creak", duration_s=3, level="sfx_fg")
 clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
+# Several takes on one request, each stored and replayable (seeded: seed, seed+1, …)
+takes = foley.variations("a single wooden door creak", 4, duration_s=3)
 
 # Sound timed to picture (video-to-audio): video= walks the V2A order (Mirelo SFX 2.0,
 # then Sonilo, both on fal; FOLEY_V2A_ORDER replaces it). Their fal-route output terms
@@ -5500,6 +5502,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`ledger`](_autosummary/foley.html.md#foley.ledger)(\*[, targets])                               | Implemented vs planned backends, computed from the registry (never hand-kept).                                                                                                 |
 | [`register_source`](_autosummary/foley.html.md#foley.register_source)(name, config[, adapter])            | Register a live source directly (out-of-tree plugin or a test double).                                                                                                         |
 | [`generate`](_autosummary/foley.html.md#foley.generate)(prompt, \*[, backend, library, ...])       | Generate a sound effect for `prompt` and add it to the library (by-value).                                                                                                     |
+| [`variations`](_autosummary/foley.html.md#foley.variations)(prompt, n, \*[, backend, seed, ...])     | `n` variations of one sound for `prompt`: `n` stored, distinct candidates (#161).                                                                                              |
 | [`candidate_of`](_autosummary/foley.html.md#foley.candidate_of)(result)                                | Wrap a stored [`IngestResult`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestResult) as a generated candidate.                                          |
 | `art50_checklist`(record)                                                                            | Return the per-clip EU AI Act Art.                                                                                                                                             |
 | `scan_prompt`(prompt)                                                                                | Scan a generation `prompt` for trademarked-audio-logo + voice-clone risk.                                                                                                      |
@@ -6112,6 +6115,20 @@ The key the paid bytes were kept under in the generations cache
 (`foley.generations.get(cache_key)`), or `None` when nothing was kept
 (a free backend, a refusal before synthesis, a failed cache write). A
 quarantined generation is retrievable: it was billed either way (#107).
+
+#### variations
+
+Raised from [`foley.variations()`](_autosummary/foley.html.md#foley.variations), the takes already made
+(stored [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)s, in order) before the one that
+failed; `None` otherwise (#161). [`foley.variations()`](_autosummary/foley.html.md#foley.variations) sets it on any
+exception a take raises, not only this one.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]
+
+#### variations *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[list](https://docs.python.org/3/builtins/stdtypes.html#list)]* *= None*
+
+The takes made before the failure, when raised from [`foley.variations()`](_autosummary/foley.html.md#foley.variations).
 
 ### *class* foley.GenerationsCache(audio, requests)
 
@@ -7906,7 +7923,7 @@ RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
 
   FusedHit\`s, each carrying its raw component scores.
 
-### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, provider_params=None, \*\*affordances)
+### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, provider_params=None, variation=0, \*\*affordances)
 
 Generate a sound effect for `prompt` and add it to the library (by-value).
 
@@ -8001,6 +8018,10 @@ training uses).
     A key the backend’s config `provider_params` policy reserves (the
     prompt, an output path) or prices (`duration_s`, the model) raises
     `ValueError` before anything is paid for: use the unified argument.
+  * **variation** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Which variation of the same request this is (#161): `0`
+    (default) is the request itself; a later one is a different paid request
+    in the generations cache, so it is a new sound even from a backend that
+    takes no seed. [`variations()`](_autosummary/foley.html.md#foley.variations) sets it; most callers never do.
   * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format`, `sample_rate`, `expand_prompt`, `video` — see
@@ -9031,6 +9052,47 @@ block the operator’s key and plan apply again.
 
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For a field an account cannot carry.
+
+### foley.variations(prompt, n, , backend=None, seed=None, budget=None, provider_params=None, \*\*kwargs)
+
+`n` variations of one sound for `prompt`: `n` stored, distinct candidates (#161).
+
+The first is [`generate()`](_autosummary/foley.html.md#foley.generate) as asked (`backend=None` walks the generation
+order); the others come from the backend that made it, so all `n` are one
+generator’s takes on one request. Where that backend records its seed, take `i`
+is `generate(..., seed=derived_seed(first_seed, i))`
+([`derived_seed()`](_autosummary/foley.sources.base.html.md#foley.sources.base.derived_seed): the first seed plus `i`, wrapped into
+the signed 32-bit seed range), so it is reproducible like any seeded clip and the
+same request as asking for that seed; where it records none, take `i` is keyed
+apart in the generations cache, so a backend that takes no seed (ElevenLabs) makes
+`n` paid sounds, each replayable, rather than replaying one `n` times. Each
+take is one call, priced and reserved like any other, under one budget for the
+whole set.
+
+* **Parameters:**
+  * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description.
+  * **n** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – How many variations (an integer >= 1).
+  * **backend** – As [`generate()`](_autosummary/foley.html.md#foley.generate)’s; the variations after the first are pinned to
+    the backend the first came from.
+  * **seed** ([`int`](https://docs.python.org/3/builtins/functions.html#int) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – The first variation’s seed (default: the backend’s own, or drawn).
+  * **budget** – One [`Budget`](_autosummary/foley.html.md#foley.Budget) for all `n` calls (default: the active run’s,
+    else one fresh default budget, $1, for the whole set, not one per take).
+  * **provider_params** – As [`generate()`](_autosummary/foley.html.md#foley.generate)’s. Per backend for an order, the takes
+    after the first get only the entry of the backend they are pinned to.
+  * **\*\*kwargs** – Everything else [`generate()`](_autosummary/foley.html.md#foley.generate) takes (`library`, `store`,
+    affordances such as `duration_s`, …).
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
+* **Returns:**
+  The `n` stored [`Candidate`](_autosummary/foley.html.md#foley.Candidate)s, in order (a byte-identical repeat is
+  the library’s existing sound, as with [`generate()`](_autosummary/foley.html.md#foley.generate)).
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `n` is not an integer >= 1, or `variation` is passed.
+  * [**GenerationError**](_autosummary/foley.html.md#foley.GenerationError) – As [`generate()`](_autosummary/foley.html.md#foley.generate), for the variation that failed.
+  * [**Exception**](https://docs.python.org/3/builtins/exceptions.html#Exception) – Whatever [`generate()`](_autosummary/foley.html.md#foley.generate) raises for a take (`BudgetExceeded`
+        when the set outruns the budget, `SourceConfigurationError`,
+        `EgressBlocked`, …). Whatever it is, its `variations` attribute holds
+        the takes already made (stored, and paid for), in order.
 
 ### foley.vector_search(qvec, , vindex, k=10, where=None)
 
@@ -14302,7 +14364,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'ta-dum', 'tudum', 'netflix sound', 'netflix intro', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel jingle', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'netflix intro', 'ta dum', 'netflix chime', 'netflix sound', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel inside', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -15678,6 +15740,8 @@ so the derived permission flags stay single-sourced.
 | [`api_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])   | Build an API-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
 | [`generated_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.generated_license)(\*, source, license_id, ...)    | Build an AI-generated [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.                                                      |
 | [`draw_seed`](_autosummary/foley.sources.base.html.md#foley.sources.base.draw_seed)()                                       | A random seed in `0..2**31-1`, for a seed-capable backend asked for none.                                                                                                                               |
+| [`derived_seed`](_autosummary/foley.sources.base.html.md#foley.sources.base.derived_seed)(seed, index)                         | The seed of variation `index` of a request seeded with `seed` (#161).                                                                                                                                   |
+| [`require_count`](_autosummary/foley.sources.base.html.md#foley.sources.base.require_count)(name, value, \*, minimum)           | `value` as an `int`, or `ValueError` unless it is an integer >= `minimum`.                                                                                                                              |
 | [`register_corpus`](_autosummary/foley.sources.base.html.md#foley.sources.base.register_corpus)(adapter)                          | Register `adapter` in [`CORPUS_REGISTRY`](_autosummary/foley.sources.base.html.md#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                                                                      |
 | [`ring_of`](_autosummary/foley.sources.base.html.md#foley.sources.base.ring_of)(name)                                     | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                                                                                    |
 | [`corpora_in_rings`](_autosummary/foley.sources.base.html.md#foley.sources.base.corpora_in_rings)(rings)                           | Registered adapters whose ring is in `rings` (sorted by name).                                                                                                                                          |
@@ -16122,6 +16186,23 @@ Registered adapters whose ring is in `rings` (sorted by name).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`CorpusAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.CorpusAdapter)]
 
+### foley.sources.base.derived_seed(seed, index)
+
+The seed of variation `index` of a request seeded with `seed` (#161).
+
+`(seed + index) % _SEED_LIMIT`: wrapped into the signed 32-bit range every local
+backend takes, so variation 0 is the request itself and each later one is a seed
+of its own. It is `seed + index` only below the limit; near it, the seed wraps
+to 0.
+
+```pycon
+>>> derived_seed(7, 0), derived_seed(7, 2), derived_seed(2**31 - 1, 1)
+(7, 9, 0)
+```
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
 ### foley.sources.base.draw_seed()
 
 A random seed in `0..2**31-1`, for a seed-capable backend asked for none.
@@ -16329,6 +16410,25 @@ Register `adapter` in [`CORPUS_REGISTRY`](_autosummary/foley.sources.base.html.m
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If a *different* adapter is already registered under the name.
 * **Return type:**
   [`CorpusAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.CorpusAdapter)
+
+### foley.sources.base.require_count(name, value, , minimum)
+
+`value` as an `int`, or `ValueError` unless it is an integer >= `minimum`.
+
+Any [`numbers.Integral`](https://docs.python.org/3/library/numbers.html#numbers.Integral) passes (a NumPy integer too); a `bool` does not,
+nor does a float, however whole.
+
+```pycon
+>>> require_count("n", 3, minimum=1)
+3
+>>> require_count("n", True, minimum=1)
+Traceback (most recent call last):
+...
+ValueError: n must be an integer >= 1, got True
+```
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 ### foley.sources.base.require_params_mapping(provider_params)
 
@@ -17696,6 +17796,20 @@ The key the paid bytes were kept under in the generations cache
 (a free backend, a refusal before synthesis, a failed cache write). A
 quarantined generation is retrievable: it was billed either way (#107).
 
+#### variations
+
+Raised from [`foley.variations()`](_autosummary/foley.html.md#foley.variations), the takes already made
+(stored [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)s, in order) before the one that
+failed; `None` otherwise (#161). [`foley.variations()`](_autosummary/foley.html.md#foley.variations) sets it on any
+exception a take raises, not only this one.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]
+
+#### variations *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[list](https://docs.python.org/3/builtins/stdtypes.html#list)]* *= None*
+
+The takes made before the failure, when raised from [`foley.variations()`](_autosummary/foley.html.md#foley.variations).
+
 ### *exception* foley.sources.RecognizableVoiceRefusal(message, , hits, report)
 
 Bases: [`SafetyRefusal`](_autosummary/foley.sources.html.md#foley.sources.SafetyRefusal)
@@ -17952,7 +18066,7 @@ an already-registered name (e.g. a test double) is never overwritten.
 * **Returns:**
   The list of discovered source names.
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -18045,6 +18159,9 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     never seen by the unsupported-parameter policy. A key the source’s
     `provider_params` policy reserves or prices raises `ValueError`
     before any call, so the cost estimate is the call’s.
+  * **variation** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Which variation of the same request this is (#161; see
+    [`foley.variations()`](_autosummary/foley.html.md#foley.variations)): `0` (default) is the request itself, a later
+    one is a different paid request in the generations cache.
   * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format`, `sample_rate`, `expand_prompt` — see
@@ -21494,7 +21611,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 16:34 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/82b3c427a39eed8540affc95848692a861594917"><code>82b3c42</code></a> on branch <code>main</code>, for **foley 0.0.91** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 17:16 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/08176bd80900a344666686623c754522467188c4"><code>08176bd</code></a> on branch <code>main</code>, for **foley 0.0.91** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -21503,9 +21620,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/82b3c427a39eed8540affc95848692a861594917"><code>82b3c427a39eed8540affc95848692a861594917</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/08176bd80900a344666686623c754522467188c4"><code>08176bd80900a344666686623c754522467188c4</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
-| Tags at this commit | <code>0.0.91</code>                                                                                                                                   |
+| Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
 | Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
@@ -21514,9 +21631,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40534476025">40534476025</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40541347644">40541347644</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>b33c32f292ab0a03a6ab722e1bfa8adf135f9117</code> (in the history of the built commit) |
+| Event commit | <code>ef4575fa417204f2eb776b6fc6be2d90da8423b3</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -21547,7 +21664,7 @@ Latest release: <a href="https://pypi.org/project/foley/0.0.91/">0.0.91</a>, the
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 82b3c427a39eed8540affc95848692a861594917
+git checkout 08176bd80900a344666686623c754522467188c4
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

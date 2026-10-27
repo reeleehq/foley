@@ -766,6 +766,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">``foley[audio]`` extra), so a bare install imports cleanly.</span>
 <span class="sd">"""</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">audio</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.audio</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">WORKING_SAMPLE_RATE</span><span class="p">,</span>
@@ -1131,6 +1133,7 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"register_source"</span><span class="p">,</span>
     <span class="c1"># --- source: generation adapters (Stable Audio Open / ElevenLabs) --------</span>
     <span class="s2">"generate"</span><span class="p">,</span>
+    <span class="s2">"variations"</span><span class="p">,</span>
     <span class="s2">"candidate_of"</span><span class="p">,</span>
     <span class="s2">"RemoteVideo"</span><span class="p">,</span>
     <span class="s2">"GenerationError"</span><span class="p">,</span>
@@ -1418,6 +1421,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">check_prompt</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">intended_use</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">provider_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">variation</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Generate a sound effect for ``prompt`` and add it to the library (by-value).</span>
@@ -1513,6 +1517,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            A key the backend's config ``provider_params`` policy reserves (the</span>
 <span class="sd">            prompt, an output path) or prices (``duration_s``, the model) raises</span>
 <span class="sd">            ``ValueError`` before anything is paid for: use the unified argument.</span>
+<span class="sd">        variation: Which variation of the same request this is (#161): ``0``</span>
+<span class="sd">            (default) is the request itself; a later one is a different paid request</span>
+<span class="sd">            in the generations cache, so it is a new sound even from a backend that</span>
+<span class="sd">            takes no seed. :func:`variations` sets it; most callers never do.</span>
 <span class="sd">        **affordances: Unified generation affordances (``duration_s``, ``model``,</span>
 <span class="sd">            ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,</span>
 <span class="sd">            ``output_format``, ``sample_rate``, ``expand_prompt``, ``video`` — see</span>
@@ -1577,11 +1585,8 @@ window.runMermaid = runMermaid;</script>
         <span class="n">paid_ok</span> <span class="o">=</span> <span class="n">paid_generation_opted_in</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
     <span class="c1"># Native params are one vendor's: an order that may try several backends takes</span>
     <span class="c1"># them per backend, and each backend gets only its own (#61).</span>
-    <span class="n">may_fall_back</span> <span class="o">=</span> <span class="n">adapter</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
-        <span class="nb">isinstance</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">or</span> <span class="n">backend</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"auto"</span><span class="p">)</span>
-    <span class="p">)</span>
     <span class="n">by_backend</span> <span class="o">=</span> <span class="n">provider_params_by_backend</span><span class="p">(</span>
-        <span class="n">provider_params</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">per_backend</span><span class="o">=</span><span class="n">may_fall_back</span>
+        <span class="n">provider_params</span><span class="p">,</span> <span class="n">order</span><span class="p">,</span> <span class="n">per_backend</span><span class="o">=</span><span class="n">_may_fall_back</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">adapter</span><span class="p">)</span>
     <span class="p">)</span>
     <span class="k">with</span> <span class="n">spend_scope</span><span class="p">(</span><span class="n">budget</span><span class="p">):</span>
         <span class="n">report</span><span class="p">,</span> <span class="n">backend</span><span class="p">,</span> <span class="n">skipped</span> <span class="o">=</span> <span class="n">generate_in_order</span><span class="p">(</span>
@@ -1602,6 +1607,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
             <span class="n">check_prompt</span><span class="o">=</span><span class="n">check_prompt</span><span class="p">,</span>
             <span class="n">provider_params</span><span class="o">=</span><span class="n">by_backend</span><span class="p">,</span>
+            <span class="n">variation</span><span class="o">=</span><span class="n">variation</span><span class="p">,</span>
             <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span>
@@ -1629,6 +1635,114 @@ window.runMermaid = runMermaid;</script>
         <span class="n">cache_key</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">cache_key</span><span class="p">,</span>
     <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">report.exception</span></div>
 
+
+
+<div class="viewcode-block" id="variations">
+<a class="viewcode-back" href="../_autosummary/foley.html#foley.variations">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">variations</span><span class="p">(</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">backend</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="s2">"int | None"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">budget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">provider_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[Candidate]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``n`` variations of one sound for ``prompt``: ``n`` stored, distinct candidates (#161).</span>
+
+<span class="sd">    The first is :func:`generate` as asked (``backend=None`` walks the generation</span>
+<span class="sd">    order); the others come from the backend that made it, so all ``n`` are one</span>
+<span class="sd">    generator's takes on one request. Where that backend records its seed, take ``i``</span>
+<span class="sd">    is ``generate(..., seed=derived_seed(first_seed, i))``</span>
+<span class="sd">    (:func:`~foley.sources.base.derived_seed`: the first seed plus ``i``, wrapped into</span>
+<span class="sd">    the signed 32-bit seed range), so it is reproducible like any seeded clip and the</span>
+<span class="sd">    same request as asking for that seed; where it records none, take ``i`` is keyed</span>
+<span class="sd">    apart in the generations cache, so a backend that takes no seed (ElevenLabs) makes</span>
+<span class="sd">    ``n`` paid sounds, each replayable, rather than replaying one ``n`` times. Each</span>
+<span class="sd">    take is one call, priced and reserved like any other, under one budget for the</span>
+<span class="sd">    whole set.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        prompt: The natural-language sound description.</span>
+<span class="sd">        n: How many variations (an integer &gt;= 1).</span>
+<span class="sd">        backend: As :func:`generate`'s; the variations after the first are pinned to</span>
+<span class="sd">            the backend the first came from.</span>
+<span class="sd">        seed: The first variation's seed (default: the backend's own, or drawn).</span>
+<span class="sd">        budget: One :class:`Budget` for all ``n`` calls (default: the active run's,</span>
+<span class="sd">            else one fresh default budget, $1, for the whole set, not one per take).</span>
+<span class="sd">        provider_params: As :func:`generate`'s. Per backend for an order, the takes</span>
+<span class="sd">            after the first get only the entry of the backend they are pinned to.</span>
+<span class="sd">        **kwargs: Everything else :func:`generate` takes (``library``, ``store``,</span>
+<span class="sd">            affordances such as ``duration_s``, …).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The ``n`` stored :class:`Candidate`\\ s, in order (a byte-identical repeat is</span>
+<span class="sd">        the library's existing sound, as with :func:`generate`).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If ``n`` is not an integer &gt;= 1, or ``variation`` is passed.</span>
+<span class="sd">        GenerationError: As :func:`generate`, for the variation that failed.</span>
+<span class="sd">        Exception: Whatever :func:`generate` raises for a take (``BudgetExceeded``</span>
+<span class="sd">            when the set outruns the budget, ``SourceConfigurationError``,</span>
+<span class="sd">            ``EgressBlocked``, …). Whatever it is, its ``variations`` attribute holds</span>
+<span class="sd">            the takes already made (stored, and paid for), in order.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">spend_scope</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">derived_seed</span><span class="p">,</span> <span class="n">require_count</span>
+
+    <span class="n">n</span> <span class="o">=</span> <span class="n">require_count</span><span class="p">(</span><span class="s2">"n"</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">"variation"</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"variations() numbers the variations itself: drop variation="</span><span class="p">)</span>
+    <span class="n">seeded</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="s2">"seed"</span><span class="p">:</span> <span class="n">seed</span><span class="p">}</span>
+    <span class="n">out</span><span class="p">:</span> <span class="s2">"list[Candidate]"</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="n">spend_scope</span><span class="p">(</span><span class="n">budget</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">generate</span><span class="p">(</span>
+                    <span class="n">prompt</span><span class="p">,</span>
+                    <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span>
+                    <span class="n">provider_params</span><span class="o">=</span><span class="n">provider_params</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">seeded</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">lic</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sound</span><span class="o">.</span><span class="n">license</span>
+            <span class="n">first_seed</span> <span class="o">=</span> <span class="n">lic</span><span class="o">.</span><span class="n">generation_seed</span>
+            <span class="n">pinned_params</span> <span class="o">=</span> <span class="n">provider_params</span>
+            <span class="k">if</span> <span class="n">provider_params</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">_may_fall_back</span><span class="p">(</span>
+                <span class="n">backend</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"adapter"</span><span class="p">)</span>
+            <span class="p">):</span>
+                <span class="c1"># Take 0 checked them as {backend: {...}}; a pinned take is one</span>
+                <span class="c1"># named backend, which takes its own entry flat (#61).</span>
+                <span class="n">pinned_params</span> <span class="o">=</span> <span class="n">provider_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">first_seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">more</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"variation"</span><span class="p">:</span> <span class="n">i</span><span class="p">}</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">more</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"seed"</span><span class="p">:</span> <span class="n">derived_seed</span><span class="p">(</span><span class="n">first_seed</span><span class="p">,</span> <span class="n">i</span><span class="p">)}</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">generate</span><span class="p">(</span>
+                        <span class="n">prompt</span><span class="p">,</span>
+                        <span class="n">backend</span><span class="o">=</span><span class="n">lic</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+                        <span class="n">provider_params</span><span class="o">=</span><span class="n">pinned_params</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">more</span><span class="p">,</span>
+                        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">AttributeError</span><span class="p">):</span>  <span class="c1"># never hide the real error</span>
+                <span class="n">exc</span><span class="o">.</span><span class="n">variations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>  <span class="c1"># the takes already made (and paid for)</span>
+            <span class="k">raise</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_may_fall_back</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">adapter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether a :func:`generate` call may try more than one backend (an unnamed order or a list)."""</span>
+    <span class="k">return</span> <span class="n">adapter</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">or</span> <span class="n">backend</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"auto"</span><span class="p">)</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_with_call_facts</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>

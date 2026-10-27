@@ -70,6 +70,7 @@
       ledger
       register_source
       generate
+      variations
       candidate_of
       art50_checklist
       scan_prompt

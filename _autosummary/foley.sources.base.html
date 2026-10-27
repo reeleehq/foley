@@ -589,6 +589,12 @@ so the derived permission flags stay single-sourced.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.draw_seed" title="foley.sources.base.draw_seed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">draw_seed</span></code></a>()</p></td>
 <td><p>A random seed in <code class="docutils literal notranslate"><span class="pre">0..2**31-1</span></code>, for a seed-capable backend asked for none.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.derived_seed" title="foley.sources.base.derived_seed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derived_seed</span></code></a>(seed, index)</p></td>
+<td><p>The seed of variation <code class="docutils literal notranslate"><span class="pre">index</span></code> of a request seeded with <code class="docutils literal notranslate"><span class="pre">seed</span></code> (#161).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.require_count" title="foley.sources.base.require_count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">require_count</span></code></a>(name, value, *, minimum)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">value</span></code> as an <code class="docutils literal notranslate"><span class="pre">int</span></code>, or <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> unless it is an integer &gt;= <code class="docutils literal notranslate"><span class="pre">minimum</span></code>.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.register_corpus" title="foley.sources.base.register_corpus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_corpus</span></code></a>(adapter)</p></td>
 <td><p>Register <code class="docutils literal notranslate"><span class="pre">adapter</span></code> in <a class="reference internal" href="#foley.sources.base.CORPUS_REGISTRY" title="foley.sources.base.CORPUS_REGISTRY"><code class="xref py py-data docutils literal notranslate"><span class="pre">CORPUS_REGISTRY</span></code></a> (idempotent) and return it.</p></td>
 </tr>
@@ -1179,6 +1185,25 @@ reserved key, rather than recording it as a failed search (#181).</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.base.derived_seed">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">derived_seed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#derived_seed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.derived_seed" title="Link to this definition">#</a></dt>
+<dd><p>The seed of variation <code class="docutils literal notranslate"><span class="pre">index</span></code> of a request seeded with <code class="docutils literal notranslate"><span class="pre">seed</span></code> (#161).</p>
+<p><code class="docutils literal notranslate"><span class="pre">(seed</span> <span class="pre">+</span> <span class="pre">index)</span> <span class="pre">%</span> <span class="pre">_SEED_LIMIT</span></code>: wrapped into the signed 32-bit range every local
+backend takes, so variation 0 is the request itself and each later one is a seed
+of its own. It is <code class="docutils literal notranslate"><span class="pre">seed</span> <span class="pre">+</span> <span class="pre">index</span></code> only below the limit; near it, the seed wraps
+to 0.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">derived_seed</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">derived_seed</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">derived_seed</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">31</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="go">(7, 9, 0)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.base.draw_seed">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">draw_seed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#draw_seed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.draw_seed" title="Link to this definition">#</a></dt>
 <dd><p>A random seed in <code class="docutils literal notranslate"><span class="pre">0..2**31-1</span></code>, for a seed-capable backend asked for none.</p>
@@ -1424,6 +1449,27 @@ the caller supplied, when anything was (#61).</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.base.require_count">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">require_count</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimum</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#require_count"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.require_count" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">value</span></code> as an <code class="docutils literal notranslate"><span class="pre">int</span></code>, or <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> unless it is an integer &gt;= <code class="docutils literal notranslate"><span class="pre">minimum</span></code>.</p>
+<p>Any <a class="reference external" href="https://docs.python.org/3/library/numbers.html#numbers.Integral" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">numbers.Integral</span></code></a> passes (a NumPy integer too); a <code class="docutils literal notranslate"><span class="pre">bool</span></code> does not,
+nor does a float, however whole.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">require_count</span><span class="p">(</span><span class="s2">"n"</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">3</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">require_count</span><span class="p">(</span><span class="s2">"n"</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">ValueError</span>: <span class="n">n must be an integer &gt;= 1, got True</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.base.require_params_mapping">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">require_params_mapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">provider_params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#require_params_mapping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.require_params_mapping" title="Link to this definition">#</a></dt>
 <dd><p>Raise <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> unless <code class="docutils literal notranslate"><span class="pre">provider_params</span></code> is a mapping (#61).</p>
@@ -1621,6 +1667,7 @@ block the operator’s key and plan apply again.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.check_prompt_influence"><code class="docutils literal notranslate"><span class="pre">check_prompt_influence()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.check_provider_params"><code class="docutils literal notranslate"><span class="pre">check_provider_params()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.corpora_in_rings"><code class="docutils literal notranslate"><span class="pre">corpora_in_rings()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.derived_seed"><code class="docutils literal notranslate"><span class="pre">derived_seed()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.draw_seed"><code class="docutils literal notranslate"><span class="pre">draw_seed()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.generated_license"><code class="docutils literal notranslate"><span class="pre">generated_license()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.key_fingerprint"><code class="docutils literal notranslate"><span class="pre">key_fingerprint()</span></code></a></li>
@@ -1631,6 +1678,7 @@ block the operator’s key and plan apply again.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.per_clip_license_meta"><code class="docutils literal notranslate"><span class="pre">per_clip_license_meta()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.recorded_params"><code class="docutils literal notranslate"><span class="pre">recorded_params()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.register_corpus"><code class="docutils literal notranslate"><span class="pre">register_corpus()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.require_count"><code class="docutils literal notranslate"><span class="pre">require_count()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.require_params_mapping"><code class="docutils literal notranslate"><span class="pre">require_params_mapping()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.resolve_source_key"><code class="docutils literal notranslate"><span class="pre">resolve_source_key()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.ring_of"><code class="docutils literal notranslate"><span class="pre">ring_of()</span></code></a></li>

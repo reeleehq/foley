@@ -990,7 +990,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            (``foley.generations.get(cache_key)``), or ``None`` when nothing was kept</span>
 <span class="sd">            (a free backend, a refusal before synthesis, a failed cache write). A</span>
 <span class="sd">            quarantined generation is retrievable: it was billed either way (#107).</span>
+<span class="sd">        variations: Raised from :func:`foley.variations`, the takes already made</span>
+<span class="sd">            (stored :class:`~foley.base.Candidate`\\ s, in order) before the one that</span>
+<span class="sd">            failed; ``None`` otherwise (#161). :func:`foley.variations` sets it on any</span>
+<span class="sd">            exception a take raises, not only this one.</span>
 <span class="sd">    """</span>
+
+    <span class="c1">#: The takes made before the failure, when raised from :func:`foley.variations`.</span>
+    <span class="n">variations</span><span class="p">:</span> <span class="s2">"Optional[list]"</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1079,6 +1086,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">level</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">check_prompt</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">variation</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IngestReport</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Generate a sound via ``backend`` and ingest it (by-value) into ``library``.</span>
@@ -1170,6 +1178,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            never seen by the unsupported-parameter policy. A key the source's</span>
 <span class="sd">            ``provider_params`` policy reserves or prices raises ``ValueError``</span>
 <span class="sd">            before any call, so the cost estimate is the call's.</span>
+<span class="sd">        variation: Which variation of the same request this is (#161; see</span>
+<span class="sd">            :func:`foley.variations`): ``0`` (default) is the request itself, a later</span>
+<span class="sd">            one is a different paid request in the generations cache.</span>
 <span class="sd">        **affordances: Unified generation affordances (``duration_s``, ``model``,</span>
 <span class="sd">            ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,</span>
 <span class="sd">            ``output_format``, ``sample_rate``, ``expand_prompt`` — see</span>
@@ -1239,6 +1250,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">cache</span><span class="o">=</span><span class="n">generations_cache</span><span class="p">,</span>
             <span class="n">reuse_cached</span><span class="o">=</span><span class="n">reuse_cached</span><span class="p">,</span>
             <span class="n">provider_params</span><span class="o">=</span><span class="n">provider_params</span><span class="p">,</span>
+            <span class="n">variation</span><span class="o">=</span><span class="n">variation</span><span class="p">,</span>
             <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="n">UndemuxedAnswer</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># a kept, paid video still not demuxed (#176)</span>
@@ -1765,6 +1777,7 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"level"</span><span class="p">,</span>
         <span class="s2">"check_prompt"</span><span class="p">,</span>
         <span class="s2">"provider_params"</span><span class="p">,</span>
+        <span class="s2">"variation"</span><span class="p">,</span>
     <span class="p">}</span>
 <span class="p">)</span>
 
@@ -1795,9 +1808,18 @@ window.runMermaid = runMermaid;</script>
     <span class="p">}</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">k</span><span class="p">:</span> <span class="n">_manifest_value</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
-        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"store"</span><span class="p">,</span> <span class="s2">"on_flagged"</span><span class="p">,</span> <span class="s2">"watermark"</span><span class="p">,</span> <span class="s2">"repair"</span><span class="p">,</span> <span class="s2">"provider_params"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="s2">"store"</span><span class="p">,</span>
+            <span class="s2">"on_flagged"</span><span class="p">,</span>
+            <span class="s2">"watermark"</span><span class="p">,</span>
+            <span class="s2">"repair"</span><span class="p">,</span>
+            <span class="s2">"provider_params"</span><span class="p">,</span>
+            <span class="s2">"variation"</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">kwargs</span>
     <span class="p">}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"variation"</span><span class="p">):</span>  <span class="c1"># recorded as the cache keys it: only a later take</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"variation"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">facade_run</span><span class="p">(</span>
         <span class="s2">"generate"</span><span class="p">,</span>
         <span class="c1"># A video is recorded by its key: never its bytes, nor a local path (#74).</span>

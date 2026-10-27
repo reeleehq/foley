@@ -122,6 +122,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`ledger`](#foley.ledger)(\*[, targets])                               | Implemented vs planned backends, computed from the registry (never hand-kept).                                                                                                 |
 | [`register_source`](#foley.register_source)(name, config[, adapter])            | Register a live source directly (out-of-tree plugin or a test double).                                                                                                         |
 | [`generate`](#foley.generate)(prompt, \*[, backend, library, ...])       | Generate a sound effect for `prompt` and add it to the library (by-value).                                                                                                     |
+| [`variations`](#foley.variations)(prompt, n, \*[, backend, seed, ...])     | `n` variations of one sound for `prompt`: `n` stored, distinct candidates (#161).                                                                                              |
 | [`candidate_of`](#foley.candidate_of)(result)                                | Wrap a stored [`IngestResult`](foley.index.ingest.html.md#foley.index.ingest.IngestResult) as a generated candidate.                                          |
 | `art50_checklist`(record)                                                                            | Return the per-clip EU AI Act Art.                                                                                                                                             |
 | `scan_prompt`(prompt)                                                                                | Scan a generation `prompt` for trademarked-audio-logo + voice-clone risk.                                                                                                      |
@@ -734,6 +735,20 @@ The key the paid bytes were kept under in the generations cache
 (`foley.generations.get(cache_key)`), or `None` when nothing was kept
 (a free backend, a refusal before synthesis, a failed cache write). A
 quarantined generation is retrievable: it was billed either way (#107).
+
+#### variations
+
+Raised from [`foley.variations()`](#foley.variations), the takes already made
+(stored [`Candidate`](foley.base.html.md#foley.base.Candidate)s, in order) before the one that
+failed; `None` otherwise (#161). [`foley.variations()`](#foley.variations) sets it on any
+exception a take raises, not only this one.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]
+
+#### variations *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[list](https://docs.python.org/3/builtins/stdtypes.html#list)]* *= None*
+
+The takes made before the failure, when raised from [`foley.variations()`](#foley.variations).
 
 ### *class* foley.GenerationsCache(audio, requests)
 
@@ -2528,7 +2543,7 @@ RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
 
   FusedHit\`s, each carrying its raw component scores.
 
-### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, provider_params=None, \*\*affordances)
+### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, provider_params=None, variation=0, \*\*affordances)
 
 Generate a sound effect for `prompt` and add it to the library (by-value).
 
@@ -2623,6 +2638,10 @@ training uses).
     A key the backend’s config `provider_params` policy reserves (the
     prompt, an output path) or prices (`duration_s`, the model) raises
     `ValueError` before anything is paid for: use the unified argument.
+  * **variation** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Which variation of the same request this is (#161): `0`
+    (default) is the request itself; a later one is a different paid request
+    in the generations cache, so it is a new sound even from a backend that
+    takes no seed. [`variations()`](#foley.variations) sets it; most callers never do.
   * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format`, `sample_rate`, `expand_prompt`, `video` — see
@@ -3653,6 +3672,47 @@ block the operator’s key and plan apply again.
 
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For a field an account cannot carry.
+
+### foley.variations(prompt, n, , backend=None, seed=None, budget=None, provider_params=None, \*\*kwargs)
+
+`n` variations of one sound for `prompt`: `n` stored, distinct candidates (#161).
+
+The first is [`generate()`](#foley.generate) as asked (`backend=None` walks the generation
+order); the others come from the backend that made it, so all `n` are one
+generator’s takes on one request. Where that backend records its seed, take `i`
+is `generate(..., seed=derived_seed(first_seed, i))`
+([`derived_seed()`](foley.sources.base.html.md#foley.sources.base.derived_seed): the first seed plus `i`, wrapped into
+the signed 32-bit seed range), so it is reproducible like any seeded clip and the
+same request as asking for that seed; where it records none, take `i` is keyed
+apart in the generations cache, so a backend that takes no seed (ElevenLabs) makes
+`n` paid sounds, each replayable, rather than replaying one `n` times. Each
+take is one call, priced and reserved like any other, under one budget for the
+whole set.
+
+* **Parameters:**
+  * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description.
+  * **n** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – How many variations (an integer >= 1).
+  * **backend** – As [`generate()`](#foley.generate)’s; the variations after the first are pinned to
+    the backend the first came from.
+  * **seed** ([`int`](https://docs.python.org/3/builtins/functions.html#int) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – The first variation’s seed (default: the backend’s own, or drawn).
+  * **budget** – One [`Budget`](#foley.Budget) for all `n` calls (default: the active run’s,
+    else one fresh default budget, $1, for the whole set, not one per take).
+  * **provider_params** – As [`generate()`](#foley.generate)’s. Per backend for an order, the takes
+    after the first get only the entry of the backend they are pinned to.
+  * **\*\*kwargs** – Everything else [`generate()`](#foley.generate) takes (`library`, `store`,
+    affordances such as `duration_s`, …).
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]
+* **Returns:**
+  The `n` stored [`Candidate`](#foley.Candidate)s, in order (a byte-identical repeat is
+  the library’s existing sound, as with [`generate()`](#foley.generate)).
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `n` is not an integer >= 1, or `variation` is passed.
+  * [**GenerationError**](#foley.GenerationError) – As [`generate()`](#foley.generate), for the variation that failed.
+  * [**Exception**](https://docs.python.org/3/builtins/exceptions.html#Exception) – Whatever [`generate()`](#foley.generate) raises for a take (`BudgetExceeded`
+        when the set outruns the budget, `SourceConfigurationError`,
+        `EgressBlocked`, …). Whatever it is, its `variations` attribute holds
+        the takes already made (stored, and paid for), in order.
 
 ### foley.vector_search(qvec, , vindex, k=10, where=None)
 

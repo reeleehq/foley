@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-27T16:34:34Z",
+  "built_at": "2026-10-27T17:16:01Z",
   "package": {
     "name": "foley",
     "version": "0.0.91",
@@ -9,26 +9,24 @@
   },
   "git": {
     "available": true,
-    "commit": "82b3c427a39eed8540affc95848692a861594917",
-    "short_commit": "82b3c42",
+    "commit": "08176bd80900a344666686623c754522467188c4",
+    "short_commit": "08176bd",
     "branch": "main",
-    "tags": [
-      "0.0.91"
-    ],
+    "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/reeleehq/foley",
-    "commit_url": "https://github.com/reeleehq/foley/commit/82b3c427a39eed8540affc95848692a861594917",
+    "commit_url": "https://github.com/reeleehq/foley/commit/08176bd80900a344666686623c754522467188c4",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "reeleehq/foley",
-    "sha": "b33c32f292ab0a03a6ab722e1bfa8adf135f9117",
+    "sha": "ef4575fa417204f2eb776b6fc6be2d90da8423b3",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "40534476025",
-    "run_url": "https://github.com/reeleehq/foley/actions/runs/40534476025",
+    "run_id": "40541347644",
+    "run_url": "https://github.com/reeleehq/foley/actions/runs/40541347644",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -58,7 +56,7 @@
   },
   "site": {
     "modules_documented": 109,
-    "objects_documented": 1531
+    "objects_documented": 1536
   },
   "pypi": {
     "checked": true,
@@ -66,7 +64,7 @@
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 82b3c427a39eed8540affc95848692a861594917\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 08176bd80900a344666686623c754522467188c4\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,

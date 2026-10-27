@@ -32,6 +32,8 @@ foley.sources.base
       api_license
       generated_license
       draw_seed
+      derived_seed
+      require_count
       register_corpus
       ring_of
       corpora_in_rings

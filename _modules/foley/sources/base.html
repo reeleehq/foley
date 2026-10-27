@@ -753,6 +753,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numbers</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
@@ -802,6 +803,8 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"api_license"</span><span class="p">,</span>
     <span class="s2">"generated_license"</span><span class="p">,</span>
     <span class="s2">"draw_seed"</span><span class="p">,</span>
+    <span class="s2">"derived_seed"</span><span class="p">,</span>
+    <span class="s2">"require_count"</span><span class="p">,</span>
     <span class="s2">"CORPUS_REGISTRY"</span><span class="p">,</span>
     <span class="s2">"register_corpus"</span><span class="p">,</span>
     <span class="s2">"ring_of"</span><span class="p">,</span>
@@ -1904,6 +1907,48 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    True</span>
 <span class="sd">    """</span>
     <span class="k">return</span> <span class="n">secrets</span><span class="o">.</span><span class="n">randbelow</span><span class="p">(</span><span class="n">_SEED_LIMIT</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="derived_seed">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.derived_seed">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">derived_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The seed of variation ``index`` of a request seeded with ``seed`` (#161).</span>
+
+<span class="sd">    ``(seed + index) % _SEED_LIMIT``: wrapped into the signed 32-bit range every local</span>
+<span class="sd">    backend takes, so variation 0 is the request itself and each later one is a seed</span>
+<span class="sd">    of its own. It is ``seed + index`` only below the limit; near it, the seed wraps</span>
+<span class="sd">    to 0.</span>
+
+<span class="sd">    &gt;&gt;&gt; derived_seed(7, 0), derived_seed(7, 2), derived_seed(2**31 - 1, 1)</span>
+<span class="sd">    (7, 9, 0)</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">index</span><span class="p">))</span> <span class="o">%</span> <span class="n">_SEED_LIMIT</span></div>
+
+
+
+<div class="viewcode-block" id="require_count">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.require_count">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">require_count</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">minimum</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``value`` as an ``int``, or ``ValueError`` unless it is an integer &gt;= ``minimum``.</span>
+
+<span class="sd">    Any :class:`numbers.Integral` passes (a NumPy integer too); a ``bool`` does not,</span>
+<span class="sd">    nor does a float, however whole.</span>
+
+<span class="sd">    &gt;&gt;&gt; require_count("n", 3, minimum=1)</span>
+<span class="sd">    3</span>
+<span class="sd">    &gt;&gt;&gt; require_count("n", True, minimum=1)</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: n must be an integer &gt;= 1, got True</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">numbers</span><span class="o">.</span><span class="n">Integral</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="n">minimum</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be an integer &gt;= </span><span class="si">{</span><span class="n">minimum</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 
 
 

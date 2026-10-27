@@ -318,6 +318,20 @@ The key the paid bytes were kept under in the generations cache
 (a free backend, a refusal before synthesis, a failed cache write). A
 quarantined generation is retrievable: it was billed either way (#107).
 
+#### variations
+
+Raised from [`foley.variations()`](foley.html.md#foley.variations), the takes already made
+(stored [`Candidate`](foley.base.html.md#foley.base.Candidate)s, in order) before the one that
+failed; `None` otherwise (#161). [`foley.variations()`](foley.html.md#foley.variations) sets it on any
+exception a take raises, not only this one.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]
+
+#### variations *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[list](https://docs.python.org/3/builtins/stdtypes.html#list)]* *= None*
+
+The takes made before the failure, when raised from [`foley.variations()`](foley.html.md#foley.variations).
+
 ### *exception* foley.sources.RecognizableVoiceRefusal(message, , hits, report)
 
 Bases: [`SafetyRefusal`](#foley.sources.SafetyRefusal)
@@ -574,7 +588,7 @@ an already-registered name (e.g. a test double) is never overwritten.
 * **Returns:**
   The list of discovered source names.
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -667,6 +681,9 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     never seen by the unsupported-parameter policy. A key the source’s
     `provider_params` policy reserves or prices raises `ValueError`
     before any call, so the cost estimate is the call’s.
+  * **variation** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Which variation of the same request this is (#161; see
+    [`foley.variations()`](foley.html.md#foley.variations)): `0` (default) is the request itself, a later
+    one is a different paid request in the generations cache.
   * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format`, `sample_rate`, `expand_prompt` — see
