@@ -19,7 +19,14 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import wanted_license_ids
 from .._keyless import get_bytes, get_json, raw_id
 from .._license_gate import license_for_item, native_license_filter
-from ..base import api_license, as_names, merge_provider_params, paging_params
+from ..base import (
+    api_license,
+    as_names,
+    merge_provider_params,
+    page_size,
+    paging_params,
+    provider_params_policy,
+)
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -98,7 +105,7 @@ class OpenverseAdapter:
             return []
         params = {
             "q": query[: api["max_query_chars"]],
-            "page_size": min(int(k), api["max_page_size"]),
+            "page_size": page_size(self.config, k),
             "license": native_license_filter(
                 wanted, api["license_native"], default=api["license_default"]
             ),
@@ -120,7 +127,7 @@ class OpenverseAdapter:
         if category:
             params[pm["kind"]["native_name"]] = category
         params = merge_provider_params(
-            params, provider_params, policy=self.config.get("provider_params")
+            params, provider_params, policy=provider_params_policy(self.config)
         )
         out = []
         for row in self.invoke_native(api["search_endpoint"]["path"], **params).get(

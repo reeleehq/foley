@@ -39,7 +39,9 @@ from ..base import (
     api_license,
     merge_provider_params,
     native_choice,
+    page_size,
     paging_params,
+    provider_params_policy,
     resolve_source_key,
 )
 from .._license_gate import is_cc0_only, license_for_item
@@ -206,7 +208,7 @@ class FreesoundAdapter:
         params: dict = {
             "query": query,
             "fields": self.config["fields"],
-            "page_size": min(int(k), 150),
+            "page_size": page_size(self.config, k),
         }
         only = wanted_license_ids(self.config, license)
         if only == []:  # a licence this source does not accept: nothing can match
@@ -243,7 +245,7 @@ class FreesoundAdapter:
             native = self.config["param_map"]["similar_to"]["native_name"]
             params[native] = _raw_id(similar_to)
         params = merge_provider_params(
-            params, provider_params, policy=self.config.get("provider_params")
+            params, provider_params, policy=provider_params_policy(self.config)
         )
 
         data = self.invoke_native(

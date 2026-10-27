@@ -26,7 +26,13 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import wanted_license_ids
 from .._keyless import get_bytes, get_json, raw_id, strip_html
 from .._license_gate import license_for_item
-from ..base import api_license, merge_provider_params, paging_params
+from ..base import (
+    api_license,
+    merge_provider_params,
+    page_size,
+    paging_params,
+    provider_params_policy,
+)
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -117,14 +123,14 @@ class WikimediaCommonsAdapter:
             generator="search",
             gsrnamespace=api["namespace_file"],
             gsrsearch=query + api["search_suffix"],
-            gsrlimit=min(int(k), api["max_page_size"]),
+            gsrlimit=page_size(self.config, k),
             prop="imageinfo",
             iiprop=_IMAGEINFO,
         )
         params.update(paging_params(self.config, page, params["gsrlimit"]))
         data = self.invoke_native(
             **merge_provider_params(
-                params, provider_params, policy=self.config.get("provider_params")
+                params, provider_params, policy=provider_params_policy(self.config)
             )
         )
         pages = sorted(

@@ -169,6 +169,10 @@ whose own default is not the model's must always receive an explicit value.
       `license` block + `kind`).
 - [ ] `adapter.py` if REST/local logic is non-trivial; else rely on the shared base adapter.
 - [ ] `param_map` covers every affordance the source supports; unsupported → `warn`.
+- [ ] Paging: `param_map['k']['max']` = the API's page-size cap (read by `page_size`), and
+      `param_map['page']['result_window']` = the deepest result one query serves, when it
+      has one (a page past it is refused before any call; its paging fields then cannot be
+      set through `provider_params`).
 - [ ] Generate source with `prompt_influence`: `coerce` + `native_default` declared (and
       `distilled` for a distilled checkpoint).
 - [ ] License flags set correctly, especially `cache_bytes_ok` vs `redistribute_standalone_ok`.

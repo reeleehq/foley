@@ -25,10 +25,11 @@ SOURCE_CONFIG = {
     "optional_dependencies": ["requests"],  # foley[wikimedia-commons]; imported lazily
     "param_map": {
         "query": {"native_name": "gsrsearch", "required": True},
-        "k": {"native_name": "gsrlimit"},
+        "k": {"native_name": "gsrlimit", "max": 50},
         "license": {"native_name": "license", "adapter_handled": True},
-        # MediaWiki pages by offset: (page - 1) * the clamped gsrlimit.
-        "page": {"native_name": "gsroffset", "as": "offset"},
+        # MediaWiki pages by offset: (page - 1) * the clamped gsrlimit; search serves
+        # offset + limit up to about 10,000.
+        "page": {"native_name": "gsroffset", "as": "offset", "result_window": 10000},
     },
     "supported_affordances": ["query", "k", "license", "page"],
     "on_unsupported_param": "warn",
@@ -36,7 +37,6 @@ SOURCE_CONFIG = {
         "base_url": "https://commons.wikimedia.org/w/api.php",
         "namespace_file": 6,
         "search_suffix": " filetype:audio",
-        "max_page_size": 50,
         # Wikimedia asks for a descriptive agent with a way to reach the operator.
         "user_agent": "foley/1 (https://github.com/reeleehq/foley; sound-effects retrieval)",
     },

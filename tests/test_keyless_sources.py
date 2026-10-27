@@ -701,3 +701,57 @@ def test_openverse_freesound_rows_stay_by_reference_whatever_the_case():
     jamendo = Fake(("/audio/", Resp(_row("j", "cc0", source="jamendo"))))
     with pytest.raises(LookupError, match="does not take from Openverse"):
         OpenverseAdapter(http=jamendo).get("openverse:j")
+
+
+# #168: a page past a source's result cap is refused before any call
+
+
+def test_openverse_refuses_a_page_past_its_result_cap():
+    ov, http = _openverse()
+    with pytest.raises(ValueError, match="241-260, past the 240"):
+        ov.search("door", k=20, page=13)  # results 241..260 of a 240-deep query
+    with pytest.raises(ValueError, match="239-245"):
+        ov.search("door", k=7, page=35)  # straddles the window: offset + limit > 240
+    assert http.calls == []
+    ov.search("door", k=20, page=12)  # results 221..240: the last full page
+    assert http.calls[0]["params"]["page"] == 12
+
+
+def test_the_cap_counts_the_clamped_page_size():
+    wc, http = _commons()
+    wc.search("door", k=99, page=200)  # clamped to 50 a page: 9,951..10,000
+    assert http.calls[0]["params"]["gsroffset"] == 9950
+    with pytest.raises(ValueError, match="past the 10000"):
+        _commons()[0].search("door", k=99, page=201)
+
+
+def test_add_from_raises_a_page_past_the_cap_instead_of_reporting_it(library):
+    from foley.sources import add_from
+
+    ad, http = _openverse()
+    with pytest.raises(ValueError, match="past the 240"):
+        add_from("openverse", query="door", limit=50, page=13, library=library,
+                 adapter=ad)  # limit 50 is clamped to 20 a page
+    assert http.calls == []
+    report = add_from("openverse", query="door", limit=50, page=12, library=library,
+                      adapter=_openverse()[0])
+    assert report.exception is None
+
+
+def test_a_capped_source_reserves_its_paging_fields_from_provider_params(library):
+    from foley.sources import add_from
+
+    for native in ({"page": 50}, {"page_size": 5}):
+        ad, http = _openverse()
+        with pytest.raises(ValueError, match="use k= and page="):
+            add_from("openverse", query="door", library=library, adapter=ad,
+                     provider_params=native)
+        with pytest.raises(ValueError, match="sets the paging"):
+            ad.search("door", provider_params=native)
+        assert http.calls == []
+    wc, http = _commons()
+    with pytest.raises(ValueError, match="sets the paging"):
+        wc.search("door", provider_params={"gsroffset": 20000})
+    ia, http = _ia()  # no result window: its paging fields stay the caller's to set
+    ia.search("door", provider_params={"rows": 30})
+    assert http.calls[0]["params"]["rows"] == 30
