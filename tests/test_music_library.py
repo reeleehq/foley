@@ -420,6 +420,9 @@ def _fake_ffprobe(tmp_path, *, stdout, code=0):
         ("audio\n", 1, False),
     ],
 )
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="the fake ffprobe is a #! script (POSIX only)"
+)
 def test_has_audio_stream_reads_ffprobe_streams(tmp_path, stdout, code, expected):
     exe = _fake_ffprobe(tmp_path, stdout=stdout, code=code)
     assert video.has_audio_stream(str(tmp_path), ffprobe=exe) is expected
@@ -700,8 +703,23 @@ def test_a_store_refusal_names_no_local_directory(tmp_path):
     assert str(tmp_path) not in row.error and "/tmp" not in row.error
     assert not list(tmp_path.rglob("evil*"))
     (row,) = _acquire(["x" * 300], Fetcher({_url("x" * 300): b"a"}), out=out)
-    assert row.status == FAILED and "too long" in row.error
-    assert str(tmp_path) not in row.error
+    assert row.status == FAILED and row.error.startswith("could not save")
+    assert str(tmp_path) not in row.error and str(tmp_path).replace("\\", "\\\\") not in row.error
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "[Errno 36] File name too long: '/home/u/o/x.mp3'",
+        "[Errno 22] Invalid argument: 'C:\\Users\\u\\o\\x.mp3'",
+        "[Errno 22] Invalid argument: 'C:\\\\Users\\\\u\\\\o\\\\x.mp3'",
+    ],
+)
+def test_a_store_error_keeps_the_file_name_and_drops_every_local_directory(reason):
+    from foley.sources.music_library.acquisition import _store_error
+
+    error = _store_error(KeyError(reason), name="x.mp3")
+    assert "x.mp3'" in error and "Users" not in error and "home" not in error
 
 
 def test_a_kept_row_keeps_the_url_and_mirror_that_served_it(tmp_path):

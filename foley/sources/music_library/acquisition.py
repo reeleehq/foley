@@ -116,7 +116,8 @@ _STORE_ERRORS: tuple[type[BaseException], ...] = (KeyError, OSError, ValueError)
 #: The directories of an absolute local path in an error message (POSIX, Windows):
 #: dropped from a row's ``error``, which is written into a shareable table.
 _LOCAL_DIRS = re.compile(
-    r"(?<![\w.~:/-])/(?:[^\s'\"/]+/)+|\b[A-Za-z]:\\(?:[^\s'\"\\]+\\)+"
+    # POSIX dirs; Windows dirs with one backslash or two (an OSError's repr escapes them)
+    r"(?<![\w.~:/-])/(?:[^\s'\"/]+/)+|\b[A-Za-z]:(?:\\{1,2}[^\s'\"\\]+)*\\{1,2}"
 )
 
 Titles = Union[Iterable[str], Mapping[str, Mapping[str, Any]]]
