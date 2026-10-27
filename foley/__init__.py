@@ -52,6 +52,8 @@ lazy-imported inside the audio/QC functions that need them (install via the
 ``foley[audio]`` extra), so a bare install imports cleanly.
 """
 
+import contextlib
+
 from . import audio
 from .audio import (
     WORKING_SAMPLE_RATE,
@@ -933,7 +935,8 @@ def variations(
         backend: As :func:`generate`'s; the variations after the first are pinned to
             the backend the first came from.
         seed: The first variation's seed (default: the backend's own, or drawn).
-        budget: A :class:`Budget` for all ``n`` calls (default: as :func:`generate`).
+        budget: One :class:`Budget` for all ``n`` calls (default: the active run's,
+            else one fresh default budget, $1, for the whole set, not one per take).
         provider_params: As :func:`generate`'s. Per backend for an order, the takes
             after the first get only the entry of the backend they are pinned to.
         **kwargs: Everything else :func:`generate` takes (``library``, ``store``,
@@ -994,7 +997,8 @@ def variations(
                     )
                 )
         except Exception as exc:
-            exc.variations = list(out)  # the takes already made (and paid for)
+            with contextlib.suppress(AttributeError):  # never hide the real error
+                exc.variations = list(out)  # the takes already made (and paid for)
             raise
     return out
 

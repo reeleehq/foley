@@ -1084,6 +1084,8 @@ def generate(*args, **kwargs) -> IngestReport:
         )
         if k in kwargs
     }
+    if not params.get("variation"):  # recorded as the cache keys it: only a later take
+        params.pop("variation", None)
     with facade_run(
         "generate",
         # A video is recorded by its key: never its bytes, nor a local path (#74).

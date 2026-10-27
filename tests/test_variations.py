@@ -270,5 +270,5 @@ def test_each_take_is_traceable_to_its_variation(library, source):
     foley.variations("sleet", 2, backend="seedless", library=library)
     kept = foley.generations.find("sleet", backend="seedless")
     assert sorted(entry.get("variation", 0) for _, entry in kept) == [0, 1]
-    params = [m["params"].get("variation") for m in store.values()]
+    params = [m["params"].get("variation", 0) for m in store.values()]
     assert sorted(params) == [0, 1]  # each take's run manifest names its variation
