@@ -96,9 +96,9 @@ def test_opting_in_puts_elevenlabs_first(paid_keys, monkeypatch):
     monkeypatch.setenv("FOLEY_GENERATE_PAID", "1")
     assert generate_module.default_generate_backend() == "elevenlabs"
     # The bound is the dearest backend the order would try (one of them bills).
-    assert foley.estimate("generate", duration=2) == pytest.approx(0.0206)
+    assert foley.estimate("generate", duration_s=2) == pytest.approx(0.0206)
     monkeypatch.delenv("FAL_KEY")
-    assert foley.estimate("generate", duration=2) == pytest.approx(0.004)
+    assert foley.estimate("generate", duration_s=2) == pytest.approx(0.004)
 
 
 def test_an_empty_order_is_an_error():
@@ -124,7 +124,7 @@ def test_auto_generation_is_served_by_elevenlabs_direct(paid_keys, monkeypatch, 
     monkeypatch.setenv("FOLEY_GENERATE_PAID", "1")
     transport = FakeTransport(FakeResponse(200, None, encode(_tone(2.0), SR)))
     _swap_sources(monkeypatch, {"elevenlabs": ElevenLabsAdapter(http=transport)})
-    cand = foley.generate("a clock ticking", library=library, duration=2, output_format="mp3")
+    cand = foley.generate("a clock ticking", library=library, duration_s=2, output_format="mp3")
     assert cand.sound.license.source == "elevenlabs"
     assert cand.sound.license.commercial_ok is True  # the paid plan's licence row
     assert cand.cost_estimate_usd == pytest.approx(0.004)
@@ -248,7 +248,7 @@ def test_an_injected_adapter_is_one_backend_named_by_its_config(paid_keys, monke
 def test_the_credits_header_is_noted(paid_keys):
     resp = FakeResponse(200, None, encode(_tone(1.0), SR))
     resp.headers = {"Character-Cost": "10"}
-    clip = ElevenLabsAdapter(http=FakeTransport(resp)).generate("a knock", duration=1.0)
+    clip = ElevenLabsAdapter(http=FakeTransport(resp)).generate("a knock", duration_s=1.0)
     assert "ElevenLabs charged 10 credits for this call" in clip.notes
 
 
@@ -289,7 +289,7 @@ def test_generate_levels_on_request_and_records_it(paid_keys, monkeypatch, libra
     transport = FakeTransport(FakeResponse(200, None, encode(_tone(2.0, amp=0.9), SR)))
     adapter = ElevenLabsAdapter(http=transport)
     cand = foley.generate(
-        "a bell", backend="elevenlabs", adapter=adapter, library=library, level="sfx_fg", duration=2
+        "a bell", backend="elevenlabs", adapter=adapter, library=library, level="sfx_fg", duration_s=2
     )
     assert any(t.startswith("levelled from") for t in cand.sound.license.transformations)
     assert cand.sound.loudness_lufs == pytest.approx(-25.0, abs=0.7)
@@ -340,7 +340,7 @@ def test_generate_puts_the_verdict_on_the_stored_record(paid_keys, fake_embedder
     idx = MemoryIndex(dim=_AlignedFake.dim)
     lib = SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=_AlignedFake(0.05))
     adapter = ElevenLabsAdapter(http=FakeTransport(FakeResponse(200, None, encode(_tone(1.0), SR))))
-    cand = foley.generate("a page turn", backend="elevenlabs", adapter=adapter, library=lib, duration=1)
+    cand = foley.generate("a page turn", backend="elevenlabs", adapter=adapter, library=lib, duration_s=1)
     assert cand.sound.qc["prompt_match"]["status"] == "mismatch"
     assert lib[cand.sound.id].qc["prompt_match"]["status"] == "mismatch"  # persisted
     assert any("prompt match: MISMATCH" in n for n in cand.notes)
@@ -348,7 +348,7 @@ def test_generate_puts_the_verdict_on_the_stored_record(paid_keys, fake_embedder
 
 def test_generate_says_unchecked_with_a_bag_of_words_embedder(paid_keys, library):
     adapter = ElevenLabsAdapter(http=FakeTransport(FakeResponse(200, None, encode(_tone(1.0), SR))))
-    cand = foley.generate("a page turn", backend="elevenlabs", adapter=adapter, library=library, duration=1)
+    cand = foley.generate("a page turn", backend="elevenlabs", adapter=adapter, library=library, duration_s=1)
     assert cand.sound.qc["prompt_match"]["status"] == "unchecked"
     assert any(n.startswith("prompt match: unchecked") for n in cand.notes)
 

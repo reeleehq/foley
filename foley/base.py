@@ -162,8 +162,15 @@ QUERY_AFFORDANCES: dict[str, Affordance] = {
 #: Unified generation-stage parameters (generate backends map onto these).
 GENERATION_AFFORDANCES: dict[str, Affordance] = {
     "prompt": Affordance("prompt", str, "Sound description", stage="generate"),
-    "duration": Affordance(
-        "duration", float, "Seconds; None => backend default", stage="generate"
+    "duration_s": Affordance(
+        "duration_s", float, "Seconds; None => backend auto", stage="generate"
+    ),
+    "model": Affordance(
+        "model",
+        str,
+        "Pin a model / version (stored as generator_version); None => the backend's",
+        stage="generate",
+        carries_meaning=True,
     ),
     "prompt_influence": Affordance(
         "prompt_influence",
@@ -191,6 +198,12 @@ GENERATION_AFFORDANCES: dict[str, Affordance] = {
         "output_format", str, "wav|opus|mp3", "wav", "generate"
     ),
 }
+
+
+#: Generation affordances renamed since a release (#75), ``{new: old}``: the old
+#: spelling raises a ``TypeError`` naming the new one, and the generations cache
+#: still finds entries kept under the old name.
+RENAMED_AFFORDANCES: dict[str, str] = {"duration_s": "duration"}
 
 
 # ---------------------------------------------------------------------------
@@ -354,6 +367,18 @@ class LicenseRecord(SerializableMixin):
         None  # {"present": True, "method": "audioseal", "version": ...}
     )
     c2pa_manifest_ref: Optional[str] = None
+
+    @property
+    def generation_reproducible(self) -> Optional[bool]:
+        """Whether this generated clip can be made again: ``True`` iff a seed was recorded.
+
+        ``None`` for a sound that was not generated. A backend with no seed
+        (ElevenLabs, Sonilo) records none, so its clips read ``False`` rather than
+        carrying a seed that would reproduce nothing (#75).
+        """
+        if not self.is_ai_generated:
+            return None
+        return self.generation_seed is not None
 
     # safety / disclosure
     contains_recognizable_voice: bool = False

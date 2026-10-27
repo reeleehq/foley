@@ -38,7 +38,7 @@ SOURCE_CONFIG = {
     # unified foley GENERATION_AFFORDANCES -> StableAudioPipeline native param names.
     "param_map": {
         "prompt": {"native_name": "prompt", "required": True},
-        "duration": {"native_name": "audio_end_in_s"},
+        "duration_s": {"native_name": "audio_end_in_s"},
         # foley prompt_influence (0..1) -> native guidance_scale, linear 1..15
         # (foley.sources.base.native_adherence); None -> native_default, the
         # model's own 7.0. NB: the CFG kwarg is 'guidance_scale' (NOT 'cfg_scale');
@@ -55,7 +55,7 @@ SOURCE_CONFIG = {
     },
     "supported_affordances": [
         "prompt",
-        "duration",
+        "duration_s",
         "prompt_influence",
         "negative_prompt",
         "steps",

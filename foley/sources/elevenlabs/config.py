@@ -40,7 +40,9 @@ SOURCE_CONFIG = {
     # 'in' marks whether the field is a JSON body field or a URL query param.
     "param_map": {
         "prompt": {"native_name": "text", "required": True, "in": "body"},
-        "duration": {"native_name": "duration_seconds", "in": "body"},  # None => auto
+        "duration_s": {"native_name": "duration_seconds", "in": "body"},  # None => auto
+        # Pin the model (eleven_text_to_sound_v2 | _v3); None => native_defaults' one.
+        "model": {"native_name": "model_id", "in": "body"},
         # 0..1 on both sides; None -> omitted, so the API applies its own default.
         "prompt_influence": {
             "native_name": "prompt_influence",
@@ -87,7 +89,8 @@ SOURCE_CONFIG = {
     },
     "supported_affordances": [
         "prompt",
-        "duration",
+        "duration_s",
+        "model",
         "prompt_influence",
         "loop",
         "output_format",

@@ -436,4 +436,4 @@ def test_generation_affordances_well_formed():
         assert isinstance(aff, Affordance)
         assert aff.name == name
         assert aff.stage == "generate"
-    assert GENERATION_AFFORDANCES["duration"].stage == "generate"
+    assert GENERATION_AFFORDANCES["duration_s"].stage == "generate"

@@ -191,7 +191,7 @@ class FalAdapter:
         args = dict(nd.get("fixed_arguments") or {})
         args.update(_integral(self.config, native_request(self.config, affordances)))
         args[param_map["prompt"]["native_name"]] = prompt
-        duration_name = (param_map.get("duration") or {}).get("native_name")
+        duration_name = (param_map.get("duration_s") or {}).get("native_name")
         default_s = nd.get("duration_default_s")
         if duration_name and duration_name not in args and default_s is not None:
             args[duration_name] = float(default_s)
@@ -241,7 +241,7 @@ class FalAdapter:
 
             native_adherence(self.config, affordances["prompt_influence"], notes)
         if (
-            affordances.get("duration") is None
+            affordances.get("duration_s") is None
             and nd.get("duration_default_s") is not None
         ):
             notes.append(
@@ -295,8 +295,8 @@ def _actual_cost(config: dict, args: dict) -> Optional[float]:
     :func:`foley.cost.actual_call_cost`)."""
     from ...cost import actual_call_cost
 
-    name = (config["param_map"].get("duration") or {}).get("native_name")
-    return actual_call_cost(config, duration=args.get(name) if name else None)
+    name = (config["param_map"].get("duration_s") or {}).get("native_name")
+    return actual_call_cost(config, duration_s=args.get(name) if name else None)
 
 
 def _integral(config: dict, native: dict) -> dict:

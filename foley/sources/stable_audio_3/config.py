@@ -30,7 +30,7 @@ SOURCE_CONFIG = {
     "optional_dependencies": [],  # the checkout's own venv carries ai_edge_litert etc.
     "param_map": {
         "prompt": {"native_name": "--prompt", "required": True},
-        "duration": {"native_name": "--seconds"},
+        "duration_s": {"native_name": "--seconds"},
         # Distilled: a requested prompt_influence is noted and not applied (#70).
         "prompt_influence": {
             "native_name": "--cfg",
@@ -43,7 +43,7 @@ SOURCE_CONFIG = {
     },
     "supported_affordances": [
         "prompt",
-        "duration",
+        "duration_s",
         "prompt_influence",
         "negative_prompt",
         "steps",

@@ -221,7 +221,7 @@ def check_provider_params(
             raise ValueError(
                 f"provider_params[{key!r}] changes the price of the call, which foley "
                 "estimates and reserves from its own request: use the unified "
-                "argument (e.g. duration=) or the source config instead"
+                "argument (e.g. duration_s=) or the source config instead"
             )
     return dict(provider_params)
 

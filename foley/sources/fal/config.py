@@ -77,7 +77,7 @@ SOURCE_CONFIGS = (
         api={"endpoint_id": "fal-ai/stable-audio-3/small/sfx/text-to-audio"},
         param_map={
             "prompt": {"native_name": "prompt", "required": True},
-            "duration": {"native_name": "duration"},
+            "duration_s": {"native_name": "duration"},
             # Distilled (post-trained for CFG 1, 8 steps): a requested prompt_influence
             # is noted and not applied (foley.sources.base.native_adherence, #70).
             "prompt_influence": {
@@ -100,7 +100,7 @@ SOURCE_CONFIGS = (
         },
         supported_affordances=[
             "prompt",
-            "duration",
+            "duration_s",
             "prompt_influence",
             "negative_prompt",
             "steps",
@@ -171,7 +171,7 @@ SOURCE_CONFIGS = (
         api={"endpoint_id": "mirelo-ai/sfx2.0/text-to-audio"},
         param_map={
             "prompt": {"native_name": "prompt", "required": True},
-            "duration": {"native_name": "duration"},
+            "duration_s": {"native_name": "duration"},
             "negative_prompt": {"native_name": "negative_prompt"},
             "seed": {"native_name": "seed"},
             "output_format": {
@@ -181,7 +181,7 @@ SOURCE_CONFIGS = (
         },
         supported_affordances=[
             "prompt",
-            "duration",
+            "duration_s",
             "negative_prompt",
             "seed",
             "output_format",
@@ -219,7 +219,7 @@ SOURCE_CONFIGS = (
         api={"endpoint_id": "fal-ai/elevenlabs/sound-effects/v2"},
         param_map={
             "prompt": {"native_name": "text", "required": True},
-            "duration": {
+            "duration_s": {
                 "native_name": "duration_seconds"
             },  # None => the model decides
             "prompt_influence": {
@@ -240,7 +240,7 @@ SOURCE_CONFIGS = (
         },
         supported_affordances=[
             "prompt",
-            "duration",
+            "duration_s",
             "prompt_influence",
             "loop",
             "output_format",
@@ -272,14 +272,14 @@ SOURCE_CONFIGS = (
         api={"endpoint_id": "sonilo/v1.1/text-to-sound-effects"},
         param_map={
             "prompt": {"native_name": "prompt", "required": True},
-            "duration": {"native_name": "duration"},
+            "duration_s": {"native_name": "duration"},
             "output_format": {
                 "native_name": "audio_format",
                 "to_native_map": {"wav": "wav", "flac": "flac", "mp3": "mp3"},
             },
         },
         # No sample-count knob: one clip per call (checked live: `audios` held one).
-        supported_affordances=["prompt", "duration", "output_format"],
+        supported_affordances=["prompt", "duration_s", "output_format"],
         unsupported_affordances=[
             "prompt_influence",
             "negative_prompt",
@@ -314,7 +314,7 @@ SOURCE_CONFIGS = (
         api={"endpoint_id": "fal-ai/mmaudio-v2/text-to-audio"},
         param_map={
             "prompt": {"native_name": "prompt", "required": True},
-            "duration": {"native_name": "duration"},
+            "duration_s": {"native_name": "duration"},
             "prompt_influence": {
                 "native_name": "cfg_strength",
                 "coerce": {"kind": "linear", "lo": 0.0, "hi": 20.0},
@@ -326,7 +326,7 @@ SOURCE_CONFIGS = (
         },
         supported_affordances=[
             "prompt",
-            "duration",
+            "duration_s",
             "prompt_influence",
             "negative_prompt",
             "steps",
@@ -381,7 +381,7 @@ for _config in SOURCE_CONFIGS:
                 *(_config["native_defaults"].get("fixed_arguments") or {}),
             }
         ),
-        "priced": [(_pm.get("duration") or {}).get("native_name") or "duration"],
+        "priced": [(_pm.get("duration_s") or {}).get("native_name") or "duration"],
     }
 
 #: The fal source names, in the order above (the first is the recommended one).

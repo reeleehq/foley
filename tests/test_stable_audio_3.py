@@ -50,7 +50,7 @@ def _arg(cmd, flag):
 def test_argv_is_built_from_the_unified_affordances(home):
     run = FakeRunner()
     clip = StableAudio3Adapter(runner=run, home=home).generate(
-        "a door creak", duration=4, seed=7
+        "a door creak", duration_s=4, seed=7
     )
     cmd = run.calls[0]["cmd"]
     assert (_arg(cmd, "--seconds"), _arg(cmd, "--steps"), _arg(cmd, "--cfg")) == (
@@ -79,8 +79,8 @@ def test_a_seed_is_always_drawn_and_recorded(home):
 def test_duration_is_clamped_to_the_model_range(home):
     run = FakeRunner()
     ad = StableAudio3Adapter(runner=run, home=home)
-    ad.generate("x", duration=9999)
-    ad.generate("x", duration=0.1)
+    ad.generate("x", duration_s=9999)
+    ad.generate("x", duration_s=0.1)
     assert [_arg(c["cmd"], "--seconds") for c in run.calls] == ["120.0", "1.0"]
 
 

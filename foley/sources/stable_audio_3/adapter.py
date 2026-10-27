@@ -129,7 +129,7 @@ class StableAudio3Adapter:
         self,
         prompt: str,
         *,
-        duration: Optional[float] = None,
+        duration_s: Optional[float] = None,
         prompt_influence: Optional[float] = None,
         negative_prompt: Optional[str] = None,
         steps: Optional[int] = None,
@@ -141,7 +141,7 @@ class StableAudio3Adapter:
     ) -> GeneratedClip:
         """Generate a sound for ``prompt`` on the CPU; return its bytes + provisional candidate.
 
-        ``duration`` is clamped to the model's 1..120 s (default 10 s); the model renders
+        ``duration_s`` is clamped to the model's 1..120 s (default 10 s); the model renders
         whole latent frames, so the clip may differ from it by a few milliseconds.
         ``seed=None`` draws a random seed, recorded in the clip's provenance.
         ``provider_params`` (#61) are native script flags merged over the translated
@@ -161,7 +161,7 @@ class StableAudio3Adapter:
             )
         seconds = min(
             max(
-                duration if duration is not None else nd["duration_default_s"],
+                duration_s if duration_s is not None else nd["duration_default_s"],
                 nd["duration_min_s"],
             ),
             nd["duration_max_s"],

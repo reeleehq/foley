@@ -369,8 +369,8 @@ def test_generations_cache_find_matches_prompt_backend_and_affordances_newest_fi
     cache = GenerationsCache(audio={}, requests=requests)
     assert [k for k, _ in cache.find("bite")] == ["other", "new", "old"]  # newest first
     assert [k for k, _ in cache.find("bite", backend="el")] == ["new", "old"]
-    assert [k for k, _ in cache.find("bite", backend="el", duration=1)] == ["old"]  # 1 == 1.0
-    assert cache.find("bite", duration=3) == []
+    assert [k for k, _ in cache.find("bite", backend="el", duration_s=1)] == ["old"]  # 1 == 1.0
+    assert cache.find("bite", duration_s=3) == []
     assert cache.find("hush") == []
     assert len(cache.find()) == 3  # everything but the alias and the unreadable entry
-    assert cache.find("bite", backend="el", duration=1)[0][1]["status"] == "quarantined"
+    assert cache.find("bite", backend="el", duration_s=1)[0][1]["status"] == "quarantined"

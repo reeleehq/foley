@@ -393,7 +393,7 @@ def _generate(
             never seen by the unsupported-parameter policy. A key the source's
             ``provider_params`` policy reserves or prices raises ``ValueError``
             before any call, so the cost estimate is the call's.
-        **affordances: Unified generation affordances (``duration``,
+        **affordances: Unified generation affordances (``duration_s``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`foley.base.GENERATION_AFFORDANCES`).
 
@@ -938,6 +938,7 @@ def generate(*args, **kwargs) -> IngestReport:
                     "version": lic.generator_version,
                     "prompt": lic.generation_prompt,
                     "seed": lic.generation_seed,
+                    "reproducible": lic.generation_reproducible,
                     "params": lic.generation_params,
                     "c2pa_manifest_ref": lic.c2pa_manifest_ref,
                 },
