@@ -18,6 +18,7 @@ item is redistributable but stored by-reference.
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, replace
 from typing import Optional
@@ -617,3 +618,62 @@ def keep_sound(sound_record, intended_use: IntendedUse) -> bool:
         The result of ``keep(sound_record.license, intended_use)``.
     """
     return keep(sound_record.license, intended_use)
+
+
+_log = logging.getLogger(__name__)
+
+#: A Creative Commons / public-domain id even when foley has no metadata for it
+#: (``CC-BY-SA-4.0``): asking for it is a real request a source may just not serve.
+_LOOKS_LIKE_CC_ID = re.compile(r"cc-[a-z]|cc0|pdm")
+
+
+def is_cc_license_token(token: Optional[str]) -> bool:
+    """Whether ``token`` is a search constraint a CC-reading source understands.
+
+    ``None``/``'any'`` (no constraint), ``'cc0'``, or a CC / public-domain licence id or
+    family (``'CC-BY-4.0'``, ``'cc-by'``, ``'PDM-1.0'``). Not an ingest-time rights
+    assertion such as ``'user-owned'``.
+    """
+    asked = "" if token is None else str(token).strip().lower()
+    return asked in ("", "any") or bool(_LOOKS_LIKE_CC_ID.match(asked))
+
+
+def wanted_license_ids(config: dict, license: Optional[str]) -> "Optional[list[str]]":
+    """The licence ids a ``license=`` request keeps, or ``None`` for every accepted one.
+
+    ``license`` is an explicit licence id (``QUERY_AFFORDANCES['license']``), matched
+    case-insensitively against the source's ``accepted_license_ids``; ``'cc0'`` is the
+    historical alias for the source's ``cc0_license_ids``, and a family prefix with a dash,
+    such as ``'cc-by'``, keeps every accepted id of that family (``CC-BY-3.0``, ``CC-BY-4.0``).
+    ``None``, ``'any'`` and a value that is no licence id at all (e.g. ``'public-domain'``) do not narrow, with a warning for the last (the historical
+    "anything but ``'cc0'``" behaviour). A real licence id the source does not accept
+    gives ``[]``, so nothing is returned: fail closed, never silently broader.
+
+    >>> cfg = {"license": {"accepted_license_ids": ["CC0-1.0", "CC-BY-4.0"],
+    ...                    "cc0_license_ids": ["CC0-1.0"]}}
+    >>> wanted_license_ids(cfg, "cc0"), wanted_license_ids(cfg, "CC-BY-4.0")
+    (['CC0-1.0'], ['CC-BY-4.0'])
+    >>> wanted_license_ids(cfg, "cc-by"), wanted_license_ids(cfg, None), wanted_license_ids(cfg, "cc-by-sa-4.0")
+    (['CC-BY-4.0'], None, [])
+    """
+    asked = "" if license is None else str(license).strip().lower()
+    if asked in ("", "any"):
+        return None
+    section = config["license"]
+    if asked == "cc0":
+        return list(section["cc0_license_ids"])
+
+    def matches(license_id: str) -> bool:
+        low = license_id.lower()
+        return low == asked or ("-" in asked and low.startswith(asked + "-"))
+
+    if not (_LOOKS_LIKE_CC_ID.match(asked) or any(matches(k) for k in LICENSE_META)):
+        _log.warning(
+            "license=%r is not a licence id; not narrowing the %s search",
+            license,
+            config.get("name"),
+        )
+        return None
+    return [
+        accepted for accepted in section["accepted_license_ids"] if matches(accepted)
+    ]

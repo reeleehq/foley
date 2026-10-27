@@ -16,8 +16,9 @@ from __future__ import annotations
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
+from ...licensing import wanted_license_ids
 from .._keyless import get_bytes, get_json, raw_id
-from .._license_gate import is_cc0_only, license_for_item, wanted_license_ids
+from .._license_gate import license_for_item, native_license_filter
 from ..base import api_license, merge_provider_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -75,23 +76,22 @@ class OpenverseAdapter:
 
         Args:
             license: A licence id (``'cc0'`` is an alias for CC0-1.0) keeps only rows
-                under it, and CC0 alone uses the CC0-only native filter; ``None`` asks for
-                CC0, CC-BY and public-domain-mark rows.
+                under it, and is pushed into the native ``license`` filter (CC0, CC-BY or
+                PDM); ``None`` asks for CC0, CC-BY and public-domain-mark rows.
             k: Max rows (anonymous limit 20).
             provider_params: Native search params merged over the translated ones
                 (#61); the per-item licence check still applies.
         """
         api = self.config["api"]
-        filters = api["license_filter"]
         wanted = wanted_license_ids(self.config, license)
         if wanted == []:  # a licence this source does not accept: nothing can match
             return []
         params = {
             "q": query[: api["max_query_chars"]],
             "page_size": min(int(k), api["max_page_size"]),
-            "license": filters["cc0"]
-            if is_cc0_only(self.config, wanted)
-            else filters["default"],
+            "license": native_license_filter(
+                wanted, api["license_native"], default=api["license_default"]
+            ),
         }
         excluded = [
             s

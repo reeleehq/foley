@@ -23,8 +23,9 @@ import re
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
+from ...licensing import wanted_license_ids
 from .._keyless import get_bytes, get_json, raw_id, strip_html
-from .._license_gate import license_for_item, wanted_license_ids
+from .._license_gate import license_for_item
 from ..base import api_license, merge_provider_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG

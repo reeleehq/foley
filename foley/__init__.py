@@ -922,8 +922,8 @@ def ingest(
         path: A folder (walked) or a single audio file.
         library: Target library (default: the process-wide default library).
         backend: ``"local"`` ingests filesystem audio; other backends (a source
-            adapter pull) route through ``add_from`` (subtask #5) — kept in the
-            signature for forward-compat.
+            adapter pull) route through ``add_from`` (subtask #5), where ``license`` is
+            a search constraint (a CC licence id), not a rights assertion.
         qc: Run the Tier-0 QC gate (quarantines failing clips).
         recursive: Recurse into sub-folders.
         **kw: Forwarded to :func:`foley.index.ingest_one` — notably ``license``:
@@ -934,7 +934,18 @@ def ingest(
     if backend != "local":
         # A non-local backend names a live source adapter (#5): treat ``path`` as
         # the query and route through the add_from pull facade (search -> license
-        # gate -> download -> the shared ingest_one pipeline).
+        # gate -> download -> the shared ingest_one pipeline). There ``license`` is a
+        # SEARCH constraint, not the rights assertion it is for local files (#153).
+        from .licensing import is_cc_license_token
+
+        if isinstance(kw.get("license"), str) and not is_cc_license_token(
+            kw["license"]
+        ):
+            raise ValueError(
+                f"license={kw['license']!r} asserts rights on local files; for "
+                f"backend={backend!r} it is a search constraint ('cc0', a CC licence id "
+                "such as 'CC-BY-4.0', or 'any'). Use backend='local' to assert rights."
+            )
         return add_from(backend, query=path, library=library, **kw)
     if isinstance(kw.get("license"), str):
         from .index.ingest import resolve_ingest_license

@@ -15,8 +15,9 @@ import re
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
+from ...licensing import wanted_license_ids
 from .._keyless import get_bytes, get_json, raw_id, strip_html
-from .._license_gate import license_for_item, wanted_license_ids
+from .._license_gate import license_for_item
 from ..base import SourceConfigurationError, api_license, merge_provider_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -75,7 +76,10 @@ class InternetArchiveAdapter:
         """Search archive audio for ``query``; return candidates (all unverified).
 
         ``license`` is a licence id (``'CC0-1.0'``; ``'cc0'`` is an alias) and keeps only
-        items under it; ``None`` keeps every accepted licence. The query always asks for items with a ``licenseurl``.
+        items under it; ``None`` keeps every accepted licence. The default is ``None``,
+        unlike the other CC sources' ``'cc0'``, because every archive licence is an
+        unverified claim anyway; ``add_from`` always passes its own (``'cc0'``) default.
+        The query always asks for items with a ``licenseurl``.
         ``provider_params`` are native advancedsearch params merged over the
         translated ones (#61); a ``q`` is ANDed onto foley's as one group, never
         replaces it (the config's ``provider_params`` policy).
