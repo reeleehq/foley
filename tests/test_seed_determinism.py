@@ -7,6 +7,8 @@ same seed must give identical bytes, a different seed different bytes (so a drop
 rewritten seed fails). A completeness test fails when a new seed-capable source has no fake.
 """
 
+import importlib
+import pkgutil
 import sys
 import types
 
@@ -18,7 +20,7 @@ pytest.importorskip("soundfile")
 import foley  # noqa: E402
 from foley.audio import encode  # noqa: E402
 from foley.sources.fal.adapter import FalAdapter  # noqa: E402
-from foley.sources.registry import SOURCE_REGISTRY  # noqa: E402
+from foley.sources.registry import SOURCE_REGISTRY, _declared_configs  # noqa: E402
 from foley.sources.stable_audio.adapter import StableAudioAdapter  # noqa: E402
 from foley.sources.stable_audio_3.adapter import StableAudio3Adapter  # noqa: E402
 
@@ -95,12 +97,24 @@ FAKES = {
 
 
 def _seeded_generators() -> list:
-    foley.list_backends()  # populate the registry
-    return sorted(
-        name
-        for name, entry in SOURCE_REGISTRY.items()
-        if foley.capabilities_of(entry["config"])["deterministic"]
-    )
+    """Shipped seed-capable generate sources, read from the packages' own configs.
+
+    Not from ``SOURCE_REGISTRY``: other tests overwrite or add entries there.
+    """
+    names = []
+    for mod in pkgutil.iter_modules(foley.sources.__path__):
+        if not mod.ispkg:
+            continue
+        try:
+            config_module = importlib.import_module(f"foley.sources.{mod.name}.config")
+        except ImportError:
+            continue
+        names += [
+            c["name"]
+            for c in _declared_configs(config_module)
+            if foley.capabilities_of(c)["deterministic"]
+        ]
+    return sorted(names)
 
 
 def test_every_seed_capable_source_has_a_determinism_fake():
@@ -112,8 +126,9 @@ def test_same_seed_same_bytes_different_seed_different_bytes(
     name, tmp_path, monkeypatch
 ):
     adapter = FAKES[name](tmp_path=tmp_path, monkeypatch=monkeypatch)
-    first, again, other = (
-        adapter.generate("a door creak", seed=seed).audio_bytes for seed in (7, 7, 8)
-    )
+    clips = [adapter.generate("a door creak", seed=seed) for seed in (7, 7, 8)]
+    first, again, other = (clip.audio_bytes for clip in clips)
     assert first == again
     assert first != other
+    # provenance half: the seed that was sent is the seed recorded
+    assert [c.candidate.sound.license.generation_seed for c in clips] == [7, 7, 8]

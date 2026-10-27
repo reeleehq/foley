@@ -111,6 +111,7 @@ SOURCE_CONFIG = {
         "seen": "2026-10-04",
     },
     # Vendor facts a config cannot imply (foley.capabilities_of); only documented ones.
-    "capabilities": {"watermarked": False},  # local open weights: no vendor watermark
+    # "watermarked" is vendor-side (foley's own AudioSeal is separate): local weights have none.
+    "capabilities": {"watermarked": False},
     "data_egress": "local",  # runs entirely on-device (offline-capable; report 12)
 }
