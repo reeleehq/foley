@@ -35,7 +35,8 @@ The edit endpoints (#162: ``fal_stable_audio_3_audio_to_audio``, ``_inpaint``, `
 declare ``modes=['edit']`` and their ``edit_op`` (a :data:`foley.base.EDIT_OPS` name), so
 only a call with a source clip (``audio=``, see :func:`foley.edit`) reaches them, and none
 joins a text-to-audio or video-to-audio order. Their Stable Audio 3 row is the
-generator's: :func:`foley.edit` narrows each edit's rights to its source's.
+generator's: the edit mode narrows each edit's rights to its source's
+(:func:`foley.sources.edit.edit_lineage`).
 
 Pricing is fal's (``unit``/``amount_usd`` as in :func:`foley.cost.estimate_call`), with the
 date it was read. ``per_second`` with no requested duration is priced at the
@@ -713,7 +714,7 @@ def _sa3_edit(
             **(native_defaults or {}),
         },
         license={"default_license_id": "Stability-Community", "cache_bytes_ok": True},
-        commercial_ok=True,  # revenue-capped; foley.edit narrows to the source's rights
+        commercial_ok=True,  # revenue-capped; the edit mode narrows to the source's rights
         pricing={
             "unit": "per_call",
             "amount_usd": price,
@@ -759,9 +760,9 @@ EDIT_SOURCE_CONFIGS = (
         "extend",
         "fal-ai/stable-audio-3/small/sfx/audio-outpainting",
         price=0.0271,
-        params={
-            "extend_before_s": {"native_name": "extend_seconds_before"},
-            "extend_after_s": {"native_name": "extend_seconds_after"},
+        params={  # fal's schema bounds each side to 0..120 s
+            "extend_before_s": {"native_name": "extend_seconds_before", "max": 120.0},
+            "extend_after_s": {"native_name": "extend_seconds_after", "max": 120.0},
         },
         unsupported=("loop", "duration_s"),  # the source's length plus the extension
     ),

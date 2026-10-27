@@ -41,6 +41,7 @@ import functools
 import importlib.util
 import logging
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, MutableMapping, Optional, Protocol, runtime_checkable
 
@@ -77,8 +78,12 @@ IPTC_DIGITAL_CREATION = "http://cv.iptc.org/newscodes/digitalsourcetype/digitalC
 #: C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).
 C2PA_CREATED = "c2pa.created"
 C2PA_PLACED = "c2pa.placed"
+C2PA_EDITED = "c2pa.edited"
 C2PA_COMPONENT_OF = "componentOf"
+C2PA_PARENT_OF = "parentOf"
 C2PA_INGREDIENT_ID_PREFIX = "foley:ingredient:"
+#: The key under which an edit's source ingredient carries what foley knows of it.
+INGREDIENT_SOURCE_KEY = "foley_source"
 
 
 # ---------------------------------------------------------------------------
@@ -524,20 +529,50 @@ def build_content_credential(
     if lic.generator_version:
         software_agent["version"] = lic.generator_version
 
-    created_action: dict = {"action": "c2pa.created", "digitalSourceType": source_type}
+    created_action: dict = {"action": C2PA_CREATED, "digitalSourceType": source_type}
     if software_agent:
         created_action["softwareAgent"] = software_agent
     # Each transformation the licence records (a repair before admission, #107; a
     # trim) is an edit of the same asset, so the credential says the kept bytes were
     # edited after creation — the machine-readable twin of the "(modified)" credit.
-    actions = [created_action] + [
-        {
-            "action": "c2pa.edited",
-            "softwareAgent": {"name": "foley"},
-            "parameters": {"description": str(t)},
-        }
-        for t in (lic.transformations or [])
-    ]
+    # An edit of another sound (#162) also declares that sound as its parentOf
+    # ingredient (its id, content key and licence), which its action names.
+    ingredients = []
+    actions = [created_action]
+    for t in lic.transformations or []:
+        parameters: dict = {"description": describe_transformation(t)}
+        source = _edit_source_ingredient(t, index=len(ingredients))
+        if source is not None:
+            ingredients.append(source)
+            parameters["ingredientIds"] = [source["instance_id"]]
+        actions.append(
+            {
+                "action": C2PA_EDITED,
+                "softwareAgent": {"name": "foley"},
+                "parameters": parameters,
+            }
+        )
+    creative_work = {
+        "@context": "https://schema.org",
+        "@type": "CreativeWork",
+        "license": license_ref,
+        "author": [
+            {
+                "@type": "Organization",
+                "name": lic.creator_name or lic.rights_holder or lic.source,
+            }
+        ],
+    }
+    if ingredients:  # a derived clip names its sources' licences beside its own
+        creative_work["isBasedOn"] = [
+            {
+                "@type": "CreativeWork",
+                "identifier": i[INGREDIENT_SOURCE_KEY]["sound_id"],
+                "license": i[INGREDIENT_SOURCE_KEY]["license_url"]
+                or i[INGREDIENT_SOURCE_KEY]["license_id"],
+            }
+            for i in ingredients
+        ]
 
     ai_use = "notAllowed" if not lic.ai_training_ok else "allowed"
     assertions = [
@@ -551,20 +586,7 @@ def build_content_credential(
                 }
             },
         },
-        {
-            "label": "stds.schema-org.CreativeWork",
-            "data": {
-                "@context": "https://schema.org",
-                "@type": "CreativeWork",
-                "license": license_ref,
-                "author": [
-                    {
-                        "@type": "Organization",
-                        "name": lic.creator_name or lic.rights_holder or lic.source,
-                    }
-                ],
-            },
-        },
+        {"label": "stds.schema-org.CreativeWork", "data": creative_work},
     ]
     # foley-native reproducibility assertion (self-asserted; kept in the local sidecar)
     if lic.is_ai_generated:
@@ -585,7 +607,7 @@ def build_content_credential(
         "claim_generator_info": [{"name": "foley", "version": _foley_version()}],
         "format": _MIME_BY_FORMAT.get((fmt or "wav").lower(), "audio/wav"),
         "title": caption or lic.generation_prompt or asset_id,
-        "ingredients": [],
+        "ingredients": ingredients,
         "assertions": assertions,
     }
     return {
@@ -595,6 +617,50 @@ def build_content_credential(
         "asset_ref": asset_id,
         "asset_hash": asset_hash,
         "manifest": manifest,
+    }
+
+
+def describe_transformation(transformation) -> str:
+    """A ``transformations`` entry as one readable line (a C2PA ``c2pa.edited``
+    description): a string as is, an edit of another sound (#162) by its op, source and
+    parameters, any other mapping as ``key=value`` pairs.
+
+    >>> describe_transformation("declick")
+    'declick'
+    >>> describe_transformation({"kind": "edit", "op": "extend", "source_id": "s1",
+    ...     "source_license_id": "CC-BY-4.0", "params": {"extend_after_s": 2.0}})
+    'extend of s1 (CC-BY-4.0): extend_after_s=2.0'
+    >>> describe_transformation({"gain_db": -3, "target": "dialogue"})
+    'gain_db=-3, target=dialogue'
+    """
+    from ..base import EDIT_TRANSFORMATION
+
+    if not isinstance(transformation, Mapping):
+        return str(transformation)
+    t = dict(transformation)
+    if t.get("kind") == EDIT_TRANSFORMATION:
+        params = ", ".join(
+            f"{k}={v}" for k, v in sorted((t.get("params") or {}).items())
+        )
+        head = f"{t.get('op')} of {t.get('source_id')} ({t.get('source_license_id')})"
+        return f"{head}: {params}" if params else head
+    return ", ".join(f"{k}={v}" for k, v in sorted(t.items()))
+
+
+def _edit_source_ingredient(transformation, *, index: int) -> Optional[dict]:
+    """The ``parentOf`` ingredient of an edit's source (#162), or ``None`` for any other
+    transformation: the fields ``c2pa.Builder`` reads, plus what foley knows of the
+    source (id, content key, licence) under :data:`INGREDIENT_SOURCE_KEY`."""
+    from .credits import derived_source
+
+    source = derived_source(transformation)
+    if source is None:
+        return None
+    return {
+        "title": source["credit"] or source["sound_id"] or "source clip",
+        "relationship": C2PA_PARENT_OF,
+        "instance_id": f"{C2PA_INGREDIENT_ID_PREFIX}source:{index}:{source['sound_id']}",
+        INGREDIENT_SOURCE_KEY: source,
     }
 
 

@@ -52,9 +52,6 @@ FAL_CREDENTIAL = "fal"
 #: The env vars falaw reads a fal key from, in order.
 FAL_KEY_ENV_VARS = ("FAL_KEY", "FAL_API_KEY")
 
-#: What a source whose param_map takes each media input needs, said when it is missing.
-_MEDIA_NEEDED = {"video": "sounds a picture", "audio": "edits a source clip"}
-
 #: ``runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)``.
 Runner = Callable[..., "tuple[bytes, dict]"]
 
@@ -217,16 +214,16 @@ class FalAdapter:
         """The exact payload this adapter sends for ``prompt`` and translated ``affordances``."""
         from .._dispatch import native_request
 
-        from ..video import MEDIA_INPUTS
+        from ..video import MEDIA
 
         reject_renamed(affordances)  # generate() builds its payload here too
         nd = self.config.get("native_defaults") or {}
         param_map = self.config["param_map"]
         affordances = dict(affordances)
-        media = {name: affordances.pop(name, None) for name in MEDIA_INPUTS}
+        media = {name: affordances.pop(name, None) for name in MEDIA}
         for name, value in media.items():
             if name in param_map and value is None:  # nothing to sound / edit otherwise
-                raise ValueError(f"{self.name} {_MEDIA_NEEDED[name]}: pass {name}=")
+                raise ValueError(f"{self.name} {MEDIA[name].does}: pass {name}=")
             if name not in param_map and value is not None:
                 raise ValueError(f"{self.name} takes no {name}=")
         args = dict(nd.get("fixed_arguments") or {})
@@ -240,7 +237,7 @@ class FalAdapter:
             args[param_map[name]["native_name"]] = self._media_url(value, kind=name)
             # The dispatch set duration_s to cover the input; a direct call gets it here.
             if duration_name and duration_name not in args:
-                input_s = _input_seconds(name, value)
+                input_s = MEDIA[name].seconds(value)  # a test may stand in for it
                 if input_s is not None:
                     lo, hi = nd.get("duration_min_s"), nd.get("duration_max_s")
                     args[duration_name] = max(
@@ -275,15 +272,15 @@ class FalAdapter:
     def _media_url(self, media, *, kind: str = "video") -> str:
         """The URL fal fetches a media input from: a URL as is, a path or bytes uploaded
         (bytes through a temporary file named by their sniffed format,
-        :data:`foley.sources.video.MEDIA_SUFFIXES`)."""
-        from ..video import MEDIA_SUFFIXES, local_video_file, video_url
+        :meth:`foley.sources.video.MediaInput.suffix`)."""
+        from ..video import MEDIA, local_video_file, video_url
 
         url = video_url(media)
         if url is not None:
             return url
         key = self.api_key  # a missing key is its own, clearer refusal
         raw = isinstance(media, (bytes, bytearray))
-        suffix = MEDIA_SUFFIXES[kind](media) if raw else None
+        suffix = MEDIA[kind].suffix(media) if raw else None
         try:
             with local_video_file(media, suffix=suffix) as path:
                 return self._uploader(path, api_key=key)
@@ -450,17 +447,6 @@ def _actual_cost(config: dict, args: dict, audio: bytes) -> Optional[float]:
         return None if seconds is None else actual_call_cost(config, duration_s=seconds)
     name = (config["param_map"].get("duration_s") or {}).get("native_name")
     return actual_call_cost(config, duration_s=args.get(name) if name else None)
-
-
-def _input_seconds(name: str, value) -> Optional[float]:
-    """A media input's length: a video by :func:`foley.sources.video.video_seconds`, an
-    audio by :func:`~foley.sources.video.audio_seconds` (via the module, so tests can
-    stand in for the probe)."""
-    from .. import video as video_mod
-
-    if name == "video":
-        return video_mod.video_seconds(value)
-    return video_mod.audio_seconds(value)
 
 
 def _audio_seconds(audio: bytes) -> Optional[float]:

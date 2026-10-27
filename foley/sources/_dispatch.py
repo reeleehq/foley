@@ -57,7 +57,13 @@ from ..base import (
     check_edit_args,
     reject_renamed,
 )
-from .video import MEDIA_INPUTS, recorded_video_key, remote_media_input, video_key
+from .video import (
+    MEDIA,
+    MEDIA_INPUTS,
+    recorded_video_key,
+    remote_media_input,
+    video_key,
+)
 from .video import keyed as video_keyed
 from .video import replayable as video_replayable
 from .base import (
@@ -179,7 +185,7 @@ def translate_affordances(
     if generation:
         _check_mode(config, affordances)
         if "edit" in source_modes(config):
-            check_edit_args(config.get("edit_op"), affordances)
+            _check_edit(config, affordances)
     for name, value in affordances.items():
         choices = getattr(vocabulary.get(name), "choices", None)
         if choices and value is not None and value not in choices:
@@ -195,6 +201,24 @@ def translate_affordances(
         )
     result = _translator(config, vocabulary)(affordances, on_unsupported=on_unsupported)
     return result.kwargs, result.notes
+
+
+def _check_edit(config: dict, affordances: dict) -> None:
+    """:func:`foley.base.check_edit_args` for a call of an edit source: its ``edit_op``,
+    the source clip's length (when it can be read) and the backend's own maxima (a
+    ``param_map`` entry's ``max``)."""
+    audio = affordances.get("audio")
+    limits = {
+        name: spec["max"]
+        for name, spec in (config.get("param_map") or {}).items()
+        if isinstance(spec, dict) and spec.get("max") is not None
+    }
+    check_edit_args(
+        config.get("edit_op"),
+        affordances,
+        clip_s=MEDIA["audio"].seconds(audio) if audio is not None else None,
+        limits=limits,
+    )
 
 
 def _checked_values(affordances: dict) -> dict:
@@ -479,6 +503,7 @@ def plan_generation(
     reuse_cached: bool = True,
     provider_params: Optional[dict] = None,
     variation: int = 0,
+    lineage: Optional[dict] = None,
     **affordances,
 ) -> GenerationPlan:
     """Decide a generation call: egress, translation, price, cache lookup, budget.
@@ -505,6 +530,10 @@ def plan_generation(
             is the request itself; a later one is keyed apart (in the request's salt),
             so a backend that takes no seed answers ``n`` variations with ``n`` paid
             sounds, each replayable, rather than one cached sound ``n`` times.
+        lineage: For an edit (#162), what it derives from (the JSON-safe
+            :meth:`foley.sources.edit.EditLineage.transformation`): part of the cache
+            key, so an edit's entry is never shared with another source or licence
+            context. ``None`` (default): every other request keeps its key.
         **affordances: The canonical generation affordances.
 
     Raises:
@@ -549,6 +578,8 @@ def plan_generation(
             salt = {"adapter": salt, "account": _account_id(adapter, config)}
             if variation:  # only a later variation: every existing key is unchanged
                 salt["variation"] = variation
+            if lineage is not None:  # only an edit's key changes
+                salt["lineage"] = lineage
         except SourceConfigurationError:
             require_source_egress(backend, config)  # offline wins over a missing plan
             raise
@@ -1072,10 +1103,6 @@ def _priced(config: dict, affordances: dict) -> dict:
     }
 
 
-#: The note of a duration set to cover a media input, per input.
-_COVERS = {"video": "to cover the video", "audio": "to match the source clip"}
-
-
 def _cover_the_input(config: dict, kept: dict, priced: dict, notes: list) -> dict:
     """``kept`` with ``duration_s`` set to the input's length (in the source's window)
     when a source that takes a duration is given a video (#74) or a source clip to
@@ -1084,35 +1111,27 @@ def _cover_the_input(config: dict, kept: dict, priced: dict, notes: list) -> dic
     Decided here, at plan time, so the one value is keyed, priced, sent and noted.
     """
     supported = config.get("supported_affordances") or ()
-    if "duration_s" not in supported or kept.get("duration_s"):
+    media = next((m for m in MEDIA.values() if kept.get(m.name) is not None), None)
+    if media is None or "duration_s" not in supported or kept.get("duration_s"):
         return kept
-    if priced.get("video_duration_s") is not None:
-        seconds, what = priced["video_duration_s"], "video"
-    elif kept.get("audio") is not None:
-        from .video import audio_seconds
-
-        seconds, what = audio_seconds(kept["audio"]), "audio"
-    else:
-        return kept
+    # The price already read a video's length (_priced): it is not probed twice.
+    seconds = (
+        priced["video_duration_s"]
+        if "video_duration_s" in priced
+        else media.seconds(kept[media.name])
+    )
     if seconds is None:
         return kept
     nd = config.get("native_defaults") or {}
     seconds = min(float(seconds), nd.get("duration_max_s") or float(seconds))
     seconds = max(seconds, nd.get("duration_min_s") or seconds)
-    notes.append(f"duration_s: {seconds:g} s, {_COVERS[what]}")
+    notes.append(f"duration_s: {seconds:g} s, {media.covers}")
     return {**kept, "duration_s": seconds}
 
 
 def source_modes(config: dict) -> "list[str]":
     """The generation modes a generate source serves (``config['modes']``, else text-to-audio)."""
     return list(config.get("modes") or ["t2a"])
-
-
-#: What a source of each mode needs, said when a call of another mode reaches it.
-_MODE_NEEDS = {
-    "v2a": "needs a video= (it sounds a picture)",
-    "edit": "needs an audio= (it edits a source clip: use foley.edit)",
-}
 
 
 def _check_mode(config: dict, affordances: dict) -> None:
@@ -1125,17 +1144,14 @@ def _check_mode(config: dict, affordances: dict) -> None:
     """
     if config.get("kind") not in (None, "generate"):
         return
-    from .generate import MODE_INPUTS, generation_mode
+    from .generate import generation_mode
 
     mode = generation_mode(affordances)
     modes = source_modes(config)
     if mode not in modes:
-        own = next((m for m in modes if m in _MODE_NEEDS), None)
-        need = (
-            _MODE_NEEDS[own]
-            if own is not None
-            else f"takes no {MODE_INPUTS[mode]}= (it is text-to-audio)"
-        )
+        own = next((m for m in MEDIA.values() if m.mode in modes), None)
+        given = next((m.name for m in MEDIA.values() if m.mode == mode), mode)
+        need = own.needed if own else f"takes no {given}= (it is text-to-audio)"
         raise UnsupportedParameter(f"{config.get('name', 'this source')} {need}")
 
 

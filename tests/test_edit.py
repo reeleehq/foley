@@ -4,6 +4,7 @@ Hermetic: the fal ``runner`` and ``uploader`` seams are fakes that record every 
 "refused before any call" is checked as "the runner and the uploader saw nothing".
 """
 
+import itertools
 import json
 
 import pytest
@@ -52,17 +53,23 @@ def _tone(seconds=1.5, freq=330.0, fmt="WAV"):
     return encode((0.3 * np.sin(2 * np.pi * freq * t)).astype(np.float32), SR, fmt=fmt)
 
 
-class Runner:
-    """Records each fal call; answers a tone unlike the source (so it is a new sound)."""
+#: A new pitch per answer, so two calls never answer byte-identical sounds.
+_PITCHES = itertools.count(550.0, 37.0)
 
-    def __init__(self):
+
+class Runner:
+    """Records each fal call; answers a tone unlike the source (so it is a new sound),
+    a new one per call unless ``freq`` pins it."""
+
+    def __init__(self, freq=None):
         self.calls = []
+        self.freq = freq
 
     def __call__(self, endpoint_id, arguments, *, api_key, audio_field="audio"):
         self.calls.append((endpoint_id, dict(arguments)))
         response = {"audio": {"url": "https://fal.media/out.wav"}, "seed": 7,
                     "prompt": arguments.get("prompt")}
-        return _tone(2.0, freq=550.0), response
+        return _tone(2.0, freq=self.freq or next(_PITCHES)), response
 
 
 class Uploader:
@@ -74,9 +81,19 @@ class Uploader:
         return f"https://fal.media/up/{len(self.paths)}"
 
 
-def _adapter(name):
-    runner, uploader = Runner(), Uploader()
+def _adapter(name, *, freq=None):
+    runner, uploader = Runner(freq), Uploader()
     return FalAdapter(CONFIGS[name], api_key="k", runner=runner, uploader=uploader), runner, uploader
+
+
+def _rights(license_id="CC0-1.0", **fields):
+    """A verified licence record, as a caller would pass for a clip not in the library."""
+    lic = apply_license_flags(
+        LicenseRecord(source="user", license_id=license_id, rights_verified=True)
+    )
+    for name, value in fields.items():
+        setattr(lic, name, value)
+    return lic
 
 
 @pytest.fixture
@@ -189,7 +206,7 @@ def test_the_same_bytes_from_two_paths_replay_without_a_second_call(library, tmp
     for path in paths:
         generate_report("a door", backend="fal_stable_audio_3_extend", adapter=adapter,
                         library=library, provenance_store={}, audio=str(path),
-                        extend_after_s=1.0)
+                        derived_from=_rights(), extend_after_s=1.0)
     assert len(runner.calls) == 1 and len(uploader.paths) == 1
     cache = foley.generations
     stored = json.dumps([cache.requests[k] for k in cache.requests])
@@ -243,6 +260,8 @@ def test_existing_video_keys_are_unchanged():
          "share-alike"),
         ("Proprietary-acme", True, {"modification_ok": True}, "no licence row"),
         ("CC-BY-4.0", True, {"modification_ok": False}, "does not allow modification"),
+        # a licence that grants nothing in some territories: the edit could not say so
+        ("Tencent-Hunyuan-Community", True, {}, "excludes territories"),
     ],
 )
 def test_the_licence_gate_refuses_before_any_call(library, license_id, verified, fields,
@@ -262,13 +281,18 @@ def test_an_edit_records_its_source_and_credits_it(library):
     cand, _, _ = _edit(library, "inpaint", sid)
     lic = cand.sound.license
     (edit,) = [t for t in lic.transformations if isinstance(t, dict)]
-    assert edit == {"kind": "edit", "op": "inpaint", "source_id": sid,
-                    "source_license_id": "CC-BY-4.0",
-                    "params": {"inpaint_start_s": 0.5, "inpaint_end_s": 1.0}}
+    assert edit == {
+        "kind": "edit", "op": "inpaint", "source_id": sid,
+        "source_content": video_mod.video_key(library.audio(sid)),
+        "source_license_id": "CC-BY-4.0", "source_license_name": "CC BY 4.0",
+        "source_license_url": "https://creativecommons.org/licenses/by/4.0/",
+        "source_credit": foley.attribution_line(library[sid], fmt="plain"),
+        "params": {"inpaint_start_s": 0.5, "inpaint_end_s": 1.0},
+    }
     assert lic.requires_attribution
     line = foley.attribution_line(cand.sound, fmt="plain")
-    assert "Derived from" in line and "Alice" in line and "CC BY 4.0" in line
-    assert "(modified)" in line
+    assert "; derived from" in line and "Alice" in line and "CC BY 4.0" in line
+    assert "(modified)" in line and "Stability AI Community License" in line
     # stored as such: the library's record says the same
     assert library[cand.sound.id].license.transformations == lic.transformations
     assert foley.credits([cand.sound]).entries[0].requires_attribution
@@ -312,7 +336,7 @@ def test_a_source_without_attribution_adds_none(library):
 )
 def test_bad_op_parameters_are_refused_before_any_call(library, op, params, match):
     sid = _add(library)
-    adapter, runner, uploader = _adapter("fal_stable_audio_3_inpaint")
+    adapter, runner, uploader = _adapter(OPS.get(op, OPS["inpaint"])[0])
     with pytest.raises(ValueError, match=match):
         foley.edit(sid, op, "x", adapter=adapter, library=library, **params)
     assert runner.calls == [] and uploader.paths == []
@@ -404,6 +428,12 @@ def test_an_unnamed_edit_needs_the_paid_opt_in(library, monkeypatch):
     monkeypatch.setenv("FOLEY_GENERATE_BACKEND", "fal_stable_audio_3")
     with pytest.raises(SourceConfigurationError, match="fal_stable_audio_3_extend"):
         foley.edit(sid, "extend", "x", library=library, extend_after_s=1.0)
+    # the opt-in lets it through, to the op's default backend
+    from foley.sources.edit import resolve_edit
+
+    monkeypatch.setenv("FOLEY_GENERATE_PAID", "1")
+    call = resolve_edit(sid, "extend", "x", library=library, affordances={})
+    assert call.backend == "fal_stable_audio_3_extend" and call.source.id == sid
 
 
 # ---------------------------------------------------------------------------
@@ -425,3 +455,261 @@ def test_the_estimate_is_the_per_call_price(library, op, price):
 def test_a_provider_param_cannot_swap_the_source_clip():
     for name, _ in OPS.values():
         assert "audio_url" in CONFIGS[name]["provider_params"]["reserved"]
+
+
+# ---------------------------------------------------------------------------
+# the gate is the edit mode's, not the façade's (review of #213)
+# ---------------------------------------------------------------------------
+
+
+def test_a_raw_edit_without_its_sources_rights_is_refused_before_any_call(library):
+    # The bytes of a CC-BY-NC sound sent straight to an edit backend: nothing says what
+    # they may be used for, so nothing is generated (it came out commercial before).
+    data = library.audio(_add(library, "CC-BY-NC-4.0"))
+    adapter, runner, uploader = _adapter("fal_stable_audio_3_extend")
+    for call in (foley.generate, generate_report):
+        with pytest.raises(EditRefusal, match="derived_from=") as err:
+            call("x", backend="fal_stable_audio_3_extend", adapter=adapter,
+                 library=library, provenance_store={}, audio=data, extend_after_s=1.0)
+        assert err.value.status == "rights_blocked" and err.value.source_id is None
+    assert runner.calls == [] and uploader.paths == []
+
+
+def test_a_raw_edit_is_narrowed_to_the_rights_it_is_given(library):
+    adapter, runner, _ = _adapter("fal_stable_audio_3_extend")
+    cand = foley.generate("x", backend="fal_stable_audio_3_extend", adapter=adapter,
+                          library=library, provenance_store={}, audio=_tone(),
+                          derived_from=_rights("CC-BY-NC-4.0"), extend_after_s=1.0)
+    lic = cand.sound.license
+    assert not lic.commercial_ok and lic.requires_attribution
+    (edit,) = [t for t in lic.transformations if isinstance(t, dict)]
+    assert edit["source_license_id"] == "CC-BY-NC-4.0" and edit["op"] == "extend"
+    assert not foley.keep(lic, foley.IntendedUse())
+
+
+def test_a_raw_edit_with_refused_rights_is_refused(library):
+    adapter, runner, uploader = _adapter("fal_stable_audio_3_extend")
+    with pytest.raises(EditRefusal, match="share-alike"):
+        foley.generate("x", backend="fal_stable_audio_3_extend", adapter=adapter,
+                       library=library, audio=_tone(),
+                       derived_from=_rights("CC-BY-SA-4.0", modification_ok=True,
+                                            cache_bytes_ok=True),
+                       extend_after_s=1.0)
+    assert runner.calls == [] and uploader.paths == []
+
+
+def test_derived_from_must_be_the_bytes_sent(library):
+    # A permissive record cannot launder another clip's bytes.
+    cc0 = library[_add(library, "CC0-1.0")]
+    adapter, runner, _ = _adapter("fal_stable_audio_3_extend")
+    with pytest.raises(EditRefusal, match="not the bytes"):
+        foley.generate("x", backend="fal_stable_audio_3_extend", adapter=adapter,
+                       library=library, audio=_tone(freq=880.0), derived_from=cc0,
+                       extend_after_s=1.0)
+    assert runner.calls == []
+
+
+def test_derived_from_is_only_for_an_edit(library):
+    with pytest.raises(ValueError, match="derived_from= is for an edit"):
+        foley.generate("x", backend="fal_stable_audio_3", library=library,
+                       derived_from=_rights())
+
+
+def test_edit_refuses_derived_from_too(library):
+    sid = _add(library)
+    with pytest.raises(ValueError, match="derived_from="):
+        foley.edit(sid, "extend", "x", library=library, derived_from=_rights(),
+                   extend_after_s=1.0)
+
+
+# ---------------------------------------------------------------------------
+# an edit's cache entry and its byte-twins never widen its rights
+# ---------------------------------------------------------------------------
+
+
+def test_an_edit_is_keyed_by_its_lineage(library):
+    # The same bytes and op parameters under other rights are another request: the
+    # NC sound's edit is not served the answer made for a CC0 licence.
+    sid = _add(library, "CC-BY-NC-4.0")
+    data = library.audio(sid)
+    adapter, runner, _ = _adapter("fal_stable_audio_3_extend")
+    first = foley.generate("a heavier door", backend="fal_stable_audio_3_extend",
+                           adapter=adapter, library=library, provenance_store={},
+                           audio=data, derived_from=_rights("CC0-1.0"),
+                           extend_after_s=2.0)
+    edit = foley.edit(sid, "extend", "a heavier door", adapter=adapter, library=library,
+                      provenance_store={}, extend_after_s=2.0)
+    assert len(runner.calls) == 2 and edit.sound.id != first.sound.id
+    assert first.sound.license.commercial_ok and not edit.sound.license.commercial_ok
+    assert not library[edit.sound.id].license.commercial_ok
+
+
+def test_a_byte_twin_with_wider_rights_is_not_handed_back(library):
+    # Two edits answered with the very same bytes (a pinned fake): the second, of an
+    # NC sound, must not come back as the first's commercial record.
+    sid = _add(library, "CC-BY-NC-4.0")
+    adapter, runner, _ = _adapter("fal_stable_audio_3_extend", freq=500.0)
+    first = foley.generate("a heavier door", backend="fal_stable_audio_3_extend",
+                           adapter=adapter, library=library, provenance_store={},
+                           audio=_tone(freq=220.0), derived_from=_rights("CC0-1.0"),
+                           extend_after_s=2.0)
+    assert first.sound.license.commercial_ok
+    with pytest.raises(foley.GenerationError, match="wider rights") as err:
+        foley.edit(sid, "extend", "a heavier door", adapter=adapter, library=library,
+                   provenance_store={}, extend_after_s=2.0)
+    assert err.value.status == "rights_blocked" and len(runner.calls) == 2
+    assert err.value.cache_key  # the paid bytes are reachable
+
+
+def test_a_repeated_edit_replays_its_own_narrowed_record(library):
+    sid = _add(library, "CC-BY-NC-4.0")
+    first, _, _ = _edit(library, "extend", sid)
+    again, runner, _ = _edit(library, "extend", sid)
+    assert runner.calls == [] and again.sound.id == first.sound.id
+    lic = again.sound.license
+    assert not lic.commercial_ok
+    assert len([t for t in lic.transformations if isinstance(t, dict)]) == 1
+
+
+# ---------------------------------------------------------------------------
+# what is published says where the clip came from, and under which licence
+# ---------------------------------------------------------------------------
+
+
+def test_credits_name_the_sources_licence_beside_the_generators(library):
+    sid = _add(library, "CC-BY-NC-4.0", creator_name="Bob")
+    cand, _, _ = _edit(library, "extend", sid)
+    entry = foley.credits([cand.sound]).entries[0]
+    assert entry.license_id == "Stability-Community"
+    (src,) = entry.derived_from
+    assert src["sound_id"] == sid and src["license_id"] == "CC-BY-NC-4.0"
+    assert src["license_url"] == "https://creativecommons.org/licenses/by-nc/4.0/"
+    md = foley.credits([cand.sound]).markdown
+    assert "Stability AI Community License" in md and "CC BY-NC 4.0" in md
+    assert "Bob" in md
+    manifest = json.loads(json.dumps(foley.credits([cand.sound]).manifest))
+    assert manifest["entries"][0]["derived_from"][0]["license_id"] == "CC-BY-NC-4.0"
+
+
+def test_an_edit_of_an_edit_credits_the_chain_without_stuttering(library):
+    sid = _add(library, "CC-BY-4.0", creator_name="Alice")
+    one, _, _ = _edit(library, "inpaint", sid)
+    two, _, _ = _edit(library, "extend", one.sound.id)
+    line = foley.attribution_line(two.sound, fmt="plain")
+    assert "Derived from Derived from" not in line and "derived from derived" not in line
+    assert line.count("; derived from") == 2 and "Alice" in line and "CC BY 4.0" in line
+    sources = [t["source_id"] for t in two.sound.license.transformations
+               if isinstance(t, dict)]
+    assert sources == [one.sound.id]  # the chain is in the source's own credit line
+    assert two.sound.license.attribution_text is None  # nothing stuffed into the text
+
+
+def test_the_content_credential_declares_the_source_as_an_ingredient(library):
+    sid = _add(library, "CC-BY-NC-4.0", creator_name="Bob")
+    store = {}
+    name, params = OPS["extend"]
+    adapter, _, _ = _adapter(name)
+    cand = foley.edit(sid, "extend", "x", adapter=adapter, library=library,
+                      provenance_store=store, **params)
+    manifest = store[cand.sound.id]["manifest"]
+    (ingredient,) = manifest["ingredients"]
+    assert ingredient["relationship"] == "parentOf"
+    source = ingredient["foley_source"]
+    assert source["sound_id"] == sid and source["license_id"] == "CC-BY-NC-4.0"
+    assert source["content"] == video_mod.video_key(library.audio(sid))
+    labels = {a["label"]: a["data"] for a in manifest["assertions"]}
+    (edited,) = [a for a in labels["c2pa.actions"]["actions"]
+                 if a["action"] == "c2pa.edited"]
+    assert edited["parameters"]["ingredientIds"] == [ingredient["instance_id"]]
+    assert edited["parameters"]["description"] == (
+        f"extend of {sid} (CC-BY-NC-4.0): extend_after_s=2.0")
+    work = labels["stds.schema-org.CreativeWork"]
+    assert work["isBasedOn"] == [{
+        "@type": "CreativeWork", "identifier": sid,
+        "license": "https://creativecommons.org/licenses/by-nc/4.0/"}]
+
+
+# ---------------------------------------------------------------------------
+# what narrowing carries over
+# ---------------------------------------------------------------------------
+
+
+def test_a_required_notice_and_the_ai_preference_survive_the_edit(library):
+    sid = _add(library, "CC0-1.0", notice_text_required="Made using Openverse.",
+               ai_training_scope="nc_open_source_only",
+               gen_ai_preference="noncommercial-open-source-models")
+    cand, _, _ = _edit(library, "extend", sid)
+    lic = cand.sound.license
+    assert lic.notice_text_required == "Made using Openverse."
+    assert lic.ai_training_scope == "nc_open_source_only"
+    assert lic.gen_ai_preference == "noncommercial-open-source-models"
+    assert "Made using Openverse." in foley.credits([cand.sound]).markdown
+
+
+@pytest.mark.parametrize(
+    "output, source, expected",
+    [
+        (None, "open_source_only", "open_source_only"),
+        ("open_source_only", "nc_open_source_only", "nc_open_source_only"),
+        ("open_source_only", "none", "none"),  # `output or source` kept the output's
+        ("nc_open_source_only", None, "nc_open_source_only"),
+        ("open_source_only", "bogus", "none"),  # unknown: fail closed
+    ],
+)
+def test_narrowing_takes_the_stricter_ai_scope(output, source, expected):
+    from foley.licensing import narrow_to_source
+
+    out = _rights("Stability-Community", ai_training_scope=output)
+    narrowed = narrow_to_source(out, _rights("CC0-1.0", ai_training_scope=source))
+    assert narrowed.ai_training_scope == expected
+
+
+def test_both_notices_are_kept():
+    from foley.licensing import narrow_to_source
+
+    out = _rights("Stability-Community", notice_text_required="Powered by X.")
+    narrowed = narrow_to_source(out, _rights(notice_text_required="Via Y."))
+    assert narrowed.notice_text_required == "Powered by X.\nVia Y."
+
+
+# ---------------------------------------------------------------------------
+# refused up front, before any upload or paid call
+# ---------------------------------------------------------------------------
+
+
+def test_an_inpaint_window_past_the_clips_end_is_refused(library):
+    sid = _add(library)  # a 1.5 s clip
+    adapter, runner, uploader = _adapter("fal_stable_audio_3_inpaint")
+    with pytest.raises(ValueError, match="past the end of the 1.5 s source clip"):
+        foley.edit(sid, "inpaint", "x", adapter=adapter, library=library,
+                   inpaint_start_s=0.5, inpaint_end_s=60.0)
+    assert runner.calls == [] and uploader.paths == []
+
+
+def test_an_extension_beyond_fals_bounds_is_refused(library):
+    sid = _add(library)
+    adapter, runner, uploader = _adapter("fal_stable_audio_3_extend")
+    with pytest.raises(ValueError, match=r"extend_after_s must be within \[0.0, 120.0\]"):
+        foley.edit(sid, "extend", "x", adapter=adapter, library=library,
+                   extend_after_s=121.0)
+    assert runner.calls == [] and uploader.paths == []
+
+
+def test_a_sound_whose_bytes_may_not_be_sent_on_is_refused(library):
+    # A Freesound API pull: CC-BY, but by-reference (the API's terms forbid caching).
+    from foley.base import SoundRecord, StorageMode
+
+    lic = _rights("CC-BY-4.0", cache_bytes_ok=False)
+    library.meta["fs:1"] = SoundRecord(id="fs:1", license=lic,
+                                       storage_mode=StorageMode.by_reference,
+                                       uri="https://freesound.org/x.wav")
+    adapter, runner, uploader = _adapter("fal_stable_audio_3_extend")
+    with pytest.raises(EditRefusal, match="may not be kept or sent on") as err:
+        foley.edit("fs:1", "extend", "x", adapter=adapter, library=library,
+                   extend_after_s=1.0)
+    assert err.value.source_id == "fs:1"
+    assert runner.calls == [] and uploader.paths == []
+    with pytest.raises(EditRefusal, match="may not be kept or sent on"):  # raw, too
+        foley.generate("x", backend="fal_stable_audio_3_extend", adapter=adapter,
+                       library=library, audio=_tone(), derived_from=lic,
+                       extend_after_s=1.0)

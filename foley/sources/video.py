@@ -33,8 +33,9 @@ once, for every V2A backend:
 
 The source clip of an edit (``audio=``, #162) is a media input too
 (:data:`MEDIA_INPUTS`): it takes the same forms, and is keyed, recorded and replayed by
-the same functions (:func:`keyed`, :func:`replayable`). Its upload suffix is sniffed by
-:func:`audio_suffix` (:data:`MEDIA_SUFFIXES`) and its length read by
+the same functions (:func:`keyed`, :func:`replayable`). Each media input is one row of
+:data:`MEDIA` (its mode, its upload suffix sniffer, its length probe): the edit's
+upload suffix is sniffed by :func:`audio_suffix` and its length read by
 :func:`audio_seconds`.
 
 Stdlib only (mixing and soundfile are used when installed, never required).
@@ -56,8 +57,73 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Optional, Union
 
-#: The affordances that carry media a backend is given (keyed by content, never by path).
-MEDIA_INPUTS = ("video", "audio")
+
+@dataclasses.dataclass(frozen=True)
+class MediaInput:
+    """One media input of generation (a row of :data:`MEDIA`): the affordance that
+    carries it, the mode it puts a call in, and how foley reads it.
+
+    Attributes:
+        name: The affordance (``video``, ``audio``).
+        mode: The generation mode a call given it is in (``v2a``, ``edit``).
+        does: What a source taking it does (said when it is missing).
+        covers: How a ``duration_s`` set to its length is noted.
+        suffix_of: The name of this module's sniffer of its bytes' file suffix.
+        seconds_of: The name of this module's probe of its length. Both are looked up
+            when called, so a test can stand in for the probe.
+    """
+
+    name: str
+    mode: str
+    does: str
+    covers: str
+    suffix_of: str
+    seconds_of: str
+
+    def suffix(self, data: bytes) -> str:
+        """The file suffix its ``data`` is uploaded under (sniffed from its first bytes)."""
+        return globals()[self.suffix_of](data)
+
+    def seconds(self, value) -> Optional[float]:
+        """Its length in seconds, or ``None`` (a URL, an unreadable input)."""
+        return globals()[self.seconds_of](value)
+
+    @property
+    def needed(self) -> str:
+        """What a source taking it says when a call lacks it.
+
+        >>> MEDIA["audio"].needed
+        'needs an audio= (it edits a source clip)'
+        """
+        article = "an" if self.name[0] in "aeiou" else "a"
+        return f"needs {article} {self.name}= (it {self.does})"
+
+
+#: SSOT: the media inputs a backend is given (keyed by content, never by path), in
+#: precedence order (a video decides the mode over an audio).
+MEDIA: "dict[str, MediaInput]" = {
+    m.name: m
+    for m in (
+        MediaInput(
+            "video",
+            "v2a",
+            does="sounds a picture",
+            covers="to cover the video",
+            suffix_of="video_suffix",
+            seconds_of="video_seconds",
+        ),
+        MediaInput(
+            "audio",
+            "edit",
+            does="edits a source clip",
+            covers="to match the source clip",
+            suffix_of="audio_suffix",
+            seconds_of="audio_seconds",
+        ),
+    )
+}
+#: The affordances of :data:`MEDIA`.
+MEDIA_INPUTS = tuple(MEDIA)
 #: Schemes of a URL the backend fetches from a server (what it serves may change).
 REMOTE_SCHEMES = ("http://", "https://")
 #: URL schemes sent to a backend as is (no upload); a ``data:`` URI holds its content.
@@ -363,13 +429,6 @@ def audio_suffix(data: bytes) -> str:
     if len(head) > 1 and head[0] == 0xFF and head[1] & 0xE0 == 0xE0:  # MPEG frame sync
         return ".mp3"
     return DEFAULT_AUDIO_SUFFIX
-
-
-#: How the temporary file of each media input's bytes is named (by its sniffed format).
-MEDIA_SUFFIXES: "dict[str, Callable[[bytes], str]]" = {
-    "video": video_suffix,
-    "audio": audio_suffix,
-}
 
 
 def audio_seconds(audio) -> Optional[float]:

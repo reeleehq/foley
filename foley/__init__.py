@@ -799,18 +799,20 @@ def generate(
             (default) is the request itself; a later one is a different paid request
             in the generations cache, so it is a new sound even from a backend that
             takes no seed. :func:`variations` sets it; most callers never do.
-        derived_from: What the clip derives from, for an edit (set by :func:`edit`:
-            a :class:`foley.sources.edit.EditLineage`); applied to the clip's licence
-            before it is repaired, watermarked, credentialed and stored. ``None``
-            (default): a new sound.
+        derived_from: For an edit (an edit backend given ``audio=``), the source
+            clip's :class:`SoundRecord` or :class:`LicenseRecord`: **required** — an
+            edit without it is refused (:class:`EditRefusal`), as one whose rights
+            do not allow it, before anything is paid for. The clip's licence is
+            narrowed to it and records it (credits, content credential).
+            :func:`edit` passes it; ``None`` (default): a new sound.
         **affordances: Unified generation affordances (``duration_s``, ``model``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format``, ``sample_rate``, ``expand_prompt``, ``video`` — see
             :data:`GENERATION_AFFORDANCES`). A ``video`` given as a bare remote URL is
             never replayed from the cache; :class:`RemoteVideo` keys it by content. An
-            edit backend takes ``audio`` (the source clip) and the op's parameters
-            (:data:`EDIT_AFFORDANCES`); prefer :func:`edit`, which also gates the
-            source's rights.
+            edit backend takes ``audio`` (the source clip, with ``derived_from=`` its
+            rights) and the op's parameters (:data:`EDIT_AFFORDANCES`); for a library
+            sound, :func:`edit` does both.
 
     Returns:
         The stored :class:`Candidate` (``origin=generated``) — its ``sound`` is the
@@ -1039,15 +1041,18 @@ def edit(
 ):
     """Edit a library sound into a new one: audio-to-audio, inpaint or extend (#162).
 
-    An edit is a generation whose input includes the source clip, so it runs through
-    :func:`generate` (cost gate, budget, generations cache, safety screen, watermark,
-    QC, ingest by-value). Before anything is paid for, the op and its parameters are
-    checked and the source's rights are gated **fail-closed**
-    (:func:`foley.licensing.derivative_refusal`: verified, modifiable, not
-    share-alike, a known licence). The new sound's licence is the generator's narrowed
-    to the source's (an edit of a non-commercial sound is non-commercial), its
-    ``transformations`` record the edit (op, source id, source licence, parameters),
-    and a source that must be credited is credited by :func:`credits`.
+    An edit is a generation whose input includes the source clip (the ``edit`` mode),
+    so it runs through :func:`generate` (cost gate, budget, generations cache, safety
+    screen, watermark, QC, ingest by-value) with the source's bytes as ``audio=`` and
+    its record as ``derived_from=``. Before anything is paid for, the op and its
+    parameters are checked (a window inside the clip) and the source's rights are
+    gated **fail-closed** (:func:`foley.licensing.derivative_refusal`: verified,
+    sendable bytes, modifiable, not share-alike, a known licence). The new sound's
+    licence is the generator's narrowed to the source's (an edit of a non-commercial
+    sound is non-commercial); its ``transformations`` record the edit (op, parameters,
+    source id, content and licence), so :func:`credits` credits the source and its
+    licence beside the generator's, and its content credential declares the source as
+    an ingredient.
 
     ``foley.edit(sound_id, "extend", extend_after_s=2)`` — with paid generation
     opted in (``$FOLEY_GENERATE_PAID=1``), or a backend named — is the whole call.
@@ -1078,11 +1083,16 @@ def edit(
 
     Raises:
         ValueError: For an unknown op, a missing, foreign or out-of-range op
-            parameter, an ``audio=``, or a backend that does another op.
+            parameter, an ``audio=`` or ``derived_from=``, or a backend that does
+            another op.
         KeyError: If ``source`` is not in the library.
-        EditRefusal: If the source's rights do not allow an edit (nothing is generated).
+        EditRefusal: If the source's rights do not allow an edit, or its bytes may not
+            be sent on (a Freesound API pull); nothing is generated.
+        LookupError: If the source's bytes are not on this machine (a remote
+            by-reference sound: fetch it first).
         SourceConfigurationError: For an unnamed paid backend without the opt-in.
-        GenerationError: As :func:`generate`, when the backend yields no stored sound.
+        GenerationError: As :func:`generate`, when the backend yields no stored sound
+            (``rights_blocked``: a byte-identical sound with wider rights is stored).
     """
     from .sources.edit import resolve_edit
 
@@ -1096,16 +1106,14 @@ def edit(
         adapter=kwargs.get("adapter"),
         affordances=kwargs,
     )
-    rest = {k: v for k, v in kwargs.items() if k not in call.params}
     return generate(
         call.prompt,
         backend=call.backend,
         library=lib,
         budget=budget,
-        derived_from=call.lineage,
+        derived_from=call.source,
         audio=lib.audio(source),
-        **call.params,
-        **rest,
+        **kwargs,
     )
 
 

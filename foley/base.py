@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import math
 import typing
 from dataclasses import dataclass, field
 from enum import Enum
@@ -339,6 +340,7 @@ class EditOp:
         requires_any: Parameters of which at least one must be given and above 0.
         accepts: Optional parameters.
         ordered: ``(lo, hi)`` parameter pairs that must satisfy ``lo < hi``.
+        within_clip: Parameters (times into the source) that may not pass its end.
     """
 
     name: str
@@ -347,6 +349,7 @@ class EditOp:
     requires_any: tuple = ()
     accepts: tuple = ()
     ordered: tuple = ()
+    within_clip: tuple = ()
 
     @property
     def params(self) -> tuple:
@@ -368,6 +371,7 @@ EDIT_OPS: dict[str, EditOp] = {
             "Regenerate one window of the source, keeping the rest",
             requires=("inpaint_start_s", "inpaint_end_s"),
             ordered=(("inpaint_start_s", "inpaint_end_s"),),
+            within_clip=("inpaint_start_s", "inpaint_end_s"),
         ),
         EditOp(
             "extend",
@@ -378,12 +382,20 @@ EDIT_OPS: dict[str, EditOp] = {
 }
 
 
-def check_edit_args(op: str, affordances: Mapping) -> None:
+def check_edit_args(
+    op: str,
+    affordances: Mapping,
+    *,
+    clip_s: Optional[float] = None,
+    limits: Optional[Mapping] = None,
+) -> None:
     """Raise ``ValueError`` unless ``affordances`` are a valid call of the edit ``op``.
 
     Checked before anything is paid for: the op is known, its required parameters are
     given, it is given no other op's parameters, each number is within its
-    :attr:`Affordance.bounds`, and each ``ordered`` pair is increasing.
+    :attr:`Affordance.bounds` and below the backend's own maximum (``limits``: name ->
+    max), each ``ordered`` pair is increasing, and a time into the source
+    (:attr:`EditOp.within_clip`) does not pass its end (``clip_s``, when known).
 
     >>> check_edit_args("inpaint", {"inpaint_start_s": 1.0, "inpaint_end_s": 2.5})
     >>> check_edit_args("inpaint", {"inpaint_start_s": 1.0})
@@ -394,9 +406,11 @@ def check_edit_args(op: str, affordances: Mapping) -> None:
     Traceback (most recent call last):
     ...
     ValueError: the extend edit needs one of extend_before_s=, extend_after_s= above 0
+    >>> check_edit_args("inpaint", {"inpaint_start_s": 1, "inpaint_end_s": 9}, clip_s=4)
+    Traceback (most recent call last):
+    ...
+    ValueError: inpaint_end_s=9 is past the end of the 4 s source clip
     """
-    import math
-
     spec = EDIT_OPS.get(op)
     if spec is None:
         raise ValueError(f"unknown edit op {op!r}; expected one of {sorted(EDIT_OPS)}")
@@ -414,10 +428,13 @@ def check_edit_args(op: str, affordances: Mapping) -> None:
     missing = [p for p in spec.requires if p not in given]
     if missing:
         raise ValueError(f"the {op} edit needs {', '.join(f'{p}=' for p in missing)}")
+    limits = limits or {}
     for name, value in given.items():
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise ValueError(f"{name} must be a number, got {value!r}")
         lo, hi = EDIT_AFFORDANCES[name].bounds or (None, None)
+        if limits.get(name) is not None:
+            hi = limits[name] if hi is None else min(hi, limits[name])
         if (
             not math.isfinite(value)
             or (lo is not None and value < lo)
@@ -433,6 +450,18 @@ def check_edit_args(op: str, affordances: Mapping) -> None:
                 f"{lo_name} must be before {hi_name}, got "
                 f"{given[lo_name]!r} >= {given[hi_name]!r}"
             )
+    if clip_s is not None:
+        for name in spec.within_clip:
+            if given.get(name, 0) > clip_s:
+                raise ValueError(
+                    f"{name}={given[name]!r} is past the end of the {clip_s:g} s "
+                    "source clip"
+                )
+
+
+#: The ``kind`` of the ``transformations`` entry an edit appends to its clip's licence
+#: (#162): what it derives from (see :class:`foley.sources.edit.EditLineage`).
+EDIT_TRANSFORMATION = "edit"
 
 
 def reject_renamed(names: Iterable[str], vocabulary: Optional[dict] = None) -> None:

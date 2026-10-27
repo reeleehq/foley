@@ -91,9 +91,6 @@ V2A_ORDER_ENV = "FOLEY_V2A_ORDER"
 #: (#162: audio-to-audio, inpaint, extend; see :func:`foley.edit`).
 GENERATION_MODES = ("t2a", "v2a", "edit")
 
-#: The input that puts a call in each non-text mode, in precedence order (a video wins).
-MODE_INPUTS = {"v2a": "video", "edit": "audio"}
-
 #: Env var opting in to the paid entries of :data:`DEFAULT_GENERATE_ORDER` (``1``).
 GENERATE_PAID_ENV = "FOLEY_GENERATE_PAID"
 
@@ -135,15 +132,17 @@ def backend_is_paid(backend: str) -> bool:
 
 def generation_mode(affordances: Mapping) -> str:
     """``'v2a'`` when the call gives a ``video``, ``'edit'`` when it gives an ``audio``
-    (and no video), else ``'t2a'`` (see :data:`MODE_INPUTS`).
+    (and no video), else ``'t2a'`` (see :data:`foley.sources.video.MEDIA`).
 
     >>> generation_mode({"video": "clip.mp4"}), generation_mode({"duration_s": 2})
     ('v2a', 't2a')
     >>> generation_mode({"audio": b"RIFF"})
     'edit'
     """
+    from .video import MEDIA
+
     return next(
-        (m for m, name in MODE_INPUTS.items() if affordances.get(name) is not None),
+        (m.mode for m in MEDIA.values() if affordances.get(m.name) is not None),
         "t2a",
     )
 
@@ -367,20 +366,21 @@ class SafetyRefusal(GenerationError):
 
 
 class EditRefusal(GenerationError):
-    """Raised (fail-closed) by :func:`foley.edit` before anything is paid for, when the
-    source sound's rights do not allow an edit of it to be made and kept.
+    """Raised (fail-closed) by an edit (:func:`foley.edit`, or :func:`foley.generate`
+    with an edit backend and ``audio=``) before anything is paid for, when the source's
+    rights do not allow an edit of it to be made and kept, or are not given.
 
-    See :func:`foley.licensing.derivative_refusal`: unverified rights, a licence that
-    forbids modification, a share-alike licence (an edit's own licence cannot carry
-    it), or a licence foley has no row for. Its ``report`` is empty and its ``status``
-    is ``'rights_blocked'``.
+    See :func:`foley.licensing.derivative_refusal`: unverified rights, bytes that may
+    not be sent on, a licence that forbids modification, a share-alike licence (an
+    edit's own licence cannot carry it), or a licence foley has no row for. Its
+    ``report`` is empty and its ``status`` is ``'rights_blocked'``.
 
     Attributes:
-        source_id: The library id of the sound that was to be edited.
+        source_id: The id of the sound that was to be edited (``None``: not known).
         reason: Why it was refused.
     """
 
-    def __init__(self, message: str, *, source_id: str, reason: str):
+    def __init__(self, message: str, *, source_id: Optional[str], reason: str):
         super().__init__(
             message,
             report=IngestReport(root=f"edit:{source_id}"),
@@ -529,13 +529,16 @@ def _generate(
         variation: Which variation of the same request this is (#161; see
             :func:`foley.variations`): ``0`` (default) is the request itself, a later
             one is a different paid request in the generations cache.
-        derived_from: For an edit (#162), what the clip derives from: an object whose
-            ``apply(lic)`` narrows the generated licence to the source's rights,
-            records the edit in its ``transformations`` and carries the source's
-            attribution (:class:`foley.sources.edit.EditLineage`, built by
-            :func:`foley.edit`). Applied to the clip's licence right after the call
-            and before the repair, the level, the watermark and the credential, so
-            the stored record says what it was made from. ``None`` (default): not an edit.
+        derived_from: For an edit (#162: an edit backend given ``audio=``), the source
+            clip's :class:`~foley.base.SoundRecord` (what :func:`foley.edit` passes)
+            or its :class:`~foley.base.LicenseRecord`. **Required** by the ``edit``
+            mode, which gates it fail-closed before anything is paid for
+            (:func:`foley.sources.edit.edit_lineage`, :class:`EditRefusal`): the edit
+            is keyed by it, and the clip's licence is narrowed to it, records it in
+            ``transformations`` (and so in the credits and the content credential)
+            before the repair, the level, the watermark and the credential. A
+            byte-identical sound already in the library with wider rights is not
+            handed back as the edit (``rights_blocked``). Refused for any other mode.
         **affordances: Unified generation affordances (``duration_s``, ``model``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format``, ``sample_rate``, ``expand_prompt`` — see
@@ -553,6 +556,8 @@ def _generate(
 
     Raises:
         SafetyRefusal: If the prompt trips a safety gate and ``on_flagged='refuse'``.
+        EditRefusal: For an edit without ``derived_from``, or whose source's rights do
+            not allow it (before anything is paid for).
         WatermarkUnavailable: If ``watermark=True`` but ``foley[provenance]`` is absent.
     """
     from ..index.library import default_library
@@ -593,6 +598,9 @@ def _generate(
 
     lib = library if library is not None else default_library()
     gen = adapter if adapter is not None else get_source(backend)["adapter"]
+    # The edit mode's licence gate (#162), fail-closed, before anything is paid for: an
+    # edit needs its source's rights, which then key it and narrow its licence.
+    lineage = _edit_lineage(backend, gen, derived_from, affordances)
 
     # Everything that can refuse the call — offline egress, an unsupported
     # meaning-carrying parameter, the run's cost cap, a missing key or plan — is
@@ -609,6 +617,7 @@ def _generate(
             reuse_cached=reuse_cached,
             provider_params=provider_params,
             variation=variation,
+            lineage=lineage.transformation() if lineage is not None else None,
             **affordances,
         )
     except UndemuxedAnswer as exc:  # a kept, paid video still not demuxed (#176)
@@ -636,8 +645,8 @@ def _generate(
         return _error_report(report, backend, exc)
 
     lic = clip.candidate.sound.license
-    if derived_from is not None:  # an edit: the source's rights and credit carry over
-        derived_from.apply(lic)
+    if lineage is not None:  # an edit: the source's rights and credit carry over
+        lineage.apply(lic)
 
     # Warn-mode: reaching here with a flagged scan means on_flagged='warn'. Stamp the
     # safety flags on the record so the fail-closed keep() gate drops it downstream.
@@ -748,6 +757,11 @@ def _generate(
 
     res.cache_key = plan.content_key  # where the paid bytes are, whatever the outcome
     record_generation_outcome(plan, res.status, cache=generations_cache)
+    if lineage is not None and res.status == "skipped_dup":
+        why = lineage.twin_refusal(lib[res.id].license, lic)
+        if why is not None:  # never hand back a record wider than the edit's
+            res.status = "rights_blocked"
+            res.notes.append(why)
     if res.status in ("pass", "warn"):
         if check_prompt and prompt:  # a picture-led (V2A) call may give no prompt
             post_qc["prompt_match"] = _prompt_verdict(
@@ -784,6 +798,33 @@ def _generate(
         res.notes.append(_CONSENT_NOTE)
     report.record(res)
     return report
+
+
+def _edit_lineage(backend: str, adapter, derived_from, affordances: dict):
+    """The :class:`~foley.sources.edit.EditLineage` of an edit call (an edit source given
+    an ``audio``), gated (:func:`foley.sources.edit.edit_lineage`); ``None`` otherwise.
+
+    Raises:
+        EditRefusal: For an edit without its source's rights, or with rights that do
+            not allow it.
+        ValueError: For a ``derived_from`` given to a call that is no edit.
+    """
+    from ._dispatch import source_modes
+    from .registry import SOURCE_REGISTRY
+
+    config = getattr(adapter, "config", None) or SOURCE_REGISTRY.get(backend, {}).get(
+        "config", {}
+    )
+    if "edit" in source_modes(config) and affordances.get("audio") is not None:
+        from .edit import edit_lineage
+
+        return edit_lineage(derived_from, config=config, affordances=affordances)
+    if derived_from is not None:
+        raise ValueError(
+            f"derived_from= is for an edit (an edit backend given audio=), and "
+            f"{backend!r} with these arguments is none"
+        )
+    return None
 
 
 def _error_report(report: IngestReport, backend: str, exc: Exception) -> IngestReport:
