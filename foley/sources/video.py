@@ -33,6 +33,7 @@ import shutil
 import subprocess
 import tempfile
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Optional, Union
 
 #: What ``video=`` accepts: a URL, a local path, or the encoded bytes.
@@ -140,19 +141,23 @@ def audio_track(
     carries a streaming placeholder size).
 
     Raises:
-        RuntimeError: If no ``ffmpeg`` is found, or it cannot read an audio stream.
+        RuntimeError: If no ``ffmpeg`` is found, it cannot read an audio stream, or it
+            runs past ``timeout_s``.
     """
     exe = ffmpeg or ffmpeg_path()
     if exe is None:
         raise RuntimeError("no ffmpeg found to take the audio out of the video")
     with local_video_file(container) as path, tempfile.TemporaryDirectory() as tmp:
-        out = os.path.join(tmp, "audio.wav")
-        proc = subprocess.run(
-            [exe, "-hide_banner", "-nostdin", "-loglevel", "error", "-i", path,
-             "-vn", "-acodec", "pcm_s16le", out],
-            capture_output=True, timeout=timeout_s,
-        )  # fmt: skip
-        wav = open(out, "rb").read() if os.path.exists(out) else b""
+        out = Path(tmp) / "audio.wav"
+        try:
+            proc = subprocess.run(
+                [exe, "-hide_banner", "-nostdin", "-loglevel", "error", "-i", path,
+                 "-vn", "-acodec", "pcm_s16le", str(out)],
+                capture_output=True, timeout=timeout_s,
+            )  # fmt: skip
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(f"ffmpeg ran past {timeout_s:g} s") from exc
+        wav = out.read_bytes() if out.exists() else b""
     if proc.returncode != 0 or not wav:
         raise RuntimeError(
             "ffmpeg could not take the audio out of the video: "

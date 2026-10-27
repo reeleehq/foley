@@ -582,11 +582,12 @@ def ai_use_permitted(
 
 
 #: The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU",
-#: with the outermost regions that carry their own codes (France's: Réunion, French
-#: Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin), which are EU territory.
+#: with the EU territories that carry their own codes: France's outermost regions
+#: (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and
+#: Finland's Åland. (The Canaries, Azores, Madeira, Ceuta and Melilla have none.)
 EU_MEMBER_STATES: frozenset = frozenset(
     "AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE"
-    " RE GF GP MQ YT MF"
+    " RE GF GP MQ YT MF AX"
     .split()
 )  # fmt: skip
 
@@ -594,7 +595,10 @@ EU_MEMBER_STATES: frozenset = frozenset(
 #: codes, plus ``"EU"`` for every member state). A row here makes the territory part
 #: of the use: :func:`keep` refuses when it is excluded, and when it is not stated.
 LICENSE_EXCLUDED_TERRITORIES: "dict[str, frozenset]" = {
-    "Tencent-Hunyuan-Community": frozenset({"EU", "GB", "KR"}),
+    # "the European Union, the United Kingdom and South Korea". The Crown Dependencies
+    # and Gibraltar (JE, GG, IM, GI) are not legally the UK, but the reading that
+    # cannot over-grant is to exclude them too (fail closed).
+    "Tencent-Hunyuan-Community": frozenset({"EU", "GB", "KR", "JE", "GG", "IM", "GI"}),
 }
 
 

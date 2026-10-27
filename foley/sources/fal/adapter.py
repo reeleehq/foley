@@ -353,10 +353,10 @@ class FalAdapter:
                 audio = demux(audio)
             except Exception as exc:  # the call is paid: say so, and where the video is
                 url = audio_url(response, self.config["output"]["audio_field"])
+                where = f"; the video is at {url} (an expiring fal URL)" if url else ""
                 raise RuntimeError(
                     f"{self.name}: the generation was billed, but its audio could not "
-                    f"be taken out of the video ({type(exc).__name__}); the video is "
-                    f"at {url} (an expiring fal URL) and in falaw's asset store"
+                    f"be taken out of the video ({type(exc).__name__}){where}"
                 ) from exc
             notes.append(f"{self.name} answered with a video: its audio track was kept")
         seed_field = nd.get("seed_field")

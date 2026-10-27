@@ -483,7 +483,9 @@ def test_a_required_prompt_is_always_sent(name, field):
     assert field in adapter.native_arguments("", video="https://x/shot.mp4")
 
 
-@pytest.mark.parametrize("spelling", ["UK", "uk", " GB ", "gb", "KR", "EL", "FR", "RE", "GF"])
+@pytest.mark.parametrize(
+    "spelling", ["UK", "uk", " GB ", "gb", "KR", "EL", "FR", "RE", "GF", "AX", "JE"]
+)
 def test_every_spelling_of_an_excluded_territory_is_refused(spelling):
     from foley.licensing import keep
 
