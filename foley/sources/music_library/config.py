@@ -27,6 +27,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from ...licensing import derive_license_flags
 from .fetch import MUSIC_LIBRARY_HTTP
 from .libraries import MUSIC_LIBRARIES, MusicLibrary, MusicLibraryError
 
@@ -52,7 +53,8 @@ def license_section(library: MusicLibrary) -> dict:
         "search_default": None,
         "license_url": library.license_url,
         "cache_bytes_ok": True,  # register_music_library refuses a library without it
-        "requires_attribution": license_id != CC0_LICENSE_ID,
+        # The licence table's flag (the SSOT track_license reads), never a guess.
+        "requires_attribution": derive_license_flags(license_id).requires_attribution,
     }
 
 

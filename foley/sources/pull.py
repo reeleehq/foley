@@ -17,7 +17,8 @@ remote by-reference sound; that is the contract).
 from __future__ import annotations
 
 import functools
-from typing import Optional
+from collections.abc import Sequence
+from typing import Optional, Union
 
 from ..base import IntendedUse
 from ..index.ingest import IngestReport, IngestResult, ingest_one
@@ -48,10 +49,28 @@ def search_license(license: Optional[str], config: dict) -> Optional[str]:
     return (config.get("license") or {}).get("search_default", DFLT_SEARCH_LICENSE)
 
 
+def _source_config(source: str, adapter=None) -> dict:
+    """The config ``add_from`` will search ``source`` under, without building its adapter.
+
+    The injected ``adapter``'s, else the registered one's (its built adapter's config
+    once loaded, else the declaration); ``{}`` for an unknown source (``_add_from``
+    raises for it inside the run).
+    """
+    if adapter is not None:
+        return getattr(adapter, "config", None) or {}
+    from .registry import SOURCE_REGISTRY, discover_sources
+
+    if source not in SOURCE_REGISTRY:
+        discover_sources()
+    entry = SOURCE_REGISTRY.get(source) or {}
+    built = entry.get("adapter")
+    return getattr(built, "config", None) or entry.get("config") or {}
+
+
 def _add_from(
     source: str,
     *,
-    query: str,
+    query: "Union[str, Sequence[str]]",
     license: Optional[str] = SOURCE_DEFAULT_LICENSE,
     limit: int = 50,
     library=None,
@@ -71,7 +90,8 @@ def _add_from(
 
     Args:
         source: A registered live-source name (e.g. ``'freesound'``).
-        query: The natural-language search query.
+        query: The natural-language search query (a music library also takes a
+            list of titles).
         license: License constraint pushed into the source query. Default: the
             source's own (``config['license']['search_default']``), ``'cc0'`` for a
             source that declares none; a music library (one licence) declares no
@@ -220,15 +240,22 @@ def add_from(source: str, **kwargs) -> IngestReport:
     from ..obs.recorder import facade_run
     from ..obs.run_artifact import ingest_digest
 
+    # The manifest records the licence the search actually sends (the source's
+    # default resolved), and _add_from is handed that same value.
+    license = search_license(
+        kwargs.pop("license", SOURCE_DEFAULT_LICENSE),
+        _source_config(source, kwargs.get("adapter")),
+    )
     with facade_run(
         "add_from",
         inputs={
             "source": source,
             "query": kwargs.get("query"),
-            "license": kwargs.get("license", SOURCE_DEFAULT_LICENSE),
+            "license": license,
             "limit": kwargs.get("limit", 50),
         },
     ) as run:
+        kwargs["license"] = license
         report = _add_from(source, **kwargs)
         for res in report.ingested:
             lic = res.record.license

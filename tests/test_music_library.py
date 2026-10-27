@@ -934,3 +934,115 @@ def test_a_library_source_is_refused_offline():
 
     with foley.offline(), pytest.raises(EgressBlocked):
         add_from("incompetech", query="A", adapter=_library_adapter(FakeTransport({})))
+
+
+# --- a library may not take a source's name; discovery refuses a clash -------------
+
+_BY_URL = "https://creativecommons.org/licenses/by/4.0/"
+_CC0_URL = "https://creativecommons.org/publicdomain/zero/1.0/"
+
+
+@pytest.mark.parametrize("name", ["openverse", "freesound", "fal_mmaudio"])
+def test_a_library_named_after_another_source_is_refused(name):
+    from foley.sources.registry import (
+        SOURCE_REGISTRY,
+        SourceNameCollision,
+        declared_source_names,
+        get_source,
+    )
+
+    assert name in declared_source_names(exclude=("music_library",)), name
+    SOURCE_REGISTRY.pop(name, None)  # before first discovery: the order-dependent case
+    lib = MusicLibrary(name, "Someone", license_url=_BY_URL, track_url=_rule)
+    with pytest.raises(SourceNameCollision, match=name):
+        register_music_library(lib, replace=True)
+    assert name not in MUSIC_LIBRARIES
+    assert get_source(name)["module"] != "music_library"
+
+
+def test_a_library_named_after_a_directly_registered_source_is_refused():
+    from foley.sources.registry import (
+        SOURCE_REGISTRY,
+        SourceNameCollision,
+        register_source,
+    )
+
+    register_source("plugin_src", {"name": "plugin_src", "data_egress": "local"})
+    try:
+        lib = MusicLibrary("plugin_src", "S", license_url=_BY_URL, track_url=_rule)
+        with pytest.raises(SourceNameCollision, match="directly registered"):
+            register_music_library(lib)
+        assert "plugin_src" not in MUSIC_LIBRARIES
+    finally:
+        SOURCE_REGISTRY.pop("plugin_src", None)
+
+
+def test_discovery_refuses_two_modules_declaring_one_name_whatever_the_order():
+    from foley.sources.registry import SourceNameCollision, discover_sources
+
+    # bypass register_music_library's check: a clash that reaches discovery anyway
+    MUSIC_LIBRARIES["openverse"] = MusicLibrary(
+        "openverse", "S", license_url=_BY_URL, track_url=_rule
+    )
+    try:
+        with pytest.raises(SourceNameCollision, match="music_library"):
+            discover_sources()
+    finally:
+        MUSIC_LIBRARIES.pop("openverse", None)
+    discover_sources()  # and clean again
+
+
+def test_a_module_whose_source_configs_raise_does_not_break_discovery(monkeypatch):
+    from foley.sources.music_library import config as ml_config
+    from foley.sources.registry import SOURCE_REGISTRY, discover_sources
+
+    def broken():
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(ml_config, "SOURCE_CONFIGS", broken)
+    SOURCE_REGISTRY.pop("incompetech", None)
+    try:
+        with pytest.warns(UserWarning, match="music_library.*boom"):
+            names = discover_sources()
+        assert "openverse" in names and "incompetech" not in names
+    finally:
+        monkeypatch.undo()
+        discover_sources()
+    assert SOURCE_REGISTRY["incompetech"]["module"] == "music_library"
+
+
+def test_a_library_sources_attribution_flag_comes_from_the_licence_table(monkeypatch):
+    import dataclasses
+
+    from foley.sources.music_library import config as ml_config
+    from foley.sources.music_library import library_source_config
+
+    by = MUSIC_LIBRARIES["incompetech"]
+    cc0 = MusicLibrary("cc0_lib", "Z", license_url=_CC0_URL, track_url=_rule)
+    assert library_source_config(by)["license"]["requires_attribution"] is True
+    assert library_source_config(cc0)["license"]["requires_attribution"] is False
+    # the SSOT is derive_license_flags, not "anything but CC0 needs a credit"
+    real = ml_config.derive_license_flags
+    monkeypatch.setattr(
+        ml_config,
+        "derive_license_flags",
+        lambda lid, **kw: dataclasses.replace(
+            real(lid, **kw), requires_attribution=False
+        ),
+    )
+    assert library_source_config(by)["license"]["requires_attribution"] is False
+
+
+def test_every_other_retrieve_source_still_searches_cc0_by_default():
+    from foley.sources.pull import SOURCE_DEFAULT_LICENSE, search_license
+    from foley.sources.registry import SOURCE_REGISTRY, list_sources
+
+    retrieve = {
+        n: SOURCE_REGISTRY[n]
+        for n in list_sources()
+        if SOURCE_REGISTRY[n]["config"].get("kind") == "retrieve"
+        and SOURCE_REGISTRY[n]["module"] not in (None, "music_library")
+    }
+    assert {"freesound", "openverse"} <= set(retrieve)
+    for name, entry in retrieve.items():
+        assert search_license(SOURCE_DEFAULT_LICENSE, entry["config"]) == "cc0", name

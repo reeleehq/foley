@@ -23,6 +23,8 @@ from __future__ import annotations
 
 import importlib
 import pkgutil
+import warnings
+from collections.abc import Iterable, Iterator
 from typing import Optional
 
 #: name -> {"config": dict, "adapter": object | None (lazy), "module": str | None}.
@@ -32,36 +34,103 @@ _SOURCE_REGISTRY: "dict[str, dict]" = {}
 SOURCE_REGISTRY = _SOURCE_REGISTRY
 
 
+class SourceNameCollision(ValueError):
+    """Two declarations claim one source name (a library named after a built-in source, ...).
+
+    Raised by :func:`discover_sources` (whatever order the packages are walked in) and
+    by :func:`~foley.sources.music_library.register_music_library`: a name that
+    silently resolved to whichever module came first would send ``add_from`` to the
+    wrong source, under the wrong licence.
+    """
+
+
+def _iter_declared(*, exclude: "Iterable[str]" = ()) -> "Iterator[tuple[str, dict]]":
+    """``(module, config)`` for every source the :mod:`foley.sources` sub-packages declare now.
+
+    A package without an importable ``config.py`` is not a source; one whose
+    ``SOURCE_CONFIGS()`` raises is skipped with a warning (a broken declaration must
+    not take every other source down with it). ``exclude``: module names to skip.
+    """
+    from . import __path__ as sources_path  # the foley.sources package search path
+
+    excluded = set(exclude)
+    for _finder, modname, ispkg in pkgutil.iter_modules(sources_path):
+        if not ispkg or modname.startswith("_") or modname in excluded:
+            continue
+        try:
+            config_module = importlib.import_module(f"foley.sources.{modname}.config")
+        except ImportError:
+            continue  # a package without an importable config.py is not a source
+        try:
+            configs = _declared_configs(config_module)
+        except Exception as exc:  # noqa: BLE001 - one broken module, not all sources
+            warnings.warn(
+                f"foley.sources.{modname}: its source configs could not be built "
+                f"({type(exc).__name__}: {exc}); its sources are skipped",
+                stacklevel=3,
+            )
+            continue
+        for config in configs:
+            yield modname, config
+
+
+def declared_source_names(*, exclude: "Iterable[str]" = ()) -> "dict[str, str]":
+    """``{source name: module}`` of the sources the sub-packages declare, and of the
+    sources registered directly (:func:`register_source`, module ``None``), leaving out
+    the modules in ``exclude``.
+
+    The name space a new declaration must not collide with:
+    :func:`~foley.sources.music_library.register_music_library` checks a library's
+    name against it (``exclude=('music_library',)``).
+    """
+    excluded = set(exclude)
+    names = {
+        name: entry.get("module")
+        for name, entry in _SOURCE_REGISTRY.items()
+        if entry.get("module") not in excluded
+    }
+    for modname, config in _iter_declared(exclude=excluded):
+        names.setdefault(config["name"], modname)
+    return names
+
+
 def discover_sources() -> "list[str]":
     """Scan :mod:`foley.sources` sub-packages for a ``SOURCE_CONFIG`` and register them.
 
     A valid live source is a sub-package of :mod:`foley.sources` (``ispkg`` and
     not ``_``-prefixed) whose ``config.py`` defines a ``SOURCE_CONFIG`` dict with a
     ``name`` (or a ``SOURCE_CONFIGS`` sequence of them: several sources sharing one
-    adapter class, see :func:`_declared_configs`). Flat modules (bulk-corpus adapters + helpers) are skipped, so this
-    never cross-captures the corpus adapters. Only ``config.py`` is imported here
-    (stdlib-cheap); the adapter loads lazily in :func:`get_source`. Idempotent —
-    an already-registered name (e.g. a test double) is never overwritten.
+    adapter class, see :func:`_declared_configs`). Flat modules (bulk-corpus adapters
+    + helpers) are skipped, so this never cross-captures the corpus adapters. Only
+    ``config.py`` is imported here (stdlib-cheap); the adapter loads lazily in
+    :func:`get_source`. Idempotent: an already-registered name (e.g. a test double)
+    is never overwritten. A module whose ``SOURCE_CONFIGS()`` raises is skipped with
+    a warning.
 
     Returns:
         The list of discovered source names.
-    """
-    from . import __path__ as sources_path  # the foley.sources package search path
 
-    discovered: "list[str]" = []
-    for _finder, modname, ispkg in pkgutil.iter_modules(sources_path):
-        if not ispkg or modname.startswith("_"):
-            continue
-        try:
-            config_module = importlib.import_module(f"foley.sources.{modname}.config")
-        except ImportError:
-            continue  # a package without an importable config.py is not a source
-        for config in _declared_configs(config_module):
-            name = config["name"]
-            _SOURCE_REGISTRY.setdefault(
-                name, {"config": config, "adapter": None, "module": modname}
+    Raises:
+        SourceNameCollision: If two modules declare the same source name (checked
+            over every declaration before anything is registered, so the outcome does
+            not depend on the order the packages are walked in).
+    """
+    declared = list(_iter_declared())
+    owners: "dict[str, str]" = {}
+    for modname, config in declared:
+        owner = owners.setdefault(config["name"], modname)
+        if owner != modname:
+            raise SourceNameCollision(
+                f"source name {config['name']!r} is declared by both "
+                f"foley.sources.{owner} and foley.sources.{modname}; rename one"
             )
-            discovered.append(name)
+    discovered: "list[str]" = []
+    for modname, config in declared:
+        name = config["name"]
+        _SOURCE_REGISTRY.setdefault(
+            name, {"config": config, "adapter": None, "module": modname}
+        )
+        discovered.append(name)
     return discovered
 
 

@@ -252,6 +252,38 @@ def test_add_from_manifest_redacts_query_and_has_disclosure(library):
     assert m["ingest_report"]["summary"]["ingested"] == 1
 
 
+class _SearchDefault(FakeRetrieveAdapter):
+    """FakeRetrieveAdapter that records the licence it was asked for, under a config."""
+
+    def __init__(self, config):
+        self.config, self.asked = config, []
+
+    def search(self, query, *, license="cc0", k=15, **kw):
+        self.asked.append(license)
+        return super().search(query, license=license, k=k, **kw)
+
+
+@pytest.mark.parametrize(
+    "config, kwargs, recorded",
+    [
+        ({}, {}, "cc0"),  # a source that declares no default: cc0, as before
+        ({"license": {"search_default": None}}, {}, None),  # a music library
+        ({"license": {"search_default": None}}, {"license": "CC-BY-4.0"}, "CC-BY-4.0"),
+        ({}, {"license": "cc0"}, "cc0"),  # an explicit licence: unchanged
+    ],
+)
+def test_add_from_manifest_records_the_resolved_license(
+    library, config, kwargs, recorded
+):
+    d = {}
+    obs.enable(prefer_otel=False, run_store=d)
+    ad = _SearchDefault(config)
+    foley.add_from("fake", query="q", library=library, adapter=ad, **kwargs)
+    (m,) = d.values()
+    assert m["inputs"]["license"] == recorded
+    assert ad.asked == [recorded], "the manifest records the licence actually searched"
+
+
 # ---------------------------------------------------------------------------
 # (e) get-or-create: a run scope aggregates nested façades into ONE manifest
 # ---------------------------------------------------------------------------
