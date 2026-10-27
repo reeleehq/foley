@@ -1,4 +1,4 @@
-> built 2026-10-27 07:47 UTC from bbd2f0d (main) · foley 0.0.87. Details: build_info.json
+> built 2026-10-27 07:54 UTC from 988a027 (main) · foley 0.0.88. Details: build_info.json
 
 # index.html.md
 
@@ -117,7 +117,7 @@ result.weave.credits  # attribution    result.timeline             # still edita
 `foley.score(...)` is the stable contract `braidio`/`nw` call. The same surface is available as
 **MCP tools** (`foley_score`, `foley_guide`, `foley_search`, `foley_preview`, `foley_weave`, …) —
 serve them over stdio (`foley-mcp`) or authenticated HTTP (`foley-mcp --http --token …`) — and as
-**CLI commands** generated from the same verb table (`foley.agent.mcp.VERBS`), JSON in and out:
+**CLI commands** generated from the same verb table (`foley.agent.verbs.VERBS`), JSON in and out:
 
 ```default
 foley score "Rain on the roof, then thunder." --territory US
@@ -841,6 +841,7 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 | [`refine`](_autosummary/foley.agent.refine.html.md#module-foley.agent.refine)         | `refine_query` — one event query → 2–4 paraphrases for multi-query retrieval.             |
 | [`session`](_autosummary/foley.agent.session.html.md#module-foley.agent.session)       | Session-scoped audition state — cached candidates, picks, and rejects (#12).              |
 | [`tools`](_autosummary/foley.agent.tools.html.md#module-foley.agent.tools)           | The SELECT orchestration: `find()` / `plan()` + the small pure tool wrappers.             |
+| [`verbs`](_autosummary/foley.agent.verbs.html.md#module-foley.agent.verbs)           | foley's JSON-safe verbs: the one table the MCP server and the CLI are built from (#62).   |
 | [`verify`](_autosummary/foley.agent.verify.html.md#module-foley.agent.verify)         | `verify_match` — the retrieve→verify ladder (clap → listen → judge) + `Judge` impls.      |
 
 
@@ -1098,88 +1099,19 @@ tools take/return only JSON (ids, scores, license summaries, timeline dicts, sto
 **never** a [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate), a [`WeaveResult`](_autosummary/foley.weave.html.md#foley.weave.WeaveResult), or numpy
 audio. Heavy objects stay server-side; audio is referenced by a byte-store key.
 
-The tool functions are thin wrappers over the existing façade (a single seam, three
-surfaces: Python / CLI / MCP): they resolve the shared [`foley.index.SoundLibrary`](_autosummary/foley.index.html.md#foley.index.SoundLibrary)
-and per-session [`foley.agent.session.SessionStore`](_autosummary/foley.agent.session.html.md#foley.agent.session.SessionStore) (both injectable for tests).
+The tools are the verbs of [`foley.agent.verbs`](_autosummary/foley.agent.verbs.html.md#module-foley.agent.verbs) (#193), the table the CLI is built
+from too; this module serves them (stdio or authenticated HTTP) and re-exports them,
+so `mcp.foley_find` and `mcp.TOOLS` keep working.
 `py2mcp` / `fastmcp` are imported LAZILY inside [`build_mcp_server()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.build_mcp_server) only, so
 `import foley` and `import foley.agent` stay dol-only.
 
-### Module Attributes
-
-| [`VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS)   | MCP's tools and the CLI's generated commands are both read from it.                                                                                                             |
-|----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`TOOLS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.TOOLS)   | The MCP tool surface at import, in the table's order (kept for callers that read it; the server reads [`VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS) when it is built). |
-
 ### Functions
 
-| [`build_mcp_server`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.build_mcp_server)(\*[, library, session, ...])    | Build the foley MCP server (lazy `py2mcp`); registers the JSON-safe tool surface.         |
-|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| [`foley_capabilities`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_capabilities)()                             | What foley can do here — keys / extras / system deps / offline / sources / degraded.      |
-| [`foley_drop_pick`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_drop_pick)(sound_id[, session])             | Remove a previously-picked sound from the session.                                        |
-| [`foley_find`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_find)(context[, max_events, verify, ...])   | Find verified, license-clean sound candidates for a narrative passage.                    |
-| [`foley_generate`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_generate)(prompt[, backend, ...])           | Generate a sound from a text prompt (local backends only when offline).                   |
-| [`foley_guide`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_guide)()                                    | How to sound-design a narration with foley — the operating playbook for an agent.         |
-| [`foley_list_picks`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_list_picks)([session])                      | The sounds picked in this session (the 'persist picks' read side).                        |
-| [`foley_nudge`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_nudge)(timeline, item_id, delta_s)          | Shift a timeline item's onset by `delta_s` seconds; returns the new timeline.             |
-| [`foley_pick`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_pick)(sound_id[, session, layer, onset])    | Accept a sound into the session (persisted); `foley_plan` folds picks into a timeline.    |
-| [`foley_plan`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_plan)([session, transcript, candidate_ids]) | Fold picks (or explicit candidate ids) into a JSON sound-design timeline.                 |
-| [`foley_preview`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_preview)(sound_id[, seconds, session])      | Produce a short audition of a sound; returns its store key (never audio bytes).           |
-| [`foley_refine`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_refine)([session, query, picked_ids, ...])  | Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank.      |
-| [`foley_reject`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_reject)(sound_id[, session, reason])        | Reject a sound (feeds `foley_refine` relevance feedback).                                 |
-| [`foley_score`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_score)(context[, commercial_ok, ...])       | Score a narration passage → an editable sound-design timeline + a per-event rationale.    |
-| [`foley_search`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_search)(query[, k, commercial_ok, ...])     | Hybrid (CLAP + keyword) search of the library for a text query; returns candidate rows.   |
-| [`foley_set_gain`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_set_gain)(timeline, item_id, gain_db)       | Set a timeline item's gain (dB); returns the new timeline.                                |
-| [`foley_set_master`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_set_master)(timeline[, target_lufs, ...])   | Set the timeline's master target (LUFS / true-peak); returns the new timeline.            |
-| [`foley_similar_to`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_similar_to)(sound_id[, k, ...])             | "More like this" — the library neighbours of a sound (by id); returns candidate rows.     |
-| [`foley_status`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_status)([session])                          | The current runtime posture + this session's pick/reject counts.                          |
-| [`foley_swap_clip`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_swap_clip)(timeline, item_id, sound_id)     | Swap a timeline item's clip; returns the new timeline.                                    |
-| [`foley_timeline_captions`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_timeline_captions)(timeline[, fmt])         | Export SDH captions for a timeline (`fmt='vtt'` | `'srt'`).                               |
-| [`foley_toggle`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_toggle)(timeline, item_id, enabled)         | Mute/unmute a timeline item; returns the new timeline.                                    |
-| [`foley_weave`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_weave)(narration, timeline[, session])      | Render a timeline under the narration; returns the mix by store key + captions + credits. |
-| [`make_http_app`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.make_http_app)(\*, auth[, path, ...])             | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.      |
-| [`serve`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.serve)(\*[, name, runtime])                       | Build and run the foley MCP server over stdio (blocks); enforces an offline posture.      |
-| [`serve_http`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.serve_http)(\*[, host, port, path])               | Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).          |
-| [`surface_snapshot`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.surface_snapshot)([verbs])                        | `{tool name: {parameter: default}}` of the MCP tools, plus the CLI commands.              |
-
-### Classes
-
-| [`Verb`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.Verb)(fn[, mcp, cli, why])   | One verb of foley's JSON-safe surface: the function and the surfaces it is on (#62).   |
-|------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
-
-### foley.agent.mcp.TOOLS *= [<function foley_find>, <function foley_search>, <function foley_similar_to>, <function foley_preview>, <function foley_refine>, <function foley_pick>, <function foley_drop_pick>, <function foley_reject>, <function foley_list_picks>, <function foley_generate>, <function foley_plan>, <function foley_weave>, <function foley_swap_clip>, <function foley_set_gain>, <function foley_nudge>, <function foley_toggle>, <function foley_set_master>, <function foley_timeline_captions>, <function foley_score>, <function foley_guide>, <function foley_capabilities>, <function foley_status>]*
-
-The MCP tool surface at import, in the table’s order (kept for callers that read it;
-the server reads [`VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS) when it is built).
-
-### foley.agent.mcp.VERBS *= (Verb(fn=<function foley_find>, mcp=True, cli=True, why=''), Verb(fn=<function foley_search>, mcp=True, cli=False, why="the CLI's own \`foley search\` prints readable rows (it predates the table)"), Verb(fn=<function foley_similar_to>, mcp=True, cli=True, why=''), Verb(fn=<function foley_preview>, mcp=True, cli=True, why=''), Verb(fn=<function foley_refine>, mcp=True, cli=True, why=''), Verb(fn=<function foley_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_drop_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_reject>, mcp=True, cli=True, why=''), Verb(fn=<function foley_list_picks>, mcp=True, cli=True, why=''), Verb(fn=<function foley_generate>, mcp=True, cli=True, why=''), Verb(fn=<function foley_plan>, mcp=True, cli=True, why=''), Verb(fn=<function foley_weave>, mcp=True, cli=True, why=''), Verb(fn=<function foley_swap_clip>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_gain>, mcp=True, cli=True, why=''), Verb(fn=<function foley_nudge>, mcp=True, cli=True, why=''), Verb(fn=<function foley_toggle>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_master>, mcp=True, cli=True, why=''), Verb(fn=<function foley_timeline_captions>, mcp=True, cli=True, why=''), Verb(fn=<function foley_score>, mcp=True, cli=True, why=''), Verb(fn=<function foley_guide>, mcp=True, cli=True, why=''), Verb(fn=<function foley_capabilities>, mcp=True, cli=True, why=''), Verb(fn=<function foley_status>, mcp=True, cli=True, why=''))*
-
-MCP’s tools and the CLI’s generated
-commands are both read from it.
-
-* **Type:**
-  The verb table (SSOT), in a stable order
-
-### *class* foley.agent.mcp.Verb(fn, mcp=True, cli=True, why='')
-
-Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
-
-One verb of foley’s JSON-safe surface: the function and the surfaces it is on (#62).
-
-The function is the verb: JSON in, JSON out, a thin call into the façade. MCP serves
-it as the tool `fn.__name__`; the `foley` CLI as the command of that name
-without its `foley_` prefix ([`foley.cli.build_parser()`](_autosummary/foley.cli.html.md#foley.cli.build_parser)). Adding a verb here
-adds it to both, with no surface code.
-
-#### *property* command *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
-
-`foley_similar_to` -> `similar-to`.
-
-* **Type:**
-  The CLI command name
-
-#### why *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= ''*
-
-Why a surface is off (said where the flag is set, so it is never a silent gap).
+| [`build_mcp_server`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.build_mcp_server)(\*[, library, session, ...])   | Build the foley MCP server (lazy `py2mcp`); registers the JSON-safe tool surface.    |
+|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`make_http_app`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.make_http_app)(\*, auth[, path, ...])            | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP. |
+| [`serve`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.serve)(\*[, name, runtime])                      | Build and run the foley MCP server over stdio (blocks); enforces an offline posture. |
+| [`serve_http`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.serve_http)(\*[, host, port, path])              | Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).     |
 
 ### foley.agent.mcp.build_mcp_server(, library=None, session='default', runtime=None, byte_store=None, include=None, name='foley', max_usd=None)
 
@@ -1201,196 +1133,6 @@ injectable library / runtime / byte-store, and hands the resolved tool functions
     `$FOLEY_LLM=anthropic`).
 * **Returns:**
   A `fastmcp.FastMCP` server.
-
-### foley.agent.mcp.foley_capabilities()
-
-What foley can do here — keys / extras / system deps / offline / sources / degraded.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_drop_pick(sound_id, session='default')
-
-Remove a previously-picked sound from the session.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_find(context, max_events=6, verify='listen', commercial_ok=True, k=10, session='default', territory=None)
-
-Find verified, license-clean sound candidates for a narrative passage.
-
-Caches the full candidates in the session so `foley_plan` / `foley_weave` can
-rehydrate them by id. Returns compact candidate rows. `territory`: where the
-sound is used (an ISO country code, or `"WORLD"` for online publishing); a
-licence that excludes territories is refused while it is unstated.
-
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
-
-### foley.agent.mcp.foley_generate(prompt, backend='auto', commercial_ok=True, session='default', territory=None)
-
-Generate a sound from a text prompt (local backends only when offline).
-
-`backend='auto'` tries the host’s generation order (ElevenLabs direct first, then
-the fal backends, then the local Stable Audio Open; the paid ones only when the
-host opted in with `$FOLEY_GENERATE_PAID=1`; `$FOLEY_GENERATE_ORDER` /
-`$FOLEY_GENERATE_BACKEND` change it), skipping what is not configured or not
-allowed offline; name one to choose (`fal_stable_audio_3`, `elevenlabs`, …).
-
-A clip QC would quarantine for a clipped run just over the gate is repaired and
-stored (the repair is in the result’s notes). A refused generation’s dict carries
-`cache_key`: where its paid bytes are in the generations cache
-(`foley.generations.get(cache_key)`, on the host — bytes never travel over MCP).
-`territory`: where the sound is used (an ISO country code, or `"WORLD"`); a
-backend whose licence excludes territories (HunyuanVideo-Foley) needs it stated.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_guide()
-
-How to sound-design a narration with foley — the operating playbook for an agent.
-
-Call this first if you are unsure of the workflow: it returns the tool order, the taste
-heuristics (restraint, layering, ducking, licensing), and the offline posture.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_list_picks(session='default')
-
-The sounds picked in this session (the ‘persist picks’ read side).
-
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
-
-### foley.agent.mcp.foley_nudge(timeline, item_id, delta_s)
-
-Shift a timeline item’s onset by `delta_s` seconds; returns the new timeline.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_pick(sound_id, session='default', layer=None, onset=None)
-
-Accept a sound into the session (persisted); `foley_plan` folds picks into a timeline.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_plan(session='default', transcript=None, candidate_ids=None)
-
-Fold picks (or explicit candidate ids) into a JSON sound-design timeline.
-
-Each pick’s explicit `layer` / `onset` (set via [`foley_pick()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.foley_pick)) is overlaid
-onto its candidate’s [`SoundEvent`](_autosummary/foley.base.html.md#foley.base.SoundEvent) so `plan` honors the agent’s
-placement choices — a numeric `onset` becomes an absolute-seconds anchor (see
-[`foley.weave.anchor.parse_symbolic_anchor()`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.parse_symbolic_anchor)).
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_preview(sound_id, seconds=6, session='default')
-
-Produce a short audition of a sound; returns its store key (never audio bytes).
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_refine(session='default', query=None, picked_ids=None, rejected_ids=None, hint=None, k=10)
-
-Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_reject(sound_id, session='default', reason=None)
-
-Reject a sound (feeds `foley_refine` relevance feedback).
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_score(context, commercial_ok=True, verify='listen', max_events=6, session='default', territory=None)
-
-Score a narration passage → an editable sound-design timeline + a per-event rationale.
-
-The one-call SELECT→plan entry for an agent: pass the narration text and get back a JSON
-timeline plus a rationale for each chosen sound. Weaving (rendering the mastered mix) is a
-**separate** step (`foley_weave`) so you can review / edit the timeline first — swap a
-clip, nudge an onset, drop a cue — before committing to a render. `territory`:
-where the sound is used (an ISO country code, or `"WORLD"` for online publishing);
-a licence that excludes territories is refused while it is unstated.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_search(query, k=10, commercial_ok=True, ucs_category=None, rerank=False, session='default')
-
-Hybrid (CLAP + keyword) search of the library for a text query; returns candidate rows.
-
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
-
-### foley.agent.mcp.foley_set_gain(timeline, item_id, gain_db)
-
-Set a timeline item’s gain (dB); returns the new timeline.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_set_master(timeline, target_lufs=None, peak_dbfs=None)
-
-Set the timeline’s master target (LUFS / true-peak); returns the new timeline.
-
-Either field may be set independently — omitting one keeps the podcast default for
-that field (so `peak_dbfs=-2.0` alone tightens only the true-peak ceiling).
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_similar_to(sound_id, k=10, commercial_ok=True, session='default')
-
-“More like this” — the library neighbours of a sound (by id); returns candidate rows.
-
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
-
-### foley.agent.mcp.foley_status(session='default')
-
-The current runtime posture + this session’s pick/reject counts.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_swap_clip(timeline, item_id, sound_id)
-
-Swap a timeline item’s clip; returns the new timeline.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_timeline_captions(timeline, fmt='vtt')
-
-Export SDH captions for a timeline (`fmt='vtt'` | `'srt'`).
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_toggle(timeline, item_id, enabled)
-
-Mute/unmute a timeline item; returns the new timeline.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
-### foley.agent.mcp.foley_weave(narration, timeline, session='default')
-
-Render a timeline under the narration; returns the mix by store key + captions + credits.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### foley.agent.mcp.make_http_app(, auth, path='/mcp', json_response=False, library=None, runtime=None, byte_store=None, include=None, name='foley')
 
@@ -1428,17 +1170,6 @@ Wraps [`make_http_app()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.m
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
-
-### foley.agent.mcp.surface_snapshot(verbs=None)
-
-`{tool name: {parameter: default}}` of the MCP tools, plus the CLI commands.
-
-What an agent or a script binds to by name, without py2mcp: a test pins it, so a
-renamed tool or a changed default is a decision, never an accident (#62). A
-parameter with no default maps to `"<required>"`.
-
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 
 # _autosummary/foley.agent.policy.html.md
@@ -2131,6 +1862,299 @@ refine pass.
   * **filters** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Extra `SoundLibrary.search()` kwargs (e.g. the license prefilter).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
+
+
+# _autosummary/foley.agent.verbs.html.md
+
+# foley.agent.verbs
+
+foley’s JSON-safe verbs: the one table the MCP server and the CLI are built from (#62).
+
+Each verb is a plain function, JSON in and JSON out, a thin call into the façade: it
+takes and returns only JSON (ids, scores, licence summaries, timeline dicts, store keys),
+never a [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate), a [`WeaveResult`](_autosummary/foley.weave.html.md#foley.weave.WeaveResult) or numpy
+audio. [`VERBS`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.VERBS) lists them with the surfaces they are on: [`foley.agent.mcp`](_autosummary/foley.agent.mcp.html.md#module-foley.agent.mcp)
+serves them as MCP tools, [`foley.cli.build_parser()`](_autosummary/foley.cli.html.md#foley.cli.build_parser) as `foley` commands, and
+[`surface_snapshot()`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.surface_snapshot) pins what both expose.
+
+The verbs share one injectable state (the library, the session factory, the byte store,
+the bound runtime, the server’s spend budget), set by `_configure()`. Nothing here
+imports a surface library: `py2mcp` / `fastmcp` load inside
+[`foley.agent.mcp.build_mcp_server()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.build_mcp_server) only, `cw` inside the CLI.
+
+### Module Attributes
+
+| [`VERBS`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.VERBS)   | MCP's tools and the CLI's generated commands are both read from it.                                                                                                             |
+|----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`TOOLS`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.TOOLS)   | The MCP tool surface at import, in the table's order (kept for callers that read it; the server reads [`VERBS`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.VERBS) when it is built). |
+
+### Functions
+
+| [`foley_capabilities`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_capabilities)()                             | What foley can do here — keys / extras / system deps / offline / sources / degraded.      |
+|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| [`foley_drop_pick`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_drop_pick)(sound_id[, session])             | Remove a previously-picked sound from the session.                                        |
+| [`foley_find`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_find)(context[, max_events, verify, ...])   | Find verified, license-clean sound candidates for a narrative passage.                    |
+| [`foley_generate`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_generate)(prompt[, backend, ...])           | Generate a sound from a text prompt (local backends only when offline).                   |
+| [`foley_guide`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_guide)()                                    | How to sound-design a narration with foley — the operating playbook for an agent.         |
+| [`foley_list_picks`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_list_picks)([session])                      | The sounds picked in this session (the 'persist picks' read side).                        |
+| [`foley_nudge`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_nudge)(timeline, item_id, delta_s)          | Shift a timeline item's onset by `delta_s` seconds; returns the new timeline.             |
+| [`foley_pick`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_pick)(sound_id[, session, layer, onset])    | Accept a sound into the session (persisted); `foley_plan` folds picks into a timeline.    |
+| [`foley_plan`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_plan)([session, transcript, candidate_ids]) | Fold picks (or explicit candidate ids) into a JSON sound-design timeline.                 |
+| [`foley_preview`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_preview)(sound_id[, seconds, session])      | Produce a short audition of a sound; returns its store key (never audio bytes).           |
+| [`foley_refine`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_refine)([session, query, picked_ids, ...])  | Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank.      |
+| [`foley_reject`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_reject)(sound_id[, session, reason])        | Reject a sound (feeds `foley_refine` relevance feedback).                                 |
+| [`foley_score`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_score)(context[, commercial_ok, ...])       | Score a narration passage → an editable sound-design timeline + a per-event rationale.    |
+| [`foley_search`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_search)(query[, k, commercial_ok, ...])     | Hybrid (CLAP + keyword) search of the library for a text query; returns candidate rows.   |
+| [`foley_set_gain`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_set_gain)(timeline, item_id, gain_db)       | Set a timeline item's gain (dB); returns the new timeline.                                |
+| [`foley_set_master`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_set_master)(timeline[, target_lufs, ...])   | Set the timeline's master target (LUFS / true-peak); returns the new timeline.            |
+| [`foley_similar_to`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_similar_to)(sound_id[, k, ...])             | "More like this" — the library neighbours of a sound (by id); returns candidate rows.     |
+| [`foley_status`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_status)([session])                          | The current runtime posture + this session's pick/reject counts.                          |
+| [`foley_swap_clip`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_swap_clip)(timeline, item_id, sound_id)     | Swap a timeline item's clip; returns the new timeline.                                    |
+| [`foley_timeline_captions`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_timeline_captions)(timeline[, fmt])         | Export SDH captions for a timeline (`fmt='vtt'` | `'srt'`).                               |
+| [`foley_toggle`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_toggle)(timeline, item_id, enabled)         | Mute/unmute a timeline item; returns the new timeline.                                    |
+| [`foley_weave`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_weave)(narration, timeline[, session])      | Render a timeline under the narration; returns the mix by store key + captions + credits. |
+| [`surface_snapshot`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.surface_snapshot)([verbs])                        | `{tool name: {parameter: default}}` of the MCP tools, plus the CLI commands.              |
+
+### Classes
+
+| [`Verb`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.Verb)(fn[, mcp, cli, why])   | One verb of foley's JSON-safe surface: the function and the surfaces it is on (#62).   |
+|------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+
+### foley.agent.verbs.TOOLS *= [<function foley_find>, <function foley_search>, <function foley_similar_to>, <function foley_preview>, <function foley_refine>, <function foley_pick>, <function foley_drop_pick>, <function foley_reject>, <function foley_list_picks>, <function foley_generate>, <function foley_plan>, <function foley_weave>, <function foley_swap_clip>, <function foley_set_gain>, <function foley_nudge>, <function foley_toggle>, <function foley_set_master>, <function foley_timeline_captions>, <function foley_score>, <function foley_guide>, <function foley_capabilities>, <function foley_status>]*
+
+The MCP tool surface at import, in the table’s order (kept for callers that read it;
+the server reads [`VERBS`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.VERBS) when it is built).
+
+### foley.agent.verbs.VERBS *= (Verb(fn=<function foley_find>, mcp=True, cli=True, why=''), Verb(fn=<function foley_search>, mcp=True, cli=False, why="the CLI's own \`foley search\` prints readable rows (it predates the table)"), Verb(fn=<function foley_similar_to>, mcp=True, cli=True, why=''), Verb(fn=<function foley_preview>, mcp=True, cli=True, why=''), Verb(fn=<function foley_refine>, mcp=True, cli=True, why=''), Verb(fn=<function foley_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_drop_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_reject>, mcp=True, cli=True, why=''), Verb(fn=<function foley_list_picks>, mcp=True, cli=True, why=''), Verb(fn=<function foley_generate>, mcp=True, cli=True, why=''), Verb(fn=<function foley_plan>, mcp=True, cli=True, why=''), Verb(fn=<function foley_weave>, mcp=True, cli=True, why=''), Verb(fn=<function foley_swap_clip>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_gain>, mcp=True, cli=True, why=''), Verb(fn=<function foley_nudge>, mcp=True, cli=True, why=''), Verb(fn=<function foley_toggle>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_master>, mcp=True, cli=True, why=''), Verb(fn=<function foley_timeline_captions>, mcp=True, cli=True, why=''), Verb(fn=<function foley_score>, mcp=True, cli=True, why=''), Verb(fn=<function foley_guide>, mcp=True, cli=True, why=''), Verb(fn=<function foley_capabilities>, mcp=True, cli=True, why=''), Verb(fn=<function foley_status>, mcp=True, cli=True, why=''))*
+
+MCP’s tools and the CLI’s generated
+commands are both read from it.
+
+* **Type:**
+  The verb table (SSOT), in a stable order
+
+### *class* foley.agent.verbs.Verb(fn, mcp=True, cli=True, why='')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One verb of foley’s JSON-safe surface: the function and the surfaces it is on (#62).
+
+The function is the verb: JSON in, JSON out, a thin call into the façade. MCP serves
+it as the tool `fn.__name__`; the `foley` CLI as the command of that name
+without its `foley_` prefix ([`foley.cli.build_parser()`](_autosummary/foley.cli.html.md#foley.cli.build_parser)). Adding a verb here
+adds it to both, with no surface code.
+
+#### *property* command *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+`foley_similar_to` -> `similar-to`.
+
+* **Type:**
+  The CLI command name
+
+#### why *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= ''*
+
+Why a surface is off (said where the flag is set, so it is never a silent gap).
+
+### foley.agent.verbs.foley_capabilities()
+
+What foley can do here — keys / extras / system deps / offline / sources / degraded.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_drop_pick(sound_id, session='default')
+
+Remove a previously-picked sound from the session.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_find(context, max_events=6, verify='listen', commercial_ok=True, k=10, session='default', territory=None)
+
+Find verified, license-clean sound candidates for a narrative passage.
+
+Caches the full candidates in the session so `foley_plan` / `foley_weave` can
+rehydrate them by id. Returns compact candidate rows. `territory`: where the
+sound is used (an ISO country code, or `"WORLD"` for online publishing); a
+licence that excludes territories is refused while it is unstated.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+### foley.agent.verbs.foley_generate(prompt, backend='auto', commercial_ok=True, session='default', territory=None)
+
+Generate a sound from a text prompt (local backends only when offline).
+
+`backend='auto'` tries the host’s generation order (ElevenLabs direct first, then
+the fal backends, then the local Stable Audio Open; the paid ones only when the
+host opted in with `$FOLEY_GENERATE_PAID=1`; `$FOLEY_GENERATE_ORDER` /
+`$FOLEY_GENERATE_BACKEND` change it), skipping what is not configured or not
+allowed offline; name one to choose (`fal_stable_audio_3`, `elevenlabs`, …).
+
+A clip QC would quarantine for a clipped run just over the gate is repaired and
+stored (the repair is in the result’s notes). A refused generation’s dict carries
+`cache_key`: where its paid bytes are in the generations cache
+(`foley.generations.get(cache_key)`, on the host — bytes never travel over MCP).
+`territory`: where the sound is used (an ISO country code, or `"WORLD"`); a
+backend whose licence excludes territories (HunyuanVideo-Foley) needs it stated.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_guide()
+
+How to sound-design a narration with foley — the operating playbook for an agent.
+
+Call this first if you are unsure of the workflow: it returns the tool order, the taste
+heuristics (restraint, layering, ducking, licensing), and the offline posture.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_list_picks(session='default')
+
+The sounds picked in this session (the ‘persist picks’ read side).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+### foley.agent.verbs.foley_nudge(timeline, item_id, delta_s)
+
+Shift a timeline item’s onset by `delta_s` seconds; returns the new timeline.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_pick(sound_id, session='default', layer=None, onset=None)
+
+Accept a sound into the session (persisted); `foley_plan` folds picks into a timeline.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_plan(session='default', transcript=None, candidate_ids=None)
+
+Fold picks (or explicit candidate ids) into a JSON sound-design timeline.
+
+Each pick’s explicit `layer` / `onset` (set via [`foley_pick()`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_pick)) is overlaid
+onto its candidate’s [`SoundEvent`](_autosummary/foley.base.html.md#foley.base.SoundEvent) so `plan` honors the agent’s
+placement choices — a numeric `onset` becomes an absolute-seconds anchor (see
+[`foley.weave.anchor.parse_symbolic_anchor()`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.parse_symbolic_anchor)).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_preview(sound_id, seconds=6, session='default')
+
+Produce a short audition of a sound; returns its store key (never audio bytes).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_refine(session='default', query=None, picked_ids=None, rejected_ids=None, hint=None, k=10)
+
+Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_reject(sound_id, session='default', reason=None)
+
+Reject a sound (feeds `foley_refine` relevance feedback).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_score(context, commercial_ok=True, verify='listen', max_events=6, session='default', territory=None)
+
+Score a narration passage → an editable sound-design timeline + a per-event rationale.
+
+The one-call SELECT→plan entry for an agent: pass the narration text and get back a JSON
+timeline plus a rationale for each chosen sound. Weaving (rendering the mastered mix) is a
+**separate** step (`foley_weave`) so you can review / edit the timeline first — swap a
+clip, nudge an onset, drop a cue — before committing to a render. `territory`:
+where the sound is used (an ISO country code, or `"WORLD"` for online publishing);
+a licence that excludes territories is refused while it is unstated.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_search(query, k=10, commercial_ok=True, ucs_category=None, rerank=False, session='default')
+
+Hybrid (CLAP + keyword) search of the library for a text query; returns candidate rows.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+### foley.agent.verbs.foley_set_gain(timeline, item_id, gain_db)
+
+Set a timeline item’s gain (dB); returns the new timeline.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_set_master(timeline, target_lufs=None, peak_dbfs=None)
+
+Set the timeline’s master target (LUFS / true-peak); returns the new timeline.
+
+Either field may be set independently — omitting one keeps the podcast default for
+that field (so `peak_dbfs=-2.0` alone tightens only the true-peak ceiling).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_similar_to(sound_id, k=10, commercial_ok=True, session='default')
+
+“More like this” — the library neighbours of a sound (by id); returns candidate rows.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+### foley.agent.verbs.foley_status(session='default')
+
+The current runtime posture + this session’s pick/reject counts.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_swap_clip(timeline, item_id, sound_id)
+
+Swap a timeline item’s clip; returns the new timeline.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_timeline_captions(timeline, fmt='vtt')
+
+Export SDH captions for a timeline (`fmt='vtt'` | `'srt'`).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_toggle(timeline, item_id, enabled)
+
+Mute/unmute a timeline item; returns the new timeline.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_weave(narration, timeline, session='default')
+
+Render a timeline under the narration; returns the mix by store key + captions + credits.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.surface_snapshot(verbs=None)
+
+`{tool name: {parameter: default}}` of the MCP tools, plus the CLI commands.
+
+What an agent or a script binds to by name, without py2mcp: a test pins it, so a
+renamed tool or a changed default is a decision, never an accident (#62). A
+parameter with no default maps to `"<required>"`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 
 # _autosummary/foley.agent.verify.html.md
@@ -3154,7 +3178,7 @@ The `foley` command-line interface (`argparse`, the verbs generated by `cw`).
 
 Two kinds of command share one parser:
 
-* **the verbs** (#62): every verb of [`foley.agent.mcp.VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS), the table MCP serves
+* **the verbs** (#62): every verb of [`foley.agent.verbs.VERBS`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.VERBS), the table MCP serves
   too, generated by `cw` from its signature and docstring, so a verb added there is a
   command here with no CLI code. Its result is printed as JSON; a dict argument (a
   timeline) is given as JSON; a result with `"ok": false` exits 1:
@@ -3184,10 +3208,10 @@ thin call into the library facade; the CLI only parses args and prints.
 
 ### Functions
 
-| [`add_verbs`](_autosummary/foley.cli.html.md#foley.cli.add_verbs)(parser[, verbs])   | Add the CLI-enabled verbs of `verbs` (default: [`foley.agent.mcp.VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS)) to `parser`'s subcommands, one command each (#62).   |
-|-------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`build_parser`](_autosummary/foley.cli.html.md#foley.cli.build_parser)()               | Build the `foley` argument parser: the commands written here, then the verbs.                                                                                                                     |
-| [`main`](_autosummary/foley.cli.html.md#foley.cli.main)([argv])                 | Entry point for the `foley` console script.                                                                                                                                                       |
+| [`add_verbs`](_autosummary/foley.cli.html.md#foley.cli.add_verbs)(parser[, verbs])   | Add the CLI-enabled verbs of `verbs` (default: [`foley.agent.verbs.VERBS`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.VERBS)) to `parser`'s subcommands, one command each (#62).   |
+|-------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`build_parser`](_autosummary/foley.cli.html.md#foley.cli.build_parser)()               | Build the `foley` argument parser: the commands written here, then the verbs.                                                                                                                         |
+| [`main`](_autosummary/foley.cli.html.md#foley.cli.main)([argv])                 | Entry point for the `foley` console script.                                                                                                                                                           |
 
 ### foley.cli.RESERVED_VERB_PARAMS *= frozenset({'_cw', 'command', 'func'})*
 
@@ -3199,7 +3223,7 @@ the parser’s own namespace keys
 
 ### foley.cli.add_verbs(parser, verbs=None)
 
-Add the CLI-enabled verbs of `verbs` (default: [`foley.agent.mcp.VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS))
+Add the CLI-enabled verbs of `verbs` (default: [`foley.agent.verbs.VERBS`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.VERBS))
 to `parser`’s subcommands, one command each (#62).
 
 * **Raises:**
@@ -14218,7 +14242,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'netflix chime', 'netflix intro', 'tudum', 'ta dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix intro', 'ta dum', 'tudum', 'ta-dum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -21339,20 +21363,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 07:47 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/bbd2f0d7c005590c56c052b6496f9378326d8deb"><code>bbd2f0d</code></a> on branch <code>main</code>, for **foley 0.0.87** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 07:54 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/988a027639ab6c14a3a59f2a11f4dc32b26fb7d2"><code>988a027</code></a> on branch <code>main</code>, for **foley 0.0.88** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.87) is behind the latest release on PyPI (0.0.88): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/bbd2f0d7c005590c56c052b6496f9378326d8deb"><code>bbd2f0d7c005590c56c052b6496f9378326d8deb</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/988a027639ab6c14a3a59f2a11f4dc32b26fb7d2"><code>988a027639ab6c14a3a59f2a11f4dc32b26fb7d2</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
-| Tags at this commit | <code>0.0.87</code>                                                                                                                                   |
+| Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
 | Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
@@ -21361,9 +21383,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40468952226">40468952226</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40469733484">40469733484</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>6616f4cc549bb25edd71a3c60788f1a9dbcef996</code> (in the history of the built commit) |
+| Event commit | <code>988a027639ab6c14a3a59f2a11f4dc32b26fb7d2</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -21388,13 +21410,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.88/">0.0.88</a>, newer than the documented version (0.0.87).
+Latest release: <a href="https://pypi.org/project/foley/0.0.88/">0.0.88</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout bbd2f0d7c005590c56c052b6496f9378326d8deb
+git checkout 988a027639ab6c14a3a59f2a11f4dc32b26fb7d2
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

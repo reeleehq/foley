@@ -54,4 +54,5 @@ foley.agent
    refine
    session
    tools
+   verbs
    verify

@@ -557,4 +557,5 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 | [`refine`](foley.agent.refine.html.md#module-foley.agent.refine)         | `refine_query` — one event query → 2–4 paraphrases for multi-query retrieval.             |
 | [`session`](foley.agent.session.html.md#module-foley.agent.session)       | Session-scoped audition state — cached candidates, picks, and rejects (#12).              |
 | [`tools`](foley.agent.tools.html.md#module-foley.agent.tools)           | The SELECT orchestration: `find()` / `plan()` + the small pure tool wrappers.             |
+| [`verbs`](foley.agent.verbs.html.md#module-foley.agent.verbs)           | foley's JSON-safe verbs: the one table the MCP server and the CLI are built from (#62).   |
 | [`verify`](foley.agent.verify.html.md#module-foley.agent.verify)         | `verify_match` — the retrieve→verify ladder (clap → listen → judge) + `Judge` impls.      |

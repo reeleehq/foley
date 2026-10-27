@@ -2,20 +2,18 @@
 
 # About this build
 
-This documentation was built on **2026-10-27 07:47 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/bbd2f0d7c005590c56c052b6496f9378326d8deb"><code>bbd2f0d</code></a> on branch <code>main</code>, for **foley 0.0.87** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 07:54 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/988a027639ab6c14a3a59f2a11f4dc32b26fb7d2"><code>988a027</code></a> on branch <code>main</code>, for **foley 0.0.88** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.87) is behind the latest release on PyPI (0.0.88): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/bbd2f0d7c005590c56c052b6496f9378326d8deb"><code>bbd2f0d7c005590c56c052b6496f9378326d8deb</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/988a027639ab6c14a3a59f2a11f4dc32b26fb7d2"><code>988a027639ab6c14a3a59f2a11f4dc32b26fb7d2</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
-| Tags at this commit | <code>0.0.87</code>                                                                                                                                   |
+| Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
 | Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
@@ -24,9 +22,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40468952226">40468952226</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40469733484">40469733484</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>6616f4cc549bb25edd71a3c60788f1a9dbcef996</code> (in the history of the built commit) |
+| Event commit | <code>988a027639ab6c14a3a59f2a11f4dc32b26fb7d2</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -51,13 +49,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.88/">0.0.88</a>, newer than the documented version (0.0.87).
+Latest release: <a href="https://pypi.org/project/foley/0.0.88/">0.0.88</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout bbd2f0d7c005590c56c052b6496f9378326d8deb
+git checkout 988a027639ab6c14a3a59f2a11f4dc32b26fb7d2
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -39,6 +39,7 @@
 - [foley.agent.refine](foley.agent.refine.html.md): &#96;refine_query&#96; — one event query → 2–4 paraphrases for multi-query retrieval.
 - [foley.agent.session](foley.agent.session.html.md): Session-scoped audition state — cached candidates, picks, and rejects (#12).
 - [foley.agent.tools](foley.agent.tools.html.md): The SELECT orchestration: &#96;find()&#96; / &#96;plan()&#96; + the small pure tool wrappers.
+- [foley.agent.verbs](foley.agent.verbs.html.md): foley’s JSON-safe verbs: the one table the MCP server and the CLI are built from (#62).
 - [foley.agent.verify](foley.agent.verify.html.md): &#96;verify_match&#96; — the retrieve→verify ladder (clap → listen → judge) + &#96;Judge&#96; impls.
 - [foley.weave](foley.weave.html.md): WEAVE — the compositor façade: narration + timeline → a finished, editable mix.
 - [foley.weave.align](foley.weave.align.html.md): Forced-alignment adapters — the &#96;Aligner&#96; seam’s fake default + WhisperX real impl.

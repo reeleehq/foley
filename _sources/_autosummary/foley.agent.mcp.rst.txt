@@ -4,48 +4,12 @@ foley.agent.mcp
 .. automodule:: foley.agent.mcp
 
    
-   .. rubric:: Module Attributes
-
-   .. autosummary::
-   
-      VERBS
-      TOOLS
-   
    .. rubric:: Functions
 
    .. autosummary::
    
       build_mcp_server
-      foley_capabilities
-      foley_drop_pick
-      foley_find
-      foley_generate
-      foley_guide
-      foley_list_picks
-      foley_nudge
-      foley_pick
-      foley_plan
-      foley_preview
-      foley_refine
-      foley_reject
-      foley_score
-      foley_search
-      foley_set_gain
-      foley_set_master
-      foley_similar_to
-      foley_status
-      foley_swap_clip
-      foley_timeline_captions
-      foley_toggle
-      foley_weave
       make_http_app
       serve
       serve_http
-      surface_snapshot
-   
-   .. rubric:: Classes
-
-   .. autosummary::
-   
-      Verb
    
