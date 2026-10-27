@@ -1,0 +1,60 @@
+foley.sources.music\_library
+============================
+
+.. automodule:: foley.sources.music_library
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      acquire
+      attribution_text
+      direct
+      fetch_audio
+      files_store
+      kept_digests
+      kept_sources
+      make_fetch
+      mirror_name
+      music_library
+      music_library_config
+      polite_transport
+      probe_available
+      probe_verify
+      register_music_library
+      require_probe
+      safe_file_name
+      title_url
+      titles_by_library
+      titles_from_json
+      track_license
+      tracks_table
+      wayback
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AcquiredTrack
+      MusicLibrary
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      MusicLibraryError
+      MusicToolMissing
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   acquisition
+   credit_parser
+   fetch
+   libraries
+   mirrors
+   verify

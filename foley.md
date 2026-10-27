@@ -1,4 +1,4 @@
-> built 2026-10-27 17:25 UTC from ef97716 (main) · foley 0.0.92. Details: build_info.json
+> built 2026-10-27 18:04 UTC from 5aaceeb (main) · foley 0.0.93. Details: build_info.json
 
 # index.html.md
 
@@ -96,6 +96,20 @@ result.notes  # how placements were timed, e.g. estimates when foley[align] is a
 
 The selection tools publish as an **MCP server** (via `py2mcp`) so the same capabilities
 drive the agent, a CLI, and external hosts.
+
+## Music libraries
+
+`foley.sources.music_library` acquires the free tracks a production credits (Kevin MacLeod’s incompetech is built in; the paid Artlist and Epidemic Sound give wishlist rows, never downloads). Each title is fetched politely through foley’s transport (paced per host, `429` / `Retry-After` honoured), from the library’s server and then the Internet Archive’s raw copy (a `Retry-After` longer than the cap moves on to the archive instead of waiting), checked to be audio (an audio stream and a duration), and recorded with a `LicenseRecord` read from the library’s licence URL. Before anything is fetched, each title’s licence goes through foley’s fail-closed gate for `intended_use=` (default: commercial publishing): a title it refuses, such as one under a NonCommercial licence, is a `refused` row and is not downloaded. Needs `foley[music-library]` and `ffprobe`.
+
+```python
+from foley.sources.music_library import acquire, attribution_text, kept_digests, titles_by_library, tracks_table
+
+titles = titles_by_library(video_description)["incompetech"]  # or a list / {title: {metadata}}
+rows = acquire("incompetech", titles, out="audio/macleod")      # one row per title: acquired / failed / refused
+table = tracks_table(rows)                                      # CSV; row.row() is the JSON-safe dict
+print(attribution_text(rows))                                   # the blocks to paste under the video
+rows = acquire("incompetech", titles, out="audio/macleod", kept=kept_digests(table))  # a rerun fetches only what is missing
+```
 
 ## For AI agents
 
@@ -12747,6 +12761,7 @@ item is redistributable but stored by-reference.
 |----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
 | [`ai_use_permitted`](_autosummary/foley.licensing.html.md#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                        |
 | [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                          |
+| [`cc_refused_terms`](_autosummary/foley.licensing.html.md#foley.licensing.cc_refused_terms)(url)                             | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                             |
 | [`checked_refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason)(record, intended_use)      | [`refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.    |
 | [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                               |
 | [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                           |
@@ -12897,6 +12912,26 @@ Does NOT touch `rights_verified` — verification is a separate concern.
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
   The same (mutated) `record`.
+
+### foley.licensing.cc_refused_terms(url)
+
+The NoDerivatives / ShareAlike terms of a CC licence URL or label.
+
+[`license_id_from_cc_url()`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url) refuses these on purpose (foley has no licence row
+expressing them, so it maps them to `'unknown'`); this says *why* a URL was
+refused, for a message that is not “cannot read a licence”.
+
+```pycon
+>>> cc_refused_terms("https://creativecommons.org/licenses/by-nc-sa/4.0/")
+('ShareAlike',)
+>>> cc_refused_terms("CC BY-ND-SA"), cc_refused_terms("https://creativecommons.org/licenses/by/4.0/")
+(('NoDerivatives', 'ShareAlike'), ())
+>>> cc_refused_terms(None)
+()
+```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
 
 ### foley.licensing.checked_refusal_reason(record, intended_use)
 
@@ -14364,7 +14399,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'netflix intro', 'ta-dum', 'netflix chime', 'netflix sound', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'tudum', 'netflix chime', 'netflix sound', 'netflix intro', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel inside', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -18321,6 +18356,7 @@ the default `rings` — it is opt-in only.
 | [`fsd50k`](_autosummary/foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                       | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                                            |
 | [`http`](_autosummary/foley.sources.http.html.md#module-foley.sources.http)                           | Injectable HTTP transport for foley's live source adapters.                                                |
 | [`internet_archive`](_autosummary/foley.sources.internet_archive.html.md#module-foley.sources.internet_archive)   | Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (`foley[internet-archive]`). |
+| [`music_library`](_autosummary/foley.sources.music_library.html.md#module-foley.sources.music_library)         | Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.            |
 | [`openverse`](_autosummary/foley.sources.openverse.html.md#module-foley.sources.openverse)                 | Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).                        |
 | [`pull`](_autosummary/foley.sources.pull.html.md#module-foley.sources.pull)                           | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                                     |
 | [`registry`](_autosummary/foley.sources.registry.html.md#module-foley.sources.registry)                   | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).                   |
@@ -18564,6 +18600,1345 @@ this package stays dol-only.
 | [`adapter`](_autosummary/foley.sources.internet_archive.adapter.html.md#module-foley.sources.internet_archive.adapter)   | Internet Archive retrieve adapter: opt-in discovery of archival sounds, never auto-verified.   |
 |----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | [`config`](_autosummary/foley.sources.internet_archive.config.html.md#module-foley.sources.internet_archive.config)     | `SOURCE_CONFIG` for the Internet Archive retrieve source (#79 · report 14 §3.4).               |
+
+
+# _autosummary/foley.sources.music_library.acquisition.html.md
+
+# foley.sources.music_library.acquisition
+
+Acquire a music library’s titles: verified files, one provenance row each, a resumable table.
+
+[`acquire()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.acquire) turns titles into download URLs (the library’s rule), fetches each
+from the first of its `mirrors` whose bytes `verify` accepts, writes the file to
+`out` and returns one [`AcquiredTrack`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack) per title. Every step is a seam
+(keyword arguments with working defaults):
+
+- `fetch` (`url -> bytes`) or `transport` (a foley
+  [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport)): by default the fetch goes through
+  [`make_fetch()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.make_fetch) (the resilience layer per
+  > host: pace, `429` / `Retry-After`, breaker); a `fetch` of the caller’s own is
+  > paced per host too ([`pace_per_host()`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.pace_per_host), from the
+  > config’s `rate`). `clock` / `sleep` time both;
+- `mirrors`: [`direct()`](_autosummary/foley.sources.music_library.mirrors.html.md#foley.sources.music_library.mirrors.direct), then
+  [`wayback()`](_autosummary/foley.sources.music_library.mirrors.html.md#foley.sources.music_library.mirrors.wayback);
+- `verify` (`bytes -> seconds`):
+  [`probe_verify()`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.probe_verify);
+- `out`: any `{file name: bytes}` store, a folder by default;
+- `intended_use`: the [`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse) each title’s licence must
+  allow (default [`foley.licensing.DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE): commercial
+  publishing).
+
+A row’s licence is a [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
+([`track_license()`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.track_license)), put through foley’s
+fail-closed gate ([`foley.licensing.refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason)) before anything is
+fetched: a title it refuses is a `refused` row, with the reason, and is not
+downloaded. `url` is where the bytes came from (the mirror that served them),
+`page_url` the library’s own address. A title that fails is a `failed` row with
+its reasons; the batch goes on. A file whose digest a previous run recorded
+(`kept`, from [`kept_digests()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_digests) or [`kept_sources()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_sources)) is not fetched again,
+so a rerun resumes. A paid library fetches nothing: its rows are `wishlist` rows.
+
+[`AcquiredTrack.row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.row) is a flat, JSON-safe dict (a caller such as `an` bridges
+it into its own asset rows without foley knowing it); [`tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.tracks_table) is those
+rows as CSV, and [`attribution_text()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.attribution_text) the blocks to paste under a video.
+
+### Module Attributes
+
+| [`ACQUIRED`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.ACQUIRED)          | the licence gate refused the title for the intended use (nothing fetched); `wishlist`: a paid library's title.                                                              |
+|--------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`KEPT`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.KEPT)              | the licence gate refused the title for the intended use (nothing fetched); `wishlist`: a paid library's title.                                                              |
+| [`FAILED`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.FAILED)            | the licence gate refused the title for the intended use (nothing fetched); `wishlist`: a paid library's title.                                                              |
+| [`REFUSED`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.REFUSED)           | the licence gate refused the title for the intended use (nothing fetched); `wishlist`: a paid library's title.                                                              |
+| [`WISHLIST`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.WISHLIST)          | the licence gate refused the title for the intended use (nothing fetched); `wishlist`: a paid library's title.                                                              |
+| [`HELD`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.HELD)              | The statuses whose file is in `out` (what a rerun may keep, what is credited).                                                                                              |
+| [`TRACK_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.TRACK_COLUMNS)     | The tracks table's columns, in order (a row's other metadata, a catalogue's `feel` or `genre`, follows in name order).                                                      |
+| [`METADATA_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.METADATA_COLUMNS)  | The metadata keys a titles file may set that are columns (the rest the library states).                                                                                     |
+| [`DURATION_DECIMALS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.DURATION_DECIMALS) | Decimal places a duration is written with.                                                                                                                                  |
+| [`Kept`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.Kept)              | a file's recorded sha256, or `{"sha256", "url", "mirror"}` ([`kept_sources()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_sources)), whose `url` / `mirror` a kept row carries on. |
+
+### Functions
+
+| [`acquire`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.acquire)(library, titles, \*, out[, fetch, ...])   | Download `titles` of `library` into `out`, verified, one row each.                                                                                                                                                                                                                |
+|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`attribution_text`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.attribution_text)(rows)                            | The attribution blocks to paste under a video, one per track that has one (acquired or kept), blank-line separated, each once.                                                                                                                                                    |
+| [`files_store`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.files_store)(out)                                  | `out` as a `{file name: bytes}` store: a mapping is used as it is; a folder becomes foley's file store over it ([`foley.stores.make_byte_store()`](_autosummary/foley.stores.html.md#foley.stores.make_byte_store), which makes the folder on its first write).         |
+| [`kept_digests`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_digests)(table)                               | `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun may keep.                                                                                                                                                                                           |
+| [`kept_sources`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_sources)(table)                               | `{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a tracks table: [`kept_digests()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_digests) with where each file came from, so a kept row still says which URL and mirror served it (`acquire(kept=...)` takes either). |
+| [`tracks_table`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.tracks_table)(rows)                                | The tracks table as CSV text: [`TRACK_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.TRACK_COLUMNS), then any metadata the rows carry, in name order.                                                                                                                                    |
+
+### Classes
+
+| [`AcquiredTrack`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack)(title, library, status, license)   | One row of the tracks table: a title, what became of it, and its provenance.   |
+|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
+
+### foley.sources.music_library.acquisition.ACQUIRED *= 'acquired'*
+
+the licence gate refused the title for the
+intended use (nothing fetched); `wishlist`: a paid library’s title.
+
+* **Type:**
+  The row statuses. `refused`
+
+### *class* foley.sources.music_library.acquisition.AcquiredTrack(title, library, status, license, file=None, sha256=None, duration_s=None, url=None, mirror=None, page_url=None, credited_by=(), metadata=dict(), error=None)
+
+Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
+
+One row of the tracks table: a title, what became of it, and its provenance.
+
+`url` is the URL that served the bytes (a mirror’s), `mirror` that mirror’s
+name, `page_url` the library’s own address for the title; `credited_by` the
+videos that credit it and `metadata` a titles file’s other fields (`feel`,
+`genre`, …).
+
+#### row()
+
+The row as the tracks table writes it: flat and JSON-safe (a list joined
+by 
+
+```
+``
+```
+
+; 
+
+```
+``
+```
+
+, a mapping as JSON).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
+
+### foley.sources.music_library.acquisition.DURATION_DECIMALS *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 3*
+
+Decimal places a duration is written with.
+
+### foley.sources.music_library.acquisition.FAILED *= 'failed'*
+
+the licence gate refused the title for the
+intended use (nothing fetched); `wishlist`: a paid library’s title.
+
+* **Type:**
+  The row statuses. `refused`
+
+### foley.sources.music_library.acquisition.HELD *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('acquired', 'kept')*
+
+The statuses whose file is in `out` (what a rerun may keep, what is credited).
+
+### foley.sources.music_library.acquisition.KEPT *= 'kept'*
+
+the licence gate refused the title for the
+intended use (nothing fetched); `wishlist`: a paid library’s title.
+
+* **Type:**
+  The row statuses. `refused`
+
+### foley.sources.music_library.acquisition.Kept
+
+a file’s recorded sha256, or `{"sha256", "url", "mirror"}`
+([`kept_sources()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_sources)), whose `url` / `mirror` a kept row carries on.
+
+* **Type:**
+  `kept`’s values
+
+alias of [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]
+
+### foley.sources.music_library.acquisition.METADATA_COLUMNS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('credited_by',)*
+
+The metadata keys a titles file may set that are columns (the rest the library states).
+
+### foley.sources.music_library.acquisition.REFUSED *= 'refused'*
+
+the licence gate refused the title for the
+intended use (nothing fetched); `wishlist`: a paid library’s title.
+
+* **Type:**
+  The row statuses. `refused`
+
+### foley.sources.music_library.acquisition.TRACK_COLUMNS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('title', 'library', 'status', 'file', 'duration_s', 'sha256', 'license', 'license_url', 'rights_verified', 'commercial_ok', 'author', 'url', 'source_page_url', 'mirror', 'attribution', 'credited_by', 'error')*
+
+The tracks table’s columns, in order (a row’s other metadata, a catalogue’s
+`feel` or `genre`, follows in name order).
+
+### foley.sources.music_library.acquisition.WISHLIST *= 'wishlist'*
+
+the licence gate refused the title for the
+intended use (nothing fetched); `wishlist`: a paid library’s title.
+
+* **Type:**
+  The row statuses. `refused`
+
+### foley.sources.music_library.acquisition.acquire(library, titles, \*, out, fetch=None, transport=None, mirrors=(<function direct>, <function wayback>), verify=<function probe_verify>, kept=None, intended_use=IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False, territory=None), libraries=None, config=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
+
+Download `titles` of `library` into `out`, verified, one row each.
+
+`titles` is a list, or `{title: metadata}` whose metadata (`credited_by`:
+the videos that credit it; a catalogue’s `feel`, `genre`, …) rides on the
+row. `library` is a `MusicLibrary` or a name in `libraries` (default
+[`MUSIC_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MUSIC_LIBRARIES)).
+
+Each title’s licence is put through [`foley.licensing.refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason) for
+`intended_use` first (fail-closed: an error in the gate is a refusal); a
+refused title is a `refused` row and is not fetched. The others are fetched
+from each of `mirrors` in turn until one gives bytes `verify` accepts.
+`fetch` (`url -> bytes`) replaces the HTTP path, paced per host by the
+config’s `rate`; otherwise the files come through `transport` (default:
+`requests`) wrapped by foley’s resilience layer per host; that path honours
+[`foley.offline()`](_autosummary/foley.html.md#foley.offline). `config` is laid over
+[`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP); `clock` /
+`sleep` time the waits. `kept` is `{file name: sha256}` a previous run
+recorded ([`kept_digests()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_digests)), or `{file name: {"sha256", "url", "mirror"}}`
+([`kept_sources()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_sources), whose `url` and `mirror` the kept row keeps): a file in
+`out` with that digest is kept, any other is fetched again. A paid library
+downloads nothing and returns wishlist rows.
+
+* **Raises:**
+  * [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – For an unknown library, titles of the wrong shape,
+        metadata that restates the row, two titles saved as one file, or a
+        `kept` value that is neither a digest nor a mapping with one.
+  * [**MusicToolMissing**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicToolMissing) – When `verify` is the default and no probe can run
+        (before anything is downloaded).
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – When both `fetch` and `transport` are given.
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`AcquiredTrack`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack)]
+
+### foley.sources.music_library.acquisition.attribution_text(rows)
+
+The attribution blocks to paste under a video, one per track that has one
+(acquired or kept), blank-line separated, each once.
+
+Each block is [`foley.provenance.credits.attribution_line()`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.attribution_line) of the row’s
+licence: the library’s own wording, verbatim.
+
+```pycon
+>>> from foley.sources.music_library import MUSIC_LIBRARIES, track_license
+>>> lic = track_license(MUSIC_LIBRARIES["incompetech"], "A")
+>>> print(attribution_text([AcquiredTrack("A", "incompetech", ACQUIRED, lic)] * 2))
+"A" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0 License
+http://creativecommons.org/licenses/by/4.0/
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.music_library.acquisition.files_store(out)
+
+`out` as a `{file name: bytes}` store: a mapping is used as it is; a folder
+becomes foley’s file store over it ([`foley.stores.make_byte_store()`](_autosummary/foley.stores.html.md#foley.stores.make_byte_store), which
+makes the folder on its first write).
+
+* **Return type:**
+  [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
+
+### foley.sources.music_library.acquisition.kept_digests(table)
+
+`{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun
+may keep. `table` is [`tracks_table()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.tracks_table)’s CSV text, or the rows themselves
+([`AcquiredTrack`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack) or their [`row()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack.row) dicts, read back
+from JSON).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.music_library.acquisition.kept_sources(table)
+
+`{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a
+tracks table: [`kept_digests()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_digests) with where each file came from, so a kept row
+still says which URL and mirror served it (`acquire(kept=...)` takes either).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]
+
+### foley.sources.music_library.acquisition.tracks_table(rows)
+
+The tracks table as CSV text: [`TRACK_COLUMNS`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.TRACK_COLUMNS), then any metadata the
+rows carry, in name order.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+
+# _autosummary/foley.sources.music_library.credit_parser.html.md
+
+# foley.sources.music_library.credit_parser
+
+Which titles a video credits, by library: the credit-block parser and the titles file.
+
+[`titles_by_library()`](_autosummary/foley.sources.music_library.credit_parser.html.md#foley.sources.music_library.credit_parser.titles_by_library) reads a video description’s credits (`From Epidemic
+Sound:` blocks, `Music by Kevin MacLeod` headers, the `"Title" Author (site)`
+attribution form) into `{library: [titles]}` over the registered libraries’ names
+and aliases. [`titles_from_json()`](_autosummary/foley.sources.music_library.credit_parser.html.md#foley.sources.music_library.credit_parser.titles_from_json) reads a titles file: a list of titles, or
+`{title: {metadata}}`.
+
+### Functions
+
+| [`titles_by_library`](_autosummary/foley.sources.music_library.credit_parser.html.md#foley.sources.music_library.credit_parser.titles_by_library)(description, \*[, libraries])   | The titles a video description credits, by library (default: the registered ones).   |
+|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`titles_from_json`](_autosummary/foley.sources.music_library.credit_parser.html.md#foley.sources.music_library.credit_parser.titles_from_json)(text)                            | A titles file's JSON: a list of titles, or `{title: {metadata}}`.                    |
+
+### foley.sources.music_library.credit_parser.titles_by_library(description, , libraries=None)
+
+The titles a video description credits, by library (default: the registered ones).
+
+A line naming a library (by name or alias, with `From`/`Music by`/
+`Music:` and a parenthetical allowed around it) opens its block, and each
+following line is a title until a blank line; a timestamp, a
+`Song:`/`Track:` label, quotes and bullets are stripped, and links and
+licence lines skipped. The attribution form (`"Title" Kevin MacLeod
+(incompetech.com)`) credits its title wherever it stands.
+
+```pycon
+>>> text = '''Music:
+... From Epidemic Sound:
+... - 0:00 Night Owl
+... - Song: "Morning Light"
+... https://www.epidemicsound.com/
+...
+... "Sneaky Snitch" Kevin MacLeod (incompetech.com)
+... Licensed under Creative Commons: By Attribution 4.0 License'''
+>>> titles_by_library(text)
+{'epidemic_sound': ['Night Owl', 'Morning Light'], 'incompetech': ['Sneaky Snitch']}
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.sources.music_library.credit_parser.titles_from_json(text)
+
+A titles file’s JSON: a list of titles, or `{title: {metadata}}`.
+
+```pycon
+>>> titles_from_json('["A", "B"]'), titles_from_json('{"A": {"feel": "Bright"}}')
+(['A', 'B'], {'A': {'feel': 'Bright'}})
+```
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – If `text` is not JSON, or not one of those two shapes.
+* **Return type:**
+  [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]]
+
+
+# _autosummary/foley.sources.music_library.fetch.html.md
+
+# foley.sources.music_library.fetch
+
+Fetching a library’s files politely, through foley’s transport and its resilience layer.
+
+A library is someone’s website, and a long run (63 tracks against the Wayback
+Machine) meets `429 Too Many Requests`. So the default fetch goes through a
+[`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport) (default
+[`requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport), which imports `requests` on its
+first call only) wrapped, **per host**, by
+[`foley.sources.resilience.resilient()`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.resilient): a pace from [`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP)’s
+`rate` (2 s between two requests to one host), backoff on `429` / `5xx` that
+waits what a `Retry-After` header asks up to the config’s `retry.max_delay_s`, a
+longer `Retry-After` given up at once
+([`RetryAfterTooLong`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.RetryAfterTooLong): the next mirror is tried
+instead of waiting the cap again and again), and a circuit breaker. Each host has
+its own pace and breaker, so falling back to the archive spends no pause, and the
+library’s site failing does not open the archive’s breaker. The runtime’s
+`http_resilience` switch turns the wrapping off, as it does for every source.
+
+[`fetch_audio()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.fetch_audio) refuses what is not a track: a non-200 answer, a text page (an
+error page served with 200), and a body over `max_bytes` (by its
+`Content-Length` before the body is read, and by its length after).
+
+A config is laid over [`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP) ([`music_library_config()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.music_library_config)), so
+a caller states only what it changes.
+
+### Module Attributes
+
+| [`Fetch`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.Fetch)              | how [`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire) gets a file.   |
+|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| [`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP) | How a music library is fetched (the keys a source config's resilience layer reads, plus the request's own).       |
+
+### Functions
+
+| [`fetch_audio`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.fetch_audio)(url, \*, http[, config])              | `url`'s bytes, asked for with the config's user agent.                                                                                                                                                                                                        |
+|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`make_fetch`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.make_fetch)(\*[, transport, config, clock, sleep]) | The default `url -> bytes`: [`fetch_audio()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.fetch_audio) over [`polite_transport()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.polite_transport) (`config` laid over [`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP)). |
+| [`music_library_config`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.music_library_config)([config])                    | `config` laid over [`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP) (top-level keys: a `retry` or `rate` given replaces the default one whole).                                                                                            |
+| [`polite_transport`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.polite_transport)([transport, config, clock, ...]) | `transport` (default [`requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport)) with a resilient wrapper per host, built from `config` (see the module docstring).                                          |
+
+### foley.sources.music_library.fetch.Fetch
+
+how [`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire) gets a file.
+
+* **Type:**
+  `url -> bytes`
+
+alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
+
+### foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)* *= {'data_egress': 'external', 'max_bytes': 67108864, 'name': 'music_library', 'pricing': {'unit': 'free'}, 'rate': {'per_min': 30}, 'retry': {'give_up_over_max_delay': True, 'max_delay_s': 120.0}, 'user_agent': 'foley-music-library (+https://github.com/reeleehq/foley)'}*
+
+How a music library is fetched (the keys a source config’s resilience layer reads,
+plus the request’s own). `rate`: one request per 2 s to one host (a library is
+someone’s website); `retry.max_delay_s`: the longest `Retry-After` honoured
+(a longer one moves on to the next mirror); `pricing`: free, so a GET is
+re-sent after a dropped connection.
+
+### foley.sources.music_library.fetch.fetch_audio(url, , http, config=None)
+
+`url`’s bytes, asked for with the config’s user agent.
+
+A body over `max_bytes` is refused by its declared `Content-Length` before
+`resp.content` is touched, and by its length after (a server may declare none,
+or lie). foley’s [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport) returns a whole response,
+so with [`requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport) the body is already in
+memory when the header is read: the header check spares the copy, not the
+download. A streaming transport, which would stop at `max_bytes`, is a
+follow-up.
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – On a non-200 answer, a `text/*` page (an error page
+      served with 200), a body over `config['max_bytes']`, or one shorter
+      than its declared `Content-Length` (a cut download, which a probe of
+      its header alone would still accept).
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.sources.music_library.fetch.make_fetch(\*, transport=None, config=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
+
+The default `url -> bytes`: [`fetch_audio()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.fetch_audio) over [`polite_transport()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.polite_transport)
+(`config` laid over [`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP)).
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
+
+### foley.sources.music_library.fetch.music_library_config(config=None)
+
+`config` laid over [`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP) (top-level keys: a `retry`
+or `rate` given replaces the default one whole).
+
+```pycon
+>>> music_library_config({"rate": {"per_min": 6}})["rate"], music_library_config()["max_bytes"]
+({'per_min': 6}, 67108864)
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.sources.music_library.fetch.polite_transport(transport=None, \*, config=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
+
+`transport` (default [`requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport)) with a
+resilient wrapper per host, built from `config` (see the module docstring).
+
+Left unwrapped when the active runtime turns `http_resilience` off.
+
+* **Return type:**
+  [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport)
+
+
+# _autosummary/foley.sources.music_library.html.md
+
+# foley.sources.music_library
+
+Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.
+
+A production that scores itself from free libraries writes the same script each
+time: turn the titles a channel credits into download URLs, fetch them politely,
+check each file is audio, record where it came from and under which licence, and
+collect the attribution lines the licence asks for. [`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire) is that script:
+
+```default
+from foley.sources.music_library import acquire, attribution_text, tracks_table
+
+rows = acquire("incompetech", ["Sneaky Snitch"], out="audio/macleod")
+open("audio/macleod/tracks.csv", "w").write(tracks_table(rows))
+print(attribution_text(rows))
+```
+
+- **A library is data** ([`MusicLibrary`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibrary), `MUSIC_LIBRARIES`,
+  [`register_music_library()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.register_music_library)): `incompetech` (Kevin MacLeod, CC BY 4.0) and
+  > the paid `artlist` and `epidemic_sound`, whose titles become wishlist rows.
+- **Licences come from foley’s SSOT**: each row’s
+  [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) is built from the library’s licence URL by
+  [`foley.licensing.license_id_from_cc_url()`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url) ([`track_license()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.track_license)) and gated
+  > by [`foley.licensing.refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason) for `acquire`’s `intended_use`
+  > (default: commercial publishing) before anything is fetched; a refused title is a
+  > `refused` row. A paid library claims no rights.
+- **Fetching is foley’s**: a [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport) wrapped per host
+  by [`foley.sources.resilience.resilient()`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.resilient) (pace, `429` / `Retry-After`,
+  breaker), with the library’s own server then the Internet Archive’s raw copy as
+  mirrors ([`direct()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.direct), [`wayback()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.wayback)); [`probe_verify()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_verify) checks each file
+  has an audio stream and a length, with foley’s media probes.
+- **Rows are portable** ([`AcquiredTrack`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack)): `.row()` is flat and JSON-safe,
+  [`tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table) writes them as CSV and [`kept_digests()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests) (or
+  [`kept_sources()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_sources), with each file’s URL) reads a table back, so a rerun fetches
+  > only what it lacks.
+
+This is not a live search source (it has no `search` / `download` adapter and no
+`config.py`), so [`foley.sources.registry.discover_sources()`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.discover_sources) does not list it;
+import it as `foley.sources.music_library`. Stdlib only at import; `requests`
+loads on the first real download.
+
+```pycon
+>>> lib = MUSIC_LIBRARIES["incompetech"]
+>>> lib.track_url("Sneaky Snitch")
+'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Sneaky%20Snitch.mp3'
+>>> track_license(lib, "Sneaky Snitch").license_id
+'CC-BY-4.0'
+```
+
+### Functions
+
+| [`acquire`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire)(library, titles, \*, out[, fetch, ...])    | Download `titles` of `library` into `out`, verified, one row each.                                                                                                                                                                                                                |
+|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`attribution_text`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.attribution_text)(rows)                             | The attribution blocks to paste under a video, one per track that has one (acquired or kept), blank-line separated, each once.                                                                                                                                                    |
+| [`direct`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.direct)(url)                                        | The URL itself: the library's own server.                                                                                                                                                                                                                                         |
+| [`fetch_audio`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.fetch_audio)(url, \*, http[, config])               | `url`'s bytes, asked for with the config's user agent.                                                                                                                                                                                                                            |
+| [`files_store`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.files_store)(out)                                   | `out` as a `{file name: bytes}` store: a mapping is used as it is; a folder becomes foley's file store over it ([`foley.stores.make_byte_store()`](_autosummary/foley.stores.html.md#foley.stores.make_byte_store), which makes the folder on its first write).         |
+| [`kept_digests`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests)(table)                                | `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun may keep.                                                                                                                                                                                           |
+| [`kept_sources`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_sources)(table)                                | `{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a tracks table: [`kept_digests()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests) with where each file came from, so a kept row still says which URL and mirror served it (`acquire(kept=...)` takes either). |
+| [`make_fetch`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.make_fetch)(\*[, transport, config, clock, sleep])  | The default `url -> bytes`: [`fetch_audio()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.fetch_audio) over [`polite_transport()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.polite_transport) (`config` laid over `MUSIC_LIBRARY_HTTP`).                                                                    |
+| [`mirror_name`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.mirror_name)(mirror)                                | The name a row records for `mirror` (its function name).                                                                                                                                                                                                                          |
+| [`music_library`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.music_library)(library, \*[, libraries])            | `library` itself, or the registered library of that name.                                                                                                                                                                                                                         |
+| [`music_library_config`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.music_library_config)([config])                     | `config` laid over `MUSIC_LIBRARY_HTTP` (top-level keys: a `retry` or `rate` given replaces the default one whole).                                                                                                                                                               |
+| [`polite_transport`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.polite_transport)([transport, config, clock, ...])  | `transport` (default [`requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport)) with a resilient wrapper per host, built from `config` (see the module docstring).                                                              |
+| [`probe_available`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_available)()                                  | Whether [`probe_verify()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_verify)'s probes can run here: `ffprobe` on `PATH`, or both mixing's video probe with an `ffmpeg` (the length) and `soundfile` (the audio stream).                                                                |
+| [`probe_verify`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_verify)(data, \*[, probe, has_audio, suffix]) | The duration of the audio `data`, in seconds.                                                                                                                                                                                                                                     |
+| [`register_music_library`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.register_music_library)(library, \*[, replace])     | Add `library` to `MUSIC_LIBRARIES` (`replace` to redefine one).                                                                                                                                                                                                                   |
+| [`require_probe`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.require_probe)()                                    | Raise [`MusicToolMissing`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicToolMissing) unless [`probe_available()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_available).                                                                                                                                |
+| [`safe_file_name`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.safe_file_name)(title, \*[, suffix])                | `title` as a file name: NFC, path separators as `-`, no leading dot.                                                                                                                                                                                                              |
+| [`title_url`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.title_url)(template)                                | The `title -> URL` rule that puts the URL-quoted title in `template`'s `{title}`.                                                                                                                                                                                                 |
+| [`titles_by_library`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.titles_by_library)(description, \*[, libraries])    | The titles a video description credits, by library (default: the registered ones).                                                                                                                                                                                                |
+| [`titles_from_json`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.titles_from_json)(text)                             | A titles file's JSON: a list of titles, or `{title: {metadata}}`.                                                                                                                                                                                                                 |
+| [`track_license`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.track_license)(library, title, \*[, page_url, ...]) | The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) of `title` from `library`.                                                                                                                                                            |
+| [`tracks_table`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table)(rows)                                 | The tracks table as CSV text: `TRACK_COLUMNS`, then any metadata the rows carry, in name order.                                                                                                                                                                                   |
+| [`wayback`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.wayback)(url)                                       | The Internet Archive's raw copy of `url` (`WAYBACK_RAW`).                                                                                                                                                                                                                         |
+
+### Classes
+
+| [`AcquiredTrack`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack)(title, library, status, license)   | One row of the tracks table: a title, what became of it, and its provenance.   |
+|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
+| [`MusicLibrary`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibrary)(name, author[, license_url, ...])   | One library: who made it, under which licence, and where a title's file is.    |
+
+### Exceptions
+
+| [`MusicLibraryError`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError)   | A library, a title or a file that cannot be used, and why.             |
+|----------------------------------------------------------------------|------------------------------------------------------------------------|
+| [`MusicToolMissing`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicToolMissing)    | A tool every title needs is missing: the batch stops before it starts. |
+
+### *class* foley.sources.music_library.AcquiredTrack(title, library, status, license, file=None, sha256=None, duration_s=None, url=None, mirror=None, page_url=None, credited_by=(), metadata=dict(), error=None)
+
+Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
+
+One row of the tracks table: a title, what became of it, and its provenance.
+
+`url` is the URL that served the bytes (a mirror’s), `mirror` that mirror’s
+name, `page_url` the library’s own address for the title; `credited_by` the
+videos that credit it and `metadata` a titles file’s other fields (`feel`,
+`genre`, …).
+
+#### row()
+
+The row as the tracks table writes it: flat and JSON-safe (a list joined
+by 
+
+```
+``
+```
+
+; 
+
+```
+``
+```
+
+, a mapping as JSON).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
+
+### *class* foley.sources.music_library.MusicLibrary(name, author, license_url=None, track_url=None, attribution='"{title}" {author}', author_url=None, aliases=(), file_name=<function safe_file_name>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One library: who made it, under which licence, and where a title’s file is.
+
+`license_url` is the URL of its Creative Commons licence, read by
+[`license_id_from_cc_url()`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url); `None` makes the library
+PAID (its titles become wishlist rows, never downloads; `track_url` is then
+unused). `track_url` is the `title -> URL` rule ([`title_url()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.title_url) builds one
+from a template). `attribution` is a template over `{title}`, `{author}`
+and `{license_url}`. `aliases` are the names a video description credits it
+by (`From Epidemic Sound:`, `Kevin MacLeod (incompetech.com)`);
+`file_name` the name a title is saved under.
+
+#### attribution_for(title)
+
+The library’s attribution for `title`, from its template.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### file_name(, suffix='.mp3')
+
+`title` as a file name: NFC, path separators as `-`, no leading dot.
+
+```pycon
+>>> safe_file_name("AC/DC"), safe_file_name("../../escape")
+('AC-DC.mp3', '-..-escape.mp3')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### *property* license_id *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The foley licence id its licence URL maps to (`'unknown'` when paid).
+
+#### *property* paid *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Whether the library has no free licence (wishlist rows only).
+
+#### *property* rights_verified *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Whether foley recognises the licence outright (never for a paid library).
+
+### *exception* foley.sources.music_library.MusicLibraryError
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A library, a title or a file that cannot be used, and why.
+
+### *exception* foley.sources.music_library.MusicToolMissing
+
+Bases: [`RuntimeError`](https://docs.python.org/3/builtins/exceptions.html#RuntimeError)
+
+A tool every title needs is missing: the batch stops before it starts.
+
+### foley.sources.music_library.acquire(library, titles, \*, out, fetch=None, transport=None, mirrors=(<function direct>, <function wayback>), verify=<function probe_verify>, kept=None, intended_use=IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False, territory=None), libraries=None, config=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
+
+Download `titles` of `library` into `out`, verified, one row each.
+
+`titles` is a list, or `{title: metadata}` whose metadata (`credited_by`:
+the videos that credit it; a catalogue’s `feel`, `genre`, …) rides on the
+row. `library` is a [`MusicLibrary`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibrary) or a name in `libraries` (default
+[`MUSIC_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MUSIC_LIBRARIES)).
+
+Each title’s licence is put through [`foley.licensing.refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason) for
+`intended_use` first (fail-closed: an error in the gate is a refusal); a
+refused title is a `refused` row and is not fetched. The others are fetched
+from each of `mirrors` in turn until one gives bytes `verify` accepts.
+`fetch` (`url -> bytes`) replaces the HTTP path, paced per host by the
+config’s `rate`; otherwise the files come through `transport` (default:
+`requests`) wrapped by foley’s resilience layer per host; that path honours
+[`foley.offline()`](_autosummary/foley.html.md#foley.offline). `config` is laid over
+[`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP); `clock` /
+`sleep` time the waits. `kept` is `{file name: sha256}` a previous run
+recorded ([`kept_digests()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests)), or `{file name: {"sha256", "url", "mirror"}}`
+([`kept_sources()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_sources), whose `url` and `mirror` the kept row keeps): a file in
+`out` with that digest is kept, any other is fetched again. A paid library
+downloads nothing and returns wishlist rows.
+
+* **Raises:**
+  * [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – For an unknown library, titles of the wrong shape,
+        metadata that restates the row, two titles saved as one file, or a
+        `kept` value that is neither a digest nor a mapping with one.
+  * [**MusicToolMissing**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicToolMissing) – When `verify` is the default and no probe can run
+        (before anything is downloaded).
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – When both `fetch` and `transport` are given.
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`AcquiredTrack`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.AcquiredTrack)]
+
+### foley.sources.music_library.attribution_text(rows)
+
+The attribution blocks to paste under a video, one per track that has one
+(acquired or kept), blank-line separated, each once.
+
+Each block is [`foley.provenance.credits.attribution_line()`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.attribution_line) of the row’s
+licence: the library’s own wording, verbatim.
+
+```pycon
+>>> from foley.sources.music_library import MUSIC_LIBRARIES, track_license
+>>> lic = track_license(MUSIC_LIBRARIES["incompetech"], "A")
+>>> print(attribution_text([AcquiredTrack("A", "incompetech", ACQUIRED, lic)] * 2))
+"A" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0 License
+http://creativecommons.org/licenses/by/4.0/
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.music_library.direct(url)
+
+The URL itself: the library’s own server.
+
+```pycon
+>>> direct("https://example.org/a.mp3")
+'https://example.org/a.mp3'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.music_library.fetch_audio(url, , http, config=None)
+
+`url`’s bytes, asked for with the config’s user agent.
+
+A body over `max_bytes` is refused by its declared `Content-Length` before
+`resp.content` is touched, and by its length after (a server may declare none,
+or lie). foley’s [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport) returns a whole response,
+so with [`requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport) the body is already in
+memory when the header is read: the header check spares the copy, not the
+download. A streaming transport, which would stop at `max_bytes`, is a
+follow-up.
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – On a non-200 answer, a `text/*` page (an error page
+      served with 200), a body over `config['max_bytes']`, or one shorter
+      than its declared `Content-Length` (a cut download, which a probe of
+      its header alone would still accept).
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.sources.music_library.files_store(out)
+
+`out` as a `{file name: bytes}` store: a mapping is used as it is; a folder
+becomes foley’s file store over it ([`foley.stores.make_byte_store()`](_autosummary/foley.stores.html.md#foley.stores.make_byte_store), which
+makes the folder on its first write).
+
+* **Return type:**
+  [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
+
+### foley.sources.music_library.kept_digests(table)
+
+`{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun
+may keep. `table` is [`tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table)’s CSV text, or the rows themselves
+([`AcquiredTrack`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack) or their [`row()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack.row) dicts, read back
+from JSON).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.music_library.kept_sources(table)
+
+`{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a
+tracks table: [`kept_digests()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests) with where each file came from, so a kept row
+still says which URL and mirror served it (`acquire(kept=...)` takes either).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]
+
+### foley.sources.music_library.make_fetch(\*, transport=None, config=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
+
+The default `url -> bytes`: [`fetch_audio()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.fetch_audio) over [`polite_transport()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.polite_transport)
+(`config` laid over `MUSIC_LIBRARY_HTTP`).
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
+
+### foley.sources.music_library.mirror_name(mirror)
+
+The name a row records for `mirror` (its function name).
+
+```pycon
+>>> mirror_name(wayback)
+'wayback'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.music_library.music_library(library, , libraries=None)
+
+`library` itself, or the registered library of that name.
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – If no library of that name is registered (naming those that are).
+* **Return type:**
+  [`MusicLibrary`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibrary)
+
+### foley.sources.music_library.music_library_config(config=None)
+
+`config` laid over `MUSIC_LIBRARY_HTTP` (top-level keys: a `retry`
+or `rate` given replaces the default one whole).
+
+```pycon
+>>> music_library_config({"rate": {"per_min": 6}})["rate"], music_library_config()["max_bytes"]
+({'per_min': 6}, 67108864)
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.sources.music_library.polite_transport(transport=None, \*, config=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
+
+`transport` (default [`requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport)) with a
+resilient wrapper per host, built from `config` (see the module docstring).
+
+Left unwrapped when the active runtime turns `http_resilience` off.
+
+* **Return type:**
+  [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport)
+
+### foley.sources.music_library.probe_available()
+
+Whether [`probe_verify()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_verify)’s probes can run here: `ffprobe` on `PATH`, or
+both mixing’s video probe with an `ffmpeg` (the length) and `soundfile` (the
+audio stream).
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.sources.music_library.probe_verify(data, , probe=None, has_audio=None, suffix='.mp3')
+
+The duration of the audio `data`, in seconds.
+
+The bytes are written to a temporary file named with `suffix` (from a pipe,
+ffprobe reports no duration). `has_audio(path) -> True | False | None` must
+say `True` (default [`has_audio_stream()`](_autosummary/foley.sources.video.html.md#foley.sources.video.has_audio_stream); `None`,
+“cannot tell”, is a refusal), then `probe(path) -> seconds | None` reads the
+length (default [`default_probe()`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe)).
+
+```pycon
+>>> probe_verify(b"ID3...", probe=lambda path: 61.5, has_audio=lambda path: True)
+61.5
+>>> probe_verify(b"<html>403</html>", probe=lambda path: 3.0,
+...              has_audio=lambda path: False)
+Traceback (most recent call last):
+...
+foley.sources.music_library.libraries.MusicLibraryError: the file has no audio stream
+>>> probe_verify(b"ID3...", probe=lambda path: None, has_audio=lambda path: True)
+Traceback (most recent call last):
+...
+foley.sources.music_library.libraries.MusicLibraryError: the file has no readable duration (not audio)
+```
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – When the file is empty, has no audio stream (or one
+      cannot be confirmed), or has no readable duration.
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+### foley.sources.music_library.register_music_library(library, , replace=False)
+
+Add `library` to `MUSIC_LIBRARIES` (`replace` to redefine one).
+
+A free library is checked for one licence right only, keeping the files
+(`cache_bytes_ok`); the uses a production makes of them are gated per title by
+[`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire) (`intended_use`).
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – If the name is taken (and not `replace`), or a free
+      library has no `track_url` rule or a licence that does not allow
+      keeping the files (a ShareAlike / NoDerivatives licence, refused on
+      purpose; a licence URL foley cannot read; a licence whose flags say no).
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.sources.music_library.require_probe()
+
+Raise [`MusicToolMissing`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicToolMissing) unless [`probe_available()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.probe_available).
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.sources.music_library.safe_file_name(title, , suffix='.mp3')
+
+`title` as a file name: NFC, path separators as `-`, no leading dot.
+
+```pycon
+>>> safe_file_name("AC/DC"), safe_file_name("../../escape")
+('AC-DC.mp3', '-..-escape.mp3')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.music_library.title_url(template)
+
+The `title -> URL` rule that puts the URL-quoted title in `template`’s `{title}`.
+
+```pycon
+>>> title_url("https://x.org/music/{title}.mp3")("Night Owl")
+'https://x.org/music/Night%20Owl.mp3'
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.music_library.titles_by_library(description, , libraries=None)
+
+The titles a video description credits, by library (default: the registered ones).
+
+A line naming a library (by name or alias, with `From`/`Music by`/
+`Music:` and a parenthetical allowed around it) opens its block, and each
+following line is a title until a blank line; a timestamp, a
+`Song:`/`Track:` label, quotes and bullets are stripped, and links and
+licence lines skipped. The attribution form (`"Title" Kevin MacLeod
+(incompetech.com)`) credits its title wherever it stands.
+
+```pycon
+>>> text = '''Music:
+... From Epidemic Sound:
+... - 0:00 Night Owl
+... - Song: "Morning Light"
+... https://www.epidemicsound.com/
+...
+... "Sneaky Snitch" Kevin MacLeod (incompetech.com)
+... Licensed under Creative Commons: By Attribution 4.0 License'''
+>>> titles_by_library(text)
+{'epidemic_sound': ['Night Owl', 'Morning Light'], 'incompetech': ['Sneaky Snitch']}
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.sources.music_library.titles_from_json(text)
+
+A titles file’s JSON: a list of titles, or `{title: {metadata}}`.
+
+```pycon
+>>> titles_from_json('["A", "B"]'), titles_from_json('{"A": {"feel": "Bright"}}')
+(['A', 'B'], {'A': {'feel': 'Bright'}})
+```
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – If `text` is not JSON, or not one of those two shapes.
+* **Return type:**
+  [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]]
+
+### foley.sources.music_library.track_license(library, title, , page_url=None, sha256=None)
+
+The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) of `title` from `library`.
+
+A free library’s record carries the id [`license_id_from_cc_url()`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url)
+reads from its licence URL, the flags derived from it (`requires_attribution`
+among them), `rights_verified` only where that id is verified, and the
+library’s attribution for the title. A paid library’s claims nothing:
+`'unknown'`, every flag closed, no attribution.
+
+```pycon
+>>> rec = track_license(MUSIC_LIBRARIES["incompetech"], "A")
+>>> rec.license_id, rec.requires_attribution, rec.commercial_ok, rec.rights_verified
+('CC-BY-4.0', True, True, True)
+>>> rec = track_license(MUSIC_LIBRARIES["artlist"], "A")
+>>> rec.license_id, rec.commercial_ok, rec.rights_verified, rec.attribution_text
+('unknown', False, False, None)
+```
+
+* **Return type:**
+  [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
+
+### foley.sources.music_library.tracks_table(rows)
+
+The tracks table as CSV text: `TRACK_COLUMNS`, then any metadata the
+rows carry, in name order.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.music_library.wayback(url)
+
+The Internet Archive’s raw copy of `url` (`WAYBACK_RAW`).
+
+```pycon
+>>> wayback("https://example.org/a.mp3")
+'https://web.archive.org/web/2id_/https://example.org/a.mp3'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### Modules
+
+| [`acquisition`](_autosummary/foley.sources.music_library.acquisition.html.md#module-foley.sources.music_library.acquisition)     | Acquire a music library's titles: verified files, one provenance row each, a resumable table.   |
+|-----------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| [`credit_parser`](_autosummary/foley.sources.music_library.credit_parser.html.md#module-foley.sources.music_library.credit_parser) | Which titles a video credits, by library: the credit-block parser and the titles file.          |
+| [`fetch`](_autosummary/foley.sources.music_library.fetch.html.md#module-foley.sources.music_library.fetch)                 | Fetching a library's files politely, through foley's transport and its resilience layer.        |
+| [`libraries`](_autosummary/foley.sources.music_library.libraries.html.md#module-foley.sources.music_library.libraries)         | Music libraries as data: who made one, its licence, its credit, where a title's file is.        |
+| [`mirrors`](_autosummary/foley.sources.music_library.mirrors.html.md#module-foley.sources.music_library.mirrors)             | Where else a track's bytes may be: the library's own server, then the Internet Archive.         |
+| [`verify`](_autosummary/foley.sources.music_library.verify.html.md#module-foley.sources.music_library.verify)               | Checking a downloaded file is audio: an audio stream and a duration, read by foley's probes.    |
+
+
+# _autosummary/foley.sources.music_library.libraries.html.md
+
+# foley.sources.music_library.libraries
+
+Music libraries as data: who made one, its licence, its credit, where a title’s file is.
+
+A [`MusicLibrary`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibrary) names its author, the URL of its licence, the attribution it
+asks for, the names a video credits it by, and the rule from a title to the file’s
+URL. The registry ([`MUSIC_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MUSIC_LIBRARIES), [`register_music_library()`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.register_music_library)) holds
+`incompetech` (Kevin MacLeod, CC BY 4.0) and two paid libraries, `artlist` and
+`epidemic_sound`, which have no free licence: their titles become wishlist rows to
+license by hand, never downloads.
+
+The licence is never typed in: [`track_license()`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.track_license) reads it from the library’s
+licence URL with [`foley.licensing.license_id_from_cc_url()`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url) (the one CC parser,
+which never widens rights) and builds the [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) with
+flags derived from that id. A free library whose licence does not let foley keep the
+files (`cache_bytes_ok`: a URL foley cannot read, or a ShareAlike / NoDerivatives
+licence, which foley refuses on purpose) is refused at registration (fail-closed),
+and a paid one claims no rights at all. Whether a title may be used for a
+production is [`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire)’s `intended_use` gate,
+not registration’s.
+
+```pycon
+>>> lib = MUSIC_LIBRARIES["incompetech"]
+>>> lib.track_url("Sneaky Snitch")
+'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Sneaky%20Snitch.mp3'
+>>> lib.license_id, lib.rights_verified
+('CC-BY-4.0', True)
+>>> print(lib.attribution_for("Sneaky Snitch"))
+"Sneaky Snitch" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0 License
+http://creativecommons.org/licenses/by/4.0/
+```
+
+### Module Attributes
+
+| [`DFLT_SUFFIX`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.DFLT_SUFFIX)       | The extension a track is saved with when its library names no other.   |
+|--------------------------------------------------------------------|------------------------------------------------------------------------|
+| [`PAID_LICENSE_ID`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.PAID_LICENSE_ID)   | no rights are claimed (fail-closed).                                   |
+| [`MUSIC_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MUSIC_LIBRARIES)   | The registered libraries, by name.                                     |
+| [`BUILTIN_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.BUILTIN_LIBRARIES) | The libraries foley ships, registered on import.                       |
+
+### Functions
+
+| [`music_library`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.music_library)(library, \*[, libraries])            | `library` itself, or the registered library of that name.                                                              |
+|-----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| [`register_music_library`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.register_music_library)(library, \*[, replace])     | Add `library` to [`MUSIC_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MUSIC_LIBRARIES) (`replace` to redefine one).         |
+| [`safe_file_name`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.safe_file_name)(title, \*[, suffix])                | `title` as a file name: NFC, path separators as `-`, no leading dot.                                                   |
+| [`title_url`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.title_url)(template)                                | The `title -> URL` rule that puts the URL-quoted title in `template`'s `{title}`.                                      |
+| [`track_license`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.track_license)(library, title, \*[, page_url, ...]) | The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) of `title` from `library`. |
+
+### Classes
+
+| [`MusicLibrary`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibrary)(name, author[, license_url, ...])   | One library: who made it, under which licence, and where a title's file is.   |
+|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+
+### Exceptions
+
+| [`MusicLibraryError`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibraryError)   | A library, a title or a file that cannot be used, and why.   |
+|----------------------------------------------------------------------|--------------------------------------------------------------|
+
+### foley.sources.music_library.libraries.BUILTIN_LIBRARIES *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[MusicLibrary](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibrary), ...]* *= (MusicLibrary(name='incompetech', author='Kevin MacLeod', license_url='http://creativecommons.org/licenses/by/4.0/', track_url=<function title_url('https://incompetech.com/music/royalty-free/mp3-royaltyfree/{title}.mp3')>, attribution='"{title}" {author} (incompetech.com)\\nLicensed under Creative Commons: By Attribution 4.0 License\\n{license_url}', author_url='https://incompetech.com', aliases=('Kevin MacLeod', 'incompetech', 'incompetech.com'), file_name=<function safe_file_name>), MusicLibrary(name='artlist', author='Artlist', license_url=None, track_url=None, attribution='"{title}" {author}', author_url=None, aliases=('Artlist',), file_name=<function safe_file_name>), MusicLibrary(name='epidemic_sound', author='Epidemic Sound', license_url=None, track_url=None, attribution='"{title}" {author}', author_url=None, aliases=('Epidemic Sound', 'Epidemic'), file_name=<function safe_file_name>))*
+
+The libraries foley ships, registered on import.
+
+### foley.sources.music_library.libraries.DFLT_SUFFIX *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= '.mp3'*
+
+The extension a track is saved with when its library names no other.
+
+### foley.sources.music_library.libraries.MUSIC_LIBRARIES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [MusicLibrary](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibrary)]* *= {'artlist': MusicLibrary(name='artlist', author='Artlist', license_url=None, track_url=None, attribution='"{title}" {author}', author_url=None, aliases=('Artlist',), file_name=<function safe_file_name>), 'epidemic_sound': MusicLibrary(name='epidemic_sound', author='Epidemic Sound', license_url=None, track_url=None, attribution='"{title}" {author}', author_url=None, aliases=('Epidemic Sound', 'Epidemic'), file_name=<function safe_file_name>), 'incompetech': MusicLibrary(name='incompetech', author='Kevin MacLeod', license_url='http://creativecommons.org/licenses/by/4.0/', track_url=<function title_url('https://incompetech.com/music/royalty-free/mp3-royaltyfree/{title}.mp3')>, attribution='"{title}" {author} (incompetech.com)\\nLicensed under Creative Commons: By Attribution 4.0 License\\n{license_url}', author_url='https://incompetech.com', aliases=('Kevin MacLeod', 'incompetech', 'incompetech.com'), file_name=<function safe_file_name>)}*
+
+The registered libraries, by name.
+
+### *class* foley.sources.music_library.libraries.MusicLibrary(name, author, license_url=None, track_url=None, attribution='"{title}" {author}', author_url=None, aliases=(), file_name=<function safe_file_name>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One library: who made it, under which licence, and where a title’s file is.
+
+`license_url` is the URL of its Creative Commons licence, read by
+[`license_id_from_cc_url()`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url); `None` makes the library
+PAID (its titles become wishlist rows, never downloads; `track_url` is then
+unused). `track_url` is the `title -> URL` rule ([`title_url()`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.title_url) builds one
+from a template). `attribution` is a template over `{title}`, `{author}`
+and `{license_url}`. `aliases` are the names a video description credits it
+by (`From Epidemic Sound:`, `Kevin MacLeod (incompetech.com)`);
+`file_name` the name a title is saved under.
+
+#### attribution_for(title)
+
+The library’s attribution for `title`, from its template.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### file_name(, suffix='.mp3')
+
+`title` as a file name: NFC, path separators as `-`, no leading dot.
+
+```pycon
+>>> safe_file_name("AC/DC"), safe_file_name("../../escape")
+('AC-DC.mp3', '-..-escape.mp3')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### *property* license_id *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The foley licence id its licence URL maps to (`'unknown'` when paid).
+
+#### *property* paid *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Whether the library has no free licence (wishlist rows only).
+
+#### *property* rights_verified *: [bool](https://docs.python.org/3/builtins/functions.html#bool)*
+
+Whether foley recognises the licence outright (never for a paid library).
+
+### *exception* foley.sources.music_library.libraries.MusicLibraryError
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A library, a title or a file that cannot be used, and why.
+
+### foley.sources.music_library.libraries.PAID_LICENSE_ID *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'unknown'*
+
+no rights are claimed (fail-closed).
+
+* **Type:**
+  The licence id of a paid library’s row
+
+### foley.sources.music_library.libraries.music_library(library, , libraries=None)
+
+`library` itself, or the registered library of that name.
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibraryError) – If no library of that name is registered (naming those that are).
+* **Return type:**
+  [`MusicLibrary`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibrary)
+
+### foley.sources.music_library.libraries.register_music_library(library, , replace=False)
+
+Add `library` to [`MUSIC_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MUSIC_LIBRARIES) (`replace` to redefine one).
+
+A free library is checked for one licence right only, keeping the files
+(`cache_bytes_ok`); the uses a production makes of them are gated per title by
+[`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire) (`intended_use`).
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibraryError) – If the name is taken (and not `replace`), or a free
+      library has no `track_url` rule or a licence that does not allow
+      keeping the files (a ShareAlike / NoDerivatives licence, refused on
+      purpose; a licence URL foley cannot read; a licence whose flags say no).
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.sources.music_library.libraries.safe_file_name(title, , suffix='.mp3')
+
+`title` as a file name: NFC, path separators as `-`, no leading dot.
+
+```pycon
+>>> safe_file_name("AC/DC"), safe_file_name("../../escape")
+('AC-DC.mp3', '-..-escape.mp3')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.music_library.libraries.title_url(template)
+
+The `title -> URL` rule that puts the URL-quoted title in `template`’s `{title}`.
+
+```pycon
+>>> title_url("https://x.org/music/{title}.mp3")("Night Owl")
+'https://x.org/music/Night%20Owl.mp3'
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.music_library.libraries.track_license(library, title, , page_url=None, sha256=None)
+
+The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) of `title` from `library`.
+
+A free library’s record carries the id [`license_id_from_cc_url()`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url)
+reads from its licence URL, the flags derived from it (`requires_attribution`
+among them), `rights_verified` only where that id is verified, and the
+library’s attribution for the title. A paid library’s claims nothing:
+`'unknown'`, every flag closed, no attribution.
+
+```pycon
+>>> rec = track_license(MUSIC_LIBRARIES["incompetech"], "A")
+>>> rec.license_id, rec.requires_attribution, rec.commercial_ok, rec.rights_verified
+('CC-BY-4.0', True, True, True)
+>>> rec = track_license(MUSIC_LIBRARIES["artlist"], "A")
+>>> rec.license_id, rec.commercial_ok, rec.rights_verified, rec.attribution_text
+('unknown', False, False, None)
+```
+
+* **Return type:**
+  [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
+
+
+# _autosummary/foley.sources.music_library.mirrors.html.md
+
+# foley.sources.music_library.mirrors
+
+Where else a track’s bytes may be: the library’s own server, then the Internet Archive.
+
+A mirror is a `url -> url` function; [`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire)
+tries each of its `mirrors` in turn and records the name of the one that served
+the bytes. [`wayback()`](_autosummary/foley.sources.music_library.mirrors.html.md#foley.sources.music_library.mirrors.wayback) asks for the Internet Archive’s raw copy (the `id_`
+form: the bytes as archived, not the archive’s page around them), the only route to
+a site that refuses scripts.
+
+### Module Attributes
+
+| [`Mirror`](_autosummary/foley.sources.music_library.mirrors.html.md#foley.sources.music_library.mirrors.Mirror)       | the URL a track's bytes are asked for at, given the library's URL.   |
+|---------------------------------------------------------------|----------------------------------------------------------------------|
+| [`WAYBACK_RAW`](_autosummary/foley.sources.music_library.mirrors.html.md#foley.sources.music_library.mirrors.WAYBACK_RAW)  | the bytes as archived; `2`: the latest capture).                     |
+| [`DFLT_MIRRORS`](_autosummary/foley.sources.music_library.mirrors.html.md#foley.sources.music_library.mirrors.DFLT_MIRRORS) | Where to look for a file, in order.                                  |
+
+### Functions
+
+| [`direct`](_autosummary/foley.sources.music_library.mirrors.html.md#foley.sources.music_library.mirrors.direct)(url)         | The URL itself: the library's own server.                                                                |
+|----------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| [`mirror_name`](_autosummary/foley.sources.music_library.mirrors.html.md#foley.sources.music_library.mirrors.mirror_name)(mirror) | The name a row records for `mirror` (its function name).                                                 |
+| [`wayback`](_autosummary/foley.sources.music_library.mirrors.html.md#foley.sources.music_library.mirrors.wayback)(url)        | The Internet Archive's raw copy of `url` ([`WAYBACK_RAW`](_autosummary/foley.sources.music_library.mirrors.html.md#foley.sources.music_library.mirrors.WAYBACK_RAW)). |
+
+### foley.sources.music_library.mirrors.DFLT_MIRRORS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Callable](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[str](https://docs.python.org/3/builtins/stdtypes.html#str)], [str](https://docs.python.org/3/builtins/stdtypes.html#str)], ...]* *= (<function direct>, <function wayback>)*
+
+Where to look for a file, in order.
+
+### foley.sources.music_library.mirrors.Mirror
+
+the URL a track’s bytes are asked for at, given the library’s URL.
+
+* **Type:**
+  A mirror
+
+alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.music_library.mirrors.WAYBACK_RAW *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'https://web.archive.org/web/2id_/{url}'*
+
+the bytes as archived;
+`2`: the latest capture).
+
+* **Type:**
+  The Internet Archive’s raw-file form of a URL (`id_`
+
+### foley.sources.music_library.mirrors.direct(url)
+
+The URL itself: the library’s own server.
+
+```pycon
+>>> direct("https://example.org/a.mp3")
+'https://example.org/a.mp3'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.music_library.mirrors.mirror_name(mirror)
+
+The name a row records for `mirror` (its function name).
+
+```pycon
+>>> mirror_name(wayback)
+'wayback'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.music_library.mirrors.wayback(url)
+
+The Internet Archive’s raw copy of `url` ([`WAYBACK_RAW`](_autosummary/foley.sources.music_library.mirrors.html.md#foley.sources.music_library.mirrors.WAYBACK_RAW)).
+
+```pycon
+>>> wayback("https://example.org/a.mp3")
+'https://web.archive.org/web/2id_/https://example.org/a.mp3'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+
+# _autosummary/foley.sources.music_library.verify.html.md
+
+# foley.sources.music_library.verify
+
+Checking a downloaded file is audio: an audio stream and a duration, read by foley’s probes.
+
+[`probe_verify()`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.probe_verify) is the default `verify` seam of
+[`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire) (`bytes -> seconds`). It writes the
+bytes to a temporary file, checks it has an audio stream with
+[`foley.sources.video.has_audio_stream()`](_autosummary/foley.sources.video.html.md#foley.sources.video.has_audio_stream) (`ffprobe`, else `soundfile`), and
+reads its length with [`foley.sources.video.default_probe()`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe) (`ffprobe`, bounded
+by a timeout, else mixing’s probe): the probes foley uses for media, rather than a
+second ffprobe wrapper. An empty file, one with no audio stream (a video-only mp4, a
+gif), one whose audio stream cannot be confirmed (fail closed), and one with no
+readable duration (an error page saved as `.mp3`) are refused. [`require_probe()`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.require_probe)
+stops a batch before its first download when the checks cannot run.
+
+### Module Attributes
+
+| [`Verify`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.Verify)   | how a file is checked to be a track (raises when it is not).   |
+|-----------------------------------------------------------|----------------------------------------------------------------|
+
+### Functions
+
+| [`probe_available`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.probe_available)()                                  | Whether [`probe_verify()`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.probe_verify)'s probes can run here: `ffprobe` on `PATH`, or both mixing's video probe with an `ffmpeg` (the length) and `soundfile` (the audio stream).   |
+|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`probe_verify`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.probe_verify)(data, \*[, probe, has_audio, suffix]) | The duration of the audio `data`, in seconds.                                                                                                                                                                        |
+| [`require_probe`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.require_probe)()                                    | Raise [`MusicToolMissing`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.MusicToolMissing) unless [`probe_available()`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.probe_available).                                                                   |
+
+### Exceptions
+
+| [`MusicToolMissing`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.MusicToolMissing)   | A tool every title needs is missing: the batch stops before it starts.   |
+|---------------------------------------------------------------------|--------------------------------------------------------------------------|
+
+### *exception* foley.sources.music_library.verify.MusicToolMissing
+
+Bases: [`RuntimeError`](https://docs.python.org/3/builtins/exceptions.html#RuntimeError)
+
+A tool every title needs is missing: the batch stops before it starts.
+
+### foley.sources.music_library.verify.Verify
+
+how a file is checked to be a track (raises when it is not).
+
+* **Type:**
+  `bytes -> seconds`
+
+alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### foley.sources.music_library.verify.probe_available()
+
+Whether [`probe_verify()`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.probe_verify)’s probes can run here: `ffprobe` on `PATH`, or
+both mixing’s video probe with an `ffmpeg` (the length) and `soundfile` (the
+audio stream).
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.sources.music_library.verify.probe_verify(data, , probe=None, has_audio=None, suffix='.mp3')
+
+The duration of the audio `data`, in seconds.
+
+The bytes are written to a temporary file named with `suffix` (from a pipe,
+ffprobe reports no duration). `has_audio(path) -> True | False | None` must
+say `True` (default [`has_audio_stream()`](_autosummary/foley.sources.video.html.md#foley.sources.video.has_audio_stream); `None`,
+“cannot tell”, is a refusal), then `probe(path) -> seconds | None` reads the
+length (default [`default_probe()`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe)).
+
+```pycon
+>>> probe_verify(b"ID3...", probe=lambda path: 61.5, has_audio=lambda path: True)
+61.5
+>>> probe_verify(b"<html>403</html>", probe=lambda path: 3.0,
+...              has_audio=lambda path: False)
+Traceback (most recent call last):
+...
+foley.sources.music_library.libraries.MusicLibraryError: the file has no audio stream
+>>> probe_verify(b"ID3...", probe=lambda path: None, has_audio=lambda path: True)
+Traceback (most recent call last):
+...
+foley.sources.music_library.libraries.MusicLibraryError: the file has no readable duration (not audio)
+```
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – When the file is empty, has no audio stream (or one
+      cannot be confirmed), or has no readable duration.
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+### foley.sources.music_library.verify.require_probe()
+
+Raise [`MusicToolMissing`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.MusicToolMissing) unless [`probe_available()`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.probe_available).
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 
 # _autosummary/foley.sources.openverse.adapter.html.md
@@ -18931,9 +20306,18 @@ predictably instead of hammering the API or crashing a run:
 * **throttle** — a token bucket honouring the source config’s declared `rate`
   (`per_min` / `per_day`) so foley never exceeds the published limits;
 * **backoff** — exponential retry on `429` / `5xx` (and transport exceptions),
-  honouring a `Retry-After` header when present;
+  honouring a `Retry-After` header when present (delta-seconds or an HTTP-date;
+  a value that is negative, not finite or unreadable falls back to the backoff), up
+  to the policy’s `max_delay_s`; a policy with `give_up_over_max_delay` raises
+  [`RetryAfterTooLong`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.RetryAfterTooLong) instead of waiting the cap (a caller with a mirror
+  > moves on to it);
 * **circuit-break** — after N consecutive failures the breaker opens and fast-fails
   with [`SourceUnavailable`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.SourceUnavailable) for a cool-down window (no thundering herd).
+
+[`per_host()`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.per_host) gives each host its own wrapped transport (its own pace and breaker),
+for a caller that fetches from several websites through one transport (a music
+library and its Wayback mirror); [`pace_per_host()`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.pace_per_host) is that pace alone, for a
+caller whose requests do not go through a transport.
 
 All timing goes through injected `clock` / `sleep` callables (default
 `time.monotonic` / `time.sleep`) so the whole thing is deterministically testable
@@ -18948,7 +20332,10 @@ with a fake clock and a no-op sleep — no real network, no real waiting. Stdlib
 
 | [`make_resilient_transport_from_config`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.make_resilient_transport_from_config)(config, \*)   | Build a resilient transport from a source `config` (its `rate` drives the throttle).                                                    |
 |-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| [`pace_per_host`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.pace_per_host)(rate, \*[, clock, sleep])            | `wait(url)`: before a request to `url`, wait out its host's pace.                                                                       |
+| [`per_host`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.per_host)(make)                                     | A transport that sends each request through its host's own transport.                                                                   |
 | [`resilient`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.resilient)(transport, \*[, rate, retry, ...])       | Wrap a [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport) with throttle + backoff + circuit-break. |
+| [`retry_after_seconds`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.retry_after_seconds)(raw, \*[, now])                | The seconds a `Retry-After` value asks to wait, or `None` when it is unusable.                                                          |
 
 ### Classes
 
@@ -18958,8 +20345,9 @@ with a fake clock and a no-op sleep — no real network, no real waiting. Stdlib
 
 ### Exceptions
 
-| [`SourceUnavailable`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.SourceUnavailable)   | Raised when a source's circuit breaker is open or its retries are exhausted.   |
-|----------------------------------------------------------------------|--------------------------------------------------------------------------------|
+| [`RetryAfterTooLong`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.RetryAfterTooLong)(message, \*, retry_after_s, ...)   | A `Retry-After` asked for longer than the policy waits, and the policy gives up rather than wait its cap ([`RetryPolicy.give_up_over_max_delay`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.RetryPolicy.give_up_over_max_delay)).   |
+|-------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`SourceUnavailable`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.SourceUnavailable)                                    | Raised when a source's circuit breaker is open or its retries are exhausted.                                                                                                                      |
 
 ### *class* foley.sources.resilience.BreakerPolicy(fail_threshold=5, reset_timeout_s=30.0)
 
@@ -18967,11 +20355,28 @@ Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 Circuit-breaker thresholds.
 
-### *class* foley.sources.resilience.RetryPolicy(max_attempts=4, retry_on=(429, 500, 502, 503, 504), base_delay_s=0.5, max_delay_s=30.0, respect_retry_after=True)
+### *exception* foley.sources.resilience.RetryAfterTooLong(message, , retry_after_s, max_delay_s)
+
+Bases: [`SourceUnavailable`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.SourceUnavailable)
+
+A `Retry-After` asked for longer than the policy waits, and the policy gives
+up rather than wait its cap ([`RetryPolicy.give_up_over_max_delay`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.RetryPolicy.give_up_over_max_delay)).
+
+`retry_after_s` is what the server asked for, `max_delay_s` the cap.
+
+### *class* foley.sources.resilience.RetryPolicy(max_attempts=4, retry_on=(429, 500, 502, 503, 504), base_delay_s=0.5, max_delay_s=30.0, respect_retry_after=True, give_up_over_max_delay=False)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 Exponential-backoff retry policy for transient HTTP failures.
+
+#### give_up_over_max_delay *: [bool](https://docs.python.org/3/builtins/functions.html#bool)* *= False*
+
+a `Retry-After` above `max_delay_s` raises
+[`RetryAfterTooLong`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.RetryAfterTooLong) at once; `False`: it is waited at `max_delay_s`.
+
+* **Type:**
+  `True`
 
 ### foley.sources.resilience.SECONDS_PER_DAY *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 86400.0*
 
@@ -18991,11 +20396,57 @@ Build a resilient transport from a source `config` (its `rate` drives the thrott
   * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG` dict (reads `config['rate']` and, if present,
     `config['retry']`: [`RetryPolicy`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.RetryPolicy) fields).
   * **base** – The base transport (default: [`foley.sources.http.requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport)).
-  * **\*\*inject** – `retry` / `breaker` / `clock` / `sleep` overrides.
+  * **\*\*inject** – `retry` / `breaker` / `clock` / `sleep` / `wall_clock`
+    overrides.
 * **Returns:**
   A resilient transport wrapping `base`.
 
-### foley.sources.resilience.resilient(transport, \*, rate=None, retry=None, breaker=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>, resend_after_transport_error=True)
+### foley.sources.resilience.pace_per_host(rate, \*, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
+
+`wait(url)`: before a request to `url`, wait out its host’s pace.
+
+The throttle of [`resilient()`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.resilient) (`rate`’s `per_min`; `per_day` raises
+[`SourceUnavailable`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.SourceUnavailable) past its cap) without the transport around it, one per
+host, for a caller whose requests are its own (a `url -> bytes` function).
+No `rate` waits for nothing.
+
+```pycon
+>>> slept, now = [], [0.0]
+>>> wait = pace_per_host({"per_min": 30}, clock=lambda: now[0], sleep=slept.append)
+>>> for url in ("https://a.org/1", "https://b.org/1", "https://a.org/2"):
+...     wait(url)
+>>> slept
+[2.0]
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]
+
+### foley.sources.resilience.per_host(make)
+
+A transport that sends each request through its host’s own transport.
+
+`make()` builds one transport per host, on that host’s first request: a
+[`resilient()`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.resilient) one gives each host its own throttle and circuit breaker, so a
+pace is kept per website and a site that fails does not trip the breaker of
+its mirror. The returned transport has a `.reset()` that resets every host’s.
+
+```pycon
+>>> made = []
+>>> def make():
+...     made.append(1)
+...     return lambda method, url, **kw: (method, url)
+>>> t = per_host(make)
+>>> t("GET", "https://a.org/1"), t("GET", "https://a.org/2")[1]
+(('GET', 'https://a.org/1'), 'https://a.org/2')
+>>> _ = t("GET", "https://b.org/1"); len(made)
+2
+```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)
+
+### foley.sources.resilience.resilient(transport, \*, rate=None, retry=None, breaker=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>, resend_after_transport_error=True, wall_clock=<built-in function time>)
 
 Wrap a [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport) with throttle + backoff + circuit-break.
 
@@ -19011,9 +20462,32 @@ Wrap a [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.
     have accepted — and billed — the request before the connection failed, so
     re-sending would be an unauthorized second paid call. Status-coded
     rejections (429 / 5xx) are still retried: those are answers, not charges.
+  * **wall_clock** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[], [`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Epoch-seconds time source, for a `Retry-After` HTTP-date
+    (injected for tests).
 * **Returns:**
   A transport with the same signature, plus a `.reset()` method. Raises
-  [`SourceUnavailable`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.SourceUnavailable) when the breaker is open or retries are exhausted.
+  [`SourceUnavailable`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.SourceUnavailable) when the breaker is open or retries are exhausted
+  ([`RetryAfterTooLong`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.RetryAfterTooLong) when the policy gives up on a long wait).
+
+### foley.sources.resilience.retry_after_seconds(raw, , now=None)
+
+The seconds a `Retry-After` value asks to wait, or `None` when it is unusable.
+
+`raw` is delta-seconds (`"120"`) or an HTTP-date, read relative to `now`
+(wall-clock epoch seconds; default [`time.time()`](https://docs.python.org/3/library/time.html#time.time)). A negative, non-finite or
+unreadable value, and a date in the past, are `None`: the caller backs off.
+
+```pycon
+>>> retry_after_seconds("37"), retry_after_seconds(" 1.5 ")
+(37.0, 1.5)
+>>> retry_after_seconds("Wed, 21 Oct 2026 07:28:00 GMT", now=1792567600.0)
+80.0
+>>> [retry_after_seconds(v) for v in ("-5", "nan", "inf", "soon", None)]
+[None, None, None, None, None]
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 
 # _autosummary/foley.sources.sonniss.html.md
@@ -19403,6 +20877,8 @@ once, for every V2A backend:
   (`probe=`; default [`default_probe()`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe): `ffprobe` on `PATH`, else mixing’s
   `probe_duration` through mixing’s ffmpeg resolver; `None` when it cannot be read,
   which prices the call as an unknown cost, needing approval).
+* [`has_audio_stream()`](_autosummary/foley.sources.video.html.md#foley.sources.video.has_audio_stream): whether a media file has an audio stream (`ffprobe`,
+  else `soundfile`; `None` when it cannot tell).
 * [`local_video_file()`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file): a local file for an uploader (bytes are written to a
   temporary file whose suffix is sniffed from them: [`video_suffix()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix)).
 * [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track): the audio of a backend’s muxed video answer (MMAudio,
@@ -19425,6 +20901,7 @@ Stdlib only (mixing is used when installed, never required).
 | [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)       | The most [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) lets ffprobe run (s).  |
 | [`DEFAULT_VIDEO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_VIDEO_SUFFIX)  | The suffix of bytes no signature matches (and of every other ISO BMFF brand).                      |
 | [`Probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.Probe)                 | how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds) reads a local file's length.  |
+| [`AudioStreamCheck`](_autosummary/foley.sources.video.html.md#foley.sources.video.AudioStreamCheck)      | whether a media file has an audio stream (`None`: it cannot tell).                                 |
 | [`REDACTED_QUERY`](_autosummary/foley.sources.video.html.md#foley.sources.video.REDACTED_QUERY)        | What stands in for a recorded URL's query and fragment.                                            |
 
 ### Functions
@@ -19435,6 +20912,7 @@ Stdlib only (mixing is used when installed, never required).
 | [`fal_immutable_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.fal_immutable_url)(url)                            | falaw's `is_immutable_url` (fal's own CDN mints a new URL per upload), else `False` when falaw is not installed: an unknown URL is taken as mutable.                                                                                                                                                                                                     |
 | [`ffmpeg_path`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                                                                                                                              |
 | [`ffprobe_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])              | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                                                                                                                     |
+| [`has_audio_stream`](_autosummary/foley.sources.video.html.md#foley.sources.video.has_audio_stream)(path, \*[, ffprobe])             | Whether the media file at `path` has an audio stream, or `None` when that cannot be told.                                                                                                                                                                                                                                                                |
 | [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                                                                                                                                                                                                                                                     |
 | [`is_video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_video_key)(value)                               | Whether `value` is already a key [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) makes (as a cache entry keeps it).                                                                                                                                                                                                                         |
 | [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances, \*[, key])                     | `affordances` with a `video` replaced by its `key` (else unchanged).                                                                                                                                                                                                                                                                                     |
@@ -19455,6 +20933,16 @@ Stdlib only (mixing is used when installed, never required).
 ### foley.sources.video.AUDIO_TRACK_TIMEOUT_S *= 120.0*
 
 The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s).
+
+### foley.sources.video.AudioStreamCheck
+
+whether a media file has an audio stream
+(`None`: it cannot tell). [`has_audio_stream()`](_autosummary/foley.sources.video.html.md#foley.sources.video.has_audio_stream) is the default.
+
+* **Type:**
+  `path -> True | False | None`
+
+alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
 ### foley.sources.video.DEFAULT_VIDEO_SUFFIX *= '.mp4'*
 
@@ -19566,6 +21054,22 @@ The length of the video file at `path` by `ffprobe` (default: the one on
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### foley.sources.video.has_audio_stream(path, , ffprobe=None)
+
+Whether the media file at `path` has an audio stream, or `None` when that
+cannot be told.
+
+By `ffprobe` (default: the one on `PATH`; bounded by [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)):
+`True` when it lists an audio stream, `False` when it lists none or cannot
+read the file (a video-only mp4, a gif, an error page), `None` when it cannot
+run or runs too long. Without `ffprobe`, by `soundfile` (the decoder
+[`foley.audio.load()`](_autosummary/foley.audio.html.md#foley.audio.load) uses): `True` when it decodes the file to one or more
+channels, else `None` (it reads no video container, so its refusal says
+nothing). A caller that needs an answer treats `None` as no (fail closed).
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
 
 ### foley.sources.video.is_url(video)
 
@@ -21611,7 +23115,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 17:25 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/ef977163854933ee4036fb9dc54bc0c1658492c9"><code>ef97716</code></a> on branch <code>main</code>, for **foley 0.0.92** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 18:04 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/5aaceebcab1d4e0365f81610106f10176ec4c6b4"><code>5aaceeb</code></a> on branch <code>main</code>, for **foley 0.0.93** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -21620,9 +23124,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/ef977163854933ee4036fb9dc54bc0c1658492c9"><code>ef977163854933ee4036fb9dc54bc0c1658492c9</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/5aaceebcab1d4e0365f81610106f10176ec4c6b4"><code>5aaceebcab1d4e0365f81610106f10176ec4c6b4</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
-| Tags at this commit | <code>0.0.92</code>                                                                                                                                   |
+| Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
 | Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
@@ -21631,9 +23135,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40546894181">40546894181</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40553780554">40553780554</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>08176bd80900a344666686623c754522467188c4</code> (in the history of the built commit) |
+| Event commit | <code>5aaceebcab1d4e0365f81610106f10176ec4c6b4</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -21658,13 +23162,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.92/">0.0.92</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.93/">0.0.93</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout ef977163854933ee4036fb9dc54bc0c1658492c9
+git checkout 5aaceebcab1d4e0365f81610106f10176ec4c6b4
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

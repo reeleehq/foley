@@ -22,6 +22,8 @@ once, for every V2A backend:
   (`probe=`; default [`default_probe()`](#foley.sources.video.default_probe): `ffprobe` on `PATH`, else mixing’s
   `probe_duration` through mixing’s ffmpeg resolver; `None` when it cannot be read,
   which prices the call as an unknown cost, needing approval).
+* [`has_audio_stream()`](#foley.sources.video.has_audio_stream): whether a media file has an audio stream (`ffprobe`,
+  else `soundfile`; `None` when it cannot tell).
 * [`local_video_file()`](#foley.sources.video.local_video_file): a local file for an uploader (bytes are written to a
   temporary file whose suffix is sniffed from them: [`video_suffix()`](#foley.sources.video.video_suffix)).
 * [`audio_track()`](#foley.sources.video.audio_track): the audio of a backend’s muxed video answer (MMAudio,
@@ -44,6 +46,7 @@ Stdlib only (mixing is used when installed, never required).
 | [`PROBE_TIMEOUT_S`](#foley.sources.video.PROBE_TIMEOUT_S)       | The most [`ffprobe_seconds()`](#foley.sources.video.ffprobe_seconds) lets ffprobe run (s).  |
 | [`DEFAULT_VIDEO_SUFFIX`](#foley.sources.video.DEFAULT_VIDEO_SUFFIX)  | The suffix of bytes no signature matches (and of every other ISO BMFF brand).                      |
 | [`Probe`](#foley.sources.video.Probe)                 | how [`video_seconds()`](#foley.sources.video.video_seconds) reads a local file's length.  |
+| [`AudioStreamCheck`](#foley.sources.video.AudioStreamCheck)      | whether a media file has an audio stream (`None`: it cannot tell).                                 |
 | [`REDACTED_QUERY`](#foley.sources.video.REDACTED_QUERY)        | What stands in for a recorded URL's query and fragment.                                            |
 
 ### Functions
@@ -54,6 +57,7 @@ Stdlib only (mixing is used when installed, never required).
 | [`fal_immutable_url`](#foley.sources.video.fal_immutable_url)(url)                            | falaw's `is_immutable_url` (fal's own CDN mints a new URL per upload), else `False` when falaw is not installed: an unknown URL is taken as mutable.                                                                                                                                                                                                     |
 | [`ffmpeg_path`](#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                                                                                                                              |
 | [`ffprobe_seconds`](#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])              | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                                                                                                                     |
+| [`has_audio_stream`](#foley.sources.video.has_audio_stream)(path, \*[, ffprobe])             | Whether the media file at `path` has an audio stream, or `None` when that cannot be told.                                                                                                                                                                                                                                                                |
 | [`is_url`](#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                                                                                                                                                                                                                                                     |
 | [`is_video_key`](#foley.sources.video.is_video_key)(value)                               | Whether `value` is already a key [`video_key()`](#foley.sources.video.video_key) makes (as a cache entry keeps it).                                                                                                                                                                                                                         |
 | [`keyed`](#foley.sources.video.keyed)(affordances, \*[, key])                     | `affordances` with a `video` replaced by its `key` (else unchanged).                                                                                                                                                                                                                                                                                     |
@@ -74,6 +78,16 @@ Stdlib only (mixing is used when installed, never required).
 ### foley.sources.video.AUDIO_TRACK_TIMEOUT_S *= 120.0*
 
 The most [`audio_track()`](#foley.sources.video.audio_track) lets ffmpeg run (s).
+
+### foley.sources.video.AudioStreamCheck
+
+whether a media file has an audio stream
+(`None`: it cannot tell). [`has_audio_stream()`](#foley.sources.video.has_audio_stream) is the default.
+
+* **Type:**
+  `path -> True | False | None`
+
+alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
 ### foley.sources.video.DEFAULT_VIDEO_SUFFIX *= '.mp4'*
 
@@ -185,6 +199,22 @@ The length of the video file at `path` by `ffprobe` (default: the one on
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### foley.sources.video.has_audio_stream(path, , ffprobe=None)
+
+Whether the media file at `path` has an audio stream, or `None` when that
+cannot be told.
+
+By `ffprobe` (default: the one on `PATH`; bounded by [`PROBE_TIMEOUT_S`](#foley.sources.video.PROBE_TIMEOUT_S)):
+`True` when it lists an audio stream, `False` when it lists none or cannot
+read the file (a video-only mp4, a gif, an error page), `None` when it cannot
+run or runs too long. Without `ffprobe`, by `soundfile` (the decoder
+[`foley.audio.load()`](foley.audio.html.md#foley.audio.load) uses): `True` when it decodes the file to one or more
+channels, else `None` (it reads no video container, so its refusal says
+nothing). A caller that needs an answer treats `None` as no (fail closed).
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool)]
 
 ### foley.sources.video.is_url(video)
 

@@ -1,0 +1,37 @@
+foley.sources.music\_library.libraries
+======================================
+
+.. automodule:: foley.sources.music_library.libraries
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_SUFFIX
+      PAID_LICENSE_ID
+      MUSIC_LIBRARIES
+      BUILTIN_LIBRARIES
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      music_library
+      register_music_library
+      safe_file_name
+      title_url
+      track_license
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      MusicLibrary
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      MusicLibraryError
+   

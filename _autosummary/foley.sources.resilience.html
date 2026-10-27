@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=ab2062fb"></script>
+    <script src="../_static/documentation_options.js?v=0f58e6e2"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.92" />
+  <meta name="docsearch:version" content="0.0.93" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -409,6 +409,7 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.fsd50k.html">foley.sources.fsd50k</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.http.html">foley.sources.http</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.internet_archive.html">foley.sources.internet_archive</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.music_library.html">foley.sources.music_library</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.openverse.html">foley.sources.openverse</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.pull.html">foley.sources.pull</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.registry.html">foley.sources.registry</a></li>
@@ -495,14 +496,25 @@
 <p><a class="reference internal" href="#foley.sources.resilience.resilient" title="foley.sources.resilience.resilient"><code class="xref py py-func docutils literal notranslate"><span class="pre">resilient()</span></code></a> wraps the injectable <a class="reference internal" href="foley.sources.http.html#foley.sources.http.Transport" title="foley.sources.http.Transport"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transport</span></code></a> DI seam
 with three composed policies so a flaky or rate-limited remote source degrades
 predictably instead of hammering the API or crashing a run:</p>
-<ul class="simple">
+<ul>
 <li><p><strong>throttle</strong> — a token bucket honouring the source config’s declared <code class="docutils literal notranslate"><span class="pre">rate</span></code>
 (<code class="docutils literal notranslate"><span class="pre">per_min</span></code> / <code class="docutils literal notranslate"><span class="pre">per_day</span></code>) so foley never exceeds the published limits;</p></li>
 <li><p><strong>backoff</strong> — exponential retry on <code class="docutils literal notranslate"><span class="pre">429</span></code> / <code class="docutils literal notranslate"><span class="pre">5xx</span></code> (and transport exceptions),
-honouring a <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> header when present;</p></li>
+honouring a <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> header when present (delta-seconds or an HTTP-date;
+a value that is negative, not finite or unreadable falls back to the backoff), up
+to the policy’s <code class="docutils literal notranslate"><span class="pre">max_delay_s</span></code>; a policy with <code class="docutils literal notranslate"><span class="pre">give_up_over_max_delay</span></code> raises
+<a class="reference internal" href="#foley.sources.resilience.RetryAfterTooLong" title="foley.sources.resilience.RetryAfterTooLong"><code class="xref py py-class docutils literal notranslate"><span class="pre">RetryAfterTooLong</span></code></a> instead of waiting the cap (a caller with a mirror</p>
+<blockquote>
+<div><p>moves on to it);</p>
+</div></blockquote>
+</li>
 <li><p><strong>circuit-break</strong> — after N consecutive failures the breaker opens and fast-fails
 with <a class="reference internal" href="#foley.sources.resilience.SourceUnavailable" title="foley.sources.resilience.SourceUnavailable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceUnavailable</span></code></a> for a cool-down window (no thundering herd).</p></li>
 </ul>
+<p><a class="reference internal" href="#foley.sources.resilience.per_host" title="foley.sources.resilience.per_host"><code class="xref py py-func docutils literal notranslate"><span class="pre">per_host()</span></code></a> gives each host its own wrapped transport (its own pace and breaker),
+for a caller that fetches from several websites through one transport (a music
+library and its Wayback mirror); <a class="reference internal" href="#foley.sources.resilience.pace_per_host" title="foley.sources.resilience.pace_per_host"><code class="xref py py-func docutils literal notranslate"><span class="pre">pace_per_host()</span></code></a> is that pace alone, for a
+caller whose requests do not go through a transport.</p>
 <p>All timing goes through injected <code class="docutils literal notranslate"><span class="pre">clock</span></code> / <code class="docutils literal notranslate"><span class="pre">sleep</span></code> callables (default
 <code class="docutils literal notranslate"><span class="pre">time.monotonic</span></code> / <code class="docutils literal notranslate"><span class="pre">time.sleep</span></code>) so the whole thing is deterministically testable
 with a fake clock and a no-op sleep — no real network, no real waiting. Stdlib-only.</p>
@@ -521,8 +533,17 @@ with a fake clock and a no-op sleep — no real network, no real waiting. Stdlib
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.resilience.make_resilient_transport_from_config" title="foley.sources.resilience.make_resilient_transport_from_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_resilient_transport_from_config</span></code></a>(config, *)</p></td>
 <td><p>Build a resilient transport from a source <code class="docutils literal notranslate"><span class="pre">config</span></code> (its <code class="docutils literal notranslate"><span class="pre">rate</span></code> drives the throttle).</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.resilience.pace_per_host" title="foley.sources.resilience.pace_per_host"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pace_per_host</span></code></a>(rate, *[, clock, sleep])</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">wait(url)</span></code>: before a request to <code class="docutils literal notranslate"><span class="pre">url</span></code>, wait out its host's pace.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.resilience.per_host" title="foley.sources.resilience.per_host"><code class="xref py py-obj docutils literal notranslate"><span class="pre">per_host</span></code></a>(make)</p></td>
+<td><p>A transport that sends each request through its host's own transport.</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.resilience.resilient" title="foley.sources.resilience.resilient"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resilient</span></code></a>(transport, *[, rate, retry, ...])</p></td>
 <td><p>Wrap a <a class="reference internal" href="foley.sources.http.html#foley.sources.http.Transport" title="foley.sources.http.Transport"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transport</span></code></a> with throttle + backoff + circuit-break.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.resilience.retry_after_seconds" title="foley.sources.resilience.retry_after_seconds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">retry_after_seconds</span></code></a>(raw, *[, now])</p></td>
+<td><p>The seconds a <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> value asks to wait, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when it is unusable.</p></td>
 </tr>
 </tbody>
 </table>
@@ -542,7 +563,10 @@ with a fake clock and a no-op sleep — no real network, no real waiting. Stdlib
 <p class="rubric">Exceptions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.resilience.SourceUnavailable" title="foley.sources.resilience.SourceUnavailable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SourceUnavailable</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.resilience.RetryAfterTooLong" title="foley.sources.resilience.RetryAfterTooLong"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RetryAfterTooLong</span></code></a>(message, *, retry_after_s, ...)</p></td>
+<td><p>A <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> asked for longer than the policy waits, and the policy gives up rather than wait its cap (<a class="reference internal" href="#foley.sources.resilience.RetryPolicy.give_up_over_max_delay" title="foley.sources.resilience.RetryPolicy.give_up_over_max_delay"><code class="xref py py-attr docutils literal notranslate"><span class="pre">RetryPolicy.give_up_over_max_delay</span></code></a>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.resilience.SourceUnavailable" title="foley.sources.resilience.SourceUnavailable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SourceUnavailable</span></code></a></p></td>
 <td><p>Raised when a source's circuit breaker is open or its retries are exhausted.</p></td>
 </tr>
 </tbody>
@@ -557,13 +581,36 @@ with a fake clock and a no-op sleep — no real network, no real waiting. Stdlib
 </dl>
 </dd></dl>
 
+<dl class="py exception">
+<dt class="sig sig-object py" id="foley.sources.resilience.RetryAfterTooLong">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.resilience.</span></span><span class="sig-name descname"><span class="pre">RetryAfterTooLong</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_after_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_delay_s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/resilience.html#RetryAfterTooLong"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.resilience.RetryAfterTooLong" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#foley.sources.resilience.SourceUnavailable" title="foley.sources.resilience.SourceUnavailable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceUnavailable</span></code></a></p>
+<p>A <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> asked for longer than the policy waits, and the policy gives
+up rather than wait its cap (<a class="reference internal" href="#foley.sources.resilience.RetryPolicy.give_up_over_max_delay" title="foley.sources.resilience.RetryPolicy.give_up_over_max_delay"><code class="xref py py-attr docutils literal notranslate"><span class="pre">RetryPolicy.give_up_over_max_delay</span></code></a>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">retry_after_s</span></code> is what the server asked for, <code class="docutils literal notranslate"><span class="pre">max_delay_s</span></code> the cap.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.sources.resilience.RetryPolicy">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.resilience.</span></span><span class="sig-name descname"><span class="pre">RetryPolicy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_attempts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_on</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(429,</span> <span class="pre">500,</span> <span class="pre">502,</span> <span class="pre">503,</span> <span class="pre">504)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_delay_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_delay_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">respect_retry_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/resilience.html#RetryPolicy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.resilience.RetryPolicy" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.resilience.</span></span><span class="sig-name descname"><span class="pre">RetryPolicy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_attempts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_on</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(429,</span> <span class="pre">500,</span> <span class="pre">502,</span> <span class="pre">503,</span> <span class="pre">504)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_delay_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_delay_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">respect_retry_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">give_up_over_max_delay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/resilience.html#RetryPolicy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.resilience.RetryPolicy" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Exponential-backoff retry policy for transient HTTP failures.</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.sources.resilience.RetryPolicy.give_up_over_max_delay">
+<span class="sig-name descname"><span class="pre">give_up_over_max_delay</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></span><a class="headerlink" href="#foley.sources.resilience.RetryPolicy.give_up_over_max_delay" title="Link to this definition">#</a></dt>
+<dd><p>a <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> above <code class="docutils literal notranslate"><span class="pre">max_delay_s</span></code> raises
+<a class="reference internal" href="#foley.sources.resilience.RetryAfterTooLong" title="foley.sources.resilience.RetryAfterTooLong"><code class="xref py py-class docutils literal notranslate"><span class="pre">RetryAfterTooLong</span></code></a> at once; <code class="docutils literal notranslate"><span class="pre">False</span></code>: it is waited at <code class="docutils literal notranslate"><span class="pre">max_delay_s</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py data">
@@ -589,7 +636,8 @@ with a fake clock and a no-op sleep — no real network, no real waiting. Stdlib
 <li><p><strong>config</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – A <code class="docutils literal notranslate"><span class="pre">SOURCE_CONFIG</span></code> dict (reads <code class="docutils literal notranslate"><span class="pre">config['rate']</span></code> and, if present,
 <code class="docutils literal notranslate"><span class="pre">config['retry']</span></code>: <a class="reference internal" href="#foley.sources.resilience.RetryPolicy" title="foley.sources.resilience.RetryPolicy"><code class="xref py py-class docutils literal notranslate"><span class="pre">RetryPolicy</span></code></a> fields).</p></li>
 <li><p><strong>base</strong> – The base transport (default: <a class="reference internal" href="foley.sources.http.html#foley.sources.http.requests_transport" title="foley.sources.http.requests_transport"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources.http.requests_transport()</span></code></a>).</p></li>
-<li><p><strong>**inject</strong> – <code class="docutils literal notranslate"><span class="pre">retry</span></code> / <code class="docutils literal notranslate"><span class="pre">breaker</span></code> / <code class="docutils literal notranslate"><span class="pre">clock</span></code> / <code class="docutils literal notranslate"><span class="pre">sleep</span></code> overrides.</p></li>
+<li><p><strong>**inject</strong> – <code class="docutils literal notranslate"><span class="pre">retry</span></code> / <code class="docutils literal notranslate"><span class="pre">breaker</span></code> / <code class="docutils literal notranslate"><span class="pre">clock</span></code> / <code class="docutils literal notranslate"><span class="pre">sleep</span></code> / <code class="docutils literal notranslate"><span class="pre">wall_clock</span></code>
+overrides.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -599,8 +647,57 @@ with a fake clock and a no-op sleep — no real network, no real waiting. Stdlib
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.resilience.pace_per_host">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.resilience.</span></span><span class="sig-name descname"><span class="pre">pace_per_host</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">monotonic&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">sleep&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/resilience.html#pace_per_host"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.resilience.pace_per_host" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">wait(url)</span></code>: before a request to <code class="docutils literal notranslate"><span class="pre">url</span></code>, wait out its host’s pace.</p>
+<p>The throttle of <a class="reference internal" href="#foley.sources.resilience.resilient" title="foley.sources.resilience.resilient"><code class="xref py py-func docutils literal notranslate"><span class="pre">resilient()</span></code></a> (<code class="docutils literal notranslate"><span class="pre">rate</span></code>’s <code class="docutils literal notranslate"><span class="pre">per_min</span></code>; <code class="docutils literal notranslate"><span class="pre">per_day</span></code> raises
+<a class="reference internal" href="#foley.sources.resilience.SourceUnavailable" title="foley.sources.resilience.SourceUnavailable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceUnavailable</span></code></a> past its cap) without the transport around it, one per
+host, for a caller whose requests are its own (a <code class="docutils literal notranslate"><span class="pre">url</span> <span class="pre">-&gt;</span> <span class="pre">bytes</span></code> function).
+No <code class="docutils literal notranslate"><span class="pre">rate</span></code> waits for nothing.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">slept</span><span class="p">,</span> <span class="n">now</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">wait</span> <span class="o">=</span> <span class="n">pace_per_host</span><span class="p">({</span><span class="s2">"per_min"</span><span class="p">:</span> <span class="mi">30</span><span class="p">},</span> <span class="n">clock</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">now</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sleep</span><span class="o">=</span><span class="n">slept</span><span class="o">.</span><span class="n">append</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"https://a.org/1"</span><span class="p">,</span> <span class="s2">"https://b.org/1"</span><span class="p">,</span> <span class="s2">"https://a.org/2"</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">wait</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">slept</span>
+<span class="go">[2.0]</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>], <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.resilience.per_host">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.resilience.</span></span><span class="sig-name descname"><span class="pre">per_host</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">make</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/resilience.html#per_host"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.resilience.per_host" title="Link to this definition">#</a></dt>
+<dd><p>A transport that sends each request through its host’s own transport.</p>
+<p><code class="docutils literal notranslate"><span class="pre">make()</span></code> builds one transport per host, on that host’s first request: a
+<a class="reference internal" href="#foley.sources.resilience.resilient" title="foley.sources.resilience.resilient"><code class="xref py py-func docutils literal notranslate"><span class="pre">resilient()</span></code></a> one gives each host its own throttle and circuit breaker, so a
+pace is kept per website and a site that fails does not trip the breaker of
+its mirror. The returned transport has a <code class="docutils literal notranslate"><span class="pre">.reset()</span></code> that resets every host’s.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">made</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span><span class="w"> </span><span class="nf">make</span><span class="p">():</span>
+<span class="gp">... </span>    <span class="n">made</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="k">lambda</span> <span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">:</span> <span class="p">(</span><span class="n">method</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span> <span class="o">=</span> <span class="n">per_host</span><span class="p">(</span><span class="n">make</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">t</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"https://a.org/1"</span><span class="p">),</span> <span class="n">t</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"https://a.org/2"</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+<span class="go">(('GET', 'https://a.org/1'), 'https://a.org/2')</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">_</span> <span class="o">=</span> <span class="n">t</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"https://b.org/1"</span><span class="p">);</span> <span class="nb">len</span><span class="p">(</span><span class="n">made</span><span class="p">)</span>
+<span class="go">2</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.resilience.resilient">
-<span class="sig-prename descclassname"><span class="pre">foley.sources.resilience.</span></span><span class="sig-name descname"><span class="pre">resilient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">breaker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">monotonic&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">sleep&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resend_after_transport_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/resilience.html#resilient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.resilience.resilient" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">foley.sources.resilience.</span></span><span class="sig-name descname"><span class="pre">resilient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transport</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">breaker</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">monotonic&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">sleep&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resend_after_transport_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wall_clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">time&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/resilience.html#resilient"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.resilience.resilient" title="Link to this definition">#</a></dt>
 <dd><p>Wrap a <a class="reference internal" href="foley.sources.http.html#foley.sources.http.Transport" title="foley.sources.http.Transport"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transport</span></code></a> with throttle + backoff + circuit-break.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -616,11 +713,36 @@ failure (timeout, reset). <code class="docutils literal notranslate"><span class
 have accepted — and billed — the request before the connection failed, so
 re-sending would be an unauthorized second paid call. Status-coded
 rejections (429 / 5xx) are still retried: those are answers, not charges.</p></li>
+<li><p><strong>wall_clock</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[], <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span>) – Epoch-seconds time source, for a <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> HTTP-date
+(injected for tests).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A transport with the same signature, plus a <code class="docutils literal notranslate"><span class="pre">.reset()</span></code> method. Raises
-<a class="reference internal" href="#foley.sources.resilience.SourceUnavailable" title="foley.sources.resilience.SourceUnavailable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceUnavailable</span></code></a> when the breaker is open or retries are exhausted.</p>
+<a class="reference internal" href="#foley.sources.resilience.SourceUnavailable" title="foley.sources.resilience.SourceUnavailable"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceUnavailable</span></code></a> when the breaker is open or retries are exhausted
+(<a class="reference internal" href="#foley.sources.resilience.RetryAfterTooLong" title="foley.sources.resilience.RetryAfterTooLong"><code class="xref py py-class docutils literal notranslate"><span class="pre">RetryAfterTooLong</span></code></a> when the policy gives up on a long wait).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.resilience.retry_after_seconds">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.resilience.</span></span><span class="sig-name descname"><span class="pre">retry_after_seconds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">now</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/resilience.html#retry_after_seconds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.resilience.retry_after_seconds" title="Link to this definition">#</a></dt>
+<dd><p>The seconds a <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> value asks to wait, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when it is unusable.</p>
+<p><code class="docutils literal notranslate"><span class="pre">raw</span></code> is delta-seconds (<code class="docutils literal notranslate"><span class="pre">&quot;120&quot;</span></code>) or an HTTP-date, read relative to <code class="docutils literal notranslate"><span class="pre">now</span></code>
+(wall-clock epoch seconds; default <a class="reference external" href="https://docs.python.org/3/library/time.html#time.time" title="(in Python v3.15)"><code class="xref py py-func docutils literal notranslate"><span class="pre">time.time()</span></code></a>). A negative, non-finite or
+unreadable value, and a date in the past, are <code class="docutils literal notranslate"><span class="pre">None</span></code>: the caller backs off.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">retry_after_seconds</span><span class="p">(</span><span class="s2">"37"</span><span class="p">),</span> <span class="n">retry_after_seconds</span><span class="p">(</span><span class="s2">" 1.5 "</span><span class="p">)</span>
+<span class="go">(37.0, 1.5)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">retry_after_seconds</span><span class="p">(</span><span class="s2">"Wed, 21 Oct 2026 07:28:00 GMT"</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="mf">1792567600.0</span><span class="p">)</span>
+<span class="go">80.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">retry_after_seconds</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"-5"</span><span class="p">,</span> <span class="s2">"nan"</span><span class="p">,</span> <span class="s2">"inf"</span><span class="p">,</span> <span class="s2">"soon"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)]</span>
+<span class="go">[None, None, None, None, None]</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -675,11 +797,18 @@ rejections (429 / 5xx) are still retried: those are answers, not charges.</p></l
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.BreakerPolicy"><code class="docutils literal notranslate"><span class="pre">BreakerPolicy</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.RetryPolicy"><code class="docutils literal notranslate"><span class="pre">RetryPolicy</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.RetryAfterTooLong"><code class="docutils literal notranslate"><span class="pre">RetryAfterTooLong</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.RetryPolicy"><code class="docutils literal notranslate"><span class="pre">RetryPolicy</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.RetryPolicy.give_up_over_max_delay"><code class="docutils literal notranslate"><span class="pre">RetryPolicy.give_up_over_max_delay</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.SECONDS_PER_DAY"><code class="docutils literal notranslate"><span class="pre">SECONDS_PER_DAY</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.SourceUnavailable"><code class="docutils literal notranslate"><span class="pre">SourceUnavailable</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.make_resilient_transport_from_config"><code class="docutils literal notranslate"><span class="pre">make_resilient_transport_from_config()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.pace_per_host"><code class="docutils literal notranslate"><span class="pre">pace_per_host()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.per_host"><code class="docutils literal notranslate"><span class="pre">per_host()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.resilient"><code class="docutils literal notranslate"><span class="pre">resilient()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.resilience.retry_after_seconds"><code class="docutils literal notranslate"><span class="pre">retry_after_seconds()</span></code></a></li>
 </ul>
   </nav></div>
 

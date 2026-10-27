@@ -27,6 +27,7 @@ foley.licensing
       ai_scope_from_gen_ai_preference
       ai_use_permitted
       apply_license_flags
+      cc_refused_terms
       checked_refusal_reason
       derive_license_flags
       intended_use_for

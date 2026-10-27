@@ -15,7 +15,10 @@ foley.sources.resilience
    .. autosummary::
    
       make_resilient_transport_from_config
+      pace_per_host
+      per_host
       resilient
+      retry_after_seconds
    
    .. rubric:: Classes
 
@@ -28,5 +31,6 @@ foley.sources.resilience
 
    .. autosummary::
    
+      RetryAfterTooLong
       SourceUnavailable
    

@@ -38,6 +38,7 @@ item is redistributable but stored by-reference.
 |----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
 | [`ai_use_permitted`](#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                        |
 | [`apply_license_flags`](#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                          |
+| [`cc_refused_terms`](#foley.licensing.cc_refused_terms)(url)                             | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                             |
 | [`checked_refusal_reason`](#foley.licensing.checked_refusal_reason)(record, intended_use)      | [`refusal_reason()`](#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.    |
 | [`derive_license_flags`](#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                               |
 | [`intended_use_for`](#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                           |
@@ -188,6 +189,26 @@ Does NOT touch `rights_verified` — verification is a separate concern.
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
   The same (mutated) `record`.
+
+### foley.licensing.cc_refused_terms(url)
+
+The NoDerivatives / ShareAlike terms of a CC licence URL or label.
+
+[`license_id_from_cc_url()`](#foley.licensing.license_id_from_cc_url) refuses these on purpose (foley has no licence row
+expressing them, so it maps them to `'unknown'`); this says *why* a URL was
+refused, for a message that is not “cannot read a licence”.
+
+```pycon
+>>> cc_refused_terms("https://creativecommons.org/licenses/by-nc-sa/4.0/")
+('ShareAlike',)
+>>> cc_refused_terms("CC BY-ND-SA"), cc_refused_terms("https://creativecommons.org/licenses/by/4.0/")
+(('NoDerivatives', 'ShareAlike'), ())
+>>> cc_refused_terms(None)
+()
+```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
 
 ### foley.licensing.checked_refusal_reason(record, intended_use)
 

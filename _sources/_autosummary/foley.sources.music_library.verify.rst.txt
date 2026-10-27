@@ -1,0 +1,26 @@
+foley.sources.music\_library.verify
+===================================
+
+.. automodule:: foley.sources.music_library.verify
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      Verify
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      probe_available
+      probe_verify
+      require_probe
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      MusicToolMissing
+   

@@ -1,0 +1,13 @@
+foley.sources.music\_library.credit\_parser
+===========================================
+
+.. automodule:: foley.sources.music_library.credit_parser
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      titles_by_library
+      titles_from_json
+   

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=ab2062fb"></script>
+    <script src="../_static/documentation_options.js?v=0f58e6e2"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.92" />
+  <meta name="docsearch:version" content="0.0.93" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -409,6 +409,7 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.fsd50k.html">foley.sources.fsd50k</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.http.html">foley.sources.http</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.internet_archive.html">foley.sources.internet_archive</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.music_library.html">foley.sources.music_library</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.openverse.html">foley.sources.openverse</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.pull.html">foley.sources.pull</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.registry.html">foley.sources.registry</a></li>
@@ -1621,31 +1622,34 @@ the default <code class="docutils literal notranslate"><span class="pre">rings</
 <tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.internet_archive.html#module-foley.sources.internet_archive" title="foley.sources.internet_archive"><code class="xref py py-obj docutils literal notranslate"><span class="pre">internet_archive</span></code></a></p></td>
 <td><p>Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (<code class="docutils literal notranslate"><span class="pre">foley[internet-archive]</span></code>).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.openverse.html#module-foley.sources.openverse" title="foley.sources.openverse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">openverse</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.music_library.html#module-foley.sources.music_library" title="foley.sources.music_library"><code class="xref py py-obj docutils literal notranslate"><span class="pre">music_library</span></code></a></p></td>
+<td><p>Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.openverse.html#module-foley.sources.openverse" title="foley.sources.openverse"><code class="xref py py-obj docutils literal notranslate"><span class="pre">openverse</span></code></a></p></td>
 <td><p>Openverse retrieve source: keyless, licence-rich audio search (<code class="docutils literal notranslate"><span class="pre">foley[openverse]</span></code>).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.pull.html#module-foley.sources.pull" title="foley.sources.pull"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pull</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.pull.html#module-foley.sources.pull" title="foley.sources.pull"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pull</span></code></a></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">add_from</span></code> — the live-source pull façade (SOURCE → INDEX in one call).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.registry.html#module-foley.sources.registry" title="foley.sources.registry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">registry</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.registry.html#module-foley.sources.registry" title="foley.sources.registry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">registry</span></code></a></p></td>
 <td><p>Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.resilience.html#module-foley.sources.resilience" title="foley.sources.resilience"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resilience</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.resilience.html#module-foley.sources.resilience" title="foley.sources.resilience"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resilience</span></code></a></p></td>
 <td><p>Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.sonniss.html#module-foley.sources.sonniss" title="foley.sources.sonniss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sonniss</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.sonniss.html#module-foley.sources.sonniss" title="foley.sources.sonniss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sonniss</span></code></a></p></td>
 <td><p>Sonniss GameAudioGDC — a Ring-2, quarantined corpus.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.stable_audio.html#module-foley.sources.stable_audio" title="foley.sources.stable_audio"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stable_audio</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.stable_audio.html#module-foley.sources.stable_audio" title="foley.sources.stable_audio"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stable_audio</span></code></a></p></td>
 <td><p>Stable Audio Open 1.0 generate source (local default; #6).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.stable_audio_3.html#module-foley.sources.stable_audio_3" title="foley.sources.stable_audio_3"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stable_audio_3</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.stable_audio_3.html#module-foley.sources.stable_audio_3" title="foley.sources.stable_audio_3"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stable_audio_3</span></code></a></p></td>
 <td><p>Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.video.html#module-foley.sources.video" title="foley.sources.video"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.video.html#module-foley.sources.video" title="foley.sources.video"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video</span></code></a></p></td>
 <td><p>Video inputs of video-to-audio generation (#74): what <code class="docutils literal notranslate"><span class="pre">video=</span></code> may be, its identity, its length.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.wikimedia_commons.html#module-foley.sources.wikimedia_commons" title="foley.sources.wikimedia_commons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wikimedia_commons</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.wikimedia_commons.html#module-foley.sources.wikimedia_commons" title="foley.sources.wikimedia_commons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wikimedia_commons</span></code></a></p></td>
 <td><p>Wikimedia Commons retrieve source: keyless, licence per file (<code class="docutils literal notranslate"><span class="pre">foley[wikimedia-commons]</span></code>).</p></td>
 </tr>
 </tbody>

@@ -96,6 +96,13 @@
 - [foley.sources.internet_archive](foley.sources.internet_archive.html.md): Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (&#96;foley&#91;internet-archi...
 - [foley.sources.internet_archive.adapter](foley.sources.internet_archive.adapter.html.md): Internet Archive retrieve adapter: opt-in discovery of archival sounds, never auto-verified.
 - [foley.sources.internet_archive.config](foley.sources.internet_archive.config.html.md): &#96;SOURCE_CONFIG&#96; for the Internet Archive retrieve source (#79 · report 14 §3.4).
+- [foley.sources.music_library](foley.sources.music_library.html.md): Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.
+- [foley.sources.music_library.acquisition](foley.sources.music_library.acquisition.html.md): Acquire a music library’s titles: verified files, one provenance row each, a resumable table.
+- [foley.sources.music_library.credit_parser](foley.sources.music_library.credit_parser.html.md): Which titles a video credits, by library: the credit-block parser and the titles file.
+- [foley.sources.music_library.fetch](foley.sources.music_library.fetch.html.md): Fetching a library’s files politely, through foley’s transport and its resilience layer.
+- [foley.sources.music_library.libraries](foley.sources.music_library.libraries.html.md): Music libraries as data: who made one, its licence, its credit, where a title’s file is.
+- [foley.sources.music_library.mirrors](foley.sources.music_library.mirrors.html.md): Where else a track’s bytes may be: the library’s own server, then the Internet Archive.
+- [foley.sources.music_library.verify](foley.sources.music_library.verify.html.md): Checking a downloaded file is audio: an audio stream and a duration, read by foley’s probes.
 - [foley.sources.openverse](foley.sources.openverse.html.md): Openverse retrieve source: keyless, licence-rich audio search (&#96;foley&#91;openverse&#93;&#96;).
 - [foley.sources.openverse.adapter](foley.sources.openverse.adapter.html.md): Openverse retrieve adapter: keyless audio search with ready attribution strings.
 - [foley.sources.openverse.config](foley.sources.openverse.config.html.md): &#96;SOURCE_CONFIG&#96; for the Openverse retrieve source (#79 · report 14 §3.2).

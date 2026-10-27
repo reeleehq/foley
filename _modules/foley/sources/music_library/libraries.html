@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="alternate" type="text/markdown" href="libraries.html.md">
+<link rel="describedby" href="../../../../llms.txt" type="text/markdown">
+    <title>foley.sources.music_library.libraries &#8212; foley</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx_autodoc_typehints.css?v=057ac668" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/epythet.css?v=e39d37f2" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../../../_static/documentation_options.js?v=0f58e6e2"></script>
+    <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../../_static/copybutton.js?v=fd10adb8"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = "pre.mermaid {\n    /* Same as .mermaid-container > pre */\n    display: block;\n    width: 100%;\n}\n\npre.mermaid > svg {\n    /* Same as .mermaid-container > pre > svg */\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}";
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = ".mermaid-container {\n    position: relative;\n    display: flex;\n    flex-direction: row;\n    width: 100%;\n}\n\n.mermaid-container > pre {\n    display: block;\n    width: 100%;\n}\n\n.mermaid-container > pre > svg {\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}\n\n.mermaid-fullscreen-btn {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.3);\n    border-radius: 4px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.2s;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n    font-size: 14px;\n    line-height: 1;\n    padding: 0;\n    color: #333;\n}\n\n.mermaid-fullscreen-btn:hover {\n    opacity: 100% !important;\n    background: rgba(255, 255, 255, 1);\n    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-btn.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.3);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-btn.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal {\n    display: none;\n    position: fixed !important;\n    top: 0 !important;\n    left: 0 !important;\n    width: 95vw;\n    height: 100vh;\n    background: rgba(255, 255, 255, 0.98);\n    z-index: 9999;\n    padding: 20px;\n    overflow: auto;\n}\n\n.mermaid-fullscreen-modal.dark-theme {\n    background: rgba(0, 0, 0, 0.98);\n}\n\n.mermaid-fullscreen-modal.active {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen {\n    position: relative;\n    width: 95vw;\n    height: 90vh;\n    max-width: 95vw;\n    max-height: 90vh;\n    background: white;\n    border-radius: 8px;\n    padding: 20px;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);\n    overflow: auto;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen.dark-theme {\n    background: #1a1a1a;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);\n}\n\n.mermaid-container-fullscreen pre.mermaid {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen .mermaid svg {\n    height: 100% !important;\n    width: 100% !important;\n    cursor: grab;\n}\n\n.mermaid-fullscreen-close {\n    position: fixed !important;\n    top: 20px !important;\n    right: 20px !important;\n    width: 40px;\n    height: 40px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.2);\n    border-radius: 50%;\n    cursor: pointer;\n    z-index: 10000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n    transition: all 0.2s;\n    font-size: 24px;\n    line-height: 1;\n    color: #333;\n}\n\n.mermaid-fullscreen-close:hover {\n    background: white;\n    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-close.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.2);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-close.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal .mermaid-fullscreen-btn {\n    display: none !important;\n}";
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+let _lazyObserver = null;
+let _renderQueue = Promise.resolve();
+let closeModal = () => {};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeModal();
+    }
+});
+
+// Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
+// so this is safe to call both for the initial batch and for diagrams that
+// render lazily once they become visible.
+const addZoomToSvgs = (svgs) => {
+    svgs.each(function() {
+        if (this.getAttribute('data-zoom-applied') === 'true') return;
+        var svg = d3.select(this);
+        svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+        var inner = svg.select("g");
+        var zoom = d3.zoom().on("zoom", function(event) {
+            inner.attr("transform", event.transform);
+        });
+        svg.call(zoom);
+        this.setAttribute('data-zoom-applied', 'true');
+    });
+};
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        // Disconnect any previous lazy rendering observer
+        if (_lazyObserver) {
+            _lazyObserver.disconnect();
+            _lazyObserver = null;
+        }
+
+        all_mermaids.forEach((el) => {
+            el.removeAttribute('data-mermaid-deferred');
+            el.removeAttribute('data-mermaid-render-failed');
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+
+        // Separate visible and hidden elements. Mermaid's layout engine measures
+        // text dimensions via the DOM, which fails for elements hidden by a parent
+        // (e.g., Reveal.js non-active slides, sphinx-design unopened tabs),
+        // producing broken SVGs. Render visible elements now, defer hidden ones.
+        const visible = [];
+        const hidden = [];
+        all_mermaids.forEach((el) => {
+            // offsetParent is null for display:none ancestors.
+            // getClientRects().length > 0 catches position:fixed elements
+            // (which also have null offsetParent but are still visible).
+            if (el.offsetParent !== null || el.getClientRects().length > 0) {
+                visible.push(el);
+            } else {
+                hidden.push(el);
+                el.setAttribute('data-mermaid-deferred', 'true');
+            }
+        });
+
+        if (visible.length > 0) {
+            try {
+                await mermaid.run({ nodes: visible });
+            } catch (e) {
+                console.error("Mermaid rendering failed:", e);
+            }
+        }
+
+        // Lazily render hidden elements when they become visible.
+        // Uses a promise chain (_renderQueue) to serialize rendering,
+        // since IntersectionObserver may report multiple entries at once
+        // and mermaid.run() is not safe to call concurrently.
+        if (hidden.length > 0) {
+            if (typeof IntersectionObserver === 'undefined') {
+                console.warn("IntersectionObserver not available; hidden mermaid diagrams will not render.");
+            } else {
+                _renderQueue = Promise.resolve();
+                _lazyObserver = new IntersectionObserver((entries) => {
+                    for (const entry of entries) {
+                        if (entry.isIntersecting && entry.target.getAttribute("data-processed") !== "true") {
+                            _lazyObserver.unobserve(entry.target);
+                            const el = entry.target;
+                            _renderQueue = _renderQueue.then(async () => {
+                                try {
+                                    await mermaid.run({ nodes: [el] });
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    // Apply zoom to the now-rendered diagram, matching
+                                    // the decoration visible diagrams receive.
+                                    if (false) {
+                                        addZoomToSvgs(d3.selectAll("").select(function() {
+                                            return this.querySelector("svg");
+                                        }));
+                                    }
+                                } catch (e) {
+                                    console.error("Mermaid deferred rendering failed:", e);
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    el.setAttribute('data-mermaid-render-failed', 'true');
+                                }
+                            });
+                        }
+                    }
+                });
+                hidden.forEach((el) => _lazyObserver.observe(el));
+            }
+        }
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    // Exclude deferred (hidden) and render-failed elements from completion checks
+    const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
+    const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
+
+    if (false) {
+        const mermaids_to_add_zoom = 0 === -1 ? mermaids_active.length : 0;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("").select(function() {
+                return this.querySelector("svg");
+            });
+            // Wait until every active (visible) diagram has rendered. Deferred
+            // diagrams are excluded, so a fixed d3_node_count that counts a
+            // hidden diagram no longer loops forever waiting for its SVG.
+            if(mermaids_active.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            }
+            addZoomToSvgs(svgs);
+        }
+    } else if(mermaids_active.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if (!true) return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = "\u26f6";
+        fullscreenBtn.style.opacity = "50%";
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scrollX, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.display = 'block';
+
+                if (false) {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+
+
+const load = async () => {
+    initStyles();
+
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...{"startOnLoad": false},
+                ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...{"startOnLoad": false},
+    ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/foley/sources/music_library/libraries';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.93" />
+  
+    
+    <script src="../../../../_static/searchtools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script src="../../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">foley</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../../foley.html" class="nav-link">foley</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">foley.sources.music_library.libraries</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for foley.sources.music_library.libraries</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Music libraries as data: who made one, its licence, its credit, where a title's file is.</span>
+
+<span class="sd">A :class:`MusicLibrary` names its author, the URL of its licence, the attribution it</span>
+<span class="sd">asks for, the names a video credits it by, and the rule from a title to the file's</span>
+<span class="sd">URL. The registry (:data:`MUSIC_LIBRARIES`, :func:`register_music_library`) holds</span>
+<span class="sd">``incompetech`` (Kevin MacLeod, CC BY 4.0) and two paid libraries, ``artlist`` and</span>
+<span class="sd">``epidemic_sound``, which have no free licence: their titles become wishlist rows to</span>
+<span class="sd">license by hand, never downloads.</span>
+
+<span class="sd">The licence is never typed in: :func:`track_license` reads it from the library's</span>
+<span class="sd">licence URL with :func:`foley.licensing.license_id_from_cc_url` (the one CC parser,</span>
+<span class="sd">which never widens rights) and builds the :class:`~foley.base.LicenseRecord` with</span>
+<span class="sd">flags derived from that id. A free library whose licence does not let foley keep the</span>
+<span class="sd">files (``cache_bytes_ok``: a URL foley cannot read, or a ShareAlike / NoDerivatives</span>
+<span class="sd">licence, which foley refuses on purpose) is refused at registration (fail-closed),</span>
+<span class="sd">and a paid one claims no rights at all. Whether a title may be used for a</span>
+<span class="sd">production is :func:`~foley.sources.music_library.acquire`'s ``intended_use`` gate,</span>
+<span class="sd">not registration's.</span>
+
+<span class="sd">&gt;&gt;&gt; lib = MUSIC_LIBRARIES["incompetech"]</span>
+<span class="sd">&gt;&gt;&gt; lib.track_url("Sneaky Snitch")</span>
+<span class="sd">'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Sneaky%20Snitch.mp3'</span>
+<span class="sd">&gt;&gt;&gt; lib.license_id, lib.rights_verified</span>
+<span class="sd">('CC-BY-4.0', True)</span>
+<span class="sd">&gt;&gt;&gt; print(lib.attribution_for("Sneaky Snitch"))</span>
+<span class="sd">"Sneaky Snitch" Kevin MacLeod (incompetech.com)</span>
+<span class="sd">Licensed under Creative Commons: By Attribution 4.0 License</span>
+<span class="sd">http://creativecommons.org/licenses/by/4.0/</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">unicodedata</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">quote</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">...base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">cc_refused_terms</span><span class="p">,</span> <span class="n">derive_license_flags</span><span class="p">,</span> <span class="n">license_id_from_cc_url</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">api_license</span>
+
+<span class="c1">#: The extension a track is saved with when its library names no other.</span>
+<span class="n">DFLT_SUFFIX</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">".mp3"</span>
+<span class="c1">#: The licence id of a paid library's row: no rights are claimed (fail-closed).</span>
+<span class="n">PAID_LICENSE_ID</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"unknown"</span>
+
+
+<div class="viewcode-block" id="MusicLibraryError">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.music_library.libraries.html#foley.sources.music_library.MusicLibraryError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MusicLibraryError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A library, a title or a file that cannot be used, and why."""</span></div>
+
+
+
+<div class="viewcode-block" id="safe_file_name">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.music_library.libraries.html#foley.sources.music_library.safe_file_name">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">safe_file_name</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DFLT_SUFFIX</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``title`` as a file name: NFC, path separators as ``-``, no leading dot.</span>
+
+<span class="sd">    &gt;&gt;&gt; safe_file_name("AC/DC"), safe_file_name("../../escape")</span>
+<span class="sd">    ('AC-DC.mp3', '-..-escape.mp3')</span>
+<span class="sd">    """</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s2">"NFC"</span><span class="p">,</span> <span class="n">title</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">". "</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MusicLibraryError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"title </span><span class="si">{</span><span class="n">title</span><span class="si">!r}</span><span class="s2"> gives no file name"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">name</span> <span class="o">+</span> <span class="n">suffix</span></div>
+
+
+
+<div class="viewcode-block" id="title_url">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.music_library.libraries.html#foley.sources.music_library.title_url">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">title_url</span><span class="p">(</span><span class="n">template</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The ``title -&gt; URL`` rule that puts the URL-quoted title in ``template``'s ``{title}``.</span>
+
+<span class="sd">    &gt;&gt;&gt; title_url("https://x.org/music/{title}.mp3")("Night Owl")</span>
+<span class="sd">    'https://x.org/music/Night%20Owl.mp3'</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">track_url</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="n">quote</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">safe</span><span class="o">=</span><span class="s2">""</span><span class="p">))</span>
+
+    <span class="n">track_url</span><span class="o">.</span><span class="vm">__qualname__</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"title_url(</span><span class="si">{</span><span class="n">template</span><span class="si">!r}</span><span class="s2">)"</span>
+    <span class="k">return</span> <span class="n">track_url</span></div>
+
+
+
+<div class="viewcode-block" id="MusicLibrary">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.music_library.libraries.html#foley.sources.music_library.MusicLibrary">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MusicLibrary</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One library: who made it, under which licence, and where a title's file is.</span>
+
+<span class="sd">    ``license_url`` is the URL of its Creative Commons licence, read by</span>
+<span class="sd">    :func:`~foley.licensing.license_id_from_cc_url`; ``None`` makes the library</span>
+<span class="sd">    PAID (its titles become wishlist rows, never downloads; ``track_url`` is then</span>
+<span class="sd">    unused). ``track_url`` is the ``title -&gt; URL`` rule (:func:`title_url` builds one</span>
+<span class="sd">    from a template). ``attribution`` is a template over ``{title}``, ``{author}``</span>
+<span class="sd">    and ``{license_url}``. ``aliases`` are the names a video description credits it</span>
+<span class="sd">    by (``From Epidemic Sound:``, ``Kevin MacLeod (incompetech.com)``);</span>
+<span class="sd">    ``file_name`` the name a title is saved under.</span>
+<span class="sd">    """</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">author</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">license_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">track_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">attribution</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">'"</span><span class="si">{title}</span><span class="s1">" </span><span class="si">{author}</span><span class="s1">'</span>
+    <span class="n">author_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">aliases</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">file_name</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">safe_file_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">paid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whether the library has no free licence (wishlist rows only)."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">license_url</span> <span class="ow">is</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">license_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The foley licence id its licence URL maps to (``'unknown'`` when paid)."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_license</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rights_verified</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whether foley recognises the licence outright (never for a paid library)."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_license</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_license</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, bool]"</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">paid</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">PAID_LICENSE_ID</span><span class="p">,</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">license_id_from_cc_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">license_url</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MusicLibrary.attribution_for">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.music_library.libraries.html#foley.sources.music_library.MusicLibrary.attribution_for">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">attribution_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The library's attribution for ``title``, from its template."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribution</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span> <span class="n">author</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">author</span><span class="p">,</span> <span class="n">license_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">license_url</span> <span class="ow">or</span> <span class="s2">""</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1">#: The registered libraries, by name.</span>
+<span class="n">MUSIC_LIBRARIES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MusicLibrary</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="register_music_library">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.music_library.libraries.html#foley.sources.music_library.register_music_library">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">register_music_library</span><span class="p">(</span><span class="n">library</span><span class="p">:</span> <span class="n">MusicLibrary</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">replace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Add ``library`` to :data:`MUSIC_LIBRARIES` (``replace`` to redefine one).</span>
+
+<span class="sd">    A free library is checked for one licence right only, keeping the files</span>
+<span class="sd">    (``cache_bytes_ok``); the uses a production makes of them are gated per title by</span>
+<span class="sd">    :func:`~foley.sources.music_library.acquire` (``intended_use``).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        MusicLibraryError: If the name is taken (and not ``replace``), or a free</span>
+<span class="sd">            library has no ``track_url`` rule or a licence that does not allow</span>
+<span class="sd">            keeping the files (a ShareAlike / NoDerivatives licence, refused on</span>
+<span class="sd">            purpose; a licence URL foley cannot read; a licence whose flags say no).</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">library</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">MUSIC_LIBRARIES</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">replace</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MusicLibraryError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"music library </span><span class="si">{</span><span class="n">library</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is already registered; pass replace=True"</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">library</span><span class="o">.</span><span class="n">paid</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">library</span><span class="o">.</span><span class="n">track_url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MusicLibraryError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"music library </span><span class="si">{</span><span class="n">library</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is free but has no track_url rule"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">derive_license_flags</span><span class="p">(</span><span class="n">library</span><span class="o">.</span><span class="n">license_id</span><span class="p">)</span><span class="o">.</span><span class="n">cache_bytes_ok</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MusicLibraryError</span><span class="p">(</span><span class="n">_not_keepable</span><span class="p">(</span><span class="n">library</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">library</span><span class="o">.</span><span class="n">rights_verified</span><span class="p">:</span>  <span class="c1"># every title would be refused by acquire</span>
+            <span class="k">raise</span> <span class="n">MusicLibraryError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"music library </span><span class="si">{</span><span class="n">library</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: foley does not verify the rights of "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">library</span><span class="o">.</span><span class="n">license_id</span><span class="si">!r}</span><span class="s2"> on its own (a human must check them), so "</span>
+                <span class="s2">"acquire would refuse every title"</span>
+            <span class="p">)</span>
+    <span class="n">MUSIC_LIBRARIES</span><span class="p">[</span><span class="n">library</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">library</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_not_keepable</span><span class="p">(</span><span class="n">library</span><span class="p">:</span> <span class="n">MusicLibrary</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Why ``library``'s files may not be kept: refused terms, an unread URL, or flags."""</span>
+    <span class="n">where</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"music library </span><span class="si">{</span><span class="n">library</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2">"</span>
+    <span class="n">terms</span> <span class="o">=</span> <span class="n">cc_refused_terms</span><span class="p">(</span><span class="n">library</span><span class="o">.</span><span class="n">license_url</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">terms</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2">: its licence (</span><span class="si">{</span><span class="n">library</span><span class="o">.</span><span class="n">license_url</span><span class="si">!r}</span><span class="s2">) has "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">' and '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">terms</span><span class="p">)</span><span class="si">}</span><span class="s2"> terms, which foley refuses on purpose (it has no "</span>
+            <span class="s2">"licence row that can honour them), so its files are not acquired"</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">library</span><span class="o">.</span><span class="n">license_id</span> <span class="o">==</span> <span class="s2">"unknown"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2">: foley cannot read a licence from </span><span class="si">{</span><span class="n">library</span><span class="o">.</span><span class="n">license_url</span><span class="si">!r}</span><span class="s2"> "</span>
+            <span class="s2">"(license_id_from_cc_url fails closed on it); register it with a "</span>
+            <span class="s2">"Creative Commons licence URL foley knows, or as paid (license_url=None)"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2">: its licence (</span><span class="si">{</span><span class="n">library</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2">) does not allow keeping the "</span>
+        <span class="s2">"files, so they cannot be acquired"</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="music_library">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.music_library.libraries.html#foley.sources.music_library.music_library">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">music_library</span><span class="p">(</span>
+    <span class="n">library</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MusicLibrary</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">libraries</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MusicLibrary</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MusicLibrary</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``library`` itself, or the registered library of that name.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        MusicLibraryError: If no library of that name is registered (naming those that are).</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">library</span><span class="p">,</span> <span class="n">MusicLibrary</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">library</span>
+    <span class="n">libraries</span> <span class="o">=</span> <span class="n">MUSIC_LIBRARIES</span> <span class="k">if</span> <span class="n">libraries</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">libraries</span>
+    <span class="k">if</span> <span class="n">library</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">libraries</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MusicLibraryError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"no music library </span><span class="si">{</span><span class="n">library</span><span class="si">!r}</span><span class="s2">; registered: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">libraries</span><span class="p">)</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="s2">"(register_music_library adds one, with its licence URL)"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">libraries</span><span class="p">[</span><span class="n">library</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="track_license">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.music_library.libraries.html#foley.sources.music_library.track_license">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">track_license</span><span class="p">(</span>
+    <span class="n">library</span><span class="p">:</span> <span class="n">MusicLibrary</span><span class="p">,</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">page_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">sha256</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The :class:`~foley.base.LicenseRecord` of ``title`` from ``library``.</span>
+
+<span class="sd">    A free library's record carries the id :func:`~foley.licensing.license_id_from_cc_url`</span>
+<span class="sd">    reads from its licence URL, the flags derived from it (``requires_attribution``</span>
+<span class="sd">    among them), ``rights_verified`` only where that id is verified, and the</span>
+<span class="sd">    library's attribution for the title. A paid library's claims nothing:</span>
+<span class="sd">    ``'unknown'``, every flag closed, no attribution.</span>
+
+<span class="sd">    &gt;&gt;&gt; rec = track_license(MUSIC_LIBRARIES["incompetech"], "A")</span>
+<span class="sd">    &gt;&gt;&gt; rec.license_id, rec.requires_attribution, rec.commercial_ok, rec.rights_verified</span>
+<span class="sd">    ('CC-BY-4.0', True, True, True)</span>
+<span class="sd">    &gt;&gt;&gt; rec = track_license(MUSIC_LIBRARIES["artlist"], "A")</span>
+<span class="sd">    &gt;&gt;&gt; rec.license_id, rec.commercial_ok, rec.rights_verified, rec.attribution_text</span>
+<span class="sd">    ('unknown', False, False, None)</span>
+<span class="sd">    """</span>
+    <span class="n">paid</span> <span class="o">=</span> <span class="n">library</span><span class="o">.</span><span class="n">paid</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="n">api_license</span><span class="p">(</span>
+        <span class="n">source</span><span class="o">=</span><span class="n">library</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">source_id</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+        <span class="n">source_url</span><span class="o">=</span><span class="n">page_url</span><span class="p">,</span>
+        <span class="n">license_url</span><span class="o">=</span><span class="n">library</span><span class="o">.</span><span class="n">license_url</span><span class="p">,</span>
+        <span class="n">license_id</span><span class="o">=</span><span class="n">library</span><span class="o">.</span><span class="n">license_id</span><span class="p">,</span>
+        <span class="n">rights_verified</span><span class="o">=</span><span class="n">library</span><span class="o">.</span><span class="n">rights_verified</span><span class="p">,</span>
+        <span class="n">creator_name</span><span class="o">=</span><span class="n">library</span><span class="o">.</span><span class="n">author</span><span class="p">,</span>
+        <span class="n">attribution_text</span><span class="o">=</span><span class="kc">None</span> <span class="k">if</span> <span class="n">paid</span> <span class="k">else</span> <span class="n">library</span><span class="o">.</span><span class="n">attribution_for</span><span class="p">(</span><span class="n">title</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+        <span class="n">record</span><span class="p">,</span> <span class="n">creator_url</span><span class="o">=</span><span class="n">library</span><span class="o">.</span><span class="n">author_url</span><span class="p">,</span> <span class="n">content_sha256</span><span class="o">=</span><span class="n">sha256</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1">#: The libraries foley ships, registered on import.</span>
+<span class="n">BUILTIN_LIBRARIES</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">MusicLibrary</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">MusicLibrary</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"incompetech"</span><span class="p">,</span>
+        <span class="n">author</span><span class="o">=</span><span class="s2">"Kevin MacLeod"</span><span class="p">,</span>
+        <span class="n">license_url</span><span class="o">=</span><span class="s2">"http://creativecommons.org/licenses/by/4.0/"</span><span class="p">,</span>
+        <span class="n">author_url</span><span class="o">=</span><span class="s2">"https://incompetech.com"</span><span class="p">,</span>
+        <span class="n">track_url</span><span class="o">=</span><span class="n">title_url</span><span class="p">(</span>
+            <span class="s2">"https://incompetech.com/music/royalty-free/mp3-royaltyfree/</span><span class="si">{title}</span><span class="s2">.mp3"</span>
+        <span class="p">),</span>
+        <span class="c1"># The wording incompetech asks for, verbatim.</span>
+        <span class="n">attribution</span><span class="o">=</span><span class="p">(</span>
+            <span class="s1">'"</span><span class="si">{title}</span><span class="s1">" </span><span class="si">{author}</span><span class="s1"> (incompetech.com)</span><span class="se">\n</span><span class="s1">'</span>
+            <span class="s2">"Licensed under Creative Commons: By Attribution 4.0 License</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="s2">"</span><span class="si">{license_url}</span><span class="s2">"</span>
+        <span class="p">),</span>
+        <span class="n">aliases</span><span class="o">=</span><span class="p">(</span><span class="s2">"Kevin MacLeod"</span><span class="p">,</span> <span class="s2">"incompetech"</span><span class="p">,</span> <span class="s2">"incompetech.com"</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">MusicLibrary</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"artlist"</span><span class="p">,</span> <span class="n">author</span><span class="o">=</span><span class="s2">"Artlist"</span><span class="p">,</span> <span class="n">aliases</span><span class="o">=</span><span class="p">(</span><span class="s2">"Artlist"</span><span class="p">,)),</span>
+    <span class="n">MusicLibrary</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"epidemic_sound"</span><span class="p">,</span>
+        <span class="n">author</span><span class="o">=</span><span class="s2">"Epidemic Sound"</span><span class="p">,</span>
+        <span class="n">aliases</span><span class="o">=</span><span class="p">(</span><span class="s2">"Epidemic Sound"</span><span class="p">,</span> <span class="s2">"Epidemic"</span><span class="p">),</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="k">for</span> <span class="n">_library</span> <span class="ow">in</span> <span class="n">BUILTIN_LIBRARIES</span><span class="p">:</span>
+    <span class="n">register_music_library</span><span class="p">(</span><span class="n">_library</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># idempotent on reload</span>
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

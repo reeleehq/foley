@@ -62,6 +62,7 @@ foley.sources
    fsd50k
    http
    internet_archive
+   music_library
    openverse
    pull
    registry

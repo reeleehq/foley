@@ -16,6 +16,7 @@ foley.sources.video
       PROBE_TIMEOUT_S
       DEFAULT_VIDEO_SUFFIX
       Probe
+      AudioStreamCheck
       REDACTED_QUERY
    
    .. rubric:: Functions
@@ -27,6 +28,7 @@ foley.sources.video
       fal_immutable_url
       ffmpeg_path
       ffprobe_seconds
+      has_audio_stream
       is_url
       is_video_key
       keyed

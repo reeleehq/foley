@@ -1,0 +1,38 @@
+foley.sources.music\_library.acquisition
+========================================
+
+.. automodule:: foley.sources.music_library.acquisition
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      ACQUIRED
+      KEPT
+      FAILED
+      REFUSED
+      WISHLIST
+      HELD
+      TRACK_COLUMNS
+      METADATA_COLUMNS
+      DURATION_DECIMALS
+      Kept
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      acquire
+      attribution_text
+      files_store
+      kept_digests
+      kept_sources
+      tracks_table
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AcquiredTrack
+   
