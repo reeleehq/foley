@@ -178,8 +178,9 @@ def reference_gain_db(
             reference programme loudness, :data:`foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).
         meter: A :data:`foley.audio.Meter` (default :data:`foley.audio.DEFAULT_METER`).
     """
-    from .audio import DEFAULT_LOUDNESS_TARGET_LUFS, loudness_gain_db
+    from .audio import DEFAULT_LOUDNESS_TARGET_LUFS, loudness_gain_db, resolve_meter
 
+    meter = resolve_meter(meter)  # a bad name raises; it is not "not measurable"
     try:
         gain, _ = loudness_gain_db(
             clip,

@@ -415,6 +415,24 @@ def loudness_component():
     return loudness
 
 
+def resolve_meter(meter: Optional[Meter] = None) -> Meter:
+    """``meter``, or :data:`DEFAULT_METER` for ``None``; an unknown name raises ``ValueError``.
+
+    Callers that read a meter error as "not measurable" resolve first, so a typo is
+    never mistaken for an unreadable clip. A name is checked only when the component
+    is installed (measuring reports a missing one).
+    """
+    meter = DEFAULT_METER if meter is None else meter
+    if isinstance(meter, str):
+        try:
+            names = loudness_component().METERS
+        except ImportError:
+            return meter
+        if meter not in names:
+            raise ValueError(f"unknown meter {meter!r}; one of {sorted(names)}")
+    return meter
+
+
 def integrated_lufs(
     samples: "ndarray",
     sample_rate: int,
@@ -438,7 +456,7 @@ def integrated_lufs(
     if samples.shape[0] < math.ceil(min_block_s * sample_rate):
         return float("-inf")
     return loudness_component().integrated_lufs(
-        samples, sample_rate, meter=meter or DEFAULT_METER
+        samples, sample_rate, meter=resolve_meter(meter)
     )
 
 

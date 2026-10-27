@@ -342,6 +342,10 @@ def test_loudness_gain_db_lands_a_quiet_clip_on_target():
     after = pyln.Meter(sr).integrated_loudness(y.astype(np.float64) * 10 ** (gain / 20))
     assert after == pytest.approx(-30.0, abs=0.05)
     assert gain == pytest.approx(-30.0 - measured)
+    stereo = np.stack([y, 0.5 * y], axis=1)  # the default meter weights channels too
+    gain2, _ = audio.loudness_gain_db(stereo, sr, target_lufs=-30.0)
+    after = pyln.Meter(sr).integrated_loudness(stereo.astype(np.float64) * 10 ** (gain2 / 20))
+    assert after == pytest.approx(-30.0, abs=0.05)
 
 
 def test_loudness_gain_db_holds_a_high_crest_clip_at_the_ceiling():

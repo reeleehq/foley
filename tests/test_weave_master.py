@@ -75,32 +75,72 @@ def test_master_injected_limiter_and_meter_are_used():
 
 
 def _transient_program(sr, secs=6.0, seed=0):
-    """A quiet bed with a few loud, noisy hits: what a lookahead limiter is for."""
+    """A quiet bed with a few loud, band-limited hits: what a lookahead limiter is for."""
     rng = np.random.default_rng(seed)
     t = np.arange(int(secs * sr)) / sr
-    x = 0.05 * np.sin(2 * np.pi * 440 * t) + 0.02 * rng.normal(size=len(t))
-    hit = 0.9 * np.exp(-np.arange(2400) / 300)
+    x = 0.05 * np.sin(2 * np.pi * 440 * t)
+    n = 2400
+    hit = sum(np.sin(2 * np.pi * f * t[:n] + rng.uniform(0, 6)) for f in (90, 230, 610))
+    hit = 0.9 * hit / np.abs(hit).max() * np.exp(-np.arange(n) / 300)
     for k in range(1, int(secs) - 1):
-        x[k * sr : k * sr + 2400] += hit * rng.normal(size=2400)
-    return np.clip(x, -1, 1).astype("float32")
+        x[k * sr : k * sr + n] += hit
+    return x.clip(-1, 1).astype("float32")
 
 
-def test_lookahead_limiter_turns_down_only_the_peaks():
+def _bed_mask(sr, n_frames, secs=6.0, margin_s=0.2):
+    """Frames farther than ``margin_s`` from every hit (the limiter's window is 50 ms)."""
+    keep = np.ones(n_frames, dtype=bool)
+    for k in range(1, int(secs) - 1):
+        keep[max(0, int((k - margin_s) * sr)) : int((k + 0.05 + margin_s) * sr)] = False
+    return keep
+
+
+def _static(mix, sr, ceiling_db):
+    from foley.audio import limit_true_peak
+
+    return limit_true_peak(mix, sr, ceiling_dbtp=ceiling_db)[0]
+
+
+def test_lookahead_limiter_leaves_the_bed_alone():
     from foley.qc import true_peak_dbtp
-    from foley.weave.master import _true_peak_trim, lookahead_true_peak_limit
+    from foley.weave.master import lookahead_true_peak_limit
+
+    sr = 48000
+    mix = np.stack([_transient_program(sr)] * 2, axis=1) * np.float32(1.5)  # over
+    out = lookahead_true_peak_limit(mix, sr, -1.0)
+    bed = _bed_mask(sr, len(mix))
+    bed_gain_db = 20 * np.log10(np.abs(out[bed]).max() / np.abs(mix[bed]).max())
+    assert abs(bed_gain_db) < 0.05  # only the hits were turned down
+    assert true_peak_dbtp(out, sr) <= -1.0 + 1e-6
+    assert out.dtype == mix.dtype and out.shape == mix.shape
+    mono = mix[:, 0].copy()
+    out1 = lookahead_true_peak_limit(mono, sr, -1.0)
+    assert out1.shape == mono.shape and out1.dtype == mono.dtype
+    assert true_peak_dbtp(out1, sr) <= -1.0 + 1e-6
+
+
+def test_master_reaches_the_target_on_a_transient_program():
+    sr = 48000
+    mix = np.stack([_transient_program(sr)] * 2, axis=1)
+    profile = MASTER_PROFILES["podcast"]
+    _, static = master(mix, sr, profile, limiter=_static)
+    limited, report = master(mix, sr, profile)
+    assert report.limited is True
+    assert report.true_peak_dbtp <= profile.true_peak_db + 1e-6  # the report's meter
+    assert report.output_lufs > static.output_lufs + 3.0
+    assert abs(report.output_lufs - profile.target_lufs) < 1.0
+    assert limited.dtype == mix.dtype and limited.shape == mix.shape
+
+
+def test_max_limiting_db_zero_is_the_static_master():
+    from dataclasses import replace
 
     sr = 48000
     mix = np.stack([_transient_program(sr)] * 2, axis=1)
-    _, static = master(mix, sr, MASTER_PROFILES["podcast"], limiter=_true_peak_trim)
-    limited, report = master(mix, sr, MASTER_PROFILES["podcast"])
-    assert report.limited is True
-    assert report.true_peak_dbtp <= -1.0 + 1e-6  # by the report's own meter
-    assert report.output_lufs > static.output_lufs + 0.5  # the bed is not turned down
-    assert limited.dtype == mix.dtype and limited.shape == mix.shape
-    mono = _transient_program(sr)
-    out = lookahead_true_peak_limit(mono, sr, -1.0)
-    assert out.shape == mono.shape and out.dtype == mono.dtype
-    assert true_peak_dbtp(out, sr) <= -1.0 + 1e-6
+    profile = replace(MASTER_PROFILES["podcast"], max_limiting_db=0.0)
+    _, static = master(mix, sr, profile, limiter=_static)
+    _, report = master(mix, sr, profile)
+    assert report.output_lufs == pytest.approx(static.output_lufs, abs=0.1)
 
 
 def test_lookahead_limiter_returns_an_unclipped_mix_as_is():
@@ -113,13 +153,44 @@ def test_lookahead_limiter_returns_an_unclipped_mix_as_is():
     assert lookahead_true_peak_limit(mono, sr, -1.0) is mono
 
 
-def test_master_true_peak_holds_on_near_nyquist_content():
-    # mixing's polyphase true-peak meter reads under foley's FFT one up here; the
-    # static residual trim keeps the reported ceiling honest.
+def test_lookahead_limiter_does_not_spread_a_nan():
     from foley.weave.master import lookahead_true_peak_limit
-    from foley.qc import true_peak_dbtp
 
     sr = 48000
-    noise = np.random.default_rng(1).normal(0, 0.3, sr * 2).clip(-1, 1)
-    out = lookahead_true_peak_limit(noise.astype("float32"), sr, -1.0)
+    mix = _sine_stereo(200, 1.0, sr, 0.99) * np.float32(1.5)
+    mix[100, 0] = np.nan
+    assert lookahead_true_peak_limit(mix, sr, -1.0) is mix
+
+
+def test_near_nyquist_residual_is_limited_then_trimmed():
+    # On full-band content mixing's polyphase meter reads under foley's FFT one: the
+    # lookahead stage must hold mixing's ceiling, and the trim the (bounded) rest.
+    from mixing.loudness import limit_peaks, true_peak_db
+
+    from foley.qc import true_peak_dbtp
+    from foley.weave.master import lookahead_true_peak_limit
+
+    sr = 48000
+    noise = np.random.default_rng(1).normal(0, 0.3, (sr * 2, 1)).clip(-1, 1)
+    ceiling = 10 ** (-1.0 / 20)
+    stage = limit_peaks(noise, ceiling=ceiling, true_peak=True, fs=sr)
+    assert true_peak_db(stage, sr) <= -1.0 + 0.01
+    out = lookahead_true_peak_limit(noise, sr, -1.0)
     assert true_peak_dbtp(out, sr) <= -1.0 + 1e-6
+    trim_db = 20 * np.log10(np.abs(out).max() / np.abs(stage).max())
+    assert -1.5 < trim_db <= 0.0
+
+
+def test_an_unknown_meter_name_raises_everywhere():
+    from foley.level import reference_gain_db
+    from foley.qc import measure_lufs
+
+    sr = 48000
+    x = _sine_stereo(200, 1.0, sr, 0.1)
+    for call in (
+        lambda: measure_lufs(x, sr, meter="numpi"),
+        lambda: reference_gain_db(x, sr, meter="numpi"),
+        lambda: master(x, sr, MASTER_PROFILES["podcast"], meter="numpi"),
+    ):
+        with pytest.raises(ValueError, match="unknown meter"):
+            call()

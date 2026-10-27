@@ -422,8 +422,9 @@ def measure_lufs(
     """
     import numpy as np
 
-    from .audio import integrated_lufs
+    from .audio import integrated_lufs, resolve_meter
 
+    meter = resolve_meter(meter)  # a bad name raises; it is not "not measurable"
     x = np.asarray(samples, dtype=np.float64)
     if not np.isfinite(x).all():
         return None

@@ -599,6 +599,11 @@ class MasterProfile(SerializableMixin):
     target_lufs: float = -16.0  # podcast default (the dominant spoken-word norm)
     true_peak_db: float = -1.0
     lra: float = 11.0
+    #: The most the master's limiter may take off a peak (dB): the loudness stage lets
+    #: the sample peak run this far over ``true_peak_db`` before it holds the gain
+    #: back. 0 restores a static, whole-program master. Transient foley (a door slam
+    #: under narration) needs a few dB to reach the target at all (foley#91).
+    max_limiting_db: float = 6.0
 
 
 #: The named delivery targets (report 06 §5.2). :func:`resolve_master` maps a

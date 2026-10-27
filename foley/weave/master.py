@@ -69,44 +69,35 @@ def _tp(mix: "ndarray", sample_rate: int) -> float:
     return float(true_peak_dbtp(mix, sample_rate))
 
 
-def _true_peak_trim(mix: "ndarray", sample_rate: int, ceiling_db: float) -> "ndarray":
-    """Scale ``mix`` so its true peak, by foley's QC meter, sits at/below ``ceiling_db``.
-
-    A static, never-boosting safety stage; ``mix`` comes back as is when under.
-    """
-    import numpy as np
-
-    from ..qc import true_peak_dbtp
-
-    tp = true_peak_dbtp(mix, sample_rate)
-    if not np.isfinite(tp) or tp <= ceiling_db:
-        return mix
-    return mix * db_to_lin(ceiling_db - tp)
-
-
 def lookahead_true_peak_limit(
     mix: "ndarray", sample_rate: int, ceiling_db: float
 ) -> "ndarray":
     """Hold ``mix``'s inter-sample true peak at/below ``ceiling_db`` with a lookahead limiter.
 
     The default :data:`Limiter` (foley#91): :func:`mixing.loudness.limit_peaks` with
-    ``true_peak=True`` turns down only the peaks (the gain eases in and out over its
-    50 ms window), not the whole program. Its polyphase true-peak meter can read a
-    little under foley's FFT one (:func:`foley.qc.true_peak_dbtp`, which the master
-    report uses) on content near Nyquist, so whatever is left over that meter is then
-    trimmed statically: the ceiling holds by the number the report shows.
-    Deterministic, never raises the level; ``mix`` comes back as is (same object)
-    when nothing is over, else with the same shape and dtype.
+    ``true_peak=True`` turns down the peaks (the gain eases in and out over its 50 ms
+    window), not the whole program. Its polyphase true-peak meter reads under foley's
+    FFT one (:func:`foley.qc.true_peak_dbtp`, which the master report uses) on content
+    near Nyquist, so whatever is left over that meter is then trimmed statically
+    (:func:`foley.audio.limit_true_peak`): the ceiling holds by the number the report
+    shows, at the cost of turning the whole program down by that residual (about a
+    dB on full-band noise; nothing on band-limited material). Deterministic, never
+    raises the level; ``mix`` comes back as is (same object) when nothing is over or
+    it is not all finite, else with the same shape and dtype.
     """
-    from ..audio import loudness_component
+    import numpy as np
 
+    from ..audio import limit_true_peak, loudness_component
+
+    if not np.isfinite(mix).all():  # one NaN would spread over the limiter's window
+        return mix
     frames = mix if mix.ndim == 2 else mix[:, None]  # the limiter's (n, channels)
     limited = loudness_component().limit_peaks(
         frames, ceiling=db_to_lin(ceiling_db), true_peak=True, fs=sample_rate
     )
     if limited is not frames:
         mix = limited.reshape(mix.shape).astype(mix.dtype, copy=False)
-    return _true_peak_trim(mix, sample_rate, ceiling_db)
+    return limit_true_peak(mix, sample_rate, ceiling_dbtp=ceiling_db)[0]
 
 
 def _parse_loudnorm_json(stderr: str) -> dict:
@@ -214,9 +205,11 @@ def master(
             uses the two-pass ``ffmpeg loudnorm`` "guarantee the numbers" master (report 06
             §5.4) and **fails safe** back to in-process if ffmpeg is unavailable or errors.
         limiter: The in-process true-peak stage (a :data:`Limiter`, ``(mix, sample_rate,
-            ceiling_db) -> mix``; default :func:`lookahead_true_peak_limit`). In-process
-            engine only; the true peak in the report is always measured here, never
-            taken from the limiter.
+            ceiling_db) -> mix``; default :func:`lookahead_true_peak_limit`). The
+            loudness stage lets the sample peak run up to ``profile.max_limiting_db``
+            over the ceiling for it to take back down. In-process engine only; the
+            true peak in the report is always measured here, never taken from the
+            limiter.
         meter: A :data:`foley.audio.Meter` for the loudness stages (default
             :data:`foley.audio.DEFAULT_METER`).
 
@@ -251,7 +244,7 @@ def master(
         mix,
         sample_rate,
         target_lufs=profile.target_lufs,
-        peak_ceiling_dbfs=profile.true_peak_db,
+        peak_ceiling_dbfs=profile.true_peak_db + profile.max_limiting_db,
         meter=meter,
     )
     limited_mix = (limiter or lookahead_true_peak_limit)(
