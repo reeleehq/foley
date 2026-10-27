@@ -508,7 +508,8 @@ def plan_generation(
         plan.request_key = request_digest(
             backend, prompt, config, kept, salt, provider_params=plan.provider_params
         )
-        if reuse_cached and not video_replayable(kept):
+        plan.replayable = video_replayable(kept)  # whatever reuse_cached says (#185)
+        if reuse_cached and not plan.replayable:
             plan.notes.append(
                 "the video is a remote URL whose content foley has not seen: what it "
                 "serves may have changed, so this request is not replayed from the "
@@ -516,7 +517,6 @@ def plan_generation(
                 "content)"
             )
             reuse_cached = False
-            plan.replayable = False
         if reuse_cached:
             # A paid sound already on this disk needs no egress and no spend.
             cache = cache if cache is not None else _default_cache()
@@ -597,9 +597,16 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
                 clip=exc.clip,
                 cache_key=plan.content_key,  # set once its bytes were written
             ) from exc
+        retry = (
+            "a retry takes its audio out without paying again"
+            if plan.replayable
+            else "a retry pays again (a bare video URL is never replayed); its audio "
+            "can still be taken out of the kept video (foley.generations.get(key), "
+            "then foley.sources.video.audio_track)"
+        )
         raise UndemuxedAnswer(
             f"{exc}. The answer is kept in the generations cache ({plan.kept_key}): "
-            "a retry takes its audio out without paying again",
+            f"{retry}",
             clip=exc.clip,
             cache_key=plan.content_key,
         ) from exc
@@ -629,7 +636,7 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
                 f"could not keep the paid generation in the cache: {exc!r}"
             )
         else:
-            if fallback:
+            if fallback and plan.replayable:  # a never-replayed answer has no pointer
                 replay_s = _fallback_replay_s(plan.config)
                 clip.notes.append(
                     "the provider answered a different request than the one asked (a "
@@ -679,8 +686,13 @@ def _answered_key(plan: GenerationPlan, clip) -> str:
     """
     native, model = _keyed_request(plan.config, plan.affordances)
     # Compared as the adapter records it (a URL without its token, #184), rebuilt below
-    # from the full request, which is what the digest hashes.
-    recorded, _ = _keyed_request(plan.config, plan.affordances, key=recorded_video_key)
+    # from the full request, which is what the digest hashes. Only a URL differs.
+    video = plan.affordances.get("video")
+    recorded = (
+        _keyed_request(plan.config, plan.affordances, key=recorded_video_key)[0]
+        if isinstance(video, str)
+        else native
+    )
     provider_params = dict(plan.provider_params or {})
     planned = {**recorded, **provider_params}  # generators append nothing
     lic = getattr(getattr(clip.candidate, "sound", None), "license", None)

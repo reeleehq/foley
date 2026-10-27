@@ -184,25 +184,39 @@ REDACTED_QUERY = "?…"
 
 def recorded_video_key(video: VideoInput) -> str:
     """:func:`video_key` as it is written down: a bare URL keeps its scheme, host and
-    path only (#184): its query and fragment (a presigned URL's signature) become
-    :data:`REDACTED_QUERY`, and credentials before the host are dropped.
+    path only (#184): its query, fragment and ``;`` path parameters (a presigned URL's
+    signature, a session id) become :data:`REDACTED_QUERY`, and credentials before
+    the host are dropped. Two URLs that differ only there record (and are found by
+    :meth:`~foley.stores.GenerationsCache.find`) as one, as a re-signed URL should.
+    An already recorded or bare ``url:`` key is redacted the same way.
 
     >>> recorded_video_key("https://u:p@bucket.s3.example/a.mp4?X-Amz-Signature=s3cr3t")
     'url:https://bucket.s3.example/a.mp4?…'
+    >>> recorded_video_key("https://[::1]:8080/a.mp4;jsessionid=X#t=2")
+    'url:https://[::1]:8080/a.mp4?…'
     >>> recorded_video_key("https://x/a.mp4"), recorded_video_key(b"abc")[:11]
     ('url:https://x/a.mp4', 'sha256:ba78')
     """
-    from urllib.parse import urlsplit
-
-    key = video_key(video)
+    is_key = isinstance(video, str) and video.startswith(URL_KEY_PREFIX)
+    key = video if is_key else video_key(video)
     if not key.startswith(URL_KEY_PREFIX):
         return key
-    parts = urlsplit(key[len(URL_KEY_PREFIX) :])
-    bare = f"{parts.scheme}://{parts.hostname or ''}"
-    if parts.port is not None:
-        bare += f":{parts.port}"
-    tail = REDACTED_QUERY if (parts.query or parts.fragment) else ""
-    return f"{URL_KEY_PREFIX}{bare}{parts.path}{tail}"
+    return URL_KEY_PREFIX + _bare_url(key[len(URL_KEY_PREFIX) :])
+
+
+def _bare_url(url: str) -> str:
+    """``url`` without its userinfo, ``;`` parameters, query and fragment (string
+    surgery, so a malformed authority never raises)."""
+    scheme, _, rest = url.partition("://")
+    cut = min(
+        (i for i in (rest.find("?"), rest.find("#")) if i >= 0), default=len(rest)
+    )
+    head, tail = rest[:cut], rest[cut:]
+    authority, slash, path = head.partition("/")
+    authority = authority.rpartition("@")[2]
+    kept = "/".join(seg.partition(";")[0] for seg in path.split("/"))
+    redacted = bool(tail) or kept != path
+    return f"{scheme}://{authority}{slash}{kept}" + (REDACTED_QUERY if redacted else "")
 
 
 def keyed(affordances: dict, *, key: Callable = recorded_video_key) -> dict:

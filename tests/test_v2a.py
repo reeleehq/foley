@@ -799,3 +799,60 @@ def test_each_answer_of_a_never_replayed_request_keeps_its_entry(library, tmp_pa
     assert len(entries) == 2 and len({e["content_key"] for e in entries}) == 2
     assert all(e["content_key"] in cache.audio for e in entries)  # no orphaned bytes
     assert len(cache.find(video="https://x/latest.mp4")) == 2
+
+
+def test_the_run_manifest_never_holds_the_token(library, tmp_path):
+    from foley import obs
+    from foley.obs.recorder import _CURRENT_RUN
+    from foley.stores import make_generations_store
+
+    runs = {}
+    obs.reset()
+    obs.enable(prefer_otel=False, run_store=runs)
+    try:
+        foley.generate("", backend="fal_mirelo_v2a", adapter=_adapter()[0],
+                       library=library, video=_PRESIGNED,
+                       generations_cache=make_generations_store(tmp_path / "g"),
+                       provenance_store={})
+    finally:
+        obs.reset()
+        _CURRENT_RUN.set(None)
+    (manifest,) = runs.values()
+    text = json.dumps(manifest, ensure_ascii=False, default=str)
+    assert "s3cr3t" not in text and "pw@" not in text
+    assert "url:https://bucket.s3.example/shot.mp4?…" in text
+
+
+def test_reuse_cached_false_on_a_bare_url_still_keeps_every_answer(library, tmp_path):
+    from foley.stores import make_generations_store
+
+    cache = make_generations_store(tmp_path / "generations")
+    keys = []
+    for seconds in (1.0, 2.0):
+        cand = foley.generate("", backend="fal_mirelo_v2a",
+                              adapter=_adapter(seconds=seconds)[0], library=library,
+                              video="https://x/latest.mp4", generations_cache=cache,
+                              provenance_store={}, reuse_cached=False)
+        (note,) = [n for n in cand.notes if n.startswith("paid generation kept")]
+        keys.append(note.rsplit(": ", 1)[1])
+    assert len(set(keys)) == 2 and all(cache.get(k) for k in keys)  # get by its key
+    assert all(cache.requests[k].get("status") for k in keys)  # the outcome is there
+    cache.evict(keys[0])
+    assert keys[0] not in cache.requests and len(cache.find(video="https://x/latest.mp4")) == 1
+
+
+def test_an_undemuxed_answer_on_a_bare_url_does_not_promise_a_free_retry(tmp_path):
+    from foley.sources._dispatch import plan_generation, run_generation
+    from foley.sources.base import UndemuxedAnswer
+    from foley.stores import make_generations_store
+
+    def broken(_):
+        raise RuntimeError("no audio stream")
+
+    cache = make_generations_store(tmp_path / "generations")
+    adapter = FalAdapter(CONFIGS["fal_mmaudio_v2a"], api_key="k", runner=VideoRunner(),
+                         uploader=Uploader(), demux=broken)
+    plan = plan_generation("fal_mmaudio_v2a", "rain", adapter=adapter, cache=cache,
+                           video="https://x/shot.mp4?sig=S")
+    with pytest.raises(UndemuxedAnswer, match="a retry pays again"):
+        run_generation(plan, adapter, cache=cache)
