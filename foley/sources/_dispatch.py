@@ -439,6 +439,7 @@ def plan_generation(
     cache=None,
     reuse_cached: bool = True,
     provider_params: Optional[dict] = None,
+    variation: int = 0,
     **affordances,
 ) -> GenerationPlan:
     """Decide a generation call: egress, translation, price, cache lookup, budget.
@@ -461,6 +462,10 @@ def plan_generation(
             or priced key raises before any reservation, so the estimate stands),
             handed to the adapter, which merges them over its translated native
             params, and part of the cache key.
+        variation: Which variation of the same request this is (#161): ``0`` (default)
+            is the request itself; a later one is keyed apart (in the request's salt),
+            so a backend that takes no seed answers ``n`` variations with ``n`` paid
+            sounds, each replayable, rather than one cached sound ``n`` times.
         **affordances: The canonical generation affordances.
 
     Raises:
@@ -472,6 +477,10 @@ def plan_generation(
     from ..cost import authorize, estimate_call
     from .registry import SOURCE_REGISTRY, require_source_egress
 
+    if isinstance(variation, bool) or not isinstance(variation, numbers.Integral):
+        raise ValueError(f"variation must be an integer >= 0, got {variation!r}")
+    if variation < 0:
+        raise ValueError(f"variation must be an integer >= 0, got {variation!r}")
     if config is None:
         config = getattr(adapter, "config", None) or SOURCE_REGISTRY.get(
             backend, {}
@@ -501,6 +510,8 @@ def plan_generation(
         try:
             salt = salt_fn() if callable(salt_fn) else None
             salt = {"adapter": salt, "account": _account_id(adapter, config)}
+            if variation:  # only a later variation: every existing key is unchanged
+                salt["variation"] = int(variation)
         except SourceConfigurationError:
             require_source_egress(backend, config)  # offline wins over a missing plan
             raise

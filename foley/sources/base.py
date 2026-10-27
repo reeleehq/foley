@@ -85,6 +85,7 @@ __all__ = [
     "api_license",
     "generated_license",
     "draw_seed",
+    "derived_seed",
     "CORPUS_REGISTRY",
     "register_corpus",
     "ring_of",
@@ -1098,6 +1099,18 @@ def draw_seed() -> int:
     True
     """
     return secrets.randbelow(_SEED_LIMIT)
+
+
+def derived_seed(seed: int, index: int) -> int:
+    """The seed of variation ``index`` of a request seeded with ``seed`` (#161).
+
+    ``seed + index``, wrapped into the signed 32-bit range every local backend takes,
+    so variation 0 is the request itself and each later one is a seed of its own.
+
+    >>> derived_seed(7, 0), derived_seed(7, 2), derived_seed(2**31 - 1, 1)
+    (7, 9, 0)
+    """
+    return (int(seed) + int(index)) % 2**31
 
 
 def generated_license(

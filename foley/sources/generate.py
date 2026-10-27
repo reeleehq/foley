@@ -347,6 +347,7 @@ def _generate(
     level=None,
     check_prompt: bool = True,
     provider_params: Optional[dict] = None,
+    variation: int = 0,
     **affordances,
 ) -> IngestReport:
     """Generate a sound via ``backend`` and ingest it (by-value) into ``library``.
@@ -438,6 +439,9 @@ def _generate(
             never seen by the unsupported-parameter policy. A key the source's
             ``provider_params`` policy reserves or prices raises ``ValueError``
             before any call, so the cost estimate is the call's.
+        variation: Which variation of the same request this is (#161; see
+            :func:`foley.variations`): ``0`` (default) is the request itself, a later
+            one is a different paid request in the generations cache.
         **affordances: Unified generation affordances (``duration_s``, ``model``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format``, ``sample_rate``, ``expand_prompt`` — see
@@ -507,6 +511,7 @@ def _generate(
             cache=generations_cache,
             reuse_cached=reuse_cached,
             provider_params=provider_params,
+            variation=variation,
             **affordances,
         )
     except UndemuxedAnswer as exc:  # a kept, paid video still not demuxed (#176)
@@ -1033,6 +1038,7 @@ _GENERATE_KNOWN = frozenset(
         "level",
         "check_prompt",
         "provider_params",
+        "variation",
     }
 )
 
