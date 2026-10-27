@@ -647,6 +647,8 @@ def test_a_new_digest_for_the_same_url_is_a_miss(library, tmp_path):
     assert len(runner.calls) == 2  # the third is the first again: replayed
     found = cache.find(video=foley.RemoteVideo(url="https://x/a.mp4", sha256="cd" * 32))
     assert len(found) == 1  # find takes the value, not only its key
+    assert cache.find(video="sha256:" + "cd" * 32) == found  # and the key it keeps
+    assert cache.find(video="/no/such/clip.mp4") == []
 
 
 def test_a_fal_cdn_url_is_replayed(library, tmp_path):

@@ -158,6 +158,22 @@ def video_key(video: VideoInput) -> str:
     )
 
 
+def is_video_key(value) -> bool:
+    """Whether ``value`` is already a key :func:`video_key` makes (as a cache entry keeps it).
+
+    >>> is_video_key("sha256:" + "ab" * 32), is_video_key("url:https://x/a.mp4")
+    (True, True)
+    >>> is_video_key("clip.mp4"), is_video_key(b"sha256:")
+    (False, False)
+    """
+    if not isinstance(value, str):
+        return False
+    digest = value.removeprefix("sha256:")
+    return value.startswith(URL_KEY_PREFIX) or (
+        digest != value and bool(_SHA256_HEX.fullmatch(digest))
+    )
+
+
 def keyed(affordances: dict) -> dict:
     """``affordances`` with a ``video`` replaced by :func:`video_key` (else unchanged).
 
@@ -174,9 +190,10 @@ def fal_immutable_url(url: str) -> bool:
     ``False`` when falaw is not installed: an unknown URL is taken as mutable."""
     try:
         from falaw.content import is_immutable_url
-    except ImportError:
+
+        return is_immutable_url(url)
+    except Exception:  # noqa: BLE001 - no falaw, a broken one, a URL it cannot parse
         return False
-    return is_immutable_url(url)
 
 
 def replayable(
