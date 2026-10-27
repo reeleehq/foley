@@ -942,4 +942,12 @@ def test_estimate_refuses_a_meaning_carrying_param_the_backend_cannot_honour(mon
     order = ("fal_sonilo", "fal_mmaudio")
     seeded = foley.estimate("generate", backend=order, prompt="rain", seed=3)
     assert seeded == foley.estimate("generate", backend="fal_mmaudio", prompt="rain", seed=3)
-    assert seeded < foley.estimate("generate", backend=order, prompt="rain") == 0.0144
+    sonilo = foley.estimate("generate", backend="fal_sonilo", prompt="rain")
+    assert seeded < sonilo == foley.estimate("generate", backend=order, prompt="rain")
+    # the call's own policy: 'note' drops it, as generate would (and warns nothing)
+    noted = foley.estimate("generate", backend="fal_sonilo", prompt="rain", model="x",
+                           on_unsupported="note", reuse_cached=False)
+    assert noted == sonilo
+    with pytest.raises(UnsupportedParameter, match="seed"):  # every backend refuses
+        foley.estimate("generate", backend=("fal_sonilo", "fal_elevenlabs"),
+                       prompt="rain", seed=3)

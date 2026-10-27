@@ -950,12 +950,15 @@ def _demux_kept(
     return audio
 
 
-def estimate_generation(backend: str, **affordances) -> Optional[float]:
+def estimate_generation(
+    backend: str, *, on_unsupported: Optional[str] = None, **affordances
+) -> Optional[float]:
     """What :func:`plan_generation` would price this call at (same translation and clamp).
 
-    The same unsupported-parameter policy as the call (#164): a meaning-carrying one
-    the backend cannot honour raises :class:`UnsupportedParameter`, as ``generate``
-    would before anything is paid; any other is dropped, silently here.
+    The same unsupported-parameter policy as the call (#164), ``on_unsupported``
+    included: by default a meaning-carrying parameter the backend cannot honour raises
+    :class:`UnsupportedParameter`, as ``generate`` would before anything is paid; any
+    other is dropped (silently here, warnings included).
     """
     from ..cost import estimate_call
     from .registry import SOURCE_REGISTRY, discover_sources, get_source
@@ -966,7 +969,9 @@ def estimate_generation(backend: str, **affordances) -> Optional[float]:
     config = SOURCE_REGISTRY[backend]["config"]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        kept, _ = translate_affordances(config, affordances)
+        kept, _ = translate_affordances(
+            config, affordances, on_unsupported=on_unsupported
+        )
     return estimate_call(config, **_priced(config, kept))
 
 
