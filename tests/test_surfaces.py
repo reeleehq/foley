@@ -170,3 +170,34 @@ def test_a_reserved_parameter_name_is_refused(monkeypatch):
     monkeypatch.setattr(mcp, "VERBS", (*mcp.VERBS, mcp.Verb(foley_route)))
     with pytest.raises(ValueError, match="reserved"):
         cli.build_parser()
+
+
+# #194: a bad timeline or item id is an "ok": false row on both surfaces, never a raise
+
+
+@pytest.mark.parametrize("call", [
+    lambda: mcp.foley_toggle({"items": []}, "zz", True),
+    lambda: mcp.foley_set_gain({"items": []}, "zz", -3.0),
+    lambda: mcp.foley_nudge([], "zz", 0.5),
+    lambda: mcp.foley_set_master("not a timeline"),
+    lambda: mcp.foley_timeline_captions([]),
+    lambda: mcp.foley_weave("text", []),
+], ids=["toggle", "set-gain", "nudge", "set-master", "captions", "weave"])
+def test_a_bad_timeline_is_an_invalid_row(call):
+    out = call()
+    assert out["ok"] is False and out["status"] == "invalid" and out["error"]
+
+
+def test_the_cli_exits_1_on_a_bad_item_id_with_no_traceback(capsys):
+    assert cli.main(["toggle", '{"items": []}', "zz", "true"]) == 1
+    assert "no timeline item" in json.loads(capsys.readouterr().out)["error"]
+    assert cli.main(["timeline-captions", "[]"]) == 1
+
+
+def test_an_unmapped_missing_module_is_named_with_its_own_install_line():
+    exc = ImportError("pyloudnorm is not installed: install it via 'pip install pyloudnorm'",
+                      name="pyloudnorm")
+    hint = cli._missing_dep_hint(exc)
+    assert "'pyloudnorm'" in hint and "pip install pyloudnorm" in hint
+    assert "foley[audio" not in hint  # no extra ships it (a test oracle)
+    assert "foley[audio" in cli._missing_dep_hint(ImportError("x", name="numpy"))

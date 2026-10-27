@@ -590,8 +590,10 @@ def _missing_dep_hint(exc: ImportError) -> str:
             f"Install it with:  pip install 'foley[{extra}]'  "
             "(the CLAP model downloads on first use)."
         )
+    if module:  # not shipped by an extra: the error says what to install (#188)
+        return f"foley needs {module!r}, which no foley extra installs: {exc}"
     return (
-        f"foley could not import {module or 'a required module'!r}. "
+        "foley could not import a required module. "
         "Install the relevant extra, e.g. pip install 'foley[audio,clap]'."
     )
 
