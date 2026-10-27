@@ -226,11 +226,7 @@ class FreesoundAdapter:
         if ucs_category:
             bst = _bst_category(self.config, ucs_category)
             if bst is not None:
-                filters.append(
-                    self.config["param_map"]["ucs_category"]["to_native"].format(
-                        category=bst
-                    )
-                )
+                filters.append(pm["ucs_category"]["to_native"].format(category=bst))
         if duration_range is not None:
             lo, hi = duration_range
             filters.append(

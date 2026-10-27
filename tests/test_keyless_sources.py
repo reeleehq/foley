@@ -604,7 +604,7 @@ def test_archive_pages_and_restricts_collections():
     ia.search("door", page=3, sources=["opensource_audio", "audio_bookspoetry"])
     p = http.calls[0]["params"]
     assert p["page"] == 3
-    assert p["q"].endswith(" AND collection:(opensource_audio OR audio_bookspoetry)")
+    assert p["q"].endswith(' AND collection:("opensource_audio" OR "audio_bookspoetry")')
 
 
 def test_commons_pages_by_offset():
@@ -644,12 +644,15 @@ def test_commons_offset_uses_the_clamped_limit():
 
 def test_archive_refuses_a_collection_name_that_is_not_an_identifier():
     ia, http = _ia()
-    for bad in ("foo bar", "x) OR (mediatype:movies", "", "AND x"):
+    for bad in ("foo bar", "x) OR (mediatype:movies", "", "-opensource_audio", '"x"'):
         with pytest.raises(ValueError, match="collection identifiers"):
             ia.search("door", sources=[bad])
     assert http.calls == []
     ia.search("door", sources="opensource_audio")  # one name, called directly
-    assert http.calls[0]["params"]["q"].endswith(" AND collection:(opensource_audio)")
+    assert http.calls[0]["params"]["q"].endswith(' AND collection:("opensource_audio")')
+    ia, http = _ia()
+    ia.search("door", sources=["AND"])  # a word, quoted: never an operator
+    assert http.calls[0]["params"]["q"].endswith(' AND collection:("AND")')
 
 
 def test_openverse_exclusion_is_case_blind_and_survives_a_provider_param():
@@ -676,3 +679,25 @@ def test_include_explicit_must_be_a_bool():
 
     with pytest.raises(ValueError, match="include_explicit"):
         translate_affordances(OV, {"include_explicit": "no"}, vocabulary=QUERY_AFFORDANCES)
+
+
+
+def test_a_bad_source_name_is_the_callers_error_before_any_call():
+    from foley.base import QUERY_AFFORDANCES
+    from foley.sources._dispatch import translate_affordances
+    from foley.sources.internet_archive.config import SOURCE_CONFIG as IA
+
+    for bad in (["foo bar"], ["-x"], [1]):
+        with pytest.raises(ValueError):
+            translate_affordances(IA, {"sources": bad}, vocabulary=QUERY_AFFORDANCES)
+
+
+def test_openverse_freesound_rows_stay_by_reference_whatever_the_case():
+    rows = [_row("f", "cc0", source="Freesound")]
+    ov = OpenverseAdapter(http=Fake(("/audio/", Resp({"results": rows}))),
+                          include_freesound=True)
+    (cand,) = ov.search("door")
+    assert cand.sound.license.cache_bytes_ok is False  # Freesound's terms: no caching
+    jamendo = Fake(("/audio/", Resp(_row("j", "cc0", source="jamendo"))))
+    with pytest.raises(LookupError, match="does not take from Openverse"):
+        OpenverseAdapter(http=jamendo).get("openverse:j")

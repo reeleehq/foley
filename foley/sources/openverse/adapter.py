@@ -147,7 +147,13 @@ class OpenverseAdapter:
         """
         rid = raw_id(_PREFIX, source_id)
         path = self.config["api"]["detail_endpoint"]["path"].format(id=rid)
-        cand = self._candidate(self._get_json(path), only=None)
+        row = self._get_json(path)
+        if self._provider(row) in self._excluded():
+            raise LookupError(
+                f"Openverse audio {rid} is from {self._provider(row)!r}, a provider "
+                "foley does not take from Openverse; refused."
+            )
+        cand = self._candidate(row, only=None)
         if cand is None:
             raise LookupError(
                 f"Openverse audio {rid} has a non-accepted licence; refused (fail-closed)."
@@ -174,14 +180,20 @@ class OpenverseAdapter:
             if not (s == "freesound" and self._include_freesound)
         ]
 
+    @staticmethod
+    def _provider(row: dict) -> str:
+        """The row's Openverse provider, normalised (the API sends lowercase)."""
+        return str(row.get("source") or "").strip().lower()
+
     def _candidate(self, row: dict, *, only: Optional[list]) -> Optional[Candidate]:
         if not row.get("id") or not row.get("url"):
             return None
+        provider = self._provider(row)
         # Whatever the request (a provider param can rewrite the source filter), an
         # excluded provider's row is never returned.
-        if str(row.get("source") or "").lower() in self._excluded():
+        if provider in self._excluded():
             return None
-        by_reference = row.get("source") == "freesound"
+        by_reference = provider == "freesound"  # its terms forbid caching its bytes
         found = license_for_item(self.config, row.get("license_url"), only=only)
         if found is None:
             return None

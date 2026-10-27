@@ -39,6 +39,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import numbers
 import time
 import warnings
@@ -136,6 +137,7 @@ def translate_affordances(
     # Validated here, at planning time, so a bad value never reserves budget.
     check_prompt_influence(affordances.get("prompt_influence"))
     affordances = _checked_values(affordances)
+    _check_patterns(config, affordances)
     duration_s = affordances.get("duration_s")
     if duration_s is not None and not math.isfinite(float(duration_s)):
         raise ValueError(
@@ -169,7 +171,8 @@ def _checked_values(affordances: dict) -> dict:
                 f"sample_rate must be a positive whole number of Hz, got {rate!r}"
             )
         affordances = {**affordances, "sample_rate": int(rate)}
-    for name in ("expand_prompt", "include_explicit"):  # loop=1 stays accepted (#97)
+    # Strict bools; loop is not here, since loop=1 is accepted as True (#97).
+    for name in ("expand_prompt", "include_explicit"):
         flag = affordances.get(name)
         if flag is not None and not isinstance(flag, bool):
             raise ValueError(f"{name} must be True or False, got {flag!r}")
@@ -178,9 +181,30 @@ def _checked_values(affordances: dict) -> dict:
         isinstance(page, bool) or not isinstance(page, numbers.Integral) or page < 1
     ):
         raise ValueError(f"page must be a positive integer, got {page!r}")
-    if isinstance(affordances.get("sources"), str):  # one name, not its characters
-        affordances = {**affordances, "sources": [affordances["sources"]]}
+    sources = affordances.get("sources")
+    if sources is not None:
+        names = [sources] if isinstance(sources, str) else list(sources)
+        if not all(isinstance(n, str) for n in names):
+            raise ValueError(f"sources must be names (str), got {sources!r}")
+        affordances = {**affordances, "sources": names}
     return affordances
+
+
+def _check_patterns(config: dict, affordances: dict) -> None:
+    """Raise ``ValueError`` for a value its ``param_map`` entry's ``pattern`` refuses.
+
+    So a malformed name (an archive collection id) is the caller's error, raised
+    before any call, not a search failure recorded in a report.
+    """
+    param_map = config.get("param_map") or {}
+    for name, value in affordances.items():
+        pattern = (param_map.get(name) or {}).get("pattern")
+        if pattern is None or value is None:
+            continue
+        values = value if isinstance(value, list) else [value]
+        bad = [v for v in values if not re.fullmatch(pattern, str(v))]
+        if bad:
+            raise ValueError(f"{name}: {bad!r} not accepted by {config.get('name')}")
 
 
 #: Part of every cache key. Bumped when the key's shape or meaning changes, so entries

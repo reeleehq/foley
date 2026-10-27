@@ -328,7 +328,11 @@ def paging_params(config: dict, page: int, per_page: int) -> dict:
 
 
 def as_names(names) -> list:
-    """``names`` as a list of names: one name is a one-item list, never its characters."""
+    """``names`` as a list of names: one name is a one-item list, never its characters.
+
+    >>> as_names("wikimedia_audio"), as_names(("a", "b")), as_names(None)
+    (['wikimedia_audio'], ['a', 'b'], [])
+    """
     return [names] if isinstance(names, str) else list(names or ())
 
 
@@ -336,6 +340,10 @@ def native_choice(config: dict, name: str, value: str) -> str:
     """The native value of an enumerated affordance (``sort``), or ``ValueError``.
 
     A native value is not accepted here: pass it as a provider param instead.
+
+    >>> cfg = {"param_map": {"sort": {"to_native_map": {"newest": "created_desc"}}}}
+    >>> native_choice(cfg, "sort", "newest")
+    'created_desc'
     """
     table = config["param_map"][name]["to_native_map"]
     try:

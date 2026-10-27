@@ -105,7 +105,8 @@ class InternetArchiveAdapter:
             bad = [n for n in names if not re.fullmatch(spec["pattern"], str(n))]
             if bad:
                 raise ValueError(f"not archive collection identifiers: {bad!r}")
-            q += " AND " + spec["to_native"].format(collections=" OR ".join(names))
+            quoted = " OR ".join(f'"{n}"' for n in names)
+            q += " AND " + spec["to_native"].format(collections=quoted)
         params = {
             "q": q,
             "fl[]": list(_FIELDS),
