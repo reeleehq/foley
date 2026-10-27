@@ -38,6 +38,7 @@ from ...base import (
 from ..base import (
     GeneratedClip,
     SourceConfigurationError,
+    UndemuxedAnswer,
     generated_license,
     merge_provider_params,
     recorded_params,
@@ -275,7 +276,7 @@ class FalAdapter:
                 f"({type(exc).__name__}); nothing was generated"
             ) from exc
 
-    def _demuxer(self) -> Optional[Callable[[bytes], bytes]]:
+    def demuxer(self) -> Optional[Callable[[bytes], bytes]]:
         """How to take the audio out of this endpoint's answer, or ``None`` (audio already).
 
         Raises:
@@ -291,7 +292,8 @@ class FalAdapter:
         if ffmpeg_path() is None:
             raise SourceConfigurationError(
                 f"{self.name} answers with a video and foley needs ffmpeg to keep its "
-                "audio: install ffmpeg (or imageio-ffmpeg); nothing was generated"
+                "audio: install ffmpeg (or imageio-ffmpeg); nothing was generated now "
+                "(a paid answer kept in the generations cache is demuxed on the retry)"
             )
         return audio_track
 
@@ -325,7 +327,7 @@ class FalAdapter:
         """
         notes: list = []
         nd = self.config.get("native_defaults") or {}
-        demux = self._demuxer()  # before the upload and the call: nothing spent yet
+        demux = self.demuxer()  # before the upload and the call: nothing spent yet
         args = merge_provider_params(
             self.native_arguments(prompt, **affordances),
             provider_params,
@@ -349,17 +351,16 @@ class FalAdapter:
             )
         endpoint = self.config["api"]["endpoint_id"]
         audio, response = self.invoke_native(args)
+        undemuxed = None  # the call is paid: a failed demux still returns the answer
         if demux is not None:
             try:
                 audio = demux(audio)
-            except Exception as exc:  # the call is paid: say so, and where the video is
-                url = audio_url(response, self.config["output"]["audio_field"])
-                where = f"; the video is at {url} (an expiring fal URL)" if url else ""
-                raise RuntimeError(
-                    f"{self.name}: the generation was billed, but its audio could not "
-                    f"be taken out of the video ({type(exc).__name__}){where}"
-                ) from exc
-            notes.append(f"{self.name} answered with a video: its audio track was kept")
+            except Exception as exc:  # noqa: BLE001 - raised below, with the answer
+                undemuxed = exc
+            else:
+                notes.append(
+                    f"{self.name} answered with a video: its audio track was kept"
+                )
         seed_field = nd.get("seed_field")
         seed = (
             response.get(seed_field)
@@ -399,12 +400,21 @@ class FalAdapter:
         record = SoundRecord(id=f"{self.name}:pending", license=lic, caption=prompt)
         candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
         candidate.cost_actual_usd = _actual_cost(self.config, args, audio)
-        return GeneratedClip(
+        clip = GeneratedClip(
             audio_bytes=audio,
             candidate=candidate,
             notes=notes,
             raw=dict(response) if isinstance(response, dict) else None,
         )
+        if undemuxed is not None:
+            url = audio_url(response, self.config["output"]["audio_field"])
+            where = f"; the video is at {url} (an expiring fal URL)" if url else ""
+            raise UndemuxedAnswer(
+                f"{self.name}: the generation was billed, but its audio could not be "
+                f"taken out of the video ({type(undemuxed).__name__}){where}",
+                clip=clip,
+            ) from undemuxed
+        return clip
 
 
 def _actual_cost(config: dict, args: dict, audio: bytes) -> Optional[float]:

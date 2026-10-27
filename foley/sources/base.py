@@ -74,6 +74,7 @@ __all__ = [
     "SourceAdapter",
     "GenerateAdapter",
     "GeneratedClip",
+    "UndemuxedAnswer",
     "UniformCorpus",
     "bulk_license",
     "per_clip_license_meta",
@@ -825,6 +826,29 @@ class GeneratedClip:
     raw: Optional[dict] = None
 
 
+class UndemuxedAnswer(RuntimeError):
+    """A paid answer that came as a video whose audio track could not be taken out (#176).
+
+    MMAudio, ThinkSound and HunyuanVideo-Foley answer with the video, the sound muxed
+    in. When ffmpeg cannot demux it, the call is still billed: ``clip`` is the whole
+    answer (``audio_bytes`` the video, its licence and notes), so the generations cache
+    keeps it and a retry demuxes it without paying again. ``None`` when the error is
+    raised for a cached answer that still cannot be demuxed. ``cache_key``: the video's
+    key in the generations cache once kept (``foley.generations.get(cache_key)``).
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        clip: Optional[GeneratedClip] = None,
+        cache_key: Optional[str] = None,
+    ):
+        super().__init__(message)
+        self.clip = clip
+        self.cache_key = cache_key
+
+
 @runtime_checkable
 class GenerateAdapter(Protocol):
     """The generation source contract (report 10 §4.2) — a SIBLING of ``SourceAdapter``.
@@ -843,6 +867,11 @@ class GenerateAdapter(Protocol):
     :class:`~foley.base.LicenseRecord`, and returns a :class:`GeneratedClip`. The
     :func:`foley.sources.generate.generate` façade converges it on the shared
     ``ingest_one`` pipeline (by-value, operator-consented).
+
+    Optional: ``demuxer() -> Optional[Callable[[bytes], bytes]]``, for a backend that
+    answers with a video (#176): the strategy that takes its audio out (``None`` when
+    the answer is already audio). The dispatch uses it again when it replays a kept
+    video answer; without one, ffmpeg (:func:`foley.sources.video.audio_track`).
     """
 
     #: Registry / façade key — ``'stable_audio'`` | ``'elevenlabs'`` | …

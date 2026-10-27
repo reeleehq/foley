@@ -662,3 +662,101 @@ def test_a_remote_video_refuses_what_is_not_a_url_and_a_digest():
                         ("https://x/a.mp4", "abc"), ("https://x/a.mp4", "md5:" + "a" * 32)):
         with pytest.raises(ValueError, match="RemoteVideo"):
             foley.RemoteVideo(url=url, sha256=digest)
+
+
+# #176: a paid muxed answer is kept when it cannot be demuxed; a retry demuxes it
+
+
+class FlakyDemux:
+    """The adapter's demux strategy: fails while ``broken``, else answers a WAV."""
+
+    def __init__(self):
+        self.broken, self.calls = True, 0
+
+    def __call__(self, video):
+        self.calls += 1
+        if self.broken:
+            raise RuntimeError("no audio stream")
+        return _wav(1.0)
+
+
+def _muxed(tmp_path):
+    from foley.sources._dispatch import plan_generation
+    from foley.stores import make_generations_store
+
+    cache = make_generations_store(tmp_path / "generations")
+    runner, demux = VideoRunner(), FlakyDemux()
+    adapter = FalAdapter(CONFIGS["fal_mmaudio_v2a"], api_key="k", runner=runner,
+                         uploader=Uploader(), demux=demux)
+    video = foley.RemoteVideo(url="https://x/shot.mp4", sha256="ab" * 32)
+
+    def plan():
+        return plan_generation("fal_mmaudio_v2a", "rain", adapter=adapter, cache=cache,
+                               video=video)
+
+    return cache, runner, demux, adapter, plan
+
+
+def test_an_undemuxed_paid_answer_is_kept_and_a_retry_demuxes_it(tmp_path):
+    from foley.sources._dispatch import run_generation
+    from foley.sources.base import UndemuxedAnswer
+
+    cache, runner, demux, adapter, plan = _muxed(tmp_path)
+    first = plan()
+    with pytest.raises(UndemuxedAnswer, match="billed.*kept in the generations cache") as e:
+        run_generation(first, adapter, cache=cache)
+    video_key = cache.requests[first.request_key]["content_key"]
+    assert e.value.cache_key == video_key and cache.audio[video_key] == b"MUXED-VIDEO"
+    assert isinstance(e.value.__cause__, RuntimeError)  # the demux error is kept
+
+    demux.broken = False  # the adapter's own strategy now works: the replay uses it
+    clip = run_generation(plan(), adapter, cache=cache)
+    assert clip.audio_bytes == _wav(1.0) and len(runner.calls) == 1  # no new call
+    assert any("audio track was taken out now" in n for n in clip.notes)
+    entry = cache.requests[first.request_key]
+    assert "container" not in entry and cache.audio[entry["content_key"]] == _wav(1.0)
+    assert video_key not in cache.audio  # the video went once nothing pointed at it
+    calls = demux.calls
+    assert run_generation(plan(), adapter, cache=cache).audio_bytes == _wav(1.0)
+    assert demux.calls == calls  # the healed entry is plain audio now
+
+
+def test_a_kept_video_gets_one_replay_then_a_new_answer(tmp_path):
+    from foley.sources._dispatch import run_generation
+    from foley.sources.base import UndemuxedAnswer
+
+    cache, runner, demux, adapter, plan = _muxed(tmp_path)
+    with pytest.raises(UndemuxedAnswer):
+        run_generation(plan(), adapter, cache=cache)
+    with pytest.raises(UndemuxedAnswer, match="next identical request pays") as e:
+        plan()  # refused at plan time: nothing is paid on this call
+    assert e.value.cache_key is not None and len(runner.calls) == 1
+    assert plan().cached is None  # marked error_on_replay: the next one asks anew
+
+
+def test_generate_reports_the_kept_video_s_cache_key(tmp_path, library):
+    from foley.sources.generate import _generate
+
+    cache, runner, demux, adapter, plan = _muxed(tmp_path)
+    kw = dict(backend="fal_mmaudio_v2a", adapter=adapter, library=library,
+              video=foley.RemoteVideo(url="https://x/shot.mp4", sha256="ab" * 32),
+              generations_cache=cache, provenance_store={})
+    for _ in range(2):  # the paid call, then the plan-time refusal of its replay
+        (res,) = _generate("rain", **kw).results
+        assert res.status == "error" and res.cache_key in cache.audio
+    assert len(runner.calls) == 1
+
+
+def test_hunyuan_is_priced_in_whole_ten_second_blocks(monkeypatch):
+    monkeypatch.setattr(video_mod, "video_seconds", lambda video: 3.0)
+    assert estimate_generation("fal_hunyuan_foley", prompt="rain", video=b"x") == pytest.approx(0.1)
+    monkeypatch.setattr(video_mod, "video_seconds", lambda video: 10.0)
+    assert estimate_generation("fal_hunyuan_foley", prompt="rain", video=b"x") == pytest.approx(0.1)
+    monkeypatch.setattr(video_mod, "video_seconds", lambda video: 10.5)
+    assert estimate_generation("fal_hunyuan_foley", prompt="rain", video=b"x") == pytest.approx(0.2)
+
+
+def test_hunyuan_actual_cost_is_in_blocks_too():
+    from foley.cost import actual_call_cost
+
+    assert actual_call_cost(CONFIGS["fal_hunyuan_foley"], duration_s=3.0) == pytest.approx(0.1)

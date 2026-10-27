@@ -620,11 +620,13 @@ SOURCE_CONFIGS = (
             "cache_bytes_ok": True,
         },
         commercial_ok=False,
-        # $0.10 per 10 s of video.
+        # $0.10 per 10 s of video: billed in whole 10 s blocks (an assumption from the
+        # wording, unverified by a live call; it can only over-quote a budget).
         pricing={
             "unit": "per_second",
             "amount_usd": 0.01,
             "seconds_from": "video",
+            "billing_increment_s": 10,
             "source": _FAL_V2A_PRICING_SOURCE,
             "seen": _SEEN_V2A,
         },

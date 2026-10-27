@@ -36,6 +36,7 @@ clamp spec.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import math
@@ -512,7 +513,13 @@ def plan_generation(
         if reuse_cached:
             # A paid sound already on this disk needs no egress and no spend.
             cache = cache if cache is not None else _default_cache()
-            plan.cached = _cached_clip(cache, plan.request_key, plan.notes, config)
+            plan.cached = _cached_clip(
+                cache,
+                plan.request_key,
+                plan.notes,
+                config,
+                demux=getattr(adapter, "demuxer", None),
+            )
             if plan.cached is not None:
                 from ..stores import content_key
 
@@ -552,7 +559,7 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
     """
     from ..cost import release
     from ..runtime import EgressBlocked
-    from .base import SourceConfigurationError
+    from .base import SourceConfigurationError, UndemuxedAnswer
 
     if plan.cached is not None:
         clip = plan.cached
@@ -570,6 +577,25 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
     except (SourceConfigurationError, EgressBlocked):
         release(reserved)  # refused before any request was sent (incl. offline weights)
         raise
+    except UndemuxedAnswer as exc:  # billed: keep the answer, so a retry is free
+        if plan.request_key is None or exc.clip is None:
+            raise
+        cache = cache if cache is not None else _default_cache()
+        try:
+            plan.kept_key = _answered_key(plan, exc.clip)
+            _store_clip(cache, plan, exc.clip, container="video")
+        except Exception as err:  # noqa: BLE001 - the demux error is the one to report
+            raise UndemuxedAnswer(
+                f"{exc}. It could not be kept in the generations cache ({err!r})",
+                clip=exc.clip,
+                cache_key=plan.content_key,  # set once its bytes were written
+            ) from exc
+        raise UndemuxedAnswer(
+            f"{exc}. The answer is kept in the generations cache ({plan.kept_key}): "
+            "a retry takes its audio out without paying again",
+            clip=exc.clip,
+            cache_key=plan.content_key,
+        ) from exc
     except ImportError as exc:
         release(reserved)
         raise SourceConfigurationError(
@@ -708,8 +734,11 @@ def _default_cache():
     return make_generations_store()
 
 
-def _store_clip(cache, plan: GenerationPlan, clip) -> None:
+def _store_clip(cache, plan: GenerationPlan, clip, *, container=None) -> None:
     """Keep the paid bytes and the entry of the request they answer.
+
+    ``container='video'`` marks bytes that are a muxed video answer whose audio is still
+    to be taken out (#176): :func:`_cached_clip` demuxes them on replay.
 
     For a fallback (``plan.kept_key`` differs from ``plan.request_key``) the request
     asked gets a pointer to that entry (see :func:`_fallback_replay_s`), and an
@@ -722,6 +751,8 @@ def _store_clip(cache, plan: GenerationPlan, clip) -> None:
     cache.audio[key] = clip.audio_bytes
     plan.content_key = key  # the bytes are kept from here on, whatever follows
     entry = _clip_entry(plan, clip, key)
+    if container is not None:
+        entry["container"] = container
     kept_key = plan.kept_key or plan.request_key
     if kept_key == plan.request_key:
         cache.requests[kept_key] = entry
@@ -771,12 +802,16 @@ def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
 _NOT_REPLAYED = frozenset({"quarantined", "error_on_replay", "safety_blocked"})
 
 
-def _cached_clip(cache, request_key: str, notes: list, config: dict):
+def _cached_clip(cache, request_key: str, notes: list, config: dict, *, demux=None):
     """Rebuild the :class:`GeneratedClip` of a cached request, or ``None`` (a miss).
 
     A corrupt or out-of-date entry, or one whose earlier ingest failed, is a miss with
-    a note: it never raises. The licence's flags are re-derived from its id, so a
-    correction to the licence table reaches cached sounds.
+    a note: it never raises, but for a kept muxed video that still cannot be demuxed
+    (:func:`_demux_kept`: ``UndemuxedAnswer``, or ``SourceConfigurationError`` when
+    no ffmpeg is found), which must not be paid for again. The licence's flags are
+    re-derived from its id, so a correction to the licence table reaches cached sounds.
+    ``demux``: the adapter's ``demuxer`` (``() -> (video bytes -> audio bytes)``), so a
+    kept video is taken apart the way the call would have (default: ffmpeg).
     """
     from ..base import Candidate, CandidateOrigin, LicenseRecord, SoundRecord
     from ..licensing import apply_license_flags
@@ -788,6 +823,7 @@ def _cached_clip(cache, request_key: str, notes: list, config: dict):
         )
         if not entry:
             return None
+        entry_key = request_key
         via_fallback = "answered_by" in entry
         if via_fallback:
             if entry.get("status") in _NOT_REPLAYED:
@@ -798,7 +834,7 @@ def _cached_clip(cache, request_key: str, notes: list, config: dict):
                     "provider again"
                 )
                 return None
-            answered_by = entry["answered_by"]
+            answered_by = entry_key = entry["answered_by"]
             entry = cache.requests.get(answered_by)
             if not entry:
                 return None
@@ -827,6 +863,16 @@ def _cached_clip(cache, request_key: str, notes: list, config: dict):
             f"generations cache entry {request_key} unreadable ({exc!r}); ignored"
         )
         return None
+    if entry.get("container") == "video":
+        audio = _demux_kept(
+            cache,
+            entry_key,
+            entry,
+            audio,
+            notes,
+            demux=demux,
+            pointer_key=request_key if via_fallback else None,
+        )
     kept_notes = list(entry.get("notes") or [])
     if entry.get("fallback") and not via_fallback:
         # Generated as another request's fallback; this request is the one it answers.
@@ -839,6 +885,68 @@ def _cached_clip(cache, request_key: str, notes: list, config: dict):
             f"served from the generations cache ({request_key}); no paid call",
         ],
     )
+
+
+def _demux_kept(
+    cache,
+    entry_key: str,
+    entry: dict,
+    video: bytes,
+    notes: list,
+    *,
+    demux=None,
+    pointer_key=None,
+) -> bytes:
+    """The audio of a kept muxed answer (#176); its entry then holds the audio instead.
+
+    Taken out by ``demux()`` (the adapter's demuxer factory; default: ffmpeg). Paid bytes
+    get one replay, as any cached answer: when it fails too, the entry is marked
+    ``error_on_replay`` (the next identical request generates anew) and this raises.
+    ``pointer_key``: the fallback pointer it was reached through, which names the bytes
+    it serves too.
+
+    Raises:
+        UndemuxedAnswer: When it still cannot be taken out (at plan time: nothing paid).
+        SourceConfigurationError: From ``demux()`` when no ffmpeg is found.
+    """
+    from ..stores import content_key
+    from .base import UndemuxedAnswer
+    from .video import audio_track
+
+    take_out = (demux() if callable(demux) else None) or audio_track
+    old_key = entry.get("content_key")
+    try:
+        audio = take_out(video)
+    except Exception as exc:  # noqa: BLE001 - reported with what happens next
+        with contextlib.suppress(Exception):
+            cache.requests[entry_key] = {**entry, "status": "error_on_replay"}
+        raise UndemuxedAnswer(
+            f"this request's paid answer is a video in the generations cache "
+            f"({old_key}) whose audio could not be taken out again "
+            f"({type(exc).__name__}: {exc}); the next identical request pays for a "
+            "new answer",
+            cache_key=old_key,
+        ) from exc
+    try:
+        key = content_key(audio)
+        cache.audio[key] = audio
+        healed = {k: v for k, v in entry.items() if k != "container"}
+        cache.requests[entry_key] = {**healed, "content_key": key}
+        if pointer_key is not None:
+            pointer = cache.requests.get(pointer_key)
+            if isinstance(pointer, dict) and pointer.get("content_key") == old_key:
+                cache.requests[pointer_key] = {**pointer, "content_key": key}
+    except Exception as exc:  # noqa: BLE001 - never fail a replay over a cache write
+        notes.append(f"could not keep the demuxed audio in the cache: {exc!r}")
+    else:
+        with contextlib.suppress(Exception):  # the video, once nothing points at it
+            if not any(
+                isinstance(e, dict) and e.get("content_key") == old_key
+                for e in (cache.requests.get(k) for k in list(cache.requests))
+            ):
+                del cache.audio[old_key]
+    notes.append("the kept answer was a video: its audio track was taken out now")
+    return audio
 
 
 def estimate_generation(backend: str, **affordances) -> Optional[float]:
