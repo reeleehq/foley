@@ -804,3 +804,133 @@ def test_registering_a_library_whose_rights_foley_never_verifies_is_refused():
     with pytest.raises(MusicLibraryError, match="refuse every title"):
         register_music_library(lib)
     assert "pdm_lib" not in MUSIC_LIBRARIES
+
+
+# --- a free library as a registered retrieve source (#212) ----------------------------
+
+
+def _wav_bytes():
+    np = pytest.importorskip("numpy")
+    pytest.importorskip("soundfile")
+    from foley.audio import encode
+
+    t = np.arange(44_100) / 44_100
+    return encode((0.3 * np.sin(2 * np.pi * 440 * t)).astype("float32"), 44_100)
+
+
+@pytest.fixture
+def sound_library(fake_embedder):
+    pytest.importorskip("numpy")
+    from foley.index import MemoryIndex, SoundLibrary
+
+    idx = MemoryIndex(dim=fake_embedder.dim)
+    return SoundLibrary(
+        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
+    )
+
+
+#: A fake probe: the file has an audio stream of 1 s.
+_FAKE_PROBE = functools.partial(
+    probe_verify, probe=lambda path: 1.0, has_audio=lambda path: True
+)
+
+
+def _library_adapter(transport, **kw):
+    from foley.sources.music_library.adapter import MusicLibraryAdapter
+    from foley.sources.registry import get_source
+
+    config = get_source("incompetech")["config"]
+    return MusicLibraryAdapter(config, http=transport, verify=_FAKE_PROBE, **kw)
+
+
+def test_free_libraries_are_registered_sources_and_paid_ones_are_not():
+    from foley.sources.registry import SOURCE_REGISTRY, list_sources
+
+    names = list_sources()
+    assert "incompetech" in names
+    assert "artlist" not in names and "epidemic_sound" not in names
+    cfg = SOURCE_REGISTRY["incompetech"]["config"]
+    assert cfg["kind"] == "retrieve" and cfg["auth"] is None
+    assert cfg["data_egress"] == "external" and cfg["pricing"]["unit"] == "free"
+    assert cfg["rate"] == {"per_min": 30}
+    assert cfg["license"]["accepted_license_ids"] == ["CC-BY-4.0"]
+    assert SOURCE_REGISTRY["incompetech"]["module"] == "music_library"
+    with pytest.raises(MusicLibraryError, match="paid"):
+        from foley.sources.music_library import library_source_config
+
+        library_source_config(MUSIC_LIBRARIES["artlist"])
+
+
+def test_add_from_incompetech_ingests_a_by_value_cc_by_record(sound_library):
+    from foley.base import StorageMode
+    from foley.sources import add_from
+
+    wav = _wav_bytes()
+    transport = FakeTransport({_url("Sneaky Snitch"): [Resp(content=wav)]})
+    report = add_from(
+        "incompetech",
+        query="Sneaky Snitch",
+        adapter=_library_adapter(transport),
+        library=sound_library,
+    )
+    assert len(report.ingested) == 1, report.results
+    rec = report.ingested[0].record
+    assert rec.id == "incompetech:Sneaky Snitch"
+    assert rec.storage_mode == StorageMode.by_value
+    lic = rec.license
+    assert lic.license_id == "CC-BY-4.0" and lic.rights_verified and lic.commercial_ok
+    assert lic.source == "incompetech" and lic.creator_name == "Kevin MacLeod"
+    assert lic.attribution_text.startswith('"Sneaky Snitch" Kevin MacLeod')
+    assert [c[1] for c in transport.calls] == [_url("Sneaky Snitch")]
+
+
+def test_a_credits_description_is_read_for_the_library_titles():
+    from foley.sources.music_library.adapter import query_titles
+
+    text = (
+        "Music:\nFrom Epidemic Sound:\n- Night Owl\n\n"
+        '"Sneaky Snitch" Kevin MacLeod (incompetech.com)\n'
+        '"Fluffing a Duck" Kevin MacLeod (incompetech.com)'
+    )
+    lib = MUSIC_LIBRARIES["incompetech"]
+    assert query_titles(text, lib) == ["Sneaky Snitch", "Fluffing a Duck"]
+    ad = _library_adapter(FakeTransport({}))
+    assert [c.sound.id for c in ad.search(text, k=1)] == ["incompetech:Sneaky Snitch"]
+    assert ad.search(["A"], license="cc0") == []  # an explicit licence still narrows
+
+
+def test_the_mirror_chain_falls_back_to_the_archive():
+    url = _url("A")
+    transport = FakeTransport({wayback(url): [Resp(content=b"ID3 track")]})
+    assert _library_adapter(transport).download("incompetech:A") == b"ID3 track"
+    assert [c[1] for c in transport.calls] == [url, wayback(url)]
+
+
+def test_a_non_commercial_registered_library_is_refused_for_a_commercial_use(
+    sound_library,
+):
+    from foley.sources import add_from
+    from foley.sources.music_library.adapter import MusicLibraryAdapter
+    from foley.sources.registry import SOURCE_REGISTRY, get_source
+
+    lib = MusicLibrary("nc_lib", "N", license_url=_NC_URL, track_url=_rule)
+    register_music_library(lib, replace=True)
+    try:
+        config = get_source("nc_lib")["config"]  # a source on the next discovery
+        transport = FakeTransport({_rule("A"): [Resp(content=b"aa")]})
+        ad = MusicLibraryAdapter(config, http=transport, verify=_FAKE_PROBE)
+        report = add_from("nc_lib", query="A", adapter=ad, library=sound_library)
+        assert [r.status for r in report.results] == ["skipped_license"]
+        assert transport.calls == [], "a refused title is not fetched"
+    finally:
+        MUSIC_LIBRARIES.pop("nc_lib", None)
+        SOURCE_REGISTRY.pop("nc_lib", None)
+
+
+def test_a_library_source_is_refused_offline():
+    import foley
+    from foley.runtime import EgressBlocked
+    from foley.sources import add_from
+
+    with foley.offline(), pytest.raises(EgressBlocked):
+        add_from("incompetech", query="A", adapter=_library_adapter(FakeTransport({})))

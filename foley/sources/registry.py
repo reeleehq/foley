@@ -73,12 +73,21 @@ def _declared_configs(config_module) -> "list[dict]":
     endpoint, because each endpoint has its own params, price and licence, while the
     transport (falaw) is the same. Each source still gets its own adapter instance,
     built from its own config.
+
+    ``SOURCE_CONFIGS`` may also be a function returning them, called on each
+    discovery pass: :mod:`foley.sources.music_library` declares one source per free
+    library registered *now*, so a library added at runtime
+    (:func:`~foley.sources.music_library.register_music_library`) becomes a source
+    on the next pass.
     """
     configs = []
     single = getattr(config_module, "SOURCE_CONFIG", None)
     if single is not None:
         configs.append(single)
-    configs.extend(getattr(config_module, "SOURCE_CONFIGS", None) or ())
+    several = getattr(config_module, "SOURCE_CONFIGS", None)
+    if callable(several):
+        several = several()
+    configs.extend(several or ())
     return [c for c in configs if isinstance(c, dict) and c.get("name")]
 
 
@@ -210,6 +219,11 @@ def _resilient_transport(config: dict):
     ``http_resilience`` on (the default). Built lazily at adapter-load time, so
     ``import foley`` stays dol-only and no ``requests`` import happens until a real call.
 
+    A config with ``resilience_scope == 'per_host'`` gets one resilient transport per
+    host (:func:`~foley.sources.resilience.per_host`): a source that falls back to a
+    mirror on another host (a music library's file, then the Wayback Machine's copy)
+    keeps one pace and one breaker per website.
+
     Returns:
         A resilient :class:`~foley.sources.http.Transport`, or ``None`` (leave the
         adapter's default transport in place).
@@ -220,8 +234,10 @@ def _resilient_transport(config: dict):
         return None
     if not current_runtime().http_resilience:
         return None
-    from .resilience import make_resilient_transport_from_config
+    from .resilience import make_resilient_transport_from_config, per_host
 
+    if config.get("resilience_scope") == "per_host":
+        return per_host(lambda: make_resilient_transport_from_config(config))
     return make_resilient_transport_from_config(config)
 
 

@@ -30,10 +30,18 @@ collect the attribution lines the licence asks for. :func:`acquire` is that scri
   :func:`kept_sources`, with each file's URL) reads a table back, so a rerun fetches
   only what it lacks.
 
-This is not a live search source (it has no ``search`` / ``download`` adapter and no
-``config.py``), so :func:`foley.sources.registry.discover_sources` does not list it;
-import it as ``foley.sources.music_library``. Stdlib only at import; ``requests``
-loads on the first real download.
+- **Each free library is also a live retrieve source** of its own name (#212):
+  ``foley.add_from("incompetech", query="Sneaky Snitch")`` (a title, a list of
+  titles, or a credits description) puts each title through the licence gate
+  under the call's intent and :func:`~foley.index.ingest.ingest_one`, giving
+  by-value :class:`~foley.base.SoundRecord` rows with their attribution, and a run
+  manifest. The config is built from the library (:func:`library_source_config`,
+  declared as the callable ``config.SOURCE_CONFIGS``, so a library registered at
+  runtime is a source on the next discovery); the adapter
+  (:class:`~foley.sources.music_library.adapter.MusicLibraryAdapter`) runs the same
+  mirror chain and ``verify`` as :func:`acquire`. A paid library is not a source.
+
+Stdlib only at import; ``requests`` loads on the first real download.
 
 >>> lib = MUSIC_LIBRARIES["incompetech"]
 >>> lib.track_url("Sneaky Snitch")
@@ -60,6 +68,7 @@ from .acquisition import (
     kept_sources,
     tracks_table,
 )
+from .config import library_source_config
 from .credit_parser import titles_by_library, titles_from_json
 from .fetch import (
     MUSIC_LIBRARY_HTTP,
@@ -84,6 +93,7 @@ from .verify import MusicToolMissing, probe_available, probe_verify, require_pro
 
 __all__ = [
     "ACQUIRED",
+    "MusicLibraryAdapter",
     "BUILTIN_LIBRARIES",
     "DFLT_MIRRORS",
     "FAILED",
@@ -106,6 +116,7 @@ __all__ = [
     "files_store",
     "kept_digests",
     "kept_sources",
+    "library_source_config",
     "make_fetch",
     "mirror_name",
     "music_library",
@@ -123,3 +134,12 @@ __all__ = [
     "tracks_table",
     "wayback",
 ]
+
+
+def __getattr__(name: str):
+    """Lazily expose the source adapter (loads ``adapter.py`` on demand)."""
+    if name == "MusicLibraryAdapter":
+        from .adapter import MusicLibraryAdapter
+
+        return MusicLibraryAdapter
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

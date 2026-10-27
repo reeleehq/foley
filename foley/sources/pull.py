@@ -27,11 +27,32 @@ from .base import SearchArgumentError, SourceConfigurationError
 from .registry import get_source
 
 
+#: ``add_from``'s ``license`` default: the source's own
+#: (``config['license']['search_default']``), :data:`DFLT_SEARCH_LICENSE` when it
+#: declares none. A music library has one licence, so it declares ``None``.
+SOURCE_DEFAULT_LICENSE: str = "source-default"
+#: The licence a search asks for when neither the call nor the source says.
+DFLT_SEARCH_LICENSE: str = "cc0"
+
+
+def search_license(license: Optional[str], config: dict) -> Optional[str]:
+    """The ``license`` a search sends: ``license``, or the source's default for it.
+
+    >>> search_license("CC-BY-4.0", {}), search_license(SOURCE_DEFAULT_LICENSE, {})
+    ('CC-BY-4.0', 'cc0')
+    >>> print(search_license(SOURCE_DEFAULT_LICENSE, {"license": {"search_default": None}}))
+    None
+    """
+    if license != SOURCE_DEFAULT_LICENSE:
+        return license
+    return (config.get("license") or {}).get("search_default", DFLT_SEARCH_LICENSE)
+
+
 def _add_from(
     source: str,
     *,
     query: str,
-    license: Optional[str] = "cc0",
+    license: Optional[str] = SOURCE_DEFAULT_LICENSE,
     limit: int = 50,
     library=None,
     intended_use: Optional[IntendedUse] = None,
@@ -51,8 +72,10 @@ def _add_from(
     Args:
         source: A registered live-source name (e.g. ``'freesound'``).
         query: The natural-language search query.
-        license: License constraint pushed into the source query (default
-            ``'cc0'``). The per-item fail-closed guard enforces the source's
+        license: License constraint pushed into the source query. Default: the
+            source's own (``config['license']['search_default']``), ``'cc0'`` for a
+            source that declares none; a music library (one licence) declares no
+            narrowing. The per-item fail-closed guard enforces the source's
             accepted-license allowlist regardless.
         limit: Max candidates to request from the source.
         library: Target :class:`~foley.index.library.SoundLibrary` (default: the
@@ -98,6 +121,7 @@ def _add_from(
     src_adapter = adapter if adapter is not None else get_source(source)["adapter"]
     use = intended_use if intended_use is not None else DEFAULT_INTENDED_USE
     config = getattr(src_adapter, "config", None) or {}
+    license = search_license(license, config)
     # The one dispatch path (#53): call-time egress check + the unsupported-parameter
     # policy over the extra search affordances; every drop is a report note.
     search_kw, search_notes = plan_search(
@@ -126,7 +150,8 @@ def _add_from(
     except ImportError as exc:
         raise SourceConfigurationError(
             f"{source!r} needs an optional dependency that is not installed "
-            f"({exc.name or exc}): pip install 'foley[{source.replace('_', '-')}]'"
+            f"({exc.name or exc}): pip install "
+            f"'foley[{config.get('extra') or source.replace('_', '-')}]'"
         ) from exc
     except Exception as exc:
         report.record(
@@ -200,7 +225,7 @@ def add_from(source: str, **kwargs) -> IngestReport:
         inputs={
             "source": source,
             "query": kwargs.get("query"),
-            "license": kwargs.get("license", "cc0"),
+            "license": kwargs.get("license", SOURCE_DEFAULT_LICENSE),
             "limit": kwargs.get("limit", 50),
         },
     ) as run:

@@ -31,7 +31,7 @@ from collections.abc import Callable
 from typing import Optional
 
 from ..http import Transport, requests_transport
-from ..resilience import make_resilient_transport_from_config, per_host
+from ..resilience import make_resilient_transport_from_config, pace_per_host, per_host
 from .libraries import MusicLibraryError
 
 #: ``url -> bytes``: how :func:`~foley.sources.music_library.acquire` gets a file.
@@ -154,3 +154,41 @@ def make_fetch(
     config = music_library_config(config)
     http = polite_transport(transport, config=config, clock=clock, sleep=sleep)
     return functools.partial(fetch_audio, http=http, config=config)
+
+
+def library_fetch(
+    *,
+    fetch: Optional[Fetch] = None,
+    transport: Optional[Transport] = None,
+    config: Optional[dict] = None,
+    what: str = "music library",
+    clock: Callable[[], float] = time.monotonic,
+    sleep: Callable[[float], None] = time.sleep,
+) -> Fetch:
+    """The ``url -> bytes`` a library's files are fetched with (one rule for every caller).
+
+    A ``fetch`` of the caller's own is paced per host by the config's ``rate``
+    (:func:`~foley.sources.resilience.pace_per_host`). Otherwise the call's egress is
+    checked (:func:`foley.runtime.require_egress`, so :func:`foley.offline` refuses
+    it, naming ``what``) and :func:`make_fetch` goes through ``transport``.
+
+    Raises:
+        ValueError: When both ``fetch`` and ``transport`` are given.
+        EgressBlocked: When the HTTP path is refused by an offline scope.
+    """
+    if fetch is not None and transport is not None:
+        raise ValueError("pass fetch= (url -> bytes) or transport=, not both")
+    config = music_library_config(config)
+    if fetch is None:
+        from ...runtime import EXTERNAL, require_egress
+
+        require_egress(config.get("data_egress") or EXTERNAL, what=what)
+        return make_fetch(transport=transport, config=config, clock=clock, sleep=sleep)
+    own_fetch = fetch
+    wait = pace_per_host(config.get("rate"), clock=clock, sleep=sleep)
+
+    def paced(url: str) -> bytes:  # the caller's fetch, paced per host
+        wait(url)
+        return own_fetch(url)
+
+    return paced
