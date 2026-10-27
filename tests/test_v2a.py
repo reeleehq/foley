@@ -550,7 +550,7 @@ def test_the_extracted_wav_has_a_real_header(tmp_path):
 # #172: the probe seam, mixing's probe by default, and a sniffed temporary suffix
 
 
-def test_video_seconds_reads_through_the_probe_seam(tmp_path):
+def test_video_seconds_reads_through_the_probe_seam():
     seen = []
     assert video_mod.video_seconds(b"\x1a\x45\xdf\xa3webm",
                                    probe=lambda p: seen.append(p) or 7.5) == 7.5
@@ -559,13 +559,23 @@ def test_video_seconds_reads_through_the_probe_seam(tmp_path):
         assert video_mod.video_seconds(b"x", probe=unreadable) is None
 
 
-def test_the_default_probe_is_mixings_else_ffprobe(monkeypatch):
+def test_the_default_probe_falls_back_to_mixing_without_ffprobe(monkeypatch):
     import sys
 
-    mixing_probe = pytest.importorskip("mixing.video.shot_boundaries").probe_duration
-    assert video_mod.default_probe() is mixing_probe
+    calls = []
+    monkeypatch.setattr(video_mod, "ffprobe_seconds", lambda p: calls.append("ff"))
+    monkeypatch.setattr(video_mod, "mixing_seconds", lambda p: calls.append("mx") or 3.0)
+    assert video_mod.default_probe("clip.mp4") == 3.0 and calls == ["ff", "mx"]
+    monkeypatch.undo()
     monkeypatch.setitem(sys.modules, "mixing.video.shot_boundaries", None)
-    assert video_mod.default_probe() is video_mod.ffprobe_seconds
+    assert video_mod.mixing_seconds("clip.mp4") is None  # mixing's video stack absent
+
+
+def test_mixings_probe_reads_a_file(tmp_path):
+    shot_boundaries = pytest.importorskip("mixing.video.shot_boundaries",
+                                          exc_type=ImportError)
+    missing = str(tmp_path / "none.mp4")
+    assert video_mod.mixing_seconds(missing) == shot_boundaries.probe_duration(missing)
 
 
 def test_the_default_probe_reads_a_real_video(tmp_path):

@@ -9,9 +9,9 @@ here, once, for every V2A backend:
   (``sha256:<hex>`` of the bytes or of the file), never its path, so a moved file hits
   the cache and an edited one cannot; a remote URL is keyed as the URL.
 * :func:`video_seconds`: its length, for a backend priced per second of the video
-  (``probe=``; default :func:`default_probe`: mixing's ``probe_duration`` when mixing's
-  video stack is installed, else ``ffprobe`` on ``PATH``; ``None`` when it cannot be
-  read, which prices the call as an unknown cost, needing approval).
+  (``probe=``; default :func:`default_probe`: ``ffprobe`` on ``PATH``, else mixing's
+  ``probe_duration`` through mixing's ffmpeg resolver; ``None`` when it cannot be read,
+  which prices the call as an unknown cost, needing approval).
 * :func:`local_video_file`: a local file for an uploader (bytes are written to a
   temporary file whose suffix is sniffed from them: :func:`video_suffix`).
 * :func:`audio_track`: the audio of a backend's muxed video answer (MMAudio,
@@ -47,13 +47,9 @@ _HASH_CHUNK = 1 << 20
 AUDIO_TRACK_TIMEOUT_S = 120.0
 #: The most :func:`ffprobe_seconds` lets ffprobe run (s).
 PROBE_TIMEOUT_S = 30.0
-#: ``(magic, suffix)`` of the containers :func:`video_suffix` recognises by their first
-#: bytes. ISO BMFF (mp4/mov) is told by its ``ftyp`` brand, EBML (mkv/webm) by its
-#: doctype, AVI by its RIFF form type.
+#: An ISO BMFF ``ftyp`` brand that is not ``.mp4`` (QuickTime).
 _ISO_BRAND_SUFFIX = {b"qt  ": ".mov"}
-_EBML_MAGIC, _EBML_DOCTYPE_SUFFIX = b"\x1a\x45\xdf\xa3", {b"webm": ".webm"}
-_SNIFF_BYTES = 64  # an EBML header names its doctype well within these
-#: The suffix of bytes no magic matches (and of every other ISO BMFF brand).
+#: The suffix of bytes no signature matches (and of every other ISO BMFF brand).
 DEFAULT_VIDEO_SUFFIX = ".mp4"
 #: ``video -> seconds | None``: how :func:`video_seconds` reads a local file's length.
 Probe = Callable[[str], Optional[float]]
@@ -130,12 +126,11 @@ def video_suffix(data: bytes) -> str:
     >>> video_suffix(b"RIFF\x00\x00\x00\x00AVI "), video_suffix(b"OggS"), video_suffix(b"?")
     ('.avi', '.ogv', '.mp4')
     """
-    head = bytes(data[:_SNIFF_BYTES])
-    if head[4:8] == b"ftyp":
+    head = bytes(data[:64])  # an EBML header names its doctype well within these
+    if head[4:8] == b"ftyp":  # ISO BMFF: the brand tells mov from mp4
         return _ISO_BRAND_SUFFIX.get(head[8:12], DEFAULT_VIDEO_SUFFIX)
-    if head.startswith(_EBML_MAGIC):
-        doctype = next((d for d in _EBML_DOCTYPE_SUFFIX if d in head), None)
-        return _EBML_DOCTYPE_SUFFIX.get(doctype, ".mkv")
+    if head.startswith(b"\x1a\x45\xdf\xa3"):  # EBML: the doctype tells webm from mkv
+        return ".webm" if b"webm" in head else ".mkv"
     if head.startswith(b"RIFF") and head[8:12] == b"AVI ":
         return ".avi"
     if head.startswith(b"OggS"):
@@ -228,15 +223,23 @@ def ffprobe_seconds(path: str, *, ffprobe: Optional[str] = None) -> Optional[flo
         return None
 
 
-def default_probe() -> Probe:
-    """mixing's ``probe_duration`` (``ffmpeg -i`` through mixing's ffmpeg resolver, so no
-    ``ffprobe`` on ``PATH`` is needed) when mixing's video stack imports, else
-    :func:`ffprobe_seconds`."""
+def mixing_seconds(path: str) -> Optional[float]:
+    """The length by mixing's ``probe_duration`` (``ffmpeg -i`` through mixing's ffmpeg
+    resolver, a pip-bundled ffmpeg too), or ``None`` when mixing's video stack is not
+    installed. Unbounded: mixing's probe has no timeout yet (reeleehq/mixing#88)."""
     try:
         from mixing.video.shot_boundaries import probe_duration
-    except Exception:  # noqa: BLE001 - mixing (or its video extra) is not installed
-        return ffprobe_seconds
-    return probe_duration
+    except ImportError:  # mixing, or its media extra, is not installed
+        return None
+    return probe_duration(path)
+
+
+def default_probe(path: str) -> Optional[float]:
+    """:func:`ffprobe_seconds` (bounded by :data:`PROBE_TIMEOUT_S`), else, when there is
+    no ``ffprobe`` or it cannot read the file, :func:`mixing_seconds` (no ``ffprobe``
+    on ``PATH`` needed)."""
+    seconds = ffprobe_seconds(path)
+    return seconds if seconds is not None else mixing_seconds(path)
 
 
 def video_seconds(
@@ -255,7 +258,7 @@ def video_seconds(
     """
     if is_url(video):
         return None
-    probe = probe or default_probe()
+    probe = probe or default_probe
     with local_video_file(video) as path:
         try:
             seconds = probe(path)

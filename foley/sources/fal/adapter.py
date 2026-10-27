@@ -423,7 +423,7 @@ def _actual_cost(config: dict, args: dict, audio: bytes) -> Optional[float]:
 
 def _video_seconds(video) -> Optional[float]:
     """The video's length (:func:`foley.sources.video.video_seconds`), via the module so
-    tests can stand in for ``ffprobe``."""
+    tests can stand in for the probe."""
     from .. import video as video_mod
 
     return video_mod.video_seconds(video)
