@@ -18,7 +18,11 @@ from cryptography.hazmat.primitives import serialization  # noqa: E402
 from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa  # noqa: E402
 
 from foley.provenance import disclosure, make_c2pa_signer, make_self_signed_c2pa_certs  # noqa: E402
-from foley.provenance.signing import SIGNING_ALGORITHMS, _callback_for  # noqa: E402
+from foley.provenance.signing import (  # noqa: E402
+    SIGNING_ALGORITHMS,
+    _callback_for,
+    c2pa_key_usage,
+)  # noqa: E402
 
 SR = 48_000
 
@@ -231,24 +235,9 @@ def _ee_extensions(
     from cryptography import x509
     from cryptography.x509.oid import ExtendedKeyUsageOID
 
-    flags = dict.fromkeys(
-        (
-            "digital_signature",
-            "content_commitment",
-            "key_encipherment",
-            "data_encipherment",
-            "key_agreement",
-            "key_cert_sign",
-            "crl_sign",
-            "encipher_only",
-            "decipher_only",
-        ),
-        False,
-    )
-    flags.update(digital_signature=digital_signature, key_cert_sign=ca)
     exts = [
         (x509.BasicConstraints(ca=ca, path_length=None), True),
-        (x509.KeyUsage(**flags), True),
+        (c2pa_key_usage(digital_signature=digital_signature, key_cert_sign=ca), True),
     ]
     if eku:
         oids = eku_oids or [ExtendedKeyUsageOID.EMAIL_PROTECTION]
@@ -363,7 +352,7 @@ def test_a_failed_signing_is_logged_not_silent(caplog):
         )
     assert "C2PA signing failed" in caplog.text
     assert cred["signed"] is False
-    assert cred["sign_error"]
+    assert cred["sign_error"].split(":")[0].isidentifier()
 
 
 def test_self_signed_certs_accept_a_pem_key():
