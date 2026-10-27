@@ -3,6 +3,8 @@
 * :class:`FakePipeline` stands in for ``diffusers.StableAudioPipeline``: it records its
   call kwargs and returns a canned waveform (default: a healthy stereo tone), or one
   computed from the call by ``audio_fn(**kwargs)`` (e.g. from the seeded generator).
+* :func:`fake_generator` stands in for ``torch.Generator`` (the Stable Audio Open
+  adapter's ``make_generator=`` seam): it only carries its ``device`` and ``seed``.
 * :func:`make_sa3_home` lays out the directory tree the Stable Audio 3 TFLite adapter
   expects, so its ``runner=`` seam can be faked without the real checkout.
 """
@@ -43,6 +45,11 @@ class FakePipeline:
         self.calls.append(kwargs)
         audio = self._audio_fn(**kwargs) if self._audio_fn else self._audio
         return SimpleNamespace(audios=[audio])
+
+
+def fake_generator(device, seed):
+    """A ``make_generator`` with no torch: the device and the seed it was asked for."""
+    return SimpleNamespace(device=device, seed=int(seed))
 
 
 def make_sa3_home(root):

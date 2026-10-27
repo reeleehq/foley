@@ -9,8 +9,6 @@ rewritten seed fails). A completeness test fails when a new seed-capable source 
 
 import importlib
 import pkgutil
-import sys
-import types
 
 import pytest
 
@@ -24,7 +22,7 @@ from foley.sources.registry import SOURCE_REGISTRY, _declared_configs  # noqa: E
 from foley.sources.stable_audio.adapter import StableAudioAdapter  # noqa: E402
 from foley.sources.stable_audio_3.adapter import StableAudio3Adapter  # noqa: E402
 
-from ._fakes import FakePipeline, make_sa3_home  # noqa: E402
+from ._fakes import FakePipeline, fake_generator, make_sa3_home  # noqa: E402
 
 SR = 44_100
 
@@ -58,23 +56,11 @@ def _stable_audio3(*, tmp_path, **_):
     return StableAudio3Adapter(runner=runner, home=tmp_path)
 
 
-def _stable_audio(*, monkeypatch, **_):
-    class Generator:  # stands in for torch.Generator
-        def __init__(self, device):
-            self.seed = None
-
-        def manual_seed(self, seed):
-            self.seed = seed
-            return self
-
-    monkeypatch.setitem(
-        sys.modules, "torch", types.SimpleNamespace(Generator=Generator)
-    )
-
+def _stable_audio(**_):
     pipe = FakePipeline(
         audio_fn=lambda *, generator, **_: np.stack([_noise(generator.seed)] * 2),
     )
-    return StableAudioAdapter(pipeline=pipe)
+    return StableAudioAdapter(pipeline=pipe, make_generator=fake_generator)
 
 
 FAKES = {
