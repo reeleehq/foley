@@ -970,7 +970,7 @@ def checked_refusal_reason(
         return f"its licence could not be checked ({type(exc).__name__}: {exc})"
 
 
-def placed_record(library, sound_id: str, *, missing=None):
+def placed_record(library, sound_id: str, *, missing=None, unreadable=None):
     """``library``'s record for ``sound_id`` as a rights gate reads it, never raising.
 
     The one lookup every placed-sound gate uses (a plan's, a weave's, the MCP verbs'),
@@ -978,8 +978,9 @@ def placed_record(library, sound_id: str, *, missing=None):
 
     * ``missing`` when there is no entry: ``library`` is ``None``, or the lookup
       raises a ``LookupError`` (the id is genuinely absent);
-    * ``None`` when the lookup fails any other way (a corrupt stored record, a broken
-      backend), or the value has no ``.license`` (a plain-mapping library of audio
+    * ``unreadable`` (default ``None``) when the lookup fails any other way (a corrupt
+      stored record, a broken backend): an entry that is there but cannot be judged;
+    * ``None`` when the value has no ``.license`` (a plain-mapping library of audio
       arrays holds sounds, not records).
 
     ``None`` is what the fail-closed gate (:func:`refusals`) refuses under an explicit
@@ -1011,7 +1012,7 @@ def placed_record(library, sound_id: str, *, missing=None):
         _log.debug(
             "no readable record for %r: %s: %s", sound_id, type(exc).__name__, exc
         )
-        return None
+        return unreadable
 
 
 #: The reason a placed sound with no record (nothing to read a licence from) is refused.

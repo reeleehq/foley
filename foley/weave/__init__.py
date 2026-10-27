@@ -182,7 +182,8 @@ def _placed_records(narration, timeline, library) -> dict:
     What :func:`weave`'s rights gate judges: each clip's record as ``library`` holds it
     now (``None`` when it has none or it cannot be read, which the fail-closed gate
     refuses; :func:`~foley.licensing.placed_record`), and the narration's when it is a
-    ``str`` with a record there (a narration that is only audio has no licence to check).
+    ``str`` with a record there (a narration that is only audio has no licence to check;
+    one whose record is there but cannot be read is judged as ``None``, refused).
     """
     from ..licensing import placed_record
 
@@ -192,8 +193,13 @@ def _placed_records(narration, timeline, library) -> dict:
         if it.enabled
     }
     if isinstance(narration, str):  # a library ref: judged when it has a record
-        record = placed_record(library, narration)
-        if record is not None:
+        absent, unreadable = object(), object()
+        record = placed_record(
+            library, narration, missing=absent, unreadable=unreadable
+        )
+        if record is unreadable:  # there, but its record cannot be read: refused
+            placed[narration] = None
+        elif record is not None and record is not absent:
             placed[narration] = record
     return placed
 

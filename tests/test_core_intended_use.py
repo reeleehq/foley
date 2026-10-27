@@ -254,3 +254,26 @@ def test_a_licence_refusal_is_not_swallowed_as_invalid_input(wired):
 
     row = tool()
     assert row["status"] == "refused" and row["refused"] == {"rain": "no grant in GB"}
+
+
+def test_a_library_narration_whose_record_cannot_be_read_is_refused():
+    """Fail-closed: an unreadable narration record is not skipped as 'only audio'."""
+    import numpy as np
+
+    from foley.base import SoundDesignTimeline
+    from foley.licensing import DEFAULT_INTENDED_USE, LicenseRefusal
+
+    class Corrupt(dict):
+        def __getitem__(self, k):
+            raise ValueError("corrupt json")
+
+        def __contains__(self, k):
+            return k == "rain"
+
+        def array(self, ref, *, sr=None, mono=True):
+            return np.zeros(4800, dtype="float32")
+
+    with pytest.raises(LicenseRefusal) as info:
+        foley.weave("rain", SoundDesignTimeline(items=[]), library=Corrupt(),
+                    intended_use=DEFAULT_INTENDED_USE)
+    assert "rain" in info.value.refused
