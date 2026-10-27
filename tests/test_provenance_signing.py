@@ -18,7 +18,11 @@ from cryptography.hazmat.primitives import serialization  # noqa: E402
 from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa  # noqa: E402
 
 from foley.provenance import disclosure, make_c2pa_signer, make_self_signed_c2pa_certs  # noqa: E402
-from foley.provenance.signing import SIGNING_ALGORITHMS, _callback_for  # noqa: E402
+from foley.provenance.signing import (  # noqa: E402
+    SIGNING_ALGORITHMS,
+    _callback_for,
+    c2pa_key_usage,
+)  # noqa: E402
 
 SR = 48_000
 
@@ -224,103 +228,33 @@ def test_a_reversed_or_unparseable_chain_is_refused_when_the_signer_is_built():
 # --- end-entity profile checks (#135) ---------------------------------------------------
 
 
-def _chain_for(
-    key,
-    *,
-    ca=False,
-    digital_signature=True,
-    eku=True,
-    with_issuer=True,
-    eku_oids=None,
-    valid_from_days=-1,
-    valid_days=30,
-):
-    """A ``(chain_pem, ca_pem)`` whose end-entity cert holds ``key``'s public key.
-
-    The knobs break one profile rule each; the issuer is an ES256 CA made here.
-    """
-    import datetime
-
+def _ee_extensions(
+    *, ca=False, digital_signature=True, eku=True, eku_oids=None
+) -> list:
+    """End-entity ``(extension, critical)`` pairs; each knob breaks one C2PA profile rule."""
     from cryptography import x509
-    from cryptography.hazmat.primitives import hashes
-    from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
+    from cryptography.x509.oid import ExtendedKeyUsageOID
 
-    def name(cn):
-        return x509.Name(
-            [
-                x509.NameAttribute(NameOID.ORGANIZATION_NAME, "foley-test"),
-                x509.NameAttribute(NameOID.COMMON_NAME, cn),
-            ]
-        )
-
-    def usage(**on):
-        flags = dict.fromkeys(
-            [
-                "digital_signature",
-                "content_commitment",
-                "key_encipherment",
-                "data_encipherment",
-                "key_agreement",
-                "key_cert_sign",
-                "crl_sign",
-                "encipher_only",
-                "decipher_only",
-            ],
-            False,
-        )
-        return x509.KeyUsage(**{**flags, **on})
-
-    now = datetime.datetime.now(datetime.timezone.utc)
-    ca_key = ec.generate_private_key(ec.SECP256R1())
-
-    def build(subject, issuer, pub, extensions):
-        b = (
-            x509.CertificateBuilder()
-            .subject_name(subject)
-            .issuer_name(issuer)
-            .public_key(pub)
-            .serial_number(x509.random_serial_number())
-            .not_valid_before(now + datetime.timedelta(days=valid_from_days))
-            .not_valid_after(
-                now + datetime.timedelta(days=valid_from_days + valid_days)
-            )
-            .add_extension(
-                x509.SubjectKeyIdentifier.from_public_key(pub), critical=False
-            )
-        )
-        for ext in extensions:
-            b = b.add_extension(ext, critical=True)
-        if issuer != subject:
-            b = b.add_extension(
-                x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()),
-                critical=False,
-            )
-        return b.sign(ca_key, hashes.SHA256())
-
-    ca_cert = build(
-        name("ca"),
-        name("ca"),
-        ca_key.public_key(),
-        [x509.BasicConstraints(ca=True, path_length=None), usage(key_cert_sign=True)],
-    )
-    extensions = [
-        x509.BasicConstraints(ca=ca, path_length=None),
-        usage(digital_signature=digital_signature, key_cert_sign=ca),
+    exts = [
+        (x509.BasicConstraints(ca=ca, path_length=None), True),
+        (c2pa_key_usage(digital_signature=digital_signature, key_cert_sign=ca), True),
     ]
     if eku:
-        extensions.append(
-            x509.ExtendedKeyUsage(eku_oids or [ExtendedKeyUsageOID.EMAIL_PROTECTION])
-        )
-    ee = build(
-        name("ee"),
-        name("ca"),
-        key.public_key(),
-        extensions,
+        oids = eku_oids or [ExtendedKeyUsageOID.EMAIL_PROTECTION]
+        exts.append((x509.ExtendedKeyUsage(oids), True))
+    return exts
+
+
+def _chain_for(key, *, with_issuer=True, backdate_days=1, valid_days=30, **profile):
+    """``(chain_pem, ca_pem)`` for ``key`` via the shipped dev-chain helper."""
+    chain, _ = make_self_signed_c2pa_certs(
+        key=key,
+        end_entity_extensions=_ee_extensions(**profile),
+        backdate_days=backdate_days,
+        valid_days=valid_days,
     )
-    pem = serialization.Encoding.PEM
-    ca_pem = ca_cert.public_bytes(pem).decode("ascii")
-    chain = ee.public_bytes(pem).decode("ascii") + (ca_pem if with_issuer else "")
-    return chain, ca_pem
+    ca = _ca_of(chain)
+    return (chain if with_issuer else chain[: chain.index(ca)]), ca
 
 
 @pytest.mark.parametrize(
@@ -345,8 +279,8 @@ def test_other_algorithms_sign_a_manifest_that_reads_back_clean(alg, key):
         ({"ca": True}, "CA certificate"),
         ({"digital_signature": False}, "digitalSignature"),
         ({"eku": False}, "ExtendedKeyUsage"),
-        ({"valid_from_days": -10, "valid_days": 5}, "expired"),
-        ({"valid_from_days": 5}, "not yet valid"),
+        ({"backdate_days": 10, "valid_days": -5}, "expired"),
+        ({"backdate_days": -5}, "not yet valid"),
     ],
 )
 def test_an_end_entity_cert_outside_the_c2pa_profile_is_refused_at_build_time(
@@ -418,3 +352,13 @@ def test_a_failed_signing_is_logged_not_silent(caplog):
         )
     assert "C2PA signing failed" in caplog.text
     assert cred["signed"] is False
+    assert cred["sign_error"].split(":")[0].isidentifier()
+
+
+def test_self_signed_certs_accept_a_pem_key():
+    key = ed25519.Ed25519PrivateKey.generate()
+    chain, key_pem = make_self_signed_c2pa_certs(key=_key_pem(key))
+    assert (
+        _sign_and_check(make_c2pa_signer(chain, key_pem, alg="ed25519"), _ca_of(chain))
+        == []
+    )

@@ -252,11 +252,12 @@ def _sign_and_embed(
 
         wav = encode(audio, sample_rate, fmt="wav", subtype="FLOAT")
         signed = _c2pa_sign_wav(wav, credential["manifest"], cert)
-    except Exception:
+    except Exception as exc:
         _log.warning(
             "C2PA signing failed; falling back to the sidecar-only credential",
             exc_info=True,
         )
+        credential["sign_error"] = f"{type(exc).__name__}: {exc}"
         return False  # fail-safe: sidecar remains the SSOT
     credential["signed"] = True
     credential["embedded"] = True
