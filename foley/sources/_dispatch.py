@@ -662,7 +662,17 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
         clip.notes = [*plan.notes, *clip.notes]
         return clip
     # plan_generation already reserved the estimate on every budget in force.
-    reserved = plan.estimate_usd if plan.request_key is not None else None
+    paid = plan.request_key is not None
+    reserved = plan.estimate_usd if paid else None
+
+    def settled(clip_) -> None:  # the actual cost, when known, replaces the estimate
+        if paid:
+            settle(reserved, _billed(plan, clip_.candidate.cost_actual_usd))
+
+    def released() -> None:  # nothing was sent: only a paid call reserved anything
+        if paid:
+            release(reserved)
+
     try:
         extra = (
             {"provider_params": plan.provider_params} if plan.provider_params else {}
@@ -673,12 +683,12 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
             affordances["seed"] = draw_seed()
         clip = adapter.generate(plan.prompt, **affordances, **extra)
     except (SourceConfigurationError, EgressBlocked):
-        release(reserved)  # refused before any request was sent (incl. offline weights)
+        released()  # refused before any request was sent (incl. offline weights)
         raise
     except UndemuxedAnswer as exc:  # billed: keep the answer, so a retry is free
         if plan.request_key is None or exc.clip is None:
             raise
-        settle(reserved, exc.clip.candidate.cost_actual_usd)  # it was billed
+        settled(exc.clip)  # it was billed
         cache = cache if cache is not None else _default_cache()
         try:
             plan.kept_key = _answered_key(plan, exc.clip)
@@ -703,19 +713,18 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
             cache_key=plan.content_key,
         ) from exc
     except ImportError as exc:
-        release(reserved)
+        released()
         raise SourceConfigurationError(
             f"{plan.backend!r} needs an optional dependency that is not installed "
             f"({exc.name or exc}): pip install 'foley[{_extra_of(plan)}]'"
         ) from exc
     except Exception as exc:
         if provider_refused(exc):
-            release(reserved)  # the provider answered with an error: nothing billed
+            released()  # the provider answered with an error: nothing billed
         raise
     # Any other failure keeps the reservation: the request may have been sent and
     # billed (a read timeout after the server accepted it).
-    if plan.request_key is not None:  # paid: the actual cost, when known, replaces it
-        settle(reserved, clip.candidate.cost_actual_usd)
+    settled(clip)
     clip.notes = [*plan.notes, *clip.notes]
     clip.candidate.cost_estimate_usd = plan.estimate_usd
     if plan.request_key is not None:
@@ -771,6 +780,22 @@ def draws_seed(config: dict) -> bool:
     takes_seed = "seed" in (config.get("supported_affordances") or ())
     echoes_seed = bool((config.get("native_defaults") or {}).get("seed_field"))
     return takes_seed and not echoes_seed
+
+
+def _billed(plan: GenerationPlan, actual: Optional[float]) -> Optional[float]:
+    """What a paid call is settled at: its actual cost, except where the estimate is
+    the exact price and the actual a lower measure of it.
+
+    A source billed by the video's length (``pricing.seconds_from == 'video'``,
+    HunyuanVideo-Foley's 10 s blocks) is quoted exactly from the video, while its
+    actual is measured from the audio it returned, which can be shorter: settling to
+    that would undercut what the provider bills, so the higher of the two stands.
+    """
+    estimate = plan.estimate_usd
+    exact = (plan.config.get("pricing") or {}).get("seconds_from") == "video"
+    if exact and estimate is not None and actual is not None:
+        return max(estimate, actual)
+    return actual
 
 
 def _extra_of(plan: GenerationPlan) -> str:

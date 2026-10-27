@@ -206,3 +206,18 @@ def test_a_billed_answer_whose_demux_failed_still_settles_its_cost():
         with pytest.raises(UndemuxedAnswer):
             run_generation(plan, adapter, cache=_Cache())
         assert budget.spent_usd == pytest.approx(0.01) and budget._unknown_calls == 0
+
+
+def test_a_video_billed_source_is_never_settled_below_its_exact_quote():
+    """HunyuanVideo-Foley bills 10 s blocks of the video: the audio it returns is not the bill."""
+    from foley.sources._dispatch import GenerationPlan, _billed
+
+    hunyuan = CONFIGS["fal_hunyuan_foley"]
+    assert hunyuan["pricing"].get("seconds_from") == "video"
+    plan = GenerationPlan(backend="fal_hunyuan_foley", prompt="", config=hunyuan,
+                          affordances={}, estimate_usd=0.2)
+    assert _billed(plan, 0.1) == 0.2 and _billed(plan, 0.3) == 0.3
+    assert _billed(plan, None) is None
+    per_call = GenerationPlan(backend="x", prompt="", config={"pricing": {"unit": "per_second"}},
+                              affordances={}, estimate_usd=0.2)
+    assert _billed(per_call, 0.1) == 0.1  # elsewhere the actual replaces the estimate
