@@ -48,7 +48,19 @@ SOURCE_CONFIG = {
             "to_native": 'license:"Creative Commons 0"',
             "to_native_attribution": 'license:("Creative Commons 0" OR "Attribution")',
         },
-        "sort": {"native_name": "sort"},
+        "page": {"native_name": "page"},
+        "sort": {
+            "native_name": "sort",
+            "to_native_map": {
+                "relevance": "score",
+                "newest": "created_desc",
+                "popular": "downloads_desc",
+                "duration": "duration_asc",
+            },
+        },
+        # Media kind (#75): the Broad Sound Taxonomy top level a kind is filed under,
+        # through ucs_category's filter template; sfx (the default) sends no filter.
+        "kind": {"bst_category": {"music": "Music"}},
         # "More like this" (Freesound's native ``similar_to``: a sound id).
         "similar_to": {"native_name": "similar_to"},
         # A coarse pre-filter on the Broad Sound Taxonomy's top level (#78). Only the
@@ -71,6 +83,8 @@ SOURCE_CONFIG = {
         "duration_range",
         "license",
         "sort",
+        "page",
+        "kind",
         "similar_to",
         "ucs_category",
     ],

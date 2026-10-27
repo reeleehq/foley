@@ -306,6 +306,55 @@ def _check_grouped(key: str, value: str) -> None:
         )
 
 
+def paging_params(config: dict, page: int, per_page: int) -> dict:
+    """The native params of results ``page`` (1-based) at ``per_page`` results a page.
+
+    ``param_map['page']`` names the native field; ``"as": "offset"`` sends the index
+    of the page's first result instead of the page number (MediaWiki). Page 1 sends
+    nothing, so a first page is the request it always was.
+
+    >>> paging_params({"param_map": {"page": {"native_name": "page"}}}, 3, 20)
+    {'page': 3}
+    >>> paging_params({"param_map": {"page": {"native_name": "off", "as": "offset"}}}, 3, 20)
+    {'off': 40}
+    >>> paging_params({"param_map": {"page": {"native_name": "page"}}}, 1, 20)
+    {}
+    """
+    if int(page) == 1:
+        return {}
+    spec = config["param_map"]["page"]
+    value = (int(page) - 1) * int(per_page) if spec.get("as") == "offset" else int(page)
+    return {spec["native_name"]: value}
+
+
+def as_names(names) -> list:
+    """``names`` as a list of names: one name is a one-item list, never its characters.
+
+    >>> as_names("wikimedia_audio"), as_names(("a", "b")), as_names(None)
+    (['wikimedia_audio'], ['a', 'b'], [])
+    """
+    return [names] if isinstance(names, str) else list(names or ())
+
+
+def native_choice(config: dict, name: str, value: str) -> str:
+    """The native value of an enumerated affordance (``sort``), or ``ValueError``.
+
+    A native value is not accepted here: pass it as a provider param instead.
+
+    >>> cfg = {"param_map": {"sort": {"to_native_map": {"newest": "created_desc"}}}}
+    >>> native_choice(cfg, "sort", "newest")
+    'created_desc'
+    """
+    table = config["param_map"][name]["to_native_map"]
+    try:
+        return table[value]
+    except KeyError:
+        raise ValueError(
+            f"{name} must be one of {tuple(table)}, got {value!r} (a native value "
+            f"goes in provider_params={{{name!r}: ...}})"
+        ) from None
+
+
 def merge_provider_params(
     native: dict,
     provider_params: Optional[Mapping] = None,

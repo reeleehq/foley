@@ -26,7 +26,7 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import wanted_license_ids
 from .._keyless import get_bytes, get_json, raw_id, strip_html
 from .._license_gate import license_for_item
-from ..base import api_license, merge_provider_params
+from ..base import api_license, merge_provider_params, paging_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -94,6 +94,7 @@ class WikimediaCommonsAdapter:
         *,
         license: Optional[str] = "cc0",
         k: int = 15,
+        page: int = 1,
         provider_params: Optional[dict] = None,
         **kw,
     ) -> "list[Candidate]":
@@ -104,6 +105,7 @@ class WikimediaCommonsAdapter:
                 CC-BY ids) keeps only files under it; ``None`` also keeps CC-BY and the
                 unverified public-domain claims.
             k: Max files requested (the API's limit is 50).
+            page: The results page (1-based, ``k`` per page), sent as an offset.
             provider_params: Native search params merged over the translated ones
                 (#61); the per-item licence check still applies.
         """
@@ -119,6 +121,7 @@ class WikimediaCommonsAdapter:
             prop="imageinfo",
             iiprop=_IMAGEINFO,
         )
+        params.update(paging_params(self.config, page, params["gsrlimit"]))
         data = self.invoke_native(
             **merge_provider_params(
                 params, provider_params, policy=self.config.get("provider_params")

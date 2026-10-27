@@ -25,8 +25,15 @@ SOURCE_CONFIG = {
         "query": {"native_name": "q", "required": True},
         "k": {"native_name": "rows"},
         "license": {"native_name": "license", "adapter_handled": True},
+        "page": {"native_name": "page"},
+        # Archive collections, quoted and ORed into the query. An identifier starts
+        # with a letter or digit, so no name reads as a Lucene operator (-x, AND).
+        "sources": {
+            "to_native": "collection:({collections})",
+            "pattern": r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}",
+        },
     },
-    "supported_affordances": ["query", "k", "license"],
+    "supported_affordances": ["query", "k", "license", "page", "sources"],
     "on_unsupported_param": "warn",
     "api": {
         "search_url": "https://archive.org/advancedsearch.php",

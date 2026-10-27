@@ -19,7 +19,7 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import wanted_license_ids
 from .._keyless import get_bytes, get_json, raw_id
 from .._license_gate import license_for_item, native_license_filter
-from ..base import api_license, merge_provider_params
+from ..base import api_license, as_names, merge_provider_params, paging_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -69,6 +69,10 @@ class OpenverseAdapter:
         *,
         license: Optional[str] = "cc0",
         k: int = 15,
+        page: int = 1,
+        include_explicit: bool = False,
+        sources: Optional[list] = None,
+        kind: str = "sfx",
         provider_params: Optional[dict] = None,
         **kw,
     ) -> "list[Candidate]":
@@ -79,6 +83,12 @@ class OpenverseAdapter:
                 under it, and is pushed into the native ``license`` filter (CC0, CC-BY or
                 PDM); ``None`` asks for CC0, CC-BY and public-domain-mark rows.
             k: Max rows (anonymous limit 20).
+            page: The results page (1-based, ``k`` per page).
+            include_explicit: Also return rows Openverse marks mature.
+            sources: Only these Openverse providers (``wikimedia_audio``, …); the
+                excluded ones (Freesound, Jamendo) stay excluded, so asking only for
+                them returns nothing.
+            kind: ``sfx`` (default, no category filter) or ``music``.
             provider_params: Native search params merged over the translated ones
                 (#61); the per-item licence check still applies.
         """
@@ -93,13 +103,22 @@ class OpenverseAdapter:
                 wanted, api["license_native"], default=api["license_default"]
             ),
         }
-        excluded = [
-            s
-            for s in api["excluded_sources"]
-            if not (s == "freesound" and self._include_freesound)
-        ]
-        if excluded:
+        excluded = self._excluded()
+        pm = self.config["param_map"]
+        if sources:
+            wanted_sources = [s.strip().lower() for s in as_names(sources)]
+            allowed = [s for s in wanted_sources if s not in excluded]
+            if not allowed:  # only excluded providers asked for: nothing can match
+                return []
+            params[pm["sources"]["native_name"]] = ",".join(allowed)
+        elif excluded:
             params["excluded_source"] = ",".join(excluded)
+        params.update(paging_params(self.config, page, params["page_size"]))
+        if include_explicit:
+            params[pm["include_explicit"]["native_name"]] = "true"
+        category = pm["kind"]["to_native"].get(kind)
+        if category:
+            params[pm["kind"]["native_name"]] = category
         params = merge_provider_params(
             params, provider_params, policy=self.config.get("provider_params")
         )
@@ -128,7 +147,13 @@ class OpenverseAdapter:
         """
         rid = raw_id(_PREFIX, source_id)
         path = self.config["api"]["detail_endpoint"]["path"].format(id=rid)
-        cand = self._candidate(self._get_json(path), only=None)
+        row = self._get_json(path)
+        if self._provider(row) in self._excluded():
+            raise LookupError(
+                f"Openverse audio {rid} is from {self._provider(row)!r}, a provider "
+                "foley does not take from Openverse; refused."
+            )
+        cand = self._candidate(row, only=None)
         if cand is None:
             raise LookupError(
                 f"Openverse audio {rid} has a non-accepted licence; refused (fail-closed)."
@@ -147,12 +172,28 @@ class OpenverseAdapter:
             what="Openverse",
         )
 
+    def _excluded(self) -> "list[str]":
+        """The Openverse providers this adapter never returns (Freesound unless asked)."""
+        return [
+            s
+            for s in self.config["api"]["excluded_sources"]
+            if not (s == "freesound" and self._include_freesound)
+        ]
+
+    @staticmethod
+    def _provider(row: dict) -> str:
+        """The row's Openverse provider, normalised (the API sends lowercase)."""
+        return str(row.get("source") or "").strip().lower()
+
     def _candidate(self, row: dict, *, only: Optional[list]) -> Optional[Candidate]:
         if not row.get("id") or not row.get("url"):
             return None
-        by_reference = row.get("source") == "freesound"
-        if by_reference and not self._include_freesound:
+        provider = self._provider(row)
+        # Whatever the request (a provider param can rewrite the source filter), an
+        # excluded provider's row is never returned.
+        if provider in self._excluded():
             return None
+        by_reference = provider == "freesound"  # its terms forbid caching its bytes
         found = license_for_item(self.config, row.get("license_url"), only=only)
         if found is None:
             return None

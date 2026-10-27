@@ -18,7 +18,13 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import wanted_license_ids
 from .._keyless import get_bytes, get_json, raw_id, strip_html
 from .._license_gate import license_for_item
-from ..base import SourceConfigurationError, api_license, merge_provider_params
+from ..base import (
+    SourceConfigurationError,
+    api_license,
+    as_names,
+    merge_provider_params,
+    paging_params,
+)
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -70,6 +76,8 @@ class InternetArchiveAdapter:
         *,
         license: Optional[str] = None,
         k: int = 15,
+        page: int = 1,
+        sources: Optional[list] = None,
         provider_params: Optional[dict] = None,
         **kw,
     ) -> "list[Candidate]":
@@ -79,7 +87,9 @@ class InternetArchiveAdapter:
         items under it; ``None`` keeps every accepted licence. The default is ``None``,
         unlike the other CC sources' ``'cc0'``, because every archive licence is an
         unverified claim anyway; ``add_from`` always passes its own (``'cc0'``) default.
-        The query always asks for items with a ``licenseurl``.
+        The query always asks for items with a ``licenseurl``. ``page`` is the results
+        page (1-based, ``k`` per page); ``sources`` restricts it to these archive
+        collections.
         ``provider_params`` are native advancedsearch params merged over the
         translated ones (#61); a ``q`` is ANDed onto foley's as one group, never
         replaces it (the config's ``provider_params`` policy).
@@ -88,12 +98,22 @@ class InternetArchiveAdapter:
         if only == []:  # a licence this source does not accept: nothing can match
             return []
         api = self.config["api"]
+        q = f"({_lucene_escape(query)}) AND mediatype:audio AND {api['licensed_clause']}"
+        if sources:
+            spec = self.config["param_map"]["sources"]
+            names = as_names(sources)
+            bad = [n for n in names if not re.fullmatch(spec["pattern"], str(n))]
+            if bad:
+                raise ValueError(f"not archive collection identifiers: {bad!r}")
+            quoted = " OR ".join(f'"{n}"' for n in names)
+            q += " AND " + spec["to_native"].format(collections=quoted)
         params = {
-            "q": f"({_lucene_escape(query)}) AND mediatype:audio AND {api['licensed_clause']}",
+            "q": q,
             "fl[]": list(_FIELDS),
             "rows": min(int(k), api["max_rows"]),
             "output": "json",
         }
+        params.update(paging_params(self.config, page, params["rows"]))
         params = merge_provider_params(
             params, provider_params, policy=self.config.get("provider_params")
         )

@@ -763,3 +763,46 @@ def test_a_cc_by_licence_id_asks_for_cc0_and_attribution_and_a_refused_one_sends
     assert '"Attribution"' in transport.calls[0].params["filter"]
     assert adapter.search("rain", license="CC-BY-SA-4.0") == []
     assert len(transport.calls) == 1
+
+
+# ---------------------------------------------------------------------------
+# #75 slice C: the search vocabulary
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "sort, native",
+    [("relevance", "score"), ("newest", "created_desc"),
+     ("popular", "downloads_desc"), ("duration", "duration_asc")],
+)
+def test_canonical_sort_values_reach_freesound_natively(sort, native):
+    transport = _transport()
+    _adapter(transport).search("rain", sort=sort)
+    assert transport.calls[0].params["sort"] == native
+
+
+def test_page_and_kind_reach_freesound():
+    transport = _transport()
+    _adapter(transport).search("rain", page=3, kind="music")
+    params = transport.calls[0].params
+    assert params["page"] == 3 and 'category:"Music"' in params["filter"]
+    transport = _transport()
+    _adapter(transport).search("rain")  # page 1 and sfx send nothing, as before
+    params = transport.calls[0].params
+    assert "page" not in params and "category:" not in params.get("filter", "")
+
+
+def test_search_vocabulary_is_validated_before_any_call():
+    from foley.base import QUERY_AFFORDANCES
+    from foley.sources._dispatch import translate_affordances
+
+    for bad in ({"sort": "score"}, {"kind": "speech"}):
+        with pytest.raises(ValueError, match="must be one of"):
+            translate_affordances(SOURCE_CONFIG, bad, vocabulary=QUERY_AFFORDANCES)
+    with pytest.raises(TypeError, match="text= was renamed query="):
+        translate_affordances(SOURCE_CONFIG, {"text": "rain"}, vocabulary=QUERY_AFFORDANCES)
+
+
+def test_a_native_sort_called_directly_names_the_choices():
+    with pytest.raises(ValueError, match="provider_params"):
+        _adapter(_transport()).search("rain", sort="created_desc")

@@ -35,7 +35,13 @@ from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import ai_scope_from_gen_ai_preference, wanted_license_ids
-from ..base import api_license, merge_provider_params, resolve_source_key
+from ..base import (
+    api_license,
+    merge_provider_params,
+    native_choice,
+    paging_params,
+    resolve_source_key,
+)
 from .._license_gate import is_cc0_only, license_for_item
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -154,6 +160,8 @@ class FreesoundAdapter:
         k: int = 15,
         duration_range: "Optional[tuple[float, float]]" = None,
         sort: Optional[str] = None,
+        page: int = 1,
+        kind: str = "sfx",
         similar_to: Optional[str] = None,
         ucs_category: Optional[str] = None,
         provider_params: Optional[dict] = None,
@@ -173,7 +181,11 @@ class FreesoundAdapter:
                 kept, so NC / SA / ND never come back.
             k: Max results (Freesound caps ``page_size`` at 150).
             duration_range: Optional ``(min_s, max_s)`` native duration filter.
-            sort: Optional native sort key (default: Freesound relevance).
+            sort: ``relevance`` (default) | ``newest`` | ``popular`` | ``duration``,
+                translated to Freesound's native key.
+            page: The results page (1-based, ``k`` per page).
+            kind: ``sfx`` (default, no filter) or ``music`` (the Broad Sound
+                Taxonomy's "Music" top level).
             similar_to: A Freesound sound id (either id form): "more like this one".
             ucs_category: A UCS CatID or category, mapped to a coarse Broad Sound
                 Taxonomy ``category`` pre-filter (no filter if it is not recognised).
@@ -205,14 +217,16 @@ class FreesoundAdapter:
             filters.append(license_map["to_native"])
         elif only is not None:
             filters.append(license_map["to_native_attribution"])
+        pm = self.config["param_map"]
+        kind_category = pm["kind"]["bst_category"].get(kind)
+        if kind_category:
+            filters.append(
+                pm["ucs_category"]["to_native"].format(category=kind_category)
+            )
         if ucs_category:
             bst = _bst_category(self.config, ucs_category)
             if bst is not None:
-                filters.append(
-                    self.config["param_map"]["ucs_category"]["to_native"].format(
-                        category=bst
-                    )
-                )
+                filters.append(pm["ucs_category"]["to_native"].format(category=bst))
         if duration_range is not None:
             lo, hi = duration_range
             filters.append(
@@ -223,7 +237,8 @@ class FreesoundAdapter:
         if filters:
             params["filter"] = " ".join(filters)
         if sort is not None:
-            params["sort"] = sort
+            params["sort"] = native_choice(self.config, "sort", sort)
+        params.update(paging_params(self.config, page, params["page_size"]))
         if similar_to:
             native = self.config["param_map"]["similar_to"]["native_name"]
             params[native] = _raw_id(similar_to)

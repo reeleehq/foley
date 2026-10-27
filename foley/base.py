@@ -126,6 +126,8 @@ class Affordance:
         carries_meaning: Dropping it would change what the caller gets (a seed they
             will rely on to reproduce, content they asked to exclude), so a backend
             that cannot honour it raises instead of dropping it (#53).
+        choices: The values it accepts, when it is an enumeration (``sort``,
+            ``kind``); any other value raises ``ValueError`` before any call.
         renamed_from: The name it had before a release renamed it (#75): passing
             the old name raises a ``TypeError`` naming this one (see
             :func:`reject_renamed`). For a generation affordance, the generations
@@ -138,12 +140,13 @@ class Affordance:
     default: Any = None
     stage: str = "query"
     carries_meaning: bool = False
+    choices: Optional[tuple] = None
     renamed_from: Optional[str] = None
 
 
 #: Unified query-stage parameters (search / find / filter surface).
 QUERY_AFFORDANCES: dict[str, Affordance] = {
-    "text": Affordance("text", str, "Natural-language query"),
+    "query": Affordance("query", str, "Natural-language query", renamed_from="text"),
     "semantic_text": Affordance(
         "semantic_text", str, "Query for CLAP semantic space", stage="query"
     ),
@@ -160,7 +163,35 @@ QUERY_AFFORDANCES: dict[str, Affordance] = {
     "similar_to": Affordance(
         "similar_to", str, "Source sound id: more like this one (a source that has it)"
     ),
-    "sort": Affordance("sort", str, "score|duration|created|downloads", "score"),
+    "page": Affordance(
+        "page", int, "Results page (1-based; k per page)", 1, carries_meaning=True
+    ),
+    "sort": Affordance(
+        "sort",
+        str,
+        "Result order",
+        "relevance",
+        choices=("relevance", "newest", "popular", "duration"),
+    ),
+    "include_explicit": Affordance(
+        "include_explicit", bool, "Also return explicit / sensitive results", False
+    ),
+    "sources": Affordance(
+        "sources",
+        list,
+        "Restrict an aggregator to these of its providers",
+        carries_meaning=True,
+    ),
+    # Media kind. Not the taxonomy category (ucs_category), which some sources
+    # also call "category" (report 14 §5.1).
+    "kind": Affordance(
+        "kind",
+        str,
+        "Media kind: sfx | music",
+        "sfx",
+        carries_meaning=True,
+        choices=("sfx", "music"),
+    ),
     "rerank": Affordance("rerank", bool, "Apply second-stage rerank", False),
 }
 

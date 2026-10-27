@@ -39,6 +39,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import numbers
 import time
 import warnings
@@ -129,9 +130,14 @@ def translate_affordances(
         raise ValueError(f"on_unsupported must be one of {UNSUPPORTED_POLICIES}")
     vocabulary = GENERATION_AFFORDANCES if vocabulary is None else vocabulary
     reject_renamed(affordances, vocabulary)
+    for name, value in affordances.items():
+        choices = getattr(vocabulary.get(name), "choices", None)
+        if choices and value is not None and value not in choices:
+            raise ValueError(f"{name} must be one of {choices}, got {value!r}")
     # Validated here, at planning time, so a bad value never reserves budget.
     check_prompt_influence(affordances.get("prompt_influence"))
-    affordances = _checked_rate_and_flags(affordances)
+    affordances = _checked_values(affordances)
+    _check_patterns(config, affordances)
     duration_s = affordances.get("duration_s")
     if duration_s is not None and not math.isfinite(float(duration_s)):
         raise ValueError(
@@ -141,11 +147,13 @@ def translate_affordances(
     return result.kwargs, result.notes
 
 
-def _checked_rate_and_flags(affordances: dict) -> dict:
-    """``affordances`` with ``sample_rate`` as an ``int``; a bad rate or flag raises.
+def _checked_values(affordances: dict) -> dict:
+    """``affordances`` normalised (``sample_rate`` an ``int``, ``sources`` a list); a bad value raises.
 
     ``sample_rate`` must be a positive whole number of Hz (any real number type,
-    numpy's included, but not a bool or a string); ``expand_prompt`` a bool.
+    numpy's included, but not a bool or a string); ``expand_prompt`` a bool;
+    ``include_explicit`` a bool; ``page`` a positive integer; ``sources`` one name
+    or a list of names.
     """
     rate = affordances.get("sample_rate")
     if rate is not None:
@@ -163,10 +171,40 @@ def _checked_rate_and_flags(affordances: dict) -> dict:
                 f"sample_rate must be a positive whole number of Hz, got {rate!r}"
             )
         affordances = {**affordances, "sample_rate": int(rate)}
-    flag = affordances.get("expand_prompt")
-    if flag is not None and not isinstance(flag, bool):
-        raise ValueError(f"expand_prompt must be True or False, got {flag!r}")
+    # Strict bools; loop is not here, since loop=1 is accepted as True (#97).
+    for name in ("expand_prompt", "include_explicit"):
+        flag = affordances.get(name)
+        if flag is not None and not isinstance(flag, bool):
+            raise ValueError(f"{name} must be True or False, got {flag!r}")
+    page = affordances.get("page")
+    if page is not None and (
+        isinstance(page, bool) or not isinstance(page, numbers.Integral) or page < 1
+    ):
+        raise ValueError(f"page must be a positive integer, got {page!r}")
+    sources = affordances.get("sources")
+    if sources is not None:
+        names = [sources] if isinstance(sources, str) else list(sources)
+        if not all(isinstance(n, str) for n in names):
+            raise ValueError(f"sources must be names (str), got {sources!r}")
+        affordances = {**affordances, "sources": names}
     return affordances
+
+
+def _check_patterns(config: dict, affordances: dict) -> None:
+    """Raise ``ValueError`` for a value its ``param_map`` entry's ``pattern`` refuses.
+
+    So a malformed name (an archive collection id) is the caller's error, raised
+    before any call, not a search failure recorded in a report.
+    """
+    param_map = config.get("param_map") or {}
+    for name, value in affordances.items():
+        pattern = (param_map.get(name) or {}).get("pattern")
+        if pattern is None or value is None:
+            continue
+        values = value if isinstance(value, list) else [value]
+        bad = [v for v in values if not re.fullmatch(pattern, str(v))]
+        if bad:
+            raise ValueError(f"{name}: {bad!r} not accepted by {config.get('name')}")
 
 
 #: Part of every cache key. Bumped when the key's shape or meaning changes, so entries
