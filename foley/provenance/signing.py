@@ -264,12 +264,25 @@ def make_self_signed_c2pa_certs(
     *,
     common_name: str = SELF_SIGNED_COMMON_NAME,
     valid_days: int = SELF_SIGNED_VALID_DAYS,
+    backdate_days: int = SELF_SIGNED_BACKDATE_DAYS,
+    key=None,
+    end_entity_extensions=None,
 ) -> "tuple[str, str]":
-    """A throwaway C2PA-conformant ``(cert_chain_pem, private_key_pem)`` (ES256) for dev and tests.
+    """A throwaway C2PA-conformant ``(cert_chain_pem, private_key_pem)`` for dev and tests.
 
     A CA plus an end-entity certificate with the profile C2PA requires. The chain is
     **not** trusted by validators; use a real CA for anything you publish. The key is
     PKCS#8 PEM.
+
+    Args:
+        key: the end-entity private key, any family ``make_c2pa_signer`` supports
+            (a ``cryptography`` private key object, or PEM text/bytes). Default: a
+            fresh ES256 (P-256) key. The CA is always ES256.
+        end_entity_extensions: ``[(extension, critical), ...]`` replacing the default
+            end-entity profile (BasicConstraints, KeyUsage, ExtendedKeyUsage), e.g. to
+            make a deliberately non-conformant chain for negative tests.
+        backdate_days: days before now that the certificates start being valid
+            (negative: not yet valid). ``valid_days`` negative gives an expired chain.
 
     Lazy dependency: ``cryptography``.
     """
@@ -279,7 +292,7 @@ def make_self_signed_c2pa_certs(
     from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
     now = datetime.datetime.now(datetime.timezone.utc)
-    not_before = now - datetime.timedelta(days=SELF_SIGNED_BACKDATE_DAYS)
+    not_before = now - datetime.timedelta(days=backdate_days)
     not_after = now + datetime.timedelta(days=valid_days)
 
     def _key_usage(**on) -> "x509.KeyUsage":
@@ -299,7 +312,15 @@ def make_self_signed_c2pa_certs(
         )
         return x509.KeyUsage(**{**flags, **on})
 
-    ca_key, ee_key = (ec.generate_private_key(ec.SECP256R1()) for _ in range(2))
+    ca_key = ec.generate_private_key(ec.SECP256R1())
+    if key is None:
+        ee_key = ec.generate_private_key(ec.SECP256R1())
+    elif isinstance(key, (str, bytes)):
+        ee_key = serialization.load_pem_private_key(
+            key.encode("ascii") if isinstance(key, str) else key, password=None
+        )
+    else:
+        ee_key = key
 
     def name(cn: str) -> "x509.Name":
         return x509.Name(
@@ -343,9 +364,15 @@ def make_self_signed_c2pa_certs(
         ee_key,
         ca_key,
         2,
-        (x509.BasicConstraints(ca=False, path_length=None), True),
-        (_key_usage(digital_signature=True), True),
-        (x509.ExtendedKeyUsage([ExtendedKeyUsageOID.EMAIL_PROTECTION]), True),
+        *(
+            end_entity_extensions
+            if end_entity_extensions is not None
+            else (
+                (x509.BasicConstraints(ca=False, path_length=None), True),
+                (_key_usage(digital_signature=True), True),
+                (x509.ExtendedKeyUsage([ExtendedKeyUsageOID.EMAIL_PROTECTION]), True),
+            )
+        ),
         (
             x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()),
             False,
