@@ -288,6 +288,14 @@ def _true_or_false(token: str) -> bool:
         ) from None
 
 
+def _json(token: str):
+    """A JSON argument (argparse names a bad value by this function's name)."""
+    return json.loads(token)
+
+
+_json.__name__ = "JSON"
+
+
 def _verb_decode(param, hint):
     """How a verb's parameter is read from the command line (``cw``'s decode seam).
 
@@ -301,10 +309,10 @@ def _verb_decode(param, hint):
 
     bare = _optional_of(hint)
     if bare is dict or typing.get_origin(bare) is dict:
-        return {"type": json.loads, "metavar": f"{param.name.upper()}_JSON"}
+        return {"type": _json, "metavar": f"{param.name.upper()}_JSON"}
     if bare is bool:
         if param.default is inspect.Parameter.empty:
-            return {"type": _true_or_false, "metavar": "{true,false}"}
+            return {"type": _true_or_false, "metavar": param.name.upper()}
         return {"action": argparse.BooleanOptionalAction}
     return modern_decode(param, hint)
 

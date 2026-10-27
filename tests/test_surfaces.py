@@ -96,21 +96,31 @@ def test_the_generated_cli_reads_flags_json_and_exits_on_a_refusal(monkeypatch, 
     assert json.loads(capsys.readouterr().out)["master"]["target_lufs"] == -14.0
 
 
-#: A token for each annotation a verb's required parameter has, and the type it must
-#: reach the verb as.
-_SAMPLES = {str: ("x", str), int: ("2", int), float: ("-0.5", float),
-            dict: ('{"items": []}', dict), bool: ("false", bool)}
+#: A token for each annotation a verb's parameter has, and the type it must reach the
+#: verb as (a list option takes two tokens).
+_SAMPLES = {str: (["x"], str), int: (["2"], int), float: (["-0.5"], float),
+            dict: (['{"items": []}'], dict), bool: (["false"], bool),
+            list: (["a", "b"], list)}
+
+
+def _base(hint):
+    import typing
+
+    bare = cli._optional_of(hint)
+    return typing.get_origin(bare) or bare
 
 
 @pytest.mark.parametrize("verb", [v for v in mcp.VERBS if v.cli], ids=lambda v: v.command)
 def test_each_verb_s_parameters_reach_it_with_their_types(verb, monkeypatch):
+    """Every parameter, required and optional, set on the command line once."""
     import functools
     import inspect
     import typing
 
+    import cw
+
     hints = typing.get_type_hints(verb.fn)
-    required = [n for n, p in inspect.signature(verb.fn).parameters.items()
-                if p.default is inspect.Parameter.empty]
+    params = inspect.signature(verb.fn).parameters
 
     @functools.wraps(verb.fn)
     def spy(*args, **kwargs):
@@ -118,13 +128,21 @@ def test_each_verb_s_parameters_reach_it_with_their_types(verb, monkeypatch):
 
     monkeypatch.setattr(mcp, "VERBS", tuple(
         mcp.Verb(spy) if v is verb else v for v in mcp.VERBS))
-    argv = [verb.command, *(_SAMPLES[cli._optional_of(hints[n])][0] for n in required)]
-    import cw
-
+    argv, want = [verb.command], {}
+    for name, p in params.items():
+        base = _base(hints[name])
+        if p.default is inspect.Parameter.empty:
+            argv += _SAMPLES[base][0]
+        elif base is bool:
+            argv.append(f"--no-{name.replace('_', '-')}")
+        else:
+            argv += [f"--{name.replace('_', '-')}", *_SAMPLES[base][0]]
+        want[name] = _SAMPLES[base][1]
     got = cw.run(cli.build_parser(), argv, standalone=False, completion=False)
-    for name in required:
-        want = _SAMPLES[cli._optional_of(hints[name])][1]
-        assert type(got[name]) is want, f"{verb.command} {name}: {got[name]!r}"
+    for name, typ in want.items():
+        assert type(got[name]) is typ, f"{verb.command} {name}: {got[name]!r}"
+        if typ is bool:
+            assert got[name] is False, f"{verb.command} {name}"
 
 
 def test_a_required_bool_reads_true_or_false(capsys):
@@ -133,6 +151,8 @@ def test_a_required_bool_reads_true_or_false(capsys):
     assert json.loads(capsys.readouterr().out)["items"][0]["enabled"] is False
     with pytest.raises(SystemExit):
         cli.main(["toggle", json.dumps(tl), "a", "nope"])
+    assert "ENABLED" in cli.build_parser()._subparsers._group_actions[0].choices[
+        "toggle"].format_usage()
 
 
 def test_a_dict_generic_is_not_mistaken_and_a_list_of_dicts_is_not_json():
