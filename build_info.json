@@ -1,32 +1,34 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-27T17:16:01Z",
+  "built_at": "2026-10-27T17:25:59Z",
   "package": {
     "name": "foley",
-    "version": "0.0.91",
+    "version": "0.0.92",
     "display_name": "foley",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "08176bd80900a344666686623c754522467188c4",
-    "short_commit": "08176bd",
+    "commit": "ef977163854933ee4036fb9dc54bc0c1658492c9",
+    "short_commit": "ef97716",
     "branch": "main",
-    "tags": [],
+    "tags": [
+      "0.0.92"
+    ],
     "dirty": false,
     "remote_url": "https://github.com/reeleehq/foley",
-    "commit_url": "https://github.com/reeleehq/foley/commit/08176bd80900a344666686623c754522467188c4",
+    "commit_url": "https://github.com/reeleehq/foley/commit/ef977163854933ee4036fb9dc54bc0c1658492c9",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "reeleehq/foley",
-    "sha": "ef4575fa417204f2eb776b6fc6be2d90da8423b3",
+    "sha": "08176bd80900a344666686623c754522467188c4",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "40541347644",
-    "run_url": "https://github.com/reeleehq/foley/actions/runs/40541347644",
+    "run_id": "40546894181",
+    "run_url": "https://github.com/reeleehq/foley/actions/runs/40546894181",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -60,11 +62,11 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.91",
+    "latest": "0.0.92",
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 08176bd80900a344666686623c754522467188c4\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout ef977163854933ee4036fb9dc54bc0c1658492c9\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,
