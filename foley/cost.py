@@ -129,8 +129,11 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
         seconds = affordances.get("duration_s")
         if seconds is None and video_s is not None:  # V2A: the sound covers the video
             seconds = video_s
-        if seconds is not None and video_s is not None:  # never longer than the video
-            seconds = min(float(seconds), float(video_s))
+        if seconds is not None and video_s is not None:  # never longer than the video,
+            floor = (config.get("native_defaults") or {}).get("duration_min_s") or 0.0
+            seconds = max(
+                min(float(seconds), float(video_s)), float(floor)
+            )  # nor short
         if seconds is None:
             # What the adapter sends when no duration is asked (its declared default),
             # else the backend's maximum: an upper bound, never zero.

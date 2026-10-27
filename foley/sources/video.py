@@ -9,8 +9,8 @@ here, once, for every V2A backend:
   (``sha256:<hex>`` of the bytes or of the file), never its path, so a moved file hits
   the cache and an edited one cannot; a remote URL is keyed as the URL.
 * :func:`video_seconds`: its length, for a backend priced per second of the video
-  (``ffprobe`` when on ``PATH``; ``None`` when it cannot be read, and the estimate then
-  falls back to the backend's maximum).
+  (``ffprobe`` when on ``PATH``; ``None`` when it cannot be read, which prices the call
+  as an unknown cost, needing approval).
 * :func:`local_video_file`: a local file for an uploader (bytes are written to a
   temporary file).
 * :func:`keyed`: affordances as they may be recorded (the cache entry, the run
@@ -23,6 +23,7 @@ Stdlib only.
 from __future__ import annotations
 
 import contextlib
+import functools
 import hashlib
 import os
 import shutil
@@ -67,11 +68,9 @@ def video_key(video: VideoInput) -> str:
             return "sha256:" + hashlib.sha256(video.encode()).hexdigest()
         return "url:" + video
     if isinstance(video, (str, os.PathLike)):
-        digest = hashlib.sha256()
-        with open(os.fspath(video), "rb") as f:
-            for chunk in iter(lambda: f.read(_HASH_CHUNK), b""):
-                digest.update(chunk)
-        return "sha256:" + digest.hexdigest()
+        path = os.fspath(video)
+        st = os.stat(path)
+        return _file_key(os.path.abspath(path), st.st_mtime_ns, st.st_size)
     raise TypeError(
         f"video must be a URL, a local path or bytes, got {type(video).__name__}"
     )
@@ -86,6 +85,17 @@ def keyed(affordances: dict) -> dict:
     if affordances.get("video") is None:
         return affordances
     return {**affordances, "video": video_key(affordances["video"])}
+
+
+@functools.lru_cache(maxsize=64)
+def _file_key(path: str, mtime_ns: int, size: int) -> str:
+    """The content key of the file at ``path``, memoised while it is unchanged (one
+    call keys, prices, records and manifests the same video several times)."""
+    digest = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(_HASH_CHUNK), b""):
+            digest.update(chunk)
+    return "sha256:" + digest.hexdigest()
 
 
 @contextlib.contextmanager

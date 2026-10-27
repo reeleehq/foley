@@ -50,6 +50,7 @@ from typing import Optional
 from ocracy.kit import UnsupportedParameter, make_translator
 
 from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES, reject_renamed
+from .video import keyed as video_keyed
 from .base import check_prompt_influence, check_provider_params
 
 __all__ = [
@@ -254,9 +255,7 @@ def _keyed_request(config: dict, affordances: dict) -> "tuple[dict, Optional[str
     comparison is on the raw value: a source that maps model tokens to native ids
     would compare after that translation.
     """
-    from .video import keyed
-
-    rest = dict(keyed(affordances))  # a copy; the video by its content (#74)
+    rest = dict(video_keyed(affordances))  # a copy; the video by its content (#74)
     nd = config.get("native_defaults") or {}
     model = rest.pop("model", None)
     if model == nd.get("model_id"):
@@ -464,13 +463,15 @@ def plan_generation(
     kept, notes = translate_affordances(
         config, affordances, on_unsupported=on_unsupported
     )
+    priced = _priced(config, kept)
+    kept = _cover_the_video(config, kept, priced.get("video_duration_s"), notes)
     plan = GenerationPlan(
         backend=backend,
         prompt=prompt,
         config=config,
         affordances=kept,
         notes=notes,
-        estimate_usd=estimate_call(config, **_priced(config, kept)),
+        estimate_usd=estimate_call(config, **{**priced, **kept}),
         # Checked against the source's policy BEFORE any price or call: a reserved
         # or priced key raises here, so the estimate below is the call's price.
         provider_params=check_provider_params(
@@ -725,20 +726,13 @@ def _replayable(cache, entry) -> bool:
     )
 
 
-def _keyed_affordances(affordances: dict) -> dict:
-    """The affordances as a cache entry keeps them (a video by its key, #74)."""
-    from .video import keyed
-
-    return keyed(affordances)
-
-
 def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
     sound = clip.candidate.sound
     return {
         "content_key": key,
         "backend": plan.backend,
         "prompt": plan.prompt,
-        "affordances": _keyed_affordances(plan.affordances),
+        "affordances": video_keyed(plan.affordances),
         **({"provider_params": plan.provider_params} if plan.provider_params else {}),
         "license": sound.license.to_dict(),
         "caption": sound.caption,
@@ -862,6 +856,24 @@ def _priced(config: dict, affordances: dict) -> dict:
     }
 
 
+def _cover_the_video(
+    config: dict, kept: dict, video_s: Optional[float], notes: list
+) -> dict:
+    """``kept`` with ``duration_s`` set to the video's length (in the source's window)
+    when a video-to-audio source takes a duration and none was asked (#74).
+
+    Decided here, at plan time, so the one value is keyed, priced, sent and noted.
+    """
+    supported = config.get("supported_affordances") or ()
+    if video_s is None or "duration_s" not in supported or kept.get("duration_s"):
+        return kept
+    nd = config.get("native_defaults") or {}
+    seconds = min(float(video_s), nd.get("duration_max_s") or float(video_s))
+    seconds = max(seconds, nd.get("duration_min_s") or seconds)
+    notes.append(f"duration_s: {seconds:g} s, to cover the video")
+    return {**kept, "duration_s": seconds}
+
+
 def source_modes(config: dict) -> "list[str]":
     """The generation modes a generate source serves (``config['modes']``, else text-to-audio)."""
     return list(config.get("modes") or ["t2a"])
@@ -876,7 +888,9 @@ def _check_mode(config: dict, affordances: dict) -> None:
     """
     if config.get("kind") not in (None, "generate"):
         return
-    mode = "v2a" if affordances.get("video") is not None else "t2a"
+    from .generate import generation_mode
+
+    mode = generation_mode(affordances)
     modes = source_modes(config)
     if mode not in modes:
         need = (

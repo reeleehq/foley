@@ -328,3 +328,39 @@ def test_no_prompt_skips_the_prompt_match_check(library, clip_file, monkeypatch)
     foley.generate("", backend="fal_mirelo_v2a", adapter=_adapter()[0], library=library,
                    video=str(clip_file), provenance_store={})
     assert called == []  # nothing to match a picture-led clip against
+
+
+def test_the_plan_sets_the_duration_to_cover_the_video_within_the_window(monkeypatch):
+    from foley.agent.policy import Budget
+    from foley.cost import spend_scope
+    from foley.sources._dispatch import plan_generation
+
+    for video_s, sent, price in ((700.0, 600.0, 9.0), (0.5, 1.0, 0.015), (42.0, 42.0, 0.63)):
+        monkeypatch.setattr(video_mod, "video_seconds", lambda video, s=video_s: s)
+        with spend_scope(Budget(max_usd=100)):
+            plan = plan_generation("fal_mirelo_v2a", "", adapter=_adapter()[0],
+                                   video=b"x", reuse_cached=False)
+        assert plan.affordances["duration_s"] == sent  # keyed, priced and sent as one
+        assert plan.estimate_usd == pytest.approx(price)
+        assert any("to cover the video" in n for n in plan.notes)
+
+
+def test_the_default_duration_note_only_when_the_default_was_sent(library, monkeypatch,
+                                                                   clip_file):
+    monkeypatch.setattr(video_mod, "video_seconds", lambda video: 42.0)
+    cand = foley.generate("", backend="fal_mirelo_v2a", adapter=_adapter()[0],
+                          library=library, video=str(clip_file), provenance_store={})
+    assert not any("sent its default" in n for n in cand.notes)
+    assert cand.sound.license.generation_params["duration"] == 42.0
+
+
+def test_mirelo_actual_cost_is_the_length_it_returned():
+    adapter, _, _ = _adapter("fal_mirelo_v2a", seconds=2.0)
+    clip = adapter.generate("", video="https://x/shot.mp4", duration_s=10.0)
+    assert clip.candidate.cost_actual_usd == pytest.approx(0.03)  # 2 s, not 10 s
+
+
+def test_a_source_without_a_kind_is_held_to_text_to_audio():
+    cfg = {"name": "kindless", "supported_affordances": ["prompt", "duration_s"]}
+    with pytest.raises(UnsupportedParameter, match="takes no video"):
+        translate_affordances(cfg, {"video": b"x"}, on_unsupported="note")

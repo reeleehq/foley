@@ -219,7 +219,8 @@ class FalAdapter:
         duration_name = (param_map.get("duration_s") or {}).get("native_name")
         if video is not None:
             args[param_map["video"]["native_name"]] = self._video_url(video)
-            if duration_name and duration_name not in args:  # cover the whole video
+            # The dispatch set duration_s to cover the video; a direct call gets it here.
+            if duration_name and duration_name not in args:
                 video_s = _video_seconds(video)
                 if video_s is not None:
                     lo, hi = nd.get("duration_min_s"), nd.get("duration_max_s")
@@ -260,9 +261,9 @@ class FalAdapter:
             with local_video_file(video) as path:
                 return self._uploader(path, api_key=key)
         except Exception as exc:  # nothing was generated, so nothing was billed
-            raise SourceConfigurationError(
-                f"{self.name}: could not upload the video to fal ({exc!r}); nothing "
-                "was generated"
+            raise SourceConfigurationError(  # the type only: no path or URL in notes
+                f"{self.name}: could not upload the video to fal "
+                f"({type(exc).__name__}); nothing was generated"
             ) from exc
 
     def _recordable(self, args: dict, affordances: dict) -> dict:
@@ -304,9 +305,13 @@ class FalAdapter:
             from ..base import native_adherence
 
             native_adherence(self.config, affordances["prompt_influence"], notes)
+        duration_name = (self.config["param_map"].get("duration_s") or {}).get(
+            "native_name"
+        )
         if (
             affordances.get("duration_s") is None
             and nd.get("duration_default_s") is not None
+            and args.get(duration_name) == nd["duration_default_s"]  # not the video's
         ):
             notes.append(
                 f"no duration asked: {self.name} sent its default "
@@ -367,7 +372,9 @@ def _actual_cost(config: dict, args: dict, audio: bytes) -> Optional[float]:
     of the audio it returned (``None`` when that cannot be read)."""
     from ...cost import actual_call_cost
 
-    if "v2a" in (config.get("modes") or ()):  # billed for the sound it made (#74)
+    from .._dispatch import source_modes
+
+    if "v2a" in source_modes(config):  # billed for the sound it made (#74)
         seconds = _audio_seconds(audio)
         return None if seconds is None else actual_call_cost(config, duration_s=seconds)
     name = (config["param_map"].get("duration_s") or {}).get("native_name")
