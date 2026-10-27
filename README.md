@@ -89,6 +89,20 @@ result.notes  # how placements were timed, e.g. estimates when foley[align] is a
 The selection tools publish as an **MCP server** (via `py2mcp`) so the same capabilities
 drive the agent, a CLI, and external hosts.
 
+## Music libraries
+
+`foley.sources.music_library` acquires the free tracks a production credits (Kevin MacLeod's incompetech is built in; the paid Artlist and Epidemic Sound give wishlist rows, never downloads). Each title is fetched politely through foley's transport (paced per host, `429` / `Retry-After` honoured), from the library's server and then the Internet Archive's raw copy, checked to be audio, and recorded with a `LicenseRecord` read from the library's licence URL. Needs `foley[music-library]` and `ffprobe`.
+
+```python
+from foley.sources.music_library import acquire, attribution_text, kept_digests, titles_by_library, tracks_table
+
+titles = titles_by_library(video_description)["incompetech"]  # or a list / {title: {metadata}}
+rows = acquire("incompetech", titles, out="audio/macleod")      # one row per title: acquired / failed
+table = tracks_table(rows)                                      # CSV; row.row() is the JSON-safe dict
+print(attribution_text(rows))                                   # the blocks to paste under the video
+rows = acquire("incompetech", titles, out="audio/macleod", kept=kept_digests(table))  # a rerun fetches only what is missing
+```
+
 ## For AI agents
 
 foley is **AI-first**: most callers are agents (directly, and via downstream packages like

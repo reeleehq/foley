@@ -11,6 +11,10 @@ predictably instead of hammering the API or crashing a run:
 * **circuit-break** — after N consecutive failures the breaker opens and fast-fails
   with :class:`SourceUnavailable` for a cool-down window (no thundering herd).
 
+:func:`per_host` gives each host its own wrapped transport (its own pace and breaker),
+for a caller that fetches from several websites through one transport (a music
+library and its Wayback mirror).
+
 All timing goes through injected ``clock`` / ``sleep`` callables (default
 ``time.monotonic`` / ``time.sleep``) so the whole thing is deterministically testable
 with a fake clock and a no-op sleep — no real network, no real waiting. Stdlib-only.
@@ -21,6 +25,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from typing import Callable, Optional
+from urllib.parse import urlsplit
 
 
 #: Seconds in a rolling rate-limit day (the ``per_day`` window length).
@@ -225,6 +230,40 @@ def resilient(
 
     wrapped.reset = reset
     return wrapped
+
+
+def per_host(make: Callable[[], Callable]) -> Callable:
+    """A transport that sends each request through its host's own transport.
+
+    ``make()`` builds one transport per host, on that host's first request: a
+    :func:`resilient` one gives each host its own throttle and circuit breaker, so a
+    pace is kept per website and a site that fails does not trip the breaker of
+    its mirror. The returned transport has a ``.reset()`` that resets every host's.
+
+    >>> made = []
+    >>> def make():
+    ...     made.append(1)
+    ...     return lambda method, url, **kw: (method, url)
+    >>> t = per_host(make)
+    >>> t("GET", "https://a.org/1"), t("GET", "https://a.org/2")[1]
+    (('GET', 'https://a.org/1'), 'https://a.org/2')
+    >>> _ = t("GET", "https://b.org/1"); len(made)
+    2
+    """
+    by_host: dict = {}
+
+    def transport(method, url, *, params=None, headers=None, json=None):
+        host = urlsplit(url).netloc.lower()
+        if host not in by_host:
+            by_host[host] = make()
+        return by_host[host](method, url, params=params, headers=headers, json=json)
+
+    def reset():
+        for t in by_host.values():
+            getattr(t, "reset", lambda: None)()
+
+    transport.reset = reset
+    return transport
 
 
 def make_resilient_transport_from_config(config: dict, *, base=None, **inject):
