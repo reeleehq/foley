@@ -50,7 +50,7 @@ foley/
     audio.py           # I/O + DSP primitives (soundfile/soxr/librosa; loudness via mixing.loudness)
     sources/           # source adapters (config.py + adapter.py each) — see foley-dev-add-source
     index/             # embedders, taggers, captioners, library (dol + LanceDB), search, taxonomy
-    agent/             # decompose, verify, policy(decide), tools, mcp
+    agent/             # decompose, verify, policy(decide), tools, verbs (the JSON-safe verb table: MCP + CLI), mcp (the server)
     weave/             # align, anchor, mix, master, timeline, render
     eval/              # qc (Tier-0), retrieval metrics (Tier-1), fit (Tier-2)
     provenance/        # LicenseRecord wiring, credits, watermark/disclosure
