@@ -25,11 +25,11 @@ SOURCE_CONFIG = {
     "optional_dependencies": ["requests"],  # foley[wikimedia-commons]; imported lazily
     "param_map": {
         "query": {"native_name": "gsrsearch", "required": True},
-        "k": {"native_name": "gsrlimit", "max": 50},
+        "k": {"native_name": "gsrlimit", "max": 50, "out_of_range": "clamp"},
         "license": {"native_name": "license", "adapter_handled": True},
         # MediaWiki pages by offset: (page - 1) * the clamped gsrlimit; search serves
         # offset + limit up to about 10,000.
-        "page": {"native_name": "gsroffset", "as": "offset", "max_results": 10000},
+        "page": {"native_name": "gsroffset", "as": "offset", "result_window": 10000},
     },
     "supported_affordances": ["query", "k", "license", "page"],
     "on_unsupported_param": "warn",

@@ -35,7 +35,7 @@ SOURCE_CONFIG = {
     # unified foley QUERY_AFFORDANCES -> Freesound native param names
     "param_map": {
         "query": {"native_name": "query", "required": True},
-        "k": {"native_name": "page_size", "max": 150},  # the API's cap
+        "k": {"native_name": "page_size", "max": 150, "out_of_range": "clamp"},
         "duration_range": {
             "native_name": "filter",
             "to_native": "duration:[{lo} TO {hi}]",

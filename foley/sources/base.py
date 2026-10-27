@@ -318,14 +318,37 @@ def page_size(config: dict, k: int) -> int:
     return int(k) if cap is None else min(int(k), int(cap))
 
 
+def check_page_depth(config: dict, page: int, per_page: int) -> None:
+    """Raise ``ValueError`` for a ``page`` that reaches past the source's result window.
+
+    ``param_map['page']['result_window']`` is the deepest result one query serves
+    (offset + limit): a page that ends past it can only come back short, empty or as
+    an error (#168). No window declared: every page is accepted.
+
+    >>> cfg = {"param_map": {"page": {"native_name": "page", "result_window": 240}}}
+    >>> check_page_depth(cfg, 12, 20)
+    >>> check_page_depth(cfg, 13, 20)
+    Traceback (most recent call last):
+    ...
+    ValueError: page 13 (20 a page) asks for results 241-260, past the 240 results this source serves per query
+    """
+    window = config["param_map"]["page"].get("result_window")
+    end = int(page) * int(per_page)
+    if window is not None and end > int(window):
+        first = (int(page) - 1) * int(per_page) + 1
+        raise ValueError(
+            f"page {page} ({per_page} a page) asks for results {first}-{end}, past "
+            f"the {window} results this source serves per query"
+        )
+
+
 def paging_params(config: dict, page: int, per_page: int) -> dict:
     """The native params of results ``page`` (1-based) at ``per_page`` results a page.
 
     ``param_map['page']`` names the native field; ``"as": "offset"`` sends the index
     of the page's first result instead of the page number (MediaWiki). Page 1 sends
-    nothing, so a first page is the request it always was. ``"max_results"`` is the
-    deepest result the source serves for one query: a page that starts at or past it
-    can only come back empty (or as an error), so it raises ``ValueError`` (#168).
+    nothing, so a first page is the request it always was. A page past the source's
+    result window raises (see :func:`check_page_depth`).
 
     >>> paging_params({"param_map": {"page": {"native_name": "page"}}}, 3, 20)
     {'page': 3}
@@ -333,23 +356,34 @@ def paging_params(config: dict, page: int, per_page: int) -> dict:
     {'off': 40}
     >>> paging_params({"param_map": {"page": {"native_name": "page"}}}, 1, 20)
     {}
-    >>> paging_params({"param_map": {"page": {"native_name": "page", "max_results": 240}}}, 13, 20)
-    Traceback (most recent call last):
-    ...
-    ValueError: page 13 (20 a page) starts at result 241, past the 240 results this source serves per query
     """
-    spec = config["param_map"]["page"]
-    start = (int(page) - 1) * int(per_page)
-    cap = spec.get("max_results")
-    if cap is not None and start >= int(cap):
-        raise ValueError(
-            f"page {page} ({per_page} a page) starts at result {start + 1}, past the "
-            f"{cap} results this source serves per query"
-        )
+    check_page_depth(config, page, per_page)
     if int(page) == 1:
         return {}
-    value = start if spec.get("as") == "offset" else int(page)
+    spec = config["param_map"]["page"]
+    value = (int(page) - 1) * int(per_page) if spec.get("as") == "offset" else int(page)
     return {spec["native_name"]: value}
+
+
+def provider_params_policy(config: dict) -> Optional[dict]:
+    """The source's ``provider_params`` policy, with its paging fields reserved when capped.
+
+    When ``param_map['page']`` declares a ``result_window``, the native names of ``k``
+    and ``page`` are reserved too: a provider param that set them would page past the
+    window unchecked, or make the check refuse a page that is in fact fine (#168).
+
+    >>> cfg = {"provider_params": {"reserved": ["q"]}, "param_map": {
+    ...     "k": {"native_name": "page_size"},
+    ...     "page": {"native_name": "page", "result_window": 240}}}
+    >>> provider_params_policy(cfg)["reserved"]
+    ['q', 'page_size', 'page']
+    """
+    policy = config.get("provider_params")
+    param_map = config.get("param_map") or {}
+    if policy is None or "result_window" not in (param_map.get("page") or {}):
+        return policy
+    paging = [param_map[n]["native_name"] for n in ("k", "page") if n in param_map]
+    return {**policy, "reserved": [*(policy.get("reserved") or ()), *paging]}
 
 
 def as_names(names) -> list:

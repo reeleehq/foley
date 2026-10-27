@@ -23,7 +23,7 @@ SOURCE_CONFIG = {
     "optional_dependencies": ["requests"],  # foley[internet-archive]; imported lazily
     "param_map": {
         "query": {"native_name": "q", "required": True},
-        "k": {"native_name": "rows", "max": 50},
+        "k": {"native_name": "rows", "max": 50, "out_of_range": "clamp"},
         "license": {"native_name": "license", "adapter_handled": True},
         "page": {"native_name": "page"},
         # Archive collections, quoted and ORed into the query. An identifier starts

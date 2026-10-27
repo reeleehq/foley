@@ -81,6 +81,11 @@ def _add_from(
         An :class:`~foley.index.ingest.IngestReport` — inspect ``.ingested`` for the
         stored records (each ``storage_mode == by_reference`` for Freesound) and
         ``.summary()`` for counts, exactly like :func:`foley.ingest`.
+
+    Raises:
+        ValueError: A search argument the source refuses before any call, e.g. a
+            ``page`` past its result window (Openverse serves ~240 results a query).
+        SourceConfigurationError: A missing key or optional dependency.
     """
     from ..bootstrap import (
         MetadataCaptioner,

@@ -708,17 +708,18 @@ def test_openverse_freesound_rows_stay_by_reference_whatever_the_case():
 
 def test_openverse_refuses_a_page_past_its_result_cap():
     ov, http = _openverse()
-    with pytest.raises(ValueError, match="241, past the 240"):
+    with pytest.raises(ValueError, match="241-260, past the 240"):
         ov.search("door", k=20, page=13)  # results 241..260 of a 240-deep query
+    with pytest.raises(ValueError, match="239-245"):
+        ov.search("door", k=7, page=35)  # straddles the window: offset + limit > 240
     assert http.calls == []
-    ov, http = _openverse()
-    ov.search("door", k=7, page=35)  # starts at 239: the last, partial page is asked
-    assert http.calls[0]["params"]["page"] == 35
+    ov.search("door", k=20, page=12)  # results 221..240: the last full page
+    assert http.calls[0]["params"]["page"] == 12
 
 
 def test_the_cap_counts_the_clamped_page_size():
     wc, http = _commons()
-    wc.search("door", k=99, page=200)  # clamped to 50 a page: starts at 9,951
+    wc.search("door", k=99, page=200)  # clamped to 50 a page: 9,951..10,000
     assert http.calls[0]["params"]["gsroffset"] == 9950
     with pytest.raises(ValueError, match="past the 10000"):
         _commons()[0].search("door", k=99, page=201)
@@ -735,3 +736,19 @@ def test_add_from_raises_a_page_past_the_cap_instead_of_reporting_it(library):
     report = add_from("openverse", query="door", limit=50, page=12, library=library,
                       adapter=_openverse()[0])
     assert report.exception is None
+
+
+def test_a_capped_source_reserves_its_paging_fields_from_provider_params(library):
+    from foley.sources import add_from
+
+    for native in ({"page": 50}, {"page_size": 5}):
+        ad, http = _openverse()
+        with pytest.raises(ValueError, match="reserved"):
+            add_from("openverse", query="door", library=library, adapter=ad,
+                     provider_params=native)
+        with pytest.raises(ValueError, match="reserved"):
+            ad.search("door", provider_params=native)
+        assert http.calls == []
+    wc, http = _commons()
+    with pytest.raises(ValueError, match="reserved"):
+        wc.search("door", provider_params={"gsroffset": 20000})

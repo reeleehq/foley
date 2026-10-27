@@ -31,10 +31,10 @@ SOURCE_CONFIG = {
     "optional_dependencies": ["requests"],  # foley[openverse]; imported lazily
     "param_map": {
         "query": {"native_name": "q", "required": True},
-        "k": {"native_name": "page_size", "max": 20},  # anonymous
+        "k": {"native_name": "page_size", "max": 20, "out_of_range": "clamp"},  # anon
         "license": {"native_name": "license"},
         # Anonymous search serves about 240 results a query (report 14 §3.2).
-        "page": {"native_name": "page", "max_results": 240},
+        "page": {"native_name": "page", "result_window": 240},
         "include_explicit": {"native_name": "mature"},
         "sources": {"native_name": "source"},  # Openverse's providers (comma list)
         # Media kind: music is category=music; sfx sends no category, since Freesound

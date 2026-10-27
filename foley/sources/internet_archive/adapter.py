@@ -25,6 +25,7 @@ from ..base import (
     merge_provider_params,
     page_size,
     paging_params,
+    provider_params_policy,
 )
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -116,7 +117,7 @@ class InternetArchiveAdapter:
         }
         params.update(paging_params(self.config, page, params["rows"]))
         params = merge_provider_params(
-            params, provider_params, policy=self.config.get("provider_params")
+            params, provider_params, policy=provider_params_policy(self.config)
         )
         docs = (
             self.invoke_native(api["search_url"], **params).get("response") or {}

@@ -25,6 +25,7 @@ from ..base import (
     merge_provider_params,
     page_size,
     paging_params,
+    provider_params_policy,
 )
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -126,7 +127,7 @@ class OpenverseAdapter:
         if category:
             params[pm["kind"]["native_name"]] = category
         params = merge_provider_params(
-            params, provider_params, policy=self.config.get("provider_params")
+            params, provider_params, policy=provider_params_policy(self.config)
         )
         out = []
         for row in self.invoke_native(api["search_endpoint"]["path"], **params).get(
