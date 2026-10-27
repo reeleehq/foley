@@ -31,6 +31,7 @@ foley.sources.base
       license_from_clip_meta
       api_license
       generated_license
+      draw_seed
       register_corpus
       ring_of
       corpora_in_rings

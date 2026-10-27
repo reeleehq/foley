@@ -26,27 +26,43 @@ Load-bearing details verified against the diffusers docs + HF model card:
 
 `torch` / `diffusers` are imported lazily inside the methods (the
 `foley[stable-audio]` extra), so `import foley` and source discovery stay
-dol-only. The local-model DI seam is `pipeline=` (the analog of the hosted
-adapters’ `http=`): inject a fake pipeline and no ML stack loads at all — the
-whole adapter is testable with no torch. The adapter performs NO storage/library
-access; the façade converges it on the shared ingest pipeline.
+dol-only. The local-model DI seams are `pipeline=` (the analog of the hosted
+adapters’ `http=`) and `make_generator=` (the seeded `torch.Generator`): inject
+fakes for both and no ML stack loads at all — the whole adapter is testable with no
+torch. The adapter performs NO storage/library access; the façade converges it on
+the shared ingest pipeline.
 
 ### Module Attributes
 
-| [`Adapter`](#foley.sources.stable_audio.adapter.Adapter)   | Registry convention (arioso): the loader imports `adapter.Adapter`.   |
-|------------------------------------------------------------|-----------------------------------------------------------------------|
+| [`GeneratorFactory`](#foley.sources.stable_audio.adapter.GeneratorFactory)   | the seeded RNG the pipeline draws from.                             |
+|---------------------------------------------------------------------|---------------------------------------------------------------------|
+| [`Adapter`](#foley.sources.stable_audio.adapter.Adapter)            | Registry convention (arioso): the loader imports `adapter.Adapter`. |
+
+### Functions
+
+| [`torch_generator`](#foley.sources.stable_audio.adapter.torch_generator)(device, seed)   | A `torch.Generator` on `device` seeded with `seed` (the default factory).   |
+|----------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
 
 ### Classes
 
-| [`Adapter`](#foley.sources.stable_audio.adapter.Adapter)                                | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                                   |
-|-----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`StableAudioAdapter`](#foley.sources.stable_audio.adapter.StableAudioAdapter)([config, pipeline]) | Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+| [`Adapter`](#foley.sources.stable_audio.adapter.Adapter)                                     | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                                   |
+|----------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`StableAudioAdapter`](#foley.sources.stable_audio.adapter.StableAudioAdapter)([config, pipeline, ...]) | Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
 
 ### foley.sources.stable_audio.adapter.Adapter
 
 Registry convention (arioso): the loader imports `adapter.Adapter`.
 
-### *class* foley.sources.stable_audio.adapter.StableAudioAdapter(config=None, , pipeline=None)
+### foley.sources.stable_audio.adapter.GeneratorFactory
+
+the seeded RNG the pipeline draws from.
+
+* **Type:**
+  `make_generator(device, seed) -> generator`
+
+alias of `Callable`[[[`Any`](https://docs.python.org/3/library/typing.html#typing.Any), [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
+
+### *class* foley.sources.stable_audio.adapter.StableAudioAdapter(config=None, , pipeline=None, make_generator=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -59,6 +75,9 @@ Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](foley.source
     a test injects a fake callable exposing `.vae.sampling_rate` +
     `.device`; production omits it and the real
     `diffusers.StableAudioPipeline` lazy-loads on first generation).
+  * **make_generator** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Any`](https://docs.python.org/3/library/typing.html#typing.Any), [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]) – `make_generator(device, seed)`, the seeded generator handed
+    to the pipeline (default [`torch_generator()`](#foley.sources.stable_audio.adapter.torch_generator)); a test with a fake
+    pipeline passes a fake one, so no torch is needed.
 
 #### generate(prompt, , duration_s=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
@@ -76,7 +95,8 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
     ≤ 1).
   * **steps** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Diffusion steps (native `num_inference_steps`); default 200.
   * **seed** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Reproducibility seed → a per-device `torch.Generator`; recorded
-    in provenance. `None` → non-deterministic (no torch import).
+    in provenance. `None` draws one ([`draw_seed()`](foley.sources.base.html.md#foley.sources.base.draw_seed))
+    and records it, so the clip is reproducible all the same (#163).
   * **loop** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – No native param (a future WEAVE crossfade) — warn-and-drop.
   * **output_format** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – No native param (the audio-write layer) — warn-and-drop;
     the clip is archived as FLAC by ingest regardless.
@@ -98,6 +118,10 @@ Run the pipeline with native kwargs; return `(encoded_bytes, sample_rate)`.
 The public entry below foley’s translation (#61): `native` goes to the
 `StableAudioPipeline` call as is (`guidance_scale`, `audio_end_in_s`, …).
 No licence record is built and no dispatch-layer check runs (cost, egress): a
-caller of this method owns those. Builds a per-device `torch.Generator` only
-when `seed` is set (so a `seed=None` generation never imports torch — the
-fake-pipeline test path).
+caller of this method owns those. It also owns the seed: unlike
+[`generate()`](#foley.sources.stable_audio.adapter.StableAudioAdapter.generate), which draws one when none is given, `seed=None` here sends
+no generator, so the pipeline falls back on its own randomness.
+
+### foley.sources.stable_audio.adapter.torch_generator(device, seed)
+
+A `torch.Generator` on `device` seeded with `seed` (the default factory).

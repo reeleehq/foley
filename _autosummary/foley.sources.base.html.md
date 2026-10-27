@@ -59,6 +59,7 @@ so the derived permission flags stay single-sourced.
 | [`license_from_clip_meta`](#foley.sources.base.license_from_clip_meta)(source, spec)              | Build a clip's rights record from [`per_clip_license_meta()`](#foley.sources.base.per_clip_license_meta) fields (fail-closed).                                                                        |
 | [`api_license`](#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])   | Build an API-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
 | [`generated_license`](#foley.sources.base.generated_license)(\*, source, license_id, ...)    | Build an AI-generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.                                                      |
+| [`draw_seed`](#foley.sources.base.draw_seed)()                                       | A random seed in `0..2**31-1`, for a seed-capable backend asked for none.                                                                                                                               |
 | [`register_corpus`](#foley.sources.base.register_corpus)(adapter)                          | Register `adapter` in [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                                                                      |
 | [`ring_of`](#foley.sources.base.ring_of)(name)                                     | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                                                                                    |
 | [`corpora_in_rings`](#foley.sources.base.corpora_in_rings)(rings)                           | Registered adapters whose ring is in `rings` (sorted by name).                                                                                                                                          |
@@ -502,6 +503,22 @@ Registered adapters whose ring is in `rings` (sorted by name).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`CorpusAdapter`](#foley.sources.base.CorpusAdapter)]
+
+### foley.sources.base.draw_seed()
+
+A random seed in `0..2**31-1`, for a seed-capable backend asked for none.
+
+Drawn and recorded by the adapter, so the clip stays reproducible
+(`LicenseRecord.generation_reproducible`) rather than left to the backend’s
+own randomness (#163).
+
+```pycon
+>>> 0 <= draw_seed() < 2**31
+True
+```
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 ### foley.sources.base.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
 

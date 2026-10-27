@@ -8,7 +8,14 @@ foley.sources.stable\_audio.adapter
 
    .. autosummary::
    
+      GeneratorFactory
       Adapter
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      torch_generator
    
    .. rubric:: Classes
 

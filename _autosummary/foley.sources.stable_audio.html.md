@@ -10,9 +10,9 @@ at `import foley` or during discovery — via the module `__getattr__` below.
 
 ### Classes
 
-| `Adapter`                                |                                                                                                                                                       |
-|------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `StableAudioAdapter`([config, pipeline]) | Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+| `Adapter`                                     |                                                                                                                                                       |
+|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `StableAudioAdapter`([config, pipeline, ...]) | Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
 
 ### Modules
 

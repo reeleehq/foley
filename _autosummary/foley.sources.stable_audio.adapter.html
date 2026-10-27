@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=db840bda"></script>
+    <script src="../_static/documentation_options.js?v=9cd8e891"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.89" />
+  <meta name="docsearch:version" content="0.0.91" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -518,15 +518,28 @@ adapter never fabricates a pipeline kwarg.</p></li>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">torch</span></code> / <code class="docutils literal notranslate"><span class="pre">diffusers</span></code> are imported lazily inside the methods (the
 <code class="docutils literal notranslate"><span class="pre">foley[stable-audio]</span></code> extra), so <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">foley</span></code> and source discovery stay
-dol-only. The local-model DI seam is <code class="docutils literal notranslate"><span class="pre">pipeline=</span></code> (the analog of the hosted
-adapters’ <code class="docutils literal notranslate"><span class="pre">http=</span></code>): inject a fake pipeline and no ML stack loads at all — the
-whole adapter is testable with no torch. The adapter performs NO storage/library
-access; the façade converges it on the shared ingest pipeline.</p>
+dol-only. The local-model DI seams are <code class="docutils literal notranslate"><span class="pre">pipeline=</span></code> (the analog of the hosted
+adapters’ <code class="docutils literal notranslate"><span class="pre">http=</span></code>) and <code class="docutils literal notranslate"><span class="pre">make_generator=</span></code> (the seeded <code class="docutils literal notranslate"><span class="pre">torch.Generator</span></code>): inject
+fakes for both and no ML stack loads at all — the whole adapter is testable with no
+torch. The adapter performs NO storage/library access; the façade converges it on
+the shared ingest pipeline.</p>
 <p class="rubric">Module Attributes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.stable_audio.adapter.Adapter" title="foley.sources.stable_audio.adapter.Adapter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Adapter</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.stable_audio.adapter.GeneratorFactory" title="foley.sources.stable_audio.adapter.GeneratorFactory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GeneratorFactory</span></code></a></p></td>
+<td><p>the seeded RNG the pipeline draws from.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.stable_audio.adapter.Adapter" title="foley.sources.stable_audio.adapter.Adapter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Adapter</span></code></a></p></td>
 <td><p>Registry convention (arioso): the loader imports <code class="docutils literal notranslate"><span class="pre">adapter.Adapter</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.stable_audio.adapter.torch_generator" title="foley.sources.stable_audio.adapter.torch_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">torch_generator</span></code></a>(device, seed)</p></td>
+<td><p>A <code class="docutils literal notranslate"><span class="pre">torch.Generator</span></code> on <code class="docutils literal notranslate"><span class="pre">device</span></code> seeded with <code class="docutils literal notranslate"><span class="pre">seed</span></code> (the default factory).</p></td>
 </tr>
 </tbody>
 </table>
@@ -537,7 +550,7 @@ access; the façade converges it on the shared ingest pipeline.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.stable_audio.adapter.Adapter" title="foley.sources.stable_audio.adapter.Adapter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Adapter</span></code></a></p></td>
 <td><p>Registry convention (arioso): the loader imports <code class="docutils literal notranslate"><span class="pre">adapter.Adapter</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.stable_audio.adapter.StableAudioAdapter" title="foley.sources.stable_audio.adapter.StableAudioAdapter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StableAudioAdapter</span></code></a>([config, pipeline])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.stable_audio.adapter.StableAudioAdapter" title="foley.sources.stable_audio.adapter.StableAudioAdapter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">StableAudioAdapter</span></code></a>([config, pipeline, ...])</p></td>
 <td><p>Local Stable Audio Open 1.0 generate adapter (a <a class="reference internal" href="foley.sources.base.html#foley.sources.base.GenerateAdapter" title="foley.sources.base.GenerateAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenerateAdapter</span></code></a>).</p></td>
 </tr>
 </tbody>
@@ -549,9 +562,21 @@ access; the façade converges it on the shared ingest pipeline.</p>
 <dd><p>Registry convention (arioso): the loader imports <code class="docutils literal notranslate"><span class="pre">adapter.Adapter</span></code>.</p>
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.sources.stable_audio.adapter.GeneratorFactory">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.stable_audio.adapter.</span></span><span class="sig-name descname"><span class="pre">GeneratorFactory</span></span><a class="headerlink" href="#foley.sources.stable_audio.adapter.GeneratorFactory" title="Link to this definition">#</a></dt>
+<dd><p>the seeded RNG the pipeline draws from.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">make_generator(device,</span> <span class="pre">seed)</span> <span class="pre">-&gt;</span> <span class="pre">generator</span></code></p>
+</dd>
+</dl>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code></a>]</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.sources.stable_audio.adapter.StableAudioAdapter">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.stable_audio.adapter.</span></span><span class="sig-name descname"><span class="pre">StableAudioAdapter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipeline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/stable_audio/adapter.html#StableAudioAdapter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.stable_audio.adapter.StableAudioAdapter" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.stable_audio.adapter.</span></span><span class="sig-name descname"><span class="pre">StableAudioAdapter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipeline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_generator</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/stable_audio/adapter.html#StableAudioAdapter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.stable_audio.adapter.StableAudioAdapter" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Local Stable Audio Open 1.0 generate adapter (a <a class="reference internal" href="foley.sources.base.html#foley.sources.base.GenerateAdapter" title="foley.sources.base.GenerateAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenerateAdapter</span></code></a>).</p>
 <dl class="field-list simple">
@@ -563,6 +588,9 @@ by the registry’s lazy loader (the arioso <code class="docutils literal notran
 a test injects a fake callable exposing <code class="docutils literal notranslate"><span class="pre">.vae.sampling_rate</span></code> +
 <code class="docutils literal notranslate"><span class="pre">.device</span></code>; production omits it and the real
 <code class="docutils literal notranslate"><span class="pre">diffusers.StableAudioPipeline</span></code> lazy-loads on first generation).</p></li>
+<li><p><strong>make_generator</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]]</span>) – <code class="docutils literal notranslate"><span class="pre">make_generator(device,</span> <span class="pre">seed)</span></code>, the seeded generator handed
+to the pipeline (default <a class="reference internal" href="#foley.sources.stable_audio.adapter.torch_generator" title="foley.sources.stable_audio.adapter.torch_generator"><code class="xref py py-func docutils literal notranslate"><span class="pre">torch_generator()</span></code></a>); a test with a fake
+pipeline passes a fake one, so no torch is needed.</p></li>
 </ul>
 </dd>
 </dl>
@@ -584,7 +612,8 @@ checkpoint ignores it with a note.</p></li>
 ≤ 1).</p></li>
 <li><p><strong>steps</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</span>) – Diffusion steps (native <code class="docutils literal notranslate"><span class="pre">num_inference_steps</span></code>); default 200.</p></li>
 <li><p><strong>seed</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</span>) – Reproducibility seed → a per-device <code class="docutils literal notranslate"><span class="pre">torch.Generator</span></code>; recorded
-in provenance. <code class="docutils literal notranslate"><span class="pre">None</span></code> → non-deterministic (no torch import).</p></li>
+in provenance. <code class="docutils literal notranslate"><span class="pre">None</span></code> draws one (<a class="reference internal" href="foley.sources.base.html#foley.sources.base.draw_seed" title="foley.sources.base.draw_seed"><code class="xref py py-func docutils literal notranslate"><span class="pre">draw_seed()</span></code></a>)
+and records it, so the clip is reproducible all the same (#163).</p></li>
 <li><p><strong>loop</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – No native param (a future WEAVE crossfade) — warn-and-drop.</p></li>
 <li><p><strong>output_format</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – No native param (the audio-write layer) — warn-and-drop;
 the clip is archived as FLAC by ingest regardless.</p></li>
@@ -612,13 +641,21 @@ in <code class="docutils literal notranslate"><span class="pre">generation_param
 <p>The public entry below foley’s translation (#61): <code class="docutils literal notranslate"><span class="pre">native</span></code> goes to the
 <code class="docutils literal notranslate"><span class="pre">StableAudioPipeline</span></code> call as is (<code class="docutils literal notranslate"><span class="pre">guidance_scale</span></code>, <code class="docutils literal notranslate"><span class="pre">audio_end_in_s</span></code>, …).
 No licence record is built and no dispatch-layer check runs (cost, egress): a
-caller of this method owns those. Builds a per-device <code class="docutils literal notranslate"><span class="pre">torch.Generator</span></code> only
-when <code class="docutils literal notranslate"><span class="pre">seed</span></code> is set (so a <code class="docutils literal notranslate"><span class="pre">seed=None</span></code> generation never imports torch — the
-fake-pipeline test path).</p>
+caller of this method owns those. It also owns the seed: unlike
+<a class="reference internal" href="#foley.sources.stable_audio.adapter.StableAudioAdapter.generate" title="foley.sources.stable_audio.adapter.StableAudioAdapter.generate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate()</span></code></a>, which draws one when none is given, <code class="docutils literal notranslate"><span class="pre">seed=None</span></code> here sends
+no generator, so the pipeline falls back on its own randomness.</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.stable_audio.adapter.torch_generator">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.stable_audio.adapter.</span></span><span class="sig-name descname"><span class="pre">torch_generator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/stable_audio/adapter.html#torch_generator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.stable_audio.adapter.torch_generator" title="Link to this definition">#</a></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">torch.Generator</span></code> on <code class="docutils literal notranslate"><span class="pre">device</span></code> seeded with <code class="docutils literal notranslate"><span class="pre">seed</span></code> (the default factory).</p>
+<dl class="field-list simple">
+</dl>
 </dd></dl>
 
 </section>
@@ -671,11 +708,13 @@ fake-pipeline test path).</p>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio.adapter.Adapter"><code class="docutils literal notranslate"><span class="pre">Adapter</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio.adapter.GeneratorFactory"><code class="docutils literal notranslate"><span class="pre">GeneratorFactory</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio.adapter.StableAudioAdapter"><code class="docutils literal notranslate"><span class="pre">StableAudioAdapter</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio.adapter.StableAudioAdapter.generate"><code class="docutils literal notranslate"><span class="pre">StableAudioAdapter.generate()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio.adapter.StableAudioAdapter.invoke_native"><code class="docutils literal notranslate"><span class="pre">StableAudioAdapter.invoke_native()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.stable_audio.adapter.torch_generator"><code class="docutils literal notranslate"><span class="pre">torch_generator()</span></code></a></li>
 </ul>
   </nav></div>
 

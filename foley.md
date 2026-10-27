@@ -1,4 +1,4 @@
-> built 2026-10-27 16:06 UTC from b33c32f (main) · foley 0.0.89. Details: build_info.json
+> built 2026-10-27 16:34 UTC from 82b3c42 (main) · foley 0.0.91. Details: build_info.json
 
 # index.html.md
 
@@ -14302,7 +14302,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'netflix sound', 'ta-dum', 'netflix intro', 'ta dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'ta-dum', 'tudum', 'netflix sound', 'netflix intro', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel jingle', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -15677,6 +15677,7 @@ so the derived permission flags stay single-sourced.
 | [`license_from_clip_meta`](_autosummary/foley.sources.base.html.md#foley.sources.base.license_from_clip_meta)(source, spec)              | Build a clip's rights record from [`per_clip_license_meta()`](_autosummary/foley.sources.base.html.md#foley.sources.base.per_clip_license_meta) fields (fail-closed).                                                                        |
 | [`api_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])   | Build an API-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
 | [`generated_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.generated_license)(\*, source, license_id, ...)    | Build an AI-generated [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.                                                      |
+| [`draw_seed`](_autosummary/foley.sources.base.html.md#foley.sources.base.draw_seed)()                                       | A random seed in `0..2**31-1`, for a seed-capable backend asked for none.                                                                                                                               |
 | [`register_corpus`](_autosummary/foley.sources.base.html.md#foley.sources.base.register_corpus)(adapter)                          | Register `adapter` in [`CORPUS_REGISTRY`](_autosummary/foley.sources.base.html.md#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                                                                      |
 | [`ring_of`](_autosummary/foley.sources.base.html.md#foley.sources.base.ring_of)(name)                                     | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                                                                                    |
 | [`corpora_in_rings`](_autosummary/foley.sources.base.html.md#foley.sources.base.corpora_in_rings)(rings)                           | Registered adapters whose ring is in `rings` (sorted by name).                                                                                                                                          |
@@ -16120,6 +16121,22 @@ Registered adapters whose ring is in `rings` (sorted by name).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`CorpusAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.CorpusAdapter)]
+
+### foley.sources.base.draw_seed()
+
+A random seed in `0..2**31-1`, for a seed-capable backend asked for none.
+
+Drawn and recorded by the adapter, so the clip stays reproducible
+(`LicenseRecord.generation_reproducible`) rather than left to the backend’s
+own randomness (#163).
+
+```pycon
+>>> 0 <= draw_seed() < 2**31
+True
+```
+
+* **Return type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
 
 ### foley.sources.base.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
 
@@ -18939,27 +18956,43 @@ Load-bearing details verified against the diffusers docs + HF model card:
 
 `torch` / `diffusers` are imported lazily inside the methods (the
 `foley[stable-audio]` extra), so `import foley` and source discovery stay
-dol-only. The local-model DI seam is `pipeline=` (the analog of the hosted
-adapters’ `http=`): inject a fake pipeline and no ML stack loads at all — the
-whole adapter is testable with no torch. The adapter performs NO storage/library
-access; the façade converges it on the shared ingest pipeline.
+dol-only. The local-model DI seams are `pipeline=` (the analog of the hosted
+adapters’ `http=`) and `make_generator=` (the seeded `torch.Generator`): inject
+fakes for both and no ML stack loads at all — the whole adapter is testable with no
+torch. The adapter performs NO storage/library access; the façade converges it on
+the shared ingest pipeline.
 
 ### Module Attributes
 
-| [`Adapter`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.Adapter)   | Registry convention (arioso): the loader imports `adapter.Adapter`.   |
-|------------------------------------------------------------|-----------------------------------------------------------------------|
+| [`GeneratorFactory`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.GeneratorFactory)   | the seeded RNG the pipeline draws from.                             |
+|---------------------------------------------------------------------|---------------------------------------------------------------------|
+| [`Adapter`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.Adapter)            | Registry convention (arioso): the loader imports `adapter.Adapter`. |
+
+### Functions
+
+| [`torch_generator`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.torch_generator)(device, seed)   | A `torch.Generator` on `device` seeded with `seed` (the default factory).   |
+|----------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
 
 ### Classes
 
-| [`Adapter`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.Adapter)                                | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                                   |
-|-----------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`StableAudioAdapter`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.StableAudioAdapter)([config, pipeline]) | Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+| [`Adapter`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.Adapter)                                     | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                                   |
+|----------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`StableAudioAdapter`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.StableAudioAdapter)([config, pipeline, ...]) | Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
 
 ### foley.sources.stable_audio.adapter.Adapter
 
 Registry convention (arioso): the loader imports `adapter.Adapter`.
 
-### *class* foley.sources.stable_audio.adapter.StableAudioAdapter(config=None, , pipeline=None)
+### foley.sources.stable_audio.adapter.GeneratorFactory
+
+the seeded RNG the pipeline draws from.
+
+* **Type:**
+  `make_generator(device, seed) -> generator`
+
+alias of `Callable`[[[`Any`](https://docs.python.org/3/library/typing.html#typing.Any), [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
+
+### *class* foley.sources.stable_audio.adapter.StableAudioAdapter(config=None, , pipeline=None, make_generator=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -18972,6 +19005,9 @@ Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](_autosummary
     a test injects a fake callable exposing `.vae.sampling_rate` +
     `.device`; production omits it and the real
     `diffusers.StableAudioPipeline` lazy-loads on first generation).
+  * **make_generator** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Any`](https://docs.python.org/3/library/typing.html#typing.Any), [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]) – `make_generator(device, seed)`, the seeded generator handed
+    to the pipeline (default [`torch_generator()`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.torch_generator)); a test with a fake
+    pipeline passes a fake one, so no torch is needed.
 
 #### generate(prompt, , duration_s=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
@@ -18989,7 +19025,8 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
     ≤ 1).
   * **steps** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Diffusion steps (native `num_inference_steps`); default 200.
   * **seed** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Reproducibility seed → a per-device `torch.Generator`; recorded
-    in provenance. `None` → non-deterministic (no torch import).
+    in provenance. `None` draws one ([`draw_seed()`](_autosummary/foley.sources.base.html.md#foley.sources.base.draw_seed))
+    and records it, so the clip is reproducible all the same (#163).
   * **loop** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – No native param (a future WEAVE crossfade) — warn-and-drop.
   * **output_format** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – No native param (the audio-write layer) — warn-and-drop;
     the clip is archived as FLAC by ingest regardless.
@@ -19011,9 +19048,13 @@ Run the pipeline with native kwargs; return `(encoded_bytes, sample_rate)`.
 The public entry below foley’s translation (#61): `native` goes to the
 `StableAudioPipeline` call as is (`guidance_scale`, `audio_end_in_s`, …).
 No licence record is built and no dispatch-layer check runs (cost, egress): a
-caller of this method owns those. Builds a per-device `torch.Generator` only
-when `seed` is set (so a `seed=None` generation never imports torch — the
-fake-pipeline test path).
+caller of this method owns those. It also owns the seed: unlike
+[`generate()`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.StableAudioAdapter.generate), which draws one when none is given, `seed=None` here sends
+no generator, so the pipeline falls back on its own randomness.
+
+### foley.sources.stable_audio.adapter.torch_generator(device, seed)
+
+A `torch.Generator` on `device` seeded with `seed` (the default factory).
 
 
 # _autosummary/foley.sources.stable_audio.config.html.md
@@ -19055,9 +19096,9 @@ at `import foley` or during discovery — via the module `__getattr__` below.
 
 ### Classes
 
-| `Adapter`                                |                                                                                                                                                       |
-|------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `StableAudioAdapter`([config, pipeline]) | Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+| `Adapter`                                     |                                                                                                                                                       |
+|-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `StableAudioAdapter`([config, pipeline, ...]) | Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
 
 ### Modules
 
@@ -21453,7 +21494,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 16:06 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/b33c32f292ab0a03a6ab722e1bfa8adf135f9117"><code>b33c32f</code></a> on branch <code>main</code>, for **foley 0.0.89** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 16:34 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/82b3c427a39eed8540affc95848692a861594917"><code>82b3c42</code></a> on branch <code>main</code>, for **foley 0.0.91** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -21462,9 +21503,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/b33c32f292ab0a03a6ab722e1bfa8adf135f9117"><code>b33c32f292ab0a03a6ab722e1bfa8adf135f9117</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/82b3c427a39eed8540affc95848692a861594917"><code>82b3c427a39eed8540affc95848692a861594917</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
-| Tags at this commit | none                                                                                                                                                  |
+| Tags at this commit | <code>0.0.91</code>                                                                                                                                   |
 | Working tree        | clean                                                                                                                                                 |
 | Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
@@ -21473,9 +21514,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40523131967">40523131967</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40534476025">40534476025</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>e263bffd357ed29464537a83ef53c9c171c51d4c</code> (in the history of the built commit) |
+| Event commit | <code>b33c32f292ab0a03a6ab722e1bfa8adf135f9117</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -21500,13 +21541,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.89/">0.0.89</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.91/">0.0.91</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout b33c32f292ab0a03a6ab722e1bfa8adf135f9117
+git checkout 82b3c427a39eed8540affc95848692a861594917
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

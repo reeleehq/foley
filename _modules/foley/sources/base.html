@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=db840bda"></script>
+    <script src="../../../_static/documentation_options.js?v=9cd8e891"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.89" />
+  <meta name="docsearch:version" content="0.0.91" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -755,6 +755,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextvars</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextVar</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
@@ -800,6 +801,7 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"license_from_clip_meta"</span><span class="p">,</span>
     <span class="s2">"api_license"</span><span class="p">,</span>
     <span class="s2">"generated_license"</span><span class="p">,</span>
+    <span class="s2">"draw_seed"</span><span class="p">,</span>
     <span class="s2">"CORPUS_REGISTRY"</span><span class="p">,</span>
     <span class="s2">"register_corpus"</span><span class="p">,</span>
     <span class="s2">"ring_of"</span><span class="p">,</span>
@@ -1882,6 +1884,26 @@ window.runMermaid = runMermaid;</script>
         <span class="n">creator_name</span><span class="o">=</span><span class="n">creator_name</span><span class="p">,</span>
         <span class="n">attribution_text</span><span class="o">=</span><span class="n">attribution_text</span><span class="p">,</span>
     <span class="p">)</span></div>
+
+
+
+<span class="c1">#: One past the largest seed foley draws: a signed 32-bit range every local backend takes.</span>
+<span class="n">_SEED_LIMIT</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">31</span>
+
+
+<div class="viewcode-block" id="draw_seed">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.draw_seed">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">draw_seed</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A random seed in ``0..2**31-1``, for a seed-capable backend asked for none.</span>
+
+<span class="sd">    Drawn and recorded by the adapter, so the clip stays reproducible</span>
+<span class="sd">    (``LicenseRecord.generation_reproducible``) rather than left to the backend's</span>
+<span class="sd">    own randomness (#163).</span>
+
+<span class="sd">    &gt;&gt;&gt; 0 &lt;= draw_seed() &lt; 2**31</span>
+<span class="sd">    True</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">secrets</span><span class="o">.</span><span class="n">randbelow</span><span class="p">(</span><span class="n">_SEED_LIMIT</span><span class="p">)</span></div>
 
 
 
