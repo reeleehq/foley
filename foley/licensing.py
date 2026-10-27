@@ -116,6 +116,14 @@ LICENSE_FLAGS: dict[str, LicenseFlags] = {
         False, True, False, True, True, False, False, None
     ),
     "MIT": LicenseFlags(True, True, True, True, True, True, True, None),
+    # Tencent Hunyuan Community licence (HunyuanVideo-Foley, #74): no grant at all in
+    # the EU, the UK or South Korea (LICENSE_EXCLUDED_TERRITORIES), and foley treats it
+    # as non-commercial; outputs may not train other models.
+    "Tencent-Hunyuan-Community": LicenseFlags(
+        False, True, False, True, True, False, False, None
+    ),
+    # A research-only notice (ThinkSound, #74): nothing may be published or sold.
+    "research-only": LicenseFlags(False, False, False, True, False, False, False, None),
     # The user's own local content (default for `foley.ingest`): full rights and
     # cacheable => stored by-value. The natural contrast to a Freesound-API pull:
     # a Freesound sound keeps its own per-clip CC id (CC0-1.0 / CC-BY-4.0 / …) but
@@ -419,6 +427,13 @@ LICENSE_META: dict[str, LicenseMeta] = {
         "https://fal.ai/legal/terms-of-service",
     ),
     "MIT": LicenseMeta("MIT License", "https://opensource.org/license/mit"),
+    "Tencent-Hunyuan-Community": LicenseMeta(
+        "Tencent Hunyuan Community License (not valid in the EU, the UK or South Korea)",
+        "https://huggingface.co/tencent/HunyuanVideo-Foley/blob/main/LICENSE",
+    ),
+    "research-only": LicenseMeta(
+        "Research use only (no commercial or public use)", None
+    ),
     "user-owned": LicenseMeta("User-owned / original work", None),
     "unknown": UNKNOWN_LICENSE_META,
 }
@@ -566,6 +581,39 @@ def ai_use_permitted(
     return False  # 'none' or an unrecognised scope: fail closed
 
 
+#: The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU".
+EU_MEMBER_STATES: frozenset = frozenset(
+    "AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE"
+    .split()
+)  # fmt: skip
+
+#: ``license_id`` -> the territories where it grants nothing (ISO 3166-1 alpha-2
+#: codes, plus ``"EU"`` for every member state). A row here makes the territory part
+#: of the use: :func:`keep` refuses when it is excluded, and when it is not stated.
+LICENSE_EXCLUDED_TERRITORIES: "dict[str, frozenset]" = {
+    "Tencent-Hunyuan-Community": frozenset({"EU", "GB", "KR"}),
+}
+
+
+def territory_excluded(excluded, territory: Optional[str]) -> bool:
+    """Whether ``territory`` is in ``excluded`` (``"EU"`` covers its member states).
+
+    An unstated territory (``None``) counts as excluded whenever anything is: the gate
+    fails closed.
+
+    >>> territory_excluded({"EU", "GB"}, "fr"), territory_excluded({"EU"}, "US")
+    (True, False)
+    >>> territory_excluded({"KR"}, None), territory_excluded(set(), None)
+    (True, False)
+    """
+    if not excluded:
+        return False
+    if territory is None:
+        return True
+    code = territory.strip().upper()
+    return code in excluded or ("EU" in excluded and code in EU_MEMBER_STATES)
+
+
 def keep(record: LicenseRecord, intended_use: IntendedUse) -> bool:
     """Fail-closed candidate license gate (report 07 §8.2).
 
@@ -603,6 +651,9 @@ def keep(record: LicenseRecord, intended_use: IntendedUse) -> bool:
         record.contains_recognizable_voice or record.potential_trademark
     ):
         return False
+    excluded = LICENSE_EXCLUDED_TERRITORIES.get(record.license_id, ())
+    if territory_excluded(excluded, intended_use.territory):
+        return False  # no grant where it is used, or the territory was not stated
     return True
 
 

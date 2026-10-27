@@ -13,6 +13,9 @@ here, once, for every V2A backend:
   as an unknown cost, needing approval).
 * :func:`local_video_file`: a local file for an uploader (bytes are written to a
   temporary file).
+* :func:`audio_track`: the audio of a backend's muxed video answer (MMAudio,
+  ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via
+  ``ffmpeg`` (:func:`ffmpeg_path`).
 * :func:`keyed`: affordances as they may be recorded (the cache entry, the run
   manifest): the video replaced by its key, so neither its bytes nor a local path
   (nor an upload's capability URL) is ever written down.
@@ -111,6 +114,41 @@ def local_video_file(video: VideoInput) -> Iterator[str]:
             os.unlink(path)
     else:
         yield os.fspath(video)
+
+
+def ffmpeg_path() -> Optional[str]:
+    """An ``ffmpeg`` binary: mixing's resolver (a pip-bundled one too), else ``PATH``."""
+    try:
+        from mixing.util import ffmpeg_exe
+
+        return ffmpeg_exe()
+    except Exception:  # noqa: BLE001 - mixing absent, or it found none
+        return shutil.which("ffmpeg")
+
+
+def audio_track(
+    container: bytes, *, ffmpeg: Optional[str] = None, timeout_s: float = 120.0
+) -> bytes:
+    """The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).
+
+    Raises:
+        RuntimeError: If no ``ffmpeg`` is found, or it cannot read an audio stream.
+    """
+    exe = ffmpeg or ffmpeg_path()
+    if exe is None:
+        raise RuntimeError("no ffmpeg found to take the audio out of the video")
+    with local_video_file(container) as path:
+        proc = subprocess.run(
+            [exe, "-hide_banner", "-nostdin", "-loglevel", "error", "-i", path,
+             "-vn", "-acodec", "pcm_s16le", "-f", "wav", "pipe:1"],
+            capture_output=True, timeout=timeout_s,
+        )  # fmt: skip
+    if proc.returncode != 0 or not proc.stdout:
+        raise RuntimeError(
+            "ffmpeg could not take the audio out of the video: "
+            + proc.stderr.decode(errors="replace").strip()[-300:]
+        )
+    return proc.stdout
 
 
 def video_seconds(

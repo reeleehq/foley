@@ -364,3 +364,90 @@ def test_a_source_without_a_kind_is_held_to_text_to_audio():
     cfg = {"name": "kindless", "supported_affordances": ["prompt", "duration_s"]}
     with pytest.raises(UnsupportedParameter, match="takes no video"):
         translate_affordances(cfg, {"video": b"x"}, on_unsupported="note")
+
+
+# ---------------------------------------------------------------------------
+# #74 part B: the non-commercial fence (MMAudio, ThinkSound, HunyuanVideo-Foley)
+# ---------------------------------------------------------------------------
+
+
+def _record(license_id):
+    from foley.sources.base import generated_license
+
+    return generated_license(source="t", license_id=license_id, generator_model="m",
+                             generation_prompt="p")
+
+
+def test_a_territory_excluded_licence_is_refused_there_and_when_unstated():
+    from foley.licensing import keep
+
+    lic = _record("Tencent-Hunyuan-Community")
+    nc = IntendedUse(commercial=False)
+    assert keep(lic, nc) is False  # no territory stated: fail closed
+    for code in ("FR", "de", "GB", "KR"):  # EU members, the UK, South Korea
+        assert keep(lic, IntendedUse(commercial=False, territory=code)) is False
+    assert keep(lic, IntendedUse(commercial=False, territory="US")) is True
+    assert keep(lic, IntendedUse(territory="US")) is False  # still not commercial
+    assert keep(_record("CC-BY-NC-4.0"), nc) is True  # no exclusion: no territory asked
+
+
+@pytest.mark.parametrize("name", ["fal_mmaudio_v2a", "fal_thinksound", "fal_hunyuan_foley"])
+def test_the_non_commercial_v2a_sources_are_fenced(name):
+    from foley.sources.generate import DEFAULT_V2A_ORDER, generation_rights_refusal
+
+    assert name not in DEFAULT_V2A_ORDER  # named only
+    assert generation_rights_refusal(name, IntendedUse()) is not None  # before paying
+    assert foley.capabilities_of(CONFIGS[name])["modes"] == ["v2a"]
+
+
+def test_research_only_cannot_be_published():
+    from foley.licensing import keep
+
+    assert keep(_record("research-only"), IntendedUse(commercial=False)) is False
+    assert keep(_record("research-only"),
+                IntendedUse(commercial=False, publish=False)) is True
+
+
+def test_a_muxed_video_answer_keeps_only_its_audio_track():
+    seen = []
+    adapter = FalAdapter(CONFIGS["fal_mmaudio_v2a"], api_key="k", runner=Runner(),
+                         uploader=Uploader(), demux=lambda b: seen.append(b) or _wav(1.0))
+    clip = adapter.generate("footsteps on gravel", video="https://x/shot.mp4")
+    assert len(seen) == 1 and clip.audio_bytes == _wav(1.0)
+    assert any("audio track was kept" in n for n in clip.notes)
+
+
+def test_without_ffmpeg_a_muxed_endpoint_refuses_before_the_call(monkeypatch):
+    from foley.sources.base import SourceConfigurationError
+
+    monkeypatch.setattr(video_mod, "ffmpeg_path", lambda: None)
+    runner = Runner()
+    adapter = FalAdapter(CONFIGS["fal_hunyuan_foley"], api_key="k", runner=runner,
+                         uploader=Uploader())
+    with pytest.raises(SourceConfigurationError, match="needs ffmpeg"):
+        adapter.generate("rain", video="https://x/shot.mp4")
+    assert runner.calls == []  # nothing was paid for
+
+
+def test_audio_track_takes_the_sound_out_of_a_real_video(tmp_path):
+    import subprocess
+
+    ffmpeg = video_mod.ffmpeg_path()
+    if ffmpeg is None:
+        pytest.skip("no ffmpeg")
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run([ffmpeg, "-loglevel", "error", "-f", "lavfi", "-i", "color=c=black:s=64x64:d=1",
+                    "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-shortest",
+                    "-c:v", "libx264", "-c:a", "aac", str(mp4)], check=True)
+    wav = video_mod.audio_track(mp4.read_bytes())
+    data, sr = sf.read(io.BytesIO(wav))
+    assert sr > 0 and len(data) / sr == pytest.approx(1.0, abs=0.1)
+    with pytest.raises(RuntimeError, match="could not take the audio"):
+        video_mod.audio_track(b"not a video")
+
+
+def test_thinksound_cost_is_unknown_and_hunyuan_is_the_videos_length(monkeypatch):
+    monkeypatch.setattr(video_mod, "video_seconds", lambda video: 20.0)
+    assert estimate_generation("fal_thinksound", video=b"x") is None  # compute seconds
+    assert estimate_generation("fal_hunyuan_foley", prompt="rain", video=b"x") == pytest.approx(0.2)
+    assert estimate_generation("fal_mmaudio_v2a", video=b"x") == pytest.approx(0.02)

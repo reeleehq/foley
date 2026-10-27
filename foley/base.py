@@ -622,6 +622,10 @@ class IntendedUse(SerializableMixin):
     can_attribute: bool = True
     revenue_usd: int = 0
     allow_voice_or_trademark: bool = False
+    #: Where the sound is used (ISO 3166-1 alpha-2, e.g. ``"US"``). Only a licence that
+    #: excludes territories asks (``foley.licensing.LICENSE_EXCLUDED_TERRITORIES``);
+    #: for one, ``None`` fails closed.
+    territory: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
