@@ -713,3 +713,26 @@ def test_a_sound_whose_bytes_may_not_be_sent_on_is_refused(library):
         foley.generate("x", backend="fal_stable_audio_3_extend", adapter=adapter,
                        library=library, audio=_tone(), derived_from=lic,
                        extend_after_s=1.0)
+
+
+def test_wider_rights_sees_the_safety_flags_and_the_ai_preference():
+    """A replayed edit must not hand back a record without a flag its source now raises."""
+    from foley.base import LicenseRecord
+    from foley.licensing import apply_license_flags, wider_rights
+
+    clean = apply_license_flags(LicenseRecord(source="s", license_id="CC0-1.0"))
+    voiced = apply_license_flags(LicenseRecord(source="s", license_id="CC0-1.0"))
+    voiced.contains_recognizable_voice = True
+    voiced.gen_ai_preference = "none"
+    assert set(wider_rights(clean, voiced)) >= {
+        "contains_recognizable_voice", "gen_ai_preference"}
+    assert wider_rights(voiced, voiced) == []
+
+
+def test_narrowing_never_trusts_a_hand_set_flag_over_the_licence_row():
+    from foley.base import LicenseRecord
+    from foley.licensing import apply_license_flags, narrow_to_source
+
+    out = apply_license_flags(LicenseRecord(source="g", license_id="Stability-Community"))
+    src = LicenseRecord(source="s", license_id="CC-BY-NC-4.0", commercial_ok=True)
+    assert narrow_to_source(out, src).commercial_ok is False

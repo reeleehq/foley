@@ -539,6 +539,9 @@ def _generate(
             before the repair, the level, the watermark and the credential. A
             byte-identical sound already in the library with wider rights is not
             handed back as the edit (``rights_blocked``). Refused for any other mode.
+            A ``SoundRecord`` with a known digest must be the bytes sent; a
+            ``LicenseRecord`` (or a bare URL as ``audio=``) is the caller's own,
+            unchecked declaration of the clip's rights, as ``ingest(license=)`` is.
         **affordances: Unified generation affordances (``duration_s``, ``model``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format``, ``sample_rate``, ``expand_prompt`` — see

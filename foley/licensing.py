@@ -830,8 +830,12 @@ def narrow_to_source(output: LicenseRecord, source: LicenseRecord) -> LicenseRec
     >>> narrowed.commercial_ok, narrowed.requires_attribution, narrowed.revenue_cap_usd
     (False, True, 1000000)
     """
+    # The source's row too: a hand-set flag never grants more than its licence id does.
+    row = derive_license_flags(source.license_id)
     overrides = {
-        name: bool(getattr(output, name) and getattr(source, name))
+        name: bool(
+            getattr(output, name) and getattr(source, name) and getattr(row, name)
+        )
         for name in _DERIVATIVE_SHARED_FLAGS
     }
     caps = [
@@ -865,7 +869,8 @@ def wider_rights(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
 
     A permission of :data:`_DERIVATIVE_SHARED_FLAGS` it holds and ``bound`` lacks, an
     attribution or a notice ``bound`` requires and it does not, a higher (or no)
-    revenue cap, a looser AI-use scope. How an edit tells that a byte-identical sound
+    revenue cap, a looser AI-use scope, a voice or trademark flag ``bound`` raises
+    and it does not, another stated AI-use preference. How an edit tells that a byte-identical sound
     already in the library is not the edit it made (see :func:`narrow_to_source`).
 
     >>> from foley.base import LicenseRecord
@@ -895,6 +900,11 @@ def wider_rights(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
         != record.ai_training_scope
     ):
         wider.append("ai_training_scope")
+    for flag in ("contains_recognizable_voice", "potential_trademark"):
+        if getattr(bound, flag) and not getattr(record, flag):  # a flag keep() reads
+            wider.append(flag)
+    if bound.gen_ai_preference and bound.gen_ai_preference != record.gen_ai_preference:
+        wider.append("gen_ai_preference")
     return wider
 
 
