@@ -33,13 +33,17 @@ the shared ingest pipeline.
 **Reproducibility across devices (#207).** The default generator is a CPU
 ``torch.Generator`` (:func:`cpu_generator`), as diffusers recommends: the pipeline's
 ``randn_tensor`` draws the initial latents on the generator's device and moves them to
-the pipeline's, so a seed starts from the same noise on CUDA and on CPU. The denoising
-itself still runs in the pipeline's device and dtype (float16 on CUDA, float32 on CPU),
-so the bytes are identical only on the same device and dtype: both are recorded in
+the pipeline's, so a seed starts from the same noise on CUDA and on CPU. Only that starting noise is
+device-independent: the denoising runs in the pipeline's device and dtype (float16 on
+CUDA, float32 on CPU), and the scheduler's per-step noise is drawn there too, so the
+bytes are identical only on the same device and dtype: both are recorded in
 ``generation_params`` (``device``, ``dtype``, and the ``generator_device``). That the
-pipeline accepts a CPU generator for a CUDA pipeline is diffusers' documented
-``randn_tensor`` behaviour, not checked here (diffusers is not a test dependency);
-:func:`torch_generator` (on the pipeline's device) is one ``make_generator=`` away.
+pipeline accepts a CPU generator for a CUDA pipeline is diffusers' ``randn_tensor``
+behaviour (it draws on the generator's device, then moves the tensor), not checked
+here (diffusers is not a test dependency); :func:`torch_generator` (on the
+pipeline's device) is one ``make_generator=`` away. A clip stored before #207 records
+no ``generator_device``: its generator was on the pipeline's device, so a CUDA one
+reproduces with ``make_generator=torch_generator``.
 """
 
 from __future__ import annotations

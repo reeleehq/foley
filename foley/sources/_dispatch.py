@@ -497,7 +497,6 @@ class GenerationPlan:
         default_factory=dict
     )  # untranslated vendor params (#61)
     variation: int = 0  # which take on the request this is (#161; foley.variations)
-    drawn_seed: Optional[int] = None  # set by run_generation when it drew one (#206)
 
 
 def plan_generation(
@@ -671,7 +670,7 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
         affordances = dict(plan.affordances)
         if affordances.get("seed") is None and draws_seed(plan.config):
             # After the cache miss: the key is the request as asked, seed-free (#206).
-            plan.drawn_seed = affordances["seed"] = draw_seed()
+            affordances["seed"] = draw_seed()
         clip = adapter.generate(plan.prompt, **affordances, **extra)
     except (SourceConfigurationError, EgressBlocked):
         release(reserved)  # refused before any request was sent (incl. offline weights)

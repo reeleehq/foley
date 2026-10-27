@@ -1195,7 +1195,8 @@ def generated_license(
             Stable-Audio-Open run; ``None`` for a non-deterministic backend).
         generation_params: The RESOLVED NATIVE params actually sent to the backend
             (e.g. ``guidance_scale`` — not the unified ``prompt_influence`` —
-            ``audio_end_in_s``, …), for reproducibility + audit.
+            ``audio_end_in_s``, …), and where it ran when that decides the bytes (a
+            local model's ``device`` / ``dtype``), for reproducibility + audit.
         disclosure_recommended: EU AI Act Art. 50 hint (default ``True``); makes the
             credits AI-disclosure line render immediately (#9a already reads it).
         watermark: Pass-through carrier for #9b (AudioSeal); ``None`` until then.
