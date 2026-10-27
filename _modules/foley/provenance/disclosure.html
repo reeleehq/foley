@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=86ab457a"></script>
+    <script src="../../../_static/documentation_options.js?v=6eb1e6b8"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.67" />
+  <meta name="docsearch:version" content="0.0.68" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1359,23 +1359,30 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
 
 
+<span class="c1">#: The one key under which an ingredient carries foley's full per-sound credential.</span>
+<span class="n">INGREDIENT_CREDENTIAL_KEY</span> <span class="o">=</span> <span class="s2">"foley_credential"</span>
+
+
 <div class="viewcode-block" id="as_c2pa_ingredient">
 <a class="viewcode-back" href="../../../_autosummary/foley.provenance.disclosure.html#foley.provenance.disclosure.as_c2pa_ingredient">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">as_c2pa_ingredient</span><span class="p">(</span><span class="n">credential</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A per-sound content credential, declared as a C2PA ``componentOf`` ingredient.</span>
 
-<span class="sd">    Adds (never removes) the fields ``c2pa.Builder`` reads from an ingredient — ``title``,</span>
-<span class="sd">    ``format``, ``relationship`` and a manifest-unique ``instance_id`` (the handle a</span>
-<span class="sd">    ``c2pa.placed`` action's ``ingredientIds`` resolves) — so the sidecar keeps the full</span>
-<span class="sd">    per-sound credential while the signed manifest gets a valid ingredient.</span>
+<span class="sd">    The ingredient holds only the fields ``c2pa.Builder`` reads — ``title``, ``format``,</span>
+<span class="sd">    ``relationship`` and a manifest-unique ``instance_id`` (the handle a ``c2pa.placed``</span>
+<span class="sd">    action's ``ingredientIds`` resolves) — and carries the full per-sound credential</span>
+<span class="sd">    whole under :data:`INGREDIENT_CREDENTIAL_KEY`, so its keys (``manifest``, ``signed``,</span>
+<span class="sd">    ``asset_ref`` ...) can never collide with a C2PA ingredient field. The credential</span>
+<span class="sd">    stays in the sidecar: ``c2pa`` drops the unknown key when it embeds the manifest</span>
+<span class="sd">    (the sub-credentials are unsigned, self-asserted JSON, so that is the right place).</span>
 <span class="sd">    """</span>
     <span class="n">manifest</span> <span class="o">=</span> <span class="n">credential</span><span class="p">[</span><span class="s2">"manifest"</span><span class="p">]</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="o">**</span><span class="n">credential</span><span class="p">,</span>
         <span class="s2">"title"</span><span class="p">:</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span>
         <span class="s2">"format"</span><span class="p">:</span> <span class="n">manifest</span><span class="p">[</span><span class="s2">"format"</span><span class="p">],</span>
         <span class="s2">"relationship"</span><span class="p">:</span> <span class="n">C2PA_COMPONENT_OF</span><span class="p">,</span>
         <span class="s2">"instance_id"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">C2PA_INGREDIENT_ID_PREFIX</span><span class="si">}{</span><span class="n">index</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">credential</span><span class="p">[</span><span class="s1">'asset_ref'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">INGREDIENT_CREDENTIAL_KEY</span><span class="p">:</span> <span class="n">credential</span><span class="p">,</span>
     <span class="p">}</span></div>
 
 

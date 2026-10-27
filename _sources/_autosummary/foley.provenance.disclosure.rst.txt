@@ -12,6 +12,7 @@ foley.provenance.disclosure
       IPTC_TRAINED_ALGORITHMIC_MEDIA
       C2PA_CREATED
       TRADEMARK_REGISTRY
+      INGREDIENT_CREDENTIAL_KEY
    
    .. rubric:: Functions
 

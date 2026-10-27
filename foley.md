@@ -1,4 +1,4 @@
-> built 2026-10-27 00:33 UTC from 897437b (main) · foley 0.0.67. Details: build_info.json
+> built 2026-10-27 00:39 UTC from 06ba0cd (main) · foley 0.0.68. Details: build_info.json
 
 # index.html.md
 
@@ -13672,6 +13672,7 @@ dependency-light.
 | [`IPTC_TRAINED_ALGORITHMIC_MEDIA`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA) | IPTC digitalSourceType vocabulary (C2PA `c2pa.actions` assertion).                                          |
 | [`C2PA_CREATED`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.C2PA_CREATED)                   | C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).                   |
 | [`TRADEMARK_REGISTRY`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TRADEMARK_REGISTRY)             | Seed registry of branded audio logos foley must not knowingly generate for commercial use (report 07 §7.2). |
+| [`INGREDIENT_CREDENTIAL_KEY`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY)      | The one key under which an ingredient carries foley's full per-sound credential.                            |
 
 ### Functions
 
@@ -13743,6 +13744,10 @@ content-hash id reproducible so a byte-identical regeneration still dedups
 (`skipped_dup`) — the #6 generation-flywheel promise. See
 [`AudioSealWatermarker.embed()`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.AudioSealWatermarker.embed).
 
+### foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY *= 'foley_credential'*
+
+The one key under which an ingredient carries foley’s full per-sound credential.
+
 ### foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA *= 'http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia'*
 
 IPTC digitalSourceType vocabulary (C2PA `c2pa.actions` assertion).
@@ -13765,7 +13770,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix chime', 'ta-dum', 'netflix sound', 'tudum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix chime', 'tudum', 'ta-dum', 'netflix intro', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel jingle', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -13833,10 +13838,13 @@ rollup over a whole mix is a weave/#8 concern.
 
 A per-sound content credential, declared as a C2PA `componentOf` ingredient.
 
-Adds (never removes) the fields `c2pa.Builder` reads from an ingredient — `title`,
-`format`, `relationship` and a manifest-unique `instance_id` (the handle a
-`c2pa.placed` action’s `ingredientIds` resolves) — so the sidecar keeps the full
-per-sound credential while the signed manifest gets a valid ingredient.
+The ingredient holds only the fields `c2pa.Builder` reads — `title`, `format`,
+`relationship` and a manifest-unique `instance_id` (the handle a `c2pa.placed`
+action’s `ingredientIds` resolves) — and carries the full per-sound credential
+whole under [`INGREDIENT_CREDENTIAL_KEY`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY), so its keys (`manifest`, `signed`,
+`asset_ref` …) can never collide with a C2PA ingredient field. The credential
+stays in the sidecar: `c2pa` drops the unknown key when it embeds the manifest
+(the sub-credentials are unsigned, self-asserted JSON, so that is the right place).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -20334,18 +20342,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 00:33 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/897437bb4fc51fc9c7b3110d3b6fccbae9ed14fc"><code>897437b</code></a> on branch <code>main</code>, for **foley 0.0.67** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 00:39 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/06ba0cd26500649912c4733fcf5ab70a1f913c74"><code>06ba0cd</code></a> on branch <code>main</code>, for **foley 0.0.68** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.67) is behind the latest release on PyPI (0.0.68): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.68) is behind the latest release on PyPI (0.0.69): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/897437bb4fc51fc9c7b3110d3b6fccbae9ed14fc"><code>897437bb4fc51fc9c7b3110d3b6fccbae9ed14fc</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/06ba0cd26500649912c4733fcf5ab70a1f913c74"><code>06ba0cd26500649912c4733fcf5ab70a1f913c74</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20356,9 +20364,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40426886435">40426886435</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40427524683">40427524683</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>897437bb4fc51fc9c7b3110d3b6fccbae9ed14fc</code> (in the history of the built commit) |
+| Event commit | <code>06ba0cd26500649912c4733fcf5ab70a1f913c74</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20383,13 +20391,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.68/">0.0.68</a>, newer than the documented version (0.0.67).
+Latest release: <a href="https://pypi.org/project/foley/0.0.69/">0.0.69</a>, newer than the documented version (0.0.68).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 897437bb4fc51fc9c7b3110d3b6fccbae9ed14fc
+git checkout 06ba0cd26500649912c4733fcf5ab70a1f913c74
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
