@@ -1,0 +1,140 @@
+{
+  "mcp": {
+    "foley_find": {
+      "context": "<required>",
+      "max_events": 6,
+      "verify": "listen",
+      "commercial_ok": true,
+      "k": 10,
+      "session": "default",
+      "territory": null
+    },
+    "foley_search": {
+      "query": "<required>",
+      "k": 10,
+      "commercial_ok": true,
+      "ucs_category": null,
+      "rerank": false,
+      "session": "default"
+    },
+    "foley_similar_to": {
+      "sound_id": "<required>",
+      "k": 10,
+      "commercial_ok": true,
+      "session": "default"
+    },
+    "foley_preview": {
+      "sound_id": "<required>",
+      "seconds": 6,
+      "session": "default"
+    },
+    "foley_refine": {
+      "session": "default",
+      "query": null,
+      "picked_ids": null,
+      "rejected_ids": null,
+      "hint": null,
+      "k": 10
+    },
+    "foley_pick": {
+      "sound_id": "<required>",
+      "session": "default",
+      "layer": null,
+      "onset": null
+    },
+    "foley_drop_pick": {
+      "sound_id": "<required>",
+      "session": "default"
+    },
+    "foley_reject": {
+      "sound_id": "<required>",
+      "session": "default",
+      "reason": null
+    },
+    "foley_list_picks": {
+      "session": "default"
+    },
+    "foley_generate": {
+      "prompt": "<required>",
+      "backend": "auto",
+      "commercial_ok": true,
+      "session": "default",
+      "territory": null
+    },
+    "foley_plan": {
+      "session": "default",
+      "transcript": null,
+      "candidate_ids": null
+    },
+    "foley_weave": {
+      "narration": "<required>",
+      "timeline": "<required>",
+      "session": "default"
+    },
+    "foley_swap_clip": {
+      "timeline": "<required>",
+      "item_id": "<required>",
+      "sound_id": "<required>"
+    },
+    "foley_set_gain": {
+      "timeline": "<required>",
+      "item_id": "<required>",
+      "gain_db": "<required>"
+    },
+    "foley_nudge": {
+      "timeline": "<required>",
+      "item_id": "<required>",
+      "delta_s": "<required>"
+    },
+    "foley_toggle": {
+      "timeline": "<required>",
+      "item_id": "<required>",
+      "enabled": "<required>"
+    },
+    "foley_set_master": {
+      "timeline": "<required>",
+      "target_lufs": null,
+      "peak_dbfs": null
+    },
+    "foley_timeline_captions": {
+      "timeline": "<required>",
+      "fmt": "vtt"
+    },
+    "foley_score": {
+      "context": "<required>",
+      "commercial_ok": true,
+      "verify": "listen",
+      "max_events": 6,
+      "session": "default",
+      "territory": null
+    },
+    "foley_guide": {},
+    "foley_capabilities": {},
+    "foley_status": {
+      "session": "default"
+    }
+  },
+  "cli": [
+    "capabilities",
+    "drop-pick",
+    "find",
+    "generate",
+    "guide",
+    "list-picks",
+    "nudge",
+    "pick",
+    "plan",
+    "preview",
+    "refine",
+    "reject",
+    "score",
+    "set-gain",
+    "set-master",
+    "similar-to",
+    "status",
+    "swap-clip",
+    "timeline-captions",
+    "toggle",
+    "weave"
+  ]
+}

@@ -16,7 +16,8 @@ and per-session :class:`foley.agent.session.SessionStore` (both injectable for t
 from __future__ import annotations
 
 import threading
-from typing import Optional
+from dataclasses import dataclass
+from typing import Callable, Optional
 
 from ..licensing import DEFAULT_INTENDED_USE, intended_use_for
 
@@ -736,39 +737,104 @@ def foley_status(session: str = "default") -> dict:
     }
 
 
-#: The full JSON-safe tool surface (SSOT), in a stable order.
-TOOLS = [
-    foley_find,
-    foley_search,
-    foley_similar_to,
-    foley_preview,
-    foley_refine,
-    foley_pick,
-    foley_drop_pick,
-    foley_reject,
-    foley_list_picks,
-    foley_generate,
-    foley_plan,
-    foley_weave,
-    foley_swap_clip,
-    foley_set_gain,
-    foley_nudge,
-    foley_toggle,
-    foley_set_master,
-    foley_timeline_captions,
-    foley_score,
-    foley_guide,
-    foley_capabilities,
-    foley_status,
-]
+@dataclass(frozen=True)
+class Verb:
+    """One verb of foley's JSON-safe surface: the function and the surfaces it is on (#62).
+
+    The function is the verb: JSON in, JSON out, a thin call into the façade. MCP serves
+    it as the tool ``fn.__name__``; the ``foley`` CLI as the command of that name
+    without its ``foley_`` prefix (:func:`foley.cli.build_parser`). Adding a verb here
+    adds it to both, with no surface code.
+    """
+
+    fn: Callable
+    mcp: bool = True
+    cli: bool = True
+    #: Why a surface is off (said where the flag is set, so it is never a silent gap).
+    why: str = ""
+
+    @property
+    def name(self) -> str:
+        return self.fn.__name__
+
+    @property
+    def command(self) -> str:
+        """The CLI command name: ``foley_similar_to`` -> ``similar-to``."""
+        return self.name.removeprefix("foley_").replace("_", "-")
+
+
+#: The verb table (SSOT), in a stable order: MCP's tools and the CLI's generated
+#: commands are both read from it.
+VERBS = (
+    Verb(foley_find),
+    Verb(
+        foley_search,
+        cli=False,
+        why="the CLI's own `foley search` prints readable rows (it predates the table)",
+    ),
+    Verb(foley_similar_to),
+    Verb(foley_preview),
+    Verb(foley_refine),
+    Verb(foley_pick),
+    Verb(foley_drop_pick),
+    Verb(foley_reject),
+    Verb(foley_list_picks),
+    Verb(foley_generate),
+    Verb(foley_plan),
+    Verb(foley_weave),
+    Verb(foley_swap_clip),
+    Verb(foley_set_gain),
+    Verb(foley_nudge),
+    Verb(foley_toggle),
+    Verb(foley_set_master),
+    Verb(foley_timeline_captions),
+    Verb(foley_score),
+    Verb(foley_guide),
+    Verb(foley_capabilities),
+    Verb(foley_status),
+)
+
+#: The MCP tool surface, in the table's order.
+TOOLS = [v.fn for v in VERBS if v.mcp]
+
+
+def surface_snapshot(verbs=VERBS) -> dict:
+    """``{tool name: {parameter: default}}`` of the MCP tools, plus the CLI commands.
+
+    What an agent or a script binds to by name, without py2mcp: a test pins it, so a
+    renamed tool or a changed default is a decision, never an accident (#62). A
+    parameter with no default maps to ``"<required>"``.
+    """
+    import inspect
+
+    def params(fn):
+        return {
+            name: "<required>" if p.default is inspect.Parameter.empty else p.default
+            for name, p in inspect.signature(fn).parameters.items()
+        }
+
+    return {
+        "mcp": {v.name: params(v.fn) for v in verbs if v.mcp},
+        "cli": sorted(v.command for v in verbs if v.cli),
+    }
 
 
 def _resolve_tools(*, include: "Optional[list[str]]" = None) -> list:
-    """The tool list, optionally subset by name (``include``)."""
-    tools = list(TOOLS)
+    """The tool list, optionally subset by name (``include``).
+
+    Raises:
+        ValueError: If ``include`` names a tool that does not exist (a typo would
+            otherwise serve a smaller surface than asked for, silently).
+    """
+    tools = [
+        v.fn for v in VERBS if v.mcp
+    ]  # read now: a verb added to the table is served
     if include is not None:
         by_name = {fn.__name__: fn for fn in tools}
-        tools = [by_name[n] for n in include if n in by_name]
+        unknown = [n for n in include if n not in by_name]
+        if unknown:
+            raise ValueError(f"no such foley MCP tool(s): {unknown}; see mcp.TOOLS")
+        tools = [by_name[n] for n in include]
     return [_under_bound_runtime(fn) for fn in tools]
 
 
