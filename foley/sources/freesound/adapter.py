@@ -82,11 +82,11 @@ def _bst_category(config: dict, ucs_category: str) -> Optional[str]:
 def _category_filter(
     config: dict, kind: str, ucs_category: Optional[str]
 ) -> Optional[str]:
-    """The one Broad Sound Taxonomy top level to pre-filter on, from ``kind`` and ``ucs_category``.
+    """The one Broad Sound Taxonomy top level to pre-filter on (``kind``, ``ucs_category``).
 
     Both narrow the same ``category`` field, so two different top levels could only
-    match nothing: that raises :class:`~foley.sources.base.SearchArgumentError` (#169). The same one from both is sent
-    once.
+    match nothing: that raises :class:`~foley.sources.base.SearchArgumentError`
+    (#169). The same one from both is sent once.
     """
     by_kind = config["param_map"]["kind"]["bst_category"].get(kind)
     by_ucs = _bst_category(config, ucs_category) if ucs_category else None

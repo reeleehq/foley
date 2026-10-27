@@ -924,8 +924,8 @@ def plan_search(
     source as a request that can only fail (#168).
 
     Raises:
-        ValueError: A ``page`` past the source's result window (and every value
-            :func:`translate_affordances` refuses).
+        SearchArgumentError: A ``page`` past the source's result window (a
+            ``ValueError``, as is every value :func:`translate_affordances` refuses).
 
     Returns:
         ``(kwargs for adapter.search, notes)``.
