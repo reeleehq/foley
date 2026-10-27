@@ -33,8 +33,22 @@ SOURCE_CONFIG = {
         "query": {"native_name": "q", "required": True},
         "k": {"native_name": "page_size"},
         "license": {"native_name": "license"},
+        "page": {"native_name": "page"},
+        "include_explicit": {"native_name": "mature"},
+        "sources": {"native_name": "source"},  # Openverse's providers (comma list)
+        # Media kind: music is category=music; sfx sends no category, since Freesound
+        # rows carry category null and category=sound_effect would drop them.
+        "kind": {"native_name": "category", "to_native": {"music": "music"}},
     },
-    "supported_affordances": ["query", "k", "license"],
+    "supported_affordances": [
+        "query",
+        "k",
+        "license",
+        "page",
+        "include_explicit",
+        "sources",
+        "kind",
+    ],
     "on_unsupported_param": "warn",
     "api": {
         "base_url": "https://api.openverse.org/v1",

@@ -27,8 +27,10 @@ SOURCE_CONFIG = {
         "query": {"native_name": "gsrsearch", "required": True},
         "k": {"native_name": "gsrlimit"},
         "license": {"native_name": "license", "adapter_handled": True},
+        # MediaWiki pages by offset: (page - 1) * k.
+        "page": {"native_name": "gsroffset"},
     },
-    "supported_affordances": ["query", "k", "license"],
+    "supported_affordances": ["query", "k", "license", "page"],
     "on_unsupported_param": "warn",
     "api": {
         "base_url": "https://commons.wikimedia.org/w/api.php",

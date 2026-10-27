@@ -70,6 +70,8 @@ class InternetArchiveAdapter:
         *,
         license: Optional[str] = None,
         k: int = 15,
+        page: int = 1,
+        sources: Optional[list] = None,
         provider_params: Optional[dict] = None,
         **kw,
     ) -> "list[Candidate]":
@@ -79,7 +81,9 @@ class InternetArchiveAdapter:
         items under it; ``None`` keeps every accepted licence. The default is ``None``,
         unlike the other CC sources' ``'cc0'``, because every archive licence is an
         unverified claim anyway; ``add_from`` always passes its own (``'cc0'``) default.
-        The query always asks for items with a ``licenseurl``.
+        The query always asks for items with a ``licenseurl``. ``page`` is the results
+        page (1-based, ``k`` per page); ``sources`` restricts it to these archive
+        collections.
         ``provider_params`` are native advancedsearch params merged over the
         translated ones (#61); a ``q`` is ANDed onto foley's as one group, never
         replaces it (the config's ``provider_params`` policy).
@@ -88,12 +92,19 @@ class InternetArchiveAdapter:
         if only == []:  # a licence this source does not accept: nothing can match
             return []
         api = self.config["api"]
+        q = f"({_lucene_escape(query)}) AND mediatype:audio AND {api['licensed_clause']}"
+        if sources:
+            spec = self.config["param_map"]["sources"]
+            names = " OR ".join(_lucene_escape(str(s)) for s in sources)
+            q += " AND " + spec["to_native"].format(collections=names)
         params = {
-            "q": f"({_lucene_escape(query)}) AND mediatype:audio AND {api['licensed_clause']}",
+            "q": q,
             "fl[]": list(_FIELDS),
             "rows": min(int(k), api["max_rows"]),
             "output": "json",
         }
+        if page != 1:
+            params[self.config["param_map"]["page"]["native_name"]] = int(page)
         params = merge_provider_params(
             params, provider_params, policy=self.config.get("provider_params")
         )

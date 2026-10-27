@@ -293,7 +293,7 @@ def test_list_backends_rejects_typos_and_derived_overrides():
 
     import foley
 
-    for bad in ({"supports": "seeed"}, {"kind": "genrate"}, {"supports": "kind"}):
+    for bad in ({"supports": "seeed"}, {"kind": "genrate"}, {"supports": "max_duration_s"}):
         with pytest.raises(ValueError):
             foley.list_backends(**bad)
     with pytest.raises(ValueError, match="derived"):

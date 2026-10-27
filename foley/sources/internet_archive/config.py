@@ -25,8 +25,10 @@ SOURCE_CONFIG = {
         "query": {"native_name": "q", "required": True},
         "k": {"native_name": "rows"},
         "license": {"native_name": "license", "adapter_handled": True},
+        "page": {"native_name": "page"},
+        "sources": {"native_name": "q", "to_native": "collection:({collections})"},
     },
-    "supported_affordances": ["query", "k", "license"],
+    "supported_affordances": ["query", "k", "license", "page", "sources"],
     "on_unsupported_param": "warn",
     "api": {
         "search_url": "https://archive.org/advancedsearch.php",

@@ -94,6 +94,7 @@ class WikimediaCommonsAdapter:
         *,
         license: Optional[str] = "cc0",
         k: int = 15,
+        page: int = 1,
         provider_params: Optional[dict] = None,
         **kw,
     ) -> "list[Candidate]":
@@ -104,6 +105,7 @@ class WikimediaCommonsAdapter:
                 CC-BY ids) keeps only files under it; ``None`` also keeps CC-BY and the
                 unverified public-domain claims.
             k: Max files requested (the API's limit is 50).
+            page: The results page (1-based, ``k`` per page), sent as an offset.
             provider_params: Native search params merged over the translated ones
                 (#61); the per-item licence check still applies.
         """
@@ -119,6 +121,9 @@ class WikimediaCommonsAdapter:
             prop="imageinfo",
             iiprop=_IMAGEINFO,
         )
+        if page != 1:
+            offset = (int(page) - 1) * params["gsrlimit"]
+            params[self.config["param_map"]["page"]["native_name"]] = offset
         data = self.invoke_native(
             **merge_provider_params(
                 params, provider_params, policy=self.config.get("provider_params")

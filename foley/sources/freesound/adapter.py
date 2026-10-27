@@ -154,6 +154,8 @@ class FreesoundAdapter:
         k: int = 15,
         duration_range: "Optional[tuple[float, float]]" = None,
         sort: Optional[str] = None,
+        page: int = 1,
+        kind: str = "sfx",
         similar_to: Optional[str] = None,
         ucs_category: Optional[str] = None,
         provider_params: Optional[dict] = None,
@@ -173,7 +175,11 @@ class FreesoundAdapter:
                 kept, so NC / SA / ND never come back.
             k: Max results (Freesound caps ``page_size`` at 150).
             duration_range: Optional ``(min_s, max_s)`` native duration filter.
-            sort: Optional native sort key (default: Freesound relevance).
+            sort: ``relevance`` (default) | ``newest`` | ``popular`` | ``duration``,
+                translated to Freesound's native key.
+            page: The results page (1-based, ``k`` per page).
+            kind: ``sfx`` (default, no filter) or ``music`` (the Broad Sound
+                Taxonomy's "Music" top level).
             similar_to: A Freesound sound id (either id form): "more like this one".
             ucs_category: A UCS CatID or category, mapped to a coarse Broad Sound
                 Taxonomy ``category`` pre-filter (no filter if it is not recognised).
@@ -205,6 +211,9 @@ class FreesoundAdapter:
             filters.append(license_map["to_native"])
         elif only is not None:
             filters.append(license_map["to_native_attribution"])
+        kind_filter = self.config["param_map"]["kind"]["to_native"].get(kind)
+        if kind_filter:
+            filters.append(kind_filter)
         if ucs_category:
             bst = _bst_category(self.config, ucs_category)
             if bst is not None:
@@ -223,7 +232,9 @@ class FreesoundAdapter:
         if filters:
             params["filter"] = " ".join(filters)
         if sort is not None:
-            params["sort"] = sort
+            params["sort"] = self.config["param_map"]["sort"]["to_native_map"][sort]
+        if page != 1:
+            params["page"] = int(page)
         if similar_to:
             native = self.config["param_map"]["similar_to"]["native_name"]
             params[native] = _raw_id(similar_to)

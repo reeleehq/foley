@@ -72,7 +72,10 @@ def _add_from(
             them) and merged over its translated params; the licence filter and the
             fail-closed gate still apply.
         **affordances: Extra unified affordances forwarded to the adapter's
-            ``search`` (e.g. ``duration_range``, ``sort``).
+            ``search`` (see :data:`foley.base.QUERY_AFFORDANCES`): ``duration_range``,
+            ``sort`` (``relevance`` | ``newest`` | ``popular`` | ``duration``),
+            ``page``, ``kind`` (``sfx`` | ``music``), ``sources``, ``include_explicit``,
+            ``similar_to``, ``ucs_category``.
 
     Returns:
         An :class:`~foley.index.ingest.IngestReport` — inspect ``.ingested`` for the

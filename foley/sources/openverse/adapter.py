@@ -69,6 +69,10 @@ class OpenverseAdapter:
         *,
         license: Optional[str] = "cc0",
         k: int = 15,
+        page: int = 1,
+        include_explicit: bool = False,
+        sources: Optional[list] = None,
+        kind: str = "sfx",
         provider_params: Optional[dict] = None,
         **kw,
     ) -> "list[Candidate]":
@@ -79,6 +83,12 @@ class OpenverseAdapter:
                 under it, and is pushed into the native ``license`` filter (CC0, CC-BY or
                 PDM); ``None`` asks for CC0, CC-BY and public-domain-mark rows.
             k: Max rows (anonymous limit 20).
+            page: The results page (1-based, ``k`` per page).
+            include_explicit: Also return rows Openverse marks mature.
+            sources: Only these Openverse providers (``wikimedia_audio``, …); the
+                excluded ones (Freesound, Jamendo) stay excluded, so asking only for
+                them returns nothing.
+            kind: ``sfx`` (default, no category filter) or ``music``.
             provider_params: Native search params merged over the translated ones
                 (#61); the per-item licence check still applies.
         """
@@ -98,8 +108,21 @@ class OpenverseAdapter:
             for s in api["excluded_sources"]
             if not (s == "freesound" and self._include_freesound)
         ]
-        if excluded:
+        pm = self.config["param_map"]
+        if sources:
+            allowed = [s for s in sources if s not in excluded]
+            if not allowed:  # only excluded providers asked for: nothing can match
+                return []
+            params[pm["sources"]["native_name"]] = ",".join(allowed)
+        elif excluded:
             params["excluded_source"] = ",".join(excluded)
+        if page != 1:
+            params[pm["page"]["native_name"]] = int(page)
+        if include_explicit:
+            params[pm["include_explicit"]["native_name"]] = "true"
+        category = pm["kind"]["to_native"].get(kind)
+        if category:
+            params[pm["kind"]["native_name"]] = category
         params = merge_provider_params(
             params, provider_params, policy=self.config.get("provider_params")
         )
