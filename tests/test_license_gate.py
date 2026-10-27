@@ -23,6 +23,7 @@ CONFIG = {
         ("CC-BY-4.0", ["CC-BY-4.0"]),
         ("cc-by", ["CC-BY-3.0", "CC-BY-4.0"]),
         ("pdm-1.0", ["PDM-1.0"]),
+        ("pdm", ["PDM-1.0"]),
         (None, None),
         ("any", None),
         ("", None),

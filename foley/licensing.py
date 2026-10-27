@@ -665,7 +665,9 @@ def wanted_license_ids(config: dict, license: Optional[str]) -> "Optional[list[s
 
     def matches(license_id: str) -> bool:
         low = license_id.lower()
-        return low == asked or ("-" in asked and low.startswith(asked + "-"))
+        return low == asked or (
+            ("-" in asked or asked == "pdm") and low.startswith(asked + "-")
+        )
 
     if not (_LOOKS_LIKE_CC_ID.match(asked) or any(matches(k) for k in LICENSE_META)):
         _log.warning(

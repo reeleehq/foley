@@ -550,3 +550,21 @@ def test_ingest_rejects_a_rights_assertion_for_a_retrieve_backend():
 
     with pytest.raises(ValueError, match="search constraint"):
         foley.ingest("door", backend="openverse", license="user-owned")
+
+
+def test_openverse_native_map_covers_every_accepted_licence_and_cc_by_family_is_by():
+    from foley.sources.openverse.config import SOURCE_CONFIG as OV
+
+    assert set(OV["api"]["license_native"]) == set(OV["license"]["accepted_license_ids"])
+    ad, http = _openverse()
+    ad.search("door", license="cc-by")
+    assert http.calls[0]["params"]["license"] == "by"
+
+
+def test_ingest_passes_a_cc_search_licence_to_the_pull_facade(monkeypatch):
+    import foley
+
+    seen = {}
+    monkeypatch.setattr(foley, "add_from", lambda backend, **kw: seen.update(kw) or "ok")
+    assert foley.ingest("door", backend="openverse", license="CC-BY-4.0") == "ok"
+    assert seen["license"] == "CC-BY-4.0" and seen["query"] == "door"
