@@ -4,3 +4,10 @@ foley.sources.elevenlabs.config
 .. automodule:: foley.sources.elevenlabs.config
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      PCM_RATES
+      MP3_BY_RATE
+   

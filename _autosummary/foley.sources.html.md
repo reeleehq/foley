@@ -653,9 +653,10 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     never seen by the unsupported-parameter policy. A key the source’s
     `provider_params` policy reserves or prices raises `ValueError`
     before any call, so the cost estimate is the call’s.
-  * **\*\*affordances** – Unified generation affordances (`duration_s`,
+  * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
-    `output_format` — see [`foley.base.GENERATION_AFFORDANCES`](foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).
+    `output_format`, `sample_rate`, `expand_prompt` — see
+    [`foley.base.GENERATION_AFFORDANCES`](foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).
 * **Return type:**
   [`IngestReport`](foley.index.ingest.html.md#foley.index.ingest.IngestReport)
 * **Returns:**
@@ -668,7 +669,7 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
   * [**SafetyRefusal**](#foley.sources.SafetyRefusal) – If the prompt trips a safety gate and `on_flagged='refuse'`.
   * [**WatermarkUnavailable**](foley.provenance.disclosure.html.md#foley.provenance.disclosure.WatermarkUnavailable) – If `watermark=True` but `foley[provenance]` is absent.
 
-### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
+### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
 
 Build an AI-generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.
 
@@ -694,7 +695,10 @@ but never flips the flag, so [`foley.keep()`](foley.html.md#foley.keep) still re
     `'ElevenLabs-SFX'` — a key of `LICENSE_FLAGS`).
   * **generator_model** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The model identifier (e.g. `'stable-audio-open-1.0'`,
     `'eleven_text_to_sound_v2'`).
-  * **generation_prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The user prompt, verbatim.
+  * **generation_prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The user prompt, verbatim (the prompt sent).
+  * **generation_prompt_used** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The prompt the backend reports it used, when it
+    reports one (fal Stable Audio 3 echoes it; it differs when the backend
+    rewrote it, `expand_prompt=True`).
   * **rights_verified** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – `True` (a generator license is authoritatively known);
     MUST be `True` or [`foley.keep()`](foley.html.md#foley.keep) rejects the sound.
   * **generator_version** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional model/version string.

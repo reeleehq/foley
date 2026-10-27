@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=ba6d0b80"></script>
+    <script src="../_static/documentation_options.js?v=1e158f99"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.72" />
+  <meta name="docsearch:version" content="0.0.73" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -1511,9 +1511,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            A key the backend's config ``provider_params`` policy reserves (the</span>
 <span class="sd">            prompt, an output path) or prices (``duration_s``, the model) raises</span>
 <span class="sd">            ``ValueError`` before anything is paid for: use the unified argument.</span>
-<span class="sd">        **affordances: Unified generation affordances (``duration_s``,</span>
+<span class="sd">        **affordances: Unified generation affordances (``duration_s``, ``model``,</span>
 <span class="sd">            ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,</span>
-<span class="sd">            ``output_format`` — see :data:`GENERATION_AFFORDANCES`).</span>
+<span class="sd">            ``output_format``, ``sample_rate``, ``expand_prompt`` — see</span>
+<span class="sd">            :data:`GENERATION_AFFORDANCES`).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stored :class:`Candidate` (``origin=generated``) — its ``sound`` is the</span>

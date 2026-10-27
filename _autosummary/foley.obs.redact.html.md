@@ -34,7 +34,7 @@ Stdlib-only. Applied at TWO boundaries (belt-and-suspenders, mirroring
 |------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
 | [`Redactor`](#foley.obs.redact.Redactor)([mode, salt, preview_chars, fields]) | The SSOT applier: redacts sensitive keys in values, attribute dicts, and manifests.  |
 
-### foley.obs.redact.REDACT_FIELDS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'context_text', 'gen_ai.completion', 'gen_ai.prompt', 'generation_prompt', 'narration', 'negative_prompt', 'onset', 'prompt', 'query'})*
+### foley.obs.redact.REDACT_FIELDS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'context_text', 'gen_ai.completion', 'gen_ai.prompt', 'generation_prompt', 'generation_prompt_used', 'narration', 'negative_prompt', 'onset', 'prompt', 'prompt_used', 'query'})*
 
 The attribute / field keys whose string values are sensitive and redacted. The
 narration/prompt/query surfaces report 12 §11 names; `context_text` / `narration`

@@ -1026,7 +1026,7 @@ the *permission* row consulted by [`keep()`](#foley.keep), `LicenseMeta` holds t
 license authority; a record’s own `license_name` / `license_url` (when a
 source populated them) take precedence over this default.
 
-### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
+### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -1047,7 +1047,9 @@ hand-set the derived flags — always route through the policy layer.
 `None` for a sound that was not generated. A backend with no seed
 (ElevenLabs, Sonilo) records none, so its clips read `False` rather than
 carrying a seed that would reproduce nothing (#75). A seed is necessary, not
-sufficient: a hosted endpoint can change its model behind the same id.
+sufficient: a hosted endpoint can change its model behind the same id. A
+prompt the backend rewrote (`expand_prompt`) is `False` too: replaying it
+runs the rewrite again.
 
 * **Type:**
   Whether this generated clip can be made again
@@ -2557,9 +2559,10 @@ training uses).
     A key the backend’s config `provider_params` policy reserves (the
     prompt, an output path) or prices (`duration_s`, the model) raises
     `ValueError` before anything is paid for: use the unified argument.
-  * **\*\*affordances** – Unified generation affordances (`duration_s`,
+  * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
-    `output_format` — see `GENERATION_AFFORDANCES`).
+    `output_format`, `sample_rate`, `expand_prompt` — see
+    `GENERATION_AFFORDANCES`).
 * **Returns:**
   The stored [`Candidate`](#foley.Candidate) (`origin=generated`) — its `sound` is the
   canonical, by-value [`SoundRecord`](#foley.SoundRecord) (a content-hash id); its `notes`

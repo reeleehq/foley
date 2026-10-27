@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=ba6d0b80"></script>
+    <script src="../../../_static/documentation_options.js?v=1e158f99"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.72" />
+  <meta name="docsearch:version" content="0.0.73" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -755,6 +755,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
@@ -1125,9 +1126,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            never seen by the unsupported-parameter policy. A key the source's</span>
 <span class="sd">            ``provider_params`` policy reserves or prices raises ``ValueError``</span>
 <span class="sd">            before any call, so the cost estimate is the call's.</span>
-<span class="sd">        **affordances: Unified generation affordances (``duration_s``,</span>
+<span class="sd">        **affordances: Unified generation affordances (``duration_s``, ``model``,</span>
 <span class="sd">            ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,</span>
-<span class="sd">            ``output_format`` — see :data:`foley.base.GENERATION_AFFORDANCES`).</span>
+<span class="sd">            ``output_format``, ``sample_rate``, ``expand_prompt`` — see</span>
+<span class="sd">            :data:`foley.base.GENERATION_AFFORDANCES`).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        An :class:`~foley.index.ingest.IngestReport` — inspect ``.ingested`` for the</span>
@@ -1237,6 +1239,21 @@ window.runMermaid = runMermaid;</script>
         <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">"safety: proceeded in warn mode; flagged </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">scan</span><span class="o">.</span><span class="n">trademark_hits</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">scan</span><span class="o">.</span><span class="n">voice_hits</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
+    <span class="k">if</span> <span class="n">_screen_prompt_used</span><span class="p">(</span><span class="n">lic</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">)</span> <span class="ow">and</span> <span class="n">on_flagged</span> <span class="o">==</span> <span class="s2">"refuse"</span><span class="p">:</span>
+        <span class="c1"># The rewrite was screened only after the (paid) call: refuse it here, as the</span>
+        <span class="c1"># gate would have, and keep the bytes reachable in the generations cache.</span>
+        <span class="n">report</span><span class="o">.</span><span class="n">record</span><span class="p">(</span>
+            <span class="n">IngestResult</span><span class="p">(</span>
+                <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">backend</span><span class="si">}</span><span class="s2">:generate"</span><span class="p">,</span>
+                <span class="n">status</span><span class="o">=</span><span class="s2">"safety_blocked"</span><span class="p">,</span>
+                <span class="n">notes</span><span class="o">=</span><span class="p">[</span><span class="o">*</span><span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">,</span> <span class="n">_REWRITE_REFUSED</span><span class="p">],</span>
+                <span class="n">cache_key</span><span class="o">=</span><span class="n">plan</span><span class="o">.</span><span class="n">content_key</span><span class="p">,</span>
+                <span class="n">cost_estimate_usd</span><span class="o">=</span><span class="n">clip</span><span class="o">.</span><span class="n">candidate</span><span class="o">.</span><span class="n">cost_estimate_usd</span><span class="p">,</span>
+                <span class="n">cost_actual_usd</span><span class="o">=</span><span class="n">clip</span><span class="o">.</span><span class="n">candidate</span><span class="o">.</span><span class="n">cost_actual_usd</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">record_generation_outcome</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="s2">"safety_blocked"</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">generations_cache</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">report</span>
 
     <span class="c1"># One try guards everything that decodes the bytes — the repair, the</span>
     <span class="c1"># content-credential sidecar (which decodes to pre-compute the id) and the ingest —</span>
@@ -1335,6 +1352,14 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">credential</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"pass"</span><span class="p">,</span> <span class="s2">"warn"</span><span class="p">):</span>
         <span class="n">disclosure</span><span class="o">.</span><span class="n">write_content_credential</span><span class="p">(</span><span class="n">pstore</span><span class="p">,</span> <span class="n">sound_id</span><span class="p">,</span> <span class="n">credential</span><span class="p">)</span>
 
+    <span class="k">if</span> <span class="n">plan</span><span class="o">.</span><span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sample_rate"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># kept: the backend takes it</span>
+        <span class="n">_note_rate</span><span class="p">(</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">affordances</span><span class="p">[</span><span class="s2">"sample_rate"</span><span class="p">]),</span>
+            <span class="n">res</span><span class="p">,</span>
+            <span class="n">audio_bytes</span><span class="o">=</span><span class="n">audio_bytes</span><span class="p">,</span>
+            <span class="n">notes</span><span class="o">=</span><span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">,</span>
+        <span class="p">)</span>
+
     <span class="c1"># Surface the adapter's + disclosure notes (unsupported affordances, warn-mode</span>
     <span class="c1"># flag, watermark-skip) in the run report.</span>
     <span class="k">if</span> <span class="n">clip</span><span class="o">.</span><span class="n">notes</span><span class="p">:</span>
@@ -1349,6 +1374,54 @@ window.runMermaid = runMermaid;</script>
         <span class="n">res</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_CONSENT_NOTE</span><span class="p">)</span>
     <span class="n">report</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">report</span>
+
+
+<span class="c1">#: The note of a generation refused because the prompt the backend used was flagged.</span>
+<span class="n">_REWRITE_REFUSED</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"refused (on_flagged='refuse'): not ingested; the paid bytes stay in the "</span>
+    <span class="s2">"generations cache under cache_key (pass on_flagged='warn' to keep it flagged)"</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_screen_prompt_used</span><span class="p">(</span><span class="n">lic</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Flag the clip when the prompt the backend used (a rewrite) trips the safety scan.</span>
+
+<span class="sd">    The gate before the call screened the prompt foley sent; with ``expand_prompt``</span>
+<span class="sd">    the backend may have used another. Its safety flags are set on ``lic`` (the</span>
+<span class="sd">    fail-closed ``keep()`` drops such a clip) and a note says so; the caller refuses</span>
+<span class="sd">    it under ``on_flagged='refuse'``. Returns whether it was flagged.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..provenance</span><span class="w"> </span><span class="kn">import</span> <span class="n">disclosure</span>
+
+    <span class="n">used</span> <span class="o">=</span> <span class="n">lic</span><span class="o">.</span><span class="n">generation_prompt_used</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">used</span> <span class="ow">or</span> <span class="n">used</span> <span class="o">==</span> <span class="n">prompt</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">scan</span> <span class="o">=</span> <span class="n">disclosure</span><span class="o">.</span><span class="n">scan_prompt</span><span class="p">(</span><span class="n">used</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">scan</span><span class="o">.</span><span class="n">flagged</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">lic</span><span class="o">.</span><span class="n">potential_trademark</span> <span class="o">=</span> <span class="n">lic</span><span class="o">.</span><span class="n">potential_trademark</span> <span class="ow">or</span> <span class="n">scan</span><span class="o">.</span><span class="n">potential_trademark</span>
+    <span class="n">lic</span><span class="o">.</span><span class="n">contains_recognizable_voice</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">lic</span><span class="o">.</span><span class="n">contains_recognizable_voice</span> <span class="ow">or</span> <span class="n">scan</span><span class="o">.</span><span class="n">contains_recognizable_voice</span>
+    <span class="p">)</span>
+    <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="s2">"safety: the prompt the backend used is flagged "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">scan</span><span class="o">.</span><span class="n">trademark_hits</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">scan</span><span class="o">.</span><span class="n">voice_hits</span><span class="p">)</span><span class="si">}</span><span class="s2">; the clip is flagged"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_note_rate</span><span class="p">(</span><span class="n">requested</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">audio_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Note when the clip's rate is not the ``sample_rate`` asked for."""</span>
+    <span class="n">actual</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="s2">"record"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="s2">"source_sample_rate"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">actual</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># a duplicate or quarantined clip has no new record: read it</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">soundfile</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sf</span>
+
+            <span class="n">actual</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">audio_bytes</span><span class="p">))</span><span class="o">.</span><span class="n">samplerate</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - an unreadable header just goes unnoted</span>
+            <span class="k">return</span>
+    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">actual</span><span class="p">)</span> <span class="o">!=</span> <span class="n">requested</span><span class="p">:</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"sample_rate: asked </span><span class="si">{</span><span class="n">requested</span><span class="si">}</span><span class="s2"> Hz, got </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">actual</span><span class="p">)</span><span class="si">}</span><span class="s2"> Hz"</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">estimate_order</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
@@ -1671,6 +1744,7 @@ window.runMermaid = runMermaid;</script>
                     <span class="s2">"model"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">generator_model</span><span class="p">,</span>
                     <span class="s2">"version"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">generator_version</span><span class="p">,</span>
                     <span class="s2">"prompt"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">generation_prompt</span><span class="p">,</span>
+                    <span class="s2">"prompt_used"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">generation_prompt_used</span><span class="p">,</span>
                     <span class="s2">"seed"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">generation_seed</span><span class="p">,</span>
                     <span class="s2">"reproducible"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">generation_reproducible</span><span class="p">,</span>
                     <span class="s2">"params"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">generation_params</span><span class="p">,</span>

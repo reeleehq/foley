@@ -19,3 +19,17 @@ same codes as `an`), each value being its own `LICENSE_FLAGS` row, and an unknow
 plan refuses to generate (no paid call is made). The Prohibited-Use policy forbids
 standalone redistribution of the raw SFX, which is why both rows set
 `redistribute_standalone_ok=False`.
+
+### Module Attributes
+
+| [`PCM_RATES`](#foley.sources.elevenlabs.config.PCM_RATES)   | The raw-PCM rates (Hz) of the direct API's `pcm_<rate>` formats (report 13 §2A).   |
+|--------------------------------------------------------------|------------------------------------------------------------------------------------|
+| [`MP3_BY_RATE`](#foley.sources.elevenlabs.config.MP3_BY_RATE) | The `mp3_*` format per rate (one bitrate each).                                    |
+
+### foley.sources.elevenlabs.config.MP3_BY_RATE *= {22050: 'mp3_22050_32', 24000: 'mp3_24000_48', 44100: 'mp3_44100_128'}*
+
+The `mp3_*` format per rate (one bitrate each).
+
+### foley.sources.elevenlabs.config.PCM_RATES *= (8000, 16000, 22050, 24000, 32000, 44100, 48000)*
+
+The raw-PCM rates (Hz) of the direct API’s `pcm_<rate>` formats (report 13 §2A).

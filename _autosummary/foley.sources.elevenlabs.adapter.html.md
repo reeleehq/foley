@@ -70,7 +70,7 @@ The account a call is made on, for the generations cache (`'operator'` or a fing
 
 The ElevenLabs token (constructor, else a bound key, else `$ELEVENLABS_API_KEY`).
 
-#### generate(prompt, , duration_s=None, model=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
+#### generate(prompt, , duration_s=None, model=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', sample_rate=None, provider_params=None, \*\*kw)
 
 Generate a sound effect for `prompt`; return its bytes + provisional candidate.
 
@@ -92,6 +92,9 @@ Generate a sound effect for `prompt`; return its bytes + provisional candidate.
     translated to the native enum; `wav` is the lossless `pcm_48000`
     wrapped in a WAV header here, falling back to MP3 (with a note) if
     the account’s plan refuses PCM. Ingest re-archives to FLAC.
+  * **sample_rate** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – The rate (Hz) to ask for; it picks the native enum for
+    `output_format` (`wav` at 22050 is `pcm_22050`). A rate the
+    format lacks keeps its default rate, with a note.
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native request fields merged over the translated ones
     (#61): JSON body fields, except `output_format`, which replaces the
     native format sent as the URL query param. Recorded in

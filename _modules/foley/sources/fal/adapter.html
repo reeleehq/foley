@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=ba6d0b80"></script>
+    <script src="../../../../_static/documentation_options.js?v=1e158f99"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.72" />
+  <meta name="docsearch:version" content="0.0.73" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -1010,7 +1010,10 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
         <span class="n">used_prompt</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"prompt"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">used_prompt</span> <span class="ow">and</span> <span class="n">used_prompt</span> <span class="o">!=</span> <span class="n">prompt</span><span class="p">:</span>
-            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the endpoint reports it used the prompt </span><span class="si">{</span><span class="n">used_prompt</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="c1"># Not quoted: notes reach the run manifest, which redacts by key only.</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">"the endpoint rewrote the prompt (recorded as generation_prompt_used)"</span>
+            <span class="p">)</span>
         <span class="n">lic_cfg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"license"</span><span class="p">]</span>
         <span class="n">lic</span> <span class="o">=</span> <span class="n">generated_license</span><span class="p">(</span>
             <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -1018,6 +1021,9 @@ window.runMermaid = runMermaid;</script>
             <span class="n">generator_model</span><span class="o">=</span><span class="n">nd</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"model_id"</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">),</span>
             <span class="n">generator_version</span><span class="o">=</span><span class="n">nd</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"generator_version"</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">),</span>
             <span class="n">generation_prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
+            <span class="n">generation_prompt_used</span><span class="o">=</span><span class="n">used_prompt</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">used_prompt</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">generation_seed</span><span class="o">=</span><span class="n">_as_int</span><span class="p">(</span><span class="n">seed</span><span class="p">),</span>
             <span class="n">generation_params</span><span class="o">=</span><span class="n">recorded_params</span><span class="p">(</span>
                 <span class="p">{</span><span class="o">**</span><span class="n">args</span><span class="p">,</span> <span class="s2">"fal_endpoint"</span><span class="p">:</span> <span class="n">endpoint</span><span class="p">},</span> <span class="n">provider_params</span>

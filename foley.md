@@ -1,4 +1,4 @@
-> built 2026-10-27 03:11 UTC from 2a99e28 (main) · foley 0.0.72. Details: build_info.json
+> built 2026-10-27 03:45 UTC from 44083e9 (main) · foley 0.0.73. Details: build_info.json
 
 # index.html.md
 
@@ -2776,7 +2776,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Whether a candidate was retrieved from the index or freshly generated.
 
-### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, renamed_from='duration'), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, renamed_from=None)}*
+### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, renamed_from='duration'), 'expand_prompt': Affordance(name='expand_prompt', type=<class 'bool'>, description='Let the backend rewrite the prompt (the prompt it used is recorded)', default=None, stage='generate', carries_meaning=False, renamed_from=None), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, renamed_from=None), 'sample_rate': Affordance(name='sample_rate', type=<class 'int'>, description='Requested rate (Hz); the actual rate is measured and recorded', default=None, stage='generate', carries_meaning=False, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, renamed_from=None)}*
 
 Unified generation-stage parameters (generate backends map onto these).
 
@@ -2792,7 +2792,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Mix layer (shared by `SoundEvent` now and `TimelineItem` later).
 
-### *class* foley.base.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
+### *class* foley.base.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -2813,7 +2813,9 @@ hand-set the derived flags — always route through the policy layer.
 `None` for a sound that was not generated. A backend with no seed
 (ElevenLabs, Sonilo) records none, so its clips read `False` rather than
 carrying a seed that would reproduce nothing (#75). A seed is necessary, not
-sufficient: a hosted endpoint can change its model behind the same id.
+sufficient: a hosted endpoint can change its model behind the same id. A
+prompt the backend rewrote (`expand_prompt`) is `False` too: replaying it
+runs the rewrite again.
 
 * **Type:**
   Whether this generated clip can be made again
@@ -6177,7 +6179,7 @@ the *permission* row consulted by [`keep()`](_autosummary/foley.html.md#foley.ke
 license authority; a record’s own `license_name` / `license_url` (when a
 source populated them) take precedence over this default.
 
-### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
+### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -6198,7 +6200,9 @@ hand-set the derived flags — always route through the policy layer.
 `None` for a sound that was not generated. A backend with no seed
 (ElevenLabs, Sonilo) records none, so its clips read `False` rather than
 carrying a seed that would reproduce nothing (#75). A seed is necessary, not
-sufficient: a hosted endpoint can change its model behind the same id.
+sufficient: a hosted endpoint can change its model behind the same id. A
+prompt the backend rewrote (`expand_prompt`) is `False` too: replaying it
+runs the rewrite again.
 
 * **Type:**
   Whether this generated clip can be made again
@@ -7708,9 +7712,10 @@ training uses).
     A key the backend’s config `provider_params` policy reserves (the
     prompt, an output path) or prices (`duration_s`, the model) raises
     `ValueError` before anything is paid for: use the unified argument.
-  * **\*\*affordances** – Unified generation affordances (`duration_s`,
+  * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
-    `output_format` — see `GENERATION_AFFORDANCES`).
+    `output_format`, `sample_rate`, `expand_prompt` — see
+    `GENERATION_AFFORDANCES`).
 * **Returns:**
   The stored [`Candidate`](_autosummary/foley.html.md#foley.Candidate) (`origin=generated`) — its `sound` is the
   canonical, by-value [`SoundRecord`](_autosummary/foley.html.md#foley.SoundRecord) (a content-hash id); its `notes`
@@ -13197,7 +13202,7 @@ Stdlib-only. Applied at TWO boundaries (belt-and-suspenders, mirroring
 |------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
 | [`Redactor`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.Redactor)([mode, salt, preview_chars, fields]) | The SSOT applier: redacts sensitive keys in values, attribute dicts, and manifests.  |
 
-### foley.obs.redact.REDACT_FIELDS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'context_text', 'gen_ai.completion', 'gen_ai.prompt', 'generation_prompt', 'narration', 'negative_prompt', 'onset', 'prompt', 'query'})*
+### foley.obs.redact.REDACT_FIELDS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'context_text', 'gen_ai.completion', 'gen_ai.prompt', 'generation_prompt', 'generation_prompt_used', 'narration', 'negative_prompt', 'onset', 'prompt', 'prompt_used', 'query'})*
 
 The attribute / field keys whose string values are sensitive and redacted. The
 narration/prompt/query surfaces report 12 §11 names; `context_text` / `narration`
@@ -13909,7 +13914,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta dum', 'netflix chime', 'netflix sound', 'netflix intro', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'netflix sound', 'ta-dum', 'netflix chime', 'ta dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -15682,7 +15687,7 @@ Registered adapters whose ring is in `rings` (sorted by name).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`CorpusAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.CorpusAdapter)]
 
-### foley.sources.base.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
+### foley.sources.base.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
 
 Build an AI-generated [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.
 
@@ -15708,7 +15713,10 @@ but never flips the flag, so [`foley.keep()`](_autosummary/foley.html.md#foley.k
     `'ElevenLabs-SFX'` — a key of `LICENSE_FLAGS`).
   * **generator_model** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The model identifier (e.g. `'stable-audio-open-1.0'`,
     `'eleven_text_to_sound_v2'`).
-  * **generation_prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The user prompt, verbatim.
+  * **generation_prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The user prompt, verbatim (the prompt sent).
+  * **generation_prompt_used** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The prompt the backend reports it used, when it
+    reports one (fal Stable Audio 3 echoes it; it differs when the backend
+    rewrote it, `expand_prompt=True`).
   * **rights_verified** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – `True` (a generator license is authoritatively known);
     MUST be `True` or [`foley.keep()`](_autosummary/foley.html.md#foley.keep) rejects the sound.
   * **generator_version** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional model/version string.
@@ -16185,7 +16193,7 @@ The account a call is made on, for the generations cache (`'operator'` or a fing
 
 The ElevenLabs token (constructor, else a bound key, else `$ELEVENLABS_API_KEY`).
 
-#### generate(prompt, , duration_s=None, model=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
+#### generate(prompt, , duration_s=None, model=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', sample_rate=None, provider_params=None, \*\*kw)
 
 Generate a sound effect for `prompt`; return its bytes + provisional candidate.
 
@@ -16207,6 +16215,9 @@ Generate a sound effect for `prompt`; return its bytes + provisional candidate.
     translated to the native enum; `wav` is the lossless `pcm_48000`
     wrapped in a WAV header here, falling back to MP3 (with a note) if
     the account’s plan refuses PCM. Ingest re-archives to FLAC.
+  * **sample_rate** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – The rate (Hz) to ask for; it picks the native enum for
+    `output_format` (`wav` at 22050 is `pcm_22050`). A rate the
+    format lacks keeps its default rate, with a note.
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native request fields merged over the translated ones
     (#61): JSON body fields, except `output_format`, which replaces the
     native format sent as the URL query param. Recorded in
@@ -16273,6 +16284,20 @@ same codes as `an`), each value being its own `LICENSE_FLAGS` row, and an unknow
 plan refuses to generate (no paid call is made). The Prohibited-Use policy forbids
 standalone redistribution of the raw SFX, which is why both rows set
 `redistribute_standalone_ok=False`.
+
+### Module Attributes
+
+| [`PCM_RATES`](_autosummary/foley.sources.elevenlabs.config.html.md#foley.sources.elevenlabs.config.PCM_RATES)   | The raw-PCM rates (Hz) of the direct API's `pcm_<rate>` formats (report 13 §2A).   |
+|--------------------------------------------------------------|------------------------------------------------------------------------------------|
+| [`MP3_BY_RATE`](_autosummary/foley.sources.elevenlabs.config.html.md#foley.sources.elevenlabs.config.MP3_BY_RATE) | The `mp3_*` format per rate (one bitrate each).                                    |
+
+### foley.sources.elevenlabs.config.MP3_BY_RATE *= {22050: 'mp3_22050_32', 24000: 'mp3_24000_48', 44100: 'mp3_44100_128'}*
+
+The `mp3_*` format per rate (one bitrate each).
+
+### foley.sources.elevenlabs.config.PCM_RATES *= (8000, 16000, 22050, 24000, 32000, 44100, 48000)*
+
+The raw-PCM rates (Hz) of the direct API’s `pcm_<rate>` formats (report 13 §2A).
 
 
 # _autosummary/foley.sources.elevenlabs.html.md
@@ -17494,9 +17519,10 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     never seen by the unsupported-parameter policy. A key the source’s
     `provider_params` policy reserves or prices raises `ValueError`
     before any call, so the cost estimate is the call’s.
-  * **\*\*affordances** – Unified generation affordances (`duration_s`,
+  * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
-    `output_format` — see [`foley.base.GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).
+    `output_format`, `sample_rate`, `expand_prompt` — see
+    [`foley.base.GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).
 * **Return type:**
   [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport)
 * **Returns:**
@@ -17509,7 +17535,7 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
   * [**SafetyRefusal**](_autosummary/foley.sources.html.md#foley.sources.SafetyRefusal) – If the prompt trips a safety gate and `on_flagged='refuse'`.
   * [**WatermarkUnavailable**](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.WatermarkUnavailable) – If `watermark=True` but `foley[provenance]` is absent.
 
-### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
+### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
 
 Build an AI-generated [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.
 
@@ -17535,7 +17561,10 @@ but never flips the flag, so [`foley.keep()`](_autosummary/foley.html.md#foley.k
     `'ElevenLabs-SFX'` — a key of `LICENSE_FLAGS`).
   * **generator_model** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The model identifier (e.g. `'stable-audio-open-1.0'`,
     `'eleven_text_to_sound_v2'`).
-  * **generation_prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The user prompt, verbatim.
+  * **generation_prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The user prompt, verbatim (the prompt sent).
+  * **generation_prompt_used** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The prompt the backend reports it used, when it
+    reports one (fal Stable Audio 3 echoes it; it differs when the backend
+    rewrote it, `expand_prompt=True`).
   * **rights_verified** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – `True` (a generator license is authoritatively known);
     MUST be `True` or [`foley.keep()`](_autosummary/foley.html.md#foley.keep) rejects the sound.
   * **generator_version** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional model/version string.
@@ -20525,7 +20554,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 03:11 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/2a99e28852363a2efa15fb019a734e4f67155c23"><code>2a99e28</code></a> on branch <code>main</code>, for **foley 0.0.72** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 03:45 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/44083e985865f064e6c91dd48409af78e9d48be0"><code>44083e9</code></a> on branch <code>main</code>, for **foley 0.0.73** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -20534,7 +20563,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/2a99e28852363a2efa15fb019a734e4f67155c23"><code>2a99e28852363a2efa15fb019a734e4f67155c23</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/44083e985865f064e6c91dd48409af78e9d48be0"><code>44083e985865f064e6c91dd48409af78e9d48be0</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20545,9 +20574,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40442570479">40442570479</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40445768391">40445768391</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>2a99e28852363a2efa15fb019a734e4f67155c23</code> (in the history of the built commit) |
+| Event commit | <code>44083e985865f064e6c91dd48409af78e9d48be0</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20572,13 +20601,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.72/">0.0.72</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.73/">0.0.73</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 2a99e28852363a2efa15fb019a734e4f67155c23
+git checkout 44083e985865f064e6c91dd48409af78e9d48be0
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
