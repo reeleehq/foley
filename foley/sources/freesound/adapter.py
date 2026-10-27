@@ -39,6 +39,7 @@ from ..base import (
     api_license,
     merge_provider_params,
     native_choice,
+    SearchArgumentError,
     page_size,
     paging_params,
     provider_params_policy,
@@ -76,6 +77,26 @@ def _bst_category(config: dict, ucs_category: str) -> Optional[str]:
     return config["param_map"]["ucs_category"]["bst_category_by_ucs_category"].get(
         category
     )
+
+
+def _category_filter(
+    config: dict, kind: str, ucs_category: Optional[str]
+) -> Optional[str]:
+    """The one Broad Sound Taxonomy top level to pre-filter on (``kind``, ``ucs_category``).
+
+    Both narrow the same ``category`` field, so two different top levels could only
+    match nothing: that raises :class:`~foley.sources.base.SearchArgumentError`
+    (#169). The same one from both is sent once.
+    """
+    by_kind = config["param_map"]["kind"]["bst_category"].get(kind)
+    by_ucs = _bst_category(config, ucs_category) if ucs_category else None
+    if by_kind and by_ucs and by_kind != by_ucs:
+        raise SearchArgumentError(
+            f"kind={kind!r} asks for Freesound's {by_kind!r} category but "
+            f"ucs_category={ucs_category!r} for {by_ucs!r}: a sound has one, so the "
+            "two together match nothing; pass one of them"
+        )
+    return by_kind or by_ucs
 
 
 def _preview_url(item: dict) -> Optional[str]:
@@ -187,10 +208,12 @@ class FreesoundAdapter:
                 translated to Freesound's native key.
             page: The results page (1-based, ``k`` per page).
             kind: ``sfx`` (default, no filter) or ``music`` (the Broad Sound
-                Taxonomy's "Music" top level).
+                Taxonomy's "Music" top level). With a ``ucs_category`` that maps to
+                another top level it raises ``SearchArgumentError`` (nothing could match).
             similar_to: A Freesound sound id (either id form): "more like this one".
             ucs_category: A UCS CatID or category, mapped to a coarse Broad Sound
-                Taxonomy ``category`` pre-filter (no filter if it is not recognised).
+                Taxonomy ``category`` pre-filter (no filter if it is not recognised;
+                ``SearchArgumentError`` if ``kind`` asks for another top level).
             provider_params: Native Freesound search params foley has no affordance
                 for, merged over the translated ones (#61), e.g.
                 ``{"filter": "ac_brightness:[50 TO 100]"}``. Per the config's
@@ -220,15 +243,9 @@ class FreesoundAdapter:
         elif only is not None:
             filters.append(license_map["to_native_attribution"])
         pm = self.config["param_map"]
-        kind_category = pm["kind"]["bst_category"].get(kind)
-        if kind_category:
-            filters.append(
-                pm["ucs_category"]["to_native"].format(category=kind_category)
-            )
-        if ucs_category:
-            bst = _bst_category(self.config, ucs_category)
-            if bst is not None:
-                filters.append(pm["ucs_category"]["to_native"].format(category=bst))
+        category = _category_filter(self.config, kind, ucs_category)
+        if category:
+            filters.append(pm["ucs_category"]["to_native"].format(category=category))
         if duration_range is not None:
             lo, hi = duration_range
             filters.append(
