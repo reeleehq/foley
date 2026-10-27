@@ -27,8 +27,9 @@ Serialization contract:
 
 ### Functions
 
-| [`resolve_master`](#foley.base.resolve_master)(master)   | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.   |
-|---------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| [`reject_renamed`](#foley.base.reject_renamed)(names[, vocabulary])   | Raise `TypeError` if any of `names` is an affordance's old spelling.                    |
+|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [`resolve_master`](#foley.base.resolve_master)(master)                | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`. |
 
 ### Classes
 
@@ -60,7 +61,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound entered foley (retrieval channel or origin).
 
-### *class* foley.base.Affordance(name, type, description, default=None, stage='query', carries_meaning=False)
+### *class* foley.base.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, renamed_from=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -110,6 +111,16 @@ that cannot honour it raises instead of dropping it (#53).
 * **Type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
+#### renamed_from
+
+The name it had before a release renamed it (#75): passing
+the old name raises a `TypeError` naming this one (see
+[`reject_renamed()`](#foley.base.reject_renamed)). For a generation affordance, the generations
+cache still reads entries kept under the old name.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### *class* foley.base.Anchor(\*values)
 
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
@@ -156,7 +167,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Whether a candidate was retrieved from the index or freshly generated.
 
-### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](#foley.base.Affordance)]* *= {'duration': Affordance(name='duration', type=<class 'float'>, description='Seconds; None => backend default', default=None, stage='generate', carries_meaning=False), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False)}*
+### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, renamed_from='duration'), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, renamed_from=None)}*
 
 Unified generation-stage parameters (generate backends map onto these).
 
@@ -185,6 +196,18 @@ bypass: `keep()` checks `rights_verified` first, so an unverified record
 is rejected regardless. Populate the flags from the `license_id` via
 `foley.licensing.apply_license_flags` (source overrides win). Never
 hand-set the derived flags — always route through the policy layer.
+
+#### *property* generation_reproducible *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[bool](https://docs.python.org/3/builtins/functions.html#bool)]*
+
+`True` iff a seed was recorded.
+
+`None` for a sound that was not generated. A backend with no seed
+(ElevenLabs, Sonilo) records none, so its clips read `False` rather than
+carrying a seed that would reproduce nothing (#75). A seed is necessary, not
+sufficient: a hosted endpoint can change its model behind the same id.
+
+* **Type:**
+  Whether this generated clip can be made again
 
 ### foley.base.MASTER_PROFILES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [MasterProfile](#foley.base.MasterProfile)]* *= {'broadcast_atsc': MasterProfile(target_lufs=-24.0, true_peak_db=-2.0, lra=7.0, max_limiting_db=6.0), 'broadcast_ebu': MasterProfile(target_lufs=-23.0, true_peak_db=-1.0, lra=7.0, max_limiting_db=6.0), 'podcast': MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0), 'streaming': MasterProfile(target_lufs=-14.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)}*
 
@@ -227,7 +250,7 @@ Every field is a no-op at its default, so a sparse item (no `processing`)
 renders untouched; the mixer departs from dry/centered/full-level only when a
 field is set.
 
-### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False), 'sort': Affordance(name='sort', type=<class 'str'>, description='score|duration|created|downloads', default='score', stage='query', carries_meaning=False), 'text': Affordance(name='text', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False)}*
+### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False, renamed_from=None), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False, renamed_from=None), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False, renamed_from=None), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False, renamed_from=None), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False, renamed_from=None), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False, renamed_from=None), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'sort': Affordance(name='sort', type=<class 'str'>, description='score|duration|created|downloads', default='score', stage='query', carries_meaning=False, renamed_from=None), 'text': Affordance(name='text', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False, renamed_from=None), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False, renamed_from=None)}*
 
 Unified query-stage parameters (search / find / filter surface).
 
@@ -348,6 +371,24 @@ The result of one verification rung for a candidate.
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
 
 Which rung of the verification ladder produced a `Verdict`.
+
+### foley.base.reject_renamed(names, vocabulary=None)
+
+Raise `TypeError` if any of `names` is an affordance’s old spelling.
+
+`vocabulary` defaults to [`GENERATION_AFFORDANCES`](#foley.base.GENERATION_AFFORDANCES); the old names come
+from each [`Affordance`](#foley.base.Affordance)’s `renamed_from`.
+
+```pycon
+>>> reject_renamed(["prompt", "duration_s"])
+>>> reject_renamed(["duration"])
+Traceback (most recent call last):
+    ...
+TypeError: duration= was renamed duration_s=
+```
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### foley.base.resolve_master(master)
 

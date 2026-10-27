@@ -70,14 +70,17 @@ The account a call is made on, for the generations cache (`'operator'` or a fing
 
 The ElevenLabs token (constructor, else a bound key, else `$ELEVENLABS_API_KEY`).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
+#### generate(prompt, , duration_s=None, model=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound effect for `prompt`; return its bytes + provisional candidate.
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description (required).
-  * **duration** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the native `0.5..30` range). `None`
+  * **duration_s** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the native `0.5..30` range). `None`
     lets the model auto-determine the length from the prompt.
+  * **model** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The native `model_id` to pin (`eleven_text_to_sound_v2` |
+    `eleven_text_to_sound_v3`); `None` uses `native_defaults`’.
+    Recorded as the licence’s `generator_model` / `generator_version`.
   * **prompt_influence** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – `0..1` (identity map to the native field; higher =
     closer to the prompt, less variety). `None` (default) omits it, so
     the API applies its own default.

@@ -226,7 +226,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound entered foley (retrieval channel or origin).
 
-### *class* foley.Affordance(name, type, description, default=None, stage='query', carries_meaning=False)
+### *class* foley.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, renamed_from=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -275,6 +275,16 @@ that cannot honour it raises instead of dropping it (#53).
 
 * **Type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+#### renamed_from
+
+The name it had before a release renamed it (#75): passing
+the old name raises a `TypeError` naming this one (see
+`reject_renamed()`). For a generation affordance, the generations
+cache still reads entries kept under the old name.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### *class* foley.Anchor(\*values)
 
@@ -756,13 +766,15 @@ Forget a cached request (so the next identical one generates anew).
 The kept generations matching `prompt` / `backend` / affordances, newest first.
 
 The way back to a paid clip whose key was not kept, e.g.
-`foley.generations.find("a crisp apple bite", backend="elevenlabs", duration=1)`.
+`foley.generations.find("a crisp apple bite", backend="elevenlabs", duration_s=1)`.
 Each item is `(request_key, entry)`: `entry["content_key"]` (or [`get()`](#foley.GenerationsCache.get)
 with either key) gives the bytes, `entry["status"]` how its ingest ended
 (`'quarantined'` for a clip QC refused, absent while none has run). A
 fallback’s alias entry is skipped (the request it answers is listed); an
-unreadable entry is skipped too. Numbers compare as floats (`duration=1`
-matches `1.0`). Entries kept by a foley before 0.0.43 carry no timestamp
+unreadable entry is skipped too. Numbers compare as floats (`duration_s=1`
+matches `1.0`); an entry kept before an affordance was renamed is matched
+under its old name (`Affordance.renamed_from`), and passing an old name
+raises `TypeError`. Entries kept by a foley before 0.0.43 carry no timestamp
 and come last, in listing order.
 
 * **Return type:**
@@ -1027,6 +1039,18 @@ bypass: `keep()` checks `rights_verified` first, so an unverified record
 is rejected regardless. Populate the flags from the `license_id` via
 `foley.licensing.apply_license_flags` (source overrides win). Never
 hand-set the derived flags — always route through the policy layer.
+
+#### *property* generation_reproducible *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[bool](https://docs.python.org/3/builtins/functions.html#bool)]*
+
+`True` iff a seed was recorded.
+
+`None` for a sound that was not generated. A backend with no seed
+(ElevenLabs, Sonilo) records none, so its clips read `False` rather than
+carrying a seed that would reproduce nothing (#75). A seed is necessary, not
+sufficient: a hosted endpoint can change its model behind the same id.
+
+* **Type:**
+  Whether this generated clip can be made again
 
 ### *class* foley.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)
 
@@ -2531,9 +2555,9 @@ training uses).
     translated native params (a provider param wins), recorded in the
     licence’s `generation_params`, and part of the generations-cache key.
     A key the backend’s config `provider_params` policy reserves (the
-    prompt, an output path) or prices (`duration`, the model) raises
+    prompt, an output path) or prices (`duration_s`, the model) raises
     `ValueError` before anything is paid for: use the unified argument.
-  * **\*\*affordances** – Unified generation affordances (`duration`,
+  * **\*\*affordances** – Unified generation affordances (`duration_s`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see `GENERATION_AFFORDANCES`).
 * **Returns:**

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=8d9581ea"></script>
+    <script src="../../../../_static/documentation_options.js?v=ba6d0b80"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.71" />
+  <meta name="docsearch:version" content="0.0.72" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -818,7 +818,7 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">duration_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">prompt_influence</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">negative_prompt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -832,7 +832,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        Args:</span>
 <span class="sd">            prompt: The natural-language sound description (required).</span>
-<span class="sd">            duration: Seconds (clamped to the model's ~47.55 s max). ``None`` uses a</span>
+<span class="sd">            duration_s: Seconds (clamped to the model's ~47.55 s max). ``None`` uses a</span>
 <span class="sd">                sane 10 s default (NOT the 47.55 s maximum).</span>
 <span class="sd">            prompt_influence: ``0..1`` unified adherence, mapped linearly onto the</span>
 <span class="sd">                native ``guidance_scale`` (1..15). ``None`` (default) sends the</span>
@@ -871,7 +871,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"(the guidance_scale to send when none is asked for)"</span>
             <span class="p">)</span>
         <span class="n">audio_end_in_s</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
-            <span class="n">duration</span> <span class="k">if</span> <span class="n">duration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">nd</span><span class="p">[</span><span class="s2">"duration_default_s"</span><span class="p">],</span>
+            <span class="n">duration_s</span> <span class="k">if</span> <span class="n">duration_s</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">nd</span><span class="p">[</span><span class="s2">"duration_default_s"</span><span class="p">],</span>
             <span class="n">nd</span><span class="p">[</span><span class="s2">"duration_max_s"</span><span class="p">],</span>
         <span class="p">)</span>
         <span class="n">native</span> <span class="o">=</span> <span class="p">{</span>

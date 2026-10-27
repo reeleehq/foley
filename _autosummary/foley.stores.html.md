@@ -143,13 +143,15 @@ Forget a cached request (so the next identical one generates anew).
 The kept generations matching `prompt` / `backend` / affordances, newest first.
 
 The way back to a paid clip whose key was not kept, e.g.
-`foley.generations.find("a crisp apple bite", backend="elevenlabs", duration=1)`.
+`foley.generations.find("a crisp apple bite", backend="elevenlabs", duration_s=1)`.
 Each item is `(request_key, entry)`: `entry["content_key"]` (or [`get()`](#foley.stores.GenerationsCache.get)
 with either key) gives the bytes, `entry["status"]` how its ingest ended
 (`'quarantined'` for a clip QC refused, absent while none has run). A
 fallback’s alias entry is skipped (the request it answers is listed); an
-unreadable entry is skipped too. Numbers compare as floats (`duration=1`
-matches `1.0`). Entries kept by a foley before 0.0.43 carry no timestamp
+unreadable entry is skipped too. Numbers compare as floats (`duration_s=1`
+matches `1.0`); an entry kept before an affordance was renamed is matched
+under its old name (`Affordance.renamed_from`), and passing an old name
+raises `TypeError`. Entries kept by a foley before 0.0.43 carry no timestamp
 and come last, in listing order.
 
 * **Return type:**

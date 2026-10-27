@@ -60,11 +60,11 @@ Local Stable Audio 3 Small-SFX adapter (a [`GenerateAdapter`](foley.sources.base
   * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – The process boundary (see [`Runner`](#foley.sources.stable_audio_3.adapter.Runner)); defaults to a subprocess.
   * **home** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]) – The Stability checkout; defaults to [`sa3_home()`](#foley.sources.stable_audio_3.adapter.sa3_home).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
+#### generate(prompt, , duration_s=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound for `prompt` on the CPU; return its bytes + provisional candidate.
 
-`duration` is clamped to the model’s 1..120 s (default 10 s); the model renders
+`duration_s` is clamped to the model’s 1..120 s (default 10 s); the model renders
 whole latent frames, so the clip may differ from it by a few milliseconds.
 `seed=None` draws a random seed, recorded in the clip’s provenance.
 `provider_params` (#61) are native script flags merged over the translated

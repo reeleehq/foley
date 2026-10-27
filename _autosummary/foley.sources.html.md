@@ -199,7 +199,7 @@ the retrieve [`SourceAdapter`](#foley.sources.SourceAdapter) rather than an extr
 
 Like a retrieve adapter, a generate adapter performs **no** storage or library
 access: it maps foley’s unified [`GENERATION_AFFORDANCES`](foley.base.html.md#foley.base.GENERATION_AFFORDANCES)
-(prompt, duration, prompt_influence, negative_prompt, steps, seed, loop,
+(prompt, duration_s, model, prompt_influence, negative_prompt, steps, seed, loop,
 output_format) to its backend’s native params (via `SOURCE_CONFIG['param_map']`,
 warning-and-dropping unsupported ones), builds the audio + a generated
 [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), and returns a [`GeneratedClip`](#foley.sources.GeneratedClip). The
@@ -653,7 +653,7 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     never seen by the unsupported-parameter policy. A key the source’s
     `provider_params` policy reserves or prices raises `ValueError`
     before any call, so the cost estimate is the call’s.
-  * **\*\*affordances** – Unified generation affordances (`duration`,
+  * **\*\*affordances** – Unified generation affordances (`duration_s`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see [`foley.base.GENERATION_AFFORDANCES`](foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).
 * **Return type:**

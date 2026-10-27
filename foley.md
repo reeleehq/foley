@@ -1,4 +1,4 @@
-> built 2026-10-27 02:46 UTC from ca3f734 (main) · foley 0.0.71. Details: build_info.json
+> built 2026-10-27 03:11 UTC from 2a99e28 (main) · foley 0.0.72. Details: build_info.json
 
 # index.html.md
 
@@ -41,20 +41,20 @@ hits = foley.search("distant thunder rumble", k=10)  # commercial use is the def
 # (accept its license on Hugging Face, set HF_TOKEN); backend="elevenlabs" needs
 # ELEVENLABS_API_KEY and is paid
 clip = foley.generate(
-    "a single wooden door creak", backend="stable_audio_3", duration=3
+    "a single wooden door creak", backend="stable_audio_3", duration_s=3
 )  # local, CPU; setup: foley.check_requirements(verbose=True)
 
 # No GPU? The fal-hosted backends (foley[fal] + FAL_KEY; paid, priced before the call):
 # Stable Audio 3 Small-SFX at $0.0206 a clip, commercial use under $1M revenue
 clip = foley.generate(
-    "a single wooden door creak", backend="fal_stable_audio_3", duration=3
+    "a single wooden door creak", backend="fal_stable_audio_3", duration_s=3
 )
 
 # Or let foley pick: with paid generation opted in (FOLEY_GENERATE_PAID=1) an unnamed
 # backend walks the generation order, ElevenLabs direct first (ELEVENLABS_API_KEY or
 # ELEVEN_API_KEY, plus FOLEY_ELEVENLABS_PLAN), then fal, then the local model; the
 # notes say which backends were skipped and why
-clip = foley.generate("a single wooden door creak", duration=3, level="sfx_fg")
+clip = foley.generate("a single wooden door creak", duration_s=3, level="sfx_fg")
 clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
 
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
@@ -148,9 +148,9 @@ lazily, so a bare install stays light. What each adds:
 
 **Nothing paid runs unless you ask for it.** Having `ANTHROPIC_API_KEY` set does not switch the SELECT rungs to Claude: pass `llm="anthropic"` to `find()` / `score()` or set `FOLEY_LLM=anthropic` (`llm="local"` uses `FOLEY_LLM_BASE_URL`). By default they run the free deterministic fakes, or your local endpoint if one is configured. `with foley.offline():` (or `FOLEY_OFFLINE=1`) blocks every external source and LLM call foley makes, on every surface, raising `foley.runtime.EgressBlocked` (model weights are never downloaded offline: a model not already cached raises `foley.runtime.ModelNotCached`, naming the command to fetch it while online).
 
-**Every paid call is priced and capped.** `foley.estimate("generate", backend="elevenlabs", duration=3)` says what a call costs before it is made (`None` means unknown, never free). A `find` / `score` / `generate` run stops before the first paid call that would take it past its `Budget(max_usd=...)` (default $1, or $3 when you chose Claude with `llm="anthropic"` / `FOLEY_LLM=anthropic`, since a default `find` with Claude is bounded at about $2.52), and a call of unknown cost needs `Budget(approve_unknown_cost=True)`. Every paid response is kept in `~/.local/share/foley/generations/` before QC, so an identical request is served from there instead of paying twice. What a backend could not honour is never silent: a parameter that changes the result (`seed` on ElevenLabs) raises, and every other drop or clamp is listed in the returned candidate’s `notes`.
+**Every paid call is priced and capped.** `foley.estimate("generate", backend="elevenlabs", duration_s=3)` says what a call costs before it is made (`None` means unknown, never free). A `find` / `score` / `generate` run stops before the first paid call that would take it past its `Budget(max_usd=...)` (default $1, or $3 when you chose Claude with `llm="anthropic"` / `FOLEY_LLM=anthropic`, since a default `find` with Claude is bounded at about $2.52), and a call of unknown cost needs `Budget(approve_unknown_cost=True)`. Every paid response is kept in `~/.local/share/foley/generations/` before QC, so an identical request is served from there instead of paying twice. What a backend could not honour is never silent: a parameter that changes the result (`seed` on ElevenLabs) raises, and every other drop or clamp is listed in the returned candidate’s `notes`.
 
-**A paid clip is repaired before it is quarantined, and never lost.** A generation Tier-0 QC would refuse for a clipped run just over the gate (a 1 s bite at 0.0125 % clipped, with the edge click and the +0.5 dBTP peak such a clip carries) gets the report’s own fixes — a 20 ms fade and a true-peak attenuation (`foley.repair`), which clear all three — is checked again and stored; the repair is on the candidate’s `notes` and in its licence’s `transformations`. Silence, NaN, a too-short clip and heavy clipping (a flat top over about a millisecond, or over 0.1 % of the clip) are still quarantined, with the reason noted. `repair=False` keeps the quarantine; a callable with `foley.repair.repair`’s signature replaces the policy (`functools.partial(foley.repair.repair, min_status=foley.QCStatus.pass_)` also declicks clips QC admits with a warning, which are otherwise stored as is). `store=False` previews a generation without indexing it: the candidate’s `audio_bytes` carries the clip, and enrichment that needs an absent extra (`foley[clap]`) is skipped with a note instead of failing after the paid call. And when a generation is refused anyway, the `GenerationError`’s `cache_key` names the paid bytes: `foley.generations.get(err.cache_key)` returns them as received, `foley.repair.repair_bytes(raw)` applies the same fixes to them, and `foley.generations.find(prompt, backend=..., duration=...)` lists what was kept, newest first (entries kept by earlier versions carry no timestamp and come last).
+**A paid clip is repaired before it is quarantined, and never lost.** A generation Tier-0 QC would refuse for a clipped run just over the gate (a 1 s bite at 0.0125 % clipped, with the edge click and the +0.5 dBTP peak such a clip carries) gets the report’s own fixes — a 20 ms fade and a true-peak attenuation (`foley.repair`), which clear all three — is checked again and stored; the repair is on the candidate’s `notes` and in its licence’s `transformations`. Silence, NaN, a too-short clip and heavy clipping (a flat top over about a millisecond, or over 0.1 % of the clip) are still quarantined, with the reason noted. `repair=False` keeps the quarantine; a callable with `foley.repair.repair`’s signature replaces the policy (`functools.partial(foley.repair.repair, min_status=foley.QCStatus.pass_)` also declicks clips QC admits with a warning, which are otherwise stored as is). `store=False` previews a generation without indexing it: the candidate’s `audio_bytes` carries the clip, and enrichment that needs an absent extra (`foley[clap]`) is skipped with a note instead of failing after the paid call. And when a generation is refused anyway, the `GenerationError`’s `cache_key` names the paid bytes: `foley.generations.get(err.cache_key)` returns them as received, `foley.repair.repair_bytes(raw)` applies the same fixes to them, and `foley.generations.find(prompt, backend=..., duration_s=...)` lists what was kept, newest first (entries kept by earlier versions carry no timestamp and come last).
 
 `foley.check_requirements()` (and the `foley_capabilities` MCP tool) report what’s installed and
 what’s degraded. Full docs: **[thorwhalen.github.io/foley](https://thorwhalen.github.io/foley)**.
@@ -2636,8 +2636,9 @@ Serialization contract:
 
 ### Functions
 
-| [`resolve_master`](_autosummary/foley.base.html.md#foley.base.resolve_master)(master)   | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.   |
-|---------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| [`reject_renamed`](_autosummary/foley.base.html.md#foley.base.reject_renamed)(names[, vocabulary])   | Raise `TypeError` if any of `names` is an affordance's old spelling.                    |
+|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [`resolve_master`](_autosummary/foley.base.html.md#foley.base.resolve_master)(master)                | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`. |
 
 ### Classes
 
@@ -2669,7 +2670,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound entered foley (retrieval channel or origin).
 
-### *class* foley.base.Affordance(name, type, description, default=None, stage='query', carries_meaning=False)
+### *class* foley.base.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, renamed_from=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2719,6 +2720,16 @@ that cannot honour it raises instead of dropping it (#53).
 * **Type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
+#### renamed_from
+
+The name it had before a release renamed it (#75): passing
+the old name raises a `TypeError` naming this one (see
+[`reject_renamed()`](_autosummary/foley.base.html.md#foley.base.reject_renamed)). For a generation affordance, the generations
+cache still reads entries kept under the old name.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### *class* foley.base.Anchor(\*values)
 
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
@@ -2765,7 +2776,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Whether a candidate was retrieved from the index or freshly generated.
 
-### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration': Affordance(name='duration', type=<class 'float'>, description='Seconds; None => backend default', default=None, stage='generate', carries_meaning=False), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False)}*
+### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, renamed_from='duration'), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, renamed_from=None)}*
 
 Unified generation-stage parameters (generate backends map onto these).
 
@@ -2794,6 +2805,18 @@ bypass: `keep()` checks `rights_verified` first, so an unverified record
 is rejected regardless. Populate the flags from the `license_id` via
 `foley.licensing.apply_license_flags` (source overrides win). Never
 hand-set the derived flags — always route through the policy layer.
+
+#### *property* generation_reproducible *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[bool](https://docs.python.org/3/builtins/functions.html#bool)]*
+
+`True` iff a seed was recorded.
+
+`None` for a sound that was not generated. A backend with no seed
+(ElevenLabs, Sonilo) records none, so its clips read `False` rather than
+carrying a seed that would reproduce nothing (#75). A seed is necessary, not
+sufficient: a hosted endpoint can change its model behind the same id.
+
+* **Type:**
+  Whether this generated clip can be made again
 
 ### foley.base.MASTER_PROFILES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [MasterProfile](_autosummary/foley.base.html.md#foley.base.MasterProfile)]* *= {'broadcast_atsc': MasterProfile(target_lufs=-24.0, true_peak_db=-2.0, lra=7.0, max_limiting_db=6.0), 'broadcast_ebu': MasterProfile(target_lufs=-23.0, true_peak_db=-1.0, lra=7.0, max_limiting_db=6.0), 'podcast': MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0), 'streaming': MasterProfile(target_lufs=-14.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)}*
 
@@ -2836,7 +2859,7 @@ Every field is a no-op at its default, so a sparse item (no `processing`)
 renders untouched; the mixer departs from dry/centered/full-level only when a
 field is set.
 
-### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False), 'sort': Affordance(name='sort', type=<class 'str'>, description='score|duration|created|downloads', default='score', stage='query', carries_meaning=False), 'text': Affordance(name='text', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False)}*
+### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False, renamed_from=None), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False, renamed_from=None), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False, renamed_from=None), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False, renamed_from=None), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False, renamed_from=None), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False, renamed_from=None), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'sort': Affordance(name='sort', type=<class 'str'>, description='score|duration|created|downloads', default='score', stage='query', carries_meaning=False, renamed_from=None), 'text': Affordance(name='text', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False, renamed_from=None), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False, renamed_from=None)}*
 
 Unified query-stage parameters (search / find / filter surface).
 
@@ -2957,6 +2980,24 @@ The result of one verification rung for a candidate.
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
 
 Which rung of the verification ladder produced a `Verdict`.
+
+### foley.base.reject_renamed(names, vocabulary=None)
+
+Raise `TypeError` if any of `names` is an affordance’s old spelling.
+
+`vocabulary` defaults to [`GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES); the old names come
+from each [`Affordance`](_autosummary/foley.base.html.md#foley.base.Affordance)’s `renamed_from`.
+
+```pycon
+>>> reject_renamed(["prompt", "duration_s"])
+>>> reject_renamed(["duration"])
+Traceback (most recent call last):
+    ...
+TypeError: duration= was renamed duration_s=
+```
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### foley.base.resolve_master(master)
 
@@ -3157,14 +3198,14 @@ The USD cost of one call to the source `config` declares, or `None` if unknown.
 
 * `'free'` (local inference, a free API tier) → `0.0`;
 * `'per_call'` → `amount_usd`;
-* `'per_second'` → `amount_usd` × the requested `duration`; when none is
+* `'per_second'` → `amount_usd` × the requested `duration_s`; when none is
   requested, × the `native_defaults['duration_default_s']` the adapter sends in
   its place, else × `native_defaults['duration_max_s']` (the duration is left to
   the backend: an upper bound), else `None`.
 
 * **Parameters:**
   * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG`.
-  * **\*\*affordances** – The canonical affordances of the call (`duration`, …).
+  * **\*\*affordances** – The canonical affordances of the call (`duration_s`, …).
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
@@ -5336,7 +5377,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound entered foley (retrieval channel or origin).
 
-### *class* foley.Affordance(name, type, description, default=None, stage='query', carries_meaning=False)
+### *class* foley.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, renamed_from=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -5385,6 +5426,16 @@ that cannot honour it raises instead of dropping it (#53).
 
 * **Type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+#### renamed_from
+
+The name it had before a release renamed it (#75): passing
+the old name raises a `TypeError` naming this one (see
+`reject_renamed()`). For a generation affordance, the generations
+cache still reads entries kept under the old name.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### *class* foley.Anchor(\*values)
 
@@ -5866,13 +5917,15 @@ Forget a cached request (so the next identical one generates anew).
 The kept generations matching `prompt` / `backend` / affordances, newest first.
 
 The way back to a paid clip whose key was not kept, e.g.
-`foley.generations.find("a crisp apple bite", backend="elevenlabs", duration=1)`.
+`foley.generations.find("a crisp apple bite", backend="elevenlabs", duration_s=1)`.
 Each item is `(request_key, entry)`: `entry["content_key"]` (or [`get()`](_autosummary/foley.html.md#foley.GenerationsCache.get)
 with either key) gives the bytes, `entry["status"]` how its ingest ended
 (`'quarantined'` for a clip QC refused, absent while none has run). A
 fallback’s alias entry is skipped (the request it answers is listed); an
-unreadable entry is skipped too. Numbers compare as floats (`duration=1`
-matches `1.0`). Entries kept by a foley before 0.0.43 carry no timestamp
+unreadable entry is skipped too. Numbers compare as floats (`duration_s=1`
+matches `1.0`); an entry kept before an affordance was renamed is matched
+under its old name (`Affordance.renamed_from`), and passing an old name
+raises `TypeError`. Entries kept by a foley before 0.0.43 carry no timestamp
 and come last, in listing order.
 
 * **Return type:**
@@ -6137,6 +6190,18 @@ bypass: `keep()` checks `rights_verified` first, so an unverified record
 is rejected regardless. Populate the flags from the `license_id` via
 `foley.licensing.apply_license_flags` (source overrides win). Never
 hand-set the derived flags — always route through the policy layer.
+
+#### *property* generation_reproducible *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[bool](https://docs.python.org/3/builtins/functions.html#bool)]*
+
+`True` iff a seed was recorded.
+
+`None` for a sound that was not generated. A backend with no seed
+(ElevenLabs, Sonilo) records none, so its clips read `False` rather than
+carrying a seed that would reproduce nothing (#75). A seed is necessary, not
+sufficient: a hosted endpoint can change its model behind the same id.
+
+* **Type:**
+  Whether this generated clip can be made again
 
 ### *class* foley.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)
 
@@ -7641,9 +7706,9 @@ training uses).
     translated native params (a provider param wins), recorded in the
     licence’s `generation_params`, and part of the generations-cache key.
     A key the backend’s config `provider_params` policy reserves (the
-    prompt, an output path) or prices (`duration`, the model) raises
+    prompt, an output path) or prices (`duration_s`, the model) raises
     `ValueError` before anything is paid for: use the unified argument.
-  * **\*\*affordances** – Unified generation affordances (`duration`,
+  * **\*\*affordances** – Unified generation affordances (`duration_s`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see `GENERATION_AFFORDANCES`).
 * **Returns:**
@@ -13844,7 +13909,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'ta dum', 'netflix intro', 'ta-dum', 'netflix sound', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta dum', 'netflix chime', 'netflix sound', 'netflix intro', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -15322,7 +15387,7 @@ the retrieve [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sou
 
 Like a retrieve adapter, a generate adapter performs **no** storage or library
 access: it maps foley’s unified [`GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES)
-(prompt, duration, prompt_influence, negative_prompt, steps, seed, loop,
+(prompt, duration_s, model, prompt_influence, negative_prompt, steps, seed, loop,
 output_format) to its backend’s native params (via `SOURCE_CONFIG['param_map']`,
 warning-and-dropping unsupported ones), builds the audio + a generated
 [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), and returns a [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip). The
@@ -16120,14 +16185,17 @@ The account a call is made on, for the generations cache (`'operator'` or a fing
 
 The ElevenLabs token (constructor, else a bound key, else `$ELEVENLABS_API_KEY`).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
+#### generate(prompt, , duration_s=None, model=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound effect for `prompt`; return its bytes + provisional candidate.
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description (required).
-  * **duration** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the native `0.5..30` range). `None`
+  * **duration_s** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the native `0.5..30` range). `None`
     lets the model auto-determine the length from the prompt.
+  * **model** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The native `model_id` to pin (`eleven_text_to_sound_v2` |
+    `eleven_text_to_sound_v3`); `None` uses `native_defaults`’.
+    Recorded as the licence’s `generator_model` / `generator_version`.
   * **prompt_influence** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – `0..1` (identity map to the native field; higher =
     closer to the prompt, less variety). `None` (default) omits it, so
     the API applies its own default.
@@ -16972,7 +17040,7 @@ the retrieve [`SourceAdapter`](_autosummary/foley.sources.html.md#foley.sources.
 
 Like a retrieve adapter, a generate adapter performs **no** storage or library
 access: it maps foley’s unified [`GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES)
-(prompt, duration, prompt_influence, negative_prompt, steps, seed, loop,
+(prompt, duration_s, model, prompt_influence, negative_prompt, steps, seed, loop,
 output_format) to its backend’s native params (via `SOURCE_CONFIG['param_map']`,
 warning-and-dropping unsupported ones), builds the audio + a generated
 [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), and returns a [`GeneratedClip`](_autosummary/foley.sources.html.md#foley.sources.GeneratedClip). The
@@ -17426,7 +17494,7 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     never seen by the unsupported-parameter policy. A key the source’s
     `provider_params` policy reserves or prices raises `ValueError`
     before any call, so the cost estimate is the call’s.
-  * **\*\*affordances** – Unified generation affordances (`duration`,
+  * **\*\*affordances** – Unified generation affordances (`duration_s`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format` — see [`foley.base.GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).
 * **Return type:**
@@ -18349,13 +18417,13 @@ Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](_autosummary
     `.device`; production omits it and the real
     `diffusers.StableAudioPipeline` lazy-loads on first generation).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
+#### generate(prompt, , duration_s=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound for `prompt`; return its bytes + provisional candidate.
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description (required).
-  * **duration** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the model’s ~47.55 s max). `None` uses a
+  * **duration_s** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the model’s ~47.55 s max). `None` uses a
     sane 10 s default (NOT the 47.55 s maximum).
   * **prompt_influence** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – `0..1` unified adherence, mapped linearly onto the
     native `guidance_scale` (1..15). `None` (default) sends the
@@ -18506,11 +18574,11 @@ Local Stable Audio 3 Small-SFX adapter (a [`GenerateAdapter`](_autosummary/foley
   * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – The process boundary (see [`Runner`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.Runner)); defaults to a subprocess.
   * **home** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)]) – The Stability checkout; defaults to [`sa3_home()`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#foley.sources.stable_audio_3.adapter.sa3_home).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
+#### generate(prompt, , duration_s=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound for `prompt` on the CPU; return its bytes + provisional candidate.
 
-`duration` is clamped to the model’s 1..120 s (default 10 s); the model renders
+`duration_s` is clamped to the model’s 1..120 s (default 10 s); the model renders
 whole latent frames, so the clip may differ from it by a few milliseconds.
 `seed=None` draws a random seed, recorded in the clip’s provenance.
 `provider_params` (#61) are native script flags merged over the translated
@@ -18873,13 +18941,15 @@ Forget a cached request (so the next identical one generates anew).
 The kept generations matching `prompt` / `backend` / affordances, newest first.
 
 The way back to a paid clip whose key was not kept, e.g.
-`foley.generations.find("a crisp apple bite", backend="elevenlabs", duration=1)`.
+`foley.generations.find("a crisp apple bite", backend="elevenlabs", duration_s=1)`.
 Each item is `(request_key, entry)`: `entry["content_key"]` (or [`get()`](_autosummary/foley.stores.html.md#foley.stores.GenerationsCache.get)
 with either key) gives the bytes, `entry["status"]` how its ingest ended
 (`'quarantined'` for a clip QC refused, absent while none has run). A
 fallback’s alias entry is skipped (the request it answers is listed); an
-unreadable entry is skipped too. Numbers compare as floats (`duration=1`
-matches `1.0`). Entries kept by a foley before 0.0.43 carry no timestamp
+unreadable entry is skipped too. Numbers compare as floats (`duration_s=1`
+matches `1.0`); an entry kept before an affordance was renamed is matched
+under its old name (`Affordance.renamed_from`), and passing an old name
+raises `TypeError`. Entries kept by a foley before 0.0.43 carry no timestamp
 and come last, in listing order.
 
 * **Return type:**
@@ -20455,18 +20525,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 02:46 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/ca3f7348b1aee718be251cf11ddac56a0fd16312"><code>ca3f734</code></a> on branch <code>main</code>, for **foley 0.0.71** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 03:11 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/2a99e28852363a2efa15fb019a734e4f67155c23"><code>2a99e28</code></a> on branch <code>main</code>, for **foley 0.0.72** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.71) is behind the latest release on PyPI (0.0.72): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/ca3f7348b1aee718be251cf11ddac56a0fd16312"><code>ca3f7348b1aee718be251cf11ddac56a0fd16312</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/2a99e28852363a2efa15fb019a734e4f67155c23"><code>2a99e28852363a2efa15fb019a734e4f67155c23</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20477,9 +20545,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40440114999">40440114999</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40442570479">40442570479</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>ca3f7348b1aee718be251cf11ddac56a0fd16312</code> (in the history of the built commit) |
+| Event commit | <code>2a99e28852363a2efa15fb019a734e4f67155c23</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20504,13 +20572,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.72/">0.0.72</a>, newer than the documented version (0.0.71).
+Latest release: <a href="https://pypi.org/project/foley/0.0.72/">0.0.72</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout ca3f7348b1aee718be251cf11ddac56a0fd16312
+git checkout 2a99e28852363a2efa15fb019a734e4f67155c23
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=8d9581ea"></script>
+    <script src="../_static/documentation_options.js?v=ba6d0b80"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.71" />
+  <meta name="docsearch:version" content="0.0.72" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -700,13 +700,15 @@ request still points at them).</p></li>
 <span class="sig-name descname"><span class="pre">find</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">affordances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/stores.html#GenerationsCache.find"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.stores.GenerationsCache.find" title="Link to this definition">#</a></dt>
 <dd><p>The kept generations matching <code class="docutils literal notranslate"><span class="pre">prompt</span></code> / <code class="docutils literal notranslate"><span class="pre">backend</span></code> / affordances, newest first.</p>
 <p>The way back to a paid clip whose key was not kept, e.g.
-<code class="docutils literal notranslate"><span class="pre">foley.generations.find(&quot;a</span> <span class="pre">crisp</span> <span class="pre">apple</span> <span class="pre">bite&quot;,</span> <span class="pre">backend=&quot;elevenlabs&quot;,</span> <span class="pre">duration=1)</span></code>.
+<code class="docutils literal notranslate"><span class="pre">foley.generations.find(&quot;a</span> <span class="pre">crisp</span> <span class="pre">apple</span> <span class="pre">bite&quot;,</span> <span class="pre">backend=&quot;elevenlabs&quot;,</span> <span class="pre">duration_s=1)</span></code>.
 Each item is <code class="docutils literal notranslate"><span class="pre">(request_key,</span> <span class="pre">entry)</span></code>: <code class="docutils literal notranslate"><span class="pre">entry[&quot;content_key&quot;]</span></code> (or <a class="reference internal" href="#foley.stores.GenerationsCache.get" title="foley.stores.GenerationsCache.get"><code class="xref py py-meth docutils literal notranslate"><span class="pre">get()</span></code></a>
 with either key) gives the bytes, <code class="docutils literal notranslate"><span class="pre">entry[&quot;status&quot;]</span></code> how its ingest ended
 (<code class="docutils literal notranslate"><span class="pre">'quarantined'</span></code> for a clip QC refused, absent while none has run). A
 fallback’s alias entry is skipped (the request it answers is listed); an
-unreadable entry is skipped too. Numbers compare as floats (<code class="docutils literal notranslate"><span class="pre">duration=1</span></code>
-matches <code class="docutils literal notranslate"><span class="pre">1.0</span></code>). Entries kept by a foley before 0.0.43 carry no timestamp
+unreadable entry is skipped too. Numbers compare as floats (<code class="docutils literal notranslate"><span class="pre">duration_s=1</span></code>
+matches <code class="docutils literal notranslate"><span class="pre">1.0</span></code>); an entry kept before an affordance was renamed is matched
+under its old name (<code class="docutils literal notranslate"><span class="pre">Affordance.renamed_from</span></code>), and passing an old name
+raises <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>. Entries kept by a foley before 0.0.43 carry no timestamp
 and come last, in listing order.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>

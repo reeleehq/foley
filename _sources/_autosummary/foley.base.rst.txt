@@ -16,6 +16,7 @@ foley.base
 
    .. autosummary::
    
+      reject_renamed
       resolve_master
    
    .. rubric:: Classes

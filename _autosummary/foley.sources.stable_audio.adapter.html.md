@@ -60,13 +60,13 @@ Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](foley.source
     `.device`; production omits it and the real
     `diffusers.StableAudioPipeline` lazy-loads on first generation).
 
-#### generate(prompt, , duration=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
+#### generate(prompt, , duration_s=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
 Generate a sound for `prompt`; return its bytes + provisional candidate.
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description (required).
-  * **duration** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the model’s ~47.55 s max). `None` uses a
+  * **duration_s** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the model’s ~47.55 s max). `None` uses a
     sane 10 s default (NOT the 47.55 s maximum).
   * **prompt_influence** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – `0..1` unified adherence, mapped linearly onto the
     native `guidance_scale` (1..15). `None` (default) sends the

@@ -174,7 +174,7 @@ the retrieve [`SourceAdapter`](#foley.sources.base.SourceAdapter) rather than an
 
 Like a retrieve adapter, a generate adapter performs **no** storage or library
 access: it maps foley’s unified [`GENERATION_AFFORDANCES`](foley.base.html.md#foley.base.GENERATION_AFFORDANCES)
-(prompt, duration, prompt_influence, negative_prompt, steps, seed, loop,
+(prompt, duration_s, model, prompt_influence, negative_prompt, steps, seed, loop,
 output_format) to its backend’s native params (via `SOURCE_CONFIG['param_map']`,
 warning-and-dropping unsupported ones), builds the audio + a generated
 [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), and returns a [`GeneratedClip`](#foley.sources.base.GeneratedClip). The

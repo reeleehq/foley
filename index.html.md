@@ -37,20 +37,20 @@ hits = foley.search("distant thunder rumble", k=10)  # commercial use is the def
 # (accept its license on Hugging Face, set HF_TOKEN); backend="elevenlabs" needs
 # ELEVENLABS_API_KEY and is paid
 clip = foley.generate(
-    "a single wooden door creak", backend="stable_audio_3", duration=3
+    "a single wooden door creak", backend="stable_audio_3", duration_s=3
 )  # local, CPU; setup: foley.check_requirements(verbose=True)
 
 # No GPU? The fal-hosted backends (foley[fal] + FAL_KEY; paid, priced before the call):
 # Stable Audio 3 Small-SFX at $0.0206 a clip, commercial use under $1M revenue
 clip = foley.generate(
-    "a single wooden door creak", backend="fal_stable_audio_3", duration=3
+    "a single wooden door creak", backend="fal_stable_audio_3", duration_s=3
 )
 
 # Or let foley pick: with paid generation opted in (FOLEY_GENERATE_PAID=1) an unnamed
 # backend walks the generation order, ElevenLabs direct first (ELEVENLABS_API_KEY or
 # ELEVEN_API_KEY, plus FOLEY_ELEVENLABS_PLAN), then fal, then the local model; the
 # notes say which backends were skipped and why
-clip = foley.generate("a single wooden door creak", duration=3, level="sfx_fg")
+clip = foley.generate("a single wooden door creak", duration_s=3, level="sfx_fg")
 clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
 
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
@@ -144,9 +144,9 @@ lazily, so a bare install stays light. What each adds:
 
 **Nothing paid runs unless you ask for it.** Having `ANTHROPIC_API_KEY` set does not switch the SELECT rungs to Claude: pass `llm="anthropic"` to `find()` / `score()` or set `FOLEY_LLM=anthropic` (`llm="local"` uses `FOLEY_LLM_BASE_URL`). By default they run the free deterministic fakes, or your local endpoint if one is configured. `with foley.offline():` (or `FOLEY_OFFLINE=1`) blocks every external source and LLM call foley makes, on every surface, raising `foley.runtime.EgressBlocked` (model weights are never downloaded offline: a model not already cached raises `foley.runtime.ModelNotCached`, naming the command to fetch it while online).
 
-**Every paid call is priced and capped.** `foley.estimate("generate", backend="elevenlabs", duration=3)` says what a call costs before it is made (`None` means unknown, never free). A `find` / `score` / `generate` run stops before the first paid call that would take it past its `Budget(max_usd=...)` (default $1, or $3 when you chose Claude with `llm="anthropic"` / `FOLEY_LLM=anthropic`, since a default `find` with Claude is bounded at about $2.52), and a call of unknown cost needs `Budget(approve_unknown_cost=True)`. Every paid response is kept in `~/.local/share/foley/generations/` before QC, so an identical request is served from there instead of paying twice. What a backend could not honour is never silent: a parameter that changes the result (`seed` on ElevenLabs) raises, and every other drop or clamp is listed in the returned candidate’s `notes`.
+**Every paid call is priced and capped.** `foley.estimate("generate", backend="elevenlabs", duration_s=3)` says what a call costs before it is made (`None` means unknown, never free). A `find` / `score` / `generate` run stops before the first paid call that would take it past its `Budget(max_usd=...)` (default $1, or $3 when you chose Claude with `llm="anthropic"` / `FOLEY_LLM=anthropic`, since a default `find` with Claude is bounded at about $2.52), and a call of unknown cost needs `Budget(approve_unknown_cost=True)`. Every paid response is kept in `~/.local/share/foley/generations/` before QC, so an identical request is served from there instead of paying twice. What a backend could not honour is never silent: a parameter that changes the result (`seed` on ElevenLabs) raises, and every other drop or clamp is listed in the returned candidate’s `notes`.
 
-**A paid clip is repaired before it is quarantined, and never lost.** A generation Tier-0 QC would refuse for a clipped run just over the gate (a 1 s bite at 0.0125 % clipped, with the edge click and the +0.5 dBTP peak such a clip carries) gets the report’s own fixes — a 20 ms fade and a true-peak attenuation (`foley.repair`), which clear all three — is checked again and stored; the repair is on the candidate’s `notes` and in its licence’s `transformations`. Silence, NaN, a too-short clip and heavy clipping (a flat top over about a millisecond, or over 0.1 % of the clip) are still quarantined, with the reason noted. `repair=False` keeps the quarantine; a callable with `foley.repair.repair`’s signature replaces the policy (`functools.partial(foley.repair.repair, min_status=foley.QCStatus.pass_)` also declicks clips QC admits with a warning, which are otherwise stored as is). `store=False` previews a generation without indexing it: the candidate’s `audio_bytes` carries the clip, and enrichment that needs an absent extra (`foley[clap]`) is skipped with a note instead of failing after the paid call. And when a generation is refused anyway, the `GenerationError`’s `cache_key` names the paid bytes: `foley.generations.get(err.cache_key)` returns them as received, `foley.repair.repair_bytes(raw)` applies the same fixes to them, and `foley.generations.find(prompt, backend=..., duration=...)` lists what was kept, newest first (entries kept by earlier versions carry no timestamp and come last).
+**A paid clip is repaired before it is quarantined, and never lost.** A generation Tier-0 QC would refuse for a clipped run just over the gate (a 1 s bite at 0.0125 % clipped, with the edge click and the +0.5 dBTP peak such a clip carries) gets the report’s own fixes — a 20 ms fade and a true-peak attenuation (`foley.repair`), which clear all three — is checked again and stored; the repair is on the candidate’s `notes` and in its licence’s `transformations`. Silence, NaN, a too-short clip and heavy clipping (a flat top over about a millisecond, or over 0.1 % of the clip) are still quarantined, with the reason noted. `repair=False` keeps the quarantine; a callable with `foley.repair.repair`’s signature replaces the policy (`functools.partial(foley.repair.repair, min_status=foley.QCStatus.pass_)` also declicks clips QC admits with a warning, which are otherwise stored as is). `store=False` previews a generation without indexing it: the candidate’s `audio_bytes` carries the clip, and enrichment that needs an absent extra (`foley[clap]`) is skipped with a note instead of failing after the paid call. And when a generation is refused anyway, the `GenerationError`’s `cache_key` names the paid bytes: `foley.generations.get(err.cache_key)` returns them as received, `foley.repair.repair_bytes(raw)` applies the same fixes to them, and `foley.generations.find(prompt, backend=..., duration_s=...)` lists what was kept, newest first (entries kept by earlier versions carry no timestamp and come last).
 
 `foley.check_requirements()` (and the `foley_capabilities` MCP tool) report what’s installed and
 what’s degraded. Full docs: **[thorwhalen.github.io/foley](https://thorwhalen.github.io/foley)**.

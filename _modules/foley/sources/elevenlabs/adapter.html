@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=8d9581ea"></script>
+    <script src="../../../../_static/documentation_options.js?v=ba6d0b80"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.71" />
+  <meta name="docsearch:version" content="0.0.72" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -747,7 +747,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">wave</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">...base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Candidate</span><span class="p">,</span> <span class="n">CandidateOrigin</span><span class="p">,</span> <span class="n">SoundRecord</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">...base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Candidate</span><span class="p">,</span> <span class="n">CandidateOrigin</span><span class="p">,</span> <span class="n">SoundRecord</span><span class="p">,</span> <span class="n">reject_renamed</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">actual_call_cost</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">GeneratedClip</span><span class="p">,</span>
@@ -1024,7 +1024,8 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">duration_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">prompt_influence</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">negative_prompt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1038,8 +1039,11 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        Args:</span>
 <span class="sd">            prompt: The natural-language sound description (required).</span>
-<span class="sd">            duration: Seconds (clamped to the native ``0.5..30`` range). ``None``</span>
+<span class="sd">            duration_s: Seconds (clamped to the native ``0.5..30`` range). ``None``</span>
 <span class="sd">                lets the model auto-determine the length from the prompt.</span>
+<span class="sd">            model: The native ``model_id`` to pin (``eleven_text_to_sound_v2`` |</span>
+<span class="sd">                ``eleven_text_to_sound_v3``); ``None`` uses ``native_defaults``'.</span>
+<span class="sd">                Recorded as the licence's ``generator_model`` / ``generator_version``.</span>
 <span class="sd">            prompt_influence: ``0..1`` (identity map to the native field; higher =</span>
 <span class="sd">                closer to the prompt, less variety). ``None`` (default) omits it, so</span>
 <span class="sd">                the API applies its own default.</span>
@@ -1072,13 +1076,13 @@ window.runMermaid = runMermaid;</script>
             <span class="n">notes</span><span class="p">,</span> <span class="n">negative_prompt</span><span class="o">=</span><span class="n">negative_prompt</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="n">steps</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span>
         <span class="p">)</span>
 
-        <span class="n">model_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">][</span><span class="s2">"model_id"</span><span class="p">]</span>
+        <span class="n">model_id</span> <span class="o">=</span> <span class="n">model</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">][</span><span class="s2">"model_id"</span><span class="p">]</span>
         <span class="n">native_influence</span> <span class="o">=</span> <span class="n">native_adherence</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">prompt_influence</span><span class="p">,</span> <span class="n">notes</span><span class="p">)</span>
         <span class="n">body</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="n">prompt</span><span class="p">,</span> <span class="s2">"model_id"</span><span class="p">:</span> <span class="n">model_id</span><span class="p">,</span> <span class="s2">"loop"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">loop</span><span class="p">)}</span>
         <span class="k">if</span> <span class="n">native_influence</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">body</span><span class="p">[</span><span class="s2">"prompt_influence"</span><span class="p">]</span> <span class="o">=</span> <span class="n">native_influence</span>
-        <span class="k">if</span> <span class="n">duration</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">body</span><span class="p">[</span><span class="s2">"duration_seconds"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clamp_duration</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">duration_s</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">body</span><span class="p">[</span><span class="s2">"duration_seconds"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clamp_duration</span><span class="p">(</span><span class="n">duration_s</span><span class="p">)</span>
         <span class="n">body</span> <span class="o">=</span> <span class="n">merge_provider_params</span><span class="p">(</span>
             <span class="n">body</span><span class="p">,</span> <span class="n">provider_params</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"provider_params"</span><span class="p">)</span>
         <span class="p">)</span>
@@ -1109,7 +1113,8 @@ window.runMermaid = runMermaid;</script>
             <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"plan_attribution"</span><span class="p">,</span> <span class="p">{})</span>
             <span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">license_id</span><span class="p">),</span>
             <span class="n">generator_model</span><span class="o">=</span><span class="n">model_id</span><span class="p">,</span>
-            <span class="n">generator_version</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"generator_version"</span><span class="p">),</span>
+            <span class="n">generator_version</span><span class="o">=</span><span class="n">model</span>
+            <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"generator_version"</span><span class="p">),</span>
             <span class="n">generation_prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
             <span class="n">generation_seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># non-deterministic backend</span>
             <span class="n">generation_params</span><span class="o">=</span><span class="n">resolved</span><span class="p">,</span>
@@ -1121,7 +1126,7 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span>
         <span class="n">candidate</span> <span class="o">=</span> <span class="n">Candidate</span><span class="p">(</span><span class="n">sound</span><span class="o">=</span><span class="n">record</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="n">CandidateOrigin</span><span class="o">.</span><span class="n">generated</span><span class="p">)</span>
         <span class="n">candidate</span><span class="o">.</span><span class="n">cost_actual_usd</span> <span class="o">=</span> <span class="n">actual_call_cost</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_seconds"</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">duration_s</span><span class="o">=</span><span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_seconds"</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">GeneratedClip</span><span class="p">(</span>
             <span class="n">audio_bytes</span><span class="o">=</span><span class="n">audio_bytes</span><span class="p">,</span>
@@ -1226,7 +1231,11 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="n">buf</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_warn_unsupported</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="o">**</span><span class="n">passed</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Record a note for each unsupported affordance passed with a non-default value."""</span>
+<span class="w">        </span><span class="sd">"""Record a note for each unsupported affordance passed with a non-default value.</span>
+
+<span class="sd">        A renamed affordance's old spelling raises ``TypeError`` instead (#75).</span>
+<span class="sd">        """</span>
+        <span class="n">reject_renamed</span><span class="p">(</span><span class="n">passed</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_UNSUPPORTED</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">passed</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -1236,11 +1245,11 @@ window.runMermaid = runMermaid;</script>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">extra</span><span class="p">:</span>
             <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"affordance </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is not a known SFX param; ignored"</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_clamp_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Clamp ``duration`` to the native ``[min, max]`` seconds window."""</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clamp_duration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">duration_s</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Clamp ``duration_s`` to the native ``[min, max]`` seconds window."""</span>
         <span class="n">lo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">][</span><span class="s2">"duration_min_s"</span><span class="p">]</span>
         <span class="n">hi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">][</span><span class="s2">"duration_max_s"</span><span class="p">]</span>
-        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">duration</span><span class="p">),</span> <span class="n">hi</span><span class="p">))</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">duration_s</span><span class="p">),</span> <span class="n">hi</span><span class="p">))</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_invoke</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">""":meth:`invoke_native`, with the credits the account was charged (the</span>

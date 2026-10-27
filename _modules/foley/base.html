@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=8d9581ea"></script>
+    <script src="../../_static/documentation_options.js?v=ba6d0b80"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.71" />
+  <meta name="docsearch:version" content="0.0.72" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -740,7 +740,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="n">SCHEMA_VERSION</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
 
@@ -866,6 +866,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        carries_meaning: Dropping it would change what the caller gets (a seed they</span>
 <span class="sd">            will rely on to reproduce, content they asked to exclude), so a backend</span>
 <span class="sd">            that cannot honour it raises instead of dropping it (#53).</span>
+<span class="sd">        renamed_from: The name it had before a release renamed it (#75): passing</span>
+<span class="sd">            the old name raises a ``TypeError`` naming this one (see</span>
+<span class="sd">            :func:`reject_renamed`). For a generation affordance, the generations</span>
+<span class="sd">            cache still reads entries kept under the old name.</span>
 <span class="sd">    """</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -873,7 +877,8 @@ window.runMermaid = runMermaid;</script>
     <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">stage</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"query"</span>
-    <span class="n">carries_meaning</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></div>
+    <span class="n">carries_meaning</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">renamed_from</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 
@@ -903,8 +908,19 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: Unified generation-stage parameters (generate backends map onto these).</span>
 <span class="n">GENERATION_AFFORDANCES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Affordance</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">"prompt"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span><span class="s2">"prompt"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">"Sound description"</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="s2">"generate"</span><span class="p">),</span>
-    <span class="s2">"duration"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
-        <span class="s2">"duration"</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="s2">"Seconds; None =&gt; backend default"</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="s2">"generate"</span>
+    <span class="s2">"duration_s"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"duration_s"</span><span class="p">,</span>
+        <span class="nb">float</span><span class="p">,</span>
+        <span class="s2">"Seconds; None =&gt; backend auto"</span><span class="p">,</span>
+        <span class="n">stage</span><span class="o">=</span><span class="s2">"generate"</span><span class="p">,</span>
+        <span class="n">renamed_from</span><span class="o">=</span><span class="s2">"duration"</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="s2">"model"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"model"</span><span class="p">,</span>
+        <span class="nb">str</span><span class="p">,</span>
+        <span class="s2">"Pin a model / version (stored as generator_version); None =&gt; the backend's"</span><span class="p">,</span>
+        <span class="n">stage</span><span class="o">=</span><span class="s2">"generate"</span><span class="p">,</span>
+        <span class="n">carries_meaning</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">),</span>
     <span class="s2">"prompt_influence"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
         <span class="s2">"prompt_influence"</span><span class="p">,</span>
@@ -932,6 +948,28 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"output_format"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">"wav|opus|mp3"</span><span class="p">,</span> <span class="s2">"wav"</span><span class="p">,</span> <span class="s2">"generate"</span>
     <span class="p">),</span>
 <span class="p">}</span>
+
+
+<div class="viewcode-block" id="reject_renamed">
+<a class="viewcode-back" href="../../_autosummary/foley.base.html#foley.reject_renamed">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">reject_renamed</span><span class="p">(</span><span class="n">names</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">vocabulary</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Raise ``TypeError`` if any of ``names`` is an affordance's old spelling.</span>
+
+<span class="sd">    ``vocabulary`` defaults to :data:`GENERATION_AFFORDANCES`; the old names come</span>
+<span class="sd">    from each :class:`Affordance`'s ``renamed_from``.</span>
+
+<span class="sd">    &gt;&gt;&gt; reject_renamed(["prompt", "duration_s"])</span>
+<span class="sd">    &gt;&gt;&gt; reject_renamed(["duration"])</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">        ...</span>
+<span class="sd">    TypeError: duration= was renamed duration_s=</span>
+<span class="sd">    """</span>
+    <span class="n">vocabulary</span> <span class="o">=</span> <span class="n">GENERATION_AFFORDANCES</span> <span class="k">if</span> <span class="n">vocabulary</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">vocabulary</span>
+    <span class="n">renamed</span> <span class="o">=</span> <span class="p">{</span><span class="n">a</span><span class="o">.</span><span class="n">renamed_from</span><span class="p">:</span> <span class="n">a</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">vocabulary</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">a</span><span class="o">.</span><span class="n">renamed_from</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">renamed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">= was renamed </span><span class="si">{</span><span class="n">renamed</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">}</span><span class="s2">="</span><span class="p">)</span></div>
+
 
 
 <span class="c1"># ---------------------------------------------------------------------------</span>
@@ -1112,6 +1150,19 @@ window.runMermaid = runMermaid;</script>
         <span class="kc">None</span>  <span class="c1"># {"present": True, "method": "audioseal", "version": ...}</span>
     <span class="p">)</span>
     <span class="n">c2pa_manifest_ref</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generation_reproducible</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Whether this generated clip can be made again: ``True`` iff a seed was recorded.</span>
+
+<span class="sd">        ``None`` for a sound that was not generated. A backend with no seed</span>
+<span class="sd">        (ElevenLabs, Sonilo) records none, so its clips read ``False`` rather than</span>
+<span class="sd">        carrying a seed that would reproduce nothing (#75). A seed is necessary, not</span>
+<span class="sd">        sufficient: a hosted endpoint can change its model behind the same id.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_ai_generated</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generation_seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
     <span class="c1"># safety / disclosure</span>
     <span class="n">contains_recognizable_voice</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
