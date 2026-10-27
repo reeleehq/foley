@@ -990,6 +990,10 @@ def estimate(verb: str, **kwargs):
     Raises:
         ValueError: For an unknown verb.
         KeyError: For an unknown backend / source.
+        UnsupportedParameter: For ``'generate'`` on one backend that cannot honour a
+            meaning-carrying parameter (``model=``, ``seed=``, ``video=``): the call
+            would be refused before anything is paid, so it has no price (#164). An
+            order passes such a backend over, as ``generate`` does.
     """
     from .agent.tools import estimate_find_usd
     from .cost import estimate_call

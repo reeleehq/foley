@@ -255,21 +255,22 @@ def check_provider_params(
     if provider_params is None:
         return {}
     require_params_mapping(provider_params)
+    for key in provider_params:  # a malformed request first, whatever the policy
+        if not isinstance(key, str):
+            raise TypeError(
+                "provider_params keys must be str (native parameter names), got "
+                f"{type(key).__name__}: {key!r}"
+            )
     if policy is None and provider_params:
         raise ValueError(
             "this source declares no provider_params policy, so it cannot take "
-            f"provider_params (got {sorted(map(str, provider_params))})"
+            f"provider_params (got {sorted(provider_params)})"
         )
     policy = policy or {}
     reserved = set(policy.get("reserved") or ())
     priced = set(policy.get("priced") or ())
     paging = set(policy.get("paging") or ())
     for key in provider_params:
-        if not isinstance(key, str):
-            raise TypeError(
-                "provider_params keys must be str (native parameter names), got "
-                f"{type(key).__name__}: {key!r}"
-            )
         if key in reserved:
             raise ValueError(
                 f"provider_params[{key!r}] is reserved: foley sets it (it decides what "

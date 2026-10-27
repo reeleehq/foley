@@ -752,10 +752,21 @@ def estimate_order(backend=None, **affordances) -> Optional[float]:
     paid entries only once opted in). An order bills at most one backend (a backend is
     passed over only when nothing was billed, see :func:`generate_in_order`), but which
     one depends on who answers, so the bound is the dearest backend the order would try.
-    ``None`` (unknown) when any of them is unknown.
+    ``None`` (unknown) when any of them is unknown. ``affordances`` may carry the call's
+    ``on_unsupported``; the façade's other keywords (``library=``, ``reuse_cached=``, …)
+    are not affordances and are ignored.
+
+    Raises:
+        UnsupportedParameter: When every backend tried refuses the call (#164).
     """
     from ._dispatch import UnsupportedParameter, estimate_generation
     from .registry import SOURCE_REGISTRY, discover_sources
+
+    affordances = {
+        k: v
+        for k, v in affordances.items()
+        if k not in _GENERATE_KNOWN or k == "on_unsupported"
+    }
 
     if isinstance(backend, (list, tuple)):
         order, paid_ok = tuple(backend), True
@@ -779,12 +790,14 @@ def estimate_order(backend=None, **affordances) -> Optional[float]:
             or ((paid_ok or not backend_is_paid(name)) and backend_has_key(name))
         )
     ]
-    prices = []
+    prices, refused = [], None
     for name in tried:
         try:
             prices.append(estimate_generation(name, **affordances))
-        except (UnsupportedParameter, SourceConfigurationError):
-            continue  # the order would pass it over before any call
+        except (UnsupportedParameter, SourceConfigurationError) as exc:
+            refused = exc  # the order would pass it over before any call
+    if not prices and isinstance(refused, UnsupportedParameter):
+        raise refused  # every backend refuses the call, as generate would
     if not prices or any(p is None for p in prices):
         return None
     return max(prices)
@@ -827,8 +840,8 @@ def provider_params_by_backend(
     (or its own ``{name: {...}}``, unwrapped). Each backend's params are checked against its
     config's ``provider_params`` policy here, before any backend is called.
 
-    >>> provider_params_by_backend({"steps": 8}, ("x",), per_backend=False)
-    {'x': {'steps': 8}}
+    >>> provider_params_by_backend({"steps": 8}, ("stable_audio",), per_backend=False)
+    {'stable_audio': {'steps': 8}}
     >>> provider_params_by_backend({"steps": 8}, ("x", "y"), per_backend=True)
     Traceback (most recent call last):
     ...
