@@ -743,12 +743,15 @@ def test_a_capped_source_reserves_its_paging_fields_from_provider_params(library
 
     for native in ({"page": 50}, {"page_size": 5}):
         ad, http = _openverse()
-        with pytest.raises(ValueError, match="reserved"):
+        with pytest.raises(ValueError, match="use k= and page="):
             add_from("openverse", query="door", library=library, adapter=ad,
                      provider_params=native)
-        with pytest.raises(ValueError, match="reserved"):
+        with pytest.raises(ValueError, match="sets the paging"):
             ad.search("door", provider_params=native)
         assert http.calls == []
     wc, http = _commons()
-    with pytest.raises(ValueError, match="reserved"):
+    with pytest.raises(ValueError, match="sets the paging"):
         wc.search("door", provider_params={"gsroffset": 20000})
+    ia, http = _ia()  # no result window: its paging fields stay the caller's to set
+    ia.search("door", provider_params={"rows": 30})
+    assert http.calls[0]["params"]["rows"] == 30

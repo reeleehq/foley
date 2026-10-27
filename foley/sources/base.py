@@ -252,6 +252,7 @@ def check_provider_params(
     policy = policy or {}
     reserved = set(policy.get("reserved") or ())
     priced = set(policy.get("priced") or ())
+    paging = set(policy.get("paging") or ())
     for key in provider_params:
         if not isinstance(key, str):
             raise TypeError(
@@ -262,6 +263,11 @@ def check_provider_params(
             raise ValueError(
                 f"provider_params[{key!r}] is reserved: foley sets it (it decides what "
                 "is screened, recorded or written); use the unified argument instead"
+            )
+        if key in paging:
+            raise ValueError(
+                f"provider_params[{key!r}] sets the paging, which foley checks against "
+                "the source's result window: use k= and page= instead"
             )
         if key in priced:
             raise ValueError(
@@ -323,10 +329,12 @@ def check_page_depth(config: dict, page: int, per_page: int) -> None:
 
     ``param_map['page']['result_window']`` is the deepest result one query serves
     (offset + limit): a page that ends past it can only come back short, empty or as
-    an error (#168). No window declared: every page is accepted.
+    an error (#168). No window declared, or page 1 (the request it always was): the
+    page is accepted.
 
     >>> cfg = {"param_map": {"page": {"native_name": "page", "result_window": 240}}}
     >>> check_page_depth(cfg, 12, 20)
+    >>> check_page_depth(cfg, 1, 500)
     >>> check_page_depth(cfg, 13, 20)
     Traceback (most recent call last):
     ...
@@ -334,7 +342,7 @@ def check_page_depth(config: dict, page: int, per_page: int) -> None:
     """
     window = config["param_map"]["page"].get("result_window")
     end = int(page) * int(per_page)
-    if window is not None and end > int(window):
+    if window is not None and int(page) > 1 and end > int(window):
         first = (int(page) - 1) * int(per_page) + 1
         raise ValueError(
             f"page {page} ({per_page} a page) asks for results {first}-{end}, past "
@@ -369,21 +377,22 @@ def provider_params_policy(config: dict) -> Optional[dict]:
     """The source's ``provider_params`` policy, with its paging fields reserved when capped.
 
     When ``param_map['page']`` declares a ``result_window``, the native names of ``k``
-    and ``page`` are reserved too: a provider param that set them would page past the
-    window unchecked, or make the check refuse a page that is in fact fine (#168).
+    and ``page`` are refused as ``paging`` too: a provider param that set them would
+    page past the window unchecked, or make the check refuse a page that is in fact
+    fine (#168).
 
     >>> cfg = {"provider_params": {"reserved": ["q"]}, "param_map": {
     ...     "k": {"native_name": "page_size"},
     ...     "page": {"native_name": "page", "result_window": 240}}}
-    >>> provider_params_policy(cfg)["reserved"]
-    ['q', 'page_size', 'page']
+    >>> provider_params_policy(cfg)["paging"]
+    ['page_size', 'page']
     """
     policy = config.get("provider_params")
     param_map = config.get("param_map") or {}
     if policy is None or "result_window" not in (param_map.get("page") or {}):
         return policy
     paging = [param_map[n]["native_name"] for n in ("k", "page") if n in param_map]
-    return {**policy, "reserved": [*(policy.get("reserved") or ()), *paging]}
+    return {**policy, "paging": paging}
 
 
 def as_names(names) -> list:
@@ -433,7 +442,9 @@ def merge_provider_params(
       value that would close the group is refused), never replacing it; ``None`` or
       an empty value is skipped. ``{key: {"joiner": ",", "group": False}}`` appends a
       list item instead (Freesound's ``fields``).
-    * ``reserved`` / ``priced`` — keys refused (see :func:`check_provider_params`).
+    * ``reserved`` / ``priced`` / ``paging`` — keys refused (see
+      :func:`check_provider_params`; ``paging`` is derived by
+      :func:`provider_params_policy`).
 
     A pure function: ``native`` is not mutated.
 

@@ -31,7 +31,7 @@ SOURCE_CONFIG = {
     "optional_dependencies": ["requests"],  # foley[openverse]; imported lazily
     "param_map": {
         "query": {"native_name": "q", "required": True},
-        "k": {"native_name": "page_size", "max": 20, "out_of_range": "clamp"},  # anon
+        "k": {"native_name": "page_size", "max": 20},  # anonymous
         "license": {"native_name": "license"},
         # Anonymous search serves about 240 results a query (report 14 §3.2).
         "page": {"native_name": "page", "result_window": 240},
