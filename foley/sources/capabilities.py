@@ -47,6 +47,8 @@ def capabilities_of(config: dict) -> dict:
     generates = kind == "generate"
     view = {
         "kind": kind,
+        # generate: text-to-audio unless the config says otherwise (#74: 'v2a').
+        "modes": list(config.get("modes") or (["t2a"] if generates else [])),
         "affordances": affordances,
         "deterministic": ("seed" in affordances) if generates else None,
         "loopable": ("loop" in affordances) if generates else None,

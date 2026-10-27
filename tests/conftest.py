@@ -79,6 +79,7 @@ _FOLEY_POSTURE_ENV = (
     "FOLEY_GENERATE_BACKEND",
     "FOLEY_GENERATE_ORDER",
     "FOLEY_GENERATE_PAID",
+    "FOLEY_V2A_ORDER",
 )
 
 #: Marker for the (few) tests that trip the network guard on purpose.

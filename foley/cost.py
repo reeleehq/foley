@@ -96,6 +96,11 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
 
     * ``'free'`` (local inference, a free API tier) → ``0.0``;
     * ``'per_call'`` → ``amount_usd``;
+    * ``'per_second'`` with ``seconds_from='video'`` → ``amount_usd`` × the video's
+      length (``video_duration_s``, measured by the dispatch), else ``None`` (an
+      unread length is an unknown cost, which needs approval);
+    * ``'per_second'`` with a video (``video_duration_s``) → × the requested
+      ``duration_s`` capped at the video's length, else × the video's length;
     * ``'per_second'`` → ``amount_usd`` × the requested ``duration_s``; when none is
       requested, × the ``native_defaults['duration_default_s']`` the adapter sends in
       its place, else × ``native_defaults['duration_max_s']`` (the duration is left to
@@ -117,7 +122,18 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
     if unit == "per_call":
         return float(amount)
     if unit == "per_second":
+        video_s = affordances.get("video_duration_s")
+        if pricing.get("seconds_from") == "video":  # billed by the video's length
+            # An unread length (a URL) is an unknown cost: it needs approval.
+            return None if video_s is None else float(amount) * float(video_s)
         seconds = affordances.get("duration_s")
+        if seconds is None and video_s is not None:  # V2A: the sound covers the video
+            seconds = video_s
+        if seconds is not None and video_s is not None:  # never longer than the video,
+            floor = (config.get("native_defaults") or {}).get("duration_min_s") or 0.0
+            seconds = max(
+                min(float(seconds), float(video_s)), float(floor)
+            )  # nor short
         if seconds is None:
             # What the adapter sends when no duration is asked (its declared default),
             # else the backend's maximum: an upper bound, never zero.
@@ -144,7 +160,8 @@ def actual_call_cost(
     """
     if duration_s is None and (config.get("pricing") or {}).get("unit") == "per_second":
         return None
-    return estimate_call(config, duration_s=duration_s)
+    # A source billed by its video's length bills the seconds it actually produced.
+    return estimate_call(config, duration_s=duration_s, video_duration_s=duration_s)
 
 
 def _stack() -> tuple:

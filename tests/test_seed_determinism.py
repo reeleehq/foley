@@ -83,6 +83,7 @@ FAKES = {
             "fal_stable_audio_3",
             "fal_stable_audio_3_medium",
             "fal_mirelo",
+            "fal_mirelo_v2a",
             "fal_mmaudio",
         )
     },
@@ -119,7 +120,9 @@ def test_same_seed_same_bytes_different_seed_different_bytes(
     name, tmp_path, monkeypatch
 ):
     adapter = FAKES[name](tmp_path=tmp_path, monkeypatch=monkeypatch)
-    clips = [adapter.generate("a door creak", seed=seed) for seed in (7, 7, 8)]
+    v2a = "v2a" in (getattr(adapter, "config", {}).get("modes") or ())
+    extra = {"video": "https://x/shot.mp4"} if v2a else {}  # a V2A call needs its picture
+    clips = [adapter.generate("a door creak", seed=seed, **extra) for seed in (7, 7, 8)]
     first, again, other = (clip.audio_bytes for clip in clips)
     assert first == again
     assert first != other

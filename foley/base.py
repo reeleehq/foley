@@ -249,6 +249,22 @@ GENERATION_AFFORDANCES: dict[str, Affordance] = {
         "Let the backend rewrite the prompt (the prompt it used is recorded)",
         stage="generate",
     ),
+    # Video-to-audio (#74): only a backend whose config declares modes=['v2a'] takes
+    # it; any other raises rather than generate sound that ignores the picture.
+    "video": Affordance(
+        "video",
+        object,
+        "The picture to sound (a URL, a local path or bytes; keyed by content)",
+        stage="generate",
+        carries_meaning=True,
+    ),
+    "keep_source_audio": Affordance(
+        "keep_source_audio",
+        bool,
+        "Keep the video's own speech and build the sound around it",
+        False,
+        "generate",
+    ),
 }
 
 

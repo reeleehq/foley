@@ -51,6 +51,11 @@ clip = foley.generate(
 clip = foley.generate("a single wooden door creak", duration_s=3, level="sfx_fg")
 clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
 
+# Sound timed to picture (video-to-audio): video= walks the V2A order (Mirelo SFX 2.0,
+# then Sonilo, both on fal; FOLEY_V2A_ORDER replaces it). Their fal-route output terms
+# are unverified, so name the backend (its licence is then gated by keep()) — #170
+clip = foley.generate("", backend="fal_mirelo_v2a", video="shot.mp4", duration_s=6)
+
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
 foley.add_from(
