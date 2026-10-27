@@ -271,7 +271,14 @@ class GenerationError(RuntimeError):
             (``foley.generations.get(cache_key)``), or ``None`` when nothing was kept
             (a free backend, a refusal before synthesis, a failed cache write). A
             quarantined generation is retrievable: it was billed either way (#107).
+        variations: Raised from :func:`foley.variations`, the takes already made
+            (stored :class:`~foley.base.Candidate`\\ s, in order) before the one that
+            failed; ``None`` otherwise (#161). :func:`foley.variations` sets it on any
+            exception a take raises, not only this one.
     """
+
+    #: The takes made before the failure, when raised from :func:`foley.variations`.
+    variations: "Optional[list]" = None
 
     def __init__(
         self,
@@ -347,6 +354,7 @@ def _generate(
     level=None,
     check_prompt: bool = True,
     provider_params: Optional[dict] = None,
+    variation: int = 0,
     **affordances,
 ) -> IngestReport:
     """Generate a sound via ``backend`` and ingest it (by-value) into ``library``.
@@ -438,6 +446,9 @@ def _generate(
             never seen by the unsupported-parameter policy. A key the source's
             ``provider_params`` policy reserves or prices raises ``ValueError``
             before any call, so the cost estimate is the call's.
+        variation: Which variation of the same request this is (#161; see
+            :func:`foley.variations`): ``0`` (default) is the request itself, a later
+            one is a different paid request in the generations cache.
         **affordances: Unified generation affordances (``duration_s``, ``model``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format``, ``sample_rate``, ``expand_prompt`` — see
@@ -507,6 +518,7 @@ def _generate(
             cache=generations_cache,
             reuse_cached=reuse_cached,
             provider_params=provider_params,
+            variation=variation,
             **affordances,
         )
     except UndemuxedAnswer as exc:  # a kept, paid video still not demuxed (#176)
@@ -1033,6 +1045,7 @@ _GENERATE_KNOWN = frozenset(
         "level",
         "check_prompt",
         "provider_params",
+        "variation",
     }
 )
 
@@ -1061,9 +1074,18 @@ def generate(*args, **kwargs) -> IngestReport:
     }
     params = {
         k: _manifest_value(kwargs[k])
-        for k in ("store", "on_flagged", "watermark", "repair", "provider_params")
+        for k in (
+            "store",
+            "on_flagged",
+            "watermark",
+            "repair",
+            "provider_params",
+            "variation",
+        )
         if k in kwargs
     }
+    if not params.get("variation"):  # recorded as the cache keys it: only a later take
+        params.pop("variation", None)
     with facade_run(
         "generate",
         # A video is recorded by its key: never its bytes, nor a local path (#74).

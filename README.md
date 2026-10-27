@@ -50,6 +50,8 @@ clip = foley.generate(
 # notes say which backends were skipped and why
 clip = foley.generate("a single wooden door creak", duration_s=3, level="sfx_fg")
 clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
+# Several takes on one request, each stored and replayable (seeded: seed, seed+1, …)
+takes = foley.variations("a single wooden door creak", 4, duration_s=3)
 
 # Sound timed to picture (video-to-audio): video= walks the V2A order (Mirelo SFX 2.0,
 # then Sonilo, both on fal; FOLEY_V2A_ORDER replaces it). Their fal-route output terms
