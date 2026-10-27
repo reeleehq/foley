@@ -16,7 +16,6 @@ from foley.qc import (  # noqa: E402  (after importorskip, by design)
     QCReport,
     QCStatus,
     QCThresholds,
-    _upsample_fft,
     detect_clipping,
     dc_offset,
     duration_s,
@@ -167,29 +166,25 @@ def test_true_peak_dbtp_silence_is_neg_inf():
     assert true_peak_dbtp(np.zeros(SR, dtype=np.float32), SR) == float("-inf")
 
 
-def test_upsample_fft_does_not_over_report_nyquist():
-    # A full-scale Nyquist tone (alternating +1/-1, even length) reconstructs to
-    # a cosine whose true peak is 1.0 (the samples ARE the peaks). Zero-pad FFT
-    # upsampling double-counts the even-n Nyquist bin unless it is halved — the
-    # bug this guards against inflated the peak to ~2.0 (+6 dB).
-    x = np.array([1.0, -1.0] * 8, dtype=np.float64)  # n=16 (even)
-    up = _upsample_fft(x, 4)
-    assert float(np.max(np.abs(up))) <= 1.0 + 1e-6  # was ~2.0 before the fix
-
-
-def test_upsample_fft_preserves_midband_peak():
-    # A tone well below Nyquist must be unaffected by the Nyquist-bin correction.
-    t = np.arange(64)
-    mid = np.sin(2.0 * np.pi * 8 * t / 64)  # bin 8 of 64 — mid-band
-    up = _upsample_fft(mid, 4)
-    assert abs(float(np.max(np.abs(up))) - 1.0) <= 1e-6
-
-
 def test_true_peak_dbtp_nyquist_tone_not_over_reported():
-    # End-to-end: the public metric must not report a Nyquist tone as > +6 dBFS.
+    # End-to-end: the public metric must not report a Nyquist tone as > +6 dBFS (a
+    # doubled Nyquist bin, the old FFT meter's bug). The meter takes a clip as played
+    # from silence (#190), so the tone is faded in and out: its own true peak is read.
     x = np.array([1.0, -1.0] * (SR // 2), dtype=np.float32)  # 1 s Nyquist tone
-    tp = true_peak_dbtp(x, SR)
-    assert tp <= 0.5  # ~0 dBFS true peak; was ~+6 dBFS before the fix
+    fade = np.ones(len(x), dtype=np.float32)
+    ramp = SR // 100
+    fade[:ramp], fade[-ramp:] = np.linspace(0, 1, ramp), np.linspace(1, 0, ramp)
+    assert true_peak_dbtp(x * fade, SR) <= 0.5  # ~0 dBFS; was ~+6 dBFS before the fix
+    # Started abruptly from silence it really overshoots at its edges (what a DAC
+    # plays), still well under the doubled-bin bug (#197).
+    assert 0.0 < true_peak_dbtp(x, SR) < 6.0
+
+
+def test_true_peak_dbtp_does_not_wrap_around_the_edges():
+    # The looping FFT meter read a -0.8 -> +0.8 ramp as +0.16 dBTP: the jump from its
+    # end back to its start (#190). From silence, only its own edge steps overshoot.
+    ramp = np.linspace(-0.8, 0.8, SR, dtype=np.float32)
+    assert true_peak_dbtp(ramp, SR) < -0.5
 
 
 # ---------------------------------------------------------------------------

@@ -170,28 +170,6 @@ def _true_run_lengths(mask: "np.ndarray") -> "np.ndarray":
     return ends - starts
 
 
-def _upsample_fft(x: "np.ndarray", factor: int) -> "np.ndarray":
-    """Band-limited ``factor``x upsampling of a 1-D real signal via zero-padding
-    the ``rfft`` spectrum. Amplitude-preserving (scaled by ``factor``)."""
-    import numpy as np
-
-    n = x.shape[0]
-    if factor <= 1 or n < 2:
-        return x
-    n_up = n * factor
-    spec = np.fft.rfft(x)
-    spec_up = np.zeros(n_up // 2 + 1, dtype=complex)
-    m = min(spec.shape[0], spec_up.shape[0])
-    spec_up[:m] = spec[:m]
-    # For even n, bin n//2 is the original Nyquist (a real cosine at f_s/2). After
-    # zero-pad upsampling it is no longer the Nyquist of the longer signal, so its
-    # energy must be split in half — else the reconstruction (and the true-peak
-    # estimate riding on it) over-reports by up to +6 dB (cf. scipy.signal.resample).
-    if n % 2 == 0 and m == n // 2 + 1:
-        spec_up[n // 2] *= 0.5
-    return np.fft.irfft(spec_up, n=n_up) * factor
-
-
 def _frame_rms(x: "np.ndarray", frame_len: int, hop: int) -> "np.ndarray":
     """Short-time RMS of a 1-D signal over ``frame_len`` windows every ``hop``.
 
@@ -313,24 +291,23 @@ def true_peak_dbtp(
     *,
     oversample: int = DEFAULT_QC_THRESHOLDS.true_peak_oversample,
 ) -> float:
-    """Inter-sample true-peak level in dBTP.
+    """Inter-sample true-peak level in dBTP (``-inf`` for a silent clip).
 
-    Each channel is band-limited-upsampled ``oversample``x (numpy FFT), the
-    peak magnitude is taken across all channels, and converted to dBTP. Returns
-    ``-inf`` for a fully silent clip. ``sample_rate`` is accepted for interface
-    symmetry (FFT interpolation is rate-independent).
+    The fleet's one true-peak meter, :func:`mixing.loudness.true_peak_db` (#190): a
+    windowed-sinc ``oversample``x interpolation (raised for rates under 48 kHz),
+    chunked, so it costs little memory on a long programme, with the signal taken as
+    silent outside its span (no wrap-around over-read at the edges). Content between
+    about 0.47 fs and Nyquist reads up to ~0.5 dB low.
+
+    Lazy dependency: ``mixing[loudness]`` (``foley[audio]``).
     """
-    import numpy as np
+    from .audio import loudness_component
 
-    a = _as_2d(samples)
-    peak = 0.0
-    for c in range(a.shape[1]):
-        up = _upsample_fft(a[:, c], oversample)
-        chan_peak = float(np.max(np.abs(up))) if up.size else 0.0
-        peak = max(peak, chan_peak)
-    if peak <= 0.0:
-        return float("-inf")
-    return float(20.0 * np.log10(peak))
+    return float(
+        loudness_component().true_peak_db(
+            _as_2d(samples), int(sample_rate), oversampling=int(oversample)
+        )
+    )
 
 
 def estimate_snr(
