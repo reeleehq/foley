@@ -8,7 +8,7 @@ the MCP and agent paths, which call it) and :func:`foley.add_from` go through he
 1. **Egress** — :func:`~foley.sources.registry.require_source_egress` at call time, so
    an adapter fetched online and called inside :func:`foley.offline` is refused.
 2. **Translate** — :func:`translate_affordances` keeps what the source's
-   ``supported_affordances`` lists, clamps ``duration`` to the declared window, and
+   ``supported_affordances`` lists, clamps ``duration_s`` to the declared window, and
    applies the unsupported-parameter policy: a parameter whose
    :class:`~foley.base.Affordance` ``carries_meaning`` (``seed``, ``negative_prompt``)
    **raises** by default, anything else is dropped with a note (and a warning when
@@ -47,7 +47,7 @@ from typing import Optional
 
 from ocracy.kit import UnsupportedParameter, make_translator
 
-from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES
+from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES, reject_renamed
 from .base import check_prompt_influence, check_provider_params
 
 __all__ = [
@@ -77,8 +77,8 @@ def _translator(config: dict, vocabulary: dict):
     """The kit translator for one source: its supported list, window and policy."""
     nd = config.get("native_defaults") or {}
     param_map = {name: {} for name in config.get("supported_affordances") or ()}
-    if "duration" in param_map:
-        param_map["duration"] = {
+    if "duration_s" in param_map:
+        param_map["duration_s"] = {
             "min": nd.get("duration_min_s"),
             "max": nd.get("duration_max_s"),
             "out_of_range": "clamp",
@@ -122,16 +122,18 @@ def translate_affordances(
     Raises:
         UnsupportedParameter: Per the policy.
         ValueError: If ``on_unsupported`` is not a known policy.
+        TypeError: If a renamed affordance is passed under its old name.
     """
     if on_unsupported is not None and on_unsupported not in UNSUPPORTED_POLICIES:
         raise ValueError(f"on_unsupported must be one of {UNSUPPORTED_POLICIES}")
     vocabulary = GENERATION_AFFORDANCES if vocabulary is None else vocabulary
+    reject_renamed(affordances, vocabulary)
     # Validated here, at planning time, so a bad value never reserves budget.
     check_prompt_influence(affordances.get("prompt_influence"))
-    duration = affordances.get("duration")
-    if duration is not None and not math.isfinite(float(duration)):
+    duration_s = affordances.get("duration_s")
+    if duration_s is not None and not math.isfinite(float(duration_s)):
         raise ValueError(
-            f"duration must be a finite number of seconds, got {duration!r}"
+            f"duration_s must be a finite number of seconds, got {duration_s!r}"
         )
     result = _translator(config, vocabulary)(affordances, on_unsupported=on_unsupported)
     return result.kwargs, result.notes
@@ -159,16 +161,34 @@ def request_digest(
     actually requested, and a change to a source's translation changes the key), and
     the adapter's ``request_salt()`` (ElevenLabs: the account plan, which decides the
     licence). The caller's ``provider_params`` (#61) are keyed too, so a different
-    vendor param is a miss; a request without any keeps the key it always had.
+    vendor param is a miss; a request without any keeps the key it always had. A
+    pinned ``model`` (#75) is keyed as the model, so pinning the default is the
+    request it always was.
     """
+    native, model = _keyed_request(config, affordances)
     return _digest(
         backend,
         prompt,
         config,
-        native_request(config, affordances),
+        native,
         salt,
         provider_params=provider_params,
+        model=model,
     )
+
+
+def _keyed_request(config: dict, affordances: dict) -> "tuple[dict, Optional[str]]":
+    """``(native request, pinned model)``: a pinned model is keyed apart from the request.
+
+    A pin equal to the source's ``native_defaults['model_id']`` keys as unpinned. The
+    comparison is on the raw value: a source that maps model tokens to native ids
+    would compare after that translation.
+    """
+    rest = dict(affordances)
+    model = rest.pop("model", None)
+    if model == (config.get("native_defaults") or {}).get("model_id"):
+        model = None  # pinning the default is the request it always was
+    return native_request(config, rest), model
 
 
 def _digest(
@@ -179,12 +199,13 @@ def _digest(
     salt,
     *,
     provider_params: Optional[dict] = None,
+    model: Optional[str] = None,
 ) -> str:
     nd = config.get("native_defaults") or {}
     payload = {
         "v": _DIGEST_VERSION,
         "backend": backend,
-        "model": nd.get("generator_version") or nd.get("model_id"),
+        "model": model or nd.get("generator_version") or nd.get("model_id"),
         "prompt": prompt,
         "native": native,
         "salt": salt,
@@ -236,7 +257,7 @@ def native_request(config: dict, affordances: dict) -> dict:
 def _canonical_affordances(config: dict, affordances: dict) -> dict:
     """``affordances`` with each supported default filled in and numbers as floats.
 
-    So ``duration=2`` and ``duration=2.0`` are the same request and hit the same
+    So ``duration_s=2`` and ``duration_s=2.0`` are the same request and hit the same
     cache entry. An affordance whose default is ``None`` (``prompt_influence``: the
     backend's native default) is left out when omitted.
     """
@@ -516,7 +537,7 @@ def _answered_key(plan: GenerationPlan, clip) -> str:
     what was answered finds it: a changed value is put back where it came from (the
     caller's provider param, when one set it, else the native request).
     """
-    native = native_request(plan.config, plan.affordances)
+    native, model = _keyed_request(plan.config, plan.affordances)
     provider_params = dict(plan.provider_params or {})
     planned = {**native, **provider_params}  # generators append nothing
     lic = getattr(getattr(clip.candidate, "sound", None), "license", None)
@@ -547,6 +568,7 @@ def _answered_key(plan: GenerationPlan, clip) -> str:
         answered_native,
         plan.salt,
         provider_params=answered_params,
+        model=model,
     )
 
 

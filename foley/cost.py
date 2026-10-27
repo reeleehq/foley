@@ -96,14 +96,14 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
 
     * ``'free'`` (local inference, a free API tier) → ``0.0``;
     * ``'per_call'`` → ``amount_usd``;
-    * ``'per_second'`` → ``amount_usd`` × the requested ``duration``; when none is
+    * ``'per_second'`` → ``amount_usd`` × the requested ``duration_s``; when none is
       requested, × the ``native_defaults['duration_default_s']`` the adapter sends in
       its place, else × ``native_defaults['duration_max_s']`` (the duration is left to
       the backend: an upper bound), else ``None``.
 
     Args:
         config: A ``SOURCE_CONFIG``.
-        **affordances: The canonical affordances of the call (``duration``, …).
+        **affordances: The canonical affordances of the call (``duration_s``, …).
     """
     pricing = config.get("pricing")
     if not pricing:
@@ -117,7 +117,7 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
     if unit == "per_call":
         return float(amount)
     if unit == "per_second":
-        seconds = affordances.get("duration")
+        seconds = affordances.get("duration_s")
         if seconds is None:
             # What the adapter sends when no duration is asked (its declared default),
             # else the backend's maximum: an upper bound, never zero.
@@ -128,7 +128,7 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
 
 
 def actual_call_cost(
-    config: dict, *, duration: Optional[float] = None
+    config: dict, *, duration_s: Optional[float] = None
 ) -> Optional[float]:
     """What a call just made costs at the declared price, for the duration actually sent.
 
@@ -137,14 +137,14 @@ def actual_call_cost(
     choose its own length.
 
     >>> cfg = {"pricing": {"unit": "per_second", "amount_usd": 0.002}}
-    >>> actual_call_cost(cfg, duration=3.0)
+    >>> actual_call_cost(cfg, duration_s=3.0)
     0.006
     >>> actual_call_cost(cfg) is None
     True
     """
-    if duration is None and (config.get("pricing") or {}).get("unit") == "per_second":
+    if duration_s is None and (config.get("pricing") or {}).get("unit") == "per_second":
         return None
-    return estimate_call(config, duration=duration)
+    return estimate_call(config, duration_s=duration_s)
 
 
 def _stack() -> tuple:

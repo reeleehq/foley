@@ -82,7 +82,8 @@ missing-configuration case *before* it sends anything.
   `check_requirements`, and scrubbed by the test suite's paid-API guard.
 - **What the provider says it charged:** when the response carries it (ElevenLabs:
   `api["credits_header"] = "character-cost"`), note it on the clip; set
-  `candidate.cost_actual_usd` with `foley.cost.actual_call_cost(config, duration=...)`.
+  `candidate.cost_actual_usd` with `foley.cost.actual_call_cost(config, duration_s=...)`.
+- A generate adapter that takes extra `**affordances` passes their names through `foley.base.reject_renamed` (or `foley.sources.base.unsupported_notes`, which does), so an old spelling such as `duration=` raises instead of being dropped.
 
 ## `SOURCE_CONFIG` (the declaration)
 
@@ -96,10 +97,10 @@ SOURCE_CONFIG = {
     # unified foley vocabulary -> this source's native names
     "param_map": {
         "query": {"native_name": "text", "required": True},  # retrieve
-        "duration": {"native_name": "length_s"},
-        # generate uses GENERATION_AFFORDANCES (prompt, duration, prompt_influence, ...)
+        "duration_s": {"native_name": "length_s"},
+        # generate uses GENERATION_AFFORDANCES (prompt, duration_s, prompt_influence, ...)
     },
-    "supported_affordances": ["query", "duration", "license"],
+    "supported_affordances": ["query", "duration_s", "license"],
     "on_unsupported_param": "warn",
     # REST sources: endpoints; local models: omit and implement adapter.generate()
     "api": {

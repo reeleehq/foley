@@ -48,7 +48,7 @@ from urllib.parse import quote, unquote
 
 from dol import Files, JsonFiles, mk_dirs_if_missing, wrap_kvs
 
-from .base import SoundRecord, StorageMode
+from .base import GENERATION_AFFORDANCES, SoundRecord, StorageMode, reject_renamed
 
 #: Hash algorithm used for content addressing (matches ``SoundRecord.hash_algo``).
 HASH_ALGO = "sha256"
@@ -314,15 +314,18 @@ class GenerationsCache:
         """The kept generations matching ``prompt`` / ``backend`` / affordances, newest first.
 
         The way back to a paid clip whose key was not kept, e.g.
-        ``foley.generations.find("a crisp apple bite", backend="elevenlabs", duration=1)``.
+        ``foley.generations.find("a crisp apple bite", backend="elevenlabs", duration_s=1)``.
         Each item is ``(request_key, entry)``: ``entry["content_key"]`` (or :meth:`get`
         with either key) gives the bytes, ``entry["status"]`` how its ingest ended
         (``'quarantined'`` for a clip QC refused, absent while none has run). A
         fallback's alias entry is skipped (the request it answers is listed); an
-        unreadable entry is skipped too. Numbers compare as floats (``duration=1``
-        matches ``1.0``). Entries kept by a foley before 0.0.43 carry no timestamp
+        unreadable entry is skipped too. Numbers compare as floats (``duration_s=1``
+        matches ``1.0``); an entry kept before an affordance was renamed is matched
+        under its old name (``Affordance.renamed_from``), and passing an old name
+        raises ``TypeError``. Entries kept by a foley before 0.0.43 carry no timestamp
         and come last, in listing order.
         """
+        reject_renamed(affordances)
         hits = []
         for key in list(self.requests):
             try:
@@ -338,7 +341,9 @@ class GenerationsCache:
             if prompt is not None and entry.get("prompt") != prompt:
                 continue
             kept = entry.get("affordances") or {}
-            if any(not _same_value(kept.get(k), v) for k, v in affordances.items()):
+            if any(
+                not _same_value(_kept_value(kept, k), v) for k, v in affordances.items()
+            ):
                 continue
             hits.append((key, entry))
         hits.sort(key=lambda kv: float(kv[1].get("at") or 0), reverse=True)
@@ -359,6 +364,14 @@ class GenerationsCache:
         still_used = any(e.get("content_key") == key for e in self.requests.values())
         if key and not still_used and key in self.audio:
             del self.audio[key]
+
+
+def _kept_value(kept: dict, name: str):
+    """``kept[name]``, or the value an older entry kept under the name's old spelling."""
+    if name in kept:
+        return kept[name]
+    aff = GENERATION_AFFORDANCES.get(name)
+    return kept.get(aff.renamed_from) if aff and aff.renamed_from else None
 
 
 def _same_value(a, b) -> bool:

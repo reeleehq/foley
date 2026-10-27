@@ -77,7 +77,7 @@ def _config(name, pricing, **extra):
     return {
         "name": name,
         "kind": "generate",
-        "supported_affordances": ["prompt", "duration", "seed"],
+        "supported_affordances": ["prompt", "duration_s", "seed"],
         "on_unsupported_param": "warn",
         "native_defaults": {"duration_min_s": 0.5, "duration_max_s": 30.0},
         "data_egress": "external",
@@ -129,7 +129,7 @@ def test_under_warn_every_drop_is_on_the_returned_candidate(library, paid_source
     with pytest.warns(UserWarning, match="steps"):
         cand = foley.generate("a door creaks", backend="droppy", library=library,
                               steps=12, negative_prompt="hum", on_unsupported="warn",
-                              duration=99)
+                              duration_s=99)
     joined = " | ".join(cand.notes)
     assert "steps=12" in joined and "negative_prompt='hum'" in joined
     assert "clamped to 30 s" in joined
@@ -166,7 +166,7 @@ def test_estimate_is_none_when_unknown_never_zero(paid_source):
     paid_source("mystery", unit=None)
     assert foley.estimate("generate", backend="mystery") is None
     assert foley.estimate("generate", backend="stable_audio") == 0.0
-    assert foley.estimate("generate", backend="elevenlabs", duration=3) == pytest.approx(0.006)
+    assert foley.estimate("generate", backend="elevenlabs", duration_s=3) == pytest.approx(0.006)
 
 
 def test_unknown_cost_needs_approval(library, paid_source):
@@ -331,13 +331,13 @@ def test_an_mcp_server_has_one_cap_whatever_session_ids_the_agent_sends(paid_sou
 
 def test_an_identical_paid_request_is_a_cache_hit(library, paid_source):
     adapter = paid_source("cached", amount=0.05)
-    first = foley.generate("a door creaks", backend="cached", library=library, duration=2)
-    second = foley.generate("a door creaks", backend="cached", library=library, duration=2)
+    first = foley.generate("a door creaks", backend="cached", library=library, duration_s=2)
+    second = foley.generate("a door creaks", backend="cached", library=library, duration_s=2)
     assert adapter.calls == 1
     assert second.sound.id == first.sound.id
     assert second.cost_actual_usd == 0.0
     assert any("generations cache" in n for n in second.notes)
-    foley.generate("a door creaks", backend="cached", library=library, duration=2,
+    foley.generate("a door creaks", backend="cached", library=library, duration_s=2,
                    reuse_cached=False)
     assert adapter.calls == 2
 
@@ -483,8 +483,8 @@ def test_a_cache_hit_keeps_the_adapters_notes(library, paid_source):
 
 def test_an_identical_request_spelled_differently_is_one_cache_entry(library, paid_source):
     adapter = paid_source("spelled", amount=0.05)
-    foley.generate("a door", backend="spelled", library=library, duration=2)
-    foley.generate("a door", backend="spelled", library=library, duration=2.0)
+    foley.generate("a door", backend="spelled", library=library, duration_s=2)
+    foley.generate("a door", backend="spelled", library=library, duration_s=2.0)
     assert adapter.calls == 1
 
 
@@ -500,7 +500,7 @@ def test_a_missing_extra_is_a_configuration_error(library, paid_source):
 
 
 def test_estimate_prices_the_call_as_it_would_be_made():
-    assert foley.estimate("generate", backend="elevenlabs", duration=60) == pytest.approx(0.06)
+    assert foley.estimate("generate", backend="elevenlabs", duration_s=60) == pytest.approx(0.06)
 
 
 
@@ -780,7 +780,7 @@ def test_a_non_finite_duration_is_refused_before_any_budget_is_reserved(
     with spend_scope(Budget(max_usd=1.0)) as budget:
         with pytest.raises(ValueError, match="duration"):
             foley.generate("a door creaks", backend="sixty", library=library,
-                           duration=bad)
+                           duration_s=bad)
     assert adapter.calls == 0 and budget.spent_usd == 0
 
 
@@ -793,3 +793,132 @@ def test_a_nan_estimate_is_unknown_cost_and_never_poisons_the_budget():
     assert approved.spent_usd == 0
     with pytest.raises(BudgetExceeded):
         approved.check(0.01, what="y")
+
+
+# ---------------------------------------------------------------------------
+# #75 — the generation vocabulary: duration_s, model, reproducibility
+# ---------------------------------------------------------------------------
+
+
+def test_the_old_duration_spelling_raises_naming_the_new_one(library):
+    with pytest.raises(TypeError, match="duration= was renamed duration_s="):
+        foley.generate("a door creaks", backend="elevenlabs", adapter=_el_adapter(),
+                       library=library, duration=2)
+
+
+def test_model_on_a_backend_that_cannot_pin_one_raises(library, paid_source):
+    paid_source("unpinned", amount=0.01)
+    with pytest.raises(UnsupportedParameter, match="model"):
+        foley.generate("a door creaks", backend="unpinned", library=library,
+                       model="some-model-v9")
+
+
+def test_a_pinned_model_is_keyed_as_the_model():
+    from foley.sources._dispatch import request_digest
+    from foley.sources.elevenlabs.config import SOURCE_CONFIG as EL
+
+    def key(**aff):
+        return request_digest("elevenlabs", "rain", EL, aff, salt="paid")
+
+    default = EL["native_defaults"]["model_id"]
+    assert key(model=default) == key()  # pinning the default is the same request
+    assert key(model="eleven_text_to_sound_v3") != key()
+
+
+def test_generation_reproducible_follows_the_recorded_seed():
+    from foley.base import LicenseRecord
+
+    assert LicenseRecord(license_id="cc0", source="t").generation_reproducible is None
+    seeded = LicenseRecord(license_id="x", source="t", is_ai_generated=True, generation_seed=7)
+    assert seeded.generation_reproducible is True
+    unseeded = LicenseRecord(license_id="x", source="t", is_ai_generated=True)
+    assert unseeded.generation_reproducible is False
+
+
+@pytest.mark.parametrize(
+    "backend, affordances, key",
+    [
+        ("elevenlabs", {"duration_s": 2.0, "output_format": "wav"},
+         "f05ae9730d9a41cdc1f57cb6418b433f468913642318e1636acb246d83e1fba9"),
+        ("fal_stable_audio_3", {"duration_s": 3, "seed": 7},
+         "50a9da8fb72bef0c96cb5356c80c3a8d1cc6851f5bbcf077532588c47f56adad"),
+        ("stable_audio_3", {"duration_s": 1.5, "steps": 8},
+         "ddf4e0127a89f04fee65310c2a955213f5d841e571b580b311633d21c8564bb9"),
+    ],
+)
+def test_the_duration_rename_keeps_every_cache_key(backend, affordances, key):
+    """Keys computed before the rename (with ``duration=``): the paid cache still hits."""
+    from foley.sources._dispatch import request_digest
+    from foley.sources.registry import get_source
+
+    config = get_source(backend)["config"]
+    assert request_digest(backend, "a door creaks", config, affordances, salt=None) == key
+
+
+def test_the_old_duration_spelling_raises_on_every_entry_point():
+    from foley.sources.elevenlabs.adapter import ElevenLabsAdapter
+
+    with pytest.raises(TypeError, match="renamed duration_s"):
+        foley.estimate("generate", backend="elevenlabs", duration=3)
+    with pytest.raises(TypeError, match="renamed duration_s"):
+        foley.generations.find("rain", duration=1)
+    adapter = ElevenLabsAdapter(api_key="k", http=lambda *a, **k: None,
+                                plan="elevenlabs-paid-plan")
+    with pytest.raises(TypeError, match="renamed duration_s"):
+        adapter.generate("rain", duration=2)  # called directly, below the dispatch
+
+
+def test_the_order_skips_a_backend_that_cannot_pin_the_model(library, paid_source):
+    unpinned = paid_source("unpinned", amount=0.01)
+    cfg = {**_config("pinnable", {"unit": "per_call", "amount_usd": 0.01}),
+           "supported_affordances": ["prompt", "duration_s", "seed", "model"]}
+    pinnable = CountingAdapter(cfg)
+    register_source("pinnable", cfg, pinnable)
+    try:
+        cand = foley.generate("a door creaks", backend=("unpinned", "pinnable"),
+                              library=library, model="m-2")
+    finally:
+        SOURCE_REGISTRY.pop("pinnable", None)
+    assert unpinned.calls == 0 and pinnable.calls == 1
+    assert cand is not None
+
+
+def _never_called(*args, **kwargs):
+    raise AssertionError("the backend must not be called")
+
+
+def _direct_adapters():
+    from foley.sources.elevenlabs.adapter import ElevenLabsAdapter
+    from foley.sources.fal.adapter import FalAdapter
+    from foley.sources.fal.config import SOURCE_CONFIGS as FAL_CONFIGS
+    from foley.sources.stable_audio.adapter import StableAudioAdapter
+    from foley.sources.stable_audio_3.adapter import StableAudio3Adapter
+
+    return {
+        "elevenlabs": ElevenLabsAdapter(api_key="k", http=_never_called,
+                                        plan="elevenlabs-paid-plan"),
+        "fal": FalAdapter(FAL_CONFIGS[0], api_key="k", runner=_never_called),
+        "stable_audio": StableAudioAdapter(pipeline=_never_called),
+        "stable_audio_3": StableAudio3Adapter(runner=_never_called),
+    }
+
+
+@pytest.mark.parametrize("name", ["elevenlabs", "fal", "stable_audio", "stable_audio_3"])
+def test_every_adapter_called_directly_rejects_the_old_duration(name):
+    with pytest.raises(TypeError, match="renamed duration_s"):
+        _direct_adapters()[name].generate("rain", duration=2)
+
+
+def test_pinning_the_native_default_model_keys_as_unpinned():
+    """Where generator_version differs from model_id, the default pin is still unpinned."""
+    from foley.sources._dispatch import request_digest
+
+    cfg = {**_config("versioned", {"unit": "per_call", "amount_usd": 0.01}),
+           "supported_affordances": ["prompt", "model"],
+           "native_defaults": {"model_id": "m-1", "generator_version": "vendor/m-1/v3"}}
+
+    def key(**aff):
+        return request_digest("versioned", "rain", cfg, aff, salt=None)
+
+    assert key(model="m-1") == key()
+    assert key(model="m-2") != key()

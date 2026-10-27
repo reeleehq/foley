@@ -117,7 +117,7 @@ def test_sa3_native_payload_has_prompt_default_duration_and_fixed_args():
 
 def test_elevenlabs_on_fal_uses_its_native_names():
     adapter, _ = _adapter("fal_elevenlabs")
-    args = adapter.native_arguments("a page turns", duration=2.0, loop=False)
+    args = adapter.native_arguments("a page turns", duration_s=2.0, loop=False)
     assert args == {
         "text": "a page turns",
         "duration_seconds": 2.0,
@@ -128,7 +128,7 @@ def test_elevenlabs_on_fal_uses_its_native_names():
 
 def test_sonilo_maps_output_format_to_audio_format():
     adapter, _ = _adapter("fal_sonilo")
-    args = adapter.native_arguments("a sigh", duration=1.5, output_format="mp3")
+    args = adapter.native_arguments("a sigh", duration_s=1.5, output_format="mp3")
     assert args == {"prompt": "a sigh", "duration": 1.5, "audio_format": "mp3"}
 
 
@@ -136,7 +136,7 @@ def test_mirelo_asks_for_one_sample_and_reads_the_seed_list(library):
     response = {"audio": [{"url": "u"}], "seeds": [42], "model": "sfx2.0"}
     adapter, runner = _adapter("fal_mirelo", runner=ReplayRunner(default=(_wav(), response)))
     rec = generate_backend("a sabre", backend="fal_mirelo", library=library,
-                           adapter=adapter, duration=1).ingested[0].record
+                           adapter=adapter, duration_s=1).ingested[0].record
     assert runner.calls[0][1]["num_samples"] == 1  # billed per sample
     assert rec.license.generation_seed == 42
 
@@ -165,7 +165,7 @@ def test_generate_stores_by_value_with_the_stability_licence_and_the_returned_se
     adapter, runner = _adapter()
     report = generate_backend(
         "an old clock ticking", backend="fal_stable_audio_3", library=library,
-        adapter=adapter, duration=2,
+        adapter=adapter, duration_s=2,
     )
     (res,) = report.ingested
     rec = res.record
@@ -182,7 +182,7 @@ def test_generate_stores_by_value_with_the_stability_licence_and_the_returned_se
 
 def test_an_identical_request_is_served_from_the_generations_cache(library):
     adapter, runner = _adapter()
-    kw = dict(backend="fal_stable_audio_3", library=library, adapter=adapter, duration=2)
+    kw = dict(backend="fal_stable_audio_3", library=library, adapter=adapter, duration_s=2)
     generate_backend("a quill scratching", **kw)
     second = generate_backend("a quill scratching", store=False, **kw)
     assert len(runner.calls) == 1
@@ -193,7 +193,7 @@ def test_an_identical_request_is_served_from_the_generations_cache(library):
 
 def test_reuse_cached_false_pays_again(library):
     adapter, runner = _adapter()
-    kw = dict(backend="fal_stable_audio_3", library=library, adapter=adapter, duration=2)
+    kw = dict(backend="fal_stable_audio_3", library=library, adapter=adapter, duration_s=2)
     generate_backend("a quill scratching", **kw)
     generate_backend("a quill scratching", reuse_cached=False, store=False, **kw)
     assert len(runner.calls) == 2
@@ -264,7 +264,7 @@ def test_estimates_are_honest_upper_bounds():
     assert foley.estimate("generate", backend="fal_sonilo") == pytest.approx(8 * 0.0018)
     # ... or, with no default, at the endpoint's maximum (ElevenLabs on fal: 22 s)
     assert foley.estimate("generate", backend="fal_elevenlabs") == pytest.approx(22 * 0.002)
-    assert foley.estimate("generate", backend="fal_mmaudio", duration=3) == pytest.approx(0.003)
+    assert foley.estimate("generate", backend="fal_mmaudio", duration_s=3) == pytest.approx(0.003)
 
 
 def test_default_backend_comes_from_the_env(monkeypatch):
@@ -323,7 +323,7 @@ def test_live_sa3_small_sfx_generates_a_decodable_clip(library):
     pytest.importorskip("falaw")
     cand = foley.generate(
         "a single wooden floorboard creak", backend="fal_stable_audio_3",
-        library=library, duration=2, reuse_cached=False,
+        library=library, duration_s=2, reuse_cached=False,
     )
     assert cand.sound.duration_s == pytest.approx(2.0, abs=0.2)
     assert cand.sound.license.license_id == "Stability-Community"
@@ -397,7 +397,7 @@ def test_mcp_generate_refuses_a_noncommercial_backend_for_free(monkeypatch):
 
 def test_auto_is_accepted_by_generate_and_estimate(monkeypatch):
     monkeypatch.setenv("FOLEY_GENERATE_BACKEND", "fal_sonilo")
-    assert foley.estimate("generate", backend="auto", duration=1) == pytest.approx(0.0018)
+    assert foley.estimate("generate", backend="auto", duration_s=1) == pytest.approx(0.0018)
 
 
 # ---------------------------------------------------------------------------
@@ -407,9 +407,9 @@ def test_auto_is_accepted_by_generate_and_estimate(monkeypatch):
 
 def test_provider_params_override_native_arguments_and_are_recorded():
     adapter, runner = _adapter()
-    base = adapter.native_arguments("rain", duration=2.0, steps=8)
+    base = adapter.native_arguments("rain", duration_s=2.0, steps=8)
     extra = {"num_inference_steps": 4, "sync_mode": True}
-    clip = adapter.generate("rain", duration=2.0, steps=8, provider_params=extra)
+    clip = adapter.generate("rain", duration_s=2.0, steps=8, provider_params=extra)
     sent = runner.calls[0][1]
     assert base["num_inference_steps"] == 8 and sent == {**base, **extra}
     gp = clip.candidate.sound.license.generation_params
@@ -426,13 +426,13 @@ def test_a_provider_duration_cannot_under_reserve_the_budget(name):
 
     config = CONFIGS[name]
     assert config["pricing"]["unit"] == "per_second"
-    duration = config["param_map"]["duration"]["native_name"]
+    duration = config["param_map"]["duration_s"]["native_name"]
     adapter, runner = _adapter(name)
     budget = Budget(max_usd=1.0)
     with spend_scope(budget):
         with pytest.raises(ValueError, match="price"):
             foley.generate(
-                "rain", backend=name, adapter=adapter, duration=1,
+                "rain", backend=name, adapter=adapter, duration_s=1,
                 provider_params={duration: config["native_defaults"]["duration_max_s"]},
             )
     assert runner.calls == [] and budget.spent_usd == 0.0

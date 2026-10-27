@@ -97,7 +97,7 @@ class StableAudioAdapter:
         self,
         prompt: str,
         *,
-        duration: Optional[float] = None,
+        duration_s: Optional[float] = None,
         prompt_influence: Optional[float] = None,
         negative_prompt: Optional[str] = None,
         steps: Optional[int] = None,
@@ -111,7 +111,7 @@ class StableAudioAdapter:
 
         Args:
             prompt: The natural-language sound description (required).
-            duration: Seconds (clamped to the model's ~47.55 s max). ``None`` uses a
+            duration_s: Seconds (clamped to the model's ~47.55 s max). ``None`` uses a
                 sane 10 s default (NOT the 47.55 s maximum).
             prompt_influence: ``0..1`` unified adherence, mapped linearly onto the
                 native ``guidance_scale`` (1..15). ``None`` (default) sends the
@@ -150,7 +150,7 @@ class StableAudioAdapter:
                 "(the guidance_scale to send when none is asked for)"
             )
         audio_end_in_s = min(
-            duration if duration is not None else nd["duration_default_s"],
+            duration_s if duration_s is not None else nd["duration_default_s"],
             nd["duration_max_s"],
         )
         native = {

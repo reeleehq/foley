@@ -778,9 +778,9 @@ def generate(
             translated native params (a provider param wins), recorded in the
             licence's ``generation_params``, and part of the generations-cache key.
             A key the backend's config ``provider_params`` policy reserves (the
-            prompt, an output path) or prices (``duration``, the model) raises
+            prompt, an output path) or prices (``duration_s``, the model) raises
             ``ValueError`` before anything is paid for: use the unified argument.
-        **affordances: Unified generation affordances (``duration``,
+        **affordances: Unified generation affordances (``duration_s``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format`` — see :data:`GENERATION_AFFORDANCES`).
 

@@ -30,7 +30,7 @@ import os
 import wave
 from typing import Optional
 
-from ...base import Candidate, CandidateOrigin, SoundRecord
+from ...base import Candidate, CandidateOrigin, SoundRecord, reject_renamed
 from ...cost import actual_call_cost
 from ..base import (
     GeneratedClip,
@@ -297,7 +297,8 @@ class ElevenLabsAdapter:
         self,
         prompt: str,
         *,
-        duration: Optional[float] = None,
+        duration_s: Optional[float] = None,
+        model: Optional[str] = None,
         prompt_influence: Optional[float] = None,
         negative_prompt: Optional[str] = None,
         steps: Optional[int] = None,
@@ -311,8 +312,11 @@ class ElevenLabsAdapter:
 
         Args:
             prompt: The natural-language sound description (required).
-            duration: Seconds (clamped to the native ``0.5..30`` range). ``None``
+            duration_s: Seconds (clamped to the native ``0.5..30`` range). ``None``
                 lets the model auto-determine the length from the prompt.
+            model: The native ``model_id`` to pin (``eleven_text_to_sound_v2`` |
+                ``eleven_text_to_sound_v3``); ``None`` uses ``native_defaults``'.
+                Recorded as the licence's ``generator_model`` / ``generator_version``.
             prompt_influence: ``0..1`` (identity map to the native field; higher =
                 closer to the prompt, less variety). ``None`` (default) omits it, so
                 the API applies its own default.
@@ -345,13 +349,13 @@ class ElevenLabsAdapter:
             notes, negative_prompt=negative_prompt, steps=steps, seed=seed, **kw
         )
 
-        model_id = self.config["native_defaults"]["model_id"]
+        model_id = model or self.config["native_defaults"]["model_id"]
         native_influence = native_adherence(self.config, prompt_influence, notes)
         body: dict = {"text": prompt, "model_id": model_id, "loop": bool(loop)}
         if native_influence is not None:
             body["prompt_influence"] = native_influence
-        if duration is not None:
-            body["duration_seconds"] = self._clamp_duration(duration)
+        if duration_s is not None:
+            body["duration_seconds"] = self._clamp_duration(duration_s)
         body = merge_provider_params(
             body, provider_params, policy=self.config.get("provider_params")
         )
@@ -382,7 +386,8 @@ class ElevenLabsAdapter:
             .get("plan_attribution", {})
             .get(license_id),
             generator_model=model_id,
-            generator_version=self.config["native_defaults"].get("generator_version"),
+            generator_version=model
+            or self.config["native_defaults"].get("generator_version"),
             generation_prompt=prompt,
             generation_seed=None,  # non-deterministic backend
             generation_params=resolved,
@@ -394,7 +399,7 @@ class ElevenLabsAdapter:
         )
         candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
         candidate.cost_actual_usd = actual_call_cost(
-            self.config, duration=body.get("duration_seconds")
+            self.config, duration_s=body.get("duration_seconds")
         )
         return GeneratedClip(
             audio_bytes=audio_bytes,
@@ -498,7 +503,11 @@ class ElevenLabsAdapter:
         return buf.getvalue()
 
     def _warn_unsupported(self, notes: list, **passed) -> None:
-        """Record a note for each unsupported affordance passed with a non-default value."""
+        """Record a note for each unsupported affordance passed with a non-default value.
+
+        A renamed affordance's old spelling raises ``TypeError`` instead (#75).
+        """
+        reject_renamed(passed)
         for name in _UNSUPPORTED:
             if passed.get(name) is not None:
                 notes.append(
@@ -508,11 +517,11 @@ class ElevenLabsAdapter:
         for name in extra:
             notes.append(f"affordance {name!r} is not a known SFX param; ignored")
 
-    def _clamp_duration(self, duration: float) -> float:
-        """Clamp ``duration`` to the native ``[min, max]`` seconds window."""
+    def _clamp_duration(self, duration_s: float) -> float:
+        """Clamp ``duration_s`` to the native ``[min, max]`` seconds window."""
         lo = self.config["native_defaults"]["duration_min_s"]
         hi = self.config["native_defaults"]["duration_max_s"]
-        return max(lo, min(float(duration), hi))
+        return max(lo, min(float(duration_s), hi))
 
     def _invoke(self, *, params: dict, body: dict, notes: list):
         """:meth:`invoke_native`, with the credits the account was charged (the
