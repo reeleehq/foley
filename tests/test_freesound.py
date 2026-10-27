@@ -808,7 +808,19 @@ def test_kind_and_ucs_category_on_one_top_level_send_it_once():
     assert 'category:"Soundscapes"' in transport.calls[0].params["filter"]
     transport = _transport()  # an unmapped UCS category never conflicts
     _adapter(transport).search("rain", kind="music", ucs_category="DOORS")
+    assert transport.calls[0].params["filter"].endswith(' category:"Music"')
     assert transport.calls[0].params["filter"].count("category:") == 1
+
+
+def test_add_from_raises_a_kind_and_ucs_category_conflict(library):
+    from foley.sources import add_from
+    from foley.sources.base import SearchArgumentError
+
+    transport = _transport()
+    with pytest.raises(SearchArgumentError, match="match nothing"):
+        add_from("freesound", query="rain", kind="music", ucs_category="AMBIENCE",
+                 adapter=_adapter(transport), library=library)
+    assert transport.calls == []
 
 
 def test_search_vocabulary_is_validated_before_any_call():

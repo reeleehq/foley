@@ -68,6 +68,7 @@ __all__ = [
     "key_fingerprint",
     "source_account_id",
     "SourceConfigurationError",
+    "SearchArgumentError",
     "ClipSpec",
     "CorpusAdapter",
     "SourceAdapter",
@@ -93,6 +94,15 @@ class SourceConfigurationError(RuntimeError):
     Not transient, so it is never recorded as one failed hit among many: the generate
     and pull façades let it propagate, and its message names what to set (the env var
     and, for a key, its sign-up URL) (#64).
+    """
+
+
+class SearchArgumentError(ValueError):
+    """A search argument the source refuses before any call: the caller's error.
+
+    A ``ValueError``, so ``except ValueError`` still catches it; its own type lets the
+    pull façade raise it rather than record it as a failed search, as it records a
+    transient one (a garbled response is a ``ValueError`` too) (#169).
     """
 
 
@@ -325,7 +335,7 @@ def page_size(config: dict, k: int) -> int:
 
 
 def check_page_depth(config: dict, page: int, per_page: int) -> None:
-    """Raise ``ValueError`` for a ``page`` that reaches past the source's result window.
+    """Raise :class:`SearchArgumentError` for a ``page`` past the source's result window.
 
     ``param_map['page']['result_window']`` is the deepest result one query serves
     (offset + limit): a page that ends past it can only come back short, empty or as
@@ -338,13 +348,13 @@ def check_page_depth(config: dict, page: int, per_page: int) -> None:
     >>> check_page_depth(cfg, 13, 20)
     Traceback (most recent call last):
     ...
-    ValueError: page 13 (20 a page) asks for results 241-260, past the 240 results this source serves per query
+    foley.sources.base.SearchArgumentError: page 13 (20 a page) asks for results 241-260, past the 240 results this source serves per query
     """
     window = config["param_map"]["page"].get("result_window")
     end = int(page) * int(per_page)
     if window is not None and int(page) > 1 and end > int(window):
         first = (int(page) - 1) * int(per_page) + 1
-        raise ValueError(
+        raise SearchArgumentError(
             f"page {page} ({per_page} a page) asks for results {first}-{end}, past "
             f"the {window} results this source serves per query"
         )

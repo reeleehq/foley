@@ -39,6 +39,7 @@ from ..base import (
     api_license,
     merge_provider_params,
     native_choice,
+    SearchArgumentError,
     page_size,
     paging_params,
     provider_params_policy,
@@ -84,13 +85,13 @@ def _category_filter(
     """The one Broad Sound Taxonomy top level to pre-filter on, from ``kind`` and ``ucs_category``.
 
     Both narrow the same ``category`` field, so two different top levels could only
-    match nothing: that raises ``ValueError`` (#169). The same one from both is sent
+    match nothing: that raises :class:`~foley.sources.base.SearchArgumentError` (#169). The same one from both is sent
     once.
     """
     by_kind = config["param_map"]["kind"]["bst_category"].get(kind)
     by_ucs = _bst_category(config, ucs_category) if ucs_category else None
     if by_kind and by_ucs and by_kind != by_ucs:
-        raise ValueError(
+        raise SearchArgumentError(
             f"kind={kind!r} asks for Freesound's {by_kind!r} category but "
             f"ucs_category={ucs_category!r} for {by_ucs!r}: a sound has one, so the "
             "two together match nothing; pass one of them"
@@ -208,10 +209,11 @@ class FreesoundAdapter:
             page: The results page (1-based, ``k`` per page).
             kind: ``sfx`` (default, no filter) or ``music`` (the Broad Sound
                 Taxonomy's "Music" top level). With a ``ucs_category`` that maps to
-                another top level it raises ``ValueError`` (nothing could match).
+                another top level it raises ``SearchArgumentError`` (nothing could match).
             similar_to: A Freesound sound id (either id form): "more like this one".
             ucs_category: A UCS CatID or category, mapped to a coarse Broad Sound
-                Taxonomy ``category`` pre-filter (no filter if it is not recognised).
+                Taxonomy ``category`` pre-filter (no filter if it is not recognised;
+                ``SearchArgumentError`` if ``kind`` asks for another top level).
             provider_params: Native Freesound search params foley has no affordance
                 for, merged over the translated ones (#61), e.g.
                 ``{"filter": "ac_brightness:[50 TO 100]"}``. Per the config's

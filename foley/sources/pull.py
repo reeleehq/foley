@@ -23,7 +23,7 @@ from ..base import IntendedUse
 from ..index.ingest import IngestReport, IngestResult, ingest_one
 from ..licensing import DEFAULT_INTENDED_USE, keep
 from ._dispatch import plan_search
-from .base import SourceConfigurationError
+from .base import SearchArgumentError, SourceConfigurationError
 from .registry import get_source
 
 
@@ -83,8 +83,10 @@ def _add_from(
         ``.summary()`` for counts, exactly like :func:`foley.ingest`.
 
     Raises:
-        ValueError: A search argument the source refuses before any call, e.g. a
-            ``page`` past its result window (Openverse serves ~240 results a query).
+        SearchArgumentError: A search argument the source refuses before any call
+            (a ``ValueError``), e.g. a ``page`` past its result window (Openverse
+            serves ~240 results a query), or Freesound's ``kind`` and
+            ``ucs_category`` naming two different top levels.
         SourceConfigurationError: A missing key or optional dependency.
     """
     from ..bootstrap import (
@@ -119,8 +121,8 @@ def _add_from(
             candidates = src_adapter.search(
                 query, license=license, k=limit, **search_kw
             )
-    except SourceConfigurationError:
-        raise
+    except (SourceConfigurationError, SearchArgumentError):
+        raise  # the user's to fix: never a failed search in the report
     except ImportError as exc:
         raise SourceConfigurationError(
             f"{source!r} needs an optional dependency that is not installed "
