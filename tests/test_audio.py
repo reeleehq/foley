@@ -6,7 +6,7 @@ Strategy (testing-trophy: cheap, stable, numpy-only where possible):
       (``to_mono``, ``ensure_channels``, ``fade``) with no optional dependency.
     * DSP that wraps an optional library is guarded with
       ``pytest.importorskip`` (``soxr`` for resample, ``librosa`` for trim,
-      ``pyloudnorm`` for loudness).
+      ``mixing.loudness`` for loudness; ``pyloudnorm`` as an independent oracle).
     * File-codec round-trips (``encode``/``save``/``load``) additionally carry
       the ``audiofile`` marker and ``importorskip('soundfile')`` so a lean env
       skips them cleanly.
@@ -206,12 +206,12 @@ def test_trim_silence_preserves_channels():
 
 
 # ---------------------------------------------------------------------------
-# loudness_normalize (pyloudnorm)
+# loudness_normalize (the mixing.loudness meter)
 # ---------------------------------------------------------------------------
 
 
 def test_loudness_normalize_near_silent_unchanged():
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     sr = 48_000
     y = np.zeros(sr, dtype=np.float32)
     out, measured = audio.loudness_normalize(y, sr)
@@ -220,7 +220,7 @@ def test_loudness_normalize_near_silent_unchanged():
 
 
 def test_loudness_normalize_scales_quiet_sine():
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     sr = 48_000
     y = _sine(sr=sr, dur=2.0, amp=0.1)  # >= 0.4 s so the meter is valid
     out, measured = audio.loudness_normalize(y, sr, target_lufs=audio.LUFS_PODCAST)
@@ -232,7 +232,7 @@ def test_loudness_normalize_scales_quiet_sine():
 
 
 def test_loudness_normalize_respects_true_peak_ceiling():
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     sr = 48_000
     y = _sine(sr=sr, dur=2.0, amp=0.05)
     out, _ = audio.loudness_normalize(y, sr, peak_ceiling_dbfs=audio.TRUE_PEAK_MAX_DBTP)
@@ -242,9 +242,9 @@ def test_loudness_normalize_respects_true_peak_ceiling():
 
 def test_loudness_normalize_short_clip_returns_unchanged():
     # A clip shorter than one BS.1770 gating block (0.4 s) cannot be measured;
-    # pyloudnorm would raise. It must be returned unchanged, flagged -inf — this
+    # a gated meter cannot read it. It must be returned unchanged, flagged -inf — this
     # is routine for one-shots (clicks, blips, gunshots).
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     sr = 48_000
     y = _sine(sr=sr, dur=0.1, amp=0.5)  # 0.1 s < 0.4 s
     out, measured = audio.loudness_normalize(y, sr)
@@ -342,10 +342,14 @@ def test_loudness_gain_db_lands_a_quiet_clip_on_target():
     after = pyln.Meter(sr).integrated_loudness(y.astype(np.float64) * 10 ** (gain / 20))
     assert after == pytest.approx(-30.0, abs=0.05)
     assert gain == pytest.approx(-30.0 - measured)
+    stereo = np.stack([y, 0.5 * y], axis=1)  # the default meter weights channels too
+    gain2, _ = audio.loudness_gain_db(stereo, sr, target_lufs=-30.0)
+    after = pyln.Meter(sr).integrated_loudness(stereo.astype(np.float64) * 10 ** (gain2 / 20))
+    assert after == pytest.approx(-30.0, abs=0.05)
 
 
 def test_loudness_gain_db_holds_a_high_crest_clip_at_the_ceiling():
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     sr = 48_000
     y = _sine(sr=sr, dur=1.0, amp=0.01)
     y[sr // 2] = 0.9  # a spike: boosting to the target would clip it
@@ -354,7 +358,7 @@ def test_loudness_gain_db_holds_a_high_crest_clip_at_the_ceiling():
 
 
 def test_loudness_gain_db_caps_the_boost():
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     sr = 48_000
     y = _sine(sr=sr, dur=1.0, amp=0.001)
     gain, _ = audio.loudness_gain_db(y, sr, target_lufs=-16.0, max_boost_db=6.0)
@@ -362,7 +366,7 @@ def test_loudness_gain_db_caps_the_boost():
 
 
 def test_loudness_gain_db_gate_floor_is_a_keyword():
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     sr = 48_000
     y = _sine(sr=sr, dur=1.0, amp=0.05)
     _, measured = audio.loudness_gain_db(y, sr, target_lufs=-16.0)
@@ -372,7 +376,7 @@ def test_loudness_gain_db_gate_floor_is_a_keyword():
 
 
 def test_loudness_gain_db_short_clip_policy_is_one_switch():
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     sr = 48_000
     y = _sine(sr=sr, dur=0.1, amp=0.5)
     assert audio.loudness_gain_db(y, sr, target_lufs=-16.0) == (0.0, float("-inf"))
@@ -384,7 +388,7 @@ def test_loudness_gain_db_short_clip_policy_is_one_switch():
 
 
 def test_loudness_gain_db_leaves_silent_and_non_finite_clips_alone():
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     sr = 48_000
     assert audio.loudness_gain_db(np.zeros(sr), sr, target_lufs=-16.0)[0] == 0.0
     assert audio.loudness_gain_db(np.full(sr, np.nan), sr, target_lufs=-16.0)[0] == 0.0

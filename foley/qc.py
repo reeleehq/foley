@@ -10,8 +10,9 @@ Zero-dependency import contract:
     This module imports **stdlib only** at the top level. ``numpy`` is
     lazy-imported inside each function body (like ``foley.audio``), so
     ``import foley.qc`` succeeds on a bare install with no scientific stack.
-    The :func:`measure_lufs` meter (``pyloudnorm``, via :func:`foley.audio.integrated_lufs`) is lazy and it returns
-    ``None`` when it (or a measurable clip) is absent; everything else is
+    The :func:`measure_lufs` meter (:mod:`mixing.loudness`, via
+    :func:`foley.audio.integrated_lufs`) is lazy and it returns ``None`` when it
+    (or a measurable clip) is absent; everything else is
     numpy-only.
 
 Waveform convention:
@@ -39,7 +40,7 @@ if TYPE_CHECKING:  # annotations only — never imported at runtime
 
 
 #: BS.1770 integrated-loudness gating block = 400 ms; a clip shorter than one
-#: block cannot be measured (``pyloudnorm`` raises), so :func:`measure_lufs`
+#: block cannot be gated, so :func:`measure_lufs`
 #: returns ``None`` for it. This is a fixed property of the algorithm, not a
 #: tunable QC policy threshold, hence a module constant rather than a field.
 LUFS_MIN_BLOCK_S: float = 0.4
@@ -411,23 +412,25 @@ def measure_lufs(
 ) -> Optional[float]:
     """Integrated loudness (LUFS, ITU-R BS.1770-4) via :func:`foley.audio.integrated_lufs`.
 
-    The one meter (``pyloudnorm`` by default, lazy; ``meter`` swaps it).
+    The one meter (:data:`foley.audio.DEFAULT_METER` by default, lazy; ``meter``
+    swaps it).
 
-    Returns ``None`` when ``pyloudnorm`` is unavailable, the clip is shorter than
-    one gating block (``min_block_s``), the samples are non-finite, or the
-    measured loudness is at/below the gate floor (near-silent / unstable — do
-    not amplify, just flag).
+    Returns ``None`` when the meter is unavailable or cannot read the layout, the
+    clip is shorter than one gating block (``min_block_s``), the samples are
+    non-finite, or the measured loudness is at/below the gate floor (near-silent /
+    unstable — do not amplify, just flag).
     """
     import numpy as np
 
-    from .audio import integrated_lufs
+    from .audio import integrated_lufs, resolve_meter
 
+    meter = resolve_meter(meter)  # a bad name raises; it is not "not measurable"
     x = np.asarray(samples, dtype=np.float64)
     if not np.isfinite(x).all():
         return None
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        try:  # a missing pyloudnorm / an unreadable layout is "not measurable"
+        try:  # a missing meter / an unreadable layout is "not measurable"
             loudness = integrated_lufs(
                 x, sample_rate, min_block_s=min_block_s, meter=meter
             )

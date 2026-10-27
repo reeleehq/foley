@@ -27,8 +27,8 @@ loudness, then the layer gain is applied, so a hot ElevenLabs clip and a quiet S
 Audio one land at the same place in the mix and ``generate(level=...)`` stays an export
 tool. A clip too short for a loudness reading is levelled by its peak instead.
 
-Zero-dependency import: ``numpy``, ``pyloudnorm`` and ``soundfile`` load inside the
-functions.
+Zero-dependency import: ``numpy``, ``soundfile`` and the shared loudness meter
+(:mod:`mixing.loudness`) load inside the functions.
 """
 
 from __future__ import annotations
@@ -85,13 +85,10 @@ def resolve_target_lufs(spec: LevelSpec) -> float:
 
 
 def require_loudness_meter() -> None:
-    """Raise ``ImportError`` (with the install line) when ``pyloudnorm`` is missing."""
-    try:
-        import pyloudnorm  # noqa: F401
-    except ImportError as exc:
-        raise ImportError(
-            "level= measures loudness with pyloudnorm: pip install 'foley[audio]'"
-        ) from exc
+    """Raise ``ImportError`` (with the install line) when the loudness meter is missing."""
+    from .audio import loudness_component
+
+    loudness_component()
 
 
 def level_bytes(
@@ -102,7 +99,7 @@ def level_bytes(
     Args:
         audio_bytes: Any clip ``soundfile`` decodes.
         target: A layer (its class target) or a LUFS number (see :func:`resolve_target_lufs`).
-        meter: A :data:`foley.audio.Meter` (default ``pyloudnorm``).
+        meter: A :data:`foley.audio.Meter` (default :data:`foley.audio.DEFAULT_METER`).
 
     Returns:
         ``(bytes, applied, measured_lufs)``: the levelled clip re-encoded in foley's FLAC
@@ -179,10 +176,11 @@ def reference_gain_db(
         sample_rate: Sample rate in Hz.
         reference_lufs: The loudness every clip is brought to (default: foley's
             reference programme loudness, :data:`foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).
-        meter: A :data:`foley.audio.Meter` (default ``pyloudnorm``).
+        meter: A :data:`foley.audio.Meter` (default :data:`foley.audio.DEFAULT_METER`).
     """
-    from .audio import DEFAULT_LOUDNESS_TARGET_LUFS, loudness_gain_db
+    from .audio import DEFAULT_LOUDNESS_TARGET_LUFS, loudness_gain_db, resolve_meter
 
+    meter = resolve_meter(meter)  # a bad name raises; it is not "not measurable"
     try:
         gain, _ = loudness_gain_db(
             clip,
@@ -196,7 +194,7 @@ def reference_gain_db(
             meter=meter,
         )
     except (ImportError, ValueError):
-        # The render must not die on one clip the meter cannot read (more than five
-        # channels) or on a missing optional meter: leave that clip's level alone.
+        # The render must not die on one clip the meter cannot read or on a missing
+        # optional meter: leave that clip's level alone.
         return 0.0
     return gain

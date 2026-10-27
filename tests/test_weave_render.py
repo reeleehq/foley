@@ -5,7 +5,7 @@ from dataclasses import replace
 import pytest
 
 np = pytest.importorskip("numpy")
-pytest.importorskip("pyloudnorm")
+pytest.importorskip("mixing.loudness")
 
 from foley.audio import WORKING_SAMPLE_RATE, to_working  # noqa: E402
 from foley.base import Layer, SoundDesignTimeline, TimelineItem  # noqa: E402

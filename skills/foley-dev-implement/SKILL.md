@@ -47,7 +47,7 @@ foley/
     base.py            # SoundRecord, LicenseRecord, Candidate, SoundEvent, Verdict,
                        #   IntendedUse, affordance registries — the SSOT types
     registry.py        # adapter auto-discovery + lazy loading
-    audio.py           # I/O + DSP primitives (soundfile/soxr/librosa/pyloudnorm)
+    audio.py           # I/O + DSP primitives (soundfile/soxr/librosa; loudness via mixing.loudness)
     sources/           # source adapters (config.py + adapter.py each) — see foley-dev-add-source
     index/             # embedders, taggers, captioners, library (dol + LanceDB), search, taxonomy
     agent/             # decompose, verify, policy(decide), tools, mcp

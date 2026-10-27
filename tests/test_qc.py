@@ -2,8 +2,8 @@
 
 numpy-only — no audio files, no ``soundfile``. Every fixture is a synthesized
 array (clean tone, clipped run, DC-offset tone, silence, NaN/Inf, edge-click
-tone, noisy tone). ``pyloudnorm`` is exercised when present and skipped
-otherwise; ``run_qc`` is verified to still produce a report without it.
+tone, noisy tone). The loudness meter (``mixing.loudness``) is exercised when
+present and skipped otherwise; ``run_qc`` is verified to still produce a report without it.
 """
 
 import pytest
@@ -198,7 +198,7 @@ def test_true_peak_dbtp_nyquist_tone_not_over_reported():
 
 
 def test_measure_lufs_when_available():
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     lufs = measure_lufs(_sine(1.0, amp=0.5), SR)
     assert lufs is not None
     assert isinstance(lufs, float)
@@ -206,7 +206,7 @@ def test_measure_lufs_when_available():
 
 
 def test_measure_lufs_none_for_too_short_clip():
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     short = _sine(LUFS_MIN_BLOCK_S / 2, amp=0.5)  # < one gating block
     assert measure_lufs(short, SR) is None
 
@@ -277,7 +277,7 @@ def test_run_qc_notes_minor_dc_offset():
 
 
 def test_run_qc_handles_missing_lufs(monkeypatch):
-    # Simulate pyloudnorm being unavailable: run_qc must still produce a report.
+    # Simulate the loudness meter being unavailable: run_qc must still produce a report.
     import foley.qc as qc
 
     monkeypatch.setattr(qc, "measure_lufs", lambda *a, **k: None)
@@ -364,5 +364,10 @@ def test_measure_lufs_is_the_audio_meter_with_none_contract():
     bad = x.copy()
     bad[5] = np.nan
     assert measure_lufs(bad, sr) is None
-    six = np.tile(x[:, None], (1, 6))
-    assert measure_lufs(six, sr) is None  # >5 channels: pyloudnorm ValueError
+    six = np.tile(x[:, None], (1, 6))  # the numpy meter reads any channel count
+    assert measure_lufs(six, sr) == pytest.approx(audio.integrated_lufs(six, sr))
+
+    def unreadable(samples, rate):  # e.g. pyloudnorm on more than five channels
+        raise ValueError("unsupported layout")
+
+    assert measure_lufs(six, sr, meter=unreadable) is None

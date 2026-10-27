@@ -2,7 +2,7 @@
 
 ``ffmpeg`` (the two-pass ``loudnorm`` "guarantee the numbers" master, report 06 §5.4)
 and ``rubberband`` (time-stretch / pitch for loop fitting) are **system** binaries,
-never pip dependencies — the default WEAVE path is pure-numpy + ``pyloudnorm`` and
+never pip dependencies — the default WEAVE path is pure-numpy + :mod:`mixing.loudness` and
 degrades gracefully when they are absent. This module is the SSOT for what those
 binaries are, how to detect them (``shutil.which``), and how to install them per
 platform; it mirrors accompy's ``check_requirements`` progressive-disclosure

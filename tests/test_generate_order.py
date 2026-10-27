@@ -265,7 +265,7 @@ def test_class_targets_come_from_the_weave_layer_gains():
 
 
 def test_level_bytes_moves_a_hot_clip_to_its_class_target():
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     from foley.level import level_bytes
     from foley.qc import measure_lufs
 
@@ -285,7 +285,7 @@ def test_a_clip_too_short_to_measure_is_left_alone():
 
 
 def test_generate_levels_on_request_and_records_it(paid_keys, monkeypatch, library):
-    pytest.importorskip("pyloudnorm")
+    pytest.importorskip("mixing.loudness")
     transport = FakeTransport(FakeResponse(200, None, encode(_tone(2.0, amp=0.9), SR)))
     adapter = ElevenLabsAdapter(http=transport)
     cand = foley.generate(

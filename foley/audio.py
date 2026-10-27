@@ -15,8 +15,8 @@ It commits to a small, explicit set of representations (report 09):
 Design rules honoured here:
 
     * **Zero-dep import.** This module imports only the stdlib at top level; the
-      heavy libraries (``numpy``, ``soundfile``, ``soxr``, ``librosa``,
-      ``pyloudnorm``) are lazy-imported *inside* the functions that need them, so
+      heavy libraries (``numpy``, ``soundfile``, ``soxr``, ``librosa``, the
+      :mod:`mixing.loudness` meter) are lazy-imported *inside* the functions that need them, so
       ``import foley.audio`` always succeeds on a bare install and only the
       function you call pays for (and requires) its dependency.
     * **No magic numbers.** Every default (sample rate, dtype, archive subtype,
@@ -62,7 +62,7 @@ LUFS_EBU: float = -23.0  # EBU R128 broadcast target
 LUFS_ATSC: float = -24.0  # ATSC A/85 broadcast target
 DEFAULT_LOUDNESS_TARGET_LUFS: float = LUFS_PODCAST
 TRUE_PEAK_MAX_DBTP: float = -1.0  # ceiling after loudness normalization
-LUFS_GATE_FLOOR: float = -70.0  # pyloudnorm near-silent gate; flag, don't amplify
+LUFS_GATE_FLOOR: float = -70.0  # BS.1770 absolute gate; flag, don't amplify
 LUFS_MIN_BLOCK_S: float = 0.4  # BS.1770 gating block; shorter clips can't be measured
 SILENT_PEAK_DBFS: float = -80.0  # a clip whose sample peak is under this is silent
 
@@ -359,7 +359,8 @@ def limit_true_peak(
     A **static** gain — the whole clip is turned down by one factor, never boosted —
     which is transparent and exactly what a Tier-0 range fault needs: after it, a
     flat-topped run or an over-ceiling peak is no longer at full scale. It is not a
-    dynamic look-ahead limiter (a shared one is planned: foley#91), so the distortion
+    dynamic look-ahead limiter (that is :func:`mixing.loudness.limit_peaks`, the WEAVE
+    master's default), so the distortion
     of a heavily clipped clip stays in the waveform; that is why :mod:`foley.repair`
     applies it only to a clip just over the clipping gate.
 
@@ -387,15 +388,49 @@ def limit_true_peak(
     return samples * (10.0 ** (gain_db / 20.0)), gain_db
 
 
-#: A loudness meter: ``(samples, sample_rate) -> integrated LUFS`` (time on axis 0).
-Meter = Callable[["ndarray", int], float]
+#: A loudness meter: a name from :data:`mixing.loudness.METERS` (``"numpy"``, the
+#: default; ``"ffmpeg_ebur128"``; ``"pyloudnorm"``) or any
+#: ``(samples, sample_rate) -> integrated LUFS`` callable (time on axis 0).
+Meter = Union[str, Callable[["ndarray", int], float]]
+#: The meter foley measures with when none is given: the shared component's numpy
+#: BS.1770-4 meter (foley#91), so foley needs no meter library of its own.
+DEFAULT_METER: str = "numpy"
+_LOUDNESS_HINT = "pip install 'foley[audio]' (it brings mixing[loudness])"
 
 
-def pyloudnorm_meter(samples: "ndarray", sample_rate: int) -> float:
-    """The default :data:`Meter`: ``pyloudnorm`` (lazy), BS.1770-4 integrated loudness."""
-    import pyloudnorm as pyln
+def loudness_component():
+    """The shared loudness component, :mod:`mixing.loudness` (foley#91).
 
-    return float(pyln.Meter(sample_rate).integrated_loudness(samples))
+    Raises ``ImportError`` naming the install line when it, or the scipy its
+    meter and limiter filter with, is missing.
+    """
+    try:
+        import scipy.signal  # noqa: F401  (mixing.loudness imports it lazily)
+        from mixing import loudness
+    except ImportError as exc:
+        raise ImportError(
+            f"loudness needs the shared mixing.loudness component: {_LOUDNESS_HINT}",
+            name=exc.name,
+        ) from exc
+    return loudness
+
+
+def resolve_meter(meter: Optional[Meter] = None) -> Meter:
+    """``meter``, or :data:`DEFAULT_METER` for ``None``; an unknown name raises ``ValueError``.
+
+    Callers that read a meter error as "not measurable" resolve first, so a typo is
+    never mistaken for an unreadable clip. A name is checked only when the component
+    is installed (measuring reports a missing one).
+    """
+    meter = DEFAULT_METER if meter is None else meter
+    if isinstance(meter, str):
+        try:
+            names = loudness_component().METERS
+        except ImportError:
+            return meter
+        if meter not in names:
+            raise ValueError(f"unknown meter {meter!r}; one of {sorted(names)}")
+    return meter
 
 
 def integrated_lufs(
@@ -412,15 +447,16 @@ def integrated_lufs(
     ``n < block_size*rate`` at every sample rate, including rates where ``0.4*sr`` is
     not integral; identical to ``int(round)`` at all standard (÷5) rates.
 
-    ``meter`` (default :func:`pyloudnorm_meter`) is the seam for another BS.1770
-    implementation (foley#91); the too-short guard stays here, outside the meter, so
-    every meter sees the same clips.
+    ``meter`` (default :data:`DEFAULT_METER`) picks the BS.1770 implementation (see
+    :data:`Meter`); the too-short guard stays here, outside the meter, so every meter
+    sees the same clips.
 
-    Lazy dependency: ``pyloudnorm`` (default meter only).
+    Lazy dependency: :mod:`mixing.loudness` (see :func:`loudness_component`).
     """
+    meter = resolve_meter(meter)  # before the guard: a bad name raises on any clip
     if samples.shape[0] < math.ceil(min_block_s * sample_rate):
         return float("-inf")
-    return float((meter or pyloudnorm_meter)(samples, sample_rate))
+    return loudness_component().integrated_lufs(samples, sample_rate, meter=meter)
 
 
 def loudness_gain_db(
@@ -458,7 +494,7 @@ def loudness_gain_db(
         ``(gain_db, measured_lufs)``; ``measured_lufs`` is ``-inf`` for a clip too short
         to measure, a value at or under :data:`LUFS_GATE_FLOOR` for a near-silent one.
 
-    Lazy dependencies: ``pyloudnorm`` (+ ``numpy``).
+    Lazy dependencies: :mod:`mixing.loudness` (+ ``numpy``).
     """
     import numpy as np
 
@@ -502,13 +538,11 @@ def loudness_normalize(
     or below ``peak_ceiling_dbfs``: the gain is :func:`loudness_gain_db`. Inputs are
     returned **unchanged** (flag them, don't amplify) when silent or non-finite,
     near-silent (measured loudness at or below ``LUFS_GATE_FLOOR``), or shorter than one
-    BS.1770 gating block (``min_block_s``) — which ``pyloudnorm`` cannot measure and
-    would otherwise raise ``ValueError`` on (routine for one-shots: clicks, blips,
-    gunshots).
+    BS.1770 gating block (``min_block_s``) — which a gated meter cannot measure
+    (routine for one-shots: clicks, blips, gunshots).
 
     Args:
-        samples: Working array (mono or multichannel, time on axis 0 — the layout
-            pyloudnorm expects).
+        samples: Working array (mono or multichannel, time on axis 0).
         sample_rate: Sample rate in Hz.
         target_lufs: Desired integrated loudness (default = foley's podcast
             target).
@@ -518,7 +552,7 @@ def loudness_normalize(
             oversampled measurement.
         min_block_s: Minimum clip length (seconds) that can be loudness-measured;
             shorter clips are returned unchanged with ``measured = -inf``.
-        meter: A :data:`Meter` (default ``pyloudnorm``).
+        meter: A :data:`Meter` (default :data:`DEFAULT_METER`).
 
     Returns:
         ``(normalized, measured_input_lufs)``. When the input is near-silent or
@@ -526,7 +560,7 @@ def loudness_normalize(
         ``measured_input_lufs`` is at or below ``LUFS_GATE_FLOOR`` (``-inf`` for
         the too-short case).
 
-    Lazy dependencies: ``pyloudnorm`` (+ ``numpy``).
+    Lazy dependencies: :mod:`mixing.loudness` (+ ``numpy``).
     """
     gain_db, measured = loudness_gain_db(
         samples,

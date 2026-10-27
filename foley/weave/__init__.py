@@ -11,7 +11,7 @@ a :class:`WeaveResult`: the mastered audio, the hydrated re-renderable
 the run-artifact join.
 
 Discipline (mirrors the rest of foley): the whole package is import-time dol-only
-(numpy / pyloudnorm / whisperx / opentimelineio / audioseal / c2pa are all
+(numpy / mixing.loudness / whisperx / opentimelineio / audioseal / c2pa are all
 function-local), the aligner and per-item strategy are injectable DI seams with
 deterministic defaults, and provenance re-assertion never raises — the C2PA
 content-credential sidecar is always emitted; the AudioSeal watermark and the (deferred)

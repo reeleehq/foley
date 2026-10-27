@@ -7,7 +7,7 @@ short for a loudness reading is levelled by its peak; silence is left alone.
 import pytest
 
 np = pytest.importorskip("numpy")
-pytest.importorskip("pyloudnorm")
+pytest.importorskip("mixing.loudness")
 
 from foley.audio import WORKING_SAMPLE_RATE, to_working  # noqa: E402
 from foley.base import Layer, SoundDesignTimeline, TimelineItem  # noqa: E402
@@ -133,4 +133,8 @@ def test_the_render_cache_tells_the_two_strategies_apart():
 
 def test_a_clip_the_meter_rejects_leaves_its_level_alone():
     six_channels = np.tile(_tone(1.0, 0.1)[:, None], (1, 6))
-    assert reference_gain_db(six_channels, SR) == 0.0
+
+    def unreadable(samples, rate):  # e.g. pyloudnorm on more than five channels
+        raise ValueError("unsupported layout")
+
+    assert reference_gain_db(six_channels, SR, meter=unreadable) == 0.0
