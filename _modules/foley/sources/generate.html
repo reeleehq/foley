@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=6b9736a6"></script>
+    <script src="../../../_static/documentation_options.js?v=a01ea66b"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.83" />
+  <meta name="docsearch:version" content="0.0.84" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1484,10 +1484,21 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    paid entries only once opted in). An order bills at most one backend (a backend is</span>
 <span class="sd">    passed over only when nothing was billed, see :func:`generate_in_order`), but which</span>
 <span class="sd">    one depends on who answers, so the bound is the dearest backend the order would try.</span>
-<span class="sd">    ``None`` (unknown) when any of them is unknown.</span>
+<span class="sd">    ``None`` (unknown) when any of them is unknown. ``affordances`` may carry the call's</span>
+<span class="sd">    ``on_unsupported``; the façade's other keywords (``library=``, ``reuse_cached=``, …)</span>
+<span class="sd">    are not affordances and are ignored.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        UnsupportedParameter: When every backend tried refuses the call (#164).</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnsupportedParameter</span><span class="p">,</span> <span class="n">estimate_generation</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
+
+    <span class="n">affordances</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">affordances</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_GENERATE_KNOWN</span> <span class="ow">or</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"on_unsupported"</span>
+    <span class="p">}</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
         <span class="n">order</span><span class="p">,</span> <span class="n">paid_ok</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">backend</span><span class="p">),</span> <span class="kc">True</span>
@@ -1511,12 +1522,14 @@ window.runMermaid = runMermaid;</script>
             <span class="ow">or</span> <span class="p">((</span><span class="n">paid_ok</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">backend_is_paid</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="ow">and</span> <span class="n">backend_has_key</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
         <span class="p">)</span>
     <span class="p">]</span>
-    <span class="n">prices</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">prices</span><span class="p">,</span> <span class="n">refused</span> <span class="o">=</span> <span class="p">[],</span> <span class="kc">None</span>
     <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">tried</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">prices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">estimate_generation</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">))</span>
-        <span class="k">except</span> <span class="p">(</span><span class="n">UnsupportedParameter</span><span class="p">,</span> <span class="n">SourceConfigurationError</span><span class="p">):</span>
-            <span class="k">continue</span>  <span class="c1"># the order would pass it over before any call</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">UnsupportedParameter</span><span class="p">,</span> <span class="n">SourceConfigurationError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">refused</span> <span class="o">=</span> <span class="n">exc</span>  <span class="c1"># the order would pass it over before any call</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">prices</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">refused</span><span class="p">,</span> <span class="n">UnsupportedParameter</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">refused</span>  <span class="c1"># every backend refuses the call, as generate would</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">prices</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">prices</span><span class="p">)</span>
@@ -1559,8 +1572,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    (or its own ``{name: {...}}``, unwrapped). Each backend's params are checked against its</span>
 <span class="sd">    config's ``provider_params`` policy here, before any backend is called.</span>
 
-<span class="sd">    &gt;&gt;&gt; provider_params_by_backend({"steps": 8}, ("x",), per_backend=False)</span>
-<span class="sd">    {'x': {'steps': 8}}</span>
+<span class="sd">    &gt;&gt;&gt; provider_params_by_backend({"steps": 8}, ("stable_audio",), per_backend=False)</span>
+<span class="sd">    {'stable_audio': {'steps': 8}}</span>
 <span class="sd">    &gt;&gt;&gt; provider_params_by_backend({"steps": 8}, ("x", "y"), per_backend=True)</span>
 <span class="sd">    Traceback (most recent call last):</span>
 <span class="sd">    ...</span>

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=6b9736a6"></script>
+    <script src="../_static/documentation_options.js?v=a01ea66b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.83" />
+  <meta name="docsearch:version" content="0.0.84" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -3898,6 +3898,10 @@ pass <code class="docutils literal notranslate"><span class="pre">context=</span
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – For an unknown verb.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – For an unknown backend / source.</p></li>
+<li><p><strong>UnsupportedParameter</strong> – For <code class="docutils literal notranslate"><span class="pre">'generate'</span></code> on one backend that cannot honour a
+    meaning-carrying parameter (<code class="docutils literal notranslate"><span class="pre">model=</span></code>, <code class="docutils literal notranslate"><span class="pre">seed=</span></code>, <code class="docutils literal notranslate"><span class="pre">video=</span></code>): the call
+    would be refused before anything is paid, so it has no price (#164). An
+    order passes such a backend over, as <code class="docutils literal notranslate"><span class="pre">generate</span></code> does.</p></li>
 </ul>
 </dd>
 </dl>

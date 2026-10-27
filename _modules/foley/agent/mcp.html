@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=6b9736a6"></script>
+    <script src="../../../_static/documentation_options.js?v=a01ea66b"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.83" />
+  <meta name="docsearch:version" content="0.0.84" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1292,21 +1292,68 @@ window.runMermaid = runMermaid;</script>
 <span class="k">def</span><span class="w"> </span><span class="nf">foley_weave</span><span class="p">(</span><span class="n">narration</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timeline</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Render a timeline under the narration; returns the mix by store key + captions + credits."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">weave</span> <span class="k">as</span> <span class="n">_weave</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">tl</span> <span class="o">=</span> <span class="n">_timeline_of</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># the input, not the render: a JSON row</span>
+        <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+    <span class="n">lib</span> <span class="o">=</span> <span class="n">_lib</span><span class="p">()</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="p">{</span><span class="n">it</span><span class="o">.</span><span class="n">clip_ref</span> <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">tl</span><span class="o">.</span><span class="n">items</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">_in_library</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">it</span><span class="o">.</span><span class="n">clip_ref</span><span class="p">)}</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"clip_ref(s) not in the library: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">_weave_result_row</span><span class="p">(</span><span class="n">_weave</span><span class="p">(</span><span class="n">narration</span><span class="p">,</span> <span class="n">tl</span><span class="p">,</span> <span class="n">library</span><span class="o">=</span><span class="n">lib</span><span class="p">))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_in_library</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">sound_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">lib</span><span class="p">[</span><span class="n">sound_id</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_timeline_of</span><span class="p">(</span><span class="n">timeline</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The :class:`~foley.base.SoundDesignTimeline` a tool was given as JSON.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If it is not a JSON object (a list, a string), or its fields are</span>
+<span class="sd">            not a timeline's.</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SoundDesignTimeline</span>
 
-    <span class="n">result</span> <span class="o">=</span> <span class="n">_weave</span><span class="p">(</span><span class="n">narration</span><span class="p">,</span> <span class="n">SoundDesignTimeline</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">timeline</span><span class="p">),</span> <span class="n">library</span><span class="o">=</span><span class="n">_lib</span><span class="p">())</span>
-    <span class="k">return</span> <span class="n">_weave_result_row</span><span class="p">(</span><span class="n">result</span><span class="p">)</span></div>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">timeline</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"timeline must be a JSON object (a timeline's to_dict()), got "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">SoundDesignTimeline</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span>
 
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_invalid_on_bad_input</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A pure timeline tool answers a bad timeline or item id with an ``invalid`` row</span>
+<span class="sd">    (#194): its ``KeyError`` / ``TypeError`` / ``ValueError`` can only be the input's."""</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tool</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">tool</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_tl_op</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">timeline</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SoundDesignTimeline</span>
-
-    <span class="k">return</span> <span class="n">op</span><span class="p">(</span><span class="n">SoundDesignTimeline</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">timeline</span><span class="p">),</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">op</span><span class="p">(</span><span class="n">_timeline_of</span><span class="p">(</span><span class="n">timeline</span><span class="p">),</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
 
 
 <div class="viewcode-block" id="foley_swap_clip">
 <a class="viewcode-back" href="../../../_autosummary/foley.agent.mcp.html#foley.foley_swap_clip">[docs]</a>
+<span class="nd">@_invalid_on_bad_input</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">foley_swap_clip</span><span class="p">(</span><span class="n">timeline</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">sound_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Swap a timeline item's clip; returns the new timeline."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..weave.timeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">swap_clip</span>
@@ -1317,6 +1364,7 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="foley_set_gain">
 <a class="viewcode-back" href="../../../_autosummary/foley.agent.mcp.html#foley.foley_set_gain">[docs]</a>
+<span class="nd">@_invalid_on_bad_input</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">foley_set_gain</span><span class="p">(</span><span class="n">timeline</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">gain_db</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Set a timeline item's gain (dB); returns the new timeline."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..weave.timeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_gain</span>
@@ -1327,6 +1375,7 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="foley_nudge">
 <a class="viewcode-back" href="../../../_autosummary/foley.agent.mcp.html#foley.foley_nudge">[docs]</a>
+<span class="nd">@_invalid_on_bad_input</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">foley_nudge</span><span class="p">(</span><span class="n">timeline</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">delta_s</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Shift a timeline item's onset by ``delta_s`` seconds; returns the new timeline."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..weave.timeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">nudge</span>
@@ -1337,6 +1386,7 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="foley_toggle">
 <a class="viewcode-back" href="../../../_autosummary/foley.agent.mcp.html#foley.foley_toggle">[docs]</a>
+<span class="nd">@_invalid_on_bad_input</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">foley_toggle</span><span class="p">(</span><span class="n">timeline</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Mute/unmute a timeline item; returns the new timeline."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..weave.timeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">toggle</span>
@@ -1347,6 +1397,7 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="foley_set_master">
 <a class="viewcode-back" href="../../../_autosummary/foley.agent.mcp.html#foley.foley_set_master">[docs]</a>
+<span class="nd">@_invalid_on_bad_input</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">foley_set_master</span><span class="p">(</span>
     <span class="n">timeline</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
     <span class="n">target_lufs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1357,7 +1408,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Either field may be set independently — omitting one keeps the podcast default for</span>
 <span class="sd">    that field (so ``peak_dbfs=-2.0`` alone tightens only the true-peak ceiling).</span>
 <span class="sd">    """</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">MasterProfile</span><span class="p">,</span> <span class="n">SoundDesignTimeline</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">MasterProfile</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..weave.timeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_master</span>
 
     <span class="k">if</span> <span class="n">target_lufs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">peak_dbfs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1367,18 +1418,20 @@ window.runMermaid = runMermaid;</script>
             <span class="n">target_lufs</span><span class="o">=</span><span class="n">target_lufs</span> <span class="k">if</span> <span class="n">target_lufs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="o">-</span><span class="mf">16.0</span><span class="p">,</span>
             <span class="n">true_peak_db</span><span class="o">=</span><span class="n">peak_dbfs</span> <span class="k">if</span> <span class="n">peak_dbfs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="k">return</span> <span class="n">set_master</span><span class="p">(</span><span class="n">SoundDesignTimeline</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">timeline</span><span class="p">),</span> <span class="n">profile</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span></div>
+    <span class="k">return</span> <span class="n">set_master</span><span class="p">(</span><span class="n">_timeline_of</span><span class="p">(</span><span class="n">timeline</span><span class="p">),</span> <span class="n">profile</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span></div>
 
 
 
 <div class="viewcode-block" id="foley_timeline_captions">
 <a class="viewcode-back" href="../../../_autosummary/foley.agent.mcp.html#foley.foley_timeline_captions">[docs]</a>
+<span class="nd">@_invalid_on_bad_input</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">foley_timeline_captions</span><span class="p">(</span><span class="n">timeline</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"vtt"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Export SDH captions for a timeline (``fmt='vtt'`` | ``'srt'``)."""</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SoundDesignTimeline</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..weave.timeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_srt</span><span class="p">,</span> <span class="n">to_webvtt</span>
 
-    <span class="n">tl</span> <span class="o">=</span> <span class="n">SoundDesignTimeline</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">fmt</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"vtt"</span><span class="p">,</span> <span class="s2">"srt"</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"fmt must be 'vtt' or 'srt', got </span><span class="si">{</span><span class="n">fmt</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">tl</span> <span class="o">=</span> <span class="n">_timeline_of</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">{</span><span class="s2">"vtt"</span><span class="p">:</span> <span class="n">to_webvtt</span><span class="p">(</span><span class="n">tl</span><span class="p">)}</span> <span class="k">if</span> <span class="n">fmt</span> <span class="o">==</span> <span class="s2">"vtt"</span> <span class="k">else</span> <span class="p">{</span><span class="s2">"srt"</span><span class="p">:</span> <span class="n">to_srt</span><span class="p">(</span><span class="n">tl</span><span class="p">)}</span></div>
 
 
@@ -1470,7 +1523,8 @@ window.runMermaid = runMermaid;</script>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_invalid</span><span class="p">(</span><span class="n">exc</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The JSON row of an argument the tool refuses (a tool never raises for one)."""</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"ok"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"invalid"</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)}</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="n">exc</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">)</span> <span class="ow">and</span> <span class="n">exc</span><span class="o">.</span><span class="n">args</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"ok"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"invalid"</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">message</span><span class="p">)}</span>
 
 
 <div class="viewcode-block" id="foley_guide">

@@ -2364,6 +2364,10 @@ remote LLM endpoint, an unlisted model), and such a call needs the run’s appro
 * **Raises:**
   * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For an unknown verb.
   * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – For an unknown backend / source.
+  * **UnsupportedParameter** – For `'generate'` on one backend that cannot honour a
+        meaning-carrying parameter (`model=`, `seed=`, `video=`): the call
+        would be refused before anything is paid, so it has no price (#164). An
+        order passes such a backend over, as `generate` does.
 
 ### foley.estimate_snr(samples, sample_rate, , quiet_percentile=10.0, frame_s=0.025, hop_s=0.01)
 
