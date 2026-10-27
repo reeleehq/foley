@@ -33,16 +33,30 @@ def _noise(seed: int) -> np.ndarray:
     )
 
 
-def _fal(name):
-    def fal_runner(endpoint_id, arguments, *, api_key, audio_field="audio"):
-        return encode(_noise(arguments["seed"]), SR, fmt="WAV"), {"audio": {"url": "u"}}
+#: What a fake fal backend draws from when sent no seed (any fixed value).
+_UNSEEDED = 999
 
-    return lambda **_: FalAdapter(
-        SOURCE_REGISTRY[name]["config"],
-        api_key="k",
-        runner=fal_runner,
-        demux=lambda answer: answer,  # a muxed-video endpoint: the fake answers audio
-    )
+
+def _fal(name):
+    def make(**_):
+        config = SOURCE_REGISTRY[name]["config"]
+        seed_field = config["native_defaults"].get("seed_field")
+
+        def fal_runner(endpoint_id, arguments, *, api_key, audio_field="audio"):
+            seed = arguments.get("seed", _UNSEEDED)  # seedless: the backend's own noise
+            response = {"audio": {"url": "u"}}
+            if seed_field:  # like the real endpoint, echo the seed it used
+                response[seed_field] = seed
+            return encode(_noise(seed), SR, fmt="WAV"), response
+
+        return FalAdapter(
+            config,
+            api_key="k",
+            runner=fal_runner,
+            demux=lambda answer: answer,  # a muxed-video endpoint: the fake answers audio
+        )
+
+    return make
 
 
 def _stable_audio3(*, tmp_path, **_):
@@ -120,3 +134,40 @@ def test_same_seed_same_bytes_different_seed_different_bytes(
     assert first != other
     # provenance half: the seed that was sent is the seed recorded
     assert [c.candidate.sound.license.generation_seed for c in clips] == [7, 7, 8]
+
+
+#: fal sources that accept a seed but declare no ``seed_field``: seedless, they record None.
+_NO_SEED_FIELD = {
+    "fal_mmaudio",
+    "fal_mirelo_v2a",
+    "fal_mmaudio_v2a",
+    "fal_thinksound",
+    "fal_hunyuan_foley",
+}
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param(
+            name,
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="no seed_field: a seedless call records no seed (reeleehq/foley#206)",
+            ),
+        )
+        if name in _NO_SEED_FIELD
+        else name
+        for name in sorted(FAKES)
+    ],
+)
+def test_a_seedless_clip_replays_from_its_recorded_seed(name, tmp_path, monkeypatch):
+    adapter = FAKES[name](tmp_path=tmp_path, monkeypatch=monkeypatch)
+    v2a = "v2a" in (getattr(adapter, "config", {}).get("modes") or ())
+    extra = {"video": "https://x/shot.mp4"} if v2a else {}
+    first = adapter.generate("a door creak", **extra)
+    lic = first.candidate.sound.license
+    assert lic.generation_reproducible is True
+    assert isinstance(lic.generation_seed, int)
+    replay = adapter.generate("a door creak", seed=lic.generation_seed, **extra)
+    assert replay.audio_bytes == first.audio_bytes

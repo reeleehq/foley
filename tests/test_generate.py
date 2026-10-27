@@ -598,12 +598,16 @@ def test_stable_audio_seed_builds_generator():
     assert isinstance(pipe.calls[0]["generator"], torch.Generator)
 
 
-def test_stable_audio_draws_and_records_a_seed_when_none_is_given():
+def test_stable_audio_draws_and_records_a_seed_when_none_is_given(monkeypatch):
     """Seedless, the clip is still reproducible: the seed sent is the one recorded (#163)."""
+    drawn = 123456  # a sentinel: a constant or bypassed draw_seed() would not match it
+    monkeypatch.setattr(
+        "foley.sources.stable_audio.adapter.draw_seed", lambda: drawn
+    )
     pipe = FakePipeline()
     lic = _sa_adapter(pipe).generate("creak").candidate.sound.license
     sent = pipe.calls[0]["generator"]
-    assert isinstance(lic.generation_seed, int) and lic.generation_seed == sent.seed
+    assert sent.seed == drawn and lic.generation_seed == drawn
     assert sent.device == pipe.device
     assert lic.generation_reproducible is True
     again = FakePipeline()

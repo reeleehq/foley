@@ -85,7 +85,6 @@ __all__ = [
     "api_license",
     "generated_license",
     "draw_seed",
-    "SEED_LIMIT",
     "CORPUS_REGISTRY",
     "register_corpus",
     "ring_of",
@@ -1085,20 +1084,20 @@ def api_license(
 
 
 #: One past the largest seed foley draws: a signed 32-bit range every local backend takes.
-SEED_LIMIT = 2**31
+_SEED_LIMIT = 2**31
 
 
-def draw_seed(*, limit: int = SEED_LIMIT) -> int:
-    """A random seed in ``0..limit-1``, for a seed-capable backend asked for none.
+def draw_seed() -> int:
+    """A random seed in ``0..2**31-1``, for a seed-capable backend asked for none.
 
     Drawn and recorded by the adapter, so the clip stays reproducible
     (``LicenseRecord.generation_reproducible``) rather than left to the backend's
     own randomness (#163).
 
-    >>> 0 <= draw_seed() < SEED_LIMIT
+    >>> 0 <= draw_seed() < 2**31
     True
     """
-    return secrets.randbelow(limit)
+    return secrets.randbelow(_SEED_LIMIT)
 
 
 def generated_license(

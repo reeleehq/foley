@@ -27,8 +27,8 @@ Load-bearing details verified against the diffusers docs + HF model card:
 dol-only. The local-model DI seams are ``pipeline=`` (the analog of the hosted
 adapters' ``http=``) and ``make_generator=`` (the seeded ``torch.Generator``): inject
 fakes for both and no ML stack loads at all — the whole adapter is testable with no
-torch. The adapter performs NO storage/library
-access; the façade converges it on the shared ingest pipeline.
+torch. The adapter performs NO storage/library access; the façade converges it on
+the shared ingest pipeline.
 """
 
 from __future__ import annotations
@@ -224,8 +224,9 @@ class StableAudioAdapter:
         The public entry below foley's translation (#61): ``native`` goes to the
         ``StableAudioPipeline`` call as is (``guidance_scale``, ``audio_end_in_s``, …).
         No licence record is built and no dispatch-layer check runs (cost, egress): a
-        caller of this method owns those, and of the seed: ``seed=None`` here sends no
-        generator (the pipeline's own randomness), where :meth:`generate` draws one.
+        caller of this method owns those. It also owns the seed: unlike
+        :meth:`generate`, which draws one when none is given, ``seed=None`` here sends
+        no generator, so the pipeline falls back on its own randomness.
         """
         pipe = self._pipe()
         generator = None if seed is None else self._make_generator(pipe.device, seed)
