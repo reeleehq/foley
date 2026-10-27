@@ -173,9 +173,9 @@ def test_license_gate_before_verify():
 
 
 def test_gate_ordering_invariant(monkeypatch):
-    """Every keep_sound call precedes any verify_match call (the report-07 ordering)."""
+    """Every rights check precedes any verify_match call (the report-07 ordering)."""
     order = []
-    real_keep = foley.licensing.keep_sound
+    real_keep = foley.licensing.checked_refusal_reason
 
     def spy_keep(rec, use):
         order.append("keep")
@@ -185,7 +185,7 @@ def test_gate_ordering_invariant(monkeypatch):
         order.append("verify")
         return Verdict(match=True, confidence=1.0, level=VerifyLevel.listen)
 
-    monkeypatch.setattr("foley.agent.policy.keep_sound", spy_keep)
+    monkeypatch.setattr("foley.agent.policy.checked_refusal_reason", spy_keep)
     monkeypatch.setattr("foley.agent.tools.verify_match", spy_verify)
     lib = _lib([_rec("d1", "a dog barking", ["dog"]), _rec("d2", "a dog barking", ["dog"])])
     foley.find("A dog barked.", library=lib, budget=Budget(allow_generate=False))
@@ -194,12 +194,12 @@ def test_gate_ordering_invariant(monkeypatch):
 
 
 def test_gate_failclosed_on_error(monkeypatch):
-    """If keep_sound raises, the candidate is dropped (fail-closed) and license_ok is not True."""
+    """If the rule raises, the candidate is dropped (fail-closed) and license_ok is not True."""
 
     def boom(rec, use):
         raise RuntimeError("gate exploded")
 
-    monkeypatch.setattr("foley.agent.policy.keep_sound", boom)
+    monkeypatch.setattr("foley.licensing.refusal_reason", boom)
     c = _candidate("x", "a dog barking")
     kept = gate_candidates([c], IntendedUse())
     assert kept == []
@@ -240,9 +240,9 @@ def test_decide_single_branch():
 
 
 def test_decide_is_pure(monkeypatch):
-    """decide() never calls keep_sound/search/generate, and asserts its precondition."""
-    for target in ("foley.agent.policy.keep_sound",):
-        monkeypatch.setattr(target, lambda *a, **k: pytest.fail("decide called keep_sound"))
+    """decide() never runs the rights gate/search/generate, and asserts its precondition."""
+    for target in ("foley.agent.policy.checked_refusal_reason",):
+        monkeypatch.setattr(target, lambda *a, **k: pytest.fail("decide ran the gate"))
     ev = SoundEvent(query="x")
     hi = _verified("a", 0.9)
     decide(ev, [hi], [hi], tau_retrieve=0.5, budget=Budget(), loop=0)  # no side-effect calls
@@ -289,7 +289,8 @@ def _no_retrieval_lib():
 def test_generate_fallback_reverified_and_gated(monkeypatch):
     """A generated clip is RE-GATED and RE-VERIFIED before being yielded."""
     seen = {"keep": 0, "verify": 0}
-    real_keep, real_verify = foley.licensing.keep_sound, foley.agent.tools.verify_match
+    real_keep = foley.licensing.checked_refusal_reason
+    real_verify = foley.agent.tools.verify_match
 
     def spy_keep(rec, use):
         seen["keep"] += 1
@@ -304,7 +305,7 @@ def test_generate_fallback_reverified_and_gated(monkeypatch):
             sound=_rec("gen", prompt, [prompt], verified=True), origin=CandidateOrigin.generated
         )
 
-    monkeypatch.setattr("foley.agent.policy.keep_sound", spy_keep)
+    monkeypatch.setattr("foley.agent.policy.checked_refusal_reason", spy_keep)
     monkeypatch.setattr("foley.agent.tools.verify_match", spy_verify)
     monkeypatch.setattr(foley, "generate", fake_generate)
 

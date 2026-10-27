@@ -396,3 +396,76 @@ def test_plan_and_weave_recheck_picks_under_their_own_intent(wired):
     assert mcp.foley_weave("nar", muted)["audio_ref"] is not None  # a muted clip is not used
     assert mcp.foley_plan(territory="Mars")["status"] == "invalid"
     assert mcp.foley_weave("nar", tl, territory="Mars")["status"] == "invalid"
+
+
+def test_weave_checks_a_library_narration(wired):
+    _hunyuan(wired)
+    empty = {"items": []}
+    out = mcp.foley_weave("rain", empty, territory="GB")  # rain as the narration ref
+    assert out["status"] == "refused" and set(out["refused"]) == {"rain"}
+    assert mcp.foley_weave("rain", empty, territory="US")["audio_ref"] is not None
+    # a narration that is audio in the library but has no record has nothing to check
+    assert mcp.foley_weave("nar", empty, territory="GB")["audio_ref"] is not None
+
+
+def test_plan_judges_the_librarys_current_record(wired):
+    mcp.foley_search("x", k=5)  # door cached while it was CC0
+    mcp.foley_pick("door")
+    rec = wired.recs["door"]
+    wired.recs["door"] = SoundRecord(**{**rec.__dict__, "license": LicenseRecord(
+        source="user", license_id="CC-BY-NC-4.0", commercial_ok=False,
+        rights_verified=True)})  # re-licensed in the library since
+    out = mcp.foley_plan()
+    assert out["status"] == "refused" and "commercial" in out["refused"]["door"]
+    assert mcp.foley_plan(commercial_ok=False)["items"]  # the same record, NC intent
+    del wired.recs["door"]  # gone from the library: the cached record is judged
+    assert mcp.foley_plan()["items"]
+
+
+def _verbs_session(sid):
+    from foley.agent import verbs
+
+    return verbs._session(sid)
+
+
+def test_refine_gates_and_caches_only_kept_rows(wired):
+    _hunyuan(wired)
+    out = mcp.foley_refine(query="x")
+    assert "rain" not in [r["id"] for r in out["results"]] and out["results"]
+    assert all(r["license_ok"] is True for r in out["results"])
+    assert "rain" not in _verbs_session("default").candidates
+    out = mcp.foley_refine(query="x", territory="US")
+    assert "rain" in [r["id"] for r in out["results"]]
+    assert mcp.foley_refine(query="x", territory="Mars")["status"] == "invalid"
+
+
+def test_unmuting_a_refused_clip_is_refused_again(wired):
+    _hunyuan(wired)
+    mcp.foley_search("x", k=5, territory="US")
+    mcp.foley_pick("door")
+    mcp.foley_pick("rain")
+    woven = mcp.foley_weave("nar", mcp.foley_plan(territory="US"), territory="US")
+    tl = woven["timeline"]
+    rain = next(it["id"] for it in tl["items"] if it["clip_ref"] == "rain")
+    muted = mcp.foley_toggle(tl, rain, False)
+    assert mcp.foley_weave("nar", muted)["audio_ref"] is not None
+    out = mcp.foley_weave("nar", mcp.foley_toggle(muted, rain, True))
+    assert out["status"] == "refused" and set(out["refused"]) == {"rain"}
+
+
+def test_plan_and_weave_refuse_on_rules_other_than_territory(wired):
+    mcp.foley_search("x", k=5)
+    mcp.foley_pick("door")
+    tl = mcp.foley_plan()
+    rec = wired.recs["door"]
+    wired.recs["door"] = SoundRecord(**{**rec.__dict__, "license": LicenseRecord(
+        source="user", license_id="CC0-1.0", commercial_ok=True, rights_verified=False)})
+    for out in (mcp.foley_plan(commercial_ok=False), mcp.foley_weave("nar", tl)):
+        assert out["status"] == "refused" and "not verified" in out["refused"]["door"]
+
+
+def test_weave_refuses_a_record_whose_licence_cannot_be_read(wired):
+    rec = wired.recs["door"]
+    wired.recs["door"] = SoundRecord(**{**rec.__dict__, "license": None})
+    out = mcp.foley_weave("nar", {"items": [{"clip_ref": "door"}]})
+    assert out["status"] == "refused" and "could not be checked" in out["refused"]["door"]

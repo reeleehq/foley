@@ -3,10 +3,11 @@
 Two load-bearing invariants live here as two **physically separate pure functions**, so
 neither can bypass the other:
 
-* :func:`gate_candidates` — the ONLY rights-rejection point. Runs the fail-closed
-  :func:`foley.licensing.keep_sound` gate over the candidate set **before** any
-  verification/ranking (invariant #3), sets ``Candidate.license_ok``, and drops every
-  non-``True`` candidate.
+* :func:`gate_candidates` — the rights gate of the SELECT loop. Runs the fail-closed
+  :func:`foley.licensing.checked_refusal_reason` rule over the candidate set **before**
+  any verification/ranking (invariant #3), sets ``Candidate.license_ok``, and drops
+  every non-``True`` candidate. The same rule re-checks placed sounds where they are
+  used (:func:`foley.licensing.refusals`, the MCP plan/weave verbs, #191).
 * :func:`decide` — the ONLY generate-vs-retrieve branch. A **pure** function of an
   already-gated+verified set; it never calls ``keep``/``search``/``generate`` (the
   :mod:`foley.agent.tools` loop owns all side effects).
@@ -31,7 +32,7 @@ from ..cost import (
     BudgetExceeded,
     CostApprovalRequired,
 )
-from ..licensing import keep_sound
+from ..licensing import checked_refusal_reason
 
 
 def gate_candidates(
@@ -39,11 +40,11 @@ def gate_candidates(
 ) -> "list[Candidate]":
     """Fail-closed license gate — run BEFORE verification/ranking (invariant #3).
 
-    For each candidate: apply :func:`~foley.licensing.keep_sound` (any exception ⇒
-    ``False``, fail-closed), record the result on ``candidate.license_ok``, and keep
-    ONLY where it is ``True`` — a ``None`` (never gated) or ``False`` is dropped. This is
-    the single rights-rejection point; :func:`~foley.agent.verify.verify_match` asserts
-    its survivors are license-clean.
+    For each candidate: apply :func:`~foley.licensing.checked_refusal_reason` to its
+    sound's licence (any error ⇒ refused, fail-closed), record whether it is kept on
+    ``candidate.license_ok``, and keep ONLY where it is ``True`` — a ``None`` (never
+    gated) or ``False`` is dropped. :func:`~foley.agent.verify.verify_match` asserts its
+    survivors are license-clean.
 
     Args:
         candidates: The retrieved shortlist (``license_ok`` typically ``None``).
@@ -54,12 +55,9 @@ def gate_candidates(
     """
     kept: "list[Candidate]" = []
     for c in candidates:
-        try:
-            ok = keep_sound(c.sound, intended_use)
-        except Exception:  # noqa: BLE001 - fail closed on ANY gate error
-            ok = False
-        c.license_ok = ok
-        if ok is True:
+        license_ = getattr(c.sound, "license", None)
+        c.license_ok = checked_refusal_reason(license_, intended_use) is None
+        if c.license_ok:
             kept.append(c)
     return kept
 

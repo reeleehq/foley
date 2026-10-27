@@ -713,21 +713,49 @@ def keep_sound(sound_record, intended_use: IntendedUse) -> bool:
     return keep(sound_record.license, intended_use)
 
 
+def checked_refusal_reason(
+    record: LicenseRecord, intended_use: IntendedUse
+) -> Optional[str]:
+    """:func:`refusal_reason`, fail-closed: an error while checking is itself a reason.
+
+    The one place a rights check is allowed to fail: whatever goes wrong reading
+    ``record`` (a missing or malformed licence) refuses it, with the error as the
+    reason, so no caller can keep a sound whose licence it could not read.
+
+    Args:
+        record: The sound's :class:`~foley.base.LicenseRecord` (a ``SoundRecord``'s
+            ``.license``; see :func:`refusals` for whole sound records).
+        intended_use: The caller's declared intent.
+
+    Returns:
+        ``None`` only when :func:`keep` keeps ``record``; otherwise why not.
+
+    >>> lic = LicenseRecord(source="user", license_id="CC0-1.0", commercial_ok=True,
+    ...                     rights_verified=True)
+    >>> checked_refusal_reason(lic, IntendedUse()) is None
+    True
+    >>> checked_refusal_reason(None, IntendedUse())
+    "its licence could not be checked (AttributeError: 'NoneType' object has no attribute 'rights_verified')"
+    """
+    try:
+        return refusal_reason(record, intended_use)
+    except Exception as exc:  # noqa: BLE001 - fail closed on ANY gate error
+        return f"its licence could not be checked ({type(exc).__name__}: {exc})"
+
+
 def refusals(sound_records, intended_use: IntendedUse) -> "dict[str, str]":
-    """``{sound id: reason}`` for each record :func:`keep` refuses for ``intended_use``.
+    """``{sound id: reason}`` for each sound record :func:`keep` refuses for ``intended_use``.
 
     The re-check a placed sound gets where it is used (a plan, a weave), whatever
-    intent it was found under (#191). Fail-closed: a record whose licence cannot be
-    read is refused, with the error as its reason. Empty when every sound is kept.
+    intent it was found under (#191). Takes :class:`~foley.base.SoundRecord` s (each
+    judged by its ``.license`` through :func:`checked_refusal_reason`, so fail-closed:
+    a record without a readable licence is refused). Empty when every sound is kept.
     """
     out: "dict[str, str]" = {}
     for record in sound_records:
-        try:
-            reason = refusal_reason(record.license, intended_use)
-        except Exception as exc:  # noqa: BLE001 - fail closed on ANY gate error
-            reason = f"its licence could not be checked ({type(exc).__name__}: {exc})"
+        reason = checked_refusal_reason(getattr(record, "license", None), intended_use)
         if reason is not None:
-            out[str(getattr(record, "id", record))] = reason
+            out[record.id] = reason
     return out
 
 

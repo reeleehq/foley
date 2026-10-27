@@ -36,7 +36,9 @@
       "picked_ids": null,
       "rejected_ids": null,
       "hint": null,
-      "k": 10
+      "k": 10,
+      "commercial_ok": true,
+      "territory": null
     },
     "foley_pick": {
       "sound_id": "<required>",
