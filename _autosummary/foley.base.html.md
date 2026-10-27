@@ -20,19 +20,20 @@ Serialization contract:
 
 ### Module Attributes
 
-| [`QUERY_AFFORDANCES`](#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).        |
-|-------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| [`GENERATION_AFFORDANCES`](#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these). |
-| [`ISO_COUNTRY_CODES`](#foley.base.ISO_COUNTRY_CODES)      | The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).     |
-| [`TERRITORY_ALIASES`](#foley.base.TERRITORY_ALIASES)      | the UK's common one and the EU's code for Greece.                       |
-| [`MASTER_PROFILES`](#foley.base.MASTER_PROFILES)        | The named delivery targets (report 06 §5.2).                            |
+| [`QUERY_AFFORDANCES`](#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).                                                                             |
+|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| [`GENERATION_AFFORDANCES`](#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these).                                                                      |
+| [`ISO_COUNTRY_CODES`](#foley.base.ISO_COUNTRY_CODES)      | The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).                                                                          |
+| [`TERRITORY_ALIASES`](#foley.base.TERRITORY_ALIASES)      | the UK's common one and the EU's code for Greece.                                                                                            |
+| [`WORLDWIDE`](#foley.base.WORLDWIDE)              | The territory of a sound used everywhere (online publishing reaches every country): a licence that excludes any territory refuses it (#175). |
+| [`MASTER_PROFILES`](#foley.base.MASTER_PROFILES)        | The named delivery targets (report 06 §5.2).                                                                                                 |
 
 ### Functions
 
-| [`normalize_territory`](#foley.base.normalize_territory)(territory)      | `territory` as an ISO 3166-1 alpha-2 code, `None` when unstated.                        |
-|--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| [`reject_renamed`](#foley.base.reject_renamed)(names[, vocabulary]) | Raise `TypeError` if any of `names` is an affordance's old spelling.                    |
-| [`resolve_master`](#foley.base.resolve_master)(master)              | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`. |
+| [`normalize_territory`](#foley.base.normalize_territory)(territory)      | `territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](#foley.base.WORLDWIDE)), `None` when unstated.   |
+|--------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| [`reject_renamed`](#foley.base.reject_renamed)(names[, vocabulary]) | Raise `TypeError` if any of `names` is an affordance's old spelling.                                                               |
+| [`resolve_master`](#foley.base.resolve_master)(master)              | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.                                            |
 
 ### Classes
 
@@ -195,10 +196,10 @@ What the caller intends to do with a sound; consumed by `keep()`.
 #### territory *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= None*
 
 Where the sound is used (ISO 3166-1 alpha-2, e.g. `"US"`; `"UK"` reads as
-`"GB"`). Only a licence that excludes territories asks
+`"GB"`), or `"WORLD"` ([`WORLDWIDE`](#foley.base.WORLDWIDE): online publishing reaches every
+country). Only a licence that excludes territories asks
 (`foley.licensing.LICENSE_EXCLUDED_TERRITORIES`); for one, `None` fails
-closed. Name every place the sound is distributed: online publishing reaches
-them all.
+closed, and so does `"WORLD"`.
 
 ### *class* foley.base.Layer(\*values)
 
@@ -405,13 +406,20 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Which rung of the verification ladder produced a `Verdict`.
 
+### foley.base.WORLDWIDE *= 'WORLD'*
+
+The territory of a sound used everywhere (online publishing reaches every country):
+a licence that excludes any territory refuses it (#175).
+
 ### foley.base.normalize_territory(territory)
 
-`territory` as an ISO 3166-1 alpha-2 code, `None` when unstated.
+`territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](#foley.base.WORLDWIDE)), `None` when unstated.
 
 ```pycon
 >>> normalize_territory(" uk "), normalize_territory("EL"), normalize_territory("")
 ('GB', 'GR', None)
+>>> normalize_territory("world")
+'WORLD'
 ```
 
 * **Raises:**

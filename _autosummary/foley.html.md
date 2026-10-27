@@ -903,10 +903,10 @@ What the caller intends to do with a sound; consumed by `keep()`.
 #### territory *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= None*
 
 Where the sound is used (ISO 3166-1 alpha-2, e.g. `"US"`; `"UK"` reads as
-`"GB"`). Only a licence that excludes territories asks
+`"GB"`), or `"WORLD"` (`WORLDWIDE`: online publishing reaches every
+country). Only a licence that excludes territories asks
 (`foley.licensing.LICENSE_EXCLUDED_TERRITORIES`); for one, `None` fails
-closed. Name every place the sound is distributed: online publishing reaches
-them all.
+closed, and so does `"WORLD"`.
 
 ### *class* foley.Judge(\*args, \*\*kwargs)
 

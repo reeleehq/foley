@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=f81738d5"></script>
+    <script src="../../_static/documentation_options.js?v=cfefb2bf"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.81" />
+  <meta name="docsearch:version" content="0.0.82" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1396,15 +1396,20 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: Spellings that name a country by another code: the UK's common one and the EU's</span>
 <span class="c1">#: code for Greece.</span>
 <span class="n">TERRITORY_ALIASES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"UK"</span><span class="p">:</span> <span class="s2">"GB"</span><span class="p">,</span> <span class="s2">"EL"</span><span class="p">:</span> <span class="s2">"GR"</span><span class="p">}</span>
+<span class="c1">#: The territory of a sound used everywhere (online publishing reaches every country):</span>
+<span class="c1">#: a licence that excludes any territory refuses it (#175).</span>
+<span class="n">WORLDWIDE</span> <span class="o">=</span> <span class="s2">"WORLD"</span>
 
 
 <div class="viewcode-block" id="normalize_territory">
 <a class="viewcode-back" href="../../_autosummary/foley.base.html#foley.normalize_territory">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">normalize_territory</span><span class="p">(</span><span class="n">territory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""``territory`` as an ISO 3166-1 alpha-2 code, ``None`` when unstated.</span>
+<span class="w">    </span><span class="sd">"""``territory`` as an ISO 3166-1 alpha-2 code (or :data:`WORLDWIDE`), ``None`` when unstated.</span>
 
 <span class="sd">    &gt;&gt;&gt; normalize_territory(" uk "), normalize_territory("EL"), normalize_territory("")</span>
 <span class="sd">    ('GB', 'GR', None)</span>
+<span class="sd">    &gt;&gt;&gt; normalize_territory("world")</span>
+<span class="sd">    'WORLD'</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If it is not a country code (a name, an alpha-3 code, a region):</span>
@@ -1414,10 +1419,10 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="n">code</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">territory</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
     <span class="n">code</span> <span class="o">=</span> <span class="n">TERRITORY_ALIASES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ISO_COUNTRY_CODES</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">code</span> <span class="o">!=</span> <span class="n">WORLDWIDE</span> <span class="ow">and</span> <span class="n">code</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ISO_COUNTRY_CODES</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"territory must be an ISO 3166-1 alpha-2 country code (e.g. 'US', 'FR'), "</span>
-            <span class="sa">f</span><span class="s2">"got </span><span class="si">{</span><span class="n">territory</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"territory must be an ISO 3166-1 alpha-2 country code (e.g. 'US', 'FR') "</span>
+            <span class="sa">f</span><span class="s2">"or </span><span class="si">{</span><span class="n">WORLDWIDE</span><span class="si">!r}</span><span class="s2"> (used everywhere), got </span><span class="si">{</span><span class="n">territory</span><span class="si">!r}</span><span class="s2">"</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">code</span></div>
 
@@ -1437,10 +1442,10 @@ window.runMermaid = runMermaid;</script>
     <span class="n">revenue_usd</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">allow_voice_or_trademark</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="c1">#: Where the sound is used (ISO 3166-1 alpha-2, e.g. ``"US"``; ``"UK"`` reads as</span>
-    <span class="c1">#: ``"GB"``). Only a licence that excludes territories asks</span>
+    <span class="c1">#: ``"GB"``), or ``"WORLD"`` (:data:`WORLDWIDE`: online publishing reaches every</span>
+    <span class="c1">#: country). Only a licence that excludes territories asks</span>
     <span class="c1">#: (``foley.licensing.LICENSE_EXCLUDED_TERRITORIES``); for one, ``None`` fails</span>
-    <span class="c1">#: closed. Name every place the sound is distributed: online publishing reaches</span>
-    <span class="c1">#: them all.</span>
+    <span class="c1">#: closed, and so does ``"WORLD"``.</span>
     <span class="n">territory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>

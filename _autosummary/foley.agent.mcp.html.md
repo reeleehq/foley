@@ -88,17 +88,19 @@ Remove a previously-picked sound from the session.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.mcp.foley_find(context, max_events=6, verify='listen', commercial_ok=True, k=10, session='default')
+### foley.agent.mcp.foley_find(context, max_events=6, verify='listen', commercial_ok=True, k=10, session='default', territory=None)
 
 Find verified, license-clean sound candidates for a narrative passage.
 
 Caches the full candidates in the session so `foley_plan` / `foley_weave` can
-rehydrate them by id. Returns compact candidate rows.
+rehydrate them by id. Returns compact candidate rows. `territory`: where the
+sound is used (an ISO country code, or `"WORLD"` for online publishing); a
+licence that excludes territories is refused while it is unstated.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
 
-### foley.agent.mcp.foley_generate(prompt, backend='auto', commercial_ok=True, session='default')
+### foley.agent.mcp.foley_generate(prompt, backend='auto', commercial_ok=True, session='default', territory=None)
 
 Generate a sound from a text prompt (local backends only when offline).
 
@@ -112,6 +114,8 @@ A clip QC would quarantine for a clipped run just over the gate is repaired and
 stored (the repair is in the result’s notes). A refused generation’s dict carries
 `cache_key`: where its paid bytes are in the generations cache
 (`foley.generations.get(cache_key)`, on the host — bytes never travel over MCP).
+`territory`: where the sound is used (an ISO country code, or `"WORLD"`); a
+backend whose licence excludes territories (HunyuanVideo-Foley) needs it stated.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -180,14 +184,16 @@ Reject a sound (feeds `foley_refine` relevance feedback).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.mcp.foley_score(context, commercial_ok=True, verify='listen', max_events=6, session='default')
+### foley.agent.mcp.foley_score(context, commercial_ok=True, verify='listen', max_events=6, session='default', territory=None)
 
 Score a narration passage → an editable sound-design timeline + a per-event rationale.
 
 The one-call SELECT→plan entry for an agent: pass the narration text and get back a JSON
 timeline plus a rationale for each chosen sound. Weaving (rendering the mastered mix) is a
 **separate** step (`foley_weave`) so you can review / edit the timeline first — swap a
-clip, nudge an onset, drop a cue — before committing to a render.
+clip, nudge an onset, drop a cue — before committing to a render. `territory`:
+where the sound is used (an ISO country code, or `"WORLD"` for online publishing);
+a licence that excludes territories is refused while it is unstated.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

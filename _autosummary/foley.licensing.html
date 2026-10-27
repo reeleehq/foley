@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=f81738d5"></script>
+    <script src="../_static/documentation_options.js?v=cfefb2bf"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.81" />
+  <meta name="docsearch:version" content="0.0.82" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -557,7 +557,7 @@ item is redistributable but stored by-reference.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.derive_license_flags" title="foley.licensing.derive_license_flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derive_license_flags</span></code></a>(license_id, *[, overrides])</p></td>
 <td><p>Look up the flag set for a <code class="docutils literal notranslate"><span class="pre">license_id</span></code> (fail-closed fallback), then apply per-source overrides.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.intended_use_for" title="foley.licensing.intended_use_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intended_use_for</span></code></a>([intended_use, commercial_ok])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.intended_use_for" title="foley.licensing.intended_use_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intended_use_for</span></code></a>([intended_use, ...])</p></td>
 <td><p>The rights intent a verb runs under — every verb and surface resolves it here (#63).</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.is_cc_license_token" title="foley.licensing.is_cc_license_token"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_cc_license_token</span></code></a>(token)</p></td>
@@ -805,14 +805,20 @@ apply per-source overrides.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.licensing.intended_use_for">
-<span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">intended_use_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">intended_use</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">commercial_ok</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#intended_use_for"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.intended_use_for" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">intended_use_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">intended_use</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">commercial_ok</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">territory</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#intended_use_for"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.intended_use_for" title="Link to this definition">#</a></dt>
 <dd><p>The rights intent a verb runs under — every verb and surface resolves it here (#63).</p>
 <p>An explicit <code class="docutils literal notranslate"><span class="pre">intended_use</span></code> wins; else <a class="reference internal" href="#foley.licensing.DEFAULT_INTENDED_USE" title="foley.licensing.DEFAULT_INTENDED_USE"><code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_INTENDED_USE</span></code></a>, with
 <code class="docutils literal notranslate"><span class="pre">commercial</span></code> overridden when <code class="docutils literal notranslate"><span class="pre">commercial_ok</span></code> is given (<code class="docutils literal notranslate"><span class="pre">False</span></code> is the explicit
-opt-in to non-commercial material). Always a fresh copy, so callers may mutate it.</p>
+opt-in to non-commercial material) and <code class="docutils literal notranslate"><span class="pre">territory</span></code> when given (an ISO 3166-1
+alpha-2 code, or <code class="docutils literal notranslate"><span class="pre">&quot;WORLD&quot;</span></code>; #175). Always a fresh copy, so callers may mutate it.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">intended_use_for</span><span class="p">(</span><span class="n">commercial_ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">territory</span><span class="o">=</span><span class="s2">"us"</span><span class="p">)</span><span class="o">.</span><span class="n">territory</span>
+<span class="go">'US'</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If both are given and disagree on <code class="docutils literal notranslate"><span class="pre">commercial</span></code>.</p>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If both are given and disagree on <code class="docutils literal notranslate"><span class="pre">commercial</span></code> or <code class="docutils literal notranslate"><span class="pre">territory</span></code>,
+    or the territory is not a code.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.IntendedUse" title="foley.base.IntendedUse"><code class="xref py py-class docutils literal notranslate"><span class="pre">IntendedUse</span></code></a></span></p>
@@ -956,6 +962,8 @@ does one that is not a country code: the gate fails closed.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">territory_excluded</span><span class="p">({</span><span class="s2">"KR"</span><span class="p">},</span> <span class="kc">None</span><span class="p">),</span> <span class="n">territory_excluded</span><span class="p">({</span><span class="s2">"GB"</span><span class="p">},</span> <span class="s2">"uk"</span><span class="p">)</span>
 <span class="go">(True, True)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">territory_excluded</span><span class="p">({</span><span class="s2">"KR"</span><span class="p">},</span> <span class="s2">"Korea"</span><span class="p">),</span> <span class="n">territory_excluded</span><span class="p">(</span><span class="nb">set</span><span class="p">(),</span> <span class="kc">None</span><span class="p">)</span>
+<span class="go">(True, False)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">territory_excluded</span><span class="p">({</span><span class="s2">"KR"</span><span class="p">},</span> <span class="s2">"WORLD"</span><span class="p">),</span> <span class="n">territory_excluded</span><span class="p">(</span><span class="nb">set</span><span class="p">(),</span> <span class="s2">"WORLD"</span><span class="p">)</span>
 <span class="go">(True, False)</span>
 </pre></div>
 </div>

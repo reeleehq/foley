@@ -39,7 +39,7 @@ item is redistributable but stored by-reference.
 | [`ai_use_permitted`](#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                    |
 | [`apply_license_flags`](#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                      |
 | [`derive_license_flags`](#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                           |
-| [`intended_use_for`](#foley.licensing.intended_use_for)([intended_use, commercial_ok])   | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                       |
+| [`intended_use_for`](#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                       |
 | [`is_cc_license_token`](#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                    |
 | [`keep`](#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                       |
 | [`keep_sound`](#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](#foley.licensing.keep) to a `SoundRecord`'s nested license.            |
@@ -205,16 +205,23 @@ apply per-source overrides.
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `overrides` contains a key that is not a
       [`LicenseFlags`](#foley.licensing.LicenseFlags) field.
 
-### foley.licensing.intended_use_for(intended_use=None, , commercial_ok=None)
+### foley.licensing.intended_use_for(intended_use=None, , commercial_ok=None, territory=None)
 
 The rights intent a verb runs under — every verb and surface resolves it here (#63).
 
 An explicit `intended_use` wins; else [`DEFAULT_INTENDED_USE`](#foley.licensing.DEFAULT_INTENDED_USE), with
 `commercial` overridden when `commercial_ok` is given (`False` is the explicit
-opt-in to non-commercial material). Always a fresh copy, so callers may mutate it.
+opt-in to non-commercial material) and `territory` when given (an ISO 3166-1
+alpha-2 code, or `"WORLD"`; #175). Always a fresh copy, so callers may mutate it.
+
+```pycon
+>>> intended_use_for(commercial_ok=False, territory="us").territory
+'US'
+```
 
 * **Raises:**
-  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If both are given and disagree on `commercial`.
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If both are given and disagree on `commercial` or `territory`,
+      or the territory is not a code.
 * **Return type:**
   [`IntendedUse`](foley.base.html.md#foley.base.IntendedUse)
 
@@ -323,6 +330,8 @@ does one that is not a country code: the gate fails closed.
 >>> territory_excluded({"KR"}, None), territory_excluded({"GB"}, "uk")
 (True, True)
 >>> territory_excluded({"KR"}, "Korea"), territory_excluded(set(), None)
+(True, False)
+>>> territory_excluded({"KR"}, "WORLD"), territory_excluded(set(), "WORLD")
 (True, False)
 ```
 

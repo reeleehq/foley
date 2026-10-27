@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=f81738d5"></script>
+    <script src="../_static/documentation_options.js?v=cfefb2bf"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.81" />
+  <meta name="docsearch:version" content="0.0.82" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -520,7 +520,10 @@ fall back to field defaults.</p></li>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.base.TERRITORY_ALIASES" title="foley.base.TERRITORY_ALIASES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TERRITORY_ALIASES</span></code></a></p></td>
 <td><p>the UK's common one and the EU's code for Greece.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.base.MASTER_PROFILES" title="foley.base.MASTER_PROFILES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MASTER_PROFILES</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.base.WORLDWIDE" title="foley.base.WORLDWIDE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WORLDWIDE</span></code></a></p></td>
+<td><p>The territory of a sound used everywhere (online publishing reaches every country): a licence that excludes any territory refuses it (#175).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.base.MASTER_PROFILES" title="foley.base.MASTER_PROFILES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MASTER_PROFILES</span></code></a></p></td>
 <td><p>The named delivery targets (report 06 §5.2).</p></td>
 </tr>
 </tbody>
@@ -530,7 +533,7 @@ fall back to field defaults.</p></li>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.base.normalize_territory" title="foley.base.normalize_territory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize_territory</span></code></a>(territory)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">territory</span></code> as an ISO 3166-1 alpha-2 code, <code class="docutils literal notranslate"><span class="pre">None</span></code> when unstated.</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">territory</span></code> as an ISO 3166-1 alpha-2 code (or <a class="reference internal" href="#foley.base.WORLDWIDE" title="foley.base.WORLDWIDE"><code class="xref py py-data docutils literal notranslate"><span class="pre">WORLDWIDE</span></code></a>), <code class="docutils literal notranslate"><span class="pre">None</span></code> when unstated.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.base.reject_renamed" title="foley.base.reject_renamed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reject_renamed</span></code></a>(names[, vocabulary])</p></td>
 <td><p>Raise <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> if any of <code class="docutils literal notranslate"><span class="pre">names</span></code> is an affordance's old spelling.</p></td>
@@ -795,10 +798,10 @@ serialized, so it never reaches the meta store however large it is.</p>
 <dt class="sig sig-object py" id="foley.base.IntendedUse.territory">
 <span class="sig-name descname"><span class="pre">territory</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><span class="pre">Optional</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#foley.base.IntendedUse.territory" title="Link to this definition">#</a></dt>
 <dd><p>Where the sound is used (ISO 3166-1 alpha-2, e.g. <code class="docutils literal notranslate"><span class="pre">&quot;US&quot;</span></code>; <code class="docutils literal notranslate"><span class="pre">&quot;UK&quot;</span></code> reads as
-<code class="docutils literal notranslate"><span class="pre">&quot;GB&quot;</span></code>). Only a licence that excludes territories asks
+<code class="docutils literal notranslate"><span class="pre">&quot;GB&quot;</span></code>), or <code class="docutils literal notranslate"><span class="pre">&quot;WORLD&quot;</span></code> (<a class="reference internal" href="#foley.base.WORLDWIDE" title="foley.base.WORLDWIDE"><code class="xref py py-data docutils literal notranslate"><span class="pre">WORLDWIDE</span></code></a>: online publishing reaches every
+country). Only a licence that excludes territories asks
 (<code class="docutils literal notranslate"><span class="pre">foley.licensing.LICENSE_EXCLUDED_TERRITORIES</span></code>); for one, <code class="docutils literal notranslate"><span class="pre">None</span></code> fails
-closed. Name every place the sound is distributed: online publishing reaches
-them all.</p>
+closed, and so does <code class="docutils literal notranslate"><span class="pre">&quot;WORLD&quot;</span></code>.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1063,12 +1066,21 @@ those are absent).</p>
 <p>Which rung of the verification ladder produced a <code class="docutils literal notranslate"><span class="pre">Verdict</span></code>.</p>
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.base.WORLDWIDE">
+<span class="sig-prename descclassname"><span class="pre">foley.base.</span></span><span class="sig-name descname"><span class="pre">WORLDWIDE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'WORLD'</span></span><a class="headerlink" href="#foley.base.WORLDWIDE" title="Link to this definition">#</a></dt>
+<dd><p>The territory of a sound used everywhere (online publishing reaches every country):
+a licence that excludes any territory refuses it (#175).</p>
+</dd></dl>
+
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.base.normalize_territory">
 <span class="sig-prename descclassname"><span class="pre">foley.base.</span></span><span class="sig-name descname"><span class="pre">normalize_territory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">territory</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#normalize_territory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.base.normalize_territory" title="Link to this definition">#</a></dt>
-<dd><p><code class="docutils literal notranslate"><span class="pre">territory</span></code> as an ISO 3166-1 alpha-2 code, <code class="docutils literal notranslate"><span class="pre">None</span></code> when unstated.</p>
+<dd><p><code class="docutils literal notranslate"><span class="pre">territory</span></code> as an ISO 3166-1 alpha-2 code (or <a class="reference internal" href="#foley.base.WORLDWIDE" title="foley.base.WORLDWIDE"><code class="xref py py-data docutils literal notranslate"><span class="pre">WORLDWIDE</span></code></a>), <code class="docutils literal notranslate"><span class="pre">None</span></code> when unstated.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">normalize_territory</span><span class="p">(</span><span class="s2">" uk "</span><span class="p">),</span> <span class="n">normalize_territory</span><span class="p">(</span><span class="s2">"EL"</span><span class="p">),</span> <span class="n">normalize_territory</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
 <span class="go">('GB', 'GR', None)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">normalize_territory</span><span class="p">(</span><span class="s2">"world"</span><span class="p">)</span>
+<span class="go">'WORLD'</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -1226,6 +1238,7 @@ from each <a class="reference internal" href="#foley.base.Affordance" title="fol
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.TimelineItem"><code class="docutils literal notranslate"><span class="pre">TimelineItem</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.Verdict"><code class="docutils literal notranslate"><span class="pre">Verdict</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.VerifyLevel"><code class="docutils literal notranslate"><span class="pre">VerifyLevel</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.WORLDWIDE"><code class="docutils literal notranslate"><span class="pre">WORLDWIDE</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.normalize_territory"><code class="docutils literal notranslate"><span class="pre">normalize_territory()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.reject_renamed"><code class="docutils literal notranslate"><span class="pre">reject_renamed()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.resolve_master"><code class="docutils literal notranslate"><span class="pre">resolve_master()</span></code></a></li>

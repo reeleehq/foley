@@ -12,6 +12,7 @@ foley.base
       GENERATION_AFFORDANCES
       ISO_COUNTRY_CODES
       TERRITORY_ALIASES
+      WORLDWIDE
       MASTER_PROFILES
    
    .. rubric:: Functions

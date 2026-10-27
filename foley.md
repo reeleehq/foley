@@ -1,4 +1,4 @@
-> built 2026-10-27 06:31 UTC from 0ec4e99 (main) · foley 0.0.81. Details: build_info.json
+> built 2026-10-27 06:44 UTC from 9accce6 (main) · foley 0.0.82. Details: build_info.json
 
 # index.html.md
 
@@ -1171,17 +1171,19 @@ Remove a previously-picked sound from the session.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.mcp.foley_find(context, max_events=6, verify='listen', commercial_ok=True, k=10, session='default')
+### foley.agent.mcp.foley_find(context, max_events=6, verify='listen', commercial_ok=True, k=10, session='default', territory=None)
 
 Find verified, license-clean sound candidates for a narrative passage.
 
 Caches the full candidates in the session so `foley_plan` / `foley_weave` can
-rehydrate them by id. Returns compact candidate rows.
+rehydrate them by id. Returns compact candidate rows. `territory`: where the
+sound is used (an ISO country code, or `"WORLD"` for online publishing); a
+licence that excludes territories is refused while it is unstated.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
 
-### foley.agent.mcp.foley_generate(prompt, backend='auto', commercial_ok=True, session='default')
+### foley.agent.mcp.foley_generate(prompt, backend='auto', commercial_ok=True, session='default', territory=None)
 
 Generate a sound from a text prompt (local backends only when offline).
 
@@ -1195,6 +1197,8 @@ A clip QC would quarantine for a clipped run just over the gate is repaired and
 stored (the repair is in the result’s notes). A refused generation’s dict carries
 `cache_key`: where its paid bytes are in the generations cache
 (`foley.generations.get(cache_key)`, on the host — bytes never travel over MCP).
+`territory`: where the sound is used (an ISO country code, or `"WORLD"`); a
+backend whose licence excludes territories (HunyuanVideo-Foley) needs it stated.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -1263,14 +1267,16 @@ Reject a sound (feeds `foley_refine` relevance feedback).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.mcp.foley_score(context, commercial_ok=True, verify='listen', max_events=6, session='default')
+### foley.agent.mcp.foley_score(context, commercial_ok=True, verify='listen', max_events=6, session='default', territory=None)
 
 Score a narration passage → an editable sound-design timeline + a per-event rationale.
 
 The one-call SELECT→plan entry for an agent: pass the narration text and get back a JSON
 timeline plus a rationale for each chosen sound. Weaving (rendering the mastered mix) is a
 **separate** step (`foley_weave`) so you can review / edit the timeline first — swap a
-clip, nudge an onset, drop a cue — before committing to a render.
+clip, nudge an onset, drop a cue — before committing to a render. `territory`:
+where the sound is used (an ISO country code, or `"WORLD"` for online publishing);
+a licence that excludes territories is refused while it is unstated.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -2643,19 +2649,20 @@ Serialization contract:
 
 ### Module Attributes
 
-| [`QUERY_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).        |
-|-------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| [`GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these). |
-| [`ISO_COUNTRY_CODES`](_autosummary/foley.base.html.md#foley.base.ISO_COUNTRY_CODES)      | The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).     |
-| [`TERRITORY_ALIASES`](_autosummary/foley.base.html.md#foley.base.TERRITORY_ALIASES)      | the UK's common one and the EU's code for Greece.                       |
-| [`MASTER_PROFILES`](_autosummary/foley.base.html.md#foley.base.MASTER_PROFILES)        | The named delivery targets (report 06 §5.2).                            |
+| [`QUERY_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).                                                                             |
+|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| [`GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these).                                                                      |
+| [`ISO_COUNTRY_CODES`](_autosummary/foley.base.html.md#foley.base.ISO_COUNTRY_CODES)      | The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).                                                                          |
+| [`TERRITORY_ALIASES`](_autosummary/foley.base.html.md#foley.base.TERRITORY_ALIASES)      | the UK's common one and the EU's code for Greece.                                                                                            |
+| [`WORLDWIDE`](_autosummary/foley.base.html.md#foley.base.WORLDWIDE)              | The territory of a sound used everywhere (online publishing reaches every country): a licence that excludes any territory refuses it (#175). |
+| [`MASTER_PROFILES`](_autosummary/foley.base.html.md#foley.base.MASTER_PROFILES)        | The named delivery targets (report 06 §5.2).                                                                                                 |
 
 ### Functions
 
-| [`normalize_territory`](_autosummary/foley.base.html.md#foley.base.normalize_territory)(territory)      | `territory` as an ISO 3166-1 alpha-2 code, `None` when unstated.                        |
-|--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| [`reject_renamed`](_autosummary/foley.base.html.md#foley.base.reject_renamed)(names[, vocabulary]) | Raise `TypeError` if any of `names` is an affordance's old spelling.                    |
-| [`resolve_master`](_autosummary/foley.base.html.md#foley.base.resolve_master)(master)              | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`. |
+| [`normalize_territory`](_autosummary/foley.base.html.md#foley.base.normalize_territory)(territory)      | `territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](_autosummary/foley.base.html.md#foley.base.WORLDWIDE)), `None` when unstated.   |
+|--------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| [`reject_renamed`](_autosummary/foley.base.html.md#foley.base.reject_renamed)(names[, vocabulary]) | Raise `TypeError` if any of `names` is an affordance's old spelling.                                                               |
+| [`resolve_master`](_autosummary/foley.base.html.md#foley.base.resolve_master)(master)              | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.                                            |
 
 ### Classes
 
@@ -2818,10 +2825,10 @@ What the caller intends to do with a sound; consumed by `keep()`.
 #### territory *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= None*
 
 Where the sound is used (ISO 3166-1 alpha-2, e.g. `"US"`; `"UK"` reads as
-`"GB"`). Only a licence that excludes territories asks
+`"GB"`), or `"WORLD"` ([`WORLDWIDE`](_autosummary/foley.base.html.md#foley.base.WORLDWIDE): online publishing reaches every
+country). Only a licence that excludes territories asks
 (`foley.licensing.LICENSE_EXCLUDED_TERRITORIES`); for one, `None` fails
-closed. Name every place the sound is distributed: online publishing reaches
-them all.
+closed, and so does `"WORLD"`.
 
 ### *class* foley.base.Layer(\*values)
 
@@ -3028,13 +3035,20 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Which rung of the verification ladder produced a `Verdict`.
 
+### foley.base.WORLDWIDE *= 'WORLD'*
+
+The territory of a sound used everywhere (online publishing reaches every country):
+a licence that excludes any territory refuses it (#175).
+
 ### foley.base.normalize_territory(territory)
 
-`territory` as an ISO 3166-1 alpha-2 code, `None` when unstated.
+`territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](_autosummary/foley.base.html.md#foley.base.WORLDWIDE)), `None` when unstated.
 
 ```pycon
 >>> normalize_territory(" uk "), normalize_territory("EL"), normalize_territory("")
 ('GB', 'GR', None)
+>>> normalize_territory("world")
+'WORLD'
 ```
 
 * **Raises:**
@@ -6131,10 +6145,10 @@ What the caller intends to do with a sound; consumed by `keep()`.
 #### territory *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= None*
 
 Where the sound is used (ISO 3166-1 alpha-2, e.g. `"US"`; `"UK"` reads as
-`"GB"`). Only a licence that excludes territories asks
+`"GB"`), or `"WORLD"` (`WORLDWIDE`: online publishing reaches every
+country). Only a licence that excludes territories asks
 (`foley.licensing.LICENSE_EXCLUDED_TERRITORIES`); for one, `None` fails
-closed. Name every place the sound is distributed: online publishing reaches
-them all.
+closed, and so does `"WORLD"`.
 
 ### *class* foley.Judge(\*args, \*\*kwargs)
 
@@ -12520,7 +12534,7 @@ item is redistributable but stored by-reference.
 | [`ai_use_permitted`](_autosummary/foley.licensing.html.md#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                    |
 | [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                      |
 | [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                           |
-| [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, commercial_ok])   | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                       |
+| [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                       |
 | [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                    |
 | [`keep`](_autosummary/foley.licensing.html.md#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                       |
 | [`keep_sound`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) to a `SoundRecord`'s nested license.            |
@@ -12686,16 +12700,23 @@ apply per-source overrides.
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `overrides` contains a key that is not a
       [`LicenseFlags`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseFlags) field.
 
-### foley.licensing.intended_use_for(intended_use=None, , commercial_ok=None)
+### foley.licensing.intended_use_for(intended_use=None, , commercial_ok=None, territory=None)
 
 The rights intent a verb runs under — every verb and surface resolves it here (#63).
 
 An explicit `intended_use` wins; else [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE), with
 `commercial` overridden when `commercial_ok` is given (`False` is the explicit
-opt-in to non-commercial material). Always a fresh copy, so callers may mutate it.
+opt-in to non-commercial material) and `territory` when given (an ISO 3166-1
+alpha-2 code, or `"WORLD"`; #175). Always a fresh copy, so callers may mutate it.
+
+```pycon
+>>> intended_use_for(commercial_ok=False, territory="us").territory
+'US'
+```
 
 * **Raises:**
-  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If both are given and disagree on `commercial`.
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If both are given and disagree on `commercial` or `territory`,
+      or the territory is not a code.
 * **Return type:**
   [`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse)
 
@@ -12804,6 +12825,8 @@ does one that is not a country code: the gate fails closed.
 >>> territory_excluded({"KR"}, None), territory_excluded({"GB"}, "uk")
 (True, True)
 >>> territory_excluded({"KR"}, "Korea"), territory_excluded(set(), None)
+(True, False)
+>>> territory_excluded({"KR"}, "WORLD"), territory_excluded(set(), "WORLD")
 (True, False)
 ```
 
@@ -14087,7 +14110,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'netflix chime', 'netflix intro', 'ta dum', 'ta-dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel chime', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'netflix chime', 'netflix intro', 'ta-dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -21155,18 +21178,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 06:31 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/0ec4e9943dd4833469108ac77d65b1cf67aa3867"><code>0ec4e99</code></a> on branch <code>main</code>, for **foley 0.0.81** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 06:44 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/9accce6a337b9089963855434bd5b8991b10c16b"><code>9accce6</code></a> on branch <code>main</code>, for **foley 0.0.82** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.81) is behind the latest release on PyPI (0.0.82): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.82) is behind the latest release on PyPI (0.0.83): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/0ec4e9943dd4833469108ac77d65b1cf67aa3867"><code>0ec4e9943dd4833469108ac77d65b1cf67aa3867</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/9accce6a337b9089963855434bd5b8991b10c16b"><code>9accce6a337b9089963855434bd5b8991b10c16b</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -21177,9 +21200,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40461404888">40461404888</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40462610171">40462610171</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>0ec4e9943dd4833469108ac77d65b1cf67aa3867</code> (in the history of the built commit) |
+| Event commit | <code>9accce6a337b9089963855434bd5b8991b10c16b</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -21204,13 +21227,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.82/">0.0.82</a>, newer than the documented version (0.0.81).
+Latest release: <a href="https://pypi.org/project/foley/0.0.83/">0.0.83</a>, newer than the documented version (0.0.82).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 0ec4e9943dd4833469108ac77d65b1cf67aa3867
+git checkout 9accce6a337b9089963855434bd5b8991b10c16b
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
