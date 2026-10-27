@@ -21,17 +21,14 @@ from foley.sources.stable_audio_3.adapter import (  # noqa: E402
     setup_hint,
 )
 
+from ._fakes import make_sa3_home  # noqa: E402
+
 SR = 44_100
 
 
 @pytest.fixture
 def home(tmp_path):
-    tflite = tmp_path / "optimized" / "tflite"
-    (tflite / "scripts").mkdir(parents=True)
-    (tflite / "scripts" / "sa3_tflite.py").write_text("")
-    (tflite / ".venv" / "bin").mkdir(parents=True)
-    (tflite / ".venv" / "bin" / "python").write_text("")
-    return tmp_path
+    return make_sa3_home(tmp_path)
 
 
 class FakeRunner:

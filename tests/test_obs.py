@@ -34,6 +34,8 @@ from foley.obs.recorder import _CURRENT_RUN  # noqa: E402
 from foley.sources.base import api_license  # noqa: E402
 from foley.sources.stable_audio.adapter import StableAudioAdapter  # noqa: E402
 
+from ._fakes import FakePipeline  # noqa: E402
+
 SR = 44_100
 
 
@@ -51,16 +53,6 @@ def _stereo_tone(freq=440.0, seconds=1.0, amp=0.4):
 def _mono_tone(freq=440.0, seconds=1.0, amp=0.4):
     t = np.arange(int(SR * seconds), dtype=np.float32) / SR
     return (amp * np.sin(2 * np.pi * freq * t)).astype(np.float32)
-
-
-class FakePipeline:
-    def __init__(self):
-        self.vae = SimpleNamespace(sampling_rate=SR)
-        self.device = "cpu"
-        self._audio = _stereo_tone()
-
-    def __call__(self, **kwargs):
-        return SimpleNamespace(audios=[self._audio])
 
 
 class FakeRetrieveAdapter:
