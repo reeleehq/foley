@@ -27,10 +27,12 @@ foley.licensing
       apply_license_flags
       derive_license_flags
       intended_use_for
+      is_cc_license_token
       keep
       keep_sound
       license_id_from_cc_url
       license_meta
+      wanted_license_ids
    
    .. rubric:: Classes
 

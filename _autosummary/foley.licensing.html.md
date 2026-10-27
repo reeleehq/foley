@@ -38,10 +38,12 @@ item is redistributable but stored by-reference.
 | [`apply_license_flags`](#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                    |
 | [`derive_license_flags`](#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                         |
 | [`intended_use_for`](#foley.licensing.intended_use_for)([intended_use, commercial_ok])   | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                     |
+| [`is_cc_license_token`](#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                  |
 | [`keep`](#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                     |
 | [`keep_sound`](#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](#foley.licensing.keep) to a `SoundRecord`'s nested license.          |
 | [`license_id_from_cc_url`](#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                             |
 | [`license_meta`](#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback). |
+| [`wanted_license_ids`](#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                            |
 
 ### Classes
 
@@ -199,6 +201,17 @@ opt-in to non-commercial material). Always a fresh copy, so callers may mutate i
 * **Return type:**
   [`IntendedUse`](foley.base.html.md#foley.base.IntendedUse)
 
+### foley.licensing.is_cc_license_token(token)
+
+Whether `token` is a search constraint a CC-reading source understands.
+
+`None`/`'any'` (no constraint), `'cc0'`, or a CC / public-domain licence id or
+family (`'CC-BY-4.0'`, `'cc-by'`, `'PDM-1.0'`). Not an ingest-time rights
+assertion such as `'user-owned'`.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
 ### foley.licensing.keep(record, intended_use)
 
 Fail-closed candidate license gate (report 07 §8.2).
@@ -270,3 +283,27 @@ Return the display [`LicenseMeta`](#foley.licensing.LicenseMeta) for `license_id
 * **Returns:**
   The mapped [`LicenseMeta`](#foley.licensing.LicenseMeta), or [`UNKNOWN_LICENSE_META`](#foley.licensing.UNKNOWN_LICENSE_META) for an
   unrecognized / `Proprietary-*` id.
+
+### foley.licensing.wanted_license_ids(config, license)
+
+The licence ids a `license=` request keeps, or `None` for every accepted one.
+
+`license` is an explicit licence id (`QUERY_AFFORDANCES['license']`), matched
+case-insensitively against the source’s `accepted_license_ids`; `'cc0'` is the
+historical alias for the source’s `cc0_license_ids`, and a family prefix with a dash,
+such as `'cc-by'`, keeps every accepted id of that family (`CC-BY-3.0`, `CC-BY-4.0`).
+`None`, `'any'` and a value that is no licence id at all (e.g. `'public-domain'`) do not narrow, with a warning for the last (the historical
+“anything but `'cc0'`” behaviour). A real licence id the source does not accept
+gives `[]`, so nothing is returned: fail closed, never silently broader.
+
+```pycon
+>>> cfg = {"license": {"accepted_license_ids": ["CC0-1.0", "CC-BY-4.0"],
+...                    "cc0_license_ids": ["CC0-1.0"]}}
+>>> wanted_license_ids(cfg, "cc0"), wanted_license_ids(cfg, "CC-BY-4.0")
+(['CC0-1.0'], ['CC-BY-4.0'])
+>>> wanted_license_ids(cfg, "cc-by"), wanted_license_ids(cfg, None), wanted_license_ids(cfg, "cc-by-sa-4.0")
+(['CC-BY-4.0'], None, [])
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]

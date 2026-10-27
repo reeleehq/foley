@@ -2598,8 +2598,8 @@ per-file options (`license`, taggers, `min_status`, …).
   * **path** – A folder (walked) or a single audio file.
   * **library** – Target library (default: the process-wide default library).
   * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `"local"` ingests filesystem audio; other backends (a source
-    adapter pull) route through `add_from` (subtask #5) — kept in the
-    signature for forward-compat.
+    adapter pull) route through `add_from` (subtask #5), where `license` is
+    a search constraint (a CC licence id), not a rights assertion.
   * **qc** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Run the Tier-0 QC gate (quarantines failing clips).
   * **recursive** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Recurse into sub-folders.
   * **\*\*kw** – Forwarded to [`foley.index.ingest_one()`](foley.index.html.md#foley.index.ingest_one) — notably `license`:

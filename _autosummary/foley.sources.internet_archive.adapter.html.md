@@ -70,7 +70,10 @@ It bypasses the licence filter and the per-item licence check that
 Search archive audio for `query`; return candidates (all unverified).
 
 `license` is a licence id (`'CC0-1.0'`; `'cc0'` is an alias) and keeps only
-items under it; `None` keeps every accepted licence. The query always asks for items with a `licenseurl`.
+items under it; `None` keeps every accepted licence. The default is `None`,
+unlike the other CC sources’ `'cc0'`, because every archive licence is an
+unverified claim anyway; `add_from` always passes its own (`'cc0'`) default.
+The query always asks for items with a `licenseurl`.
 `provider_params` are native advancedsearch params merged over the
 translated ones (#61); a `q` is ANDed onto foley’s as one group, never
 replaces it (the config’s `provider_params` policy).

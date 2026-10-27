@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=cac962a1"></script>
+    <script src="../_static/documentation_options.js?v=29ed05f3"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.69" />
+  <meta name="docsearch:version" content="0.0.70" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -596,8 +596,8 @@ off by default: use the <code class="docutils literal notranslate"><span class="
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>license</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – A licence id (<code class="docutils literal notranslate"><span class="pre">'cc0'</span></code> is an alias for CC0-1.0) keeps only rows
-under it, and CC0 alone uses the CC0-only native filter; <code class="docutils literal notranslate"><span class="pre">None</span></code> asks for
-CC0, CC-BY and public-domain-mark rows.</p></li>
+under it, and is pushed into the native <code class="docutils literal notranslate"><span class="pre">license</span></code> filter (CC0, CC-BY or
+PDM); <code class="docutils literal notranslate"><span class="pre">None</span></code> asks for CC0, CC-BY and public-domain-mark rows.</p></li>
 <li><p><strong>k</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Max rows (anonymous limit 20).</p></li>
 <li><p><strong>provider_params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span>) – Native search params merged over the translated ones
 (#61); the per-item licence check still applies.</p></li>

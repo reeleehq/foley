@@ -1,4 +1,4 @@
-> built 2026-10-27 00:44 UTC from d5db9a9 (main) · foley 0.0.69. Details: build_info.json
+> built 2026-10-27 00:52 UTC from 42a253c (main) · foley 0.0.70. Details: build_info.json
 
 # index.html.md
 
@@ -7678,8 +7678,8 @@ per-file options (`license`, taggers, `min_status`, …).
   * **path** – A folder (walked) or a single audio file.
   * **library** – Target library (default: the process-wide default library).
   * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `"local"` ingests filesystem audio; other backends (a source
-    adapter pull) route through `add_from` (subtask #5) — kept in the
-    signature for forward-compat.
+    adapter pull) route through `add_from` (subtask #5), where `license` is
+    a search constraint (a CC licence id), not a rights assertion.
   * **qc** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Run the Tier-0 QC gate (quarantines failing clips).
   * **recursive** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Recurse into sub-folders.
   * **\*\*kw** – Forwarded to [`foley.index.ingest_one()`](_autosummary/foley.index.html.md#foley.index.ingest_one) — notably `license`:
@@ -12284,10 +12284,12 @@ item is redistributable but stored by-reference.
 | [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                    |
 | [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                         |
 | [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, commercial_ok])   | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                     |
+| [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                  |
 | [`keep`](_autosummary/foley.licensing.html.md#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                     |
 | [`keep_sound`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) to a `SoundRecord`'s nested license.          |
 | [`license_id_from_cc_url`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                             |
 | [`license_meta`](_autosummary/foley.licensing.html.md#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback). |
+| [`wanted_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                            |
 
 ### Classes
 
@@ -12445,6 +12447,17 @@ opt-in to non-commercial material). Always a fresh copy, so callers may mutate i
 * **Return type:**
   [`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse)
 
+### foley.licensing.is_cc_license_token(token)
+
+Whether `token` is a search constraint a CC-reading source understands.
+
+`None`/`'any'` (no constraint), `'cc0'`, or a CC / public-domain licence id or
+family (`'CC-BY-4.0'`, `'cc-by'`, `'PDM-1.0'`). Not an ingest-time rights
+assertion such as `'user-owned'`.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
 ### foley.licensing.keep(record, intended_use)
 
 Fail-closed candidate license gate (report 07 §8.2).
@@ -12516,6 +12529,30 @@ Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.li
 * **Returns:**
   The mapped [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta), or [`UNKNOWN_LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_META) for an
   unrecognized / `Proprietary-*` id.
+
+### foley.licensing.wanted_license_ids(config, license)
+
+The licence ids a `license=` request keeps, or `None` for every accepted one.
+
+`license` is an explicit licence id (`QUERY_AFFORDANCES['license']`), matched
+case-insensitively against the source’s `accepted_license_ids`; `'cc0'` is the
+historical alias for the source’s `cc0_license_ids`, and a family prefix with a dash,
+such as `'cc-by'`, keeps every accepted id of that family (`CC-BY-3.0`, `CC-BY-4.0`).
+`None`, `'any'` and a value that is no licence id at all (e.g. `'public-domain'`) do not narrow, with a warning for the last (the historical
+“anything but `'cc0'`” behaviour). A real licence id the source does not accept
+gives `[]`, so nothing is returned: fail closed, never silently broader.
+
+```pycon
+>>> cfg = {"license": {"accepted_license_ids": ["CC0-1.0", "CC-BY-4.0"],
+...                    "cc0_license_ids": ["CC0-1.0"]}}
+>>> wanted_license_ids(cfg, "cc0"), wanted_license_ids(cfg, "CC-BY-4.0")
+(['CC0-1.0'], ['CC-BY-4.0'])
+>>> wanted_license_ids(cfg, "cc-by"), wanted_license_ids(cfg, None), wanted_license_ids(cfg, "cc-by-sa-4.0")
+(['CC-BY-4.0'], None, [])
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
 
 # _autosummary/foley.obs.html.md
@@ -13770,7 +13807,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta dum', 'netflix sound', 'netflix chime', 'tudum', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'netflix chime', 'ta dum', 'tudum', 'ta-dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -17696,7 +17733,10 @@ It bypasses the licence filter and the per-item licence check that
 Search archive audio for `query`; return candidates (all unverified).
 
 `license` is a licence id (`'CC0-1.0'`; `'cc0'` is an alias) and keeps only
-items under it; `None` keeps every accepted licence. The query always asks for items with a `licenseurl`.
+items under it; `None` keeps every accepted licence. The default is `None`,
+unlike the other CC sources’ `'cc0'`, because every archive licence is an
+unverified claim anyway; `add_from` always passes its own (`'cc0'`) default.
+The query always asks for items with a `licenseurl`.
 `provider_params` are native advancedsearch params merged over the
 translated ones (#61); a `q` is ANDed onto foley’s as one group, never
 replaces it (the config’s `provider_params` policy).
@@ -17823,8 +17863,8 @@ Search Openverse audio for `query`; return licence-checked candidates.
 
 * **Parameters:**
   * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A licence id (`'cc0'` is an alias for CC0-1.0) keeps only rows
-    under it, and CC0 alone uses the CC0-only native filter; `None` asks for
-    CC0, CC-BY and public-domain-mark rows.
+    under it, and is pushed into the native `license` filter (CC0, CC-BY or
+    PDM); `None` asks for CC0, CC-BY and public-domain-mark rows.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max rows (anonymous limit 20).
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
     (#61); the per-item licence check still applies.
@@ -20342,18 +20382,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 00:44 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/d5db9a9eac79dac700650301a421b11f71d08b89"><code>d5db9a9</code></a> on branch <code>main</code>, for **foley 0.0.69** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 00:52 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/42a253c403e78da584f9a3450f8d25275e85e2e0"><code>42a253c</code></a> on branch <code>main</code>, for **foley 0.0.70** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.69) is behind the latest release on PyPI (0.0.70): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/d5db9a9eac79dac700650301a421b11f71d08b89"><code>d5db9a9eac79dac700650301a421b11f71d08b89</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/42a253c403e78da584f9a3450f8d25275e85e2e0"><code>42a253c403e78da584f9a3450f8d25275e85e2e0</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20364,9 +20402,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40428128991">40428128991</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40428922927">40428922927</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>d5db9a9eac79dac700650301a421b11f71d08b89</code> (in the history of the built commit) |
+| Event commit | <code>42a253c403e78da584f9a3450f8d25275e85e2e0</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20391,13 +20429,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.70/">0.0.70</a>, newer than the documented version (0.0.69).
+Latest release: <a href="https://pypi.org/project/foley/0.0.70/">0.0.70</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout d5db9a9eac79dac700650301a421b11f71d08b89
+git checkout 42a253c403e78da584f9a3450f8d25275e85e2e0
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

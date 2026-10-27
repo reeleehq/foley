@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=cac962a1"></script>
+    <script src="../_static/documentation_options.js?v=29ed05f3"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.69" />
+  <meta name="docsearch:version" content="0.0.70" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -588,7 +588,10 @@ Constructing it without the opt-in raises <a class="reference internal" href="fo
 <span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">license</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/internet_archive/adapter.html#InternetArchiveAdapter.search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.internet_archive.adapter.InternetArchiveAdapter.search" title="Link to this definition">#</a></dt>
 <dd><p>Search archive audio for <code class="docutils literal notranslate"><span class="pre">query</span></code>; return candidates (all unverified).</p>
 <p><code class="docutils literal notranslate"><span class="pre">license</span></code> is a licence id (<code class="docutils literal notranslate"><span class="pre">'CC0-1.0'</span></code>; <code class="docutils literal notranslate"><span class="pre">'cc0'</span></code> is an alias) and keeps only
-items under it; <code class="docutils literal notranslate"><span class="pre">None</span></code> keeps every accepted licence. The query always asks for items with a <code class="docutils literal notranslate"><span class="pre">licenseurl</span></code>.
+items under it; <code class="docutils literal notranslate"><span class="pre">None</span></code> keeps every accepted licence. The default is <code class="docutils literal notranslate"><span class="pre">None</span></code>,
+unlike the other CC sources’ <code class="docutils literal notranslate"><span class="pre">'cc0'</span></code>, because every archive licence is an
+unverified claim anyway; <code class="docutils literal notranslate"><span class="pre">add_from</span></code> always passes its own (<code class="docutils literal notranslate"><span class="pre">'cc0'</span></code>) default.
+The query always asks for items with a <code class="docutils literal notranslate"><span class="pre">licenseurl</span></code>.
 <code class="docutils literal notranslate"><span class="pre">provider_params</span></code> are native advancedsearch params merged over the
 translated ones (#61); a <code class="docutils literal notranslate"><span class="pre">q</span></code> is ANDed onto foley’s as one group, never
 replaces it (the config’s <code class="docutils literal notranslate"><span class="pre">provider_params</span></code> policy).</p>

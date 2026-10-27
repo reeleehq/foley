@@ -75,8 +75,8 @@ Search Openverse audio for `query`; return licence-checked candidates.
 
 * **Parameters:**
   * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A licence id (`'cc0'` is an alias for CC0-1.0) keeps only rows
-    under it, and CC0 alone uses the CC0-only native filter; `None` asks for
-    CC0, CC-BY and public-domain-mark rows.
+    under it, and is pushed into the native `license` filter (CC0, CC-BY or
+    PDM); `None` asks for CC0, CC-BY and public-domain-mark rows.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max rows (anonymous limit 20).
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
     (#61); the per-item licence check still applies.
