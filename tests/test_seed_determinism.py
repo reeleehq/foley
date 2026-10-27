@@ -5,6 +5,8 @@ claim only holds if the adapter really forwards the seed to the native call. Eac
 is run against a fake backend whose output depends ONLY on the native seed it receives:
 same seed must give identical bytes, a different seed different bytes (so a dropped or
 rewritten seed fails). A completeness test fails when a new seed-capable source has no fake.
+And a seedless clip must replay from the seed it recorded (#163): a backend that takes a
+seed but records none is not reproducible.
 """
 
 import importlib
@@ -152,6 +154,7 @@ _NO_SEED_FIELD = {
         pytest.param(
             name,
             marks=pytest.mark.xfail(
+                raises=AssertionError,
                 strict=True,
                 reason="no seed_field: a seedless call records no seed (reeleehq/foley#206)",
             ),
