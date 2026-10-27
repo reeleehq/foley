@@ -111,6 +111,52 @@ def check_prompt_influence(value) -> None:
         raise ValueError(f"prompt_influence must be in 0..1, got {value!r}")
 
 
+def native_output_format(
+    config: dict,
+    output_format: str,
+    *,
+    sample_rate: Optional[int] = None,
+    notes: Optional[list] = None,
+) -> str:
+    """The native format enum for a coarse ``output_format`` token at ``sample_rate``.
+
+    A source whose native format also fixes the rate (ElevenLabs: ``pcm_22050``,
+    ``mp3_44100_128``) declares ``param_map['output_format']['to_native_by_rate']``:
+    ``{token: {rate: enum}}``. A requested rate it lacks for that token, or no rate,
+    falls back to ``to_native_map`` (the token's default rate), and an unknown token
+    to ``native_defaults['output_format']``; each fallback is noted.
+
+    >>> cfg = {"name": "x", "native_defaults": {"output_format": "mp3_44100"},
+    ...        "param_map": {"output_format": {"to_native_map": {"wav": "pcm_48000"},
+    ...                      "to_native_by_rate": {"wav": {22050: "pcm_22050"}}}}}
+    >>> native_output_format(cfg, "wav", sample_rate=22050)
+    'pcm_22050'
+    >>> notes = []
+    >>> native_output_format(cfg, "wav", sample_rate=32000, notes=notes), len(notes)
+    ('pcm_48000', 1)
+    """
+    spec = (config.get("param_map") or {}).get("output_format") or {}
+    name = config.get("display_name") or config.get("name", "this source")
+    if sample_rate is not None:
+        rates = (spec.get("to_native_by_rate") or {}).get(output_format) or {}
+        native = rates.get(int(sample_rate))
+        if native is not None:
+            return native
+        if notes is not None:
+            notes.append(
+                f"sample_rate {int(sample_rate)} Hz is not offered as {output_format!r} "
+                f"by {name}; using its default rate (the actual rate is recorded)"
+            )
+    native = (spec.get("to_native_map") or {}).get(output_format)
+    if native is None:
+        native = (config.get("native_defaults") or {}).get("output_format")
+        if notes is not None:
+            notes.append(
+                f"output_format {output_format!r} not offered by {name}; using {native!r}"
+            )
+    return native
+
+
 def native_adherence(
     config: dict, prompt_influence: Optional[float], notes: list
 ) -> Optional[float]:
@@ -830,6 +876,7 @@ def generated_license(
     generator_version: Optional[str] = None,
     generation_seed: Optional[int] = None,
     generation_params: Optional[dict] = None,
+    generation_prompt_used: Optional[str] = None,
     disclosure_recommended: bool = True,
     watermark: Optional[dict] = None,
     c2pa_manifest_ref: Optional[str] = None,
@@ -864,7 +911,10 @@ def generated_license(
             ``'ElevenLabs-SFX'`` — a key of ``LICENSE_FLAGS``).
         generator_model: The model identifier (e.g. ``'stable-audio-open-1.0'``,
             ``'eleven_text_to_sound_v2'``).
-        generation_prompt: The user prompt, verbatim.
+        generation_prompt: The user prompt, verbatim (the prompt sent).
+        generation_prompt_used: The prompt the backend reports it used, when it
+            reports one (fal Stable Audio 3 echoes it; it differs when the backend
+            rewrote it, ``expand_prompt=True``).
         rights_verified: ``True`` (a generator license is authoritatively known);
             MUST be ``True`` or :func:`foley.keep` rejects the sound.
         generator_version: Optional model/version string.
@@ -906,6 +956,7 @@ def generated_license(
     record.generator_model = generator_model
     record.generator_version = generator_version
     record.generation_prompt = generation_prompt
+    record.generation_prompt_used = generation_prompt_used
     record.generation_seed = generation_seed
     record.generation_params = generation_params or {}
     record.disclosure_recommended = disclosure_recommended

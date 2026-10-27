@@ -185,10 +185,17 @@ def _keyed_request(config: dict, affordances: dict) -> "tuple[dict, Optional[str
     would compare after that translation.
     """
     rest = dict(affordances)
+    nd = config.get("native_defaults") or {}
     model = rest.pop("model", None)
-    if model == (config.get("native_defaults") or {}).get("model_id"):
+    if model == nd.get("model_id"):
         model = None  # pinning the default is the request it always was
-    return native_request(config, rest), model
+    fixed = nd.get("fixed_arguments") or {}
+    native = {  # a value the source always sends anyway is the unset request
+        k: v
+        for k, v in native_request(config, rest).items()
+        if k not in fixed or fixed[k] != v
+    }
+    return native, model
 
 
 def _digest(
@@ -231,16 +238,23 @@ def native_request(config: dict, affordances: dict) -> dict:
     >>> native_request(cfg, {})
     {'fmt': 'pcm'}
     """
-    from .base import native_adherence
+    from .base import native_adherence, native_output_format
 
     param_map = config.get("param_map") or {}
     native_defaults = config.get("native_defaults") or {}
+    canonical = _canonical_affordances(config, affordances)
     out = {}
-    for name, value in _canonical_affordances(config, affordances).items():
+    for name, value in canonical.items():
         spec = param_map.get(name) or {}
+        if spec.get("via"):  # folded into another native field (sample_rate: format)
+            continue
         native_name = spec.get("native_name", name)
         if name == "prompt_influence" and spec:
             value = native_adherence(config, value, [])
+        elif "to_native_by_rate" in spec:
+            value = native_output_format(
+                config, value, sample_rate=canonical.get("sample_rate")
+            )
         elif "to_native_map" in spec:
             value = spec["to_native_map"].get(
                 value, native_defaults.get(native_name, value)

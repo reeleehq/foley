@@ -780,9 +780,10 @@ def generate(
             A key the backend's config ``provider_params`` policy reserves (the
             prompt, an output path) or prices (``duration_s``, the model) raises
             ``ValueError`` before anything is paid for: use the unified argument.
-        **affordances: Unified generation affordances (``duration_s``,
+        **affordances: Unified generation affordances (``duration_s``, ``model``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
-            ``output_format`` — see :data:`GENERATION_AFFORDANCES`).
+            ``output_format``, ``sample_rate``, ``expand_prompt`` — see
+            :data:`GENERATION_AFFORDANCES`).
 
     Returns:
         The stored :class:`Candidate` (``origin=generated``) — its ``sound`` is the

@@ -279,6 +279,9 @@ class FalAdapter:
             generator_model=nd.get("model_id", endpoint),
             generator_version=nd.get("generator_version", endpoint),
             generation_prompt=prompt,
+            generation_prompt_used=used_prompt
+            if isinstance(used_prompt, str)
+            else None,
             generation_seed=_as_int(seed),
             generation_params=recorded_params(
                 {**args, "fal_endpoint": endpoint}, provider_params

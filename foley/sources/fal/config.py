@@ -88,6 +88,9 @@ SOURCE_CONFIGS = (
             "negative_prompt": {"native_name": "negative_prompt"},
             "steps": {"native_name": "num_inference_steps"},
             "seed": {"native_name": "seed"},
+            # fal's LLM prompt rewrite (#75); off unless asked (fixed_arguments below),
+            # and the prompt the endpoint used is recorded beside the one sent.
+            "expand_prompt": {"native_name": "enable_prompt_expansion"},
             "output_format": {
                 "native_name": "output_format",
                 "to_native_map": {
@@ -106,6 +109,7 @@ SOURCE_CONFIGS = (
             "steps",
             "seed",
             "output_format",
+            "expand_prompt",
         ],
         unsupported_affordances=["loop"],
         native_defaults={
@@ -117,7 +121,7 @@ SOURCE_CONFIGS = (
             "duration_min_s": 1.0,
             "duration_max_s": 120.0,
             "sample_rate": 44100,  # SAME-Small autoencoder; read live 2026-10-25 (report 17)
-            # Sent on every call; prompt expansion would rewrite the prompt we record.
+            # Sent on every call: prompt expansion only when expand_prompt=True asks.
             "fixed_arguments": {
                 "enable_prompt_expansion": False,
                 "enable_safety_checker": True,
@@ -228,6 +232,7 @@ SOURCE_CONFIGS = (
                 "native_default": None,
             },
             "loop": {"native_name": "loop"},
+            "sample_rate": {"via": "output_format"},  # the rate is in the enum (#75)
             "output_format": {
                 "native_name": "output_format",
                 # fal returns pcm_* as a WAV file (checked live: RIFF header, 2 ch).
@@ -235,6 +240,14 @@ SOURCE_CONFIGS = (
                     "wav": "pcm_44100",
                     "mp3": "mp3_44100_128",
                     "opus": "opus_48000_128",
+                },
+                # fal's enum (report 17 §3): no mp3_24000_48 and no wav_* here.
+                "to_native_by_rate": {
+                    "wav": {
+                        r: f"pcm_{r}" for r in (8000, 16000, 22050, 24000, 44100, 48000)
+                    },
+                    "mp3": {22050: "mp3_22050_32", 44100: "mp3_44100_128"},
+                    "opus": {48000: "opus_48000_128"},
                 },
             },
         },
@@ -244,6 +257,7 @@ SOURCE_CONFIGS = (
             "prompt_influence",
             "loop",
             "output_format",
+            "sample_rate",
         ],
         unsupported_affordances=["negative_prompt", "steps", "seed"],
         native_defaults={

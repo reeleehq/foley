@@ -393,9 +393,10 @@ def _generate(
             never seen by the unsupported-parameter policy. A key the source's
             ``provider_params`` policy reserves or prices raises ``ValueError``
             before any call, so the cost estimate is the call's.
-        **affordances: Unified generation affordances (``duration_s``,
+        **affordances: Unified generation affordances (``duration_s``, ``model``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
-            ``output_format`` — see :data:`foley.base.GENERATION_AFFORDANCES`).
+            ``output_format``, ``sample_rate``, ``expand_prompt`` — see
+            :data:`foley.base.GENERATION_AFFORDANCES`).
 
     Returns:
         An :class:`~foley.index.ingest.IngestReport` — inspect ``.ingested`` for the
@@ -602,6 +603,11 @@ def _generate(
     # library, so it gets no orphan credential (its already-stored twin keeps one).
     if credential is not None and res.status in ("pass", "warn"):
         disclosure.write_content_credential(pstore, sound_id, credential)
+
+    requested_sr = affordances.get("sample_rate")
+    actual_sr = getattr(res.record, "source_sample_rate", None)
+    if requested_sr is not None and actual_sr is not None and actual_sr != requested_sr:
+        clip.notes.append(f"sample_rate: asked {requested_sr} Hz, got {actual_sr} Hz")
 
     # Surface the adapter's + disclosure notes (unsupported affordances, warn-mode
     # flag, watermark-skip) in the run report.

@@ -1718,3 +1718,33 @@ def test_a_fallback_with_provider_params_is_keyed_so_it_can_be_served(library):
     mp3 = _gen(adapter, library, "mp3", provider_params=pp)
     assert _served(mp3) and len(transport.calls) == 2
     assert not _served(_gen(adapter, library, "mp3", provider_params={"prompt_influence": 0.5}))
+
+
+def test_elevenlabs_sample_rate_picks_the_native_enum():
+    transport = FakeTransport()
+    _el_adapter(transport).generate("rain", output_format="wav", sample_rate=22050)
+    assert transport.calls[0].params["output_format"] == "pcm_22050"
+    transport = FakeTransport()
+    clip = _el_adapter(transport).generate("rain", output_format="wav", sample_rate=32000)
+    assert transport.calls[0].params["output_format"] == "pcm_48000"
+    assert any("32000 Hz is not offered" in n for n in clip.notes)
+
+
+def test_elevenlabs_raw_pcm_at_a_requested_rate_is_wrapped_at_that_rate():
+    import wave as _wave
+
+    sr, seconds = 22050, 1.0
+    raw = (np.zeros(int(sr * seconds) * 2, dtype="<i2") + 100).tobytes()  # 2 ch S16LE
+    transport = FakeTransport(FakeResponse(200, None, raw))
+    clip = _el_adapter(transport).generate(
+        "rain", output_format="wav", sample_rate=sr, duration_s=seconds
+    )
+    with _wave.open(io.BytesIO(clip.audio_bytes)) as w:
+        assert w.getframerate() == sr and w.getnchannels() == 2
+
+
+def test_the_facade_notes_a_rate_the_backend_did_not_honour(library):
+    # The fake answers a FLAC at its own rate whatever was asked: the note says so.
+    cand = foley.generate("rain", backend="elevenlabs", adapter=_el_adapter(),
+                          library=library, sample_rate=22050, provenance_store={})
+    assert any("asked 22050 Hz, got" in n for n in cand.notes)

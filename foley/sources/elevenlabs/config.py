@@ -51,6 +51,8 @@ SOURCE_CONFIG = {
             "native_default": None,
         },
         "loop": {"native_name": "loop", "in": "body"},  # v2 only (v2 is default)
+        # The rate is part of the native format enum (#75): see to_native_by_rate.
+        "sample_rate": {"via": "output_format"},
         "output_format": {
             "native_name": "output_format",
             "in": "query",  # a URL query param, NOT a body field
@@ -63,6 +65,19 @@ SOURCE_CONFIG = {
                 "opus": "opus_48000_128",
                 "wav": "pcm_48000",
             },
+            # A requested sample_rate picks the enum (the documented direct-API set,
+            # report 17 §3); a rate missing here keeps to_native_map's, with a note.
+            "to_native_by_rate": {
+                "wav": {
+                    r: f"pcm_{r}" for r in (8000, 16000, 22050, 24000, 44100, 48000)
+                },
+                "mp3": {
+                    22050: "mp3_22050_32",
+                    24000: "mp3_24000_48",
+                    44100: "mp3_44100_128",
+                },
+                "opus": {48000: "opus_48000_128"},
+            },
             # Retried once with the fallback only for a plan-tier refusal of the
             # format; any other error is raised as is (#100). ElevenLabs' documented
             # error body is {"detail": {"type", "code", "message", "status", ...}}: a
@@ -71,7 +86,10 @@ SOURCE_CONFIG = {
             # with a message naming the format: "Requested output format pcm_44100
             # ... is only allowed for Pro tier and above"). A 402 is payment_required
             # (out of credits), which MP3 would not fix. Live confirmation: #95.
-            "fallback_on_4xx": {"pcm_48000": "mp3_44100_128"},
+            "fallback_on_4xx": {
+                f"pcm_{r}": "mp3_44100_128"
+                for r in (8000, 16000, 22050, 24000, 44100, 48000)
+            },
             "fallback_statuses": [403],
             "fallback_detail_codes": [
                 "subscription_required",
@@ -82,8 +100,13 @@ SOURCE_CONFIG = {
             # 1.0 s request returned 192,000 bytes (48,000 x 2 ch x 2 B), and five
             # studio clips of 1.5-8 s all implied 2 ch; a paid plan was not refused
             # PCM. The byte-length check still corrects a clip that disagrees.
+            # The other rates are assumed stereo like pcm_48000 (not verified live).
             "pcm": {
-                "pcm_48000": {"sample_rate": 48000, "channels": 2, "verified": True}
+                "pcm_48000": {"sample_rate": 48000, "channels": 2, "verified": True},
+                **{
+                    f"pcm_{r}": {"sample_rate": r, "channels": 2, "verified": False}
+                    for r in (8000, 16000, 22050, 24000, 44100)
+                },
             },
         },
     },
@@ -94,6 +117,7 @@ SOURCE_CONFIG = {
         "prompt_influence",
         "loop",
         "output_format",
+        "sample_rate",
     ],
     # No native equivalent on this endpoint (non-deterministic, no CFG/steps).
     "unsupported_affordances": ["negative_prompt", "steps", "seed"],
