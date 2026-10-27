@@ -47,7 +47,7 @@ from typing import Optional
 
 from ocracy.kit import UnsupportedParameter, make_translator
 
-from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES, RENAMED_AFFORDANCES
+from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES, reject_renamed
 from .base import check_prompt_influence, check_provider_params
 
 __all__ = [
@@ -127,10 +127,7 @@ def translate_affordances(
     if on_unsupported is not None and on_unsupported not in UNSUPPORTED_POLICIES:
         raise ValueError(f"on_unsupported must be one of {UNSUPPORTED_POLICIES}")
     vocabulary = GENERATION_AFFORDANCES if vocabulary is None else vocabulary
-    if vocabulary is GENERATION_AFFORDANCES:
-        for new, old in RENAMED_AFFORDANCES.items():
-            if old in affordances:
-                raise TypeError(f"{old}= was renamed {new}= (foley#75)")
+    reject_renamed(affordances, vocabulary)
     # Validated here, at planning time, so a bad value never reserves budget.
     check_prompt_influence(affordances.get("prompt_influence"))
     duration_s = affordances.get("duration_s")
@@ -184,6 +181,8 @@ def _keyed_request(config: dict, affordances: dict) -> "tuple[dict, Optional[str
     """``(native request, pinned model)``: a pinned model is keyed apart from the request."""
     rest = dict(affordances)
     model = rest.pop("model", None)
+    if model == (config.get("native_defaults") or {}).get("model_id"):
+        model = None  # pinning the default is the request it always was
     return native_request(config, rest), model
 
 

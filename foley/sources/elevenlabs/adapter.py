@@ -30,7 +30,7 @@ import os
 import wave
 from typing import Optional
 
-from ...base import Candidate, CandidateOrigin, SoundRecord
+from ...base import Candidate, CandidateOrigin, SoundRecord, reject_renamed
 from ...cost import actual_call_cost
 from ..base import (
     GeneratedClip,
@@ -503,7 +503,11 @@ class ElevenLabsAdapter:
         return buf.getvalue()
 
     def _warn_unsupported(self, notes: list, **passed) -> None:
-        """Record a note for each unsupported affordance passed with a non-default value."""
+        """Record a note for each unsupported affordance passed with a non-default value.
+
+        A renamed affordance's old spelling raises ``TypeError`` instead (#75).
+        """
+        reject_renamed(passed)
         for name in _UNSUPPORTED:
             if passed.get(name) is not None:
                 notes.append(
@@ -513,11 +517,11 @@ class ElevenLabsAdapter:
         for name in extra:
             notes.append(f"affordance {name!r} is not a known SFX param; ignored")
 
-    def _clamp_duration(self, duration: float) -> float:
+    def _clamp_duration(self, duration_s: float) -> float:
         """Clamp ``duration_s`` to the native ``[min, max]`` seconds window."""
         lo = self.config["native_defaults"]["duration_min_s"]
         hi = self.config["native_defaults"]["duration_max_s"]
-        return max(lo, min(float(duration), hi))
+        return max(lo, min(float(duration_s), hi))
 
     def _invoke(self, *, params: dict, body: dict, notes: list):
         """:meth:`invoke_native`, with the credits the account was charged (the

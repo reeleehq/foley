@@ -371,7 +371,7 @@ foley.similar(sound_id, *, k=10) -> list[Candidate]              # audio↔audio
 # ── Generate when nothing fits (arioso-style: backend + unified vocabulary) ──
 clip = foley.generate(
     "a single wooden door creak", *, backend="stable_audio",
-    duration=3, prompt_influence=0.5, negative_prompt="music, speech", seed=None,
+    duration_s=3, prompt_influence=0.5, negative_prompt="music, speech", seed=None,
 ) -> Candidate                                                    # commercial_ok guardrail enforced
 
 # ── Grow the library: ingest auto-tags/captions/embeds; pull from a source ──

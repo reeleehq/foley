@@ -49,7 +49,7 @@ from typing import (
     runtime_checkable,
 )
 
-from ..base import AcquisitionMethod, LicenseRecord
+from ..base import AcquisitionMethod, LicenseRecord, reject_renamed
 from ..licensing import apply_license_flags
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
@@ -341,8 +341,10 @@ def unsupported_notes(
 
     ``loop`` has none (a future WEAVE crossfade); ``output_format`` is the audio layer's,
     so only a format other than the config's ``output.default_format`` is noted; any
-    ``extra`` affordance passed with a value is unknown to the model.
+    ``extra`` affordance passed with a value is unknown to the model, except a
+    renamed one's old spelling, which raises ``TypeError`` (#75).
     """
+    reject_renamed(extra)
     name = config.get("display_name", config["name"])
     default_format = (config.get("output") or {}).get("default_format", "wav")
     notes = []
@@ -660,7 +662,7 @@ class GenerateAdapter(Protocol):
 
     Like a retrieve adapter, a generate adapter performs **no** storage or library
     access: it maps foley's unified :data:`~foley.base.GENERATION_AFFORDANCES`
-    (prompt, duration, prompt_influence, negative_prompt, steps, seed, loop,
+    (prompt, duration_s, model, prompt_influence, negative_prompt, steps, seed, loop,
     output_format) to its backend's native params (via ``SOURCE_CONFIG['param_map']``,
     warning-and-dropping unsupported ones), builds the audio + a generated
     :class:`~foley.base.LicenseRecord`, and returns a :class:`GeneratedClip`. The

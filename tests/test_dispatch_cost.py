@@ -833,3 +833,51 @@ def test_generation_reproducible_follows_the_recorded_seed():
     assert seeded.generation_reproducible is True
     unseeded = LicenseRecord(license_id="x", source="t", is_ai_generated=True)
     assert unseeded.generation_reproducible is False
+
+
+@pytest.mark.parametrize(
+    "backend, affordances, key",
+    [
+        ("elevenlabs", {"duration_s": 2.0, "output_format": "wav"},
+         "f05ae9730d9a41cdc1f57cb6418b433f468913642318e1636acb246d83e1fba9"),
+        ("fal_stable_audio_3", {"duration_s": 3, "seed": 7},
+         "50a9da8fb72bef0c96cb5356c80c3a8d1cc6851f5bbcf077532588c47f56adad"),
+        ("stable_audio_3", {"duration_s": 1.5, "steps": 8},
+         "ddf4e0127a89f04fee65310c2a955213f5d841e571b580b311633d21c8564bb9"),
+    ],
+)
+def test_the_duration_rename_keeps_every_cache_key(backend, affordances, key):
+    """Keys computed before the rename (with ``duration=``): the paid cache still hits."""
+    from foley.sources._dispatch import request_digest
+    from foley.sources.registry import get_source
+
+    config = get_source(backend)["config"]
+    assert request_digest(backend, "a door creaks", config, affordances, salt=None) == key
+
+
+def test_the_old_duration_spelling_raises_on_every_entry_point():
+    from foley.sources.elevenlabs.adapter import ElevenLabsAdapter
+
+    with pytest.raises(TypeError, match="renamed duration_s"):
+        foley.estimate("generate", backend="elevenlabs", duration=3)
+    with pytest.raises(TypeError, match="renamed duration_s"):
+        foley.generations.find("rain", duration=1)
+    adapter = ElevenLabsAdapter(api_key="k", http=lambda *a, **k: None,
+                                plan="elevenlabs-paid-plan")
+    with pytest.raises(TypeError, match="renamed duration_s"):
+        adapter.generate("rain", duration=2)  # called directly, below the dispatch
+
+
+def test_the_order_skips_a_backend_that_cannot_pin_the_model(library, paid_source):
+    unpinned = paid_source("unpinned", amount=0.01)
+    cfg = {**_config("pinnable", {"unit": "per_call", "amount_usd": 0.01}),
+           "supported_affordances": ["prompt", "duration_s", "seed", "model"]}
+    pinnable = CountingAdapter(cfg)
+    register_source("pinnable", cfg, pinnable)
+    try:
+        cand = foley.generate("a door creaks", backend=("unpinned", "pinnable"),
+                              library=library, model="m-2")
+    finally:
+        SOURCE_REGISTRY.pop("pinnable", None)
+    assert unpinned.calls == 0 and pinnable.calls == 1
+    assert cand is not None

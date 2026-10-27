@@ -374,3 +374,21 @@ def test_generations_cache_find_matches_prompt_backend_and_affordances_newest_fi
     assert cache.find("hush") == []
     assert len(cache.find()) == 3  # everything but the alias and the unreadable entry
     assert cache.find("bite", backend="el", duration_s=1)[0][1]["status"] == "quarantined"
+
+
+def test_generations_cache_find_reads_old_and_new_spellings_alike():
+    """Entries kept as ``duration`` (before #75) and as ``duration_s`` match one query."""
+    from foley.stores import GenerationsCache
+
+    requests = {
+        "before": {"content_key": "k1", "backend": "el", "prompt": "bite",
+                   "affordances": {"duration": 1.0}, "at": 1.0},
+        "after": {"content_key": "k2", "backend": "el", "prompt": "bite",
+                  "affordances": {"duration_s": 1.0}, "at": 2.0},
+        "longer": {"content_key": "k3", "backend": "el", "prompt": "bite",
+                   "affordances": {"duration_s": 2.0}, "at": 3.0},
+    }
+    cache = GenerationsCache(audio={}, requests=requests)
+    assert [k for k, _ in cache.find("bite", duration_s=1)] == ["after", "before"]
+    with pytest.raises(TypeError, match="renamed duration_s"):
+        cache.find("bite", duration=1)  # the old spelling never matches silently

@@ -48,7 +48,7 @@ from urllib.parse import quote, unquote
 
 from dol import Files, JsonFiles, mk_dirs_if_missing, wrap_kvs
 
-from .base import SoundRecord, StorageMode
+from .base import GENERATION_AFFORDANCES, SoundRecord, StorageMode, reject_renamed
 
 #: Hash algorithm used for content addressing (matches ``SoundRecord.hash_algo``).
 HASH_ALGO = "sha256"
@@ -321,9 +321,11 @@ class GenerationsCache:
         fallback's alias entry is skipped (the request it answers is listed); an
         unreadable entry is skipped too. Numbers compare as floats (``duration_s=1``
         matches ``1.0``); an entry kept before an affordance was renamed is matched
-        under its old name (:data:`foley.base.RENAMED_AFFORDANCES`). Entries kept by a foley before 0.0.43 carry no timestamp
+        under its old name (``Affordance.renamed_from``), and passing an old name
+        raises ``TypeError``. Entries kept by a foley before 0.0.43 carry no timestamp
         and come last, in listing order.
         """
+        reject_renamed(affordances)
         hits = []
         for key in list(self.requests):
             try:
@@ -366,11 +368,10 @@ class GenerationsCache:
 
 def _kept_value(kept: dict, name: str):
     """``kept[name]``, or the value an older entry kept under the name's old spelling."""
-    from .base import RENAMED_AFFORDANCES
-
     if name in kept:
         return kept[name]
-    return kept.get(RENAMED_AFFORDANCES.get(name, name))
+    aff = GENERATION_AFFORDANCES.get(name)
+    return kept.get(aff.renamed_from) if aff and aff.renamed_from else None
 
 
 def _same_value(a, b) -> bool:

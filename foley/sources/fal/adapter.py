@@ -28,7 +28,13 @@ from typing import Callable, Optional
 
 import os
 
-from ...base import GENERATION_AFFORDANCES, Candidate, CandidateOrigin, SoundRecord
+from ...base import (
+    GENERATION_AFFORDANCES,
+    Candidate,
+    CandidateOrigin,
+    SoundRecord,
+    reject_renamed,
+)
 from ..base import (
     GeneratedClip,
     SourceConfigurationError,
@@ -229,6 +235,7 @@ class FalAdapter:
         Raises:
             SourceConfigurationError: If no fal key is available (before any call).
         """
+        reject_renamed(affordances)
         notes: list = []
         nd = self.config.get("native_defaults") or {}
         args = merge_provider_params(

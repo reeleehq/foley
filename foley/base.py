@@ -126,6 +126,9 @@ class Affordance:
         carries_meaning: Dropping it would change what the caller gets (a seed they
             will rely on to reproduce, content they asked to exclude), so a backend
             that cannot honour it raises instead of dropping it (#53).
+        renamed_from: The name it had before a release renamed it (#75): passing
+            the old name raises a ``TypeError`` naming this one (see
+            :func:`reject_renamed`), and kept entries are still read under it.
     """
 
     name: str
@@ -134,6 +137,7 @@ class Affordance:
     default: Any = None
     stage: str = "query"
     carries_meaning: bool = False
+    renamed_from: Optional[str] = None
 
 
 #: Unified query-stage parameters (search / find / filter surface).
@@ -163,7 +167,11 @@ QUERY_AFFORDANCES: dict[str, Affordance] = {
 GENERATION_AFFORDANCES: dict[str, Affordance] = {
     "prompt": Affordance("prompt", str, "Sound description", stage="generate"),
     "duration_s": Affordance(
-        "duration_s", float, "Seconds; None => backend auto", stage="generate"
+        "duration_s",
+        float,
+        "Seconds; None => backend auto",
+        stage="generate",
+        renamed_from="duration",
     ),
     "model": Affordance(
         "model",
@@ -200,10 +208,23 @@ GENERATION_AFFORDANCES: dict[str, Affordance] = {
 }
 
 
-#: Generation affordances renamed since a release (#75), ``{new: old}``: the old
-#: spelling raises a ``TypeError`` naming the new one, and the generations cache
-#: still finds entries kept under the old name.
-RENAMED_AFFORDANCES: dict[str, str] = {"duration_s": "duration"}
+def reject_renamed(names, vocabulary: Optional[dict] = None) -> None:
+    """Raise ``TypeError`` if any of ``names`` is an affordance's old spelling.
+
+    ``vocabulary`` defaults to :data:`GENERATION_AFFORDANCES`; the old names come
+    from each :class:`Affordance`'s ``renamed_from``.
+
+    >>> reject_renamed(["prompt", "duration_s"])
+    >>> reject_renamed(["duration"])
+    Traceback (most recent call last):
+        ...
+    TypeError: duration= was renamed duration_s= (foley#75)
+    """
+    vocabulary = GENERATION_AFFORDANCES if vocabulary is None else vocabulary
+    renamed = {a.renamed_from: a.name for a in vocabulary.values() if a.renamed_from}
+    for name in names:
+        if name in renamed:
+            raise TypeError(f"{name}= was renamed {renamed[name]}= (foley#75)")
 
 
 # ---------------------------------------------------------------------------
@@ -374,7 +395,8 @@ class LicenseRecord(SerializableMixin):
 
         ``None`` for a sound that was not generated. A backend with no seed
         (ElevenLabs, Sonilo) records none, so its clips read ``False`` rather than
-        carrying a seed that would reproduce nothing (#75).
+        carrying a seed that would reproduce nothing (#75). A seed is necessary, not
+        sufficient: a hosted endpoint can change its model behind the same id.
         """
         if not self.is_ai_generated:
             return None
