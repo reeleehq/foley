@@ -44,14 +44,16 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Optional, Union
 
-#: URL schemes sent to a backend as is (no upload).
-URL_SCHEMES = ("http://", "https://", "data:")
+#: Schemes of a URL the backend fetches from a server (what it serves may change).
+REMOTE_SCHEMES = ("http://", "https://")
+#: URL schemes sent to a backend as is (no upload); a ``data:`` URI holds its content.
+URL_SCHEMES = (*REMOTE_SCHEMES, "data:")
 #: The key prefix of a video known only by its URL (its content unseen).
 URL_KEY_PREFIX = "url:"
 _SHA256_HEX = re.compile(r"[0-9a-f]{64}")
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True, kw_only=True, slots=True)
 class RemoteVideo:
     """A remote video ``url`` with the SHA-256 of its bytes: keyed, and replayed, by content.
 
@@ -60,9 +62,13 @@ class RemoteVideo:
     may have changed: ``.../latest.mp4``). A caller who knows the content passes this
     instead, and a repeat is replayed while the digest is the same (#173).
 
-    >>> RemoteVideo("https://x/clip.mp4", sha256="sha256:" + "ab" * 32).sha256[:4]
+    The digest is **trusted, not checked** (foley does not fetch the URL): it is
+    recorded as the input's identity in the cache key and the licence's
+    ``generation_params``, as a digest foley computed would be.
+
+    >>> RemoteVideo(url="https://x/clip.mp4", sha256="sha256:" + "ab" * 32).sha256[:4]
     'abab'
-    >>> RemoteVideo("clip.mp4", sha256="ab" * 32)
+    >>> RemoteVideo(url="clip.mp4", sha256="ab" * 32)
     Traceback (most recent call last):
     ...
     ValueError: RemoteVideo.url must be an http(s) URL, got 'clip.mp4'
@@ -72,7 +78,7 @@ class RemoteVideo:
     sha256: str
 
     def __post_init__(self):
-        if not (isinstance(self.url, str) and self.url.startswith(URL_SCHEMES[:2])):
+        if not (isinstance(self.url, str) and self.url.startswith(REMOTE_SCHEMES)):
             raise ValueError(
                 f"RemoteVideo.url must be an http(s) URL, got {self.url!r}"
             )
@@ -128,7 +134,7 @@ def video_key(video: VideoInput) -> str:
     'sha256:ba7816bf'
     >>> video_key("https://x/clip.mp4")
     'url:https://x/clip.mp4'
-    >>> video_key(RemoteVideo("https://x/clip.mp4", sha256="ab" * 32))[:11]
+    >>> video_key(RemoteVideo(url="https://x/clip.mp4", sha256="ab" * 32))[:11]
     'sha256:abab'
 
     Raises:
@@ -163,17 +169,36 @@ def keyed(affordances: dict) -> dict:
     return {**affordances, "video": video_key(affordances["video"])}
 
 
-def replayable(affordances: dict) -> bool:
-    """Whether an identical request may be served from the cache: not when its video is a
-    bare remote URL, whose content foley never saw (#173).
+def fal_immutable_url(url: str) -> bool:
+    """falaw's ``is_immutable_url`` (fal's own CDN mints a new URL per upload), else
+    ``False`` when falaw is not installed: an unknown URL is taken as mutable."""
+    try:
+        from falaw.content import is_immutable_url
+    except ImportError:
+        return False
+    return is_immutable_url(url)
+
+
+def replayable(
+    affordances: dict, *, is_immutable: Callable[[str], bool] = fal_immutable_url
+) -> bool:
+    """Whether an identical request may be served from the cache (#173).
+
+    Not when its video is a bare remote URL whose content foley never saw, unless
+    ``is_immutable(url)`` says it never serves other bytes (default:
+    :func:`fal_immutable_url`, fal's own CDN). Decided from the value alone: no file
+    is read.
 
     >>> replayable({"video": "https://x/latest.mp4"}), replayable({"video": b"abc"})
     (False, True)
+    >>> replayable({"video": "https://x/a.mp4"}, is_immutable=lambda url: True)
+    True
     >>> replayable({"seed": 1})
     True
     """
     video = affordances.get("video")
-    return video is None or not video_key(video).startswith(URL_KEY_PREFIX)
+    remote = isinstance(video, str) and video.startswith(REMOTE_SCHEMES)
+    return not remote or is_immutable(video)
 
 
 @functools.lru_cache(maxsize=64)

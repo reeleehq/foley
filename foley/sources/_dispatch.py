@@ -503,9 +503,10 @@ def plan_generation(
         )
         if reuse_cached and not video_replayable(kept):
             plan.notes.append(
-                "the video is a remote URL, keyed as the URL: what it serves may have "
-                "changed, so this request is not replayed from the cache (pass "
-                "video=RemoteVideo(url, sha256=...) to key it by content)"
+                "the video is a remote URL whose content foley has not seen: what it "
+                "serves may have changed, so this request is not replayed from the "
+                "cache (pass video=foley.RemoteVideo(url=..., sha256=...) to key it by "
+                "content)"
             )
             reuse_cached = False
         if reuse_cached:

@@ -326,6 +326,10 @@ class GenerationsCache:
         and come last, in listing order.
         """
         reject_renamed(affordances)
+        if affordances.get("video") is not None:  # kept by its key (#74), found by it
+            from .sources.video import video_key
+
+            affordances = {**affordances, "video": video_key(affordances["video"])}
         hits = []
         for key in list(self.requests):
             try:
