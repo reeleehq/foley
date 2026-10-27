@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=f329fc45"></script>
+    <script src="../../../_static/documentation_options.js?v=1b335f87"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.97" />
+  <meta name="docsearch:version" content="0.0.98" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1315,7 +1315,12 @@ window.runMermaid = runMermaid;</script>
             <span class="p">}</span>
         <span class="p">],</span>
     <span class="p">}</span>
-    <span class="k">if</span> <span class="n">ingredients</span><span class="p">:</span>  <span class="c1"># a derived clip names its sources' licences beside its own</span>
+    <span class="n">derived</span> <span class="o">=</span> <span class="n">_derived_license_refs</span><span class="p">(</span><span class="n">lic</span><span class="p">,</span> <span class="n">ingredients</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">derived</span><span class="p">:</span>  <span class="c1"># a derived clip is under its own licence AND its sources' (#214)</span>
+        <span class="n">creative_work</span><span class="p">[</span><span class="s2">"license"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">([</span><span class="n">license_ref</span><span class="p">,</span> <span class="o">*</span><span class="n">derived</span><span class="p">]))</span>
+        <span class="c1"># schema.org reads a list of licences as alternatives; this one is cumulative.</span>
+        <span class="n">creative_work</span><span class="p">[</span><span class="s2">"description"</span><span class="p">]</span> <span class="o">=</span> <span class="n">DERIVED_LICENSES_STATEMENT</span>
+    <span class="k">if</span> <span class="n">ingredients</span><span class="p">:</span>  <span class="c1"># ... and names each source it was made from</span>
         <span class="n">creative_work</span><span class="p">[</span><span class="s2">"isBasedOn"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
             <span class="p">{</span>
                 <span class="s2">"@type"</span><span class="p">:</span> <span class="s2">"CreativeWork"</span><span class="p">,</span>
@@ -1418,6 +1423,46 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"instance_id"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">C2PA_INGREDIENT_ID_PREFIX</span><span class="si">}</span><span class="s2">source:</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">source</span><span class="p">[</span><span class="s1">'sound_id'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="n">INGREDIENT_SOURCE_KEY</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span>
     <span class="p">}</span>
+
+
+<span class="c1">#: The ``CreativeWork.description`` of a derived clip, whose ``license`` is a list: every</span>
+<span class="c1">#: listed licence applies at once (the clip is bound by all of them), not a choice of one.</span>
+<span class="n">DERIVED_LICENSES_STATEMENT</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"Derived work: ALL of the listed licences apply together (the terms of each one "</span>
+    <span class="s2">"bind this work); they are not alternatives to choose between."</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_derived_license_refs</span><span class="p">(</span><span class="n">lic</span><span class="p">,</span> <span class="n">ingredients</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The licence refs (URL, else id) of everything ``lic`` derives from (#214).</span>
+
+<span class="sd">    Each source ingredient's licence (the URL its record carried), then every other</span>
+<span class="sd">    licence the record derives from (:func:`foley.licensing.derived_license_ids`: an</span>
+<span class="sd">    edit of an edit is bounded by its source's sources too), by its SSOT URL.</span>
+
+<span class="sd">    &gt;&gt;&gt; from foley.base import LicenseRecord</span>
+<span class="sd">    &gt;&gt;&gt; _derived_license_refs(LicenseRecord(source="g"), [])</span>
+<span class="sd">    []</span>
+<span class="sd">    &gt;&gt;&gt; _derived_license_refs(LicenseRecord(source="g",</span>
+<span class="sd">    ...     derived_from_license_ids=["CC-BY-4.0"]), [])</span>
+<span class="sd">    ['https://creativecommons.org/licenses/by/4.0/']</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">derived_license_ids</span><span class="p">,</span> <span class="n">license_meta</span>
+
+    <span class="n">refs</span><span class="p">,</span> <span class="n">named</span> <span class="o">=</span> <span class="p">[],</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ingredients</span><span class="p">:</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="n">INGREDIENT_SOURCE_KEY</span><span class="p">]</span>
+        <span class="n">named</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">source</span><span class="p">[</span><span class="s2">"license_id"</span><span class="p">])</span>
+        <span class="n">refs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">source</span><span class="p">[</span><span class="s2">"license_url"</span><span class="p">]</span>
+            <span class="ow">or</span> <span class="n">license_meta</span><span class="p">(</span><span class="n">source</span><span class="p">[</span><span class="s2">"license_id"</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">"unknown"</span><span class="p">)</span><span class="o">.</span><span class="n">url</span>
+            <span class="ow">or</span> <span class="n">source</span><span class="p">[</span><span class="s2">"license_id"</span><span class="p">]</span>
+            <span class="ow">or</span> <span class="s2">"unknown"</span>
+        <span class="p">)</span>
+    <span class="k">for</span> <span class="n">license_id</span> <span class="ow">in</span> <span class="n">derived_license_ids</span><span class="p">(</span><span class="n">lic</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">license_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">named</span><span class="p">:</span>
+            <span class="n">refs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">license_meta</span><span class="p">(</span><span class="n">license_id</span><span class="p">)</span><span class="o">.</span><span class="n">url</span> <span class="ow">or</span> <span class="n">license_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">refs</span><span class="p">))</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_ref_of</span><span class="p">(</span><span class="n">record</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>

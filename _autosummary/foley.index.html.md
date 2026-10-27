@@ -1119,6 +1119,12 @@ records in place:
 * corpus clips (Clotho, FSD50K) are repaired by re-running `foley bootstrap`,
   which re-stamps already-stored clips from the corpus metadata.
 
+Re-stamping never widens a derivative (an edit, #162): the new flags stay bounded
+by every licence the record derives from ([`foley.licensing.derived_license_ids()`](foley.licensing.html.md#foley.licensing.derived_license_ids)).
+A record stored before `derived_from_license_ids` existed falls back to its edit
+entries, which name only the direct source, so an edit of an edit stored then is
+bounded by its parent’s licence, not its grandparent’s.
+
 * **Parameters:**
   * **library** – The [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the default one).
   * **license** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The `license_id` to stamp (a `LICENSE_FLAGS` row; default

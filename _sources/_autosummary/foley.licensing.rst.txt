@@ -28,11 +28,13 @@ foley.licensing
       ai_scope_from_gen_ai_preference
       ai_use_permitted
       apply_license_flags
+      carry_lineage
       cc_refused_terms
       check_placed
       checked_refusal_reason
       derivative_refusal
       derive_license_flags
+      derived_license_ids
       intended_use_for
       is_cc_license_token
       is_share_alike

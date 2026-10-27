@@ -13,6 +13,7 @@ foley.provenance.disclosure
       C2PA_CREATED
       INGREDIENT_SOURCE_KEY
       TRADEMARK_REGISTRY
+      DERIVED_LICENSES_STATEMENT
       INGREDIENT_CREDENTIAL_KEY
    
    .. rubric:: Functions

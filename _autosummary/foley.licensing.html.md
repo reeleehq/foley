@@ -39,11 +39,13 @@ item is redistributable but stored by-reference.
 |----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
 | [`ai_use_permitted`](#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                        |
 | [`apply_license_flags`](#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                          |
+| [`carry_lineage`](#foley.licensing.carry_lineage)(new, old)                           | Copy `old`'s lineage onto `new`, in place, and return `new`.                                                                   |
 | [`cc_refused_terms`](#foley.licensing.cc_refused_terms)(url)                             | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                             |
 | [`check_placed`](#foley.licensing.check_placed)(records, intended_use, \*, what)     | The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.                                             |
 | [`checked_refusal_reason`](#foley.licensing.checked_refusal_reason)(record, intended_use)      | [`refusal_reason()`](#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.    |
 | [`derivative_refusal`](#foley.licensing.derivative_refusal)(source)                        | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                |
 | [`derive_license_flags`](#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                               |
+| [`derived_license_ids`](#foley.licensing.derived_license_ids)(record)                       | The licence ids of every sound `record` derives from (`[]`: not derived).                                                      |
 | [`intended_use_for`](#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                           |
 | [`is_cc_license_token`](#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                        |
 | [`is_share_alike`](#foley.licensing.is_share_alike)(license_id)                        | Whether `license_id` (or a licence URL / label) is share-alike.                                                                |
@@ -212,6 +214,11 @@ also needs a non-commercial purpose, `none` admits nothing.
 Populate `record`’s eight derived flags from its `license_id`
 (+ overrides), in place, and return it.
 
+A derivative (an edit, #162) stays bounded by every licence it derives from
+([`derived_license_ids()`](#foley.licensing.derived_license_ids)): each one’s row is ANDed in after the overrides, so
+re-deriving its flags (a restamp to the generator’s licence, a reload) never widens
+them back (#214). A record that derives from nothing is unaffected.
+
 Does NOT touch `rights_verified` — verification is a separate concern.
 
 * **Parameters:**
@@ -222,6 +229,42 @@ Does NOT touch `rights_verified` — verification is a separate concern.
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
   The same (mutated) `record`.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> edit = LicenseRecord(source="g", license_id="Stability-Community",
+...                      derived_from_license_ids=["CC-BY-NC-4.0"])
+>>> apply_license_flags(edit, overrides={"commercial_ok": True}).commercial_ok
+False
+```
+
+### foley.licensing.carry_lineage(new, old)
+
+Copy `old`’s lineage onto `new`, in place, and return `new`.
+
+The lineage is what a re-stamped record must keep from the one it replaces: its
+`transformations` (the edits and fixes, so the credit still reads “(modified)”)
+and its `derived_from_license_ids` (the licences bounding it, #214). Fresh lists,
+so the two records never share one; a `None` reads as empty. `new`’s flags are
+then bounded by every licence it now derives from (never widened), so the copy is
+safe on its own; a later [`apply_license_flags()`](#foley.licensing.apply_license_flags) re-derives under the same bound.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> old = LicenseRecord(source="g", transformations=["declick"],
+...                     derived_from_license_ids=["CC-BY-NC-4.0"])
+>>> new = carry_lineage(LicenseRecord(source="g"), old)
+>>> new.transformations, new.derived_from_license_ids
+(['declick'], ['CC-BY-NC-4.0'])
+>>> new.transformations is old.transformations
+False
+>>> cc0 = apply_license_flags(LicenseRecord(source="g", license_id="CC0-1.0"))
+>>> carry_lineage(cc0, old).commercial_ok
+False
+```
+
+* **Return type:**
+  [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 
 ### foley.licensing.cc_refused_terms(url)
 
@@ -333,6 +376,34 @@ apply per-source overrides.
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `overrides` contains a key that is not a
       [`LicenseFlags`](#foley.licensing.LicenseFlags) field.
+
+### foley.licensing.derived_license_ids(record)
+
+The licence ids of every sound `record` derives from (`[]`: not derived).
+
+The merge of two records of it: its
+`derived_from_license_ids` field (#214), plus the
+`source_license_id` of each edit entry in its `transformations` (#162), so a
+record stored before the field existed is still bounded by its source. In order,
+without repeats.
+
+That legacy fallback sees only the *direct* source: an edit entry names its
+parent’s licence, not the licences the parent itself derived from. So an edit of
+an edit stored before this release (no `derived_from_license_ids`) is bounded
+by its parent’s licence only, not its grandparent’s. Re-running the edit, or
+narrowing it again with [`narrow_to_source()`](#foley.licensing.narrow_to_source), records the full chain.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> derived_license_ids(LicenseRecord(source="g"))
+[]
+>>> derived_license_ids(LicenseRecord(source="g", derived_from_license_ids=["CC-BY-4.0"],
+...     transformations=["declick", {"kind": "edit", "source_license_id": "CC-BY-NC-4.0"}]))
+['CC-BY-4.0', 'CC-BY-NC-4.0']
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.licensing.intended_use_for(intended_use=None, , commercial_ok=None, territory=None)
 

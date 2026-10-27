@@ -57,7 +57,7 @@ Design (report 07 · 10 §\`\`provenance/
 |------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | [`Credits`](#foley.provenance.credits.Credits)([entries, title, schema_version])     | A deduplicated, ordered collection of [`CreditEntry`](#foley.provenance.credits.CreditEntry) for one run. |
 
-### *class* foley.provenance.credits.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list())
+### *class* foley.provenance.credits.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list(), derived_license_ids=list())
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -123,7 +123,9 @@ Build a [`CreditEntry`](#foley.provenance.credits.CreditEntry) from a record (ti
 
 Every field is read straight off the [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) (flags
 never re-derived); `modified` reflects a non-empty `transformations` list, and
-`derived_from` the sources an edit was made from ([`derived_sources()`](#foley.provenance.credits.derived_sources)).
+`derived_from` the sources an edit was made from ([`derived_sources()`](#foley.provenance.credits.derived_sources)),
+`derived_license_ids` the licence of every sound it derives from (each bounds
+it on top of its own).
 
 * **Parameters:**
   * **record** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate),

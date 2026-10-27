@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=f329fc45"></script>
+    <script src="../../_static/documentation_options.js?v=1b335f87"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.97" />
+  <meta name="docsearch:version" content="0.0.98" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1409,6 +1409,11 @@ window.runMermaid = runMermaid;</script>
     <span class="n">transformations</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span>
         <span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span>
     <span class="p">)</span>  <span class="c1"># ordered ops; non-empty =&gt; "(modified)"</span>
+    <span class="c1"># The licence ids of every sound this one derives from (an edit's source, and the</span>
+    <span class="c1"># sources that source derived from, #214). Each one bounds the derived flags:</span>
+    <span class="c1"># ``apply_license_flags`` ANDs their rows in, so a re-derivation from</span>
+    <span class="c1"># ``license_id`` (a restamp) can never widen a derivative. Empty: not derived.</span>
+    <span class="n">derived_from_license_ids</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
 
     <span class="c1"># generation (present iff AI-generated)</span>
     <span class="n">is_ai_generated</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -1445,7 +1450,15 @@ window.runMermaid = runMermaid;</script>
     <span class="n">disclosure_recommended</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># EU AI Act Art.50 hint</span>
     <span class="n">rights_verified</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># False =&gt; unknown =&gt; fail-closed</span>
     <span class="n">verified_at</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">schema_version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">SCHEMA_VERSION</span></div>
+    <span class="n">schema_version</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">SCHEMA_VERSION</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># A stored JSON ``null`` (or a caller's ``None``) for a lineage list reads as</span>
+        <span class="c1"># empty, so no re-derivation or copy of the record trips on ``list(None)``.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformations</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">transformations</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">derived_from_license_ids</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">derived_from_license_ids</span> <span class="o">=</span> <span class="p">[]</span></div>
 
 
 

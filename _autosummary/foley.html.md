@@ -607,7 +607,7 @@ no second CLAP forward pass.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
 
-### *class* foley.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list())
+### *class* foley.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list(), derived_license_ids=list())
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -1109,7 +1109,7 @@ the *permission* row consulted by [`keep()`](#foley.keep), `LicenseMeta` holds t
 license authority; a record’s own `license_name` / `license_url` (when a
 source populated them) take precedence over this default.
 
-### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
+### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), derived_from_license_ids=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -2019,6 +2019,11 @@ applies the by-reference storage gate from the sound’s own license.
 Populate `record`’s eight derived flags from its `license_id`
 (+ overrides), in place, and return it.
 
+A derivative (an edit, #162) stays bounded by every licence it derives from
+(`derived_license_ids()`): each one’s row is ANDed in after the overrides, so
+re-deriving its flags (a restamp to the generator’s licence, a reload) never widens
+them back (#214). A record that derives from nothing is unaffected.
+
 Does NOT touch `rights_verified` — verification is a separate concern.
 
 * **Parameters:**
@@ -2029,6 +2034,14 @@ Does NOT touch `rights_verified` — verification is a separate concern.
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
   The same (mutated) `record`.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> edit = LicenseRecord(source="g", license_id="Stability-Community",
+...                      derived_from_license_ids=["CC-BY-NC-4.0"])
+>>> apply_license_flags(edit, overrides={"commercial_ok": True}).commercial_ok
+False
+```
 
 ### foley.attribution_line(source, , fmt='markdown')
 
@@ -2183,7 +2196,9 @@ Build a [`CreditEntry`](#foley.CreditEntry) from a record (title override option
 
 Every field is read straight off the [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) (flags
 never re-derived); `modified` reflects a non-empty `transformations` list, and
-`derived_from` the sources an edit was made from (`derived_sources()`).
+`derived_from` the sources an edit was made from (`derived_sources()`),
+`derived_license_ids` the licence of every sound it derives from (each bounds
+it on top of its own).
 
 * **Parameters:**
   * **record** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate),
@@ -3516,6 +3531,12 @@ records in place:
   re-derived by today’s mapper (CC versions, PDM, NC spellings);
 * corpus clips (Clotho, FSD50K) are repaired by re-running `foley bootstrap`,
   which re-stamps already-stored clips from the corpus metadata.
+
+Re-stamping never widens a derivative (an edit, #162): the new flags stay bounded
+by every licence the record derives from ([`foley.licensing.derived_license_ids()`](foley.licensing.html.md#foley.licensing.derived_license_ids)).
+A record stored before `derived_from_license_ids` existed falls back to its edit
+entries, which name only the direct source, so an edit of an edit stored then is
+bounded by its parent’s licence, not its grandparent’s.
 
 * **Parameters:**
   * **library** – The [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the default one).

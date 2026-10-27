@@ -44,6 +44,7 @@ dependency-light.
 | [`C2PA_CREATED`](#foley.provenance.disclosure.C2PA_CREATED)                   | C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).                   |
 | [`INGREDIENT_SOURCE_KEY`](#foley.provenance.disclosure.INGREDIENT_SOURCE_KEY)          | The key under which an edit's source ingredient carries what foley knows of it.                             |
 | [`TRADEMARK_REGISTRY`](#foley.provenance.disclosure.TRADEMARK_REGISTRY)             | Seed registry of branded audio logos foley must not knowingly generate for commercial use (report 07 §7.2). |
+| [`DERIVED_LICENSES_STATEMENT`](#foley.provenance.disclosure.DERIVED_LICENSES_STATEMENT)     | every listed licence applies at once (the clip is bound by all of them), not a choice of one.               |
 | [`INGREDIENT_CREDENTIAL_KEY`](#foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY)      | The one key under which an ingredient carries foley's full per-sound credential.                            |
 
 ### Functions
@@ -117,6 +118,14 @@ content-hash id reproducible so a byte-identical regeneration still dedups
 (`skipped_dup`) — the #6 generation-flywheel promise. See
 [`AudioSealWatermarker.embed()`](#foley.provenance.disclosure.AudioSealWatermarker.embed).
 
+### foley.provenance.disclosure.DERIVED_LICENSES_STATEMENT *= 'Derived work: ALL of the listed licences apply together (the terms of each one bind this work); they are not alternatives to choose between.'*
+
+every
+listed licence applies at once (the clip is bound by all of them), not a choice of one.
+
+* **Type:**
+  The `CreativeWork.description` of a derived clip, whose `license` is a list
+
 ### foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY *= 'foley_credential'*
 
 The one key under which an ingredient carries foley’s full per-sound credential.
@@ -147,7 +156,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta-dum', 'netflix chime', 'tudum', 'ta dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel jingle', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'tudum', 'netflix sound', 'netflix intro', 'ta-dum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel jingle', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of

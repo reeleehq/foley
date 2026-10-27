@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=f329fc45"></script>
+    <script src="../../../_static/documentation_options.js?v=1b335f87"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.97" />
+  <meta name="docsearch:version" content="0.0.98" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -756,7 +756,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">SerializableMixin</span><span class="p">,</span>
     <span class="n">SoundRecord</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">license_meta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">derived_license_ids</span><span class="p">,</span> <span class="n">license_meta</span>
 
 <span class="c1">#: What the credits layer accepts: a full record, a ranked candidate, or a bare</span>
 <span class="c1">#: rights record (each yields one credit entry).</span>
@@ -800,7 +800,12 @@ window.runMermaid = runMermaid;</script>
     <span class="n">c2pa_manifest_ref</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># pass-through for #9b (None in #9a)</span>
     <span class="c1"># What an edit (#162) derives from, one dict per source (see derived_sources):</span>
     <span class="c1"># its id, content key, licence id / name / URL and its own credit line.</span>
-    <span class="n">derived_from</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span></div>
+    <span class="n">derived_from</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="c1"># The licence of every sound the clip derives from (#214): its sources', and their</span>
+    <span class="c1"># sources' (foley.licensing.derived_license_ids). Each bounds it on top of its own</span>
+    <span class="c1"># licence_id, which may appear here too (an edit of a clip under the same licence).</span>
+    <span class="c1"># Empty: not derived.</span>
+    <span class="n">derived_license_ids</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span></div>
 
 
 
@@ -927,7 +932,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Every field is read straight off the :class:`~foley.base.LicenseRecord` (flags</span>
 <span class="sd">    never re-derived); ``modified`` reflects a non-empty ``transformations`` list, and</span>
-<span class="sd">    ``derived_from`` the sources an edit was made from (:func:`derived_sources`).</span>
+<span class="sd">    ``derived_from`` the sources an edit was made from (:func:`derived_sources`),</span>
+<span class="sd">    ``derived_license_ids`` the licence of every sound it derives from (each bounds</span>
+<span class="sd">    it on top of its own).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        record: A :class:`~foley.base.SoundRecord`, :class:`~foley.base.Candidate`,</span>
@@ -957,6 +964,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">watermark</span><span class="o">=</span><span class="n">lic</span><span class="o">.</span><span class="n">watermark</span><span class="p">,</span>
         <span class="n">c2pa_manifest_ref</span><span class="o">=</span><span class="n">lic</span><span class="o">.</span><span class="n">c2pa_manifest_ref</span><span class="p">,</span>
         <span class="n">derived_from</span><span class="o">=</span><span class="n">derived_sources</span><span class="p">(</span><span class="n">lic</span><span class="p">),</span>
+        <span class="n">derived_license_ids</span><span class="o">=</span><span class="n">derived_license_ids</span><span class="p">(</span><span class="n">lic</span><span class="p">),</span>
     <span class="p">)</span></div>
 
 

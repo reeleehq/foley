@@ -1,4 +1,4 @@
-> built 2026-10-27 20:40 UTC from dc2870c (main) · foley 0.0.97. Details: build_info.json
+> built 2026-10-27 20:46 UTC from 7e84a1c (main) · foley 0.0.98. Details: build_info.json
 
 # index.html.md
 
@@ -3128,7 +3128,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Mix layer (shared by `SoundEvent` now and `TimelineItem` later).
 
-### *class* foley.base.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
+### *class* foley.base.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), derived_from_license_ids=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -6206,7 +6206,7 @@ no second CLAP forward pass.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
 
-### *class* foley.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list())
+### *class* foley.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list(), derived_license_ids=list())
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -6708,7 +6708,7 @@ the *permission* row consulted by [`keep()`](_autosummary/foley.html.md#foley.ke
 license authority; a record’s own `license_name` / `license_url` (when a
 source populated them) take precedence over this default.
 
-### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
+### *class* foley.LicenseRecord(source, source_id=None, source_url=None, acquisition_method=AcquisitionMethod.user, retrieved_at=None, adapter_version=None, content_sha256=None, license_id='unknown', license_name=None, license_version=None, license_url=None, rights_holder=None, creator_name=None, creator_url=None, commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, ai_training_scope=None, gen_ai_preference=None, revenue_cap_usd=None, requires_attribution=False, attribution_text=None, notice_text_required=None, transformations=list(), derived_from_license_ids=list(), is_ai_generated=False, generator_model=None, generator_version=None, generation_prompt=None, generation_prompt_used=None, generation_seed=None, generation_params=dict(), watermark=None, c2pa_manifest_ref=None, contains_recognizable_voice=False, potential_trademark=False, disclosure_recommended=False, rights_verified=False, verified_at=None, schema_version=1)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -7618,6 +7618,11 @@ applies the by-reference storage gate from the sound’s own license.
 Populate `record`’s eight derived flags from its `license_id`
 (+ overrides), in place, and return it.
 
+A derivative (an edit, #162) stays bounded by every licence it derives from
+(`derived_license_ids()`): each one’s row is ANDed in after the overrides, so
+re-deriving its flags (a restamp to the generator’s licence, a reload) never widens
+them back (#214). A record that derives from nothing is unaffected.
+
 Does NOT touch `rights_verified` — verification is a separate concern.
 
 * **Parameters:**
@@ -7628,6 +7633,14 @@ Does NOT touch `rights_verified` — verification is a separate concern.
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
   The same (mutated) `record`.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> edit = LicenseRecord(source="g", license_id="Stability-Community",
+...                      derived_from_license_ids=["CC-BY-NC-4.0"])
+>>> apply_license_flags(edit, overrides={"commercial_ok": True}).commercial_ok
+False
+```
 
 ### foley.attribution_line(source, , fmt='markdown')
 
@@ -7782,7 +7795,9 @@ Build a [`CreditEntry`](_autosummary/foley.html.md#foley.CreditEntry) from a rec
 
 Every field is read straight off the [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) (flags
 never re-derived); `modified` reflects a non-empty `transformations` list, and
-`derived_from` the sources an edit was made from (`derived_sources()`).
+`derived_from` the sources an edit was made from (`derived_sources()`),
+`derived_license_ids` the licence of every sound it derives from (each bounds
+it on top of its own).
 
 * **Parameters:**
   * **record** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate),
@@ -9115,6 +9130,12 @@ records in place:
   re-derived by today’s mapper (CC versions, PDM, NC spellings);
 * corpus clips (Clotho, FSD50K) are repaired by re-running `foley bootstrap`,
   which re-stamps already-stored clips from the corpus metadata.
+
+Re-stamping never widens a derivative (an edit, #162): the new flags stay bounded
+by every licence the record derives from ([`foley.licensing.derived_license_ids()`](_autosummary/foley.licensing.html.md#foley.licensing.derived_license_ids)).
+A record stored before `derived_from_license_ids` existed falls back to its edit
+entries, which name only the direct source, so an edit of an edit stored then is
+bounded by its parent’s licence, not its grandparent’s.
 
 * **Parameters:**
   * **library** – The [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the default one).
@@ -10806,6 +10827,12 @@ records in place:
 * corpus clips (Clotho, FSD50K) are repaired by re-running `foley bootstrap`,
   which re-stamps already-stored clips from the corpus metadata.
 
+Re-stamping never widens a derivative (an edit, #162): the new flags stay bounded
+by every licence the record derives from ([`foley.licensing.derived_license_ids()`](_autosummary/foley.licensing.html.md#foley.licensing.derived_license_ids)).
+A record stored before `derived_from_license_ids` existed falls back to its edit
+entries, which name only the direct source, so an edit of an edit stored then is
+bounded by its parent’s licence, not its grandparent’s.
+
 * **Parameters:**
   * **library** – The [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the default one).
   * **license** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The `license_id` to stamp (a `LICENSE_FLAGS` row; default
@@ -11500,6 +11527,12 @@ records in place:
   re-derived by today’s mapper (CC versions, PDM, NC spellings);
 * corpus clips (Clotho, FSD50K) are repaired by re-running `foley bootstrap`,
   which re-stamps already-stored clips from the corpus metadata.
+
+Re-stamping never widens a derivative (an edit, #162): the new flags stay bounded
+by every licence the record derives from ([`foley.licensing.derived_license_ids()`](_autosummary/foley.licensing.html.md#foley.licensing.derived_license_ids)).
+A record stored before `derived_from_license_ids` existed falls back to its edit
+entries, which name only the direct source, so an edit of an edit stored then is
+bounded by its parent’s licence, not its grandparent’s.
 
 * **Parameters:**
   * **library** – The [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the default one).
@@ -13122,11 +13155,13 @@ item is redistributable but stored by-reference.
 |----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
 | [`ai_use_permitted`](_autosummary/foley.licensing.html.md#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                        |
 | [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                          |
+| [`carry_lineage`](_autosummary/foley.licensing.html.md#foley.licensing.carry_lineage)(new, old)                           | Copy `old`'s lineage onto `new`, in place, and return `new`.                                                                   |
 | [`cc_refused_terms`](_autosummary/foley.licensing.html.md#foley.licensing.cc_refused_terms)(url)                             | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                             |
 | [`check_placed`](_autosummary/foley.licensing.html.md#foley.licensing.check_placed)(records, intended_use, \*, what)     | The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.                                             |
 | [`checked_refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason)(record, intended_use)      | [`refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.    |
 | [`derivative_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal)(source)                        | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                |
 | [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                               |
+| [`derived_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.derived_license_ids)(record)                       | The licence ids of every sound `record` derives from (`[]`: not derived).                                                      |
 | [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                           |
 | [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                        |
 | [`is_share_alike`](_autosummary/foley.licensing.html.md#foley.licensing.is_share_alike)(license_id)                        | Whether `license_id` (or a licence URL / label) is share-alike.                                                                |
@@ -13295,6 +13330,11 @@ also needs a non-commercial purpose, `none` admits nothing.
 Populate `record`’s eight derived flags from its `license_id`
 (+ overrides), in place, and return it.
 
+A derivative (an edit, #162) stays bounded by every licence it derives from
+([`derived_license_ids()`](_autosummary/foley.licensing.html.md#foley.licensing.derived_license_ids)): each one’s row is ANDed in after the overrides, so
+re-deriving its flags (a restamp to the generator’s licence, a reload) never widens
+them back (#214). A record that derives from nothing is unaffected.
+
 Does NOT touch `rights_verified` — verification is a separate concern.
 
 * **Parameters:**
@@ -13305,6 +13345,42 @@ Does NOT touch `rights_verified` — verification is a separate concern.
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
   The same (mutated) `record`.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> edit = LicenseRecord(source="g", license_id="Stability-Community",
+...                      derived_from_license_ids=["CC-BY-NC-4.0"])
+>>> apply_license_flags(edit, overrides={"commercial_ok": True}).commercial_ok
+False
+```
+
+### foley.licensing.carry_lineage(new, old)
+
+Copy `old`’s lineage onto `new`, in place, and return `new`.
+
+The lineage is what a re-stamped record must keep from the one it replaces: its
+`transformations` (the edits and fixes, so the credit still reads “(modified)”)
+and its `derived_from_license_ids` (the licences bounding it, #214). Fresh lists,
+so the two records never share one; a `None` reads as empty. `new`’s flags are
+then bounded by every licence it now derives from (never widened), so the copy is
+safe on its own; a later [`apply_license_flags()`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags) re-derives under the same bound.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> old = LicenseRecord(source="g", transformations=["declick"],
+...                     derived_from_license_ids=["CC-BY-NC-4.0"])
+>>> new = carry_lineage(LicenseRecord(source="g"), old)
+>>> new.transformations, new.derived_from_license_ids
+(['declick'], ['CC-BY-NC-4.0'])
+>>> new.transformations is old.transformations
+False
+>>> cc0 = apply_license_flags(LicenseRecord(source="g", license_id="CC0-1.0"))
+>>> carry_lineage(cc0, old).commercial_ok
+False
+```
+
+* **Return type:**
+  [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 
 ### foley.licensing.cc_refused_terms(url)
 
@@ -13416,6 +13492,34 @@ apply per-source overrides.
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `overrides` contains a key that is not a
       [`LicenseFlags`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseFlags) field.
+
+### foley.licensing.derived_license_ids(record)
+
+The licence ids of every sound `record` derives from (`[]`: not derived).
+
+The merge of two records of it: its
+`derived_from_license_ids` field (#214), plus the
+`source_license_id` of each edit entry in its `transformations` (#162), so a
+record stored before the field existed is still bounded by its source. In order,
+without repeats.
+
+That legacy fallback sees only the *direct* source: an edit entry names its
+parent’s licence, not the licences the parent itself derived from. So an edit of
+an edit stored before this release (no `derived_from_license_ids`) is bounded
+by its parent’s licence only, not its grandparent’s. Re-running the edit, or
+narrowing it again with [`narrow_to_source()`](_autosummary/foley.licensing.html.md#foley.licensing.narrow_to_source), records the full chain.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> derived_license_ids(LicenseRecord(source="g"))
+[]
+>>> derived_license_ids(LicenseRecord(source="g", derived_from_license_ids=["CC-BY-4.0"],
+...     transformations=["declick", {"kind": "edit", "source_license_id": "CC-BY-NC-4.0"}]))
+['CC-BY-4.0', 'CC-BY-NC-4.0']
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.licensing.intended_use_for(intended_use=None, , commercial_ok=None, territory=None)
 
@@ -14701,7 +14805,7 @@ Design (report 07 · 10 §\`\`provenance/
 |------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | [`Credits`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.Credits)([entries, title, schema_version])     | A deduplicated, ordered collection of [`CreditEntry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry) for one run. |
 
-### *class* foley.provenance.credits.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list())
+### *class* foley.provenance.credits.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list(), derived_license_ids=list())
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -14767,7 +14871,9 @@ Build a [`CreditEntry`](_autosummary/foley.provenance.credits.html.md#foley.prov
 
 Every field is read straight off the [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) (flags
 never re-derived); `modified` reflects a non-empty `transformations` list, and
-`derived_from` the sources an edit was made from ([`derived_sources()`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.derived_sources)).
+`derived_from` the sources an edit was made from ([`derived_sources()`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.derived_sources)),
+`derived_license_ids` the licence of every sound it derives from (each bounds
+it on top of its own).
 
 * **Parameters:**
   * **record** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate),
@@ -14910,6 +15016,7 @@ dependency-light.
 | [`C2PA_CREATED`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.C2PA_CREATED)                   | C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).                   |
 | [`INGREDIENT_SOURCE_KEY`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.INGREDIENT_SOURCE_KEY)          | The key under which an edit's source ingredient carries what foley knows of it.                             |
 | [`TRADEMARK_REGISTRY`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TRADEMARK_REGISTRY)             | Seed registry of branded audio logos foley must not knowingly generate for commercial use (report 07 §7.2). |
+| [`DERIVED_LICENSES_STATEMENT`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.DERIVED_LICENSES_STATEMENT)     | every listed licence applies at once (the clip is bound by all of them), not a choice of one.               |
 | [`INGREDIENT_CREDENTIAL_KEY`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY)      | The one key under which an ingredient carries foley's full per-sound credential.                            |
 
 ### Functions
@@ -14983,6 +15090,14 @@ content-hash id reproducible so a byte-identical regeneration still dedups
 (`skipped_dup`) — the #6 generation-flywheel promise. See
 [`AudioSealWatermarker.embed()`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.AudioSealWatermarker.embed).
 
+### foley.provenance.disclosure.DERIVED_LICENSES_STATEMENT *= 'Derived work: ALL of the listed licences apply together (the terms of each one bind this work); they are not alternatives to choose between.'*
+
+every
+listed licence applies at once (the clip is bound by all of them), not a choice of one.
+
+* **Type:**
+  The `CreativeWork.description` of a derived clip, whose `license` is a list
+
 ### foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY *= 'foley_credential'*
 
 The one key under which an ingredient carries foley’s full per-sound credential.
@@ -15013,7 +15128,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta-dum', 'netflix chime', 'tudum', 'ta dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel jingle', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'tudum', 'netflix sound', 'netflix intro', 'ta-dum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel jingle', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -15245,7 +15360,7 @@ reach the pure helpers via `foley.art50_checklist` / `foley.scan_prompt`.
 |------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | [`Credits`](_autosummary/foley.provenance.html.md#foley.provenance.Credits)([entries, title, schema_version])     | A deduplicated, ordered collection of [`CreditEntry`](_autosummary/foley.provenance.html.md#foley.provenance.CreditEntry) for one run. |
 
-### *class* foley.provenance.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list())
+### *class* foley.provenance.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list(), derived_license_ids=list())
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -15301,7 +15416,9 @@ Build a [`CreditEntry`](_autosummary/foley.provenance.html.md#foley.provenance.C
 
 Every field is read straight off the [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) (flags
 never re-derived); `modified` reflects a non-empty `transformations` list, and
-`derived_from` the sources an edit was made from (`derived_sources()`).
+`derived_from` the sources an edit was made from (`derived_sources()`),
+`derived_license_ids` the licence of every sound it derives from (each bounds
+it on top of its own).
 
 * **Parameters:**
   * **record** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate),
@@ -24610,7 +24727,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 20:40 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/dc2870c6cf713117fedbced94037032e65b75ea2"><code>dc2870c</code></a> on branch <code>main</code>, for **foley 0.0.97** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 20:46 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/7e84a1ce77a419702a8f5c7b6f5ab2e46b53a3f7"><code>7e84a1c</code></a> on branch <code>main</code>, for **foley 0.0.98** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -24619,9 +24736,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/dc2870c6cf713117fedbced94037032e65b75ea2"><code>dc2870c6cf713117fedbced94037032e65b75ea2</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/7e84a1ce77a419702a8f5c7b6f5ab2e46b53a3f7"><code>7e84a1ce77a419702a8f5c7b6f5ab2e46b53a3f7</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
-| Tags at this commit | <code>0.0.97</code>                                                                                                                                   |
+| Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
 | Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
@@ -24630,9 +24747,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40576577489">40576577489</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40576742369">40576742369</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>e0771793cb696134093ef8d6bbff25206161242e</code> (in the history of the built commit) |
+| Event commit | <code>4da0f8f4cb386beb0f823bc723fef831b57c945e</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -24657,13 +24774,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.97/">0.0.97</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.98/">0.0.98</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout dc2870c6cf713117fedbced94037032e65b75ea2
+git checkout 7e84a1ce77a419702a8f5c7b6f5ab2e46b53a3f7
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=f329fc45"></script>
+    <script src="../_static/documentation_options.js?v=1b335f87"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.97" />
+  <meta name="docsearch:version" content="0.0.98" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -968,6 +968,11 @@ re-derived by today’s mapper (CC versions, PDM, NC spellings);</p></li>
 <li><p>corpus clips (Clotho, FSD50K) are repaired by re-running <code class="docutils literal notranslate"><span class="pre">foley</span> <span class="pre">bootstrap</span></code>,
 which re-stamps already-stored clips from the corpus metadata.</p></li>
 </ul>
+<p>Re-stamping never widens a derivative (an edit, #162): the new flags stay bounded
+by every licence the record derives from (<a class="reference internal" href="foley.licensing.html#foley.licensing.derived_license_ids" title="foley.licensing.derived_license_ids"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.licensing.derived_license_ids()</span></code></a>).
+A record stored before <code class="docutils literal notranslate"><span class="pre">derived_from_license_ids</span></code> existed falls back to its edit
+entries, which name only the direct source, so an edit of an edit stored then is
+bounded by its parent’s licence, not its grandparent’s.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">

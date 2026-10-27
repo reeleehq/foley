@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=f329fc45"></script>
+    <script src="../_static/documentation_options.js?v=1b335f87"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.97" />
+  <meta name="docsearch:version" content="0.0.98" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -560,20 +560,26 @@ item is redistributable but stored by-reference.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.apply_license_flags" title="foley.licensing.apply_license_flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apply_license_flags</span></code></a>(record, *[, overrides])</p></td>
 <td><p>Populate <code class="docutils literal notranslate"><span class="pre">record</span></code>'s eight derived flags from its <code class="docutils literal notranslate"><span class="pre">license_id</span></code> (+ overrides), in place, and return it.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.cc_refused_terms" title="foley.licensing.cc_refused_terms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cc_refused_terms</span></code></a>(url)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.carry_lineage" title="foley.licensing.carry_lineage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">carry_lineage</span></code></a>(new, old)</p></td>
+<td><p>Copy <code class="docutils literal notranslate"><span class="pre">old</span></code>'s lineage onto <code class="docutils literal notranslate"><span class="pre">new</span></code>, in place, and return <code class="docutils literal notranslate"><span class="pre">new</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.cc_refused_terms" title="foley.licensing.cc_refused_terms"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cc_refused_terms</span></code></a>(url)</p></td>
 <td><p>The NoDerivatives / ShareAlike terms of a CC licence URL or label.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.check_placed" title="foley.licensing.check_placed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_placed</span></code></a>(records, intended_use, *, what)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.check_placed" title="foley.licensing.check_placed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_placed</span></code></a>(records, intended_use, *, what)</p></td>
 <td><p>The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.checked_refusal_reason" title="foley.licensing.checked_refusal_reason"><code class="xref py py-obj docutils literal notranslate"><span class="pre">checked_refusal_reason</span></code></a>(record, intended_use)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.checked_refusal_reason" title="foley.licensing.checked_refusal_reason"><code class="xref py py-obj docutils literal notranslate"><span class="pre">checked_refusal_reason</span></code></a>(record, intended_use)</p></td>
 <td><p><a class="reference internal" href="#foley.licensing.refusal_reason" title="foley.licensing.refusal_reason"><code class="xref py py-func docutils literal notranslate"><span class="pre">refusal_reason()</span></code></a>, fail-closed: an error while checking is itself a reason.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.derivative_refusal" title="foley.licensing.derivative_refusal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derivative_refusal</span></code></a>(source)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.derivative_refusal" title="foley.licensing.derivative_refusal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derivative_refusal</span></code></a>(source)</p></td>
 <td><p>Why a sound with rights <code class="docutils literal notranslate"><span class="pre">source</span></code> may not be edited into a new sound, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.derive_license_flags" title="foley.licensing.derive_license_flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derive_license_flags</span></code></a>(license_id, *[, overrides])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.derive_license_flags" title="foley.licensing.derive_license_flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derive_license_flags</span></code></a>(license_id, *[, overrides])</p></td>
 <td><p>Look up the flag set for a <code class="docutils literal notranslate"><span class="pre">license_id</span></code> (fail-closed fallback), then apply per-source overrides.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.derived_license_ids" title="foley.licensing.derived_license_ids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derived_license_ids</span></code></a>(record)</p></td>
+<td><p>The licence ids of every sound <code class="docutils literal notranslate"><span class="pre">record</span></code> derives from (<code class="docutils literal notranslate"><span class="pre">[]</span></code>: not derived).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.intended_use_for" title="foley.licensing.intended_use_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intended_use_for</span></code></a>([intended_use, ...])</p></td>
 <td><p>The rights intent a verb runs under — every verb and surface resolves it here (#63).</p></td>
@@ -826,6 +832,10 @@ embedder’s <code class="docutils literal notranslate"><span class="pre">open_s
 <span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">apply_license_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">overrides</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#apply_license_flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.apply_license_flags" title="Link to this definition">#</a></dt>
 <dd><p>Populate <code class="docutils literal notranslate"><span class="pre">record</span></code>’s eight derived flags from its <code class="docutils literal notranslate"><span class="pre">license_id</span></code>
 (+ overrides), in place, and return it.</p>
+<p>A derivative (an edit, #162) stays bounded by every licence it derives from
+(<a class="reference internal" href="#foley.licensing.derived_license_ids" title="foley.licensing.derived_license_ids"><code class="xref py py-func docutils literal notranslate"><span class="pre">derived_license_ids()</span></code></a>): each one’s row is ANDed in after the overrides, so
+re-deriving its flags (a restamp to the generator’s licence, a reload) never widens
+them back (#214). A record that derives from nothing is unaffected.</p>
 <p>Does NOT touch <code class="docutils literal notranslate"><span class="pre">rights_verified</span></code> — verification is a separate concern.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -840,6 +850,43 @@ embedder’s <code class="docutils literal notranslate"><span class="pre">open_s
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The same (mutated) <code class="docutils literal notranslate"><span class="pre">record</span></code>.</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">foley.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">edit</span> <span class="o">=</span> <span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"g"</span><span class="p">,</span> <span class="n">license_id</span><span class="o">=</span><span class="s2">"Stability-Community"</span><span class="p">,</span>
+<span class="gp">... </span>                     <span class="n">derived_from_license_ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"CC-BY-NC-4.0"</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">apply_license_flags</span><span class="p">(</span><span class="n">edit</span><span class="p">,</span> <span class="n">overrides</span><span class="o">=</span><span class="p">{</span><span class="s2">"commercial_ok"</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span><span class="o">.</span><span class="n">commercial_ok</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.licensing.carry_lineage">
+<span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">carry_lineage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">old</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#carry_lineage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.carry_lineage" title="Link to this definition">#</a></dt>
+<dd><p>Copy <code class="docutils literal notranslate"><span class="pre">old</span></code>’s lineage onto <code class="docutils literal notranslate"><span class="pre">new</span></code>, in place, and return <code class="docutils literal notranslate"><span class="pre">new</span></code>.</p>
+<p>The lineage is what a re-stamped record must keep from the one it replaces: its
+<code class="docutils literal notranslate"><span class="pre">transformations</span></code> (the edits and fixes, so the credit still reads “(modified)”)
+and its <code class="docutils literal notranslate"><span class="pre">derived_from_license_ids</span></code> (the licences bounding it, #214). Fresh lists,
+so the two records never share one; a <code class="docutils literal notranslate"><span class="pre">None</span></code> reads as empty. <code class="docutils literal notranslate"><span class="pre">new</span></code>’s flags are
+then bounded by every licence it now derives from (never widened), so the copy is
+safe on its own; a later <a class="reference internal" href="#foley.licensing.apply_license_flags" title="foley.licensing.apply_license_flags"><code class="xref py py-func docutils literal notranslate"><span class="pre">apply_license_flags()</span></code></a> re-derives under the same bound.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">foley.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">old</span> <span class="o">=</span> <span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"g"</span><span class="p">,</span> <span class="n">transformations</span><span class="o">=</span><span class="p">[</span><span class="s2">"declick"</span><span class="p">],</span>
+<span class="gp">... </span>                    <span class="n">derived_from_license_ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"CC-BY-NC-4.0"</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span> <span class="o">=</span> <span class="n">carry_lineage</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"g"</span><span class="p">),</span> <span class="n">old</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">transformations</span><span class="p">,</span> <span class="n">new</span><span class="o">.</span><span class="n">derived_from_license_ids</span>
+<span class="go">(['declick'], ['CC-BY-NC-4.0'])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">new</span><span class="o">.</span><span class="n">transformations</span> <span class="ow">is</span> <span class="n">old</span><span class="o">.</span><span class="n">transformations</span>
+<span class="go">False</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cc0</span> <span class="o">=</span> <span class="n">apply_license_flags</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"g"</span><span class="p">,</span> <span class="n">license_id</span><span class="o">=</span><span class="s2">"CC0-1.0"</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">carry_lineage</span><span class="p">(</span><span class="n">cc0</span><span class="p">,</span> <span class="n">old</span><span class="p">)</span><span class="o">.</span><span class="n">commercial_ok</span>
+<span class="go">False</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -977,6 +1024,35 @@ apply per-source overrides.</p>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">overrides</span></code> contains a key that is not a
     <a class="reference internal" href="#foley.licensing.LicenseFlags" title="foley.licensing.LicenseFlags"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseFlags</span></code></a> field.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.licensing.derived_license_ids">
+<span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">derived_license_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#derived_license_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.derived_license_ids" title="Link to this definition">#</a></dt>
+<dd><p>The licence ids of every sound <code class="docutils literal notranslate"><span class="pre">record</span></code> derives from (<code class="docutils literal notranslate"><span class="pre">[]</span></code>: not derived).</p>
+<p>The merge of two records of it: its
+<code class="xref py py-attr docutils literal notranslate"><span class="pre">derived_from_license_ids</span></code> field (#214), plus the
+<code class="docutils literal notranslate"><span class="pre">source_license_id</span></code> of each edit entry in its <code class="docutils literal notranslate"><span class="pre">transformations</span></code> (#162), so a
+record stored before the field existed is still bounded by its source. In order,
+without repeats.</p>
+<p>That legacy fallback sees only the <em>direct</em> source: an edit entry names its
+parent’s licence, not the licences the parent itself derived from. So an edit of
+an edit stored before this release (no <code class="docutils literal notranslate"><span class="pre">derived_from_license_ids</span></code>) is bounded
+by its parent’s licence only, not its grandparent’s. Re-running the edit, or
+narrowing it again with <a class="reference internal" href="#foley.licensing.narrow_to_source" title="foley.licensing.narrow_to_source"><code class="xref py py-func docutils literal notranslate"><span class="pre">narrow_to_source()</span></code></a>, records the full chain.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">foley.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">derived_license_ids</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"g"</span><span class="p">))</span>
+<span class="go">[]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">derived_license_ids</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"g"</span><span class="p">,</span> <span class="n">derived_from_license_ids</span><span class="o">=</span><span class="p">[</span><span class="s2">"CC-BY-4.0"</span><span class="p">],</span>
+<span class="gp">... </span>    <span class="n">transformations</span><span class="o">=</span><span class="p">[</span><span class="s2">"declick"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"edit"</span><span class="p">,</span> <span class="s2">"source_license_id"</span><span class="p">:</span> <span class="s2">"CC-BY-NC-4.0"</span><span class="p">}]))</span>
+<span class="go">['CC-BY-4.0', 'CC-BY-NC-4.0']</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1390,11 +1466,13 @@ already in the library is not the edit it made (see <a class="reference internal
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.ai_scope_from_gen_ai_preference"><code class="docutils literal notranslate"><span class="pre">ai_scope_from_gen_ai_preference()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.ai_use_permitted"><code class="docutils literal notranslate"><span class="pre">ai_use_permitted()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.apply_license_flags"><code class="docutils literal notranslate"><span class="pre">apply_license_flags()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.carry_lineage"><code class="docutils literal notranslate"><span class="pre">carry_lineage()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.cc_refused_terms"><code class="docutils literal notranslate"><span class="pre">cc_refused_terms()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.check_placed"><code class="docutils literal notranslate"><span class="pre">check_placed()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.checked_refusal_reason"><code class="docutils literal notranslate"><span class="pre">checked_refusal_reason()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.derivative_refusal"><code class="docutils literal notranslate"><span class="pre">derivative_refusal()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.derive_license_flags"><code class="docutils literal notranslate"><span class="pre">derive_license_flags()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.derived_license_ids"><code class="docutils literal notranslate"><span class="pre">derived_license_ids()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.intended_use_for"><code class="docutils literal notranslate"><span class="pre">intended_use_for()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.is_cc_license_token"><code class="docutils literal notranslate"><span class="pre">is_cc_license_token()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.is_share_alike"><code class="docutils literal notranslate"><span class="pre">is_share_alike()</span></code></a></li>
