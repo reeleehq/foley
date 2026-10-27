@@ -5,19 +5,21 @@ orphan: true
 
 # About this build
 
-This documentation was built on **2026-10-27 18:14 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/f8ffee5a4dbffe056ecf8b3dd36f745a69408151"><code>f8ffee5</code></a> on branch <code>main</code>, for **foley 0.0.95** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 20:19 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/29b5b69533a67e628cf8ba76c380cff9be9684da"><code>29b5b69</code></a> on branch <code>main</code>, for **foley 0.0.96** (from <code>pyproject.toml</code>).
 
-:::{note}
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+:::{warning}
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.96) is ahead of the latest release on PyPI (0.0.95): these docs describe unreleased code.
 :::
 
 ## Source
 
 | | |
 |---|---|
-| Commit | <a href="https://github.com/reeleehq/foley/commit/f8ffee5a4dbffe056ecf8b3dd36f745a69408151"><code>f8ffee5a4dbffe056ecf8b3dd36f745a69408151</code></a> |
+| Commit | <a href="https://github.com/reeleehq/foley/commit/29b5b69533a67e628cf8ba76c380cff9be9684da"><code>29b5b69533a67e628cf8ba76c380cff9be9684da</code></a> |
 | Branch | <code>main</code> |
-| Tags at this commit | <code>0.0.95</code> |
+| Tags at this commit | <code>0.0.96</code> |
 | Working tree | clean |
 | Remote | <code>https://github.com/reeleehq/foley</code> |
 
@@ -26,9 +28,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 | | |
 |---|---|
 | Repository | <code>reeleehq/foley</code> |
-| Run | <a href="https://github.com/reeleehq/foley/actions/runs/40556867452">40556867452</a> |
+| Run | <a href="https://github.com/reeleehq/foley/actions/runs/40560912322">40560912322</a> |
 | Ref | <code>refs/heads/main</code> |
-| Event commit | <code>e654a81556252b99821c1a8a8929dbf50dda3ae6</code> (in the history of the built commit) |
+| Event commit | <code>4d792e0801c291aee40a4d9f399966d892510dce</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -53,13 +55,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.95/">0.0.95</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.95/">0.0.95</a>, older than the documented version (0.0.96).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout f8ffee5a4dbffe056ecf8b3dd36f745a69408151
+git checkout 29b5b69533a67e628cf8ba76c380cff9be9684da
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

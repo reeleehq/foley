@@ -461,7 +461,7 @@ Stamp the corpus’s uniform license (derived via the licensing SSOT).
 * **Return type:**
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 
-### foley.sources.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
+### foley.sources.add_from(source, , query, license='source-default', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -473,9 +473,12 @@ applies the by-reference storage gate from the sound’s own license.
 
 * **Parameters:**
   * **source** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A registered live-source name (e.g. `'freesound'`).
-  * **query** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language search query.
-  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query (default
-    `'cc0'`). The per-item fail-closed guard enforces the source’s
+  * **query** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The natural-language search query (a music library also takes a
+    list of titles).
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query. Default: the
+    source’s own (`config['license']['search_default']`), `'cc0'` for a
+    source that declares none; a music library (one licence) declares no
+    narrowing. The per-item fail-closed guard enforces the source’s
     accepted-license allowlist regardless.
   * **limit** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max candidates to request from the source.
   * **library** – Target [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
@@ -600,15 +603,23 @@ Scan [`foley.sources`](#module-foley.sources) sub-packages for a `SOURCE_CONFIG`
 A valid live source is a sub-package of [`foley.sources`](#module-foley.sources) (`ispkg` and
 not `_`-prefixed) whose `config.py` defines a `SOURCE_CONFIG` dict with a
 `name` (or a `SOURCE_CONFIGS` sequence of them: several sources sharing one
-adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters + helpers) are skipped, so this
-never cross-captures the corpus adapters. Only `config.py` is imported here
-(stdlib-cheap); the adapter loads lazily in [`get_source()`](#foley.sources.get_source). Idempotent —
-an already-registered name (e.g. a test double) is never overwritten.
+adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters
+
++ helpers) are skipped, so this never cross-captures the corpus adapters. Only
+  `config.py` is imported here (stdlib-cheap); the adapter loads lazily in
+
+[`get_source()`](#foley.sources.get_source). Idempotent: an already-registered name (e.g. a test double)
+: is never overwritten. A module whose `SOURCE_CONFIGS()` raises is skipped with
+  a warning.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 * **Returns:**
   The list of discovered source names.
+* **Raises:**
+  [**SourceNameCollision**](foley.sources.registry.html.md#foley.sources.registry.SourceNameCollision) – If two modules declare the same source name (checked
+      over every declaration before anything is registered, so the outcome does
+      not depend on the order the packages are walked in).
 
 ### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, derived_from=None, \*\*affordances)
 
@@ -777,7 +788,8 @@ but never flips the flag, so [`foley.keep()`](foley.html.md#foley.keep) still re
     Stable-Audio-Open run; `None` for a non-deterministic backend).
   * **generation_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The RESOLVED NATIVE params actually sent to the backend
     (e.g. `guidance_scale` — not the unified `prompt_influence` —
-    `audio_end_in_s`, …), for reproducibility + audit.
+    `audio_end_in_s`, …), and where it ran when that decides the bytes (a
+    local model’s `device` / `dtype`), for reproducibility + audit.
   * **disclosure_recommended** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – EU AI Act Art. 50 hint (default `True`); makes the
     credits AI-disclosure line render immediately (#9a already reads it).
   * **watermark** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Pass-through carrier for #9b (AudioSeal); `None` until then.

@@ -33,11 +33,18 @@ print(attribution_text(rows))
   [`tracks_table()`](#foley.sources.music_library.tracks_table) writes them as CSV and [`kept_digests()`](#foley.sources.music_library.kept_digests) (or
   [`kept_sources()`](#foley.sources.music_library.kept_sources), with each file’s URL) reads a table back, so a rerun fetches
   > only what it lacks.
+- **Each free library is also a live retrieve source** of its own name (#212):
+  `foley.add_from("incompetech", query="Sneaky Snitch")` (a title, a list of
+  titles, or a credits description) puts each title through the licence gate
+  under the call’s intent and [`ingest_one()`](foley.index.ingest.html.md#foley.index.ingest.ingest_one), giving
+  by-value [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord) rows with their attribution, and a run
+  manifest. The config is built from the library ([`library_source_config()`](#foley.sources.music_library.library_source_config),
+  declared as the callable `config.SOURCE_CONFIGS`, so a library registered at
+  runtime is a source on the next discovery); the adapter
+  ([`MusicLibraryAdapter`](foley.sources.music_library.adapter.html.md#foley.sources.music_library.adapter.MusicLibraryAdapter)) runs the same
+  mirror chain and `verify` as [`acquire()`](#foley.sources.music_library.acquire). A paid library is not a source.
 
-This is not a live search source (it has no `search` / `download` adapter and no
-`config.py`), so [`foley.sources.registry.discover_sources()`](foley.sources.registry.html.md#foley.sources.registry.discover_sources) does not list it;
-import it as `foley.sources.music_library`. Stdlib only at import; `requests`
-loads on the first real download.
+Stdlib only at import; `requests` loads on the first real download.
 
 ```pycon
 >>> lib = MUSIC_LIBRARIES["incompetech"]
@@ -57,6 +64,7 @@ loads on the first real download.
 | [`files_store`](#foley.sources.music_library.files_store)(out)                                   | `out` as a `{file name: bytes}` store: a mapping is used as it is; a folder becomes foley's file store over it ([`foley.stores.make_byte_store()`](foley.stores.html.md#foley.stores.make_byte_store), which makes the folder on its first write).         |
 | [`kept_digests`](#foley.sources.music_library.kept_digests)(table)                                | `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun may keep.                                                                                                                                                                                           |
 | [`kept_sources`](#foley.sources.music_library.kept_sources)(table)                                | `{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a tracks table: [`kept_digests()`](#foley.sources.music_library.kept_digests) with where each file came from, so a kept row still says which URL and mirror served it (`acquire(kept=...)` takes either). |
+| [`library_source_config`](#foley.sources.music_library.library_source_config)(library)                     | The `SOURCE_CONFIG` of the free `library`.                                                                                                                                                                                                                                        |
 | [`make_fetch`](#foley.sources.music_library.make_fetch)(\*[, transport, config, clock, sleep])  | The default `url -> bytes`: [`fetch_audio()`](#foley.sources.music_library.fetch_audio) over [`polite_transport()`](#foley.sources.music_library.polite_transport) (`config` laid over `MUSIC_LIBRARY_HTTP`).                                                                    |
 | [`mirror_name`](#foley.sources.music_library.mirror_name)(mirror)                                | The name a row records for `mirror` (its function name).                                                                                                                                                                                                                          |
 | [`music_library`](#foley.sources.music_library.music_library)(library, \*[, libraries])            | `library` itself, or the registered library of that name.                                                                                                                                                                                                                         |
@@ -76,9 +84,10 @@ loads on the first real download.
 
 ### Classes
 
-| [`AcquiredTrack`](#foley.sources.music_library.AcquiredTrack)(title, library, status, license)   | One row of the tracks table: a title, what became of it, and its provenance.   |
-|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| [`MusicLibrary`](#foley.sources.music_library.MusicLibrary)(name, author[, license_url, ...])   | One library: who made it, under which licence, and where a title's file is.    |
+| `MusicLibraryAdapter`([config, http, verify, ...])                                              | One free music library as a retrieve source (a [`SourceAdapter`](foley.sources.base.html.md#foley.sources.base.SourceAdapter)).   |
+|-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`AcquiredTrack`](#foley.sources.music_library.AcquiredTrack)(title, library, status, license) | One row of the tracks table: a title, what became of it, and its provenance.                                                                       |
+| [`MusicLibrary`](#foley.sources.music_library.MusicLibrary)(name, author[, license_url, ...]) | One library: who made it, under which licence, and where a title's file is.                                                                        |
 
 ### Exceptions
 
@@ -289,6 +298,15 @@ still says which URL and mirror served it (`acquire(kept=...)` takes either).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]
 
+### foley.sources.music_library.library_source_config(library)
+
+The `SOURCE_CONFIG` of the free `library`.
+
+* **Raises:**
+  [**MusicLibraryError**](#foley.sources.music_library.MusicLibraryError) – If `library` is paid (a paid library is not a source).
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### foley.sources.music_library.make_fetch(\*, transport=None, config=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
 
 The default `url -> bytes`: [`fetch_audio()`](#foley.sources.music_library.fetch_audio) over [`polite_transport()`](#foley.sources.music_library.polite_transport)
@@ -388,11 +406,18 @@ A free library is checked for one licence right only, keeping the files
 (`cache_bytes_ok`); the uses a production makes of them are gated per title by
 [`acquire()`](#foley.sources.music_library.acquire) (`intended_use`).
 
+A library’s name is also its live-source name (`foley.add_from(name, ...)`),
+so it may not be the name of a source another [`foley.sources`](foley.sources.html.md#module-foley.sources) module
+declares, or one registered directly (`openverse`, `freesound`, a `fal_*`
+endpoint, …): that library would silently take the source over, or silently
+never become one.
+
 * **Raises:**
-  [**MusicLibraryError**](#foley.sources.music_library.MusicLibraryError) – If the name is taken (and not `replace`), or a free
-      library has no `track_url` rule or a licence that does not allow
-      keeping the files (a ShareAlike / NoDerivatives licence, refused on
-      purpose; a licence URL foley cannot read; a licence whose flags say no).
+  * [**MusicLibraryError**](#foley.sources.music_library.MusicLibraryError) – If the name is taken (and not `replace`), or a free
+        library has no `track_url` rule or a licence that does not allow
+        keeping the files (a ShareAlike / NoDerivatives licence, refused on
+        purpose; a licence URL foley cannot read; a licence whose flags say no).
+  * [**SourceNameCollision**](foley.sources.registry.html.md#foley.sources.registry.SourceNameCollision) – If the name is another module’s source name.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
@@ -514,6 +539,8 @@ The Internet Archive’s raw copy of `url` (`WAYBACK_RAW`).
 
 | [`acquisition`](foley.sources.music_library.acquisition.html.md#module-foley.sources.music_library.acquisition)     | Acquire a music library's titles: verified files, one provenance row each, a resumable table.   |
 |-----------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| [`adapter`](foley.sources.music_library.adapter.html.md#module-foley.sources.music_library.adapter)             | A free music library as a live retrieve source: titles in, licensed tracks out (#212).          |
+| [`config`](foley.sources.music_library.config.html.md#module-foley.sources.music_library.config)               | `SOURCE_CONFIGS` for the music libraries: one retrieve source per free library (#212).          |
 | [`credit_parser`](foley.sources.music_library.credit_parser.html.md#module-foley.sources.music_library.credit_parser) | Which titles a video credits, by library: the credit-block parser and the titles file.          |
 | [`fetch`](foley.sources.music_library.fetch.html.md#module-foley.sources.music_library.fetch)                 | Fetching a library's files politely, through foley's transport and its resilience layer.        |
 | [`libraries`](foley.sources.music_library.libraries.html.md#module-foley.sources.music_library.libraries)         | Music libraries as data: who made one, its licence, its credit, where a title's file is.        |

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="_static/documentation_options.js?v=60a9f236"></script>
+    <script src="_static/documentation_options.js?v=5751785c"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.95" />
+  <meta name="docsearch:version" content="0.0.96" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -415,8 +415,15 @@ for what’s next. Follow along in <a class="reference internal" href="#misc/doc
 <span class="n">timeline</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">candidates</span><span class="p">)</span>  <span class="c1"># the editable sound-design plan</span>
 <span class="n">result</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">weave</span><span class="p">(</span><span class="s2">"narration.wav"</span><span class="p">,</span> <span class="n">timeline</span><span class="p">)</span>  <span class="c1"># mastered mix + SDH captions + credits</span>
 <span class="n">result</span><span class="o">.</span><span class="n">notes</span>  <span class="c1"># how placements were timed, e.g. estimates when foley[align] is absent</span>
+
+<span class="c1"># Rights intent: say what the mix is for, and every placed sound is re-checked (fail-closed)</span>
+<span class="n">use</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">IntendedUse</span><span class="p">(</span><span class="n">commercial</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">publish</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">territory</span><span class="o">=</span><span class="s2">"US"</span><span class="p">)</span>
+<span class="n">hits</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s2">"door creak"</span><span class="p">,</span> <span class="n">intended_use</span><span class="o">=</span><span class="n">use</span><span class="p">)</span>  <span class="c1"># only rows the intent keeps</span>
+<span class="n">timeline</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">plan</span><span class="p">(</span><span class="n">candidates</span><span class="p">,</span> <span class="n">intended_use</span><span class="o">=</span><span class="n">use</span><span class="p">)</span>  <span class="c1"># raises foley.LicenseRefusal</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">weave</span><span class="p">(</span><span class="s2">"narration.wav"</span><span class="p">,</span> <span class="n">timeline</span><span class="p">,</span> <span class="n">intended_use</span><span class="o">=</span><span class="n">use</span><span class="p">)</span>  <span class="c1"># ...naming each id</span>
 </pre></div>
 </div>
+<p><strong>Rights intent and migration.</strong> <code class="docutils literal notranslate"><span class="pre">foley.plan</span></code>, <code class="docutils literal notranslate"><span class="pre">foley.weave</span></code>, <code class="docutils literal notranslate"><span class="pre">foley.search</span></code> and <code class="docutils literal notranslate"><span class="pre">foley.similar</span></code> take <code class="docutils literal notranslate"><span class="pre">intended_use=</span></code> (an <code class="docutils literal notranslate"><span class="pre">IntendedUse</span></code>: commercial or not, where the sound is shown). Given, the licence gate is fail-closed: search and similar drop every row the intent does not keep, and plan and weave raise <code class="docutils literal notranslate"><span class="pre">foley.LicenseRefusal</span></code> (its <code class="docutils literal notranslate"><span class="pre">.refused</span></code> maps each refused id to the reason), judging every enabled clip by its library record and the narration too when it is a library sound. <code class="docutils literal notranslate"><span class="pre">foley.plan</span></code> without <code class="docutils literal notranslate"><span class="pre">library=</span></code> judges each candidate’s own record (the one it was found with); pass <code class="docutils literal notranslate"><span class="pre">library=</span></code> to judge the library’s current one. A clip whose record cannot be read (a corrupt stored record) counts as having no record, so it is refused under an explicit intent; for the same reason a plain mapping of audio arrays used as <code class="docutils literal notranslate"><span class="pre">library=</span></code> cannot pass an explicit intent (it holds sounds, not licence records) and only works without one. A narration given as audio has no licence and is not judged. The MCP and CLI verbs pass their <code class="docutils literal notranslate"><span class="pre">commercial_ok</span></code> / <code class="docutils literal notranslate"><span class="pre">territory</span></code> through to the same gate. Without <code class="docutils literal notranslate"><span class="pre">intended_use=</span></code>, plan and weave behave as before but emit one <code class="docutils literal notranslate"><span class="pre">FutureWarning</span></code> naming the sounds the default intent (<code class="docutils literal notranslate"><span class="pre">foley.DEFAULT_INTENDED_USE</span></code>: commercial publishing) would refuse: a future release gates by default. Pass <code class="docutils literal notranslate"><span class="pre">intended_use=foley.DEFAULT_INTENDED_USE</span></code> to opt in now, or <code class="docutils literal notranslate"><span class="pre">intended_use=foley.IntendedUse(...)</span></code> for your actual use. Search and similar without it keep today’s commercial-only filter.</p>
 </section>
 <section id="how-it-works-four-stages">
 <h2>How it works — four stages<a class="headerlink" href="#how-it-works-four-stages" title="Link to this heading">#</a></h2>
@@ -580,7 +587,7 @@ what’s degraded. Full docs: <strong><a class="reference external" href="https:
 </section>
 </section>
 
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-27 18:14 UTC from <a href="https://github.com/reeleehq/foley/commit/f8ffee5a4dbffe056ecf8b3dd36f745a69408151">f8ffee5</a> (main) · foley 0.0.95 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-27 20:19 UTC from <a href="https://github.com/reeleehq/foley/commit/29b5b69533a67e628cf8ba76c380cff9be9684da">29b5b69</a> (main) · foley 0.0.96 · <a href="about-this-build.html">about this build</a></p>
 
                 </article>
               

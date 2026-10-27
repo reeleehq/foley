@@ -32,6 +32,21 @@ fakes for both and no ML stack loads at all — the whole adapter is testable wi
 torch. The adapter performs NO storage/library access; the façade converges it on
 the shared ingest pipeline.
 
+**Reproducibility across devices (#207).** The default generator is a CPU
+`torch.Generator` ([`cpu_generator()`](#foley.sources.stable_audio.adapter.cpu_generator)), as diffusers recommends: the pipeline’s
+`randn_tensor` draws the initial latents on the generator’s device and moves them to
+the pipeline’s, so a seed starts from the same noise on CUDA and on CPU. Only that starting noise is
+device-independent: the denoising runs in the pipeline’s device and dtype (float16 on
+CUDA, float32 on CPU), and the scheduler’s per-step noise is drawn there too, so the
+bytes are identical only on the same device and dtype: both are recorded in
+`generation_params` (`device`, `dtype`, and the `generator_device`). That the
+pipeline accepts a CPU generator for a CUDA pipeline is diffusers’ `randn_tensor`
+behaviour (it draws on the generator’s device, then moves the tensor), not checked
+here (diffusers is not a test dependency); [`torch_generator()`](#foley.sources.stable_audio.adapter.torch_generator) (on the
+pipeline’s device) is one `make_generator=` away. A clip stored before #207 records
+no `generator_device`: its generator was on the pipeline’s device, so a CUDA one
+reproduces with `make_generator=torch_generator`.
+
 ### Module Attributes
 
 | [`GeneratorFactory`](#foley.sources.stable_audio.adapter.GeneratorFactory)   | the seeded RNG the pipeline draws from.                             |
@@ -40,8 +55,9 @@ the shared ingest pipeline.
 
 ### Functions
 
-| [`torch_generator`](#foley.sources.stable_audio.adapter.torch_generator)(device, seed)   | A `torch.Generator` on `device` seeded with `seed` (the default factory).   |
-|----------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| [`cpu_generator`](#foley.sources.stable_audio.adapter.cpu_generator)(device, seed)   | A CPU `torch.Generator` seeded with `seed`, whatever the pipeline's `device`.   |
+|--------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| [`torch_generator`](#foley.sources.stable_audio.adapter.torch_generator)(device, seed) | A `torch.Generator` on `device` (the pipeline's) seeded with `seed`.            |
 
 ### Classes
 
@@ -76,8 +92,9 @@ Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](foley.source
     `.device`; production omits it and the real
     `diffusers.StableAudioPipeline` lazy-loads on first generation).
   * **make_generator** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Any`](https://docs.python.org/3/library/typing.html#typing.Any), [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]) – `make_generator(device, seed)`, the seeded generator handed
-    to the pipeline (default [`torch_generator()`](#foley.sources.stable_audio.adapter.torch_generator)); a test with a fake
-    pipeline passes a fake one, so no torch is needed.
+    to the pipeline (default [`cpu_generator()`](#foley.sources.stable_audio.adapter.cpu_generator), for the same initial noise
+    on any device; [`torch_generator()`](#foley.sources.stable_audio.adapter.torch_generator) puts it on the pipeline’s device);
+    a test with a fake pipeline passes a fake one, so no torch is needed.
 
 #### generate(prompt, , duration_s=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
@@ -94,9 +111,14 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
   * **negative_prompt** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Content to exclude (ignored by the model when guidance
     ≤ 1).
   * **steps** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Diffusion steps (native `num_inference_steps`); default 200.
-  * **seed** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Reproducibility seed → a per-device `torch.Generator`; recorded
-    in provenance. `None` draws one ([`draw_seed()`](foley.sources.base.html.md#foley.sources.base.draw_seed))
-    and records it, so the clip is reproducible all the same (#163).
+  * **seed** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Reproducibility seed → the generator `make_generator` builds (by
+    default a CPU `torch.Generator`, #207); recorded in provenance, with
+    the device and dtype it ran on.
+    `None` draws one ([`draw_seed()`](foley.sources.base.html.md#foley.sources.base.draw_seed)) and records
+    it, so the clip is reproducible all the same (#163). Through
+    [`foley.generate()`](foley.html.md#foley.generate) the dispatch layer has already drawn it
+    (`foley.sources._dispatch.draws_seed()`, #206); this draw serves a
+    direct call.
   * **loop** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – No native param (a future WEAVE crossfade) — warn-and-drop.
   * **output_format** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – No native param (the audio-write layer) — warn-and-drop;
     the clip is archived as FLAC by ingest regardless.
@@ -122,6 +144,12 @@ caller of this method owns those. It also owns the seed: unlike
 [`generate()`](#foley.sources.stable_audio.adapter.StableAudioAdapter.generate), which draws one when none is given, `seed=None` here sends
 no generator, so the pipeline falls back on its own randomness.
 
+### foley.sources.stable_audio.adapter.cpu_generator(device, seed)
+
+A CPU `torch.Generator` seeded with `seed`, whatever the pipeline’s `device`.
+
+The default factory (#207): the initial noise is then the same on every device.
+
 ### foley.sources.stable_audio.adapter.torch_generator(device, seed)
 
-A `torch.Generator` on `device` seeded with `seed` (the default factory).
+A `torch.Generator` on `device` (the pipeline’s) seeded with `seed`.

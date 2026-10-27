@@ -15,12 +15,32 @@ provenance + the CLAP vector persist. The audio is re-fetched on demand via the
 adapter (there is no local blob to serve — `library.audio(id)` raises for a
 remote by-reference sound; that is the contract).
 
+### Module Attributes
+
+| [`SOURCE_DEFAULT_LICENSE`](#foley.sources.pull.SOURCE_DEFAULT_LICENSE)   | the source's own (`config['license']['search_default']`), [`DFLT_SEARCH_LICENSE`](#foley.sources.pull.DFLT_SEARCH_LICENSE) when it declares none.   |
+|---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`DFLT_SEARCH_LICENSE`](#foley.sources.pull.DFLT_SEARCH_LICENSE)      | The licence a search asks for when neither the call nor the source says.                                                                                |
+
 ### Functions
 
 | [`add_from`](#foley.sources.pull.add_from)(source, \*, query[, license, limit, ...])   | Search a live `source` and ingest its license-clean hits into `library`.   |
 |-------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| [`search_license`](#foley.sources.pull.search_license)(license, config)                      | The `license` a search sends: `license`, or the source's default for it.   |
 
-### foley.sources.pull.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
+### foley.sources.pull.DFLT_SEARCH_LICENSE *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'cc0'*
+
+The licence a search asks for when neither the call nor the source says.
+
+### foley.sources.pull.SOURCE_DEFAULT_LICENSE *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'source-default'*
+
+the source’s own
+(`config['license']['search_default']`), [`DFLT_SEARCH_LICENSE`](#foley.sources.pull.DFLT_SEARCH_LICENSE) when it
+declares none. A music library has one licence, so it declares `None`.
+
+* **Type:**
+  `add_from`’s `license` default
+
+### foley.sources.pull.add_from(source, , query, license='source-default', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -32,9 +52,12 @@ applies the by-reference storage gate from the sound’s own license.
 
 * **Parameters:**
   * **source** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A registered live-source name (e.g. `'freesound'`).
-  * **query** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language search query.
-  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query (default
-    `'cc0'`). The per-item fail-closed guard enforces the source’s
+  * **query** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The natural-language search query (a music library also takes a
+    list of titles).
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query. Default: the
+    source’s own (`config['license']['search_default']`), `'cc0'` for a
+    source that declares none; a music library (one licence) declares no
+    narrowing. The per-item fail-closed guard enforces the source’s
     accepted-license allowlist regardless.
   * **limit** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max candidates to request from the source.
   * **library** – Target [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
@@ -70,3 +93,17 @@ applies the by-reference storage gate from the sound’s own license.
         serves ~240 results a query), or Freesound’s `kind` and
         `ucs_category` naming two different top levels.
   * [**SourceConfigurationError**](foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – A missing key or optional dependency.
+
+### foley.sources.pull.search_license(license, config)
+
+The `license` a search sends: `license`, or the source’s default for it.
+
+```pycon
+>>> search_license("CC-BY-4.0", {}), search_license(SOURCE_DEFAULT_LICENSE, {})
+('CC-BY-4.0', 'cc0')
+>>> print(search_license(SOURCE_DEFAULT_LICENSE, {"license": {"search_default": None}}))
+None
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]

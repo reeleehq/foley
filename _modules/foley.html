@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=60a9f236"></script>
+    <script src="../_static/documentation_options.js?v=5751785c"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.95" />
+  <meta name="docsearch:version" content="0.0.96" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -768,6 +768,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">audio</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.audio</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -813,12 +814,14 @@ window.runMermaid = runMermaid;</script>
     <span class="n">resolve_master</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.licensing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DEFAULT_INTENDED_USE</span><span class="p">,</span>
     <span class="n">LICENSE_FLAGS</span><span class="p">,</span>
     <span class="n">LICENSE_META</span><span class="p">,</span>
     <span class="n">UNKNOWN_LICENSE_FLAGS</span><span class="p">,</span>
     <span class="n">UNKNOWN_LICENSE_META</span><span class="p">,</span>
     <span class="n">LicenseFlags</span><span class="p">,</span>
     <span class="n">LicenseMeta</span><span class="p">,</span>
+    <span class="n">LicenseRefusal</span><span class="p">,</span>
     <span class="n">apply_license_flags</span><span class="p">,</span>
     <span class="n">derive_license_flags</span><span class="p">,</span>
     <span class="n">keep</span><span class="p">,</span>
@@ -1016,6 +1019,8 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"Verdict"</span><span class="p">,</span>
     <span class="s2">"Candidate"</span><span class="p">,</span>
     <span class="s2">"IntendedUse"</span><span class="p">,</span>
+    <span class="s2">"DEFAULT_INTENDED_USE"</span><span class="p">,</span>
+    <span class="s2">"LicenseRefusal"</span><span class="p">,</span>
     <span class="s2">"TimelineItem"</span><span class="p">,</span>
     <span class="s2">"SoundDesignTimeline"</span><span class="p">,</span>
     <span class="s2">"Anchor"</span><span class="p">,</span>
@@ -1338,21 +1343,25 @@ window.runMermaid = runMermaid;</script>
     <span class="n">min_snr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">duration_range</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">rerank</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">intended_use</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">IntendedUse</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">library</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Hybrid (CLAP vector ⊕ BM25) search of the default library.</span>
 
 <span class="sd">    Convenience wrapper over ``foley.library.search(...)`` — see</span>
 <span class="sd">    :meth:`foley.index.SoundLibrary.search`. Constructs the process-wide default</span>
-<span class="sd">    library (local stores + CLAP + best available index) on first use.</span>
+<span class="sd">    library (local stores + CLAP + best available index) on first use; pass</span>
+<span class="sd">    ``library=`` to search another.</span>
 
-<span class="sd">    ``commercial_ok`` defaults to the one rights intent every verb shares</span>
+<span class="sd">    **Rights intent.** With an explicit ``intended_use`` (#208), every row goes through</span>
+<span class="sd">    the fail-closed gate (:func:`foley.agent.policy.gate_candidates`): only sounds the</span>
+<span class="sd">    intent keeps come back, each ``license_ok=True`` (a territory-excluded or</span>
+<span class="sd">    unverified licence is dropped). Without one, the filter is today's: ``commercial_ok``</span>
+<span class="sd">    defaults to the one rights intent every verb shares</span>
 <span class="sd">    (:data:`foley.licensing.DEFAULT_INTENDED_USE`: commercial), so only commercially</span>
-<span class="sd">    usable sounds come back; pass ``commercial_ok=False`` to include the rest.</span>
+<span class="sd">    usable, verified sounds come back; pass ``commercial_ok=False`` to include the rest.</span>
 <span class="sd">    """</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">intended_use_for</span>
-
-    <span class="n">commercial</span> <span class="o">=</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial_ok</span><span class="p">)</span><span class="o">.</span><span class="n">commercial</span>
-    <span class="n">lib</span> <span class="o">=</span> <span class="n">default_library</span><span class="p">()</span>
+    <span class="n">lib</span> <span class="o">=</span> <span class="n">library</span> <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_library</span><span class="p">()</span>
     <span class="n">kw</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
         <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
         <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span>
@@ -1361,6 +1370,14 @@ window.runMermaid = runMermaid;</script>
         <span class="n">duration_range</span><span class="o">=</span><span class="n">duration_range</span><span class="p">,</span>
         <span class="n">rerank</span><span class="o">=</span><span class="n">rerank</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="k">if</span> <span class="n">intended_use</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">use</span> <span class="o">=</span> <span class="n">_rights_intent</span><span class="p">(</span><span class="n">intended_use</span><span class="p">,</span> <span class="n">commercial_ok</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_gated</span><span class="p">(</span>
+            <span class="n">lib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">commercial_ok</span><span class="o">=</span><span class="n">use</span><span class="o">.</span><span class="n">commercial</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">),</span> <span class="n">use</span>
+        <span class="p">)</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">intended_use_for</span>
+
+    <span class="n">commercial</span> <span class="o">=</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial_ok</span><span class="p">)</span><span class="o">.</span><span class="n">commercial</span>
     <span class="n">hits</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">commercial</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">hits</span><span class="p">:</span>
         <span class="n">_warn_if_hidden</span><span class="p">(</span><span class="n">lib</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">commercial_ok</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
@@ -1370,16 +1387,27 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="similar">
 <a class="viewcode-back" href="../_autosummary/foley.html#foley.similar">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">similar</span><span class="p">(</span><span class="n">sound_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">commercial_ok</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">similar</span><span class="p">(</span>
+    <span class="n">sound_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">commercial_ok</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">intended_use</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">IntendedUse</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">library</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Find sounds similar to a stored sound (audio&lt;-&gt;audio) in the default library.</span>
 
-<span class="sd">    See :meth:`foley.index.SoundLibrary.similar`. Like :func:`search`, only sounds</span>
-<span class="sd">    cleared for the default (commercial) intent are returned unless</span>
-<span class="sd">    ``commercial_ok=False``.</span>
+<span class="sd">    See :meth:`foley.index.SoundLibrary.similar`. Gated like :func:`search`: with an</span>
+<span class="sd">    explicit ``intended_use`` only the neighbours it keeps (fail-closed, each</span>
+<span class="sd">    ``license_ok=True``); without one, only sounds cleared for the default</span>
+<span class="sd">    (commercial) intent unless ``commercial_ok=False``.</span>
 <span class="sd">    """</span>
+    <span class="n">lib</span> <span class="o">=</span> <span class="n">library</span> <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_library</span><span class="p">()</span>
+    <span class="n">hits</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">similar</span><span class="p">(</span><span class="n">sound_id</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">intended_use</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_gated</span><span class="p">(</span><span class="n">hits</span><span class="p">,</span> <span class="n">_rights_intent</span><span class="p">(</span><span class="n">intended_use</span><span class="p">,</span> <span class="n">commercial_ok</span><span class="p">))</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">intended_use_for</span>
 
-    <span class="n">hits</span> <span class="o">=</span> <span class="n">default_library</span><span class="p">()</span><span class="o">.</span><span class="n">similar</span><span class="p">(</span><span class="n">sound_id</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial_ok</span><span class="p">)</span><span class="o">.</span><span class="n">commercial</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">hits</span>
     <span class="n">kept</span> <span class="o">=</span> <span class="p">[</span>
@@ -1391,6 +1419,20 @@ window.runMermaid = runMermaid;</script>
         <span class="n">_warn_if_hidden</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">kept</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_rights_intent</span><span class="p">(</span><span class="n">intended_use</span><span class="p">,</span> <span class="n">commercial_ok</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IntendedUse</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The explicit intent, checked against a ``commercial_ok`` that may contradict it."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">intended_use_for</span>
+
+    <span class="k">return</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">intended_use</span><span class="p">,</span> <span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial_ok</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_gated</span><span class="p">(</span><span class="n">hits</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">:</span> <span class="n">IntendedUse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The rows ``intended_use`` keeps (fail-closed), each ``license_ok=True``."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.agent.policy</span><span class="w"> </span><span class="kn">import</span> <span class="n">gate_candidates</span>
+
+    <span class="k">return</span> <span class="n">gate_candidates</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">hits</span><span class="p">),</span> <span class="n">intended_use</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_warn_if_hidden</span><span class="p">(</span><span class="n">hidden</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>

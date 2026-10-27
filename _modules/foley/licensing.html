@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=60a9f236"></script>
+    <script src="../../_static/documentation_options.js?v=5751785c"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.95" />
+  <meta name="docsearch:version" content="0.0.96" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -737,6 +737,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">replace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
@@ -1746,6 +1747,58 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="placed_record">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.placed_record">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">placed_record</span><span class="p">(</span><span class="n">library</span><span class="p">,</span> <span class="n">sound_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">missing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">unreadable</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""``library``'s record for ``sound_id`` as a rights gate reads it, never raising.</span>
+
+<span class="sd">    The one lookup every placed-sound gate uses (a plan's, a weave's, the MCP verbs'),</span>
+<span class="sd">    so they agree on what "no record" means (#208):</span>
+
+<span class="sd">    * ``missing`` when there is no entry: ``library`` is ``None``, or the lookup</span>
+<span class="sd">      raises a ``LookupError`` (the id is genuinely absent);</span>
+<span class="sd">    * ``unreadable`` (default ``None``) when the lookup fails any other way (a corrupt</span>
+<span class="sd">      stored record, a broken backend): an entry that is there but cannot be judged;</span>
+<span class="sd">    * ``None`` when the value has no ``.license`` (a plain-mapping library of audio</span>
+<span class="sd">      arrays holds sounds, not records).</span>
+
+<span class="sd">    ``None`` is what the fail-closed gate (:func:`refusals`) refuses under an explicit</span>
+<span class="sd">    intent, and what the no-intent path only warns about, so a bad library can make a</span>
+<span class="sd">    gated call refuse but never make an ungated one raise.</span>
+
+<span class="sd">    &gt;&gt;&gt; from foley.base import SoundRecord</span>
+<span class="sd">    &gt;&gt;&gt; rec = SoundRecord(id="a", license=LicenseRecord(source="user"))</span>
+<span class="sd">    &gt;&gt;&gt; placed_record({"a": rec}, "a") is rec</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; placed_record({"a": rec}, "b", missing="own"), placed_record(None, "a")</span>
+<span class="sd">    ('own', None)</span>
+<span class="sd">    &gt;&gt;&gt; placed_record({"a": [0.0, 0.1]}, "a") is None  # audio, not a record</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; class Corrupt(dict):</span>
+<span class="sd">    ...     def __getitem__(self, k):</span>
+<span class="sd">    ...         raise ValueError("bad JSON")</span>
+<span class="sd">    &gt;&gt;&gt; placed_record(Corrupt(), "a", missing="own") is None</span>
+<span class="sd">    True</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">missing</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">library</span><span class="p">[</span><span class="n">sound_id</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">value</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">"license"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">LookupError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">missing</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - an unreadable record is no record</span>
+        <span class="n">_log</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">"no readable record for </span><span class="si">%r</span><span class="s2">: </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">sound_id</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">exc</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">unreadable</span></div>
+
+
+
+<span class="c1">#: The reason a placed sound with no record (nothing to read a licence from) is refused.</span>
+<span class="n">NO_RECORD_REASON</span> <span class="o">=</span> <span class="s2">"it has no record in the library, so its licence cannot be checked"</span>
+
+
 <div class="viewcode-block" id="refusals">
 <a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.refusals">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">refusals</span><span class="p">(</span><span class="n">sound_records</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">:</span> <span class="n">IntendedUse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"dict[str, str]"</span><span class="p">:</span>
@@ -1754,15 +1807,109 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    The re-check a placed sound gets where it is used (a plan, a weave), whatever</span>
 <span class="sd">    intent it was found under (#191). Takes :class:`~foley.base.SoundRecord` s (each</span>
 <span class="sd">    judged by its ``.license`` through :func:`checked_refusal_reason`, so fail-closed:</span>
-<span class="sd">    a record without a readable licence is refused). Empty when every sound is kept.</span>
+<span class="sd">    a record without a readable licence is refused), or a mapping ``{sound id: record}``</span>
+<span class="sd">    in which a ``None`` record (the sound has none) is refused too. Empty when every</span>
+<span class="sd">    sound is kept.</span>
+
+<span class="sd">    &gt;&gt;&gt; refusals({"a": None}, IntendedUse())</span>
+<span class="sd">    {'a': 'it has no record in the library, so its licence cannot be checked'}</span>
 <span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sound_records</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="n">pairs</span> <span class="o">=</span> <span class="n">sound_records</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pairs</span> <span class="o">=</span> <span class="p">((</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">record</span><span class="p">)</span> <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">sound_records</span><span class="p">)</span>
     <span class="n">out</span><span class="p">:</span> <span class="s2">"dict[str, str]"</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">sound_records</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">sound_id</span><span class="p">,</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">sound_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">NO_RECORD_REASON</span>
+            <span class="k">continue</span>
         <span class="n">reason</span> <span class="o">=</span> <span class="n">checked_refusal_reason</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">"license"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">intended_use</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">out</span><span class="p">[</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">sound_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span>
     <span class="k">return</span> <span class="n">out</span></div>
 
+
+
+<div class="viewcode-block" id="LicenseRefusal">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.LicenseRefusal">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LicenseRefusal</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A plan or a weave refused because a placed sound's licence does not serve the intent.</span>
+
+<span class="sd">    Raised by :func:`foley.plan` and :func:`foley.weave` when they are given an</span>
+<span class="sd">    explicit ``intended_use=`` (#208). ``refused`` is ``{sound id: reason}`` for every</span>
+<span class="sd">    refused sound (:func:`refusals`); the message names each of them.</span>
+
+<span class="sd">    &gt;&gt;&gt; err = LicenseRefusal({"a": "no grant in EU"})</span>
+<span class="sd">    &gt;&gt;&gt; err.refused, str(err)</span>
+<span class="sd">    ({'a': 'no grant in EU'}, 'not licensed for this use: a: no grant in EU')</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">refused</span><span class="p">:</span> <span class="s2">"Mapping[str, str]"</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refused</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">refused</span><span class="p">)</span>
+        <span class="n">why</span> <span class="o">=</span> <span class="s2">"; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">sid</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">sid</span><span class="p">,</span> <span class="n">reason</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">refused</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="sa">f</span><span class="s2">"not licensed for this use: </span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="check_placed">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.check_placed">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_placed</span><span class="p">(</span>
+    <span class="n">records</span><span class="p">:</span> <span class="s2">"Mapping[str, object]"</span><span class="p">,</span>
+    <span class="n">intended_use</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">IntendedUse</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">what</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.</span>
+
+<span class="sd">    With an explicit ``intended_use``, fail-closed: raise :class:`LicenseRefusal`</span>
+<span class="sd">    naming every sound in ``records`` (``{sound id: SoundRecord or None}``) the</span>
+<span class="sd">    intent does not keep. With ``None`` (the migration default, #208), nothing is</span>
+<span class="sd">    refused, but if :data:`DEFAULT_INTENDED_USE` would refuse anything, one</span>
+<span class="sd">    ``FutureWarning`` names each such id and reason: a future release gates by default.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        records: The placed sounds, by id (``None`` for one with no record).</span>
+<span class="sd">        intended_use: The caller's rights intent, or ``None`` (today's behaviour).</span>
+<span class="sd">        what: The façade's name, for the warning (``"foley.plan"``); the warning</span>
+<span class="sd">            points at the first caller outside foley.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        LicenseRefusal: If ``intended_use`` is given and refuses any sound.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">intended_use</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">refused</span> <span class="o">=</span> <span class="n">refusals</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">refused</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">LicenseRefusal</span><span class="p">(</span><span class="n">refused</span><span class="p">)</span>
+        <span class="k">return</span>
+    <span class="n">refused</span> <span class="o">=</span> <span class="n">refusals</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">DEFAULT_INTENDED_USE</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">refused</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+        <span class="n">why</span> <span class="o">=</span> <span class="s2">"; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">sid</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">sid</span><span class="p">,</span> <span class="n">reason</span> <span class="ow">in</span> <span class="n">refused</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">refused</span><span class="p">)</span><span class="si">}</span><span class="s2"> sound(s) are not licensed for the default rights "</span>
+            <span class="sa">f</span><span class="s2">"intent (commercial publishing) and are used anyway: </span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2">. A future "</span>
+            <span class="s2">"release gates by default (fail-closed) and will refuse them. Pass "</span>
+            <span class="s2">"intended_use=foley.DEFAULT_INTENDED_USE to opt in now, or "</span>
+            <span class="s2">"intended_use=foley.IntendedUse(...) for your actual use."</span><span class="p">,</span>
+            <span class="ne">FutureWarning</span><span class="p">,</span>
+            <span class="n">stacklevel</span><span class="o">=</span><span class="n">_outside_foley_stacklevel</span><span class="p">(),</span>
+        <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_outside_foley_stacklevel</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The ``stacklevel`` of the first frame outside the foley package (its caller's)."""</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+    <span class="n">root</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">sep</span>
+    <span class="n">frame</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">_getframe</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="n">frame</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">frame</span><span class="o">.</span><span class="n">f_code</span><span class="o">.</span><span class="n">co_filename</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span>
+        <span class="n">root</span>
+    <span class="p">):</span>
+        <span class="n">frame</span><span class="p">,</span> <span class="n">level</span> <span class="o">=</span> <span class="n">frame</span><span class="o">.</span><span class="n">f_back</span><span class="p">,</span> <span class="n">level</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">level</span>
 
 
 <span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>

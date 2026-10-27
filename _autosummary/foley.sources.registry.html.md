@@ -28,18 +28,48 @@ Out-of-tree plugins — and test doubles — register directly via
 
 ### Functions
 
-| [`discover_sources`](#foley.sources.registry.discover_sources)()                       | Scan [`foley.sources`](foley.sources.html.md#module-foley.sources) sub-packages for a `SOURCE_CONFIG` and register them.   |
-|-------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`get_source`](#foley.sources.registry.get_source)(name)                         | Return the `{'config', 'adapter'}` entry for `name`, lazily building the adapter.                                                                |
-| [`list_sources`](#foley.sources.registry.list_sources)(\*[, egress_allow])         | Return the names of registered live sources (runs discovery first).                                                                              |
-| [`local_sources`](#foley.sources.registry.local_sources)()                          | The names of sources that run entirely on-device (`data_egress == 'local'`).                                                                     |
-| [`register_source`](#foley.sources.registry.register_source)(name, config[, adapter]) | Register a live source directly (out-of-tree plugin or a test double).                                                                           |
-| [`require_source_egress`](#foley.sources.registry.require_source_egress)(name[, config])    | Raise [`EgressBlocked`](foley.runtime.html.md#foley.runtime.EgressBlocked) if source `name` may not run now.               |
-| [`source_egress`](#foley.sources.registry.source_egress)(name)                      | The declared `data_egress` class of source `name` (`None` if undeclared).                                                                        |
+| [`declared_source_names`](#foley.sources.registry.declared_source_names)(\*[, exclude])     | `{source name: module}` of the sources the sub-packages declare, and of the sources registered directly ([`register_source()`](#foley.sources.registry.register_source), module `None`), leaving out the modules in `exclude`.   |
+|-------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`discover_sources`](#foley.sources.registry.discover_sources)()                       | Scan [`foley.sources`](foley.sources.html.md#module-foley.sources) sub-packages for a `SOURCE_CONFIG` and register them.                                                                                       |
+| [`get_source`](#foley.sources.registry.get_source)(name)                         | Return the `{'config', 'adapter'}` entry for `name`, lazily building the adapter.                                                                                                                                                    |
+| [`list_sources`](#foley.sources.registry.list_sources)(\*[, egress_allow])         | Return the names of registered live sources (runs discovery first).                                                                                                                                                                  |
+| [`local_sources`](#foley.sources.registry.local_sources)()                          | The names of sources that run entirely on-device (`data_egress == 'local'`).                                                                                                                                                         |
+| [`register_source`](#foley.sources.registry.register_source)(name, config[, adapter]) | Register a live source directly (out-of-tree plugin or a test double).                                                                                                                                                               |
+| [`require_source_egress`](#foley.sources.registry.require_source_egress)(name[, config])    | Raise [`EgressBlocked`](foley.runtime.html.md#foley.runtime.EgressBlocked) if source `name` may not run now.                                                                                                   |
+| [`source_egress`](#foley.sources.registry.source_egress)(name)                      | The declared `data_egress` class of source `name` (`None` if undeclared).                                                                                                                                                            |
+
+### Exceptions
+
+| [`SourceNameCollision`](#foley.sources.registry.SourceNameCollision)   | Two declarations claim one source name (a library named after a built-in source, ...).   |
+|------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
 
 ### foley.sources.registry.SOURCE_REGISTRY *= {}*
 
 Public read alias of the registry (callers/tests inspect discovered sources).
+
+### *exception* foley.sources.registry.SourceNameCollision
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+Two declarations claim one source name (a library named after a built-in source, …).
+
+Raised by [`discover_sources()`](#foley.sources.registry.discover_sources) (whatever order the packages are walked in) and
+by [`register_music_library()`](foley.sources.music_library.html.md#foley.sources.music_library.register_music_library): a name that
+silently resolved to whichever module came first would send `add_from` to the
+wrong source, under the wrong licence.
+
+### foley.sources.registry.declared_source_names(, exclude=())
+
+`{source name: module}` of the sources the sub-packages declare, and of the
+sources registered directly ([`register_source()`](#foley.sources.registry.register_source), module `None`), leaving out
+the modules in `exclude`.
+
+The name space a new declaration must not collide with:
+[`register_music_library()`](foley.sources.music_library.html.md#foley.sources.music_library.register_music_library) checks a library’s
+name against it (`exclude=('music_library',)`).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.sources.registry.discover_sources()
 
@@ -48,15 +78,23 @@ Scan [`foley.sources`](foley.sources.html.md#module-foley.sources) sub-packages 
 A valid live source is a sub-package of [`foley.sources`](foley.sources.html.md#module-foley.sources) (`ispkg` and
 not `_`-prefixed) whose `config.py` defines a `SOURCE_CONFIG` dict with a
 `name` (or a `SOURCE_CONFIGS` sequence of them: several sources sharing one
-adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters + helpers) are skipped, so this
-never cross-captures the corpus adapters. Only `config.py` is imported here
-(stdlib-cheap); the adapter loads lazily in [`get_source()`](#foley.sources.registry.get_source). Idempotent —
-an already-registered name (e.g. a test double) is never overwritten.
+adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters
+
++ helpers) are skipped, so this never cross-captures the corpus adapters. Only
+  `config.py` is imported here (stdlib-cheap); the adapter loads lazily in
+
+[`get_source()`](#foley.sources.registry.get_source). Idempotent: an already-registered name (e.g. a test double)
+: is never overwritten. A module whose `SOURCE_CONFIGS()` raises is skipped with
+  a warning.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 * **Returns:**
   The list of discovered source names.
+* **Raises:**
+  [**SourceNameCollision**](#foley.sources.registry.SourceNameCollision) – If two modules declare the same source name (checked
+      over every declaration before anything is registered, so the outcome does
+      not depend on the order the packages are walked in).
 
 ### foley.sources.registry.get_source(name)
 

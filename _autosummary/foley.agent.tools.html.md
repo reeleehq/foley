@@ -24,7 +24,7 @@ generation-error hierarchy are imported lazily inside the functions that call th
 | [`find`](#foley.agent.tools.find)(context, \*[, max_events, seconds, ...])       | The headline: a narrative context → verified, license-clean sound candidates.                                             |
 | [`generate_sound`](#foley.agent.tools.generate_sound)(query, \*[, backend, library, ...])  | Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.                                   |
 | [`place_in_timeline`](#foley.agent.tools.place_in_timeline)(clip, \*[, onset, gain, ...])     | Emit the SPARSE per-item plan subset (`clip_ref·onset·gain·layer·loop`) — no more.                                        |
-| [`plan`](#foley.agent.tools.plan)(candidates, \*[, transcript])                  | Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge).                                 |
+| [`plan`](#foley.agent.tools.plan)(candidates, \*[, transcript, ...])             | Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge).                                 |
 | [`search_sounds`](#foley.agent.tools.search_sounds)(queries, \*[, k, library, filters])   | Hybrid search for one query, or a multi-query RRF-merge (the SELECT retrieval tool).                                      |
 
 ### foley.agent.tools.estimate_find_usd(, max_events=6, backend='auto', llm=None, k=10, verify='listen', max_refine_loops=1, max_generations=1, injected=None, context_chars=0)
@@ -108,7 +108,7 @@ alignment / mastering are WEAVE’s (#8) job, not SELECT’s.
 * **Return type:**
   [`TimelineItem`](foley.base.html.md#foley.base.TimelineItem)
 
-### foley.agent.tools.plan(candidates, , transcript=None)
+### foley.agent.tools.plan(candidates, , transcript=None, intended_use=None, library=None)
 
 Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge).
 
@@ -117,9 +117,22 @@ One `TimelineItem` per candidate (`onset·gain·layer·loop` only, from its
 reserved #8 `plan_ref` slot is filled when called inside an active `foley.obs`
 run scope (`None`-safe otherwise).
 
+**Rights intent (#208).** Every candidate is re-checked where it is placed, on the
+library’s current record when `library` has its id (else the candidate’s own):
+with an explicit `intended_use` the gate is fail-closed and a sound the intent
+does not keep refuses the plan ([`LicenseRefusal`](foley.licensing.html.md#foley.licensing.LicenseRefusal), naming
+each id and reason). With `None` nothing is refused yet, but a `FutureWarning`
+names what [`DEFAULT_INTENDED_USE`](foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) would refuse: a future
+release gates by default.
+
 * **Parameters:**
   * **candidates** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]) – The candidates returned by [`find()`](#foley.agent.tools.find).
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional narration transcript (WEAVE resolves the reference).
+  * **intended_use** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`IntendedUse`](foley.base.html.md#foley.base.IntendedUse)]) – The rights intent the plan is for (`None`: warn only).
+  * **library** – The library whose current records are judged (default: each
+    candidate’s own record).
+* **Raises:**
+  [**LicenseRefusal**](foley.html.md#foley.LicenseRefusal) – If `intended_use` is given and refuses a placed sound.
 * **Return type:**
   [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeline)
 

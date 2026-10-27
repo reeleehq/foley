@@ -16,6 +16,7 @@ foley.sources.music\_library.fetch
    .. autosummary::
    
       fetch_audio
+      library_fetch
       make_fetch
       music_library_config
       polite_transport

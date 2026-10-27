@@ -19,6 +19,7 @@ foley.licensing
       GEN_AI_PREFERENCE_SCOPES
       EU_MEMBER_STATES
       LICENSE_EXCLUDED_TERRITORIES
+      NO_RECORD_REASON
    
    .. rubric:: Functions
 
@@ -28,6 +29,7 @@ foley.licensing
       ai_use_permitted
       apply_license_flags
       cc_refused_terms
+      check_placed
       checked_refusal_reason
       derivative_refusal
       derive_license_flags
@@ -39,6 +41,7 @@ foley.licensing
       license_id_from_cc_url
       license_meta
       narrow_to_source
+      placed_record
       refusal_reason
       refusals
       territory_excluded
@@ -52,4 +55,10 @@ foley.licensing
    
       LicenseFlags
       LicenseMeta
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      LicenseRefusal
    

@@ -1,4 +1,4 @@
-> built 2026-10-27 18:14 UTC from f8ffee5 (main) · foley 0.0.95. Details: build_info.json
+> built 2026-10-27 20:19 UTC from 29b5b69 (main) · foley 0.0.96. Details: build_info.json
 
 # index.html.md
 
@@ -87,7 +87,15 @@ foley.add_from(
 timeline = foley.plan(candidates)  # the editable sound-design plan
 result = foley.weave("narration.wav", timeline)  # mastered mix + SDH captions + credits
 result.notes  # how placements were timed, e.g. estimates when foley[align] is absent
+
+# Rights intent: say what the mix is for, and every placed sound is re-checked (fail-closed)
+use = foley.IntendedUse(commercial=True, publish=True, territory="US")
+hits = foley.search("door creak", intended_use=use)  # only rows the intent keeps
+timeline = foley.plan(candidates, intended_use=use)  # raises foley.LicenseRefusal
+result = foley.weave("narration.wav", timeline, intended_use=use)  # ...naming each id
 ```
+
+**Rights intent and migration.** `foley.plan`, `foley.weave`, `foley.search` and `foley.similar` take `intended_use=` (an `IntendedUse`: commercial or not, where the sound is shown). Given, the licence gate is fail-closed: search and similar drop every row the intent does not keep, and plan and weave raise `foley.LicenseRefusal` (its `.refused` maps each refused id to the reason), judging every enabled clip by its library record and the narration too when it is a library sound. `foley.plan` without `library=` judges each candidate’s own record (the one it was found with); pass `library=` to judge the library’s current one. A clip whose record cannot be read (a corrupt stored record) counts as having no record, so it is refused under an explicit intent; for the same reason a plain mapping of audio arrays used as `library=` cannot pass an explicit intent (it holds sounds, not licence records) and only works without one. A narration given as audio has no licence and is not judged. The MCP and CLI verbs pass their `commercial_ok` / `territory` through to the same gate. Without `intended_use=`, plan and weave behave as before but emit one `FutureWarning` naming the sounds the default intent (`foley.DEFAULT_INTENDED_USE`: commercial publishing) would refuse: a future release gates by default. Pass `intended_use=foley.DEFAULT_INTENDED_USE` to opt in now, or `intended_use=foley.IntendedUse(...)` for your actual use. Search and similar without it keep today’s commercial-only filter.
 
 ## How it works — four stages
 
@@ -339,7 +347,7 @@ verify + generate aggregate into a single reproducible run-manifest.
 
 | [`find`](_autosummary/foley.agent.html.md#foley.agent.find)(context, \*[, max_events, seconds, ...])       | The headline: a narrative context → verified, license-clean sound candidates.             |
 |------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| [`plan`](_autosummary/foley.agent.html.md#foley.agent.plan)(candidates, \*[, transcript])                  | Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge). |
+| [`plan`](_autosummary/foley.agent.html.md#foley.agent.plan)(candidates, \*[, transcript, ...])             | Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge). |
 | [`decompose_context`](_autosummary/foley.agent.html.md#foley.agent.decompose_context)(context, \*[, max_events, ...])   | Decompose a passage into `<= max_events` sparse `SoundEvent`s.                            |
 | [`refine_query`](_autosummary/foley.agent.html.md#foley.agent.refine_query)(query, \*[, n, hint, refiner, \_span]) | Expand `query` into up to `n` paraphrases for multi-query retrieval.                      |
 | [`search_sounds`](_autosummary/foley.agent.html.md#foley.agent.search_sounds)(queries, \*[, k, library, filters])   | Hybrid search for one query, or a multi-query RRF-merge (the SELECT retrieval tool).      |
@@ -514,6 +522,21 @@ semantics).
 #### settle(reserved_usd, actual_usd)
 
 Replace a reservation with the actual cost (`None` actual: keep the reservation).
+
+A reservation of unknown cost (`None` reserved, counted as an unknown call)
+settled with a known actual becomes that actual: it is summed, and no longer
+counted as unknown (#186: a source billed per compute second, priced after).
+Settling a known reservation with an equal actual changes nothing.
+
+```pycon
+>>> b = Budget(approve_unknown_cost=True)
+>>> b.reserve(None, what="x"); b.settle(None, 0.0425)
+>>> b.spent_usd, b._unknown_calls
+(0.0425, 0)
+>>> b.reserve(0.1, what="y"); b.settle(0.1, 0.1)
+>>> round(b.spent_usd, 10)
+0.1425
+```
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -791,7 +814,7 @@ alignment / mastering are WEAVE’s (#8) job, not SELECT’s.
 * **Return type:**
   [`TimelineItem`](_autosummary/foley.base.html.md#foley.base.TimelineItem)
 
-### foley.agent.plan(candidates, , transcript=None)
+### foley.agent.plan(candidates, , transcript=None, intended_use=None, library=None)
 
 Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge).
 
@@ -800,9 +823,22 @@ One `TimelineItem` per candidate (`onset·gain·layer·loop` only, from its
 reserved #8 `plan_ref` slot is filled when called inside an active `foley.obs`
 run scope (`None`-safe otherwise).
 
+**Rights intent (#208).** Every candidate is re-checked where it is placed, on the
+library’s current record when `library` has its id (else the candidate’s own):
+with an explicit `intended_use` the gate is fail-closed and a sound the intent
+does not keep refuses the plan ([`LicenseRefusal`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseRefusal), naming
+each id and reason). With `None` nothing is refused yet, but a `FutureWarning`
+names what [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) would refuse: a future
+release gates by default.
+
 * **Parameters:**
   * **candidates** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]) – The candidates returned by [`find()`](_autosummary/foley.agent.html.md#foley.agent.find).
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional narration transcript (WEAVE resolves the reference).
+  * **intended_use** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse)]) – The rights intent the plan is for (`None`: warn only).
+  * **library** – The library whose current records are judged (default: each
+    candidate’s own record).
+* **Raises:**
+  [**LicenseRefusal**](_autosummary/foley.html.md#foley.LicenseRefusal) – If `intended_use` is given and refuses a placed sound.
 * **Return type:**
   [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.SoundDesignTimeline)
 
@@ -1317,6 +1353,21 @@ semantics).
 
 Replace a reservation with the actual cost (`None` actual: keep the reservation).
 
+A reservation of unknown cost (`None` reserved, counted as an unknown call)
+settled with a known actual becomes that actual: it is summed, and no longer
+counted as unknown (#186: a source billed per compute second, priced after).
+Settling a known reservation with an equal actual changes nothing.
+
+```pycon
+>>> b = Budget(approve_unknown_cost=True)
+>>> b.reserve(None, what="x"); b.settle(None, 0.0425)
+>>> b.spent_usd, b._unknown_calls
+(0.0425, 0)
+>>> b.reserve(0.1, what="y"); b.settle(0.1, 0.1)
+>>> round(b.spent_usd, 10)
+0.1425
+```
+
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
@@ -1780,7 +1831,7 @@ generation-error hierarchy are imported lazily inside the functions that call th
 | [`find`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.find)(context, \*[, max_events, seconds, ...])       | The headline: a narrative context → verified, license-clean sound candidates.                                             |
 | [`generate_sound`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.generate_sound)(query, \*[, backend, library, ...])  | Generate a clip for `query` (the fallback tool) — a thin wrapper over `foley.generate`.                                   |
 | [`place_in_timeline`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.place_in_timeline)(clip, \*[, onset, gain, ...])     | Emit the SPARSE per-item plan subset (`clip_ref·onset·gain·layer·loop`) — no more.                                        |
-| [`plan`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.plan)(candidates, \*[, transcript])                  | Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge).                                 |
+| [`plan`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.plan)(candidates, \*[, transcript, ...])             | Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge).                                 |
 | [`search_sounds`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.search_sounds)(queries, \*[, k, library, filters])   | Hybrid search for one query, or a multi-query RRF-merge (the SELECT retrieval tool).                                      |
 
 ### foley.agent.tools.estimate_find_usd(, max_events=6, backend='auto', llm=None, k=10, verify='listen', max_refine_loops=1, max_generations=1, injected=None, context_chars=0)
@@ -1864,7 +1915,7 @@ alignment / mastering are WEAVE’s (#8) job, not SELECT’s.
 * **Return type:**
   [`TimelineItem`](_autosummary/foley.base.html.md#foley.base.TimelineItem)
 
-### foley.agent.tools.plan(candidates, , transcript=None)
+### foley.agent.tools.plan(candidates, , transcript=None, intended_use=None, library=None)
 
 Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge).
 
@@ -1873,9 +1924,22 @@ One `TimelineItem` per candidate (`onset·gain·layer·loop` only, from its
 reserved #8 `plan_ref` slot is filled when called inside an active `foley.obs`
 run scope (`None`-safe otherwise).
 
+**Rights intent (#208).** Every candidate is re-checked where it is placed, on the
+library’s current record when `library` has its id (else the candidate’s own):
+with an explicit `intended_use` the gate is fail-closed and a sound the intent
+does not keep refuses the plan ([`LicenseRefusal`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseRefusal), naming
+each id and reason). With `None` nothing is refused yet, but a `FutureWarning`
+names what [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) would refuse: a future
+release gates by default.
+
 * **Parameters:**
   * **candidates** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]) – The candidates returned by [`find()`](_autosummary/foley.agent.tools.html.md#foley.agent.tools.find).
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional narration transcript (WEAVE resolves the reference).
+  * **intended_use** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse)]) – The rights intent the plan is for (`None`: warn only).
+  * **library** – The library whose current records are judged (default: each
+    candidate’s own record).
+* **Raises:**
+  [**LicenseRefusal**](_autosummary/foley.html.md#foley.LicenseRefusal) – If `intended_use` is given and refuses a placed sound.
 * **Return type:**
   [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.SoundDesignTimeline)
 
@@ -5632,7 +5696,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`default_library`](_autosummary/foley.html.md#foley.default_library)()                                   | The process-wide default library (local stores + CLAP + best index).                                                                                                           |
 | [`search`](_autosummary/foley.html.md#foley.search)(query, \*[, k, filters, ...])                | Hybrid (CLAP vector ⊕ BM25) search of the default library.                                                                                                                     |
 | [`estimate`](_autosummary/foley.html.md#foley.estimate)(verb, \*\*kwargs)                          | What a call would cost in USD before making it — `None` when it cannot be known (#57).                                                                                         |
-| [`similar`](_autosummary/foley.html.md#foley.similar)(sound_id, \*[, k, commercial_ok])           | Find sounds similar to a stored sound (audio<->audio) in the default library.                                                                                                  |
+| [`similar`](_autosummary/foley.html.md#foley.similar)(sound_id, \*[, k, commercial_ok, ...])      | Find sounds similar to a stored sound (audio<->audio) in the default library.                                                                                                  |
 | [`default_embedder`](_autosummary/foley.html.md#foley.default_embedder)()                                  | Return a process-wide default [`ClapEmbedder`](_autosummary/foley.html.md#foley.ClapEmbedder) (loaded once, reused).                                                             |
 | [`default_index`](_autosummary/foley.html.md#foley.default_index)(\*, data_dir, dim)                    | Build the best available persistent index for a library.                                                                                                                       |
 | [`lancedb_available`](_autosummary/foley.html.md#foley.lancedb_available)()                                 | True if `lancedb` is importable (the `foley[index]` extra is present).                                                                                                         |
@@ -5664,7 +5728,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | `art50_checklist`(record)                                                                            | Return the per-clip EU AI Act Art.                                                                                                                                             |
 | `scan_prompt`(prompt)                                                                                | Scan a generation `prompt` for trademarked-audio-logo + voice-clone risk.                                                                                                      |
 | [`find`](_autosummary/foley.html.md#foley.find)(context, \*[, max_events, seconds, ...])       | The headline: a narrative context → verified, license-clean sound candidates.                                                                                                  |
-| [`plan`](_autosummary/foley.html.md#foley.plan)(candidates, \*[, transcript])                  | Fold verified candidates into the SPARSE [`SoundDesignTimeline`](_autosummary/foley.html.md#foley.SoundDesignTimeline) (the SELECT→WEAVE bridge).                                       |
+| [`plan`](_autosummary/foley.html.md#foley.plan)(candidates, \*[, transcript, ...])             | Fold verified candidates into the SPARSE [`SoundDesignTimeline`](_autosummary/foley.html.md#foley.SoundDesignTimeline) (the SELECT→WEAVE bridge).                                       |
 | [`decompose_context`](_autosummary/foley.html.md#foley.decompose_context)(context, \*[, max_events, ...])   | Decompose a passage into `<= max_events` sparse [`SoundEvent`](_autosummary/foley.html.md#foley.SoundEvent)s.                                                                  |
 | [`refine_query`](_autosummary/foley.html.md#foley.refine_query)(query, \*[, n, hint, refiner, \_span]) | Expand `query` into up to `n` paraphrases for multi-query retrieval.                                                                                                           |
 | [`verify_match`](_autosummary/foley.html.md#foley.verify_match)(event, candidate, \*[, level, ...])    | Verify `candidate` against `event` up to rung `level` (AND-confirming ladder).                                                                                                 |
@@ -5753,8 +5817,9 @@ lazy-imported inside the audio/QC functions that need them (install via the
 
 ### Exceptions
 
-| [`GenerationError`](_autosummary/foley.html.md#foley.GenerationError)(message, \*, report, status)     | Raised by [`foley.generate()`](_autosummary/foley.html.md#foley.generate) (and [`foley.edit()`](_autosummary/foley.html.md#foley.edit)) when a backend yields no stored sound.                                                                                                                                          |
+| [`LicenseRefusal`](_autosummary/foley.html.md#foley.LicenseRefusal)(refused)                          | A plan or a weave refused because a placed sound's licence does not serve the intent.                                                                                                                                                                                                                                           |
 |---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`GenerationError`](_autosummary/foley.html.md#foley.GenerationError)(message, \*, report, status)     | Raised by [`foley.generate()`](_autosummary/foley.html.md#foley.generate) (and [`foley.edit()`](_autosummary/foley.html.md#foley.edit)) when a backend yields no stored sound.                                                                                                                                          |
 | [`EditRefusal`](_autosummary/foley.html.md#foley.EditRefusal)(message, \*, source_id, reason)      | Raised (fail-closed) by an edit ([`foley.edit()`](_autosummary/foley.html.md#foley.edit), or [`foley.generate()`](_autosummary/foley.html.md#foley.generate) with an edit backend and `audio=`) before anything is paid for, when the source's rights do not allow an edit of it to be made and kept, or are not given. |
 | [`SafetyRefusal`](_autosummary/foley.html.md#foley.SafetyRefusal)(message, \*, hits, report)         | Raised (fail-closed) when a generation prompt trips a #9b safety gate.                                                                                                                                                                                                                                                          |
 | [`TrademarkRefusal`](_autosummary/foley.html.md#foley.TrademarkRefusal)(message, \*, hits, report)      | A [`SafetyRefusal`](_autosummary/foley.html.md#foley.SafetyRefusal) for a prompt naming a trademarked audio logo (report 07 §7.2).                                                                                                                                                                                                 |
@@ -5930,6 +5995,21 @@ semantics).
 #### settle(reserved_usd, actual_usd)
 
 Replace a reservation with the actual cost (`None` actual: keep the reservation).
+
+A reservation of unknown cost (`None` reserved, counted as an unknown call)
+settled with a known actual becomes that actual: it is summed, and no longer
+counted as unknown (#186: a source billed per compute second, priced after).
+Settling a known reservation with an equal actual changes nothing.
+
+```pycon
+>>> b = Budget(approve_unknown_cost=True)
+>>> b.reserve(None, what="x"); b.settle(None, 0.0425)
+>>> b.spent_usd, b._unknown_calls
+(0.0425, 0)
+>>> b.reserve(0.1, what="y"); b.settle(0.1, 0.1)
+>>> round(b.spent_usd, 10)
+0.1425
+```
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -6655,6 +6735,22 @@ runs the rewrite again.
 
 * **Type:**
   Whether this generated clip can be made again
+
+### *exception* foley.LicenseRefusal(refused)
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A plan or a weave refused because a placed sound’s licence does not serve the intent.
+
+Raised by [`foley.plan()`](_autosummary/foley.html.md#foley.plan) and [`foley.weave()`](_autosummary/foley.weave.html.md#module-foley.weave) when they are given an
+explicit `intended_use=` (#208). `refused` is `{sound id: reason}` for every
+refused sound (`refusals()`); the message names each of them.
+
+```pycon
+>>> err = LicenseRefusal({"a": "no grant in EU"})
+>>> err.refused, str(err)
+({'a': 'no grant in EU'}, 'not licensed for this use: a: no grant in EU')
+```
 
 ### *class* foley.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)
 
@@ -7463,7 +7559,7 @@ reproducible run-artifact join, plus the fail-safe provenance re-assertion.
 What the caller should know about how the mix was made, e.g. that word timings
 are estimates because no forced aligner is installed (#65).
 
-### foley.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
+### foley.add_from(source, , query, license='source-default', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -7475,9 +7571,12 @@ applies the by-reference storage gate from the sound’s own license.
 
 * **Parameters:**
   * **source** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A registered live-source name (e.g. `'freesound'`).
-  * **query** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language search query.
-  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query (default
-    `'cc0'`). The per-item fail-closed guard enforces the source’s
+  * **query** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The natural-language search query (a music library also takes a
+    list of titles).
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query. Default: the
+    source’s own (`config['license']['search_default']`), `'cc0'` for a
+    source that declares none; a music library (one licence) declares no
+    narrowing. The per-item fail-closed guard enforces the source’s
     accepted-license allowlist regardless.
   * **limit** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max candidates to request from the source.
   * **library** – Target [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
@@ -8830,7 +8929,7 @@ its CatID token is unknown (so a wrong subcategory is never emitted).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### foley.plan(candidates, , transcript=None)
+### foley.plan(candidates, , transcript=None, intended_use=None, library=None)
 
 Fold verified candidates into the SPARSE [`SoundDesignTimeline`](_autosummary/foley.html.md#foley.SoundDesignTimeline) (the SELECT→WEAVE bridge).
 
@@ -8839,9 +8938,22 @@ One [`TimelineItem`](_autosummary/foley.html.md#foley.TimelineItem) per candidat
 reserved #8 `plan_ref` slot is filled when called inside an active `foley.obs`
 run scope (`None`-safe otherwise).
 
+**Rights intent (#208).** Every candidate is re-checked where it is placed, on the
+library’s current record when `library` has its id (else the candidate’s own):
+with an explicit `intended_use` the gate is fail-closed and a sound the intent
+does not keep refuses the plan ([`LicenseRefusal`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseRefusal), naming
+each id and reason). With `None` nothing is refused yet, but a `FutureWarning`
+names what [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) would refuse: a future
+release gates by default.
+
 * **Parameters:**
   * **candidates** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]) – The candidates returned by [`find()`](_autosummary/foley.html.md#foley.find).
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional narration transcript (WEAVE resolves the reference).
+  * **intended_use** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse)]) – The rights intent the plan is for (`None`: warn only).
+  * **library** – The library whose current records are judged (default: each
+    candidate’s own record).
+* **Raises:**
+  [**LicenseRefusal**](_autosummary/foley.html.md#foley.LicenseRefusal) – If `intended_use` is given and refuses a placed sound.
 * **Return type:**
   [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.SoundDesignTimeline)
 
@@ -9109,17 +9221,22 @@ editable [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.Soun
 * **Returns:**
   A [`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult) (`timeline` + `events` rationale; `weave` when woven).
 
-### foley.search(query, , k=10, filters=None, commercial_ok=None, ucs_category=None, min_snr=None, duration_range=None, rerank=False)
+### foley.search(query, , k=10, filters=None, commercial_ok=None, ucs_category=None, min_snr=None, duration_range=None, rerank=False, intended_use=None, library=None)
 
 Hybrid (CLAP vector ⊕ BM25) search of the default library.
 
 Convenience wrapper over `foley.library.search(...)` — see
 [`foley.index.SoundLibrary.search()`](_autosummary/foley.index.html.md#foley.index.SoundLibrary.search). Constructs the process-wide default
-library (local stores + CLAP + best available index) on first use.
+library (local stores + CLAP + best available index) on first use; pass
+`library=` to search another.
 
-`commercial_ok` defaults to the one rights intent every verb shares
+**Rights intent.** With an explicit `intended_use` (#208), every row goes through
+the fail-closed gate ([`foley.agent.policy.gate_candidates()`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.gate_candidates)): only sounds the
+intent keeps come back, each `license_ok=True` (a territory-excluded or
+unverified licence is dropped). Without one, the filter is today’s: `commercial_ok`
+defaults to the one rights intent every verb shares
 ([`foley.licensing.DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE): commercial), so only commercially
-usable sounds come back; pass `commercial_ok=False` to include the rest.
+usable, verified sounds come back; pass `commercial_ok=False` to include the rest.
 
 ### foley.serve_http(, host='127.0.0.1', port=8000, auth, path='/mcp', \*\*kwargs)
 
@@ -9130,13 +9247,14 @@ Wraps [`make_http_app()`](_autosummary/foley.html.md#foley.make_http_app) and ru
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### foley.similar(sound_id, , k=10, commercial_ok=None)
+### foley.similar(sound_id, , k=10, commercial_ok=None, intended_use=None, library=None)
 
 Find sounds similar to a stored sound (audio<->audio) in the default library.
 
-See [`foley.index.SoundLibrary.similar()`](_autosummary/foley.index.html.md#foley.index.SoundLibrary.similar). Like [`search()`](_autosummary/foley.html.md#foley.search), only sounds
-cleared for the default (commercial) intent are returned unless
-`commercial_ok=False`.
+See [`foley.index.SoundLibrary.similar()`](_autosummary/foley.index.html.md#foley.index.SoundLibrary.similar). Gated like [`search()`](_autosummary/foley.html.md#foley.search): with an
+explicit `intended_use` only the neighbours it keeps (fail-closed, each
+`license_ok=True`); without one, only sounds cleared for the default
+(commercial) intent unless `commercial_ok=False`.
 
 ### foley.similar_to(clip_or_candidate, , k=10, library=None)
 
@@ -12996,6 +13114,7 @@ item is redistributable but stored by-reference.
 | [`GEN_AI_PREFERENCE_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.GEN_AI_PREFERENCE_SCOPES)     | Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.                                                                                                                                                                           |
 | [`EU_MEMBER_STATES`](_autosummary/foley.licensing.html.md#foley.licensing.EU_MEMBER_STATES)             | The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU", with the EU territories that carry their own codes: France's outermost regions (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and Finland's Åland. |
 | [`LICENSE_EXCLUDED_TERRITORIES`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_EXCLUDED_TERRITORIES) | `license_id` -> the territories where it grants nothing (ISO 3166-1 alpha-2 codes, plus `"EU"` for every member state).                                                                                                                                    |
+| [`NO_RECORD_REASON`](_autosummary/foley.licensing.html.md#foley.licensing.NO_RECORD_REASON)             | The reason a placed sound with no record (nothing to read a licence from) is refused.                                                                                                                                                                      |
 
 ### Functions
 
@@ -13004,6 +13123,7 @@ item is redistributable but stored by-reference.
 | [`ai_use_permitted`](_autosummary/foley.licensing.html.md#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                        |
 | [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                          |
 | [`cc_refused_terms`](_autosummary/foley.licensing.html.md#foley.licensing.cc_refused_terms)(url)                             | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                             |
+| [`check_placed`](_autosummary/foley.licensing.html.md#foley.licensing.check_placed)(records, intended_use, \*, what)     | The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.                                             |
 | [`checked_refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason)(record, intended_use)      | [`refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.    |
 | [`derivative_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal)(source)                        | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                |
 | [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                               |
@@ -13015,6 +13135,7 @@ item is redistributable but stored by-reference.
 | [`license_id_from_cc_url`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                                   |
 | [`license_meta`](_autosummary/foley.licensing.html.md#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback).       |
 | [`narrow_to_source`](_autosummary/foley.licensing.html.md#foley.licensing.narrow_to_source)(output, source)                  | Narrow `output`'s rights to what `source` allows, in place (never widening).                                                   |
+| [`placed_record`](_autosummary/foley.licensing.html.md#foley.licensing.placed_record)(library, sound_id, \*[, ...])       | `library`'s record for `sound_id` as a rights gate reads it, never raising.                                                    |
 | [`refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason)(record, intended_use)              | Why [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.     |
 | [`refusals`](_autosummary/foley.licensing.html.md#foley.licensing.refusals)(sound_records, intended_use)             | `{sound id: reason}` for each sound record [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses for `intended_use`. |
 | [`territory_excluded`](_autosummary/foley.licensing.html.md#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                        |
@@ -13027,6 +13148,11 @@ item is redistributable but stored by-reference.
 | [`LicenseFlags`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseFlags)([commercial_ok, ...])   | The eight derivable flags for one `license_id` (the table row type).       |
 |---------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
 | [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta)(display_name[, url])     | Human-facing display metadata for one `license_id` (name + canonical URL). |
+
+### Exceptions
+
+| [`LicenseRefusal`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseRefusal)(refused)   | A plan or a weave refused because a placed sound's licence does not serve the intent.   |
+|----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
 
 ### foley.licensing.AI_TRAINING_SCOPES *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('none', 'open_source_only', 'nc_open_source_only')*
 
@@ -13110,6 +13236,26 @@ the *permission* row consulted by [`keep()`](_autosummary/foley.licensing.html.m
 license authority; a record’s own `license_name` / `license_url` (when a
 source populated them) take precedence over this default.
 
+### *exception* foley.licensing.LicenseRefusal(refused)
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A plan or a weave refused because a placed sound’s licence does not serve the intent.
+
+Raised by [`foley.plan()`](_autosummary/foley.html.md#foley.plan) and [`foley.weave()`](_autosummary/foley.weave.html.md#module-foley.weave) when they are given an
+explicit `intended_use=` (#208). `refused` is `{sound id: reason}` for every
+refused sound ([`refusals()`](_autosummary/foley.licensing.html.md#foley.licensing.refusals)); the message names each of them.
+
+```pycon
+>>> err = LicenseRefusal({"a": "no grant in EU"})
+>>> err.refused, str(err)
+({'a': 'no grant in EU'}, 'not licensed for this use: a: no grant in EU')
+```
+
+### foley.licensing.NO_RECORD_REASON *= 'it has no record in the library, so its licence cannot be checked'*
+
+The reason a placed sound with no record (nothing to read a licence from) is refused.
+
 ### foley.licensing.UNKNOWN_LICENSE_FLAGS *= LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None)*
 
 Fail-closed fallback for unknown / `Proprietary-*` license ids (all False, cap None).
@@ -13179,6 +13325,26 @@ refused, for a message that is not “cannot read a licence”.
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
+
+### foley.licensing.check_placed(records, intended_use, , what)
+
+The one rights gate for placed sounds (a plan’s, a weave’s): raise, warn, or pass.
+
+With an explicit `intended_use`, fail-closed: raise [`LicenseRefusal`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseRefusal)
+naming every sound in `records` (`{sound id: SoundRecord or None}`) the
+intent does not keep. With `None` (the migration default, #208), nothing is
+refused, but if [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) would refuse anything, one
+`FutureWarning` names each such id and reason: a future release gates by default.
+
+* **Parameters:**
+  * **records** ([`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`object`](https://docs.python.org/3/builtins/functions.html#object)]) – The placed sounds, by id (`None` for one with no record).
+  * **intended_use** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse)]) – The caller’s rights intent, or `None` (today’s behaviour).
+  * **what** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The façade’s name, for the warning (`"foley.plan"`); the warning
+    points at the first caller outside foley.
+* **Raises:**
+  [**LicenseRefusal**](_autosummary/foley.licensing.html.md#foley.licensing.LicenseRefusal) – If `intended_use` is given and refuses any sound.
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### foley.licensing.checked_refusal_reason(record, intended_use)
 
@@ -13395,6 +13561,40 @@ flags still come from the policy layer, never set by hand.
 * **Return type:**
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 
+### foley.licensing.placed_record(library, sound_id, , missing=None, unreadable=None)
+
+`library`’s record for `sound_id` as a rights gate reads it, never raising.
+
+The one lookup every placed-sound gate uses (a plan’s, a weave’s, the MCP verbs’),
+so they agree on what “no record” means (#208):
+
+* `missing` when there is no entry: `library` is `None`, or the lookup
+  raises a `LookupError` (the id is genuinely absent);
+* `unreadable` (default `None`) when the lookup fails any other way (a corrupt
+  stored record, a broken backend): an entry that is there but cannot be judged;
+* `None` when the value has no `.license` (a plain-mapping library of audio
+  arrays holds sounds, not records).
+
+`None` is what the fail-closed gate ([`refusals()`](_autosummary/foley.licensing.html.md#foley.licensing.refusals)) refuses under an explicit
+intent, and what the no-intent path only warns about, so a bad library can make a
+gated call refuse but never make an ungated one raise.
+
+```pycon
+>>> from foley.base import SoundRecord
+>>> rec = SoundRecord(id="a", license=LicenseRecord(source="user"))
+>>> placed_record({"a": rec}, "a") is rec
+True
+>>> placed_record({"a": rec}, "b", missing="own"), placed_record(None, "a")
+('own', None)
+>>> placed_record({"a": [0.0, 0.1]}, "a") is None  # audio, not a record
+True
+>>> class Corrupt(dict):
+...     def __getitem__(self, k):
+...         raise ValueError("bad JSON")
+>>> placed_record(Corrupt(), "a", missing="own") is None
+True
+```
+
 ### foley.licensing.refusal_reason(record, intended_use)
 
 Why [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.
@@ -13411,7 +13611,14 @@ The one rule, read as text: the first requirement the record does not meet.
 The re-check a placed sound gets where it is used (a plan, a weave), whatever
 intent it was found under (#191). Takes [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) s (each
 judged by its `.license` through [`checked_refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason), so fail-closed:
-a record without a readable licence is refused). Empty when every sound is kept.
+a record without a readable licence is refused), or a mapping `{sound id: record}`
+in which a `None` record (the sound has none) is refused too. Empty when every
+sound is kept.
+
+```pycon
+>>> refusals({"a": None}, IntendedUse())
+{'a': 'it has no record in the library, so its licence cannot be checked'}
+```
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
@@ -14806,7 +15013,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'ta-dum', 'netflix intro', 'netflix chime', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'netflix intro', 'tudum', 'ta dum', 'netflix sound', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16721,7 +16928,8 @@ but never flips the flag, so [`foley.keep()`](_autosummary/foley.html.md#foley.k
     Stable-Audio-Open run; `None` for a non-deterministic backend).
   * **generation_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The RESOLVED NATIVE params actually sent to the backend
     (e.g. `guidance_scale` — not the unified `prompt_influence` —
-    `audio_end_in_s`, …), for reproducibility + audit.
+    `audio_end_in_s`, …), and where it ran when that decides the bytes (a
+    local model’s `device` / `dtype`), for reproducibility + audit.
   * **disclosure_recommended** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – EU AI Act Art. 50 hint (default `True`); makes the
     credits AI-disclosure line render immediately (#9a already reads it).
   * **watermark** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Pass-through carrier for #9b (AudioSeal); `None` until then.
@@ -17615,11 +17823,11 @@ is an error, never a fall-through to the network.
 
 ### Module Attributes
 
-| [`FAL_CREDENTIAL`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FAL_CREDENTIAL)   | The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).      |
-|-------------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| [`FAL_KEY_ENV_VARS`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FAL_KEY_ENV_VARS) | The env vars falaw reads a fal key from, in order.                                    |
-| [`Runner`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.Runner)           | `runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`. |
-| [`Adapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.Adapter)          | Registry convention (arioso): the loader imports `adapter.Adapter`.                   |
+| [`FAL_CREDENTIAL`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FAL_CREDENTIAL)   | The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).                                                                                                                         |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`FAL_KEY_ENV_VARS`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FAL_KEY_ENV_VARS) | The env vars falaw reads a fal key from, in order.                                                                                                                                                       |
+| [`Runner`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.Runner)           | `runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`, or a [`FalAnswer`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAnswer) (that two-tuple, with fal's run `.metrics`, #186). |
+| [`Adapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.Adapter)          | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                                                                                      |
 
 ### Functions
 
@@ -17633,6 +17841,7 @@ is an error, never a fall-through to the network.
 | [`Adapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.Adapter)                                        | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                    |
 |-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
 | [`FalAdapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAdapter)(config, \*[, api_key, runner, ...]) | A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+| [`FalAnswer`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAnswer)(media, response[, metrics])          | A runner's `(media, response)`, with fal's run `metrics` beside it.                                                                    |
 
 ### foley.sources.fal.adapter.Adapter
 
@@ -17660,7 +17869,7 @@ A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.
     itself (`falaw.using_fal_credentials(key)`, or `fal=` in
     `ocracy.kit.using_credentials`: one binding covers every fal source),
     else `$FAL_KEY`, else `$FAL_API_KEY`.
-  * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]]) – The transport seam (default [`falaw_runner()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
+  * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)] | [`FalAnswer`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAnswer)]]) – The transport seam (default [`falaw_runner()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
   * **uploader** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – `(path, *, api_key) -> url`, how a local `video=` or `audio=`
     (a path or bytes) reaches fal (default [`falaw_uploader()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_uploader)); tests pass
     a fake.
@@ -17741,11 +17950,22 @@ affordances, so a change to either must not replay a clip made without it.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
+### *class* foley.sources.fal.adapter.FalAnswer(media, response, metrics=None)
+
+Bases: [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+A runner’s `(media, response)`, with fal’s run `metrics` beside it.
+
+Still the two-tuple every runner answers (`media, response = answer`), so a
+caller that does not know about metrics is unchanged; `.metrics` is fal’s
+`Completed.metrics` (`inference_time`), or `None`.
+
 ### foley.sources.fal.adapter.Runner
 
-`runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`.
+`runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`,
+or a [`FalAnswer`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAnswer) (that two-tuple, with fal’s run `.metrics`, #186).
 
-alias of `Callable`[[…], `tuple[bytes, dict]`]
+alias of `Callable`[[…], `tuple[bytes, dict] | FalAnswer`]
 
 ### foley.sources.fal.adapter.audio_url(response, field='audio')
 
@@ -17767,6 +17987,11 @@ The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...
 
 Call a fal endpoint through falaw and return `(audio bytes, raw response)`.
 
+A [`FalAnswer`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAnswer): its `.metrics` are fal’s `Completed.metrics`
+(`inference_time`: the seconds the runner spent), which falaw carries on its
+`done` event (falaw#125); `None` when fal reported none (or an older falaw
+dropped them).
+
 `refresh=True` skips falaw’s cache read and keeps its write (see the module
 docstring: foley’s generations cache owns replay). The audio is downloaded by
 `falaw.materialize_asset`, which content-addresses it in falaw’s store.
@@ -17777,7 +18002,7 @@ docstring: foley’s generations cache owns replay). The audio is downloaded by
         argument cannot be sent), so the run’s budget reservation is released.
   * [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If the response carries no audio URL.
 * **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+  [`FalAnswer`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAnswer)
 
 ### foley.sources.fal.adapter.falaw_uploader(path, , api_key)
 
@@ -18640,7 +18865,7 @@ Stamp the corpus’s uniform license (derived via the licensing SSOT).
 * **Return type:**
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 
-### foley.sources.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
+### foley.sources.add_from(source, , query, license='source-default', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -18652,9 +18877,12 @@ applies the by-reference storage gate from the sound’s own license.
 
 * **Parameters:**
   * **source** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A registered live-source name (e.g. `'freesound'`).
-  * **query** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language search query.
-  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query (default
-    `'cc0'`). The per-item fail-closed guard enforces the source’s
+  * **query** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The natural-language search query (a music library also takes a
+    list of titles).
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query. Default: the
+    source’s own (`config['license']['search_default']`), `'cc0'` for a
+    source that declares none; a music library (one licence) declares no
+    narrowing. The per-item fail-closed guard enforces the source’s
     accepted-license allowlist regardless.
   * **limit** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max candidates to request from the source.
   * **library** – Target [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
@@ -18779,15 +19007,23 @@ Scan [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) 
 A valid live source is a sub-package of [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) (`ispkg` and
 not `_`-prefixed) whose `config.py` defines a `SOURCE_CONFIG` dict with a
 `name` (or a `SOURCE_CONFIGS` sequence of them: several sources sharing one
-adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters + helpers) are skipped, so this
-never cross-captures the corpus adapters. Only `config.py` is imported here
-(stdlib-cheap); the adapter loads lazily in [`get_source()`](_autosummary/foley.sources.html.md#foley.sources.get_source). Idempotent —
-an already-registered name (e.g. a test double) is never overwritten.
+adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters
+
++ helpers) are skipped, so this never cross-captures the corpus adapters. Only
+  `config.py` is imported here (stdlib-cheap); the adapter loads lazily in
+
+[`get_source()`](_autosummary/foley.sources.html.md#foley.sources.get_source). Idempotent: an already-registered name (e.g. a test double)
+: is never overwritten. A module whose `SOURCE_CONFIGS()` raises is skipped with
+  a warning.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 * **Returns:**
   The list of discovered source names.
+* **Raises:**
+  [**SourceNameCollision**](_autosummary/foley.sources.registry.html.md#foley.sources.registry.SourceNameCollision) – If two modules declare the same source name (checked
+      over every declaration before anything is registered, so the outcome does
+      not depend on the order the packages are walked in).
 
 ### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, derived_from=None, \*\*affordances)
 
@@ -18956,7 +19192,8 @@ but never flips the flag, so [`foley.keep()`](_autosummary/foley.html.md#foley.k
     Stable-Audio-Open run; `None` for a non-deterministic backend).
   * **generation_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The RESOLVED NATIVE params actually sent to the backend
     (e.g. `guidance_scale` — not the unified `prompt_influence` —
-    `audio_end_in_s`, …), for reproducibility + audit.
+    `audio_end_in_s`, …), and where it ran when that decides the bytes (a
+    local model’s `device` / `dtype`), for reproducibility + audit.
   * **disclosure_recommended** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – EU AI Act Art. 50 hint (default `True`); makes the
     credits AI-disclosure line render immediately (#9a already reads it).
   * **watermark** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Pass-through carrier for #9b (AudioSeal); `None` until then.
@@ -19368,6 +19605,7 @@ rows as CSV, and [`attribution_text()`](_autosummary/foley.sources.music_library
 | [`acquire`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.acquire)(library, titles, \*, out[, fetch, ...])   | Download `titles` of `library` into `out`, verified, one row each.                                                                                                                                                                                                                |
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`attribution_text`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.attribution_text)(rows)                            | The attribution blocks to paste under a video, one per track that has one (acquired or kept), blank-line separated, each once.                                                                                                                                                    |
+| [`fetch_verified`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.fetch_verified)(url, \*, mirrors, fetch, verify)   | `(bytes, seconds, the URL that served them, its mirror's name)` from the first of `mirrors` whose bytes `verify` accepts; every mirror's reason in one `MusicLibraryError` when none does.                                                                                        |
 | [`files_store`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.files_store)(out)                                  | `out` as a `{file name: bytes}` store: a mapping is used as it is; a folder becomes foley's file store over it ([`foley.stores.make_byte_store()`](_autosummary/foley.stores.html.md#foley.stores.make_byte_store), which makes the folder on its first write).         |
 | [`kept_digests`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_digests)(table)                               | `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun may keep.                                                                                                                                                                                           |
 | [`kept_sources`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_sources)(table)                               | `{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a tracks table: [`kept_digests()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.kept_digests) with where each file came from, so a kept row still says which URL and mirror served it (`acquire(kept=...)` takes either). |
@@ -19530,6 +19768,18 @@ http://creativecommons.org/licenses/by/4.0/
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
+### foley.sources.music_library.acquisition.fetch_verified(url, , mirrors, fetch, verify)
+
+`(bytes, seconds, the URL that served them, its mirror's name)` from the
+first of `mirrors` whose bytes `verify` accepts; every mirror’s reason in one
+`MusicLibraryError` when none does.
+
+The one mirror chain: [`acquire()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.acquire) and the registered library sources’
+`download` ([`foley.sources.music_library.adapter`](_autosummary/foley.sources.music_library.adapter.html.md#module-foley.sources.music_library.adapter)) both run it.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`float`](https://docs.python.org/3/builtins/functions.html#float), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.sources.music_library.acquisition.files_store(out)
 
 `out` as a `{file name: bytes}` store: a mapping is used as it is; a folder
@@ -19565,6 +19815,233 @@ rows carry, in name order.
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+
+# _autosummary/foley.sources.music_library.adapter.html.md
+
+# foley.sources.music_library.adapter
+
+A free music library as a live retrieve source: titles in, licensed tracks out (#212).
+
+[`MusicLibraryAdapter`](_autosummary/foley.sources.music_library.adapter.html.md#foley.sources.music_library.adapter.MusicLibraryAdapter) is the [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter) of one
+free library (`incompetech`), built by the registry from the library’s config
+([`foley.sources.music_library.config`](_autosummary/foley.sources.music_library.config.html.md#module-foley.sources.music_library.config)). Through
+[`foley.sources.pull.add_from()`](_autosummary/foley.sources.pull.html.md#foley.sources.pull.add_from) a library’s tracks get what every source’s sounds
+get: the fail-closed licence gate ([`foley.keep()`](_autosummary/foley.html.md#foley.keep)) under the call’s intent, a
+by-value [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) from
+[`ingest_one()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.ingest_one) (decode, QC, embed, store) with the library’s
+attribution on its licence (credits), and the run manifest.
+
+- `search`: a library has no search API, so the query is the titles: one title,
+  a list of titles, or a credits description (a video’s, read by
+  [`titles_by_library()`](_autosummary/foley.sources.music_library.credit_parser.html.md#foley.sources.music_library.credit_parser.titles_by_library) for this
+  > library’s names). Each title is a candidate whose licence is
+
+  [`track_license()`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.track_license)’s; nothing is fetched.
+- `download`: the mirror chain [`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire) uses
+  ([`fetch_verified()`](_autosummary/foley.sources.music_library.acquisition.html.md#foley.sources.music_library.acquisition.fetch_verified): the library’s
+  server, then the Internet Archive’s raw copy), through the resilient transport,
+  each file checked by `verify` ([`probe_verify()`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.probe_verify)).
+
+The library is looked up by name on each call, so the adapter follows
+[`register_music_library()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.register_music_library) (`replace=True`).
+
+### Module Attributes
+
+| [`Query`](_autosummary/foley.sources.music_library.adapter.html.md#foley.sources.music_library.adapter.Query)   | one title or a credits description, or the titles.                  |
+|----------------------------------------------------------|---------------------------------------------------------------------|
+| [`Adapter`](_autosummary/foley.sources.music_library.adapter.html.md#foley.sources.music_library.adapter.Adapter) | Registry convention (arioso): the loader imports `adapter.Adapter`. |
+
+### Functions
+
+| [`query_titles`](_autosummary/foley.sources.music_library.adapter.html.md#foley.sources.music_library.adapter.query_titles)(query, library)   | The titles `query` names for `library`, in order, each once.   |
+|---------------------------------------------------------------------------------|----------------------------------------------------------------|
+
+### Classes
+
+| [`Adapter`](_autosummary/foley.sources.music_library.adapter.html.md#foley.sources.music_library.adapter.Adapter)                                          | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                              |
+|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`MusicLibraryAdapter`](_autosummary/foley.sources.music_library.adapter.html.md#foley.sources.music_library.adapter.MusicLibraryAdapter)([config, http, verify, ...]) | One free music library as a retrieve source (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)). |
+
+### foley.sources.music_library.adapter.Adapter
+
+Registry convention (arioso): the loader imports `adapter.Adapter`.
+
+### *class* foley.sources.music_library.adapter.MusicLibraryAdapter(config=None, \*, http=None, verify=<function probe_verify>, mirrors=(<function direct>, <function wayback>), library=None, libraries=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One free music library as a retrieve source (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)).
+
+* **Parameters:**
+  * **config** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The library’s `SOURCE_CONFIG` (the registry passes it); its
+    `api['library']` names the library.
+  * **http** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport)]) – The [`Transport`](_autosummary/foley.sources.http.html.md#foley.sources.http.Transport) files are asked through, used
+    as given (the registry passes a resilient one, per host). Default: the
+    library’s polite transport (`requests`, paced and retried per host),
+    with the call’s egress checked.
+  * **verify** ([`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]) – `bytes -> seconds`: how a file is checked to be a track (default
+    [`probe_verify()`](_autosummary/foley.sources.music_library.verify.html.md#foley.sources.music_library.verify.probe_verify)).
+  * **mirrors** ([`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Where a title’s file is asked for, in order.
+  * **library** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`MusicLibrary`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibrary)]) – The `MusicLibrary` itself, instead of the one registered
+    under `config['api']['library']`.
+  * **libraries** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`MusicLibrary`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibrary)]]) – Where a library name is looked up (default: the registered ones).
+  * **clock** ([`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[], [`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The monotonic clock the default transport paces by.
+  * **sleep** ([`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`float`](https://docs.python.org/3/builtins/functions.html#float)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – How the default transport waits.
+
+#### download(source_id)
+
+The verified bytes of one title, from the first mirror that serves them.
+
+* **Raises:**
+  * [**LookupError**](https://docs.python.org/3/builtins/exceptions.html#LookupError) – If the title’s licence is not one foley verified or lets it
+        keep (checked here too, so a direct call cannot fetch what the gate
+        would refuse).
+  * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If the default `verify` cannot run here.
+  * [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – If no mirror serves a file `verify` accepts.
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+#### get(source_id)
+
+The record of one title (`incompetech:Sneaky Snitch` or the bare title).
+
+* **Return type:**
+  [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)
+
+#### *property* library *: [MusicLibrary](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibrary)*
+
+The library this source serves (looked up on each call).
+
+* **Raises:**
+  [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If it is not registered, or is paid.
+
+#### search(query, , license=None, k=50, provider_params=None, \*\*\_affordances)
+
+The titles `query` names, as candidates (at most `k`; nothing fetched).
+
+`license` is a licence id (`'cc0'`, `'CC-BY-4.0'`, `'cc-by'`): a
+library has one licence, so its titles are all kept or none are (fail
+closed). There are no native params (`provider_params` is refused).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
+
+### foley.sources.music_library.adapter.Query
+
+one title or a credits description, or the titles.
+
+* **Type:**
+  What `query` may be
+
+alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)] | [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
+
+### foley.sources.music_library.adapter.query_titles(query, library)
+
+The titles `query` names for `library`, in order, each once.
+
+A string is read as a credits description first
+([`titles_by_library()`](_autosummary/foley.sources.music_library.credit_parser.html.md#foley.sources.music_library.credit_parser.titles_by_library), over this
+library’s names only); one that credits nothing is one title when it is a single
+line, and no title when it is several. A list (or a titles file’s
+`{title: metadata}`) is the titles.
+
+```pycon
+>>> lib = music_library("incompetech")
+>>> query_titles("Sneaky Snitch", lib)
+['Sneaky Snitch']
+>>> query_titles('"Sneaky Snitch" Kevin MacLeod (incompetech.com)', lib)
+['Sneaky Snitch']
+>>> query_titles(["A", "B", "A"], lib)
+['A', 'B']
+```
+
+* **Raises:**
+  [**SearchArgumentError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SearchArgumentError) – If a title is not a non-empty string, or `query` is
+      empty.
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+
+# _autosummary/foley.sources.music_library.config.html.md
+
+# foley.sources.music_library.config
+
+`SOURCE_CONFIGS` for the music libraries: one retrieve source per free library (#212).
+
+Each free [`MusicLibrary`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibrary) in
+[`MUSIC_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MUSIC_LIBRARIES) is a live retrieve
+source of its own name (`incompetech`), so `foley.add_from("incompetech",
+query="Sneaky Snitch")` runs it through the licence gate, `ingest_one` and the run
+manifest like any other source. A paid library is not a source: it never downloads.
+
+`SOURCE_CONFIGS` is a function, not a tuple: the registry
+([`foley.sources.registry.discover_sources()`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.discover_sources)) calls it on every discovery pass,
+so a library added with
+[`register_music_library()`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.register_music_library) becomes a
+source without a config file of its own. Each config is built by
+[`library_source_config()`](_autosummary/foley.sources.music_library.config.html.md#foley.sources.music_library.config.library_source_config) from the library itself and from
+[`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP) (the pace, the
+`Retry-After` cap, free pricing, external egress), so the polite fetch and the
+source share one declaration.
+
+```pycon
+>>> cfg = library_source_config(MUSIC_LIBRARIES["incompetech"])
+>>> cfg["kind"], cfg["license"]["accepted_license_ids"], cfg["pricing"]["unit"]
+('retrieve', ['CC-BY-4.0'], 'free')
+>>> [c["name"] for c in SOURCE_CONFIGS()]
+['incompetech']
+```
+
+### Module Attributes
+
+| [`CC0_LICENSE_ID`](_autosummary/foley.sources.music_library.config.html.md#foley.sources.music_library.config.CC0_LICENSE_ID)   | The id CC0 has in foley's licence table (`license='cc0'` keeps it).   |
+|-------------------------------------------------------------------|-----------------------------------------------------------------------|
+| [`EXTRA`](_autosummary/foley.sources.music_library.config.html.md#foley.sources.music_library.config.EXTRA)            | The pip extra a library source needs (the lazy `requests`).           |
+
+### Functions
+
+| [`SOURCE_CONFIGS`](_autosummary/foley.sources.music_library.config.html.md#foley.sources.music_library.config.SOURCE_CONFIGS)([libraries])    | The configs of the free libraries registered now (`libraries`: default [`MUSIC_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MUSIC_LIBRARIES)).   |
+|---------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`library_source_config`](_autosummary/foley.sources.music_library.config.html.md#foley.sources.music_library.config.library_source_config)(library) | The `SOURCE_CONFIG` of the free `library`.                                                                                                                                                        |
+| [`license_section`](_autosummary/foley.sources.music_library.config.html.md#foley.sources.music_library.config.license_section)(library)       | The `license` block of `library`'s source: its one licence, from its URL.                                                                                                                         |
+
+### foley.sources.music_library.config.CC0_LICENSE_ID *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'CC0-1.0'*
+
+The id CC0 has in foley’s licence table (`license='cc0'` keeps it).
+
+### foley.sources.music_library.config.EXTRA *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'music-library'*
+
+The pip extra a library source needs (the lazy `requests`).
+
+### foley.sources.music_library.config.SOURCE_CONFIGS(libraries=None)
+
+The configs of the free libraries registered now (`libraries`: default
+[`MUSIC_LIBRARIES`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MUSIC_LIBRARIES)).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.sources.music_library.config.library_source_config(library)
+
+The `SOURCE_CONFIG` of the free `library`.
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – If `library` is paid (a paid library is not a source).
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.sources.music_library.config.license_section(library)
+
+The `license` block of `library`’s source: its one licence, from its URL.
+
+`search_default` is `None`: a library has one licence, so `add_from`’s
+default does not narrow it to CC0 (an explicit `license=` still does, fail
+closed). Each item’s [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) is still
+[`track_license()`](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.track_license)’s, gated per call.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 
 # _autosummary/foley.sources.music_library.credit_parser.html.md
@@ -19663,11 +20140,12 @@ a caller states only what it changes.
 
 ### Functions
 
-| [`fetch_audio`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.fetch_audio)(url, \*, http[, config])              | `url`'s bytes, asked for with the config's user agent.                                                                                                                                                                                                        |
-|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`make_fetch`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.make_fetch)(\*[, transport, config, clock, sleep]) | The default `url -> bytes`: [`fetch_audio()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.fetch_audio) over [`polite_transport()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.polite_transport) (`config` laid over [`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP)). |
-| [`music_library_config`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.music_library_config)([config])                    | `config` laid over [`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP) (top-level keys: a `retry` or `rate` given replaces the default one whole).                                                                                            |
-| [`polite_transport`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.polite_transport)([transport, config, clock, ...]) | `transport` (default [`requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport)) with a resilient wrapper per host, built from `config` (see the module docstring).                                          |
+| [`fetch_audio`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.fetch_audio)(url, \*, http[, config])               | `url`'s bytes, asked for with the config's user agent.                                                                                                                                                                                                        |
+|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`library_fetch`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.library_fetch)(\*[, fetch, transport, config, ...]) | The `url -> bytes` a library's files are fetched with (one rule for every caller).                                                                                                                                                                            |
+| [`make_fetch`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.make_fetch)(\*[, transport, config, clock, sleep])  | The default `url -> bytes`: [`fetch_audio()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.fetch_audio) over [`polite_transport()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.polite_transport) (`config` laid over [`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP)). |
+| [`music_library_config`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.music_library_config)([config])                     | `config` laid over [`MUSIC_LIBRARY_HTTP`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP) (top-level keys: a `retry` or `rate` given replaces the default one whole).                                                                                            |
+| [`polite_transport`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.polite_transport)([transport, config, clock, ...])  | `transport` (default [`requests_transport()`](_autosummary/foley.sources.http.html.md#foley.sources.http.requests_transport)) with a resilient wrapper per host, built from `config` (see the module docstring).                                          |
 
 ### foley.sources.music_library.fetch.Fetch
 
@@ -19705,6 +20183,21 @@ follow-up.
       its header alone would still accept).
 * **Return type:**
   [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.sources.music_library.fetch.library_fetch(\*, fetch=None, transport=None, config=None, what='music library', clock=<built-in function monotonic>, sleep=<built-in function sleep>)
+
+The `url -> bytes` a library’s files are fetched with (one rule for every caller).
+
+A `fetch` of the caller’s own is paced per host by the config’s `rate`
+([`pace_per_host()`](_autosummary/foley.sources.resilience.html.md#foley.sources.resilience.pace_per_host)). Otherwise the call’s egress is
+checked ([`foley.runtime.require_egress()`](_autosummary/foley.runtime.html.md#foley.runtime.require_egress), so [`foley.offline()`](_autosummary/foley.html.md#foley.offline) refuses
+it, naming `what`) and [`make_fetch()`](_autosummary/foley.sources.music_library.fetch.html.md#foley.sources.music_library.fetch.make_fetch) goes through `transport`.
+
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – When both `fetch` and `transport` are given.
+  * [**EgressBlocked**](_autosummary/foley.runtime.html.md#foley.runtime.EgressBlocked) – When the HTTP path is refused by an offline scope.
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
 
 ### foley.sources.music_library.fetch.make_fetch(\*, transport=None, config=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
 
@@ -19775,11 +20268,18 @@ print(attribution_text(rows))
   [`tracks_table()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.tracks_table) writes them as CSV and [`kept_digests()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests) (or
   [`kept_sources()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_sources), with each file’s URL) reads a table back, so a rerun fetches
   > only what it lacks.
+- **Each free library is also a live retrieve source** of its own name (#212):
+  `foley.add_from("incompetech", query="Sneaky Snitch")` (a title, a list of
+  titles, or a credits description) puts each title through the licence gate
+  under the call’s intent and [`ingest_one()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.ingest_one), giving
+  by-value [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) rows with their attribution, and a run
+  manifest. The config is built from the library ([`library_source_config()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.library_source_config),
+  declared as the callable `config.SOURCE_CONFIGS`, so a library registered at
+  runtime is a source on the next discovery); the adapter
+  ([`MusicLibraryAdapter`](_autosummary/foley.sources.music_library.adapter.html.md#foley.sources.music_library.adapter.MusicLibraryAdapter)) runs the same
+  mirror chain and `verify` as [`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire). A paid library is not a source.
 
-This is not a live search source (it has no `search` / `download` adapter and no
-`config.py`), so [`foley.sources.registry.discover_sources()`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.discover_sources) does not list it;
-import it as `foley.sources.music_library`. Stdlib only at import; `requests`
-loads on the first real download.
+Stdlib only at import; `requests` loads on the first real download.
 
 ```pycon
 >>> lib = MUSIC_LIBRARIES["incompetech"]
@@ -19799,6 +20299,7 @@ loads on the first real download.
 | [`files_store`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.files_store)(out)                                   | `out` as a `{file name: bytes}` store: a mapping is used as it is; a folder becomes foley's file store over it ([`foley.stores.make_byte_store()`](_autosummary/foley.stores.html.md#foley.stores.make_byte_store), which makes the folder on its first write).         |
 | [`kept_digests`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests)(table)                                | `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun may keep.                                                                                                                                                                                           |
 | [`kept_sources`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_sources)(table)                                | `{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a tracks table: [`kept_digests()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.kept_digests) with where each file came from, so a kept row still says which URL and mirror served it (`acquire(kept=...)` takes either). |
+| [`library_source_config`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.library_source_config)(library)                     | The `SOURCE_CONFIG` of the free `library`.                                                                                                                                                                                                                                        |
 | [`make_fetch`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.make_fetch)(\*[, transport, config, clock, sleep])  | The default `url -> bytes`: [`fetch_audio()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.fetch_audio) over [`polite_transport()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.polite_transport) (`config` laid over `MUSIC_LIBRARY_HTTP`).                                                                    |
 | [`mirror_name`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.mirror_name)(mirror)                                | The name a row records for `mirror` (its function name).                                                                                                                                                                                                                          |
 | [`music_library`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.music_library)(library, \*[, libraries])            | `library` itself, or the registered library of that name.                                                                                                                                                                                                                         |
@@ -19818,9 +20319,10 @@ loads on the first real download.
 
 ### Classes
 
-| [`AcquiredTrack`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack)(title, library, status, license)   | One row of the tracks table: a title, what became of it, and its provenance.   |
-|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
-| [`MusicLibrary`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibrary)(name, author[, license_url, ...])   | One library: who made it, under which licence, and where a title's file is.    |
+| `MusicLibraryAdapter`([config, http, verify, ...])                                              | One free music library as a retrieve source (a [`SourceAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceAdapter)).   |
+|-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`AcquiredTrack`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.AcquiredTrack)(title, library, status, license) | One row of the tracks table: a title, what became of it, and its provenance.                                                                       |
+| [`MusicLibrary`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibrary)(name, author[, license_url, ...]) | One library: who made it, under which licence, and where a title's file is.                                                                        |
 
 ### Exceptions
 
@@ -20031,6 +20533,15 @@ still says which URL and mirror served it (`acquire(kept=...)` takes either).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]
 
+### foley.sources.music_library.library_source_config(library)
+
+The `SOURCE_CONFIG` of the free `library`.
+
+* **Raises:**
+  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – If `library` is paid (a paid library is not a source).
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### foley.sources.music_library.make_fetch(\*, transport=None, config=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
 
 The default `url -> bytes`: [`fetch_audio()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.fetch_audio) over [`polite_transport()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.polite_transport)
@@ -20130,11 +20641,18 @@ A free library is checked for one licence right only, keeping the files
 (`cache_bytes_ok`); the uses a production makes of them are gated per title by
 [`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire) (`intended_use`).
 
+A library’s name is also its live-source name (`foley.add_from(name, ...)`),
+so it may not be the name of a source another [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) module
+declares, or one registered directly (`openverse`, `freesound`, a `fal_*`
+endpoint, …): that library would silently take the source over, or silently
+never become one.
+
 * **Raises:**
-  [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – If the name is taken (and not `replace`), or a free
-      library has no `track_url` rule or a licence that does not allow
-      keeping the files (a ShareAlike / NoDerivatives licence, refused on
-      purpose; a licence URL foley cannot read; a licence whose flags say no).
+  * [**MusicLibraryError**](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.MusicLibraryError) – If the name is taken (and not `replace`), or a free
+        library has no `track_url` rule or a licence that does not allow
+        keeping the files (a ShareAlike / NoDerivatives licence, refused on
+        purpose; a licence URL foley cannot read; a licence whose flags say no).
+  * [**SourceNameCollision**](_autosummary/foley.sources.registry.html.md#foley.sources.registry.SourceNameCollision) – If the name is another module’s source name.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
@@ -20256,6 +20774,8 @@ The Internet Archive’s raw copy of `url` (`WAYBACK_RAW`).
 
 | [`acquisition`](_autosummary/foley.sources.music_library.acquisition.html.md#module-foley.sources.music_library.acquisition)     | Acquire a music library's titles: verified files, one provenance row each, a resumable table.   |
 |-----------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| [`adapter`](_autosummary/foley.sources.music_library.adapter.html.md#module-foley.sources.music_library.adapter)             | A free music library as a live retrieve source: titles in, licensed tracks out (#212).          |
+| [`config`](_autosummary/foley.sources.music_library.config.html.md#module-foley.sources.music_library.config)               | `SOURCE_CONFIGS` for the music libraries: one retrieve source per free library (#212).          |
 | [`credit_parser`](_autosummary/foley.sources.music_library.credit_parser.html.md#module-foley.sources.music_library.credit_parser) | Which titles a video credits, by library: the credit-block parser and the titles file.          |
 | [`fetch`](_autosummary/foley.sources.music_library.fetch.html.md#module-foley.sources.music_library.fetch)                 | Fetching a library's files politely, through foley's transport and its resilience layer.        |
 | [`libraries`](_autosummary/foley.sources.music_library.libraries.html.md#module-foley.sources.music_library.libraries)         | Music libraries as data: who made one, its licence, its credit, where a title's file is.        |
@@ -20413,11 +20933,18 @@ A free library is checked for one licence right only, keeping the files
 (`cache_bytes_ok`); the uses a production makes of them are gated per title by
 [`acquire()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.acquire) (`intended_use`).
 
+A library’s name is also its live-source name (`foley.add_from(name, ...)`),
+so it may not be the name of a source another [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) module
+declares, or one registered directly (`openverse`, `freesound`, a `fal_*`
+endpoint, …): that library would silently take the source over, or silently
+never become one.
+
 * **Raises:**
-  [**MusicLibraryError**](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibraryError) – If the name is taken (and not `replace`), or a free
-      library has no `track_url` rule or a licence that does not allow
-      keeping the files (a ShareAlike / NoDerivatives licence, refused on
-      purpose; a licence URL foley cannot read; a licence whose flags say no).
+  * [**MusicLibraryError**](_autosummary/foley.sources.music_library.libraries.html.md#foley.sources.music_library.libraries.MusicLibraryError) – If the name is taken (and not `replace`), or a free
+        library has no `track_url` rule or a licence that does not allow
+        keeping the files (a ShareAlike / NoDerivatives licence, refused on
+        purpose; a licence URL foley cannot read; a licence whose flags say no).
+  * [**SourceNameCollision**](_autosummary/foley.sources.registry.html.md#foley.sources.registry.SourceNameCollision) – If the name is another module’s source name.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
@@ -20808,12 +21335,32 @@ provenance + the CLAP vector persist. The audio is re-fetched on demand via the
 adapter (there is no local blob to serve — `library.audio(id)` raises for a
 remote by-reference sound; that is the contract).
 
+### Module Attributes
+
+| [`SOURCE_DEFAULT_LICENSE`](_autosummary/foley.sources.pull.html.md#foley.sources.pull.SOURCE_DEFAULT_LICENSE)   | the source's own (`config['license']['search_default']`), [`DFLT_SEARCH_LICENSE`](_autosummary/foley.sources.pull.html.md#foley.sources.pull.DFLT_SEARCH_LICENSE) when it declares none.   |
+|---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`DFLT_SEARCH_LICENSE`](_autosummary/foley.sources.pull.html.md#foley.sources.pull.DFLT_SEARCH_LICENSE)      | The licence a search asks for when neither the call nor the source says.                                                                                |
+
 ### Functions
 
 | [`add_from`](_autosummary/foley.sources.pull.html.md#foley.sources.pull.add_from)(source, \*, query[, license, limit, ...])   | Search a live `source` and ingest its license-clean hits into `library`.   |
 |-------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
+| [`search_license`](_autosummary/foley.sources.pull.html.md#foley.sources.pull.search_license)(license, config)                      | The `license` a search sends: `license`, or the source's default for it.   |
 
-### foley.sources.pull.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
+### foley.sources.pull.DFLT_SEARCH_LICENSE *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'cc0'*
+
+The licence a search asks for when neither the call nor the source says.
+
+### foley.sources.pull.SOURCE_DEFAULT_LICENSE *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'source-default'*
+
+the source’s own
+(`config['license']['search_default']`), [`DFLT_SEARCH_LICENSE`](_autosummary/foley.sources.pull.html.md#foley.sources.pull.DFLT_SEARCH_LICENSE) when it
+declares none. A music library has one licence, so it declares `None`.
+
+* **Type:**
+  `add_from`’s `license` default
+
+### foley.sources.pull.add_from(source, , query, license='source-default', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -20825,9 +21372,12 @@ applies the by-reference storage gate from the sound’s own license.
 
 * **Parameters:**
   * **source** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A registered live-source name (e.g. `'freesound'`).
-  * **query** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language search query.
-  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query (default
-    `'cc0'`). The per-item fail-closed guard enforces the source’s
+  * **query** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The natural-language search query (a music library also takes a
+    list of titles).
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query. Default: the
+    source’s own (`config['license']['search_default']`), `'cc0'` for a
+    source that declares none; a music library (one licence) declares no
+    narrowing. The per-item fail-closed guard enforces the source’s
     accepted-license allowlist regardless.
   * **limit** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max candidates to request from the source.
   * **library** – Target [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
@@ -20864,6 +21414,20 @@ applies the by-reference storage gate from the sound’s own license.
         `ucs_category` naming two different top levels.
   * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – A missing key or optional dependency.
 
+### foley.sources.pull.search_license(license, config)
+
+The `license` a search sends: `license`, or the source’s default for it.
+
+```pycon
+>>> search_license("CC-BY-4.0", {}), search_license(SOURCE_DEFAULT_LICENSE, {})
+('CC-BY-4.0', 'cc0')
+>>> print(search_license(SOURCE_DEFAULT_LICENSE, {"license": {"search_default": None}}))
+None
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 
 # _autosummary/foley.sources.registry.html.md
 
@@ -20897,18 +21461,48 @@ Out-of-tree plugins — and test doubles — register directly via
 
 ### Functions
 
-| [`discover_sources`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.discover_sources)()                       | Scan [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) sub-packages for a `SOURCE_CONFIG` and register them.   |
-|-------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`get_source`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.get_source)(name)                         | Return the `{'config', 'adapter'}` entry for `name`, lazily building the adapter.                                                                |
-| [`list_sources`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.list_sources)(\*[, egress_allow])         | Return the names of registered live sources (runs discovery first).                                                                              |
-| [`local_sources`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.local_sources)()                          | The names of sources that run entirely on-device (`data_egress == 'local'`).                                                                     |
-| [`register_source`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.register_source)(name, config[, adapter]) | Register a live source directly (out-of-tree plugin or a test double).                                                                           |
-| [`require_source_egress`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.require_source_egress)(name[, config])    | Raise [`EgressBlocked`](_autosummary/foley.runtime.html.md#foley.runtime.EgressBlocked) if source `name` may not run now.               |
-| [`source_egress`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.source_egress)(name)                      | The declared `data_egress` class of source `name` (`None` if undeclared).                                                                        |
+| [`declared_source_names`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.declared_source_names)(\*[, exclude])     | `{source name: module}` of the sources the sub-packages declare, and of the sources registered directly ([`register_source()`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.register_source), module `None`), leaving out the modules in `exclude`.   |
+|-------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`discover_sources`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.discover_sources)()                       | Scan [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) sub-packages for a `SOURCE_CONFIG` and register them.                                                                                       |
+| [`get_source`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.get_source)(name)                         | Return the `{'config', 'adapter'}` entry for `name`, lazily building the adapter.                                                                                                                                                    |
+| [`list_sources`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.list_sources)(\*[, egress_allow])         | Return the names of registered live sources (runs discovery first).                                                                                                                                                                  |
+| [`local_sources`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.local_sources)()                          | The names of sources that run entirely on-device (`data_egress == 'local'`).                                                                                                                                                         |
+| [`register_source`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.register_source)(name, config[, adapter]) | Register a live source directly (out-of-tree plugin or a test double).                                                                                                                                                               |
+| [`require_source_egress`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.require_source_egress)(name[, config])    | Raise [`EgressBlocked`](_autosummary/foley.runtime.html.md#foley.runtime.EgressBlocked) if source `name` may not run now.                                                                                                   |
+| [`source_egress`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.source_egress)(name)                      | The declared `data_egress` class of source `name` (`None` if undeclared).                                                                                                                                                            |
+
+### Exceptions
+
+| [`SourceNameCollision`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.SourceNameCollision)   | Two declarations claim one source name (a library named after a built-in source, ...).   |
+|------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
 
 ### foley.sources.registry.SOURCE_REGISTRY *= {}*
 
 Public read alias of the registry (callers/tests inspect discovered sources).
+
+### *exception* foley.sources.registry.SourceNameCollision
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+Two declarations claim one source name (a library named after a built-in source, …).
+
+Raised by [`discover_sources()`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.discover_sources) (whatever order the packages are walked in) and
+by [`register_music_library()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.register_music_library): a name that
+silently resolved to whichever module came first would send `add_from` to the
+wrong source, under the wrong licence.
+
+### foley.sources.registry.declared_source_names(, exclude=())
+
+`{source name: module}` of the sources the sub-packages declare, and of the
+sources registered directly ([`register_source()`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.register_source), module `None`), leaving out
+the modules in `exclude`.
+
+The name space a new declaration must not collide with:
+[`register_music_library()`](_autosummary/foley.sources.music_library.html.md#foley.sources.music_library.register_music_library) checks a library’s
+name against it (`exclude=('music_library',)`).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.sources.registry.discover_sources()
 
@@ -20917,15 +21511,23 @@ Scan [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) 
 A valid live source is a sub-package of [`foley.sources`](_autosummary/foley.sources.html.md#module-foley.sources) (`ispkg` and
 not `_`-prefixed) whose `config.py` defines a `SOURCE_CONFIG` dict with a
 `name` (or a `SOURCE_CONFIGS` sequence of them: several sources sharing one
-adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters + helpers) are skipped, so this
-never cross-captures the corpus adapters. Only `config.py` is imported here
-(stdlib-cheap); the adapter loads lazily in [`get_source()`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.get_source). Idempotent —
-an already-registered name (e.g. a test double) is never overwritten.
+adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters
+
++ helpers) are skipped, so this never cross-captures the corpus adapters. Only
+  `config.py` is imported here (stdlib-cheap); the adapter loads lazily in
+
+[`get_source()`](_autosummary/foley.sources.registry.html.md#foley.sources.registry.get_source). Idempotent: an already-registered name (e.g. a test double)
+: is never overwritten. A module whose `SOURCE_CONFIGS()` raises is skipped with
+  a warning.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 * **Returns:**
   The list of discovered source names.
+* **Raises:**
+  [**SourceNameCollision**](_autosummary/foley.sources.registry.html.md#foley.sources.registry.SourceNameCollision) – If two modules declare the same source name (checked
+      over every declaration before anything is registered, so the outcome does
+      not depend on the order the packages are walked in).
 
 ### foley.sources.registry.get_source(name)
 
@@ -21260,6 +21862,21 @@ fakes for both and no ML stack loads at all — the whole adapter is testable wi
 torch. The adapter performs NO storage/library access; the façade converges it on
 the shared ingest pipeline.
 
+**Reproducibility across devices (#207).** The default generator is a CPU
+`torch.Generator` ([`cpu_generator()`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.cpu_generator)), as diffusers recommends: the pipeline’s
+`randn_tensor` draws the initial latents on the generator’s device and moves them to
+the pipeline’s, so a seed starts from the same noise on CUDA and on CPU. Only that starting noise is
+device-independent: the denoising runs in the pipeline’s device and dtype (float16 on
+CUDA, float32 on CPU), and the scheduler’s per-step noise is drawn there too, so the
+bytes are identical only on the same device and dtype: both are recorded in
+`generation_params` (`device`, `dtype`, and the `generator_device`). That the
+pipeline accepts a CPU generator for a CUDA pipeline is diffusers’ `randn_tensor`
+behaviour (it draws on the generator’s device, then moves the tensor), not checked
+here (diffusers is not a test dependency); [`torch_generator()`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.torch_generator) (on the
+pipeline’s device) is one `make_generator=` away. A clip stored before #207 records
+no `generator_device`: its generator was on the pipeline’s device, so a CUDA one
+reproduces with `make_generator=torch_generator`.
+
 ### Module Attributes
 
 | [`GeneratorFactory`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.GeneratorFactory)   | the seeded RNG the pipeline draws from.                             |
@@ -21268,8 +21885,9 @@ the shared ingest pipeline.
 
 ### Functions
 
-| [`torch_generator`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.torch_generator)(device, seed)   | A `torch.Generator` on `device` seeded with `seed` (the default factory).   |
-|----------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| [`cpu_generator`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.cpu_generator)(device, seed)   | A CPU `torch.Generator` seeded with `seed`, whatever the pipeline's `device`.   |
+|--------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| [`torch_generator`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.torch_generator)(device, seed) | A `torch.Generator` on `device` (the pipeline's) seeded with `seed`.            |
 
 ### Classes
 
@@ -21304,8 +21922,9 @@ Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](_autosummary
     `.device`; production omits it and the real
     `diffusers.StableAudioPipeline` lazy-loads on first generation).
   * **make_generator** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Any`](https://docs.python.org/3/library/typing.html#typing.Any), [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]]) – `make_generator(device, seed)`, the seeded generator handed
-    to the pipeline (default [`torch_generator()`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.torch_generator)); a test with a fake
-    pipeline passes a fake one, so no torch is needed.
+    to the pipeline (default [`cpu_generator()`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.cpu_generator), for the same initial noise
+    on any device; [`torch_generator()`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.torch_generator) puts it on the pipeline’s device);
+    a test with a fake pipeline passes a fake one, so no torch is needed.
 
 #### generate(prompt, , duration_s=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
 
@@ -21322,9 +21941,14 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
   * **negative_prompt** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Content to exclude (ignored by the model when guidance
     ≤ 1).
   * **steps** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Diffusion steps (native `num_inference_steps`); default 200.
-  * **seed** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Reproducibility seed → a per-device `torch.Generator`; recorded
-    in provenance. `None` draws one ([`draw_seed()`](_autosummary/foley.sources.base.html.md#foley.sources.base.draw_seed))
-    and records it, so the clip is reproducible all the same (#163).
+  * **seed** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Reproducibility seed → the generator `make_generator` builds (by
+    default a CPU `torch.Generator`, #207); recorded in provenance, with
+    the device and dtype it ran on.
+    `None` draws one ([`draw_seed()`](_autosummary/foley.sources.base.html.md#foley.sources.base.draw_seed)) and records
+    it, so the clip is reproducible all the same (#163). Through
+    [`foley.generate()`](_autosummary/foley.html.md#foley.generate) the dispatch layer has already drawn it
+    (`foley.sources._dispatch.draws_seed()`, #206); this draw serves a
+    direct call.
   * **loop** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – No native param (a future WEAVE crossfade) — warn-and-drop.
   * **output_format** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – No native param (the audio-write layer) — warn-and-drop;
     the clip is archived as FLAC by ingest regardless.
@@ -21350,9 +21974,15 @@ caller of this method owns those. It also owns the seed: unlike
 [`generate()`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.StableAudioAdapter.generate), which draws one when none is given, `seed=None` here sends
 no generator, so the pipeline falls back on its own randomness.
 
+### foley.sources.stable_audio.adapter.cpu_generator(device, seed)
+
+A CPU `torch.Generator` seeded with `seed`, whatever the pipeline’s `device`.
+
+The default factory (#207): the initial noise is then the same on every device.
+
 ### foley.sources.stable_audio.adapter.torch_generator(device, seed)
 
-A `torch.Generator` on `device` seeded with `seed` (the default factory).
+A `torch.Generator` on `device` (the pipeline’s) seeded with `seed`.
 
 
 # _autosummary/foley.sources.stable_audio.config.html.md
@@ -21475,7 +22105,10 @@ Generate a sound for `prompt` on the CPU; return its bytes + provisional candida
 
 `duration_s` is clamped to the model’s 1..120 s (default 10 s); the model renders
 whole latent frames, so the clip may differ from it by a few milliseconds.
-`seed=None` draws a random seed, recorded in the clip’s provenance.
+`seed=None` draws a random seed, recorded in the clip’s provenance (the
+script always takes one). Through [`foley.generate()`](_autosummary/foley.html.md#foley.generate) the dispatch layer
+has already drawn it (`foley.sources._dispatch.draws_seed()`, #206); this
+draw serves a direct call.
 `provider_params` (#61) are native script flags merged over the translated
 ones (`seconds`, `steps`, `cfg`, `seed`; any other key is passed as
 `--<key> <value>`) and recorded in `generation_params`; the config’s
@@ -23201,7 +23834,7 @@ sudo). Surfaces the exact per-platform command so the user can opt in.
 * **Returns:**
   `{name: {'available': bool, 'purpose': str, 'install': str, 'url': str}}`.
 
-### foley.weave.weave(narration, timeline, , master='podcast', library=None, transcript=None, aligner=None, apply_strategy=None, sr=48000, cache=None, watermark=None, watermarker=None, sign_cert=None, export_captions=True, provenance_store=None)
+### foley.weave.weave(narration, timeline, , master='podcast', library=None, transcript=None, aligner=None, apply_strategy=None, sr=48000, cache=None, watermark=None, watermarker=None, sign_cert=None, export_captions=True, provenance_store=None, intended_use=None)
 
 Weave the chosen sounds under `narration` into a mastered, editable mix.
 
@@ -23232,10 +23865,20 @@ an optional keyword.
     with [`foley.provenance.make_c2pa_signer()`](_autosummary/foley.provenance.html.md#foley.provenance.make_c2pa_signer)); omit for the sidecar only.
   * **export_captions** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `True` (default), emit WebVTT + SRT SDH captions.
   * **provenance_store** – An optional `MutableMapping` to persist the C2PA sidecar.
+  * **intended_use** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse)]) – The rights intent the mix is for (#208). Given, the gate is
+    fail-closed: every *enabled* clip is judged by its record in `library`
+    (a clip with no record is refused), and so is the narration when it is a
+    library ref; any refusal raises before rendering. `None` (default)
+    renders as before but warns (`FutureWarning`) about what
+    [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) would refuse: a future
+    release gates by default.
 * **Return type:**
   [`WeaveResult`](_autosummary/foley.weave.html.md#foley.weave.WeaveResult)
 * **Returns:**
   A [`WeaveResult`](_autosummary/foley.weave.html.md#foley.weave.WeaveResult).
+* **Raises:**
+  [**LicenseRefusal**](_autosummary/foley.html.md#foley.LicenseRefusal) – If `intended_use` is given and refuses a clip or the
+      narration (`.refused` names each id and reason).
 
 ### Modules
 
@@ -23967,18 +24610,20 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 18:14 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/f8ffee5a4dbffe056ecf8b3dd36f745a69408151"><code>f8ffee5</code></a> on branch <code>main</code>, for **foley 0.0.95** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 20:19 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/29b5b69533a67e628cf8ba76c380cff9be9684da"><code>29b5b69</code></a> on branch <code>main</code>, for **foley 0.0.96** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.96) is ahead of the latest release on PyPI (0.0.95): these docs describe unreleased code.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/f8ffee5a4dbffe056ecf8b3dd36f745a69408151"><code>f8ffee5a4dbffe056ecf8b3dd36f745a69408151</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/29b5b69533a67e628cf8ba76c380cff9be9684da"><code>29b5b69533a67e628cf8ba76c380cff9be9684da</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
-| Tags at this commit | <code>0.0.95</code>                                                                                                                                   |
+| Tags at this commit | <code>0.0.96</code>                                                                                                                                   |
 | Working tree        | clean                                                                                                                                                 |
 | Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
@@ -23987,9 +24632,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40556867452">40556867452</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40560912322">40560912322</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>e654a81556252b99821c1a8a8929dbf50dda3ae6</code> (in the history of the built commit) |
+| Event commit | <code>4d792e0801c291aee40a4d9f399966d892510dce</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -24014,13 +24659,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.95/">0.0.95</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.95/">0.0.95</a>, older than the documented version (0.0.96).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout f8ffee5a4dbffe056ecf8b3dd36f745a69408151
+git checkout 29b5b69533a67e628cf8ba76c380cff9be9684da
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

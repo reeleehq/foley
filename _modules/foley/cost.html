@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=60a9f236"></script>
+    <script src="../../_static/documentation_options.js?v=5751785c"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.95" />
+  <meta name="docsearch:version" content="0.0.96" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -903,22 +903,52 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">step</span><span class="p">),</span> <span class="n">_BLOCK_DECIMALS</span><span class="p">))</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_finite_non_negative</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether ``value`` is a real number (not a bool), finite and &gt;= 0."""</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="n">value</span> <span class="o">&gt;=</span> <span class="mi">0</span>
+    <span class="p">)</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">actual_call_cost</span><span class="p">(</span>
-    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">duration_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">duration_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">compute_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""What a call just made costs at the declared price, for the duration actually sent.</span>
 
 <span class="sd">    The same pricing rule as :func:`estimate_call`, so the estimate and the actual</span>
 <span class="sd">    cannot disagree on it; ``None`` (unknown) when a per-second source was left to</span>
-<span class="sd">    choose its own length.</span>
+<span class="sd">    choose its own length. A source billed per compute second (unknown beforehand) is</span>
+<span class="sd">    priced from ``compute_s``, the run time the provider reported (#186), and is</span>
+<span class="sd">    ``None`` without it.</span>
 
 <span class="sd">    &gt;&gt;&gt; cfg = {"pricing": {"unit": "per_second", "amount_usd": 0.002}}</span>
 <span class="sd">    &gt;&gt;&gt; actual_call_cost(cfg, duration_s=3.0)</span>
 <span class="sd">    0.006</span>
 <span class="sd">    &gt;&gt;&gt; actual_call_cost(cfg) is None</span>
 <span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; gpu = {"pricing": {"unit": "per_compute_second", "amount_usd": 0.001}}</span>
+<span class="sd">    &gt;&gt;&gt; actual_call_cost(gpu, compute_s=42.0), actual_call_cost(gpu) is None</span>
+<span class="sd">    (0.042, True)</span>
+
+<span class="sd">    Only a finite number of seconds &gt;= 0 is priced (a NaN, a negative, a bool or a</span>
+<span class="sd">    string is ``None``: an unknown cost is never guessed):</span>
+
+<span class="sd">    &gt;&gt;&gt; [actual_call_cost(gpu, compute_s=s) for s in (float("nan"), -1.0, True, "3")]</span>
+<span class="sd">    [None, None, None, None]</span>
 <span class="sd">    """</span>
-    <span class="k">if</span> <span class="n">duration_s</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pricing"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"unit"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"per_second"</span><span class="p">:</span>
+    <span class="n">pricing</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pricing"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">pricing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"unit"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"per_compute_second"</span><span class="p">:</span>
+        <span class="n">amount</span> <span class="o">=</span> <span class="n">pricing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"amount_usd"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">amount</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">_finite_non_negative</span><span class="p">(</span><span class="n">compute_s</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">compute_s</span><span class="p">),</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">duration_s</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pricing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"unit"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"per_second"</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="c1"># A source billed by its video's length bills the seconds it actually produced.</span>
     <span class="k">return</span> <span class="n">estimate_call</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">duration_s</span><span class="o">=</span><span class="n">duration_s</span><span class="p">,</span> <span class="n">video_duration_s</span><span class="o">=</span><span class="n">duration_s</span><span class="p">)</span>

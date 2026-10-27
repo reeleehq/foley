@@ -83,7 +83,15 @@ foley.add_from(
 timeline = foley.plan(candidates)  # the editable sound-design plan
 result = foley.weave("narration.wav", timeline)  # mastered mix + SDH captions + credits
 result.notes  # how placements were timed, e.g. estimates when foley[align] is absent
+
+# Rights intent: say what the mix is for, and every placed sound is re-checked (fail-closed)
+use = foley.IntendedUse(commercial=True, publish=True, territory="US")
+hits = foley.search("door creak", intended_use=use)  # only rows the intent keeps
+timeline = foley.plan(candidates, intended_use=use)  # raises foley.LicenseRefusal
+result = foley.weave("narration.wav", timeline, intended_use=use)  # ...naming each id
 ```
+
+**Rights intent and migration.** `foley.plan`, `foley.weave`, `foley.search` and `foley.similar` take `intended_use=` (an `IntendedUse`: commercial or not, where the sound is shown). Given, the licence gate is fail-closed: search and similar drop every row the intent does not keep, and plan and weave raise `foley.LicenseRefusal` (its `.refused` maps each refused id to the reason), judging every enabled clip by its library record and the narration too when it is a library sound. `foley.plan` without `library=` judges each candidate’s own record (the one it was found with); pass `library=` to judge the library’s current one. A clip whose record cannot be read (a corrupt stored record) counts as having no record, so it is refused under an explicit intent; for the same reason a plain mapping of audio arrays used as `library=` cannot pass an explicit intent (it holds sounds, not licence records) and only works without one. A narration given as audio has no licence and is not judged. The MCP and CLI verbs pass their `commercial_ok` / `territory` through to the same gate. Without `intended_use=`, plan and weave behave as before but emit one `FutureWarning` naming the sounds the default intent (`foley.DEFAULT_INTENDED_USE`: commercial publishing) would refuse: a future release gates by default. Pass `intended_use=foley.DEFAULT_INTENDED_USE` to opt in now, or `intended_use=foley.IntendedUse(...)` for your actual use. Search and similar without it keep today’s commercial-only filter.
 
 ## How it works — four stages
 

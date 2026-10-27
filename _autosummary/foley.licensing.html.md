@@ -31,6 +31,7 @@ item is redistributable but stored by-reference.
 | [`GEN_AI_PREFERENCE_SCOPES`](#foley.licensing.GEN_AI_PREFERENCE_SCOPES)     | Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.                                                                                                                                                                           |
 | [`EU_MEMBER_STATES`](#foley.licensing.EU_MEMBER_STATES)             | The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU", with the EU territories that carry their own codes: France's outermost regions (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and Finland's Åland. |
 | [`LICENSE_EXCLUDED_TERRITORIES`](#foley.licensing.LICENSE_EXCLUDED_TERRITORIES) | `license_id` -> the territories where it grants nothing (ISO 3166-1 alpha-2 codes, plus `"EU"` for every member state).                                                                                                                                    |
+| [`NO_RECORD_REASON`](#foley.licensing.NO_RECORD_REASON)             | The reason a placed sound with no record (nothing to read a licence from) is refused.                                                                                                                                                                      |
 
 ### Functions
 
@@ -39,6 +40,7 @@ item is redistributable but stored by-reference.
 | [`ai_use_permitted`](#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                        |
 | [`apply_license_flags`](#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                          |
 | [`cc_refused_terms`](#foley.licensing.cc_refused_terms)(url)                             | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                             |
+| [`check_placed`](#foley.licensing.check_placed)(records, intended_use, \*, what)     | The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.                                             |
 | [`checked_refusal_reason`](#foley.licensing.checked_refusal_reason)(record, intended_use)      | [`refusal_reason()`](#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.    |
 | [`derivative_refusal`](#foley.licensing.derivative_refusal)(source)                        | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                |
 | [`derive_license_flags`](#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                               |
@@ -50,6 +52,7 @@ item is redistributable but stored by-reference.
 | [`license_id_from_cc_url`](#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                                   |
 | [`license_meta`](#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback).       |
 | [`narrow_to_source`](#foley.licensing.narrow_to_source)(output, source)                  | Narrow `output`'s rights to what `source` allows, in place (never widening).                                                   |
+| [`placed_record`](#foley.licensing.placed_record)(library, sound_id, \*[, ...])       | `library`'s record for `sound_id` as a rights gate reads it, never raising.                                                    |
 | [`refusal_reason`](#foley.licensing.refusal_reason)(record, intended_use)              | Why [`keep()`](#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.     |
 | [`refusals`](#foley.licensing.refusals)(sound_records, intended_use)             | `{sound id: reason}` for each sound record [`keep()`](#foley.licensing.keep) refuses for `intended_use`. |
 | [`territory_excluded`](#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                        |
@@ -62,6 +65,11 @@ item is redistributable but stored by-reference.
 | [`LicenseFlags`](#foley.licensing.LicenseFlags)([commercial_ok, ...])   | The eight derivable flags for one `license_id` (the table row type).       |
 |---------------------------------------------------------------------------------------|----------------------------------------------------------------------------|
 | [`LicenseMeta`](#foley.licensing.LicenseMeta)(display_name[, url])     | Human-facing display metadata for one `license_id` (name + canonical URL). |
+
+### Exceptions
+
+| [`LicenseRefusal`](#foley.licensing.LicenseRefusal)(refused)   | A plan or a weave refused because a placed sound's licence does not serve the intent.   |
+|----------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
 
 ### foley.licensing.AI_TRAINING_SCOPES *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('none', 'open_source_only', 'nc_open_source_only')*
 
@@ -145,6 +153,26 @@ the *permission* row consulted by [`keep()`](#foley.licensing.keep), `LicenseMet
 license authority; a record’s own `license_name` / `license_url` (when a
 source populated them) take precedence over this default.
 
+### *exception* foley.licensing.LicenseRefusal(refused)
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A plan or a weave refused because a placed sound’s licence does not serve the intent.
+
+Raised by [`foley.plan()`](foley.html.md#foley.plan) and [`foley.weave()`](foley.weave.html.md#module-foley.weave) when they are given an
+explicit `intended_use=` (#208). `refused` is `{sound id: reason}` for every
+refused sound ([`refusals()`](#foley.licensing.refusals)); the message names each of them.
+
+```pycon
+>>> err = LicenseRefusal({"a": "no grant in EU"})
+>>> err.refused, str(err)
+({'a': 'no grant in EU'}, 'not licensed for this use: a: no grant in EU')
+```
+
+### foley.licensing.NO_RECORD_REASON *= 'it has no record in the library, so its licence cannot be checked'*
+
+The reason a placed sound with no record (nothing to read a licence from) is refused.
+
 ### foley.licensing.UNKNOWN_LICENSE_FLAGS *= LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None)*
 
 Fail-closed fallback for unknown / `Proprietary-*` license ids (all False, cap None).
@@ -214,6 +242,26 @@ refused, for a message that is not “cannot read a licence”.
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
+
+### foley.licensing.check_placed(records, intended_use, , what)
+
+The one rights gate for placed sounds (a plan’s, a weave’s): raise, warn, or pass.
+
+With an explicit `intended_use`, fail-closed: raise [`LicenseRefusal`](#foley.licensing.LicenseRefusal)
+naming every sound in `records` (`{sound id: SoundRecord or None}`) the
+intent does not keep. With `None` (the migration default, #208), nothing is
+refused, but if [`DEFAULT_INTENDED_USE`](#foley.licensing.DEFAULT_INTENDED_USE) would refuse anything, one
+`FutureWarning` names each such id and reason: a future release gates by default.
+
+* **Parameters:**
+  * **records** ([`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`object`](https://docs.python.org/3/builtins/functions.html#object)]) – The placed sounds, by id (`None` for one with no record).
+  * **intended_use** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`IntendedUse`](foley.base.html.md#foley.base.IntendedUse)]) – The caller’s rights intent, or `None` (today’s behaviour).
+  * **what** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The façade’s name, for the warning (`"foley.plan"`); the warning
+    points at the first caller outside foley.
+* **Raises:**
+  [**LicenseRefusal**](#foley.licensing.LicenseRefusal) – If `intended_use` is given and refuses any sound.
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### foley.licensing.checked_refusal_reason(record, intended_use)
 
@@ -430,6 +478,40 @@ flags still come from the policy layer, never set by hand.
 * **Return type:**
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 
+### foley.licensing.placed_record(library, sound_id, , missing=None, unreadable=None)
+
+`library`’s record for `sound_id` as a rights gate reads it, never raising.
+
+The one lookup every placed-sound gate uses (a plan’s, a weave’s, the MCP verbs’),
+so they agree on what “no record” means (#208):
+
+* `missing` when there is no entry: `library` is `None`, or the lookup
+  raises a `LookupError` (the id is genuinely absent);
+* `unreadable` (default `None`) when the lookup fails any other way (a corrupt
+  stored record, a broken backend): an entry that is there but cannot be judged;
+* `None` when the value has no `.license` (a plain-mapping library of audio
+  arrays holds sounds, not records).
+
+`None` is what the fail-closed gate ([`refusals()`](#foley.licensing.refusals)) refuses under an explicit
+intent, and what the no-intent path only warns about, so a bad library can make a
+gated call refuse but never make an ungated one raise.
+
+```pycon
+>>> from foley.base import SoundRecord
+>>> rec = SoundRecord(id="a", license=LicenseRecord(source="user"))
+>>> placed_record({"a": rec}, "a") is rec
+True
+>>> placed_record({"a": rec}, "b", missing="own"), placed_record(None, "a")
+('own', None)
+>>> placed_record({"a": [0.0, 0.1]}, "a") is None  # audio, not a record
+True
+>>> class Corrupt(dict):
+...     def __getitem__(self, k):
+...         raise ValueError("bad JSON")
+>>> placed_record(Corrupt(), "a", missing="own") is None
+True
+```
+
 ### foley.licensing.refusal_reason(record, intended_use)
 
 Why [`keep()`](#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.
@@ -446,7 +528,14 @@ The one rule, read as text: the first requirement the record does not meet.
 The re-check a placed sound gets where it is used (a plan, a weave), whatever
 intent it was found under (#191). Takes [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord) s (each
 judged by its `.license` through [`checked_refusal_reason()`](#foley.licensing.checked_refusal_reason), so fail-closed:
-a record without a readable licence is refused). Empty when every sound is kept.
+a record without a readable licence is refused), or a mapping `{sound id: record}`
+in which a `None` record (the sound has none) is refused too. Empty when every
+sound is kept.
+
+```pycon
+>>> refusals({"a": None}, IntendedUse())
+{'a': 'it has no record in the library, so its licence cannot be checked'}
+```
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]

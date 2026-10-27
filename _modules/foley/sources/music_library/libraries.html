@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=60a9f236"></script>
+    <script src="../../../../_static/documentation_options.js?v=5751785c"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.95" />
+  <meta name="docsearch:version" content="0.0.96" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -758,6 +758,9 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">cc_refused_terms</span><span class="p">,</span> <span class="n">derive_license_flags</span><span class="p">,</span> <span class="n">license_id_from_cc_url</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">api_license</span>
 
+<span class="c1">#: The :mod:`foley.sources` sub-package whose sources the libraries are (the</span>
+<span class="c1">#: source-name check leaves its own declarations out).</span>
+<span class="n">_SOURCE_MODULE</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"music_library"</span>
 <span class="c1">#: The extension a track is saved with when its library names no other.</span>
 <span class="n">DFLT_SUFFIX</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">".mp3"</span>
 <span class="c1">#: The licence id of a paid library's row: no rights are claimed (fail-closed).</span>
@@ -874,12 +877,41 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    (``cache_bytes_ok``); the uses a production makes of them are gated per title by</span>
 <span class="sd">    :func:`~foley.sources.music_library.acquire` (``intended_use``).</span>
 
+<span class="sd">    A library's name is also its live-source name (``foley.add_from(name, ...)``),</span>
+<span class="sd">    so it may not be the name of a source another :mod:`foley.sources` module</span>
+<span class="sd">    declares, or one registered directly (``openverse``, ``freesound``, a ``fal_*``</span>
+<span class="sd">    endpoint, ...): that library would silently take the source over, or silently</span>
+<span class="sd">    never become one.</span>
+
 <span class="sd">    Raises:</span>
 <span class="sd">        MusicLibraryError: If the name is taken (and not ``replace``), or a free</span>
 <span class="sd">            library has no ``track_url`` rule or a licence that does not allow</span>
 <span class="sd">            keeping the files (a ShareAlike / NoDerivatives licence, refused on</span>
 <span class="sd">            purpose; a licence URL foley cannot read; a licence whose flags say no).</span>
+<span class="sd">        SourceNameCollision: If the name is another module's source name.</span>
 <span class="sd">    """</span>
+    <span class="n">_check_library</span><span class="p">(</span><span class="n">library</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="n">replace</span><span class="p">)</span>
+    <span class="n">_refuse_source_name</span><span class="p">(</span><span class="n">library</span><span class="p">)</span>
+    <span class="n">MUSIC_LIBRARIES</span><span class="p">[</span><span class="n">library</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">library</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_refuse_source_name</span><span class="p">(</span><span class="n">library</span><span class="p">:</span> <span class="n">MusicLibrary</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Raise if ``library``'s name is a source name another module owns."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SourceNameCollision</span><span class="p">,</span> <span class="n">declared_source_names</span>
+
+    <span class="n">names</span> <span class="o">=</span> <span class="n">declared_source_names</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="p">(</span><span class="n">_SOURCE_MODULE</span><span class="p">,))</span>
+    <span class="k">if</span> <span class="n">library</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+        <span class="n">owner</span> <span class="o">=</span> <span class="n">names</span><span class="p">[</span><span class="n">library</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">where</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"foley.sources.</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">owner</span> <span class="k">else</span> <span class="s2">"a directly registered source"</span>
+        <span class="k">raise</span> <span class="n">SourceNameCollision</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"music library </span><span class="si">{</span><span class="n">library</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: that name is already a source "</span>
+            <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2">); a library is a source of its own name, so pick another"</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_library</span><span class="p">(</span><span class="n">library</span><span class="p">:</span> <span class="n">MusicLibrary</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">replace</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The checks every registration makes (the built-ins' too)."""</span>
     <span class="k">if</span> <span class="n">library</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="n">MUSIC_LIBRARIES</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">replace</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">MusicLibraryError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">"music library </span><span class="si">{</span><span class="n">library</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is already registered; pass replace=True"</span>
@@ -897,8 +929,6 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">library</span><span class="o">.</span><span class="n">license_id</span><span class="si">!r}</span><span class="s2"> on its own (a human must check them), so "</span>
                 <span class="s2">"acquire would refuse every title"</span>
             <span class="p">)</span>
-    <span class="n">MUSIC_LIBRARIES</span><span class="p">[</span><span class="n">library</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">library</span></div>
-
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_not_keepable</span><span class="p">(</span><span class="n">library</span><span class="p">:</span> <span class="n">MusicLibrary</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -1014,8 +1044,11 @@ window.runMermaid = runMermaid;</script>
     <span class="p">),</span>
 <span class="p">)</span>
 
+<span class="c1"># The built-ins skip the source-name check (it imports every other source's config;</span>
+<span class="c1"># discover_sources refuses a clash anyway, and a test pins the built-ins' names).</span>
 <span class="k">for</span> <span class="n">_library</span> <span class="ow">in</span> <span class="n">BUILTIN_LIBRARIES</span><span class="p">:</span>
-    <span class="n">register_music_library</span><span class="p">(</span><span class="n">_library</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># idempotent on reload</span>
+    <span class="n">_check_library</span><span class="p">(</span><span class="n">_library</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># idempotent on reload</span>
+    <span class="n">MUSIC_LIBRARIES</span><span class="p">[</span><span class="n">_library</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_library</span>
 </pre></div>
 
                 </article>

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=60a9f236"></script>
+    <script src="../_static/documentation_options.js?v=5751785c"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.95" />
+  <meta name="docsearch:version" content="0.0.96" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -533,11 +533,18 @@ has an audio stream and a length, with foley’s media probes.</p></li>
 <div><p>only what it lacks.</p>
 </div></blockquote>
 </li>
+<li><p><strong>Each free library is also a live retrieve source</strong> of its own name (#212):
+<code class="docutils literal notranslate"><span class="pre">foley.add_from(&quot;incompetech&quot;,</span> <span class="pre">query=&quot;Sneaky</span> <span class="pre">Snitch&quot;)</span></code> (a title, a list of
+titles, or a credits description) puts each title through the licence gate
+under the call’s intent and <a class="reference internal" href="foley.index.ingest.html#foley.index.ingest.ingest_one" title="foley.index.ingest.ingest_one"><code class="xref py py-func docutils literal notranslate"><span class="pre">ingest_one()</span></code></a>, giving
+by-value <a class="reference internal" href="foley.base.html#foley.base.SoundRecord" title="foley.base.SoundRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundRecord</span></code></a> rows with their attribution, and a run
+manifest. The config is built from the library (<a class="reference internal" href="#foley.sources.music_library.library_source_config" title="foley.sources.music_library.library_source_config"><code class="xref py py-func docutils literal notranslate"><span class="pre">library_source_config()</span></code></a>,
+declared as the callable <code class="docutils literal notranslate"><span class="pre">config.SOURCE_CONFIGS</span></code>, so a library registered at
+runtime is a source on the next discovery); the adapter
+(<a class="reference internal" href="foley.sources.music_library.adapter.html#foley.sources.music_library.adapter.MusicLibraryAdapter" title="foley.sources.music_library.adapter.MusicLibraryAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">MusicLibraryAdapter</span></code></a>) runs the same
+mirror chain and <code class="docutils literal notranslate"><span class="pre">verify</span></code> as <a class="reference internal" href="#foley.sources.music_library.acquire" title="foley.sources.music_library.acquire"><code class="xref py py-func docutils literal notranslate"><span class="pre">acquire()</span></code></a>. A paid library is not a source.</p></li>
 </ul>
-<p>This is not a live search source (it has no <code class="docutils literal notranslate"><span class="pre">search</span></code> / <code class="docutils literal notranslate"><span class="pre">download</span></code> adapter and no
-<code class="docutils literal notranslate"><span class="pre">config.py</span></code>), so <a class="reference internal" href="foley.sources.registry.html#foley.sources.registry.discover_sources" title="foley.sources.registry.discover_sources"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources.registry.discover_sources()</span></code></a> does not list it;
-import it as <code class="docutils literal notranslate"><span class="pre">foley.sources.music_library</span></code>. Stdlib only at import; <code class="docutils literal notranslate"><span class="pre">requests</span></code>
-loads on the first real download.</p>
+<p>Stdlib only at import; <code class="docutils literal notranslate"><span class="pre">requests</span></code> loads on the first real download.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">lib</span> <span class="o">=</span> <span class="n">MUSIC_LIBRARIES</span><span class="p">[</span><span class="s2">"incompetech"</span><span class="p">]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">lib</span><span class="o">.</span><span class="n">track_url</span><span class="p">(</span><span class="s2">"Sneaky Snitch"</span><span class="p">)</span>
 <span class="go">'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Sneaky%20Snitch.mp3'</span>
@@ -569,52 +576,55 @@ loads on the first real download.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.kept_sources" title="foley.sources.music_library.kept_sources"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kept_sources</span></code></a>(table)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">{file:</span> <span class="pre">{&quot;sha256&quot;,</span> <span class="pre">&quot;url&quot;,</span> <span class="pre">&quot;mirror&quot;}}</span></code> of the acquired or kept rows of a tracks table: <a class="reference internal" href="#foley.sources.music_library.kept_digests" title="foley.sources.music_library.kept_digests"><code class="xref py py-func docutils literal notranslate"><span class="pre">kept_digests()</span></code></a> with where each file came from, so a kept row still says which URL and mirror served it (<code class="docutils literal notranslate"><span class="pre">acquire(kept=...)</span></code> takes either).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.make_fetch" title="foley.sources.music_library.make_fetch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_fetch</span></code></a>(*[, transport, config, clock, sleep])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.library_source_config" title="foley.sources.music_library.library_source_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">library_source_config</span></code></a>(library)</p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">SOURCE_CONFIG</span></code> of the free <code class="docutils literal notranslate"><span class="pre">library</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.make_fetch" title="foley.sources.music_library.make_fetch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_fetch</span></code></a>(*[, transport, config, clock, sleep])</p></td>
 <td><p>The default <code class="docutils literal notranslate"><span class="pre">url</span> <span class="pre">-&gt;</span> <span class="pre">bytes</span></code>: <a class="reference internal" href="#foley.sources.music_library.fetch_audio" title="foley.sources.music_library.fetch_audio"><code class="xref py py-func docutils literal notranslate"><span class="pre">fetch_audio()</span></code></a> over <a class="reference internal" href="#foley.sources.music_library.polite_transport" title="foley.sources.music_library.polite_transport"><code class="xref py py-func docutils literal notranslate"><span class="pre">polite_transport()</span></code></a> (<code class="docutils literal notranslate"><span class="pre">config</span></code> laid over <code class="xref py py-data docutils literal notranslate"><span class="pre">MUSIC_LIBRARY_HTTP</span></code>).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.mirror_name" title="foley.sources.music_library.mirror_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mirror_name</span></code></a>(mirror)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.mirror_name" title="foley.sources.music_library.mirror_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mirror_name</span></code></a>(mirror)</p></td>
 <td><p>The name a row records for <code class="docutils literal notranslate"><span class="pre">mirror</span></code> (its function name).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.music_library" title="foley.sources.music_library.music_library"><code class="xref py py-obj docutils literal notranslate"><span class="pre">music_library</span></code></a>(library, *[, libraries])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.music_library" title="foley.sources.music_library.music_library"><code class="xref py py-obj docutils literal notranslate"><span class="pre">music_library</span></code></a>(library, *[, libraries])</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">library</span></code> itself, or the registered library of that name.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.music_library_config" title="foley.sources.music_library.music_library_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">music_library_config</span></code></a>([config])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.music_library_config" title="foley.sources.music_library.music_library_config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">music_library_config</span></code></a>([config])</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">config</span></code> laid over <code class="xref py py-data docutils literal notranslate"><span class="pre">MUSIC_LIBRARY_HTTP</span></code> (top-level keys: a <code class="docutils literal notranslate"><span class="pre">retry</span></code> or <code class="docutils literal notranslate"><span class="pre">rate</span></code> given replaces the default one whole).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.polite_transport" title="foley.sources.music_library.polite_transport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">polite_transport</span></code></a>([transport, config, clock, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.polite_transport" title="foley.sources.music_library.polite_transport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">polite_transport</span></code></a>([transport, config, clock, ...])</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">transport</span></code> (default <a class="reference internal" href="foley.sources.http.html#foley.sources.http.requests_transport" title="foley.sources.http.requests_transport"><code class="xref py py-func docutils literal notranslate"><span class="pre">requests_transport()</span></code></a>) with a resilient wrapper per host, built from <code class="docutils literal notranslate"><span class="pre">config</span></code> (see the module docstring).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.probe_available" title="foley.sources.music_library.probe_available"><code class="xref py py-obj docutils literal notranslate"><span class="pre">probe_available</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.probe_available" title="foley.sources.music_library.probe_available"><code class="xref py py-obj docutils literal notranslate"><span class="pre">probe_available</span></code></a>()</p></td>
 <td><p>Whether <a class="reference internal" href="#foley.sources.music_library.probe_verify" title="foley.sources.music_library.probe_verify"><code class="xref py py-func docutils literal notranslate"><span class="pre">probe_verify()</span></code></a>'s probes can run here: <code class="docutils literal notranslate"><span class="pre">ffprobe</span></code> on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, or both mixing's video probe with an <code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> (the length) and <code class="docutils literal notranslate"><span class="pre">soundfile</span></code> (the audio stream).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.probe_verify" title="foley.sources.music_library.probe_verify"><code class="xref py py-obj docutils literal notranslate"><span class="pre">probe_verify</span></code></a>(data, *[, probe, has_audio, suffix])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.probe_verify" title="foley.sources.music_library.probe_verify"><code class="xref py py-obj docutils literal notranslate"><span class="pre">probe_verify</span></code></a>(data, *[, probe, has_audio, suffix])</p></td>
 <td><p>The duration of the audio <code class="docutils literal notranslate"><span class="pre">data</span></code>, in seconds.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.register_music_library" title="foley.sources.music_library.register_music_library"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_music_library</span></code></a>(library, *[, replace])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.register_music_library" title="foley.sources.music_library.register_music_library"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_music_library</span></code></a>(library, *[, replace])</p></td>
 <td><p>Add <code class="docutils literal notranslate"><span class="pre">library</span></code> to <code class="xref py py-data docutils literal notranslate"><span class="pre">MUSIC_LIBRARIES</span></code> (<code class="docutils literal notranslate"><span class="pre">replace</span></code> to redefine one).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.require_probe" title="foley.sources.music_library.require_probe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">require_probe</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.require_probe" title="foley.sources.music_library.require_probe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">require_probe</span></code></a>()</p></td>
 <td><p>Raise <a class="reference internal" href="#foley.sources.music_library.MusicToolMissing" title="foley.sources.music_library.MusicToolMissing"><code class="xref py py-class docutils literal notranslate"><span class="pre">MusicToolMissing</span></code></a> unless <a class="reference internal" href="#foley.sources.music_library.probe_available" title="foley.sources.music_library.probe_available"><code class="xref py py-func docutils literal notranslate"><span class="pre">probe_available()</span></code></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.safe_file_name" title="foley.sources.music_library.safe_file_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">safe_file_name</span></code></a>(title, *[, suffix])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.safe_file_name" title="foley.sources.music_library.safe_file_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">safe_file_name</span></code></a>(title, *[, suffix])</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">title</span></code> as a file name: NFC, path separators as <code class="docutils literal notranslate"><span class="pre">-</span></code>, no leading dot.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.title_url" title="foley.sources.music_library.title_url"><code class="xref py py-obj docutils literal notranslate"><span class="pre">title_url</span></code></a>(template)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.title_url" title="foley.sources.music_library.title_url"><code class="xref py py-obj docutils literal notranslate"><span class="pre">title_url</span></code></a>(template)</p></td>
 <td><p>The <code class="docutils literal notranslate"><span class="pre">title</span> <span class="pre">-&gt;</span> <span class="pre">URL</span></code> rule that puts the URL-quoted title in <code class="docutils literal notranslate"><span class="pre">template</span></code>'s <code class="docutils literal notranslate"><span class="pre">{title}</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.titles_by_library" title="foley.sources.music_library.titles_by_library"><code class="xref py py-obj docutils literal notranslate"><span class="pre">titles_by_library</span></code></a>(description, *[, libraries])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.titles_by_library" title="foley.sources.music_library.titles_by_library"><code class="xref py py-obj docutils literal notranslate"><span class="pre">titles_by_library</span></code></a>(description, *[, libraries])</p></td>
 <td><p>The titles a video description credits, by library (default: the registered ones).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.titles_from_json" title="foley.sources.music_library.titles_from_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">titles_from_json</span></code></a>(text)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.titles_from_json" title="foley.sources.music_library.titles_from_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">titles_from_json</span></code></a>(text)</p></td>
 <td><p>A titles file's JSON: a list of titles, or <code class="docutils literal notranslate"><span class="pre">{title:</span> <span class="pre">{metadata}}</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.track_license" title="foley.sources.music_library.track_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">track_license</span></code></a>(library, title, *[, page_url, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.track_license" title="foley.sources.music_library.track_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">track_license</span></code></a>(library, title, *[, page_url, ...])</p></td>
 <td><p>The <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a> of <code class="docutils literal notranslate"><span class="pre">title</span></code> from <code class="docutils literal notranslate"><span class="pre">library</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.tracks_table" title="foley.sources.music_library.tracks_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tracks_table</span></code></a>(rows)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.tracks_table" title="foley.sources.music_library.tracks_table"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tracks_table</span></code></a>(rows)</p></td>
 <td><p>The tracks table as CSV text: <code class="xref py py-data docutils literal notranslate"><span class="pre">TRACK_COLUMNS</span></code>, then any metadata the rows carry, in name order.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.wayback" title="foley.sources.music_library.wayback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wayback</span></code></a>(url)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.wayback" title="foley.sources.music_library.wayback"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wayback</span></code></a>(url)</p></td>
 <td><p>The Internet Archive's raw copy of <code class="docutils literal notranslate"><span class="pre">url</span></code> (<code class="xref py py-data docutils literal notranslate"><span class="pre">WAYBACK_RAW</span></code>).</p></td>
 </tr>
 </tbody>
@@ -623,10 +633,13 @@ loads on the first real download.</p>
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.AcquiredTrack" title="foley.sources.music_library.AcquiredTrack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AcquiredTrack</span></code></a>(title, library, status, license)</p></td>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">MusicLibraryAdapter</span></code>([config, http, verify, ...])</p></td>
+<td><p>One free music library as a retrieve source (a <a class="reference internal" href="foley.sources.base.html#foley.sources.base.SourceAdapter" title="foley.sources.base.SourceAdapter"><code class="xref py py-class docutils literal notranslate"><span class="pre">SourceAdapter</span></code></a>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.AcquiredTrack" title="foley.sources.music_library.AcquiredTrack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AcquiredTrack</span></code></a>(title, library, status, license)</p></td>
 <td><p>One row of the tracks table: a title, what became of it, and its provenance.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.music_library.MusicLibrary" title="foley.sources.music_library.MusicLibrary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MusicLibrary</span></code></a>(name, author[, license_url, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.music_library.MusicLibrary" title="foley.sources.music_library.MusicLibrary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MusicLibrary</span></code></a>(name, author[, license_url, ...])</p></td>
 <td><p>One library: who made it, under which licence, and where a title's file is.</p></td>
 </tr>
 </tbody>
@@ -885,6 +898,20 @@ still says which URL and mirror served it (<code class="docutils literal notrans
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.music_library.library_source_config">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.music_library.</span></span><span class="sig-name descname"><span class="pre">library_source_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">library</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/music_library/config.html#library_source_config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.music_library.library_source_config" title="Link to this definition">#</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">SOURCE_CONFIG</span></code> of the free <code class="docutils literal notranslate"><span class="pre">library</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#foley.sources.music_library.MusicLibraryError" title="foley.sources.music_library.MusicLibraryError"><strong>MusicLibraryError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">library</span></code> is paid (a paid library is not a source).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.music_library.make_fetch">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.music_library.</span></span><span class="sig-name descname"><span class="pre">make_fetch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transport</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">monotonic&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">sleep&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/music_library/fetch.html#make_fetch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.music_library.make_fetch" title="Link to this definition">#</a></dt>
 <dd><p>The default <code class="docutils literal notranslate"><span class="pre">url</span> <span class="pre">-&gt;</span> <span class="pre">bytes</span></code>: <a class="reference internal" href="#foley.sources.music_library.fetch_audio" title="foley.sources.music_library.fetch_audio"><code class="xref py py-func docutils literal notranslate"><span class="pre">fetch_audio()</span></code></a> over <a class="reference internal" href="#foley.sources.music_library.polite_transport" title="foley.sources.music_library.polite_transport"><code class="xref py py-func docutils literal notranslate"><span class="pre">polite_transport()</span></code></a>
@@ -1007,12 +1034,20 @@ length (default <a class="reference internal" href="foley.sources.video.html#fol
 <p>A free library is checked for one licence right only, keeping the files
 (<code class="docutils literal notranslate"><span class="pre">cache_bytes_ok</span></code>); the uses a production makes of them are gated per title by
 <a class="reference internal" href="#foley.sources.music_library.acquire" title="foley.sources.music_library.acquire"><code class="xref py py-func docutils literal notranslate"><span class="pre">acquire()</span></code></a> (<code class="docutils literal notranslate"><span class="pre">intended_use</span></code>).</p>
+<p>A library’s name is also its live-source name (<code class="docutils literal notranslate"><span class="pre">foley.add_from(name,</span> <span class="pre">...)</span></code>),
+so it may not be the name of a source another <a class="reference internal" href="foley.sources.html#module-foley.sources" title="foley.sources"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.sources</span></code></a> module
+declares, or one registered directly (<code class="docutils literal notranslate"><span class="pre">openverse</span></code>, <code class="docutils literal notranslate"><span class="pre">freesound</span></code>, a <code class="docutils literal notranslate"><span class="pre">fal_*</span></code>
+endpoint, …): that library would silently take the source over, or silently
+never become one.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#foley.sources.music_library.MusicLibraryError" title="foley.sources.music_library.MusicLibraryError"><strong>MusicLibraryError</strong></a> – If the name is taken (and not <code class="docutils literal notranslate"><span class="pre">replace</span></code>), or a free
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#foley.sources.music_library.MusicLibraryError" title="foley.sources.music_library.MusicLibraryError"><strong>MusicLibraryError</strong></a> – If the name is taken (and not <code class="docutils literal notranslate"><span class="pre">replace</span></code>), or a free
     library has no <code class="docutils literal notranslate"><span class="pre">track_url</span></code> rule or a licence that does not allow
     keeping the files (a ShareAlike / NoDerivatives licence, refused on
-    purpose; a licence URL foley cannot read; a licence whose flags say no).</p>
+    purpose; a licence URL foley cannot read; a licence whose flags say no).</p></li>
+<li><p><a class="reference internal" href="foley.sources.registry.html#foley.sources.registry.SourceNameCollision" title="foley.sources.registry.SourceNameCollision"><strong>SourceNameCollision</strong></a> – If the name is another module’s source name.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
@@ -1165,6 +1200,12 @@ rows carry, in name order.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.music_library.acquisition.html#module-foley.sources.music_library.acquisition" title="foley.sources.music_library.acquisition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">acquisition</span></code></a></p></td>
 <td><p>Acquire a music library's titles: verified files, one provenance row each, a resumable table.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.music_library.adapter.html#module-foley.sources.music_library.adapter" title="foley.sources.music_library.adapter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">adapter</span></code></a></p></td>
+<td><p>A free music library as a live retrieve source: titles in, licensed tracks out (#212).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.music_library.config.html#module-foley.sources.music_library.config" title="foley.sources.music_library.config"><code class="xref py py-obj docutils literal notranslate"><span class="pre">config</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SOURCE_CONFIGS</span></code> for the music libraries: one retrieve source per free library (#212).</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="foley.sources.music_library.credit_parser.html#module-foley.sources.music_library.credit_parser" title="foley.sources.music_library.credit_parser"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credit_parser</span></code></a></p></td>
 <td><p>Which titles a video credits, by library: the credit-block parser and the titles file.</p></td>
 </tr>
@@ -1253,6 +1294,7 @@ rows carry, in name order.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.music_library.files_store"><code class="docutils literal notranslate"><span class="pre">files_store()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.music_library.kept_digests"><code class="docutils literal notranslate"><span class="pre">kept_digests()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.music_library.kept_sources"><code class="docutils literal notranslate"><span class="pre">kept_sources()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.music_library.library_source_config"><code class="docutils literal notranslate"><span class="pre">library_source_config()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.music_library.make_fetch"><code class="docutils literal notranslate"><span class="pre">make_fetch()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.music_library.mirror_name"><code class="docutils literal notranslate"><span class="pre">mirror_name()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.music_library.music_library"><code class="docutils literal notranslate"><span class="pre">music_library()</span></code></a></li>

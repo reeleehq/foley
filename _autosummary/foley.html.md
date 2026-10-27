@@ -97,7 +97,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`default_library`](#foley.default_library)()                                   | The process-wide default library (local stores + CLAP + best index).                                                                                                           |
 | [`search`](#foley.search)(query, \*[, k, filters, ...])                | Hybrid (CLAP vector ⊕ BM25) search of the default library.                                                                                                                     |
 | [`estimate`](#foley.estimate)(verb, \*\*kwargs)                          | What a call would cost in USD before making it — `None` when it cannot be known (#57).                                                                                         |
-| [`similar`](#foley.similar)(sound_id, \*[, k, commercial_ok])           | Find sounds similar to a stored sound (audio<->audio) in the default library.                                                                                                  |
+| [`similar`](#foley.similar)(sound_id, \*[, k, commercial_ok, ...])      | Find sounds similar to a stored sound (audio<->audio) in the default library.                                                                                                  |
 | [`default_embedder`](#foley.default_embedder)()                                  | Return a process-wide default [`ClapEmbedder`](#foley.ClapEmbedder) (loaded once, reused).                                                             |
 | [`default_index`](#foley.default_index)(\*, data_dir, dim)                    | Build the best available persistent index for a library.                                                                                                                       |
 | [`lancedb_available`](#foley.lancedb_available)()                                 | True if `lancedb` is importable (the `foley[index]` extra is present).                                                                                                         |
@@ -129,7 +129,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | `art50_checklist`(record)                                                                            | Return the per-clip EU AI Act Art.                                                                                                                                             |
 | `scan_prompt`(prompt)                                                                                | Scan a generation `prompt` for trademarked-audio-logo + voice-clone risk.                                                                                                      |
 | [`find`](#foley.find)(context, \*[, max_events, seconds, ...])       | The headline: a narrative context → verified, license-clean sound candidates.                                                                                                  |
-| [`plan`](#foley.plan)(candidates, \*[, transcript])                  | Fold verified candidates into the SPARSE [`SoundDesignTimeline`](#foley.SoundDesignTimeline) (the SELECT→WEAVE bridge).                                       |
+| [`plan`](#foley.plan)(candidates, \*[, transcript, ...])             | Fold verified candidates into the SPARSE [`SoundDesignTimeline`](#foley.SoundDesignTimeline) (the SELECT→WEAVE bridge).                                       |
 | [`decompose_context`](#foley.decompose_context)(context, \*[, max_events, ...])   | Decompose a passage into `<= max_events` sparse [`SoundEvent`](#foley.SoundEvent)s.                                                                  |
 | [`refine_query`](#foley.refine_query)(query, \*[, n, hint, refiner, \_span]) | Expand `query` into up to `n` paraphrases for multi-query retrieval.                                                                                                           |
 | [`verify_match`](#foley.verify_match)(event, candidate, \*[, level, ...])    | Verify `candidate` against `event` up to rung `level` (AND-confirming ladder).                                                                                                 |
@@ -218,8 +218,9 @@ lazy-imported inside the audio/QC functions that need them (install via the
 
 ### Exceptions
 
-| [`GenerationError`](#foley.GenerationError)(message, \*, report, status)     | Raised by [`foley.generate()`](#foley.generate) (and [`foley.edit()`](#foley.edit)) when a backend yields no stored sound.                                                                                                                                          |
+| [`LicenseRefusal`](#foley.LicenseRefusal)(refused)                          | A plan or a weave refused because a placed sound's licence does not serve the intent.                                                                                                                                                                                                                                           |
 |---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`GenerationError`](#foley.GenerationError)(message, \*, report, status)     | Raised by [`foley.generate()`](#foley.generate) (and [`foley.edit()`](#foley.edit)) when a backend yields no stored sound.                                                                                                                                          |
 | [`EditRefusal`](#foley.EditRefusal)(message, \*, source_id, reason)      | Raised (fail-closed) by an edit ([`foley.edit()`](#foley.edit), or [`foley.generate()`](#foley.generate) with an edit backend and `audio=`) before anything is paid for, when the source's rights do not allow an edit of it to be made and kept, or are not given. |
 | [`SafetyRefusal`](#foley.SafetyRefusal)(message, \*, hits, report)         | Raised (fail-closed) when a generation prompt trips a #9b safety gate.                                                                                                                                                                                                                                                          |
 | [`TrademarkRefusal`](#foley.TrademarkRefusal)(message, \*, hits, report)      | A [`SafetyRefusal`](#foley.SafetyRefusal) for a prompt naming a trademarked audio logo (report 07 §7.2).                                                                                                                                                                                                 |
@@ -395,6 +396,21 @@ semantics).
 #### settle(reserved_usd, actual_usd)
 
 Replace a reservation with the actual cost (`None` actual: keep the reservation).
+
+A reservation of unknown cost (`None` reserved, counted as an unknown call)
+settled with a known actual becomes that actual: it is summed, and no longer
+counted as unknown (#186: a source billed per compute second, priced after).
+Settling a known reservation with an equal actual changes nothing.
+
+```pycon
+>>> b = Budget(approve_unknown_cost=True)
+>>> b.reserve(None, what="x"); b.settle(None, 0.0425)
+>>> b.spent_usd, b._unknown_calls
+(0.0425, 0)
+>>> b.reserve(0.1, what="y"); b.settle(0.1, 0.1)
+>>> round(b.spent_usd, 10)
+0.1425
+```
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -1120,6 +1136,22 @@ runs the rewrite again.
 
 * **Type:**
   Whether this generated clip can be made again
+
+### *exception* foley.LicenseRefusal(refused)
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A plan or a weave refused because a placed sound’s licence does not serve the intent.
+
+Raised by [`foley.plan()`](#foley.plan) and [`foley.weave()`](foley.weave.html.md#module-foley.weave) when they are given an
+explicit `intended_use=` (#208). `refused` is `{sound id: reason}` for every
+refused sound (`refusals()`); the message names each of them.
+
+```pycon
+>>> err = LicenseRefusal({"a": "no grant in EU"})
+>>> err.refused, str(err)
+({'a': 'no grant in EU'}, 'not licensed for this use: a: no grant in EU')
+```
 
 ### *class* foley.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)
 
@@ -1928,7 +1960,7 @@ reproducible run-artifact join, plus the fail-safe provenance re-assertion.
 What the caller should know about how the mix was made, e.g. that word timings
 are estimates because no forced aligner is installed (#65).
 
-### foley.add_from(source, , query, license='cc0', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
+### foley.add_from(source, , query, license='source-default', limit=50, library=None, intended_use=None, adapter=None, on_unsupported=None, provider_params=None, \*\*affordances)
 
 Search a live `source` and ingest its license-clean hits into `library`.
 
@@ -1940,9 +1972,12 @@ applies the by-reference storage gate from the sound’s own license.
 
 * **Parameters:**
   * **source** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A registered live-source name (e.g. `'freesound'`).
-  * **query** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language search query.
-  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query (default
-    `'cc0'`). The per-item fail-closed guard enforces the source’s
+  * **query** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The natural-language search query (a music library also takes a
+    list of titles).
+  * **license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – License constraint pushed into the source query. Default: the
+    source’s own (`config['license']['search_default']`), `'cc0'` for a
+    source that declares none; a music library (one licence) declares no
+    narrowing. The per-item fail-closed guard enforces the source’s
     accepted-license allowlist regardless.
   * **limit** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max candidates to request from the source.
   * **library** – Target [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) (default: the
@@ -3295,7 +3330,7 @@ its CatID token is unknown (so a wrong subcategory is never emitted).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
-### foley.plan(candidates, , transcript=None)
+### foley.plan(candidates, , transcript=None, intended_use=None, library=None)
 
 Fold verified candidates into the SPARSE [`SoundDesignTimeline`](#foley.SoundDesignTimeline) (the SELECT→WEAVE bridge).
 
@@ -3304,9 +3339,22 @@ One [`TimelineItem`](#foley.TimelineItem) per candidate (`onset·gain·layer·lo
 reserved #8 `plan_ref` slot is filled when called inside an active `foley.obs`
 run scope (`None`-safe otherwise).
 
+**Rights intent (#208).** Every candidate is re-checked where it is placed, on the
+library’s current record when `library` has its id (else the candidate’s own):
+with an explicit `intended_use` the gate is fail-closed and a sound the intent
+does not keep refuses the plan ([`LicenseRefusal`](foley.licensing.html.md#foley.licensing.LicenseRefusal), naming
+each id and reason). With `None` nothing is refused yet, but a `FutureWarning`
+names what [`DEFAULT_INTENDED_USE`](foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) would refuse: a future
+release gates by default.
+
 * **Parameters:**
   * **candidates** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]) – The candidates returned by [`find()`](#foley.find).
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional narration transcript (WEAVE resolves the reference).
+  * **intended_use** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`IntendedUse`](foley.base.html.md#foley.base.IntendedUse)]) – The rights intent the plan is for (`None`: warn only).
+  * **library** – The library whose current records are judged (default: each
+    candidate’s own record).
+* **Raises:**
+  [**LicenseRefusal**](#foley.LicenseRefusal) – If `intended_use` is given and refuses a placed sound.
 * **Return type:**
   [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeline)
 
@@ -3574,17 +3622,22 @@ editable [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeli
 * **Returns:**
   A [`ScoreResult`](#foley.ScoreResult) (`timeline` + `events` rationale; `weave` when woven).
 
-### foley.search(query, , k=10, filters=None, commercial_ok=None, ucs_category=None, min_snr=None, duration_range=None, rerank=False)
+### foley.search(query, , k=10, filters=None, commercial_ok=None, ucs_category=None, min_snr=None, duration_range=None, rerank=False, intended_use=None, library=None)
 
 Hybrid (CLAP vector ⊕ BM25) search of the default library.
 
 Convenience wrapper over `foley.library.search(...)` — see
 [`foley.index.SoundLibrary.search()`](foley.index.html.md#foley.index.SoundLibrary.search). Constructs the process-wide default
-library (local stores + CLAP + best available index) on first use.
+library (local stores + CLAP + best available index) on first use; pass
+`library=` to search another.
 
-`commercial_ok` defaults to the one rights intent every verb shares
+**Rights intent.** With an explicit `intended_use` (#208), every row goes through
+the fail-closed gate ([`foley.agent.policy.gate_candidates()`](foley.agent.policy.html.md#foley.agent.policy.gate_candidates)): only sounds the
+intent keeps come back, each `license_ok=True` (a territory-excluded or
+unverified licence is dropped). Without one, the filter is today’s: `commercial_ok`
+defaults to the one rights intent every verb shares
 ([`foley.licensing.DEFAULT_INTENDED_USE`](foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE): commercial), so only commercially
-usable sounds come back; pass `commercial_ok=False` to include the rest.
+usable, verified sounds come back; pass `commercial_ok=False` to include the rest.
 
 ### foley.serve_http(, host='127.0.0.1', port=8000, auth, path='/mcp', \*\*kwargs)
 
@@ -3595,13 +3648,14 @@ Wraps [`make_http_app()`](#foley.make_http_app) and runs it with uvicorn. `auth`
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### foley.similar(sound_id, , k=10, commercial_ok=None)
+### foley.similar(sound_id, , k=10, commercial_ok=None, intended_use=None, library=None)
 
 Find sounds similar to a stored sound (audio<->audio) in the default library.
 
-See [`foley.index.SoundLibrary.similar()`](foley.index.html.md#foley.index.SoundLibrary.similar). Like [`search()`](#foley.search), only sounds
-cleared for the default (commercial) intent are returned unless
-`commercial_ok=False`.
+See [`foley.index.SoundLibrary.similar()`](foley.index.html.md#foley.index.SoundLibrary.similar). Gated like [`search()`](#foley.search): with an
+explicit `intended_use` only the neighbours it keeps (fail-closed, each
+`license_ok=True`); without one, only sounds cleared for the default
+(commercial) intent unless `commercial_ok=False`.
 
 ### foley.similar_to(clip_or_candidate, , k=10, library=None)
 

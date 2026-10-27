@@ -15,6 +15,7 @@ foley.sources.stable\_audio.adapter
 
    .. autosummary::
    
+      cpu_generator
       torch_generator
    
    .. rubric:: Classes

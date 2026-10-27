@@ -1,0 +1,26 @@
+foley.sources.music\_library.adapter
+====================================
+
+.. automodule:: foley.sources.music_library.adapter
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      Query
+      Adapter
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      query_titles
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Adapter
+      MusicLibraryAdapter
+   

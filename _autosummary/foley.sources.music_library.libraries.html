@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=60a9f236"></script>
+    <script src="../_static/documentation_options.js?v=5751785c"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.95" />
+  <meta name="docsearch:version" content="0.0.96" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -698,12 +698,20 @@ by (<code class="docutils literal notranslate"><span class="pre">From</span> <sp
 <p>A free library is checked for one licence right only, keeping the files
 (<code class="docutils literal notranslate"><span class="pre">cache_bytes_ok</span></code>); the uses a production makes of them are gated per title by
 <a class="reference internal" href="foley.sources.music_library.html#foley.sources.music_library.acquire" title="foley.sources.music_library.acquire"><code class="xref py py-func docutils literal notranslate"><span class="pre">acquire()</span></code></a> (<code class="docutils literal notranslate"><span class="pre">intended_use</span></code>).</p>
+<p>A library’s name is also its live-source name (<code class="docutils literal notranslate"><span class="pre">foley.add_from(name,</span> <span class="pre">...)</span></code>),
+so it may not be the name of a source another <a class="reference internal" href="foley.sources.html#module-foley.sources" title="foley.sources"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.sources</span></code></a> module
+declares, or one registered directly (<code class="docutils literal notranslate"><span class="pre">openverse</span></code>, <code class="docutils literal notranslate"><span class="pre">freesound</span></code>, a <code class="docutils literal notranslate"><span class="pre">fal_*</span></code>
+endpoint, …): that library would silently take the source over, or silently
+never become one.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#foley.sources.music_library.libraries.MusicLibraryError" title="foley.sources.music_library.libraries.MusicLibraryError"><strong>MusicLibraryError</strong></a> – If the name is taken (and not <code class="docutils literal notranslate"><span class="pre">replace</span></code>), or a free
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#foley.sources.music_library.libraries.MusicLibraryError" title="foley.sources.music_library.libraries.MusicLibraryError"><strong>MusicLibraryError</strong></a> – If the name is taken (and not <code class="docutils literal notranslate"><span class="pre">replace</span></code>), or a free
     library has no <code class="docutils literal notranslate"><span class="pre">track_url</span></code> rule or a licence that does not allow
     keeping the files (a ShareAlike / NoDerivatives licence, refused on
-    purpose; a licence URL foley cannot read; a licence whose flags say no).</p>
+    purpose; a licence URL foley cannot read; a licence whose flags say no).</p></li>
+<li><p><a class="reference internal" href="foley.sources.registry.html#foley.sources.registry.SourceNameCollision" title="foley.sources.registry.SourceNameCollision"><strong>SourceNameCollision</strong></a> – If the name is another module’s source name.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>

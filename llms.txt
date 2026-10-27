@@ -101,6 +101,8 @@
 - [foley.sources.internet_archive.config](_autosummary/foley.sources.internet_archive.config.html.md): &#96;SOURCE_CONFIG&#96; for the Internet Archive retrieve source (#79 · report 14 §3.4).
 - [foley.sources.music_library](_autosummary/foley.sources.music_library.html.md): Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.
 - [foley.sources.music_library.acquisition](_autosummary/foley.sources.music_library.acquisition.html.md): Acquire a music library’s titles: verified files, one provenance row each, a resumable table.
+- [foley.sources.music_library.adapter](_autosummary/foley.sources.music_library.adapter.html.md): A free music library as a live retrieve source: titles in, licensed tracks out (#212).
+- [foley.sources.music_library.config](_autosummary/foley.sources.music_library.config.html.md): &#96;SOURCE_CONFIGS&#96; for the music libraries: one retrieve source per free library (#212).
 - [foley.sources.music_library.credit_parser](_autosummary/foley.sources.music_library.credit_parser.html.md): Which titles a video credits, by library: the credit-block parser and the titles file.
 - [foley.sources.music_library.fetch](_autosummary/foley.sources.music_library.fetch.html.md): Fetching a library’s files politely, through foley’s transport and its resilience layer.
 - [foley.sources.music_library.libraries](_autosummary/foley.sources.music_library.libraries.html.md): Music libraries as data: who made one, its licence, its credit, where a title’s file is.
@@ -125,7 +127,7 @@
 - [foley.sources.wikimedia_commons.config](_autosummary/foley.sources.wikimedia_commons.config.html.md): &#96;SOURCE_CONFIG&#96; for the Wikimedia Commons retrieve source (#79 · report 14 §3.3).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-27 18:14 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-27 20:19 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

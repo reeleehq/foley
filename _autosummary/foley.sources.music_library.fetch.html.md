@@ -32,11 +32,12 @@ a caller states only what it changes.
 
 ### Functions
 
-| [`fetch_audio`](#foley.sources.music_library.fetch.fetch_audio)(url, \*, http[, config])              | `url`'s bytes, asked for with the config's user agent.                                                                                                                                                                                                        |
-|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`make_fetch`](#foley.sources.music_library.fetch.make_fetch)(\*[, transport, config, clock, sleep]) | The default `url -> bytes`: [`fetch_audio()`](#foley.sources.music_library.fetch.fetch_audio) over [`polite_transport()`](#foley.sources.music_library.fetch.polite_transport) (`config` laid over [`MUSIC_LIBRARY_HTTP`](#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP)). |
-| [`music_library_config`](#foley.sources.music_library.fetch.music_library_config)([config])                    | `config` laid over [`MUSIC_LIBRARY_HTTP`](#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP) (top-level keys: a `retry` or `rate` given replaces the default one whole).                                                                                            |
-| [`polite_transport`](#foley.sources.music_library.fetch.polite_transport)([transport, config, clock, ...]) | `transport` (default [`requests_transport()`](foley.sources.http.html.md#foley.sources.http.requests_transport)) with a resilient wrapper per host, built from `config` (see the module docstring).                                          |
+| [`fetch_audio`](#foley.sources.music_library.fetch.fetch_audio)(url, \*, http[, config])               | `url`'s bytes, asked for with the config's user agent.                                                                                                                                                                                                        |
+|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`library_fetch`](#foley.sources.music_library.fetch.library_fetch)(\*[, fetch, transport, config, ...]) | The `url -> bytes` a library's files are fetched with (one rule for every caller).                                                                                                                                                                            |
+| [`make_fetch`](#foley.sources.music_library.fetch.make_fetch)(\*[, transport, config, clock, sleep])  | The default `url -> bytes`: [`fetch_audio()`](#foley.sources.music_library.fetch.fetch_audio) over [`polite_transport()`](#foley.sources.music_library.fetch.polite_transport) (`config` laid over [`MUSIC_LIBRARY_HTTP`](#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP)). |
+| [`music_library_config`](#foley.sources.music_library.fetch.music_library_config)([config])                     | `config` laid over [`MUSIC_LIBRARY_HTTP`](#foley.sources.music_library.fetch.MUSIC_LIBRARY_HTTP) (top-level keys: a `retry` or `rate` given replaces the default one whole).                                                                                            |
+| [`polite_transport`](#foley.sources.music_library.fetch.polite_transport)([transport, config, clock, ...])  | `transport` (default [`requests_transport()`](foley.sources.http.html.md#foley.sources.http.requests_transport)) with a resilient wrapper per host, built from `config` (see the module docstring).                                          |
 
 ### foley.sources.music_library.fetch.Fetch
 
@@ -74,6 +75,21 @@ follow-up.
       its header alone would still accept).
 * **Return type:**
   [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.sources.music_library.fetch.library_fetch(\*, fetch=None, transport=None, config=None, what='music library', clock=<built-in function monotonic>, sleep=<built-in function sleep>)
+
+The `url -> bytes` a library’s files are fetched with (one rule for every caller).
+
+A `fetch` of the caller’s own is paced per host by the config’s `rate`
+([`pace_per_host()`](foley.sources.resilience.html.md#foley.sources.resilience.pace_per_host)). Otherwise the call’s egress is
+checked ([`foley.runtime.require_egress()`](foley.runtime.html.md#foley.runtime.require_egress), so [`foley.offline()`](foley.html.md#foley.offline) refuses
+it, naming `what`) and [`make_fetch()`](#foley.sources.music_library.fetch.make_fetch) goes through `transport`.
+
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – When both `fetch` and `transport` are given.
+  * [**EgressBlocked**](foley.runtime.html.md#foley.runtime.EgressBlocked) – When the HTTP path is refused by an offline scope.
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
 
 ### foley.sources.music_library.fetch.make_fetch(\*, transport=None, config=None, clock=<built-in function monotonic>, sleep=<built-in function sleep>)
 

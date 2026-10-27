@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=60a9f236"></script>
+    <script src="../../../_static/documentation_options.js?v=5751785c"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.95" />
+  <meta name="docsearch:version" content="0.0.96" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -734,7 +734,8 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">IntendedUse</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..index.ingest</span><span class="w"> </span><span class="kn">import</span> <span class="n">IngestReport</span><span class="p">,</span> <span class="n">IngestResult</span><span class="p">,</span> <span class="n">ingest_one</span>
@@ -744,11 +745,53 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_source</span>
 
 
+<span class="c1">#: ``add_from``'s ``license`` default: the source's own</span>
+<span class="c1">#: (``config['license']['search_default']``), :data:`DFLT_SEARCH_LICENSE` when it</span>
+<span class="c1">#: declares none. A music library has one licence, so it declares ``None``.</span>
+<span class="n">SOURCE_DEFAULT_LICENSE</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"source-default"</span>
+<span class="c1">#: The licence a search asks for when neither the call nor the source says.</span>
+<span class="n">DFLT_SEARCH_LICENSE</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"cc0"</span>
+
+
+<div class="viewcode-block" id="search_license">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.pull.html#foley.search_license">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">search_license</span><span class="p">(</span><span class="n">license</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The ``license`` a search sends: ``license``, or the source's default for it.</span>
+
+<span class="sd">    &gt;&gt;&gt; search_license("CC-BY-4.0", {}), search_license(SOURCE_DEFAULT_LICENSE, {})</span>
+<span class="sd">    ('CC-BY-4.0', 'cc0')</span>
+<span class="sd">    &gt;&gt;&gt; print(search_license(SOURCE_DEFAULT_LICENSE, {"license": {"search_default": None}}))</span>
+<span class="sd">    None</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">license</span> <span class="o">!=</span> <span class="n">SOURCE_DEFAULT_LICENSE</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">license</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"license"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"search_default"</span><span class="p">,</span> <span class="n">DFLT_SEARCH_LICENSE</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_source_config</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">adapter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The config ``add_from`` will search ``source`` under, without building its adapter.</span>
+
+<span class="sd">    The injected ``adapter``'s, else the registered one's (its built adapter's config</span>
+<span class="sd">    once loaded, else the declaration); ``{}`` for an unknown source (``_add_from``</span>
+<span class="sd">    raises for it inside the run).</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">adapter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="s2">"config"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
+
+    <span class="k">if</span> <span class="n">source</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SOURCE_REGISTRY</span><span class="p">:</span>
+        <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="n">entry</span> <span class="o">=</span> <span class="n">SOURCE_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">source</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">built</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"adapter"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">built</span><span class="p">,</span> <span class="s2">"config"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"config"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_add_from</span><span class="p">(</span>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">license</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"cc0"</span><span class="p">,</span>
+    <span class="n">query</span><span class="p">:</span> <span class="s2">"Union[str, Sequence[str]]"</span><span class="p">,</span>
+    <span class="n">license</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">SOURCE_DEFAULT_LICENSE</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
     <span class="n">library</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">intended_use</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">IntendedUse</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -767,9 +810,12 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Args:</span>
 <span class="sd">        source: A registered live-source name (e.g. ``'freesound'``).</span>
-<span class="sd">        query: The natural-language search query.</span>
-<span class="sd">        license: License constraint pushed into the source query (default</span>
-<span class="sd">            ``'cc0'``). The per-item fail-closed guard enforces the source's</span>
+<span class="sd">        query: The natural-language search query (a music library also takes a</span>
+<span class="sd">            list of titles).</span>
+<span class="sd">        license: License constraint pushed into the source query. Default: the</span>
+<span class="sd">            source's own (``config['license']['search_default']``), ``'cc0'`` for a</span>
+<span class="sd">            source that declares none; a music library (one licence) declares no</span>
+<span class="sd">            narrowing. The per-item fail-closed guard enforces the source's</span>
 <span class="sd">            accepted-license allowlist regardless.</span>
 <span class="sd">        limit: Max candidates to request from the source.</span>
 <span class="sd">        library: Target :class:`~foley.index.library.SoundLibrary` (default: the</span>
@@ -815,6 +861,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">src_adapter</span> <span class="o">=</span> <span class="n">adapter</span> <span class="k">if</span> <span class="n">adapter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">get_source</span><span class="p">(</span><span class="n">source</span><span class="p">)[</span><span class="s2">"adapter"</span><span class="p">]</span>
     <span class="n">use</span> <span class="o">=</span> <span class="n">intended_use</span> <span class="k">if</span> <span class="n">intended_use</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">DEFAULT_INTENDED_USE</span>
     <span class="n">config</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">src_adapter</span><span class="p">,</span> <span class="s2">"config"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">license</span> <span class="o">=</span> <span class="n">search_license</span><span class="p">(</span><span class="n">license</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
     <span class="c1"># The one dispatch path (#53): call-time egress check + the unsupported-parameter</span>
     <span class="c1"># policy over the extra search affordances; every drop is a report note.</span>
     <span class="n">search_kw</span><span class="p">,</span> <span class="n">search_notes</span> <span class="o">=</span> <span class="n">plan_search</span><span class="p">(</span>
@@ -843,7 +890,8 @@ window.runMermaid = runMermaid;</script>
     <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">SourceConfigurationError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">source</span><span class="si">!r}</span><span class="s2"> needs an optional dependency that is not installed "</span>
-            <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">exc</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">exc</span><span class="si">}</span><span class="s2">): pip install 'foley[</span><span class="si">{</span><span class="n">source</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'_'</span><span class="p">,</span><span class="w"> </span><span class="s1">'-'</span><span class="p">)</span><span class="si">}</span><span class="s2">]'"</span>
+            <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">exc</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">exc</span><span class="si">}</span><span class="s2">): pip install "</span>
+            <span class="sa">f</span><span class="s2">"'foley[</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'extra'</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">source</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'_'</span><span class="p">,</span><span class="w"> </span><span class="s1">'-'</span><span class="p">)</span><span class="si">}</span><span class="s2">]'"</span>
         <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
         <span class="n">report</span><span class="o">.</span><span class="n">record</span><span class="p">(</span>
@@ -914,15 +962,22 @@ window.runMermaid = runMermaid;</script>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..obs.recorder</span><span class="w"> </span><span class="kn">import</span> <span class="n">facade_run</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..obs.run_artifact</span><span class="w"> </span><span class="kn">import</span> <span class="n">ingest_digest</span>
 
+    <span class="c1"># The manifest records the licence the search actually sends (the source's</span>
+    <span class="c1"># default resolved), and _add_from is handed that same value.</span>
+    <span class="n">license</span> <span class="o">=</span> <span class="n">search_license</span><span class="p">(</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"license"</span><span class="p">,</span> <span class="n">SOURCE_DEFAULT_LICENSE</span><span class="p">),</span>
+        <span class="n">_source_config</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"adapter"</span><span class="p">)),</span>
+    <span class="p">)</span>
     <span class="k">with</span> <span class="n">facade_run</span><span class="p">(</span>
         <span class="s2">"add_from"</span><span class="p">,</span>
         <span class="n">inputs</span><span class="o">=</span><span class="p">{</span>
             <span class="s2">"source"</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span>
             <span class="s2">"query"</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"query"</span><span class="p">),</span>
-            <span class="s2">"license"</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"license"</span><span class="p">,</span> <span class="s2">"cc0"</span><span class="p">),</span>
+            <span class="s2">"license"</span><span class="p">:</span> <span class="n">license</span><span class="p">,</span>
             <span class="s2">"limit"</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"limit"</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
         <span class="p">},</span>
     <span class="p">)</span> <span class="k">as</span> <span class="n">run</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">"license"</span><span class="p">]</span> <span class="o">=</span> <span class="n">license</span>
         <span class="n">report</span> <span class="o">=</span> <span class="n">_add_from</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">report</span><span class="o">.</span><span class="n">ingested</span><span class="p">:</span>
             <span class="n">lic</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">record</span><span class="o">.</span><span class="n">license</span>

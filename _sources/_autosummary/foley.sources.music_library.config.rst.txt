@@ -1,0 +1,21 @@
+foley.sources.music\_library.config
+===================================
+
+.. automodule:: foley.sources.music_library.config
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      CC0_LICENSE_ID
+      EXTRA
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      SOURCE_CONFIGS
+      library_source_config
+      license_section
+   

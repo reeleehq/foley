@@ -28,11 +28,11 @@ is an error, never a fall-through to the network.
 
 ### Module Attributes
 
-| [`FAL_CREDENTIAL`](#foley.sources.fal.adapter.FAL_CREDENTIAL)   | The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).      |
-|-------------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| [`FAL_KEY_ENV_VARS`](#foley.sources.fal.adapter.FAL_KEY_ENV_VARS) | The env vars falaw reads a fal key from, in order.                                    |
-| [`Runner`](#foley.sources.fal.adapter.Runner)           | `runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`. |
-| [`Adapter`](#foley.sources.fal.adapter.Adapter)          | Registry convention (arioso): the loader imports `adapter.Adapter`.                   |
+| [`FAL_CREDENTIAL`](#foley.sources.fal.adapter.FAL_CREDENTIAL)   | The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).                                                                                                                         |
+|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`FAL_KEY_ENV_VARS`](#foley.sources.fal.adapter.FAL_KEY_ENV_VARS) | The env vars falaw reads a fal key from, in order.                                                                                                                                                       |
+| [`Runner`](#foley.sources.fal.adapter.Runner)           | `runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`, or a [`FalAnswer`](#foley.sources.fal.adapter.FalAnswer) (that two-tuple, with fal's run `.metrics`, #186). |
+| [`Adapter`](#foley.sources.fal.adapter.Adapter)          | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                                                                                      |
 
 ### Functions
 
@@ -46,6 +46,7 @@ is an error, never a fall-through to the network.
 | [`Adapter`](#foley.sources.fal.adapter.Adapter)                                        | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                    |
 |-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
 | [`FalAdapter`](#foley.sources.fal.adapter.FalAdapter)(config, \*[, api_key, runner, ...]) | A fal-hosted generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+| [`FalAnswer`](#foley.sources.fal.adapter.FalAnswer)(media, response[, metrics])          | A runner's `(media, response)`, with fal's run `metrics` beside it.                                                                    |
 
 ### foley.sources.fal.adapter.Adapter
 
@@ -73,7 +74,7 @@ A fal-hosted generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#
     itself (`falaw.using_fal_credentials(key)`, or `fal=` in
     `ocracy.kit.using_credentials`: one binding covers every fal source),
     else `$FAL_KEY`, else `$FAL_API_KEY`.
-  * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]]) – The transport seam (default [`falaw_runner()`](#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
+  * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)] | [`FalAnswer`](#foley.sources.fal.adapter.FalAnswer)]]) – The transport seam (default [`falaw_runner()`](#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
   * **uploader** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – `(path, *, api_key) -> url`, how a local `video=` or `audio=`
     (a path or bytes) reaches fal (default [`falaw_uploader()`](#foley.sources.fal.adapter.falaw_uploader)); tests pass
     a fake.
@@ -154,11 +155,22 @@ affordances, so a change to either must not replay a clip made without it.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
+### *class* foley.sources.fal.adapter.FalAnswer(media, response, metrics=None)
+
+Bases: [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+A runner’s `(media, response)`, with fal’s run `metrics` beside it.
+
+Still the two-tuple every runner answers (`media, response = answer`), so a
+caller that does not know about metrics is unchanged; `.metrics` is fal’s
+`Completed.metrics` (`inference_time`), or `None`.
+
 ### foley.sources.fal.adapter.Runner
 
-`runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`.
+`runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)`,
+or a [`FalAnswer`](#foley.sources.fal.adapter.FalAnswer) (that two-tuple, with fal’s run `.metrics`, #186).
 
-alias of `Callable`[[…], `tuple[bytes, dict]`]
+alias of `Callable`[[…], `tuple[bytes, dict] | FalAnswer`]
 
 ### foley.sources.fal.adapter.audio_url(response, field='audio')
 
@@ -180,6 +192,11 @@ The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...
 
 Call a fal endpoint through falaw and return `(audio bytes, raw response)`.
 
+A [`FalAnswer`](#foley.sources.fal.adapter.FalAnswer): its `.metrics` are fal’s `Completed.metrics`
+(`inference_time`: the seconds the runner spent), which falaw carries on its
+`done` event (falaw#125); `None` when fal reported none (or an older falaw
+dropped them).
+
 `refresh=True` skips falaw’s cache read and keeps its write (see the module
 docstring: foley’s generations cache owns replay). The audio is downloaded by
 `falaw.materialize_asset`, which content-addresses it in falaw’s store.
@@ -190,7 +207,7 @@ docstring: foley’s generations cache owns replay). The audio is downloaded by
         argument cannot be sent), so the run’s budget reservation is released.
   * [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If the response carries no audio URL.
 * **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+  [`FalAnswer`](#foley.sources.fal.adapter.FalAnswer)
 
 ### foley.sources.fal.adapter.falaw_uploader(path, , api_key)
 

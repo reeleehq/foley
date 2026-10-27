@@ -25,6 +25,7 @@ foley.sources.music\_library.acquisition
    
       acquire
       attribution_text
+      fetch_verified
       files_store
       kept_digests
       kept_sources

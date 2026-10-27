@@ -445,7 +445,7 @@ sudo). Surfaces the exact per-platform command so the user can opt in.
 * **Returns:**
   `{name: {'available': bool, 'purpose': str, 'install': str, 'url': str}}`.
 
-### foley.weave.weave(narration, timeline, , master='podcast', library=None, transcript=None, aligner=None, apply_strategy=None, sr=48000, cache=None, watermark=None, watermarker=None, sign_cert=None, export_captions=True, provenance_store=None)
+### foley.weave.weave(narration, timeline, , master='podcast', library=None, transcript=None, aligner=None, apply_strategy=None, sr=48000, cache=None, watermark=None, watermarker=None, sign_cert=None, export_captions=True, provenance_store=None, intended_use=None)
 
 Weave the chosen sounds under `narration` into a mastered, editable mix.
 
@@ -476,10 +476,20 @@ an optional keyword.
     with [`foley.provenance.make_c2pa_signer()`](foley.provenance.html.md#foley.provenance.make_c2pa_signer)); omit for the sidecar only.
   * **export_captions** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `True` (default), emit WebVTT + SRT SDH captions.
   * **provenance_store** – An optional `MutableMapping` to persist the C2PA sidecar.
+  * **intended_use** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`IntendedUse`](foley.base.html.md#foley.base.IntendedUse)]) – The rights intent the mix is for (#208). Given, the gate is
+    fail-closed: every *enabled* clip is judged by its record in `library`
+    (a clip with no record is refused), and so is the narration when it is a
+    library ref; any refusal raises before rendering. `None` (default)
+    renders as before but warns (`FutureWarning`) about what
+    [`DEFAULT_INTENDED_USE`](foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) would refuse: a future
+    release gates by default.
 * **Return type:**
   [`WeaveResult`](#foley.weave.WeaveResult)
 * **Returns:**
   A [`WeaveResult`](#foley.weave.WeaveResult).
+* **Raises:**
+  [**LicenseRefusal**](foley.html.md#foley.LicenseRefusal) – If `intended_use` is given and refuses a clip or the
+      narration (`.refused` names each id and reason).
 
 ### Modules
 

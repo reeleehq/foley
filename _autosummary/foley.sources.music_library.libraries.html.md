@@ -146,11 +146,18 @@ A free library is checked for one licence right only, keeping the files
 (`cache_bytes_ok`); the uses a production makes of them are gated per title by
 [`acquire()`](foley.sources.music_library.html.md#foley.sources.music_library.acquire) (`intended_use`).
 
+A library’s name is also its live-source name (`foley.add_from(name, ...)`),
+so it may not be the name of a source another [`foley.sources`](foley.sources.html.md#module-foley.sources) module
+declares, or one registered directly (`openverse`, `freesound`, a `fal_*`
+endpoint, …): that library would silently take the source over, or silently
+never become one.
+
 * **Raises:**
-  [**MusicLibraryError**](#foley.sources.music_library.libraries.MusicLibraryError) – If the name is taken (and not `replace`), or a free
-      library has no `track_url` rule or a licence that does not allow
-      keeping the files (a ShareAlike / NoDerivatives licence, refused on
-      purpose; a licence URL foley cannot read; a licence whose flags say no).
+  * [**MusicLibraryError**](#foley.sources.music_library.libraries.MusicLibraryError) – If the name is taken (and not `replace`), or a free
+        library has no `track_url` rule or a licence that does not allow
+        keeping the files (a ShareAlike / NoDerivatives licence, refused on
+        purpose; a licence URL foley cannot read; a licence whose flags say no).
+  * [**SourceNameCollision**](foley.sources.registry.html.md#foley.sources.registry.SourceNameCollision) – If the name is another module’s source name.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 

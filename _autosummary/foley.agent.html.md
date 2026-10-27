@@ -23,7 +23,7 @@ verify + generate aggregate into a single reproducible run-manifest.
 
 | [`find`](#foley.agent.find)(context, \*[, max_events, seconds, ...])       | The headline: a narrative context → verified, license-clean sound candidates.             |
 |------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-| [`plan`](#foley.agent.plan)(candidates, \*[, transcript])                  | Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge). |
+| [`plan`](#foley.agent.plan)(candidates, \*[, transcript, ...])             | Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge). |
 | [`decompose_context`](#foley.agent.decompose_context)(context, \*[, max_events, ...])   | Decompose a passage into `<= max_events` sparse `SoundEvent`s.                            |
 | [`refine_query`](#foley.agent.refine_query)(query, \*[, n, hint, refiner, \_span]) | Expand `query` into up to `n` paraphrases for multi-query retrieval.                      |
 | [`search_sounds`](#foley.agent.search_sounds)(queries, \*[, k, library, filters])   | Hybrid search for one query, or a multi-query RRF-merge (the SELECT retrieval tool).      |
@@ -198,6 +198,21 @@ semantics).
 #### settle(reserved_usd, actual_usd)
 
 Replace a reservation with the actual cost (`None` actual: keep the reservation).
+
+A reservation of unknown cost (`None` reserved, counted as an unknown call)
+settled with a known actual becomes that actual: it is summed, and no longer
+counted as unknown (#186: a source billed per compute second, priced after).
+Settling a known reservation with an equal actual changes nothing.
+
+```pycon
+>>> b = Budget(approve_unknown_cost=True)
+>>> b.reserve(None, what="x"); b.settle(None, 0.0425)
+>>> b.spent_usd, b._unknown_calls
+(0.0425, 0)
+>>> b.reserve(0.1, what="y"); b.settle(0.1, 0.1)
+>>> round(b.spent_usd, 10)
+0.1425
+```
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -475,7 +490,7 @@ alignment / mastering are WEAVE’s (#8) job, not SELECT’s.
 * **Return type:**
   [`TimelineItem`](foley.base.html.md#foley.base.TimelineItem)
 
-### foley.agent.plan(candidates, , transcript=None)
+### foley.agent.plan(candidates, , transcript=None, intended_use=None, library=None)
 
 Fold verified candidates into the SPARSE `SoundDesignTimeline` (the SELECT→WEAVE bridge).
 
@@ -484,9 +499,22 @@ One `TimelineItem` per candidate (`onset·gain·layer·loop` only, from its
 reserved #8 `plan_ref` slot is filled when called inside an active `foley.obs`
 run scope (`None`-safe otherwise).
 
+**Rights intent (#208).** Every candidate is re-checked where it is placed, on the
+library’s current record when `library` has its id (else the candidate’s own):
+with an explicit `intended_use` the gate is fail-closed and a sound the intent
+does not keep refuses the plan ([`LicenseRefusal`](foley.licensing.html.md#foley.licensing.LicenseRefusal), naming
+each id and reason). With `None` nothing is refused yet, but a `FutureWarning`
+names what [`DEFAULT_INTENDED_USE`](foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) would refuse: a future
+release gates by default.
+
 * **Parameters:**
   * **candidates** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]) – The candidates returned by [`find()`](#foley.agent.find).
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional narration transcript (WEAVE resolves the reference).
+  * **intended_use** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`IntendedUse`](foley.base.html.md#foley.base.IntendedUse)]) – The rights intent the plan is for (`None`: warn only).
+  * **library** – The library whose current records are judged (default: each
+    candidate’s own record).
+* **Raises:**
+  [**LicenseRefusal**](foley.html.md#foley.LicenseRefusal) – If `intended_use` is given and refuses a placed sound.
 * **Return type:**
   [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeline)
 

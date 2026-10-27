@@ -15,6 +15,7 @@ foley.sources.music\_library
       files_store
       kept_digests
       kept_sources
+      library_source_config
       make_fetch
       mirror_name
       music_library
@@ -36,6 +37,7 @@ foley.sources.music\_library
 
    .. autosummary::
    
+      MusicLibraryAdapter
       AcquiredTrack
       MusicLibrary
    
@@ -53,6 +55,8 @@ foley.sources.music\_library
    :recursive:
 
    acquisition
+   adapter
+   config
    credit_parser
    fetch
    libraries

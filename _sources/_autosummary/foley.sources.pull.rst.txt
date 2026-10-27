@@ -4,9 +4,17 @@ foley.sources.pull
 .. automodule:: foley.sources.pull
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      SOURCE_DEFAULT_LICENSE
+      DFLT_SEARCH_LICENSE
+   
    .. rubric:: Functions
 
    .. autosummary::
    
       add_from
+      search_license
    

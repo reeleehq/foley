@@ -55,6 +55,7 @@ rows as CSV, and [`attribution_text()`](#foley.sources.music_library.acquisition
 | [`acquire`](#foley.sources.music_library.acquisition.acquire)(library, titles, \*, out[, fetch, ...])   | Download `titles` of `library` into `out`, verified, one row each.                                                                                                                                                                                                                |
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`attribution_text`](#foley.sources.music_library.acquisition.attribution_text)(rows)                            | The attribution blocks to paste under a video, one per track that has one (acquired or kept), blank-line separated, each once.                                                                                                                                                    |
+| [`fetch_verified`](#foley.sources.music_library.acquisition.fetch_verified)(url, \*, mirrors, fetch, verify)   | `(bytes, seconds, the URL that served them, its mirror's name)` from the first of `mirrors` whose bytes `verify` accepts; every mirror's reason in one `MusicLibraryError` when none does.                                                                                        |
 | [`files_store`](#foley.sources.music_library.acquisition.files_store)(out)                                  | `out` as a `{file name: bytes}` store: a mapping is used as it is; a folder becomes foley's file store over it ([`foley.stores.make_byte_store()`](foley.stores.html.md#foley.stores.make_byte_store), which makes the folder on its first write).         |
 | [`kept_digests`](#foley.sources.music_library.acquisition.kept_digests)(table)                               | `{file: sha256}` of the acquired or kept rows of a tracks table: what a rerun may keep.                                                                                                                                                                                           |
 | [`kept_sources`](#foley.sources.music_library.acquisition.kept_sources)(table)                               | `{file: {"sha256", "url", "mirror"}}` of the acquired or kept rows of a tracks table: [`kept_digests()`](#foley.sources.music_library.acquisition.kept_digests) with where each file came from, so a kept row still says which URL and mirror served it (`acquire(kept=...)` takes either). |
@@ -216,6 +217,18 @@ http://creativecommons.org/licenses/by/4.0/
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.music_library.acquisition.fetch_verified(url, , mirrors, fetch, verify)
+
+`(bytes, seconds, the URL that served them, its mirror's name)` from the
+first of `mirrors` whose bytes `verify` accepts; every mirror’s reason in one
+`MusicLibraryError` when none does.
+
+The one mirror chain: [`acquire()`](#foley.sources.music_library.acquisition.acquire) and the registered library sources’
+`download` ([`foley.sources.music_library.adapter`](foley.sources.music_library.adapter.html.md#module-foley.sources.music_library.adapter)) both run it.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`float`](https://docs.python.org/3/builtins/functions.html#float), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.sources.music_library.acquisition.files_store(out)
 
