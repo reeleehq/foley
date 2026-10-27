@@ -24,9 +24,9 @@ is an error, never a fall-through to the network.
 
 from __future__ import annotations
 
-from typing import Callable, Optional
-
+import io
 import os
+from typing import Callable, Optional
 
 from ...base import (
     GENERATION_AFFORDANCES,
@@ -69,6 +69,15 @@ def audio_url(response: dict, field: str = "audio") -> Optional[str]:
     if isinstance(value, dict):
         return value.get("url")
     return value if isinstance(value, str) else None
+
+
+def falaw_uploader(path: str, *, api_key: str) -> str:
+    """A fal-fetchable URL for the local file at ``path`` (``falaw.upload``: content-addressed,
+    so an unchanged file is not uploaded twice)."""
+    import falaw  # lazy: the foley[fal] extra
+
+    with falaw.using_fal_credentials(api_key):
+        return falaw.upload(path)
 
 
 def falaw_runner(
@@ -126,6 +135,8 @@ class FalAdapter:
             ``ocracy.kit.using_credentials``: one binding covers every fal source),
             else ``$FAL_KEY``, else ``$FAL_API_KEY``.
         runner: The transport seam (default :func:`falaw_runner`); tests pass a fake.
+        uploader: ``(path, *, api_key) -> url``, how a local ``video=`` reaches fal
+            (default :func:`falaw_uploader`); tests pass a fake.
         http: Accepted and ignored: the registry passes a resilient HTTP transport to
             external sources, but this adapter's transport is falaw (which retries and
             classifies errors itself).
@@ -137,12 +148,14 @@ class FalAdapter:
         *,
         api_key: Optional[str] = None,
         runner: Optional[Runner] = None,
+        uploader: Optional[Callable[..., str]] = None,
         http=None,
     ):
         self.config = config
         self.name = config["name"]
         self._api_key = api_key
         self._runner: Runner = runner if runner is not None else falaw_runner
+        self._uploader = uploader if uploader is not None else falaw_uploader
 
     def _resolve_key(self) -> "tuple[Optional[str], bool]":
         """``(key, is_operators)``: the first of ``api_key=``, a key bound for this
@@ -195,9 +208,14 @@ class FalAdapter:
         reject_renamed(affordances)  # generate() builds its payload here too
         nd = self.config.get("native_defaults") or {}
         param_map = self.config["param_map"]
+        affordances = dict(affordances)
+        video = affordances.pop("video", None)
         args = dict(nd.get("fixed_arguments") or {})
         args.update(_integral(self.config, native_request(self.config, affordances)))
-        args[param_map["prompt"]["native_name"]] = prompt
+        if prompt or param_map["prompt"].get("required"):  # a V2A prompt is optional
+            args[param_map["prompt"]["native_name"]] = prompt
+        if video is not None:
+            args[param_map["video"]["native_name"]] = self._video_url(video)
         duration_name = (param_map.get("duration_s") or {}).get("native_name")
         default_s = nd.get("duration_default_s")
         if duration_name and duration_name not in args and default_s is not None:
@@ -221,6 +239,15 @@ class FalAdapter:
             api_key=self.api_key,
             audio_field=(self.config.get("output") or {}).get("audio_field", "audio"),
         )
+
+    def _video_url(self, video) -> str:
+        """The URL fal fetches ``video`` from: a URL as is, a path or bytes uploaded."""
+        from ..video import is_url, local_video_file
+
+        if is_url(video):
+            return video
+        with local_video_file(video) as path:
+            return self._uploader(path, api_key=self.api_key)
 
     def generate(
         self, prompt: str, *, provider_params: Optional[dict] = None, **affordances
@@ -294,7 +321,7 @@ class FalAdapter:
         )
         record = SoundRecord(id=f"{self.name}:pending", license=lic, caption=prompt)
         candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
-        candidate.cost_actual_usd = _actual_cost(self.config, args)
+        candidate.cost_actual_usd = _actual_cost(self.config, args, audio)
         return GeneratedClip(
             audio_bytes=audio,
             candidate=candidate,
@@ -303,13 +330,28 @@ class FalAdapter:
         )
 
 
-def _actual_cost(config: dict, args: dict) -> Optional[float]:
-    """What the call just made costs, for the duration actually sent (see
-    :func:`foley.cost.actual_call_cost`)."""
+def _actual_cost(config: dict, args: dict, audio: bytes) -> Optional[float]:
+    """What the call just made costs (see :func:`foley.cost.actual_call_cost`): for the
+    duration sent, or for a source billed by the video's length (#74), for the length
+    of the audio it returned (``None`` when that cannot be read)."""
     from ...cost import actual_call_cost
 
+    if (config.get("pricing") or {}).get("seconds_from") == "video":
+        seconds = _audio_seconds(audio)
+        return None if seconds is None else actual_call_cost(config, duration_s=seconds)
     name = (config["param_map"].get("duration_s") or {}).get("native_name")
     return actual_call_cost(config, duration_s=args.get(name) if name else None)
+
+
+def _audio_seconds(audio: bytes) -> Optional[float]:
+    """The length of encoded ``audio`` in seconds, or ``None`` when it cannot be read."""
+    try:
+        import soundfile as sf
+
+        info = sf.info(io.BytesIO(audio))
+        return info.frames / info.samplerate if info.samplerate else None
+    except Exception:  # noqa: BLE001 - an unreadable clip is an unknown cost
+        return None
 
 
 def _integral(config: dict, native: dict) -> dict:

@@ -253,6 +253,10 @@ def _keyed_request(config: dict, affordances: dict) -> "tuple[dict, Optional[str
     would compare after that translation.
     """
     rest = dict(affordances)
+    if rest.get("video") is not None:  # keyed by its content, never its path (#74)
+        from .video import video_key
+
+        rest["video"] = video_key(rest["video"])
     nd = config.get("native_defaults") or {}
     model = rest.pop("model", None)
     if model == nd.get("model_id"):
@@ -466,7 +470,7 @@ def plan_generation(
         config=config,
         affordances=kept,
         notes=notes,
-        estimate_usd=estimate_call(config, **kept),
+        estimate_usd=estimate_call(config, **_priced(config, kept)),
         # Checked against the source's policy BEFORE any price or call: a reserved
         # or priced key raises here, so the estimate below is the call's price.
         provider_params=check_provider_params(
@@ -835,7 +839,18 @@ def estimate_generation(backend: str, **affordances) -> Optional[float]:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         kept, _ = translate_affordances(config, affordances, on_unsupported="note")
-    return estimate_call(config, **kept)
+    return estimate_call(config, **_priced(config, kept))
+
+
+def _priced(config: dict, affordances: dict) -> dict:
+    """``affordances`` plus what the price depends on beyond them: the video's length
+    for a source billed per second of the video it is given (#74)."""
+    pricing = config.get("pricing") or {}
+    if pricing.get("seconds_from") != "video" or affordances.get("video") is None:
+        return affordances
+    from .video import video_seconds
+
+    return {**affordances, "video_duration_s": video_seconds(affordances["video"])}
 
 
 def plan_search(

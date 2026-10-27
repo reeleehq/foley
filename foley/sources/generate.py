@@ -77,6 +77,19 @@ GENERATE_BACKEND_ENV = "FOLEY_GENERATE_BACKEND"
 #: Setting it is the operator naming backends, so its paid entries are tried.
 GENERATE_ORDER_ENV = "FOLEY_GENERATE_ORDER"
 
+#: The order an unnamed **video-to-audio** generation (``video=``) tries (#74): the
+#: backends whose config declares ``modes=['v2a']``. A text-to-audio backend never
+#: runs on a video (``video`` is meaning-carrying, so it would refuse anyway).
+DEFAULT_V2A_ORDER = ("fal_mirelo_v2a", "fal_sonilo_v2a")
+
+#: Env var replacing the video-to-audio order (comma-separated). Separate from
+#: :data:`GENERATE_BACKEND_ENV` / :data:`GENERATE_ORDER_ENV`, which name text-to-audio
+#: backends: one variable cannot hold a default for both.
+V2A_ORDER_ENV = "FOLEY_V2A_ORDER"
+
+#: The generation modes: text-to-audio and video-to-audio.
+GENERATION_MODES = ("t2a", "v2a")
+
 #: Env var opting in to the paid entries of :data:`DEFAULT_GENERATE_ORDER` (``1``).
 GENERATE_PAID_ENV = "FOLEY_GENERATE_PAID"
 
@@ -90,7 +103,8 @@ def paid_generation_opted_in() -> bool:
     """
     import os
 
-    if os.environ.get(GENERATE_BACKEND_ENV) or os.environ.get(GENERATE_ORDER_ENV):
+    named = (GENERATE_BACKEND_ENV, GENERATE_ORDER_ENV, V2A_ORDER_ENV)
+    if any(os.environ.get(name) for name in named):
         return True
     return os.environ.get(GENERATE_PAID_ENV, "").strip().lower() in ("1", "true", "yes")
 
@@ -105,14 +119,31 @@ def backend_is_paid(backend: str) -> bool:
     return entry is None or _is_paid(entry["config"])
 
 
-def generate_backend_order() -> "tuple[str, ...]":
+def generation_mode(affordances: Mapping) -> str:
+    """``'v2a'`` when the call gives a ``video``, else ``'t2a'``.
+
+    >>> generation_mode({"video": "clip.mp4"}), generation_mode({"duration_s": 2})
+    ('v2a', 't2a')
+    """
+    return "v2a" if affordances.get("video") is not None else "t2a"
+
+
+def generate_backend_order(*, mode: str = "t2a") -> "tuple[str, ...]":
     """The backends an unnamed generation tries, in order.
 
-    ``$FOLEY_GENERATE_BACKEND`` pins one (a one-element order: no fallback); else
-    ``$FOLEY_GENERATE_ORDER`` (comma-separated); else :data:`DEFAULT_GENERATE_ORDER`.
+    Text-to-audio (``mode='t2a'``): ``$FOLEY_GENERATE_BACKEND`` pins one (a
+    one-element order: no fallback); else ``$FOLEY_GENERATE_ORDER`` (comma-separated);
+    else :data:`DEFAULT_GENERATE_ORDER`. Video-to-audio (``mode='v2a'``, see
+    :func:`generation_mode`): ``$FOLEY_V2A_ORDER``, else :data:`DEFAULT_V2A_ORDER`.
     """
     import os
 
+    if mode not in GENERATION_MODES:
+        raise ValueError(f"mode must be one of {GENERATION_MODES}, got {mode!r}")
+    if mode == "v2a":
+        listed = os.environ.get(V2A_ORDER_ENV, "")
+        names = tuple(n.strip() for n in listed.split(",") if n.strip())
+        return names or DEFAULT_V2A_ORDER
     pinned = os.environ.get(GENERATE_BACKEND_ENV)
     if pinned:
         return (pinned,)
@@ -159,12 +190,12 @@ def first_runnable_backend(order, *, paid_ok: bool = True) -> str:
     )
 
 
-def default_generate_backend() -> str:
+def default_generate_backend(*, mode: str = "t2a") -> str:
     """The backend an unnamed generation tries first (:func:`first_runnable_backend` of
-    :func:`generate_backend_order`, paid ones only once opted in). What
+    :func:`generate_backend_order` for ``mode``, paid ones only once opted in). What
     :func:`foley.estimate` prices and the rights pre-check judges for ``backend='auto'``."""
     return first_runnable_backend(
-        generate_backend_order(), paid_ok=paid_generation_opted_in()
+        generate_backend_order(mode=mode), paid_ok=paid_generation_opted_in()
     )
 
 
@@ -413,7 +444,7 @@ def _generate(
     from ..index.library import default_library
     from ..provenance import disclosure  # stdlib top-level; heavy deps lazy inside
 
-    backend = backend or default_generate_backend()
+    backend = backend or default_generate_backend(mode=generation_mode(affordances))
 
     if on_flagged not in ("refuse", "warn"):
         raise ValueError(f"on_flagged must be 'refuse' or 'warn', got {on_flagged!r}")
@@ -607,7 +638,7 @@ def _generate(
     res.cache_key = plan.content_key  # where the paid bytes are, whatever the outcome
     record_generation_outcome(plan, res.status, cache=generations_cache)
     if res.status in ("pass", "warn"):
-        if check_prompt:
+        if check_prompt and prompt:  # a picture-led (V2A) call may give no prompt
             post_qc["prompt_match"] = _prompt_verdict(
                 prompt, audio_bytes, lib, clip.notes
             )
@@ -709,7 +740,8 @@ def estimate_order(backend=None, **affordances) -> Optional[float]:
         if not order:
             raise ValueError("backend= is an empty sequence: name at least one backend")
     elif backend in (None, "", "auto"):
-        order, paid_ok = generate_backend_order(), paid_generation_opted_in()
+        order = generate_backend_order(mode=generation_mode(affordances))
+        paid_ok = paid_generation_opted_in()
     else:
         return estimate_generation(backend, **affordances)
     if len(order) == 1:
@@ -984,7 +1016,9 @@ def generate(*args, **kwargs) -> IngestReport:
     from ..obs.run_artifact import ingest_digest
 
     prompt = args[0] if args else kwargs.get("prompt")
-    backend = kwargs.get("backend") or default_generate_backend()
+    backend = kwargs.get("backend") or default_generate_backend(
+        mode=generation_mode(kwargs)
+    )
     affordances = {
         k: v for k, v in kwargs.items() if k not in _GENERATE_KNOWN and k != "prompt"
     }

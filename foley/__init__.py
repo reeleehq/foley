@@ -816,10 +816,12 @@ def generate(
         default_generate_backend,
         generate_backend_order,
         generate_in_order,
+        generation_mode,
         paid_generation_opted_in,
         provider_params_by_backend,
     )
 
+    mode = generation_mode(affordances)  # a video= walks the video-to-audio order
     paid_ok = True  # a named backend or order is the caller asking for it
     if adapter is not None:  # an injected adapter is one backend, named by its config
         if isinstance(backend, (list, tuple)):
@@ -828,7 +830,7 @@ def generate(
         order = (
             backend
             if backend not in (None, "", "auto")
-            else named or default_generate_backend(),
+            else named or default_generate_backend(mode=mode),
         )
     elif isinstance(backend, (list, tuple)):
         order = tuple(backend)  # the caller's own order
@@ -837,7 +839,7 @@ def generate(
     elif backend not in (None, "", "auto"):
         order = (backend,)  # named: that backend, no fallback
     else:
-        order, paid_ok = generate_backend_order(), paid_generation_opted_in()
+        order, paid_ok = generate_backend_order(mode=mode), paid_generation_opted_in()
     # Native params are one vendor's: an order that may try several backends takes
     # them per backend, and each backend gets only its own (#61).
     may_fall_back = adapter is None and (

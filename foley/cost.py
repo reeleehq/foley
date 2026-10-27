@@ -96,6 +96,9 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
 
     * ``'free'`` (local inference, a free API tier) → ``0.0``;
     * ``'per_call'`` → ``amount_usd``;
+    * ``'per_second'`` with ``seconds_from='video'`` → ``amount_usd`` × the video's
+      length (``video_duration_s``, measured by the dispatch), else × the declared
+      ``duration_max_s`` (an upper bound);
     * ``'per_second'`` → ``amount_usd`` × the requested ``duration_s``; when none is
       requested, × the ``native_defaults['duration_default_s']`` the adapter sends in
       its place, else × ``native_defaults['duration_max_s']`` (the duration is left to
@@ -117,6 +120,11 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
     if unit == "per_call":
         return float(amount)
     if unit == "per_second":
+        if pricing.get("seconds_from") == "video":  # billed by the video's length
+            seconds = affordances.get("video_duration_s") or (
+                config.get("native_defaults") or {}
+            ).get("duration_max_s")
+            return None if seconds is None else float(amount) * float(seconds)
         seconds = affordances.get("duration_s")
         if seconds is None:
             # What the adapter sends when no duration is asked (its declared default),
@@ -144,7 +152,8 @@ def actual_call_cost(
     """
     if duration_s is None and (config.get("pricing") or {}).get("unit") == "per_second":
         return None
-    return estimate_call(config, duration_s=duration_s)
+    # A source billed by its video's length bills the seconds it actually produced.
+    return estimate_call(config, duration_s=duration_s, video_duration_s=duration_s)
 
 
 def _stack() -> tuple:

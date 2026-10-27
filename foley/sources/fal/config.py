@@ -49,6 +49,9 @@ _FAL_EL_LACKS = frozenset({"pcm_32000", "mp3_24000_48"})
 #: fal's documented pricing and model pages (read 2026-10-25).
 _FAL_PRICING_SOURCE = "fal pricing API (GET /v1/models/pricing?endpoint_id=...)"
 _SEEN = "2026-10-25"
+#: The video-to-audio endpoints' prices, read off their fal model pages (#74).
+_FAL_V2A_PRICING_SOURCE = "fal model page (pricing note)"
+_SEEN_V2A = "2026-10-27"
 
 #: What every fal source shares: the key, the extra, the transport, the egress class.
 _COMMON = {
@@ -381,6 +384,102 @@ SOURCE_CONFIGS = (
             "seen": _SEEN,
         },
     ),
+    # -- video-to-audio (#74): modes=['v2a'], so only a call with video= reaches them --
+    _source(
+        "fal_mirelo_v2a",
+        display_name="Mirelo SFX 2.0 video-to-audio (fal)",
+        website="https://fal.ai/models/mirelo-ai/sfx2.0/video-to-audio",
+        api={"endpoint_id": "mirelo-ai/sfx2.0/video-to-audio"},
+        modes=["v2a"],
+        param_map={
+            "prompt": {"native_name": "text_prompt"},  # optional: the picture leads
+            "video": {"native_name": "video_url"},
+            "keep_source_audio": {"native_name": "preserve_speech"},
+            "duration_s": {"native_name": "duration"},  # clamped to the video's length
+            "negative_prompt": {"native_name": "negative_prompt"},
+            "seed": {"native_name": "seed"},
+            "output_format": {
+                "native_name": "upload_audio_format",
+                "to_native_map": {"wav": "wav", "flac": "flac", "mp3": "mp3"},
+            },
+        },
+        supported_affordances=[
+            "prompt",
+            "video",
+            "keep_source_audio",
+            "duration_s",
+            "negative_prompt",
+            "seed",
+            "output_format",
+        ],
+        unsupported_affordances=["prompt_influence", "steps", "loop"],
+        native_defaults={
+            "model_id": "mirelo-sfx-2.0",
+            "generator_version": "mirelo-ai/sfx2.0/video-to-audio",
+            "upload_audio_format": "wav",
+            "duration_default_s": 10.0,  # fal's own default; never past the video
+            "duration_min_s": 1.0,
+            "duration_max_s": 600.0,
+            # One clip per call (billed per sample), and no separated speech track.
+            "fixed_arguments": {"num_samples": 1, "return_speech": False},
+        },
+        license={
+            "default_license_id": "fal-partner-unverified",
+            "cache_bytes_ok": True,
+        },
+        commercial_ok=False,
+        # $0.010/s per sample until 2026-12-13, then $0.015: priced at the later rate.
+        pricing={
+            "unit": "per_second",
+            "amount_usd": 0.015,
+            "source": _FAL_V2A_PRICING_SOURCE + " (0.010 until 2026-12-13)",
+            "seen": _SEEN_V2A,
+        },
+    ),
+    _source(
+        "fal_sonilo_v2a",
+        display_name="Sonilo v1.1 video-to-sound-effects (fal)",
+        website="https://fal.ai/models/sonilo/v1.1/video-to-sound-effects",
+        api={"endpoint_id": "sonilo/v1.1/video-to-sound-effects"},
+        modes=["v2a"],
+        param_map={
+            "prompt": {"native_name": "prompt"},  # optional: steers every scene
+            "video": {"native_name": "video_url"},
+            "keep_source_audio": {"native_name": "keep_speech_vocal"},
+            "output_format": {
+                "native_name": "audio_format",
+                "to_native_map": {"wav": "wav", "flac": "flac", "mp3": "mp3"},
+            },
+        },
+        # The length is the video's: no duration knob; no seed.
+        supported_affordances=["prompt", "video", "keep_source_audio", "output_format"],
+        unsupported_affordances=[
+            "duration_s",
+            "prompt_influence",
+            "negative_prompt",
+            "steps",
+            "seed",
+            "loop",
+        ],
+        native_defaults={
+            "model_id": "sonilo-v1.1",
+            "generator_version": "sonilo/v1.1/video-to-sound-effects",
+            "audio_format": "wav",
+            "duration_max_s": 180.0,  # the estimate's bound when the video is unread
+        },
+        license={
+            "default_license_id": "fal-partner-unverified",
+            "cache_bytes_ok": True,
+        },
+        commercial_ok=False,
+        pricing={
+            "unit": "per_second",
+            "amount_usd": 0.009,  # per second of output (the video's length), per sample
+            "seconds_from": "video",
+            "source": _FAL_V2A_PRICING_SOURCE,
+            "seen": _SEEN_V2A,
+        },
+    ),
 )
 
 _SMALL = SOURCE_CONFIGS[0]
@@ -403,6 +502,8 @@ for _config in SOURCE_CONFIGS:
         "reserved": sorted(
             {
                 _pm["prompt"]["native_name"],
+                # the video is keyed by its content: a provider param may not swap it
+                *([_pm["video"]["native_name"]] if "video" in _pm else []),
                 *_FAL_RESERVED,
                 *(_config["native_defaults"].get("fixed_arguments") or {}),
             }

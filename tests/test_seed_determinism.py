@@ -83,6 +83,7 @@ FAKES = {
             "fal_stable_audio_3",
             "fal_stable_audio_3_medium",
             "fal_mirelo",
+            "fal_mirelo_v2a",
             "fal_mmaudio",
         )
     },
