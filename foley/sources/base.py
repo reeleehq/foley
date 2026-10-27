@@ -867,6 +867,11 @@ class GenerateAdapter(Protocol):
     :class:`~foley.base.LicenseRecord`, and returns a :class:`GeneratedClip`. The
     :func:`foley.sources.generate.generate` façade converges it on the shared
     ``ingest_one`` pipeline (by-value, operator-consented).
+
+    Optional: ``demuxer() -> Optional[Callable[[bytes], bytes]]``, for a backend that
+    answers with a video (#176): the strategy that takes its audio out (``None`` when
+    the answer is already audio). The dispatch uses it again when it replays a kept
+    video answer; without one, ffmpeg (:func:`foley.sources.video.audio_track`).
     """
 
     #: Registry / façade key — ``'stable_audio'`` | ``'elevenlabs'`` | …

@@ -292,7 +292,8 @@ class FalAdapter:
         if ffmpeg_path() is None:
             raise SourceConfigurationError(
                 f"{self.name} answers with a video and foley needs ffmpeg to keep its "
-                "audio: install ffmpeg (or imageio-ffmpeg); nothing was generated"
+                "audio: install ffmpeg (or imageio-ffmpeg); nothing was generated now "
+                "(a paid answer kept in the generations cache is demuxed on the retry)"
             )
         return audio_track
 

@@ -689,7 +689,7 @@ def _error_report(report: IngestReport, backend: str, exc: Exception) -> IngestR
             id=f"{backend}:generate",
             status="error",
             error=f"{type(exc).__name__}: {exc}",
-            cache_key=getattr(exc, "cache_key", None),
+            cache_key=exc.cache_key if isinstance(exc, UndemuxedAnswer) else None,
         )
     )
     report.exception = exc

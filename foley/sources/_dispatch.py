@@ -588,6 +588,7 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
             raise UndemuxedAnswer(
                 f"{exc}. It could not be kept in the generations cache ({err!r})",
                 clip=exc.clip,
+                cache_key=plan.content_key,  # set once its bytes were written
             ) from exc
         raise UndemuxedAnswer(
             f"{exc}. The answer is kept in the generations cache ({plan.kept_key}): "
@@ -806,7 +807,8 @@ def _cached_clip(cache, request_key: str, notes: list, config: dict, *, demux=No
 
     A corrupt or out-of-date entry, or one whose earlier ingest failed, is a miss with
     a note: it never raises, but for a kept muxed video that still cannot be demuxed
-    (:func:`_demux_kept`), which must not be paid for again. The licence's flags are
+    (:func:`_demux_kept`: ``UndemuxedAnswer``, or ``SourceConfigurationError`` when
+    no ffmpeg is found), which must not be paid for again. The licence's flags are
     re-derived from its id, so a correction to the licence table reaches cached sounds.
     ``demux``: the adapter's ``demuxer`` (``() -> (video bytes -> audio bytes)``), so a
     kept video is taken apart the way the call would have (default: ffmpeg).
@@ -862,7 +864,15 @@ def _cached_clip(cache, request_key: str, notes: list, config: dict, *, demux=No
         )
         return None
     if entry.get("container") == "video":
-        audio = _demux_kept(cache, entry_key, entry, audio, notes, demux=demux)
+        audio = _demux_kept(
+            cache,
+            entry_key,
+            entry,
+            audio,
+            notes,
+            demux=demux,
+            pointer_key=request_key if via_fallback else None,
+        )
     kept_notes = list(entry.get("notes") or [])
     if entry.get("fallback") and not via_fallback:
         # Generated as another request's fallback; this request is the one it answers.
@@ -878,13 +888,22 @@ def _cached_clip(cache, request_key: str, notes: list, config: dict, *, demux=No
 
 
 def _demux_kept(
-    cache, entry_key: str, entry: dict, video: bytes, notes: list, *, demux=None
+    cache,
+    entry_key: str,
+    entry: dict,
+    video: bytes,
+    notes: list,
+    *,
+    demux=None,
+    pointer_key=None,
 ) -> bytes:
     """The audio of a kept muxed answer (#176); its entry then holds the audio instead.
 
     Taken out by ``demux()`` (the adapter's demuxer factory; default: ffmpeg). Paid bytes
     get one replay, as any cached answer: when it fails too, the entry is marked
     ``error_on_replay`` (the next identical request generates anew) and this raises.
+    ``pointer_key``: the fallback pointer it was reached through, which names the bytes
+    it serves too.
 
     Raises:
         UndemuxedAnswer: When it still cannot be taken out (at plan time: nothing paid).
@@ -913,13 +932,19 @@ def _demux_kept(
         cache.audio[key] = audio
         healed = {k: v for k, v in entry.items() if k != "container"}
         cache.requests[entry_key] = {**healed, "content_key": key}
-        if not any(
-            isinstance(e, dict) and e.get("content_key") == old_key
-            for e in (cache.requests.get(k) for k in list(cache.requests))
-        ):
-            del cache.audio[old_key]  # the video, now that nothing points at it
+        if pointer_key is not None:
+            pointer = cache.requests.get(pointer_key)
+            if isinstance(pointer, dict) and pointer.get("content_key") == old_key:
+                cache.requests[pointer_key] = {**pointer, "content_key": key}
     except Exception as exc:  # noqa: BLE001 - never fail a replay over a cache write
         notes.append(f"could not keep the demuxed audio in the cache: {exc!r}")
+    else:
+        with contextlib.suppress(Exception):  # the video, once nothing points at it
+            if not any(
+                isinstance(e, dict) and e.get("content_key") == old_key
+                for e in (cache.requests.get(k) for k in list(cache.requests))
+            ):
+                del cache.audio[old_key]
     notes.append("the kept answer was a video: its audio track was taken out now")
     return audio
 
