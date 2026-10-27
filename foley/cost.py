@@ -175,21 +175,35 @@ def _billed_seconds(seconds, pricing: dict) -> float:
 
 
 def actual_call_cost(
-    config: dict, *, duration_s: Optional[float] = None
+    config: dict,
+    *,
+    duration_s: Optional[float] = None,
+    compute_s: Optional[float] = None,
 ) -> Optional[float]:
     """What a call just made costs at the declared price, for the duration actually sent.
 
     The same pricing rule as :func:`estimate_call`, so the estimate and the actual
     cannot disagree on it; ``None`` (unknown) when a per-second source was left to
-    choose its own length.
+    choose its own length. A source billed per compute second (unknown beforehand) is
+    priced from ``compute_s``, the run time the provider reported (#186), and is
+    ``None`` without it.
 
     >>> cfg = {"pricing": {"unit": "per_second", "amount_usd": 0.002}}
     >>> actual_call_cost(cfg, duration_s=3.0)
     0.006
     >>> actual_call_cost(cfg) is None
     True
+    >>> gpu = {"pricing": {"unit": "per_compute_second", "amount_usd": 0.001}}
+    >>> actual_call_cost(gpu, compute_s=42.0), actual_call_cost(gpu) is None
+    (0.042, True)
     """
-    if duration_s is None and (config.get("pricing") or {}).get("unit") == "per_second":
+    pricing = config.get("pricing") or {}
+    if pricing.get("unit") == "per_compute_second":
+        amount = pricing.get("amount_usd")
+        if amount is None or compute_s is None:
+            return None
+        return round(float(amount) * float(compute_s), 10)
+    if duration_s is None and pricing.get("unit") == "per_second":
         return None
     # A source billed by its video's length bills the seconds it actually produced.
     return estimate_call(config, duration_s=duration_s, video_duration_s=duration_s)
