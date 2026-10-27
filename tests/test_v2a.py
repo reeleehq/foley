@@ -5,6 +5,7 @@ Hermetic: the fal ``runner`` and ``uploader`` seams are fakes; no video is decod
 """
 
 import io
+import json
 
 import pytest
 
@@ -760,3 +761,41 @@ def test_hunyuan_actual_cost_is_in_blocks_too():
     from foley.cost import actual_call_cost
 
     assert actual_call_cost(CONFIGS["fal_hunyuan_foley"], duration_s=3.0) == pytest.approx(0.1)
+
+
+# #184: a presigned URL's token is never written down; #185: each answer of a request
+# that is never replayed keeps its own entry
+
+
+_PRESIGNED = "https://user:pw@bucket.s3.example/shot.mp4?X-Amz-Signature=s3cr3t#t=2"
+
+
+def test_a_presigned_url_s_token_never_reaches_a_record(library, tmp_path):
+    from foley.stores import make_generations_store
+
+    cache = make_generations_store(tmp_path / "generations")
+    adapter, runner, _ = _adapter()
+    cand = foley.generate("", backend="fal_mirelo_v2a", adapter=adapter, library=library,
+                          video=_PRESIGNED, generations_cache=cache, provenance_store={})
+    assert runner.calls[0][1]["video_url"] == _PRESIGNED  # the provider gets it whole
+    stored = json.dumps([cache.requests[k] for k in cache.requests], ensure_ascii=False)
+    recorded = json.dumps(cand.sound.license.generation_params, ensure_ascii=False)
+    for text in (stored, recorded):
+        assert "s3cr3t" not in text and "pw@" not in text and "t=2" not in text
+        assert "url:https://bucket.s3.example/shot.mp4?…" in text
+    assert not any("fallback" in n for n in cand.notes)  # not mistaken for another request
+
+
+def test_each_answer_of_a_never_replayed_request_keeps_its_entry(library, tmp_path):
+    from foley.stores import make_generations_store
+
+    cache = make_generations_store(tmp_path / "generations")
+    for seconds in (1.0, 2.0):  # the URL served something else the second time
+        adapter, runner, _ = _adapter(seconds=seconds)
+        foley.generate("", backend="fal_mirelo_v2a", adapter=adapter, library=library,
+                       video="https://x/latest.mp4", generations_cache=cache,
+                       provenance_store={})
+    entries = [cache.requests[k] for k in cache.requests]
+    assert len(entries) == 2 and len({e["content_key"] for e in entries}) == 2
+    assert all(e["content_key"] in cache.audio for e in entries)  # no orphaned bytes
+    assert len(cache.find(video="https://x/latest.mp4")) == 2

@@ -307,9 +307,9 @@ class FalAdapter:
         video_field = (self.config["param_map"].get("video") or {}).get("native_name")
         if video_field not in args or affordances.get("video") is None:
             return args
-        from ..video import video_key
+        from ..video import recorded_video_key
 
-        return {**args, video_field: video_key(affordances["video"])}
+        return {**args, video_field: recorded_video_key(affordances["video"])}
 
     def generate(
         self, prompt: str, *, provider_params: Optional[dict] = None, **affordances
