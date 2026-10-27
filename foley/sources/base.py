@@ -306,12 +306,26 @@ def _check_grouped(key: str, value: str) -> None:
         )
 
 
+def page_size(config: dict, k: int) -> int:
+    """``k`` clamped to the most results a page of this source holds (``param_map['k']['max']``).
+
+    >>> page_size({"param_map": {"k": {"native_name": "page_size", "max": 20}}}, 50)
+    20
+    >>> page_size({"param_map": {"k": {"native_name": "rows"}}}, 50)
+    50
+    """
+    cap = (config["param_map"].get("k") or {}).get("max")
+    return int(k) if cap is None else min(int(k), int(cap))
+
+
 def paging_params(config: dict, page: int, per_page: int) -> dict:
     """The native params of results ``page`` (1-based) at ``per_page`` results a page.
 
     ``param_map['page']`` names the native field; ``"as": "offset"`` sends the index
     of the page's first result instead of the page number (MediaWiki). Page 1 sends
-    nothing, so a first page is the request it always was.
+    nothing, so a first page is the request it always was. ``"max_results"`` is the
+    deepest result the source serves for one query: a page that starts at or past it
+    can only come back empty (or as an error), so it raises ``ValueError`` (#168).
 
     >>> paging_params({"param_map": {"page": {"native_name": "page"}}}, 3, 20)
     {'page': 3}
@@ -319,11 +333,22 @@ def paging_params(config: dict, page: int, per_page: int) -> dict:
     {'off': 40}
     >>> paging_params({"param_map": {"page": {"native_name": "page"}}}, 1, 20)
     {}
+    >>> paging_params({"param_map": {"page": {"native_name": "page", "max_results": 240}}}, 13, 20)
+    Traceback (most recent call last):
+    ...
+    ValueError: page 13 (20 a page) starts at result 241, past the 240 results this source serves per query
     """
+    spec = config["param_map"]["page"]
+    start = (int(page) - 1) * int(per_page)
+    cap = spec.get("max_results")
+    if cap is not None and start >= int(cap):
+        raise ValueError(
+            f"page {page} ({per_page} a page) starts at result {start + 1}, past the "
+            f"{cap} results this source serves per query"
+        )
     if int(page) == 1:
         return {}
-    spec = config["param_map"]["page"]
-    value = (int(page) - 1) * int(per_page) if spec.get("as") == "offset" else int(page)
+    value = start if spec.get("as") == "offset" else int(page)
     return {spec["native_name"]: value}
 
 

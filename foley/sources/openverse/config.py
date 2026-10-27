@@ -31,9 +31,10 @@ SOURCE_CONFIG = {
     "optional_dependencies": ["requests"],  # foley[openverse]; imported lazily
     "param_map": {
         "query": {"native_name": "q", "required": True},
-        "k": {"native_name": "page_size"},
+        "k": {"native_name": "page_size", "max": 20},  # anonymous
         "license": {"native_name": "license"},
-        "page": {"native_name": "page"},
+        # Anonymous search serves about 240 results a query (report 14 §3.2).
+        "page": {"native_name": "page", "max_results": 240},
         "include_explicit": {"native_name": "mature"},
         "sources": {"native_name": "source"},  # Openverse's providers (comma list)
         # Media kind: music is category=music; sfx sends no category, since Freesound
@@ -54,7 +55,6 @@ SOURCE_CONFIG = {
         "base_url": "https://api.openverse.org/v1",
         "search_endpoint": {"method": "GET", "path": "/audio/"},
         "detail_endpoint": {"method": "GET", "path": "/audio/{id}/"},
-        "max_page_size": 20,  # anonymous
         "max_query_chars": 200,
         "excluded_sources": ["freesound", "jamendo"],
         # foley licence id -> Openverse's native ``license`` token; what is sent when no

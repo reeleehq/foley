@@ -23,7 +23,7 @@ SOURCE_CONFIG = {
     "optional_dependencies": ["requests"],  # foley[internet-archive]; imported lazily
     "param_map": {
         "query": {"native_name": "q", "required": True},
-        "k": {"native_name": "rows"},
+        "k": {"native_name": "rows", "max": 50},
         "license": {"native_name": "license", "adapter_handled": True},
         "page": {"native_name": "page"},
         # Archive collections, quoted and ORed into the query. An identifier starts
@@ -40,7 +40,6 @@ SOURCE_CONFIG = {
         "metadata_url": "https://archive.org/metadata/{id}",
         "download_url": "https://archive.org/download/{id}/{name}",
         "item_url": "https://archive.org/details/{id}",
-        "max_rows": 50,
         "licensed_clause": "licenseurl:(*publicdomain* OR *creativecommons*)",
         "audio_formats": [
             "mp3",

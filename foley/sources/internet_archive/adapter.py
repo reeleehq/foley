@@ -23,6 +23,7 @@ from ..base import (
     api_license,
     as_names,
     merge_provider_params,
+    page_size,
     paging_params,
 )
 from ..http import Transport, requests_transport
@@ -110,7 +111,7 @@ class InternetArchiveAdapter:
         params = {
             "q": q,
             "fl[]": list(_FIELDS),
-            "rows": min(int(k), api["max_rows"]),
+            "rows": page_size(self.config, k),
             "output": "json",
         }
         params.update(paging_params(self.config, page, params["rows"]))

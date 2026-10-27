@@ -99,6 +99,7 @@ def _add_from(
         affordances,
         on_unsupported=on_unsupported,
         provider_params=provider_params,
+        k=limit,
     )
 
     from ..obs.recorder import current_run

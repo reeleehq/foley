@@ -51,7 +51,12 @@ from ocracy.kit import UnsupportedParameter, make_translator
 
 from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES, reject_renamed
 from .video import keyed as video_keyed
-from .base import check_prompt_influence, check_provider_params
+from .base import (
+    check_prompt_influence,
+    check_provider_params,
+    page_size,
+    paging_params,
+)
 
 __all__ = [
     "UNSUPPORTED_POLICIES",
@@ -908,11 +913,14 @@ def plan_search(
     *,
     on_unsupported: Optional[str] = None,
     provider_params: Optional[Mapping] = None,
+    k: Optional[int] = None,
 ) -> "tuple[dict, list[str]]":
     """Egress check + translation for a retrieve source's ``search`` (the same policy).
 
     ``provider_params`` (#61) is checked against the source's policy here, before any
-    call, and rides in the kwargs untranslated.
+    call, and rides in the kwargs untranslated. With ``k`` (results a page), a
+    ``page`` past the source's result cap raises here too, rather than reaching the
+    source as a request that can only fail (#168).
 
     Returns:
         ``(kwargs for adapter.search, notes)``.
@@ -923,6 +931,8 @@ def plan_search(
     search_kw, notes = translate_affordances(
         config, affordances, on_unsupported=on_unsupported, vocabulary=QUERY_AFFORDANCES
     )
+    if k is not None and search_kw.get("page") is not None:
+        paging_params(config, search_kw["page"], page_size(config, k))
     if provider_params is not None:
         search_kw["provider_params"] = check_provider_params(
             provider_params, policy=config.get("provider_params")
