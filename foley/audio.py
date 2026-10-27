@@ -369,13 +369,13 @@ def limit_true_peak(
         sample_rate: Sample rate in Hz (passed to the true-peak measurement).
         ceiling_dbtp: The true-peak ceiling in dBTP (default: foley's -1 dBTP).
         oversample: Oversampling factor for the true-peak estimate (default: the
-            QC table's ``true_peak_oversample``).
+            QC table's ``true_peak_oversample``, ``None``: mixing's own).
 
     Returns:
         ``(attenuated, gain_db)``. ``gain_db`` is ``0.0`` — and ``samples`` comes back
         as is — when the clip is already under the ceiling or is silent.
 
-    Lazy dependency: ``numpy`` (via :func:`foley.qc.true_peak_dbtp`).
+    Lazy dependency: ``mixing[loudness]`` (via :func:`foley.qc.true_peak_dbtp`).
     """
     from .qc import DEFAULT_QC_THRESHOLDS, true_peak_dbtp
 

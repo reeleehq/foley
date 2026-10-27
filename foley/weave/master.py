@@ -69,20 +69,35 @@ def _tp(mix: "ndarray", sample_rate: int) -> float:
     return float(true_peak_dbtp(mix, sample_rate))
 
 
+#: How far under the ceiling a trim aims, so the rounding of a float32 mix never
+#: reads over it (a few 1e-7 dB at most).
+TRIM_MARGIN_DB = 1e-5
+
+
 def _held_at_ceiling(
     mix: "ndarray", sample_rate: int, ceiling_db: float
 ) -> "tuple[ndarray, float]":
     """``(mix, its true peak)`` with what a limiter left over ``ceiling_db`` trimmed.
 
     One measurement (#159): a static gain scales the true peak exactly, so a trimmed
-    mix's peak is the ceiling and is not measured again. ``mix`` comes back as is
-    (same object) when it is under; a trim keeps its dtype.
+    mix's peak is the ceiling and is not measured again (the gain is taken
+    :data:`TRIM_MARGIN_DB` lower, so float32 rounding cannot put it over). A
+    non-finite sample is measured as silence, so it cannot hide the overs around it.
+    ``mix`` comes back as is (same object) when it is under; a trim keeps its dtype.
+
+    Raises:
+        TypeError: If ``mix`` is not floating point (a limiter that returned ints).
     """
-    tp = _tp(mix, sample_rate)
+    import numpy as np
+
+    if not np.issubdtype(mix.dtype, np.floating):
+        raise TypeError(f"a limiter must return float samples, got {mix.dtype}")
+    finite = np.isfinite(mix)
+    tp = _tp(mix if finite.all() else np.where(finite, mix, 0), sample_rate)
     if not math.isfinite(tp) or tp <= ceiling_db:
         return mix, tp
-    trimmed = mix * mix.dtype.type(db_to_lin(ceiling_db - tp))
-    return trimmed, float(ceiling_db)
+    gain = db_to_lin(ceiling_db - tp - TRIM_MARGIN_DB)  # float64, then one cast
+    return (mix * gain).astype(mix.dtype, copy=False), float(ceiling_db)
 
 
 def lookahead_true_peak_limit(

@@ -10,10 +10,10 @@ Zero-dependency import contract:
     This module imports **stdlib only** at the top level. ``numpy`` is
     lazy-imported inside each function body (like ``foley.audio``), so
     ``import foley.qc`` succeeds on a bare install with no scientific stack.
-    The :func:`measure_lufs` meter (:mod:`mixing.loudness`, via
-    :func:`foley.audio.integrated_lufs`) is lazy and it returns ``None`` when it
-    (or a measurable clip) is absent; everything else is
-    numpy-only.
+    The loudness and true-peak meters (:mod:`mixing.loudness`: :func:`measure_lufs`
+    via :func:`foley.audio.integrated_lufs`, and :func:`true_peak_dbtp`) are lazy;
+    :func:`run_qc` reports ``None`` for each when mixing (or a measurable clip) is
+    absent. Everything else is numpy-only.
 
 Waveform convention:
     ``samples`` is a float array shaped ``(frames,)`` (mono) or
@@ -99,7 +99,9 @@ class QCThresholds:
     clip_reject_run: int = 10  # any run >= 10 samples => fail
     # true peak
     true_peak_max_dbtp: float = -1.0
-    true_peak_oversample: int = 4
+    #: ``None``: mixing's own factor (4x, raised under 48 kHz so the oversampled rate
+    #: stays at least 192 kHz): the limiter uses the same, so the two agree.
+    true_peak_oversample: Optional[int] = None
     # dc offset
     dc_offset_fail: float = 0.01  # |mean| > 0.01 => correct/warn
     dc_offset_warn: float = 0.001  # 0.001..0.01 => note
@@ -289,23 +291,27 @@ def true_peak_dbtp(
     samples: "np.ndarray",
     sample_rate: int,
     *,
-    oversample: int = DEFAULT_QC_THRESHOLDS.true_peak_oversample,
+    oversample: Optional[int] = DEFAULT_QC_THRESHOLDS.true_peak_oversample,
 ) -> float:
     """Inter-sample true-peak level in dBTP (``-inf`` for a silent clip).
 
     The fleet's one true-peak meter, :func:`mixing.loudness.true_peak_db` (#190): a
-    windowed-sinc ``oversample``x interpolation (raised for rates under 48 kHz),
+    windowed-sinc ``oversample``x interpolation (default ``None``: mixing's own 4x,
+    raised for rates under 48 kHz, the factor its limiter uses too),
     chunked, so it costs little memory on a long programme, with the signal taken as
     silent outside its span (no wrap-around over-read at the edges). Content between
     about 0.47 fs and Nyquist reads up to ~0.5 dB low.
 
     Lazy dependency: ``mixing[loudness]`` (``foley[audio]``).
     """
+    import numpy as np
+
     from .audio import loudness_component
 
+    factor = None if oversample is None else int(oversample)
     return float(
         loudness_component().true_peak_db(
-            _as_2d(samples), int(sample_rate), oversampling=int(oversample)
+            np.asarray(samples), int(sample_rate), oversampling=factor
         )
     )
 
@@ -532,9 +538,12 @@ def run_qc(
     )
     dc = dc_offset(a)
     edge = needs_edge_fade(a, rel_peak_dbfs=thresholds.edge_rel_peak_dbfs)
-    true_peak = true_peak_dbtp(
-        a, sample_rate, oversample=thresholds.true_peak_oversample
-    )
+    try:
+        true_peak = true_peak_dbtp(
+            a, sample_rate, oversample=thresholds.true_peak_oversample
+        )
+    except ImportError:  # no mixing[loudness]: not measured, as LUFS
+        true_peak = None
     snr = estimate_snr(
         a,
         sample_rate,
