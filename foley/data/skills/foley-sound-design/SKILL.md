@@ -122,6 +122,10 @@ A cheer, laugh or applause synced to the *instant* of the on-screen event sounds
 - Only `license_ok` candidates are ever placed — the gate is **fail-closed** (unknown license →
   refused). Every verb and tool assumes **commercial publishing** by default; pass
   `commercial_ok=False` (or an explicit `IntendedUse`) only for a non-commercial project.
+- Pass the same `commercial_ok` / `territory` to every tool of one job. `foley_plan` and
+  `foley_weave` re-check each placed sound under their own intent and answer
+  `status: "refused"` (with a reason per id) for one it does not keep. A licence that
+  excludes territories (HunyuanVideo-Foley: EU, GB, KR) needs `territory=` (e.g. `"US"`).
 - Sounds you ingest yourself have **unknown** rights until you say otherwise:
   `foley.ingest(path, license="user-owned")` for your own recordings.
 - Read each candidate's `license` row: full TASL (`creator_name`, `source_url`, `license_url`) and

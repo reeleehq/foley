@@ -19,7 +19,7 @@ import threading
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from ..licensing import DEFAULT_INTENDED_USE, intended_use_for
+from ..licensing import DEFAULT_INTENDED_USE, intended_use_for, refusals
 
 # ---------------------------------------------------------------------------
 # injectable shared state (a default library + session factory; overridden in tests)
@@ -246,10 +246,9 @@ def foley_find(
     from .. import find
     from ..cost import BudgetExceeded, spend_scope
 
-    try:
-        use = intended_use_for(commercial_ok=commercial_ok, territory=territory)
-    except ValueError as exc:  # a territory that is not a code: a JSON row, no raise
-        return [_invalid(exc)]
+    use, invalid = _intent(commercial_ok, territory)
+    if invalid:
+        return [invalid]
     try:
         with spend_scope(_server_budget()):
             cands = list(
@@ -276,8 +275,18 @@ def foley_search(
     ucs_category: Optional[str] = None,
     rerank: bool = False,
     session: str = "default",
+    territory: Optional[str] = None,
 ) -> list:
-    """Hybrid (CLAP + keyword) search of the library for a text query; returns candidate rows."""
+    """Hybrid (CLAP + keyword) search of the library for a text query; returns candidate rows.
+
+    Only sounds whose licence serves the intent (``commercial_ok``, ``territory``; see
+    :func:`foley_find`) come back, each ``license_ok`` (#191).
+    """
+    from .policy import gate_candidates
+
+    use, invalid = _intent(commercial_ok, territory)
+    if invalid:
+        return [invalid]
     hits = _lib().search(
         query,
         k=k,
@@ -285,6 +294,7 @@ def foley_search(
         ucs_category=ucs_category,
         rerank=rerank,
     )
+    hits = gate_candidates(hits, use)
     _session(session).cache_candidates(hits)
     return [_candidate_row(c) for c in hits]
 
@@ -294,17 +304,19 @@ def foley_similar_to(
     k: int = 10,
     commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
     session: str = "default",
+    territory: Optional[str] = None,
 ) -> list:
-    """ "More like this" — the library neighbours of a sound (by id); returns candidate rows."""
+    """ "More like this" — the library neighbours of a sound (by id); returns candidate rows.
+
+    Gated like :func:`foley_search`: only neighbours the intent keeps (#191).
+    """
+    from .policy import gate_candidates
     from .preview import similar_to
 
-    hits = similar_to(sound_id, k=k, library=_lib())
-    if commercial_ok:
-        hits = [
-            c
-            for c in hits
-            if c.sound.license.commercial_ok and c.sound.license.rights_verified
-        ]
+    use, invalid = _intent(commercial_ok, territory)
+    if invalid:
+        return [invalid]
+    hits = gate_candidates(similar_to(sound_id, k=k, library=_lib()), use)
     _session(session).cache_candidates(hits)
     return [_candidate_row(c) for c in hits]
 
@@ -329,10 +341,20 @@ def foley_refine(
     rejected_ids: Optional[list] = None,
     hint: Optional[str] = None,
     k: int = 10,
+    commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
+    territory: Optional[str] = None,
 ) -> dict:
-    """Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank."""
+    """Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank.
+
+    Gated like :func:`foley_search`: only results the intent (``commercial_ok``,
+    ``territory``) keeps come back, and are cached (#191).
+    """
+    from .policy import gate_candidates
     from .preview import refine
 
+    use, invalid = _intent(commercial_ok, territory)
+    if invalid:
+        return invalid
     sess = _session(session)
     res = refine(
         sess,
@@ -343,8 +365,9 @@ def foley_refine(
         k=k,
         library=_lib(),
     )
-    sess.cache_candidates(res.results)
-    return {"queries": res.queries, "results": [_candidate_row(c) for c in res.results]}
+    hits = gate_candidates(res.results, use)
+    sess.cache_candidates(hits)
+    return {"queries": res.queries, "results": [_candidate_row(c) for c in hits]}
 
 
 def foley_pick(
@@ -413,10 +436,9 @@ def foley_generate(
     )
     from ..sources.registry import source_egress
 
-    try:
-        use = intended_use_for(commercial_ok=commercial_ok, territory=territory)
-    except ValueError as exc:  # a territory that is not a code
-        return _invalid(exc)
+    use, invalid = _intent(commercial_ok, territory)
+    if invalid:
+        return invalid
 
     # The bound server runtime may differ from the call's context (a server built with
     # runtime= but not run under offline_scope), so check it here too; undeclared
@@ -506,6 +528,8 @@ def foley_plan(
     session: str = "default",
     transcript: Optional[str] = None,
     candidate_ids: Optional[list] = None,
+    commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
+    territory: Optional[str] = None,
 ) -> dict:
     """Fold picks (or explicit candidate ids) into a JSON sound-design timeline.
 
@@ -513,13 +537,26 @@ def foley_plan(
     onto its candidate's :class:`~foley.base.SoundEvent` so ``plan`` honors the agent's
     placement choices — a numeric ``onset`` becomes an absolute-seconds anchor (see
     :func:`foley.weave.anchor.parse_symbolic_anchor`).
+
+    Every pick is re-checked under this call's intent (``commercial_ok``,
+    ``territory``), whatever it was found under, on the library's current record (the
+    one :func:`foley_weave` judges; the cached one only for a sound the library no
+    longer has): one the intent does not keep refuses the plan, naming each such id and
+    why (#191).
     """
     from .. import plan
     from ..base import Layer, SoundEvent
 
+    use, invalid = _intent(commercial_ok, territory)
+    if invalid:
+        return invalid
     sess = _session(session)
     ids = candidate_ids if candidate_ids is not None else sess.picked_ids()
     cands = sess.rehydrate(ids)
+    lib = _lib()
+    refused = refusals([_record_of(lib, c.sound.id, c.sound) for c in cands], use)
+    if refused:
+        return _refused(refused)
     for c in cands:
         sid = getattr(getattr(c, "sound", None), "id", None)
         pick = sess.picks.get(sid) if sid is not None else None
@@ -537,29 +574,54 @@ def foley_plan(
     return plan(cands, transcript=transcript).to_dict()
 
 
-def foley_weave(narration: str, timeline: dict, session: str = "default") -> dict:
-    """Render a timeline under the narration; returns the mix by store key + captions + credits."""
+def foley_weave(
+    narration: str,
+    timeline: dict,
+    session: str = "default",
+    commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
+    territory: Optional[str] = None,
+) -> dict:
+    """Render a timeline under the narration; returns the mix by store key + captions + credits.
+
+    Every enabled clip is re-checked under this call's intent (``commercial_ok``,
+    ``territory``), and so is the narration when it is a library sound (a ``str`` with a
+    record there; a narration that is only audio has no licence to check): one the
+    intent does not keep refuses the render, naming each such id and why (#191).
+    """
     from .. import weave as _weave
 
     try:
         tl = _timeline_of(timeline)
     except (TypeError, ValueError) as exc:  # the input, not the render: a JSON row
         return _invalid(exc)
+    use, invalid = _intent(commercial_ok, territory)
+    if invalid:
+        return invalid
     lib = _lib()
     missing = sorted(
         {it.clip_ref for it in tl.items if not _in_library(lib, it.clip_ref)}
     )
     if missing:
         return _invalid(ValueError(f"clip_ref(s) not in the library: {missing}"))
+    records = [lib[it.clip_ref] for it in tl.items if it.enabled]
+    if isinstance(narration, str) and _in_library(lib, narration):
+        records.append(lib[narration])  # weave uses a library ref as the narration
+    refused = refusals(records, use)
+    if refused:
+        return _refused(refused)
     return _weave_result_row(_weave(narration, tl, library=lib))
 
 
-def _in_library(lib, sound_id: str) -> bool:
+def _record_of(lib, sound_id: str, default=None):
+    """The library's record for ``sound_id``, or ``default`` when it has none."""
     try:
-        lib[sound_id]
+        return lib[sound_id]
     except KeyError:
-        return False
-    return True
+        return default
+
+
+def _in_library(lib, sound_id: str) -> bool:
+    return _record_of(lib, sound_id) is not None
 
 
 def _timeline_of(timeline):
@@ -685,10 +747,9 @@ def foley_score(
     from .. import score
     from ..cost import spend_scope
 
-    try:
-        use = intended_use_for(commercial_ok=commercial_ok, territory=territory)
-    except ValueError as exc:  # a territory that is not a code
-        return _invalid(exc)
+    use, invalid = _intent(commercial_ok, territory)
+    if invalid:
+        return invalid
 
     with spend_scope(_server_budget()):
         res = score(
@@ -736,15 +797,42 @@ TASTE HEURISTICS:
   - Licensing is load-bearing: only `license_ok` candidates are placed. Every tool assumes
     commercial publishing (commercial_ok=True); pass commercial_ok=False only for a
     non-commercial project. Each row's `license` carries full TASL + every rights flag.
-    Some licences exclude territories (HunyuanVideo-Foley: EU, GB, KR): foley_find,
-    foley_score and foley_generate refuse them unless territory= names where the sound is
-    used (an ISO code like "US"; "WORLD" for online publishing, which they refuse).
+    Some licences exclude territories (HunyuanVideo-Foley: EU, GB, KR): every tool that
+    finds sounds, plans or renders the mix (foley_find, foley_search, foley_similar_to,
+    foley_refine, foley_score, foley_generate, foley_plan, foley_weave) refuses them
+    unless territory= names where the sound is used (an ISO code like "US"; "WORLD" for
+    online publishing, which they refuse). foley_plan / foley_weave re-check every
+    placed sound (and a library narration) under their own intent, so pass the same
+    commercial_ok / territory to every call.
   - Loudness: the master profile ('podcast'/'streaming'/'broadcast_ebu') sets the delivery target.
 
 OFFLINE / SENSITIVE narration: run with the offline posture (foley_status shows it) — external
 sources + telemetry are disabled; generation stays on local backends.
 Call foley_capabilities() to see what's installed/degraded here.
 """
+
+
+def _intent(commercial_ok: bool, territory: Optional[str]):
+    """``(use, None)`` for a tool's rights arguments, or ``(None, invalid_row)``.
+
+    The only refusal is a territory that is not a code (``intended_use_for``'s
+    ``ValueError``), answered as a JSON row: a tool never raises for an argument.
+    """
+    try:
+        return intended_use_for(commercial_ok=commercial_ok, territory=territory), None
+    except ValueError as exc:
+        return None, _invalid(exc)
+
+
+def _refused(refused: "dict[str, str]") -> dict:
+    """The JSON row of a plan or weave refused for its sounds' licences (#191)."""
+    why = "; ".join(f"{sid}: {reason}" for sid, reason in refused.items())
+    return {
+        "ok": False,
+        "status": "refused",
+        "error": f"not licensed for this use: {why}",
+        "refused": refused,
+    }
 
 
 def _invalid(exc: Exception) -> dict:
