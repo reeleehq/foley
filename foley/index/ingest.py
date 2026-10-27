@@ -36,6 +36,7 @@ from ..licensing import (
     LICENSE_FLAGS,
     ai_use_permitted,
     apply_license_flags,
+    carry_lineage,
 )
 from ..qc import (
     DEFAULT_MIN_STATUS,
@@ -798,7 +799,11 @@ def _restamped(lic: LicenseRecord, license_id: str) -> LicenseRecord:
     from dataclasses import replace
 
     changed = license_id != lic.license_id
-    new = replace(lic, license_id=license_id, transformations=list(lic.transformations))
+    new = replace(
+        lic,
+        license_id=license_id,
+    )
+    carry_lineage(new, lic)
     apply_license_flags(new, overrides=_source_overrides(lic, license_id))
     new.rights_verified = license_id in ASSERTABLE_LICENSE_IDS
     new.verified_at = _now_iso() if new.rights_verified else None
@@ -832,7 +837,11 @@ def _rederived_from_url(lic: LicenseRecord) -> LicenseRecord:
     from ..licensing import license_id_from_cc_url
 
     license_id, verified = license_id_from_cc_url(lic.license_url)
-    new = replace(lic, license_id=license_id, transformations=list(lic.transformations))
+    new = replace(
+        lic,
+        license_id=license_id,
+    )
+    carry_lineage(new, lic)
     apply_license_flags(new, overrides=_source_overrides(lic, license_id))
     new.rights_verified = verified
     return new
@@ -864,6 +873,12 @@ def restamp_rights(
       re-derived by today's mapper (CC versions, PDM, NC spellings);
     * corpus clips (Clotho, FSD50K) are repaired by re-running ``foley bootstrap``,
       which re-stamps already-stored clips from the corpus metadata.
+
+    Re-stamping never widens a derivative (an edit, #162): the new flags stay bounded
+    by every licence the record derives from (:func:`foley.licensing.derived_license_ids`).
+    A record stored before ``derived_from_license_ids`` existed falls back to its edit
+    entries, which name only the direct source, so an edit of an edit stored then is
+    bounded by its parent's licence, not its grandparent's.
 
     Args:
         library: The :class:`~foley.index.library.SoundLibrary` (default: the default one).

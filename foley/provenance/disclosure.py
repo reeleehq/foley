@@ -563,7 +563,12 @@ def build_content_credential(
             }
         ],
     }
-    if ingredients:  # a derived clip names its sources' licences beside its own
+    derived = _derived_license_refs(lic, ingredients)
+    if derived:  # a derived clip is under its own licence AND its sources' (#214)
+        creative_work["license"] = list(dict.fromkeys([license_ref, *derived]))
+        # schema.org reads a list of licences as alternatives; this one is cumulative.
+        creative_work["description"] = DERIVED_LICENSES_STATEMENT
+    if ingredients:  # ... and names each source it was made from
         creative_work["isBasedOn"] = [
             {
                 "@type": "CreativeWork",
@@ -662,6 +667,46 @@ def _edit_source_ingredient(transformation, *, index: int) -> Optional[dict]:
         "instance_id": f"{C2PA_INGREDIENT_ID_PREFIX}source:{index}:{source['sound_id']}",
         INGREDIENT_SOURCE_KEY: source,
     }
+
+
+#: The ``CreativeWork.description`` of a derived clip, whose ``license`` is a list: every
+#: listed licence applies at once (the clip is bound by all of them), not a choice of one.
+DERIVED_LICENSES_STATEMENT = (
+    "Derived work: ALL of the listed licences apply together (the terms of each one "
+    "bind this work); they are not alternatives to choose between."
+)
+
+
+def _derived_license_refs(lic, ingredients) -> "list[str]":
+    """The licence refs (URL, else id) of everything ``lic`` derives from (#214).
+
+    Each source ingredient's licence (the URL its record carried), then every other
+    licence the record derives from (:func:`foley.licensing.derived_license_ids`: an
+    edit of an edit is bounded by its source's sources too), by its SSOT URL.
+
+    >>> from foley.base import LicenseRecord
+    >>> _derived_license_refs(LicenseRecord(source="g"), [])
+    []
+    >>> _derived_license_refs(LicenseRecord(source="g",
+    ...     derived_from_license_ids=["CC-BY-4.0"]), [])
+    ['https://creativecommons.org/licenses/by/4.0/']
+    """
+    from ..licensing import derived_license_ids, license_meta
+
+    refs, named = [], set()
+    for i in ingredients:
+        source = i[INGREDIENT_SOURCE_KEY]
+        named.add(source["license_id"])
+        refs.append(
+            source["license_url"]
+            or license_meta(source["license_id"] or "unknown").url
+            or source["license_id"]
+            or "unknown"
+        )
+    for license_id in derived_license_ids(lic):
+        if license_id not in named:
+            refs.append(license_meta(license_id).url or license_id)
+    return list(dict.fromkeys(refs))
 
 
 def _ref_of(record) -> str:

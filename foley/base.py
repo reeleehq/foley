@@ -642,6 +642,11 @@ class LicenseRecord(SerializableMixin):
     transformations: list = field(
         default_factory=list
     )  # ordered ops; non-empty => "(modified)"
+    # The licence ids of every sound this one derives from (an edit's source, and the
+    # sources that source derived from, #214). Each one bounds the derived flags:
+    # ``apply_license_flags`` ANDs their rows in, so a re-derivation from
+    # ``license_id`` (a restamp) can never widen a derivative. Empty: not derived.
+    derived_from_license_ids: list = field(default_factory=list)
 
     # generation (present iff AI-generated)
     is_ai_generated: bool = False
@@ -679,6 +684,14 @@ class LicenseRecord(SerializableMixin):
     rights_verified: bool = False  # False => unknown => fail-closed
     verified_at: Optional[str] = None
     schema_version: int = SCHEMA_VERSION
+
+    def __post_init__(self):
+        # A stored JSON ``null`` (or a caller's ``None``) for a lineage list reads as
+        # empty, so no re-derivation or copy of the record trips on ``list(None)``.
+        if self.transformations is None:
+            self.transformations = []
+        if self.derived_from_license_ids is None:
+            self.derived_from_license_ids = []
 
 
 # ---------------------------------------------------------------------------

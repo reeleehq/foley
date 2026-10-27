@@ -736,3 +736,173 @@ def test_narrowing_never_trusts_a_hand_set_flag_over_the_licence_row():
     out = apply_license_flags(LicenseRecord(source="g", license_id="Stability-Community"))
     src = LicenseRecord(source="s", license_id="CC-BY-NC-4.0", commercial_ok=True)
     assert narrow_to_source(out, src).commercial_ok is False
+
+
+# ---------------------------------------------------------------------------
+# the derived-licence model (#214): no re-derivation ever widens an edit
+# ---------------------------------------------------------------------------
+
+
+def test_an_edit_records_the_licences_it_derives_from(library):
+    sid = _add(library, "CC-BY-NC-4.0")
+    cand, _, _ = _edit(library, "extend", sid)
+    lic = cand.sound.license
+    assert lic.license_id == "Stability-Community"  # the generator's, as before
+    assert lic.derived_from_license_ids == ["CC-BY-NC-4.0"]
+    again = LicenseRecord.from_json(lic.to_json())
+    assert again.derived_from_license_ids == ["CC-BY-NC-4.0"]
+
+
+def test_a_record_stored_without_the_field_still_loads():
+    payload = LicenseRecord(source="g", license_id="CC0-1.0").to_dict()
+    del payload["derived_from_license_ids"]
+    assert LicenseRecord.from_dict(payload).derived_from_license_ids == []
+
+
+def test_reapplying_the_flags_of_a_reloaded_edit_never_widens_it(library):
+    sid = _add(library, "CC-BY-NC-4.0")
+    cand, _, _ = _edit(library, "extend", sid)
+    reloaded = LicenseRecord.from_dict(library.meta[cand.sound.id].license.to_dict())
+    apply_license_flags(reloaded)
+    assert reloaded.commercial_ok is False and reloaded.requires_attribution is True
+
+
+def test_an_edit_stored_before_the_field_is_bounded_by_its_transformations(library):
+    sid = _add(library, "CC-BY-NC-4.0")
+    cand, _, _ = _edit(library, "extend", sid)
+    payload = cand.sound.license.to_dict()
+    del payload["derived_from_license_ids"]  # as an 0.0.95 edit was stored
+    old = apply_license_flags(LicenseRecord.from_dict(payload))
+    assert old.commercial_ok is False
+
+
+def test_restamping_an_edit_to_the_generators_licence_never_widens_it(library):
+    from foley.index.ingest import restamp_rights
+
+    sid = _add(library, "CC-BY-NC-4.0")
+    cand, _, _ = _edit(library, "extend", sid)
+    for license_id in ("Stability-Community", "user-owned", "CC0-1.0"):
+        assert restamp_rights(library, license=license_id, ids=[cand.sound.id],
+                              apply=True) == [cand.sound.id]
+        lic = library.meta[cand.sound.id].license
+        assert lic.license_id == license_id
+        assert lic.commercial_ok is False, license_id
+        assert lic.derived_from_license_ids == ["CC-BY-NC-4.0"]
+
+
+def test_an_edit_of_an_edit_is_bounded_by_every_licence_in_its_chain(library):
+    sid = _add(library, "CC-BY-NC-4.0")
+    one, _, _ = _edit(library, "inpaint", sid)
+    two, _, _ = _edit(library, "extend", one.sound.id)
+    lic = two.sound.license
+    assert lic.derived_from_license_ids == ["CC-BY-NC-4.0", "Stability-Community"]
+    restamped = apply_license_flags(
+        LicenseRecord.from_dict({**lic.to_dict(), "license_id": "CC0-1.0",
+                                 "transformations": []}))
+    assert restamped.commercial_ok is False  # the NC grandparent still binds it
+
+
+def test_a_derived_credential_lists_every_licence_it_is_under(library):
+    sid = _add(library, "CC-BY-NC-4.0", creator_name="Bob")
+    one, _, _ = _edit(library, "inpaint", sid)
+    store = {}
+    name, params = OPS["extend"]
+    adapter, _, _ = _adapter(name)
+    two = foley.edit(one.sound.id, "extend", "x", adapter=adapter, library=library,
+                     provenance_store=store, **params)
+    labels = {a["label"]: a["data"] for a in store[two.sound.id]["manifest"]["assertions"]}
+    stability = foley.licensing.license_meta("Stability-Community").url
+    assert labels["stds.schema-org.CreativeWork"]["license"] == [
+        stability, "https://creativecommons.org/licenses/by-nc/4.0/"]
+    entry = foley.credits([two.sound]).entries[0]
+    assert entry.derived_license_ids == ["CC-BY-NC-4.0", "Stability-Community"]
+
+
+def test_a_non_derived_record_keeps_its_single_licence():
+    from foley.provenance.disclosure import build_content_credential
+
+    lic = apply_license_flags(LicenseRecord(source="u", license_id="CC-BY-4.0"))
+    assert lic.derived_from_license_ids == []
+    cred = build_content_credential(lic, asset_id="a")
+    labels = {a["label"]: a["data"] for a in cred["manifest"]["assertions"]}
+    assert labels["stds.schema-org.CreativeWork"]["license"] == (
+        "https://creativecommons.org/licenses/by/4.0/")
+
+
+def test_a_stored_null_lineage_reads_as_empty_and_never_crashes_a_restamp():
+    from foley.index.ingest import _rederived_from_url, _restamped
+    from foley.licensing import narrow_to_source
+
+    payload = _rights("CC-BY-NC-4.0").to_dict()
+    payload["derived_from_license_ids"] = None  # a JSON null in a stored record
+    payload["transformations"] = None
+    lic = LicenseRecord.from_dict(payload)
+    assert lic.derived_from_license_ids == [] and lic.transformations == []
+    lic.derived_from_license_ids = None  # set by hand after construction
+    lic.transformations = None
+    assert _restamped(lic, "CC0-1.0").derived_from_license_ids == []
+    lic.license_url = "https://creativecommons.org/licenses/by/4.0/"
+    assert _rederived_from_url(lic).derived_from_license_ids == []
+    out = apply_license_flags(LicenseRecord(source="g", license_id="Stability-Community"))
+    out.derived_from_license_ids = None
+    assert narrow_to_source(out, lic).derived_from_license_ids == ["CC-BY-NC-4.0"]
+
+
+def test_a_bootstrap_repair_keeps_the_lineage_and_never_widens_an_edit(library):
+    from types import SimpleNamespace
+
+    from foley.bootstrap import _repair_stored
+    from foley.index.ingest import IngestResult
+
+    sid = _add(library, "CC-BY-NC-4.0")
+    cand, _, _ = _edit(library, "extend", sid)
+    fresh = _rights("CC0-1.0")  # what the corpus metadata now says
+    res = IngestResult(id=cand.sound.id, status="skipped_dup")
+    _repair_stored(library, cand.sound.id, fresh, SimpleNamespace(meta={}), res)
+    lic = library.meta[cand.sound.id].license
+    assert lic.license_id == "CC0-1.0"
+    assert lic.derived_from_license_ids == ["CC-BY-NC-4.0"]
+    assert lic.transformations == cand.sound.license.transformations
+    assert lic.commercial_ok is False and lic.requires_attribution is True
+
+
+def test_a_legacy_edit_of_an_edit_is_bounded_by_its_parent_only():
+    """Pins a known limit (#214): an edit of an edit stored before
+    ``derived_from_license_ids`` keeps only its direct parent's licence (its edit
+    entry), so a restamp loses the grandparent's bound. No backfill is attempted."""
+    from foley.licensing import derived_license_ids, narrow_to_source
+
+    grandparent = _rights("CC-BY-NC-4.0")
+    parent = apply_license_flags(LicenseRecord(source="g", license_id="Stability-Community"))
+    narrow_to_source(parent, grandparent)
+    child = apply_license_flags(LicenseRecord(source="g", license_id="Stability-Community"))
+    narrow_to_source(child, parent)
+    child.transformations.append(
+        {"kind": "edit", "source_license_id": "Stability-Community"})
+    assert child.commercial_ok is False  # the new model: the chain binds it
+    payload = child.to_dict()
+    del payload["derived_from_license_ids"]  # as an 0.0.95 edit was stored
+    legacy = LicenseRecord.from_dict({**payload, "license_id": "CC0-1.0"})
+    assert derived_license_ids(legacy) == ["Stability-Community"]
+    restamped = apply_license_flags(legacy)
+    assert restamped.commercial_ok is True  # the NC grandparent is lost (known limit)
+    assert restamped.revenue_cap_usd == 1_000_000  # the parent's bound still holds
+
+
+def test_a_credential_listing_several_licences_says_all_of_them_apply(library):
+    from foley.provenance.disclosure import (
+        DERIVED_LICENSES_STATEMENT,
+        build_content_credential,
+    )
+
+    sid = _add(library, "CC-BY-NC-4.0")
+    cand, _, _ = _edit(library, "extend", sid)
+    cred = build_content_credential(cand.sound.license, asset_id="a")
+    work = {a["label"]: a["data"] for a in cred["manifest"]["assertions"]}[
+        "stds.schema-org.CreativeWork"]
+    assert isinstance(work["license"], list) and len(work["license"]) == 2
+    assert work["description"] == DERIVED_LICENSES_STATEMENT
+    plain = build_content_credential(_rights("CC-BY-4.0"), asset_id="b")
+    plain_work = {a["label"]: a["data"] for a in plain["manifest"]["assertions"]}[
+        "stds.schema-org.CreativeWork"]
+    assert "description" not in plain_work
