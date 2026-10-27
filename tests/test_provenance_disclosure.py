@@ -556,3 +556,18 @@ def test_real_audioseal_roundtrip_and_determinism():
     # byte-identical double-embed (CPU determinism => flywheel dedup regression guard)
     res2 = disclosure.AudioSealWatermarker().embed(clip)
     assert res1.audio_bytes == res2.audio_bytes
+
+
+def test_the_mix_ingredient_is_c2pa_fields_plus_the_credential_under_one_key():
+    from foley.provenance.disclosure import INGREDIENT_CREDENTIAL_KEY, as_c2pa_ingredient
+
+    credential = {
+        "manifest": {"title": "t", "format": "audio/wav"},
+        "asset_ref": "s1",
+        "signed": False,
+    }
+    ingredient = as_c2pa_ingredient(credential, index=0)
+    assert set(ingredient) == {
+        "title", "format", "relationship", "instance_id", INGREDIENT_CREDENTIAL_KEY,
+    }  # fmt: skip
+    assert ingredient[INGREDIENT_CREDENTIAL_KEY] is credential

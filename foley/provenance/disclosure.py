@@ -606,21 +606,28 @@ def _ref_of(record) -> str:
     )
 
 
+#: The one key under which an ingredient carries foley's full per-sound credential.
+INGREDIENT_CREDENTIAL_KEY = "foley_credential"
+
+
 def as_c2pa_ingredient(credential: dict, *, index: int) -> dict:
     """A per-sound content credential, declared as a C2PA ``componentOf`` ingredient.
 
-    Adds (never removes) the fields ``c2pa.Builder`` reads from an ingredient — ``title``,
-    ``format``, ``relationship`` and a manifest-unique ``instance_id`` (the handle a
-    ``c2pa.placed`` action's ``ingredientIds`` resolves) — so the sidecar keeps the full
-    per-sound credential while the signed manifest gets a valid ingredient.
+    The ingredient holds only the fields ``c2pa.Builder`` reads — ``title``, ``format``,
+    ``relationship`` and a manifest-unique ``instance_id`` (the handle a ``c2pa.placed``
+    action's ``ingredientIds`` resolves) — and carries the full per-sound credential
+    whole under :data:`INGREDIENT_CREDENTIAL_KEY`, so its keys (``manifest``, ``signed``,
+    ``asset_ref`` ...) can never collide with a C2PA ingredient field. The credential
+    stays in the sidecar: ``c2pa`` drops the unknown key when it embeds the manifest
+    (the sub-credentials are unsigned, self-asserted JSON, so that is the right place).
     """
     manifest = credential["manifest"]
     return {
-        **credential,
         "title": manifest["title"],
         "format": manifest["format"],
         "relationship": C2PA_COMPONENT_OF,
         "instance_id": f"{C2PA_INGREDIENT_ID_PREFIX}{index}:{credential['asset_ref']}",
+        INGREDIENT_CREDENTIAL_KEY: credential,
     }
 
 
