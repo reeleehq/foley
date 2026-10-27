@@ -33,7 +33,7 @@ def foley_echo(text: str, times: int = 1, loud: bool = False) -> dict:
 
 
 def test_adding_a_verb_adds_it_to_mcp_and_the_cli(monkeypatch):
-    monkeypatch.setattr(verbs, "VERBS", (*mcp.VERBS, mcp.Verb(foley_echo)))
+    monkeypatch.setattr(verbs, "VERBS", (*verbs.VERBS, verbs.Verb(foley_echo)))
     assert "foley_echo" in {f.__name__ for f in mcp._resolve_tools()}
     out = io.StringIO()
     monkeypatch.setattr("sys.stdout", out)
@@ -42,19 +42,19 @@ def test_adding_a_verb_adds_it_to_mcp_and_the_cli(monkeypatch):
 
 
 def test_a_surface_flag_keeps_a_verb_off_that_surface(monkeypatch):
-    verb = mcp.Verb(foley_echo, cli=False, why="a test")
-    monkeypatch.setattr(verbs, "VERBS", (*mcp.VERBS, verb))
+    verb = verbs.Verb(foley_echo, cli=False, why="a test")
+    monkeypatch.setattr(verbs, "VERBS", (*verbs.VERBS, verb))
     assert "foley_echo" in {f.__name__ for f in mcp._resolve_tools()}
     with pytest.raises(SystemExit):
         cli.build_parser().parse_args(["echo", "hi"])
-    assert all(v.why for v in mcp.VERBS if not (v.mcp and v.cli))  # never a silent gap
+    assert all(v.why for v in verbs.VERBS if not (v.mcp and v.cli))  # never a silent gap
 
 
 def test_a_verb_that_clashes_with_a_written_command_is_refused(monkeypatch):
     def foley_demo() -> dict:
         return {}
 
-    monkeypatch.setattr(verbs, "VERBS", (*mcp.VERBS, mcp.Verb(foley_demo)))
+    monkeypatch.setattr(verbs, "VERBS", (*verbs.VERBS, verbs.Verb(foley_demo)))
     with pytest.raises(ValueError, match="clash"):
         cli.build_parser()
 
@@ -64,7 +64,7 @@ def test_every_verb_parameter_is_annotated():
     ``flag=True`` would be a CLI switch that can never turn it off."""
     import inspect
 
-    bare = [f"{v.name}({n})" for v in mcp.VERBS
+    bare = [f"{v.name}({n})" for v in verbs.VERBS
             for n, p in inspect.signature(v.fn).parameters.items()
             if p.annotation is inspect.Parameter.empty]
     assert bare == []
@@ -83,8 +83,8 @@ def test_the_generated_cli_reads_flags_json_and_exits_on_a_refusal(monkeypatch, 
         seen.update(prompt=prompt, commercial_ok=commercial_ok, territory=territory)
         return {"ok": False, "status": "refused", "error": "no"}
 
-    table = tuple(mcp.Verb(fake_generate) if v.name == "foley_generate" else v
-                  for v in mcp.VERBS)
+    table = tuple(verbs.Verb(fake_generate) if v.name == "foley_generate" else v
+                  for v in verbs.VERBS)
     fake_generate.__name__ = "foley_generate"
     monkeypatch.setattr(verbs, "VERBS", table)
     code = cli.main(["generate", "rain", "--no-commercial-ok", "--territory", "US"])
@@ -110,7 +110,7 @@ def _base(hint):
     return typing.get_origin(bare) or bare
 
 
-@pytest.mark.parametrize("verb", [v for v in mcp.VERBS if v.cli], ids=lambda v: v.command)
+@pytest.mark.parametrize("verb", [v for v in verbs.VERBS if v.cli], ids=lambda v: v.command)
 def test_each_verb_s_parameters_reach_it_with_their_types(verb, monkeypatch):
     """Every parameter, required and optional, set on the command line once."""
     import functools
@@ -127,7 +127,7 @@ def test_each_verb_s_parameters_reach_it_with_their_types(verb, monkeypatch):
         return inspect.signature(verb.fn).bind(*args, **kwargs).arguments
 
     monkeypatch.setattr(verbs, "VERBS", tuple(
-        mcp.Verb(spy) if v is verb else v for v in mcp.VERBS))
+        verbs.Verb(spy) if v is verb else v for v in verbs.VERBS))
     argv, want = [verb.command], {}
     for name, p in params.items():
         base = _base(hints[name])
@@ -167,7 +167,7 @@ def test_a_reserved_parameter_name_is_refused(monkeypatch):
     def foley_route(command: str) -> dict:
         return {}
 
-    monkeypatch.setattr(verbs, "VERBS", (*mcp.VERBS, mcp.Verb(foley_route)))
+    monkeypatch.setattr(verbs, "VERBS", (*verbs.VERBS, verbs.Verb(foley_route)))
     with pytest.raises(ValueError, match="reserved"):
         cli.build_parser()
 

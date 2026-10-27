@@ -172,7 +172,8 @@ foley/
         verify.py      # verification ladder
         policy.py      # generate-vs-retrieve decide()
         tools.py       # tool functions
-        mcp.py         # py2mcp server
+        verbs.py       # the JSON-safe verbs + VERBS table (MCP tools and CLI commands)
+        mcp.py         # py2mcp server over the verbs
     weave/             # alignment, anchoring, ducking, mixing, mastering, render
 ```
 

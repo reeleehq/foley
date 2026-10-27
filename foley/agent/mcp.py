@@ -18,7 +18,11 @@ from __future__ import annotations
 from typing import Optional
 
 from . import verbs as _verbs
-from .verbs import (  # re-exported: the verbs and their state live in foley.agent.verbs (#193)
+
+# Re-exported: the verbs live in foley.agent.verbs (#193). Patch them THERE: a patch on
+# a name here changes nothing the verbs or the server read. Only what callers read is
+# re-exported, so a stale patch on any other name fails loudly.
+from .verbs import (
     foley_find,
     foley_search,
     foley_similar_to,
@@ -47,23 +51,9 @@ from .verbs import (  # re-exported: the verbs and their state live in foley.age
     surface_snapshot,
     _STATE,
     _configure,
-    _BUDGET_LOCK,
     _server_budget,
-    _lib,
-    _session,
-    _byte_store,
-    _runtime,
-    _enum,
-    _LICENSE_ROW_FIELDS,
-    _license_summary,
     _candidate_row,
     _weave_result_row,
-    _in_library,
-    _timeline_of,
-    _invalid_on_bad_input,
-    _tl_op,
-    _GUIDE,
-    _invalid,
 )
 
 
