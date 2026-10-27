@@ -177,23 +177,42 @@ def test_an_injected_limiter_gets_no_headroom():
     assert 20 * np.log10(np.abs(out).max()) <= -1.0 + 1e-4  # held at the sample peak
 
 
-def test_near_nyquist_residual_is_limited_then_trimmed():
-    # On full-band content mixing's polyphase meter reads under foley's FFT one: the
-    # lookahead stage must hold mixing's ceiling, and the trim the (bounded) rest.
-    from mixing.loudness import limit_peaks, true_peak_db
-
+@pytest.mark.parametrize("sr", [48000, 44100, 22050])
+def test_full_band_noise_is_held_at_the_ceiling_with_a_rounding_level_trim(sr):
+    # The limiter and the master's meter use one meter at one factor (#190), so what
+    # the master trims after the limiter is float rounding, not a meter mismatch.
+    from foley.base import MasterProfile
     from foley.qc import true_peak_dbtp
-    from foley.weave.master import lookahead_true_peak_limit
+    from foley.weave.master import lookahead_true_peak_limit, master
+
+    noise = np.random.default_rng(1).normal(0, 0.3, (sr * 2, 2)).clip(-1, 1)
+    stage = lookahead_true_peak_limit(noise.astype(np.float32), sr, -1.0)
+    assert true_peak_dbtp(stage, sr) <= -1.0 + 0.05
+    out, rep = master(noise.astype(np.float32), sr, MasterProfile(target_lufs=-10.0))
+    assert rep.true_peak_dbtp <= -1.0 and true_peak_dbtp(out, sr) <= -1.0
+
+
+def test_a_nan_does_not_lift_the_ceiling():
+    from foley.weave.master import _held_at_ceiling
 
     sr = 48000
-    noise = np.random.default_rng(1).normal(0, 0.3, (sr * 2, 1)).clip(-1, 1)
-    ceiling = 10 ** (-1.0 / 20)
-    stage = limit_peaks(noise, ceiling=ceiling, true_peak=True, fs=sr)
-    assert true_peak_db(stage, sr) <= -1.0 + 0.01
-    out = lookahead_true_peak_limit(noise, sr, -1.0)
-    assert true_peak_dbtp(out, sr) <= -1.0 + 1e-6
-    trim_db = 20 * np.log10(np.abs(out).max() / np.abs(stage).max())
-    assert -1.5 < trim_db <= 0.0
+    loud = np.random.default_rng(2).normal(0, 0.5, (sr, 2)).clip(-1, 1).astype(np.float32)
+    loud[100, 0] = np.nan
+    out, tp = _held_at_ceiling(loud, sr, -1.0)
+    finite = np.where(np.isfinite(out), out, 0)
+    from foley.qc import true_peak_dbtp
+
+    assert tp == -1.0 and true_peak_dbtp(finite, sr) <= -1.0 and np.isnan(out[100, 0])
+
+
+def test_a_limiter_returning_ints_is_refused():
+    from foley.base import MasterProfile
+    from foley.weave.master import master
+
+    mix = np.random.default_rng(3).normal(0, 0.1, (48000, 2)).astype(np.float32)
+    with pytest.raises(TypeError, match="float samples"):
+        master(mix, 48000, MasterProfile(),
+               limiter=lambda m, sr, c: (m * 32767).astype(np.int16))
 
 
 def test_an_unknown_meter_name_raises_everywhere():

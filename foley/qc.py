@@ -10,10 +10,10 @@ Zero-dependency import contract:
     This module imports **stdlib only** at the top level. ``numpy`` is
     lazy-imported inside each function body (like ``foley.audio``), so
     ``import foley.qc`` succeeds on a bare install with no scientific stack.
-    The :func:`measure_lufs` meter (:mod:`mixing.loudness`, via
-    :func:`foley.audio.integrated_lufs`) is lazy and it returns ``None`` when it
-    (or a measurable clip) is absent; everything else is
-    numpy-only.
+    The loudness and true-peak meters (:mod:`mixing.loudness`: :func:`measure_lufs`
+    via :func:`foley.audio.integrated_lufs`, and :func:`true_peak_dbtp`) are lazy;
+    :func:`run_qc` reports ``None`` for each when mixing (or a measurable clip) is
+    absent. Everything else is numpy-only.
 
 Waveform convention:
     ``samples`` is a float array shaped ``(frames,)`` (mono) or
@@ -99,7 +99,9 @@ class QCThresholds:
     clip_reject_run: int = 10  # any run >= 10 samples => fail
     # true peak
     true_peak_max_dbtp: float = -1.0
-    true_peak_oversample: int = 4
+    #: ``None``: mixing's own factor (4x, raised under 48 kHz so the oversampled rate
+    #: stays at least 192 kHz): the limiter uses the same, so the two agree.
+    true_peak_oversample: Optional[int] = None
     # dc offset
     dc_offset_fail: float = 0.01  # |mean| > 0.01 => correct/warn
     dc_offset_warn: float = 0.001  # 0.001..0.01 => note
@@ -168,28 +170,6 @@ def _true_run_lengths(mask: "np.ndarray") -> "np.ndarray":
     starts = np.flatnonzero(diff == 1)
     ends = np.flatnonzero(diff == -1)
     return ends - starts
-
-
-def _upsample_fft(x: "np.ndarray", factor: int) -> "np.ndarray":
-    """Band-limited ``factor``x upsampling of a 1-D real signal via zero-padding
-    the ``rfft`` spectrum. Amplitude-preserving (scaled by ``factor``)."""
-    import numpy as np
-
-    n = x.shape[0]
-    if factor <= 1 or n < 2:
-        return x
-    n_up = n * factor
-    spec = np.fft.rfft(x)
-    spec_up = np.zeros(n_up // 2 + 1, dtype=complex)
-    m = min(spec.shape[0], spec_up.shape[0])
-    spec_up[:m] = spec[:m]
-    # For even n, bin n//2 is the original Nyquist (a real cosine at f_s/2). After
-    # zero-pad upsampling it is no longer the Nyquist of the longer signal, so its
-    # energy must be split in half — else the reconstruction (and the true-peak
-    # estimate riding on it) over-reports by up to +6 dB (cf. scipy.signal.resample).
-    if n % 2 == 0 and m == n // 2 + 1:
-        spec_up[n // 2] *= 0.5
-    return np.fft.irfft(spec_up, n=n_up) * factor
 
 
 def _frame_rms(x: "np.ndarray", frame_len: int, hop: int) -> "np.ndarray":
@@ -311,26 +291,29 @@ def true_peak_dbtp(
     samples: "np.ndarray",
     sample_rate: int,
     *,
-    oversample: int = DEFAULT_QC_THRESHOLDS.true_peak_oversample,
+    oversample: Optional[int] = DEFAULT_QC_THRESHOLDS.true_peak_oversample,
 ) -> float:
-    """Inter-sample true-peak level in dBTP.
+    """Inter-sample true-peak level in dBTP (``-inf`` for a silent clip).
 
-    Each channel is band-limited-upsampled ``oversample``x (numpy FFT), the
-    peak magnitude is taken across all channels, and converted to dBTP. Returns
-    ``-inf`` for a fully silent clip. ``sample_rate`` is accepted for interface
-    symmetry (FFT interpolation is rate-independent).
+    The fleet's one true-peak meter, :func:`mixing.loudness.true_peak_db` (#190): a
+    windowed-sinc ``oversample``x interpolation (default ``None``: mixing's own 4x,
+    raised for rates under 48 kHz, the factor its limiter uses too),
+    chunked, so it costs little memory on a long programme, with the signal taken as
+    silent outside its span (no wrap-around over-read at the edges). Content between
+    about 0.47 fs and Nyquist reads up to ~0.5 dB low.
+
+    Lazy dependency: ``mixing[loudness]`` (``foley[audio]``).
     """
     import numpy as np
 
-    a = _as_2d(samples)
-    peak = 0.0
-    for c in range(a.shape[1]):
-        up = _upsample_fft(a[:, c], oversample)
-        chan_peak = float(np.max(np.abs(up))) if up.size else 0.0
-        peak = max(peak, chan_peak)
-    if peak <= 0.0:
-        return float("-inf")
-    return float(20.0 * np.log10(peak))
+    from .audio import loudness_component
+
+    factor = None if oversample is None else int(oversample)
+    return float(
+        loudness_component().true_peak_db(
+            np.asarray(samples), int(sample_rate), oversampling=factor
+        )
+    )
 
 
 def estimate_snr(
@@ -555,9 +538,12 @@ def run_qc(
     )
     dc = dc_offset(a)
     edge = needs_edge_fade(a, rel_peak_dbfs=thresholds.edge_rel_peak_dbfs)
-    true_peak = true_peak_dbtp(
-        a, sample_rate, oversample=thresholds.true_peak_oversample
-    )
+    try:
+        true_peak = true_peak_dbtp(
+            a, sample_rate, oversample=thresholds.true_peak_oversample
+        )
+    except ImportError:  # no mixing[loudness]: not measured, as LUFS
+        true_peak = None
     snr = estimate_snr(
         a,
         sample_rate,

@@ -69,6 +69,37 @@ def _tp(mix: "ndarray", sample_rate: int) -> float:
     return float(true_peak_dbtp(mix, sample_rate))
 
 
+#: How far under the ceiling a trim aims, so the rounding of a float32 mix never
+#: reads over it (a few 1e-7 dB at most).
+TRIM_MARGIN_DB = 1e-5
+
+
+def _held_at_ceiling(
+    mix: "ndarray", sample_rate: int, ceiling_db: float
+) -> "tuple[ndarray, float]":
+    """``(mix, its true peak)`` with what a limiter left over ``ceiling_db`` trimmed.
+
+    One measurement (#159): a static gain scales the true peak exactly, so a trimmed
+    mix's peak is the ceiling and is not measured again (the gain is taken
+    :data:`TRIM_MARGIN_DB` lower, so float32 rounding cannot put it over). A
+    non-finite sample is measured as silence, so it cannot hide the overs around it.
+    ``mix`` comes back as is (same object) when it is under; a trim keeps its dtype.
+
+    Raises:
+        TypeError: If ``mix`` is not floating point (a limiter that returned ints).
+    """
+    import numpy as np
+
+    if not np.issubdtype(mix.dtype, np.floating):
+        raise TypeError(f"a limiter must return float samples, got {mix.dtype}")
+    finite = np.isfinite(mix)
+    tp = _tp(mix if finite.all() else np.where(finite, mix, 0), sample_rate)
+    if not math.isfinite(tp) or tp <= ceiling_db:
+        return mix, tp
+    gain = db_to_lin(ceiling_db - tp - TRIM_MARGIN_DB)  # float64, then one cast
+    return (mix * gain).astype(mix.dtype, copy=False), float(ceiling_db)
+
+
 def lookahead_true_peak_limit(
     mix: "ndarray", sample_rate: int, ceiling_db: float
 ) -> "ndarray":
@@ -76,20 +107,16 @@ def lookahead_true_peak_limit(
 
     The default :data:`Limiter` (foley#91): :func:`mixing.loudness.limit_peaks` with
     ``true_peak=True`` turns down the peaks (the gain eases in and out over its 50 ms
-    window), not the whole program. Its polyphase true-peak meter reads under foley's
-    FFT one (:func:`foley.qc.true_peak_dbtp`, which the master report uses) on content
-    near Nyquist, so whatever is left over that meter is then trimmed statically
-    (:func:`foley.audio.limit_true_peak`): the ceiling holds by the number the report
-    shows, at the cost of turning the whole program down by that residual (about a
-    dB on full-band noise; nothing on band-limited material). Deterministic, never
-    raises the level; ``mix`` comes back as is (same object) when nothing is over,
-    else with the same shape and dtype. A non-finite sample is limited as silence
-    and put back where it was, so it neither spreads over the limiter's window nor
-    lets the overs around it through.
+    window), not the whole program. What it leaves over the ceiling (it interpolates
+    its gain between samples; reeleehq/mixing#92) is trimmed by :func:`master`, which
+    measures the result once. Deterministic, never raises the level; ``mix`` comes back
+    as is (same object) when nothing is over, else with the same shape and dtype. A
+    non-finite sample is limited as silence and put back where it was, so it neither
+    spreads over the limiter's window nor lets the overs around it through.
     """
     import numpy as np
 
-    from ..audio import limit_true_peak, loudness_component
+    from ..audio import loudness_component
 
     frames = mix if mix.ndim == 2 else mix[:, None]  # the limiter's (n, channels)
     finite = np.isfinite(frames)
@@ -97,7 +124,6 @@ def lookahead_true_peak_limit(
     out = loudness_component().limit_peaks(
         work, ceiling=db_to_lin(ceiling_db), true_peak=True, fs=sample_rate
     )
-    out = limit_true_peak(out, sample_rate, ceiling_dbtp=ceiling_db)[0]
     if out is work:  # nothing over the ceiling
         return mix
     out = out.astype(mix.dtype, copy=False)  # a fresh array from either stage
@@ -215,8 +241,9 @@ def master(
             ``profile.max_limiting_db`` over the ceiling for it to take back down; an
             injected limiter gets a mix already held at the ceiling's sample peak (no
             headroom is assumed of a stage foley does not know). In-process engine
-            only; the true peak in the report is always measured here, never taken
-            from the limiter.
+            only; the true peak in the report is always measured here, once, never
+            taken from the limiter, and whatever any limiter leaves over the ceiling is
+            trimmed by a static gain, so the ceiling holds by the reported number.
         meter: A :data:`foley.audio.Meter` for the loudness stages (default
             :data:`foley.audio.DEFAULT_METER`).
 
@@ -260,8 +287,8 @@ def master(
     limited_mix = (limiter or lookahead_true_peak_limit)(
         normalized, sample_rate, profile.true_peak_db
     )
+    limited_mix, tp = _held_at_ceiling(limited_mix, sample_rate, profile.true_peak_db)
     limited = limited_mix is not normalized
-    tp = _tp(limited_mix, sample_rate)
     output_lufs = _measure_lufs(limited_mix, sample_rate, meter=meter)
     gain_db = (
         output_lufs - input_lufs
