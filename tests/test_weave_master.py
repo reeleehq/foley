@@ -106,11 +106,15 @@ def test_lookahead_limiter_leaves_the_bed_alone():
     from foley.weave.master import lookahead_true_peak_limit
 
     sr = 48000
-    mix = np.stack([_transient_program(sr)] * 2, axis=1) * np.float32(1.5)  # over
+    mix = np.stack([_transient_program(sr)] * 2, axis=1) * np.float32(3.0)
+    assert true_peak_dbtp(mix, sr) > 4.0  # well over the ceiling
     out = lookahead_true_peak_limit(mix, sr, -1.0)
+    assert out is not mix
     bed = _bed_mask(sr, len(mix))
     bed_gain_db = 20 * np.log10(np.abs(out[bed]).max() / np.abs(mix[bed]).max())
-    assert abs(bed_gain_db) < 0.05  # only the hits were turned down
+    hit_gain_db = 20 * np.log10(np.abs(out[~bed]).max() / np.abs(mix[~bed]).max())
+    assert abs(bed_gain_db) < 0.05  # the bed is untouched...
+    assert hit_gain_db < -4.0  # ...while the hits came down
     assert true_peak_dbtp(out, sr) <= -1.0 + 1e-6
     assert out.dtype == mix.dtype and out.shape == mix.shape
     mono = mix[:, 0].copy()
@@ -153,13 +157,24 @@ def test_lookahead_limiter_returns_an_unclipped_mix_as_is():
     assert lookahead_true_peak_limit(mono, sr, -1.0) is mono
 
 
-def test_lookahead_limiter_does_not_spread_a_nan():
+def test_lookahead_limiter_keeps_a_nan_local_and_still_limits():
+    from foley.qc import true_peak_dbtp
     from foley.weave.master import lookahead_true_peak_limit
 
     sr = 48000
-    mix = _sine_stereo(200, 1.0, sr, 0.99) * np.float32(1.5)
+    mix = _sine_stereo(200, 1.0, sr, 0.99) * np.float32(4.0)  # about +12 dBTP
     mix[100, 0] = np.nan
-    assert lookahead_true_peak_limit(mix, sr, -1.0) is mix
+    out = lookahead_true_peak_limit(mix, sr, -1.0)
+    assert np.isnan(out[100, 0]) and np.isfinite(np.delete(out[:, 0], 100)).all()
+    assert np.isfinite(out[:, 1]).all()
+    assert true_peak_dbtp(np.nan_to_num(out), sr) <= -1.0 + 1e-6
+
+
+def test_an_injected_limiter_gets_no_headroom():
+    sr = 48000
+    mix = np.stack([_transient_program(sr)] * 2, axis=1)
+    out, _ = master(mix, sr, MASTER_PROFILES["podcast"], limiter=lambda m, r, c: m)
+    assert 20 * np.log10(np.abs(out).max()) <= -1.0 + 1e-4  # held at the sample peak
 
 
 def test_near_nyquist_residual_is_limited_then_trimmed():
@@ -189,6 +204,7 @@ def test_an_unknown_meter_name_raises_everywhere():
     x = _sine_stereo(200, 1.0, sr, 0.1)
     for call in (
         lambda: measure_lufs(x, sr, meter="numpi"),
+        lambda: master(x[: sr // 10], sr, MASTER_PROFILES["podcast"], meter="numpi"),
         lambda: reference_gain_db(x, sr, meter="numpi"),
         lambda: master(x, sr, MASTER_PROFILES["podcast"], meter="numpi"),
     ):

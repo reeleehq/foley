@@ -453,11 +453,10 @@ def integrated_lufs(
 
     Lazy dependency: :mod:`mixing.loudness` (see :func:`loudness_component`).
     """
+    meter = resolve_meter(meter)  # before the guard: a bad name raises on any clip
     if samples.shape[0] < math.ceil(min_block_s * sample_rate):
         return float("-inf")
-    return loudness_component().integrated_lufs(
-        samples, sample_rate, meter=resolve_meter(meter)
-    )
+    return loudness_component().integrated_lufs(samples, sample_rate, meter=meter)
 
 
 def loudness_gain_db(
