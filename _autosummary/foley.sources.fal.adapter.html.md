@@ -91,6 +91,16 @@ The account a call is made on, for the generations cache (`'operator'` or a fing
 
 The fal key (see the class docstring for the order); raises if none.
 
+#### demuxer()
+
+How to take the audio out of this endpoint’s answer, or `None` (audio already).
+
+* **Raises:**
+  [**SourceConfigurationError**](foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If the endpoint answers with a video and no
+      ffmpeg can open it (before any call, so nothing is paid for).
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)], [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]]
+
 #### generate(prompt, , provider_params=None, \*\*affordances)
 
 Generate a sound for `prompt` on this source’s fal endpoint.

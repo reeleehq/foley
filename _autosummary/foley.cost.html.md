@@ -150,6 +150,14 @@ The USD cost of one call to the source `config` declares, or `None` if unknown.
   requested, × the `native_defaults['duration_default_s']` the adapter sends in
   its place, else × `native_defaults['duration_max_s']` (the duration is left to
   the backend: an upper bound), else `None`.
+* `'per_second'` with `billing_increment_s` → the seconds rounded **up** to whole
+  increments first (a provider that bills in blocks: “$0.10 per 10 s”).
+
+```pycon
+>>> estimate_call({"pricing": {"unit": "per_second", "amount_usd": 0.01,
+...     "seconds_from": "video", "billing_increment_s": 10}}, video_duration_s=3)
+0.1
+```
 
 * **Parameters:**
   * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG`.

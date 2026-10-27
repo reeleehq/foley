@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=5c6fbccc"></script>
+    <script src="../_static/documentation_options.js?v=f81738d5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.80" />
+  <meta name="docsearch:version" content="0.0.81" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -625,6 +625,21 @@ classifies errors itself).</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="foley.sources.fal.adapter.FalAdapter.demuxer">
+<span class="sig-name descname"><span class="pre">demuxer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/fal/adapter.html#FalAdapter.demuxer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.fal.adapter.FalAdapter.demuxer" title="Link to this definition">#</a></dt>
+<dd><p>How to take the audio out of this endpoint’s answer, or <code class="docutils literal notranslate"><span class="pre">None</span></code> (audio already).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="foley.sources.base.html#foley.sources.base.SourceConfigurationError" title="foley.sources.base.SourceConfigurationError"><strong>SourceConfigurationError</strong></a> – If the endpoint answers with a video and no
+    ffmpeg can open it (before any call, so nothing is paid for).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>], <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="foley.sources.fal.adapter.FalAdapter.generate">
 <span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">affordances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/fal/adapter.html#FalAdapter.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.fal.adapter.FalAdapter.generate" title="Link to this definition">#</a></dt>
 <dd><p>Generate a sound for <code class="docutils literal notranslate"><span class="pre">prompt</span></code> on this source’s fal endpoint.</p>
@@ -804,6 +819,7 @@ so an unchanged file is not uploaded twice).</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter"><code class="docutils literal notranslate"><span class="pre">FalAdapter</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.account_id"><code class="docutils literal notranslate"><span class="pre">FalAdapter.account_id()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.api_key"><code class="docutils literal notranslate"><span class="pre">FalAdapter.api_key</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.demuxer"><code class="docutils literal notranslate"><span class="pre">FalAdapter.demuxer()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.generate"><code class="docutils literal notranslate"><span class="pre">FalAdapter.generate()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.invoke_native"><code class="docutils literal notranslate"><span class="pre">FalAdapter.invoke_native()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.native_arguments"><code class="docutils literal notranslate"><span class="pre">FalAdapter.native_arguments()</span></code></a></li>

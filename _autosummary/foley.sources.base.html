@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=5c6fbccc"></script>
+    <script src="../_static/documentation_options.js?v=f81738d5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.80" />
+  <meta name="docsearch:version" content="0.0.81" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -630,6 +630,9 @@ so the derived permission flags stay single-sourced.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.SearchArgumentError" title="foley.sources.base.SearchArgumentError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SearchArgumentError</span></code></a></p></td>
 <td><p>A search argument the source refuses before any call: the caller's error.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.UndemuxedAnswer" title="foley.sources.base.UndemuxedAnswer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UndemuxedAnswer</span></code></a>(message, *[, clip, cache_key])</p></td>
+<td><p>A paid answer that came as a video whose audio track could not be taken out (#176).</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -770,6 +773,10 @@ warning-and-dropping unsupported ones), builds the audio + a generated
 <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>, and returns a <a class="reference internal" href="#foley.sources.base.GeneratedClip" title="foley.sources.base.GeneratedClip"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeneratedClip</span></code></a>. The
 <code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources.generate.generate()</span></code> façade converges it on the shared
 <code class="docutils literal notranslate"><span class="pre">ingest_one</span></code> pipeline (by-value, operator-consented).</p>
+<p>Optional: <code class="docutils literal notranslate"><span class="pre">demuxer()</span> <span class="pre">-&gt;</span> <span class="pre">Optional[Callable[[bytes],</span> <span class="pre">bytes]]</span></code>, for a backend that
+answers with a video (#176): the strategy that takes its audio out (<code class="docutils literal notranslate"><span class="pre">None</span></code> when
+the answer is already audio). The dispatch uses it again when it replays a kept
+video answer; without one, ffmpeg (<a class="reference internal" href="foley.sources.video.html#foley.sources.video.audio_track" title="foley.sources.video.audio_track"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources.video.audio_track()</span></code></a>).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="foley.sources.base.GenerateAdapter.generate">
 <span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">affordances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#GenerateAdapter.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.GenerateAdapter.generate" title="Link to this definition">#</a></dt>
@@ -946,6 +953,21 @@ adapters.</p>
 <p>Not transient, so it is never recorded as one failed hit among many: the generate
 and pull façades let it propagate, and its message names what to set (the env var
 and, for a key, its sign-up URL) (#64).</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="foley.sources.base.UndemuxedAnswer">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">UndemuxedAnswer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/base.html#UndemuxedAnswer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.UndemuxedAnswer" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">RuntimeError</span></code></a></p>
+<p>A paid answer that came as a video whose audio track could not be taken out (#176).</p>
+<p>MMAudio, ThinkSound and HunyuanVideo-Foley answer with the video, the sound muxed
+in. When ffmpeg cannot demux it, the call is still billed: <code class="docutils literal notranslate"><span class="pre">clip</span></code> is the whole
+answer (<code class="docutils literal notranslate"><span class="pre">audio_bytes</span></code> the video, its licence and notes), so the generations cache
+keeps it and a retry demuxes it without paying again. <code class="docutils literal notranslate"><span class="pre">None</span></code> when the error is
+raised for a cached answer that still cannot be demuxed. <code class="docutils literal notranslate"><span class="pre">cache_key</span></code>: the video’s
+key in the generations cache once kept (<code class="docutils literal notranslate"><span class="pre">foley.generations.get(cache_key)</span></code>).</p>
+<dl class="field-list simple">
+</dl>
 </dd></dl>
 
 <dl class="py class">
@@ -1532,6 +1554,7 @@ block the operator’s key and plan apply again.</p>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.SourceConfigurationError"><code class="docutils literal notranslate"><span class="pre">SourceConfigurationError</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.UndemuxedAnswer"><code class="docutils literal notranslate"><span class="pre">UndemuxedAnswer</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.UniformCorpus"><code class="docutils literal notranslate"><span class="pre">UniformCorpus</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.UniformCorpus.corpus_dir"><code class="docutils literal notranslate"><span class="pre">UniformCorpus.corpus_dir()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.UniformCorpus.iter_clips"><code class="docutils literal notranslate"><span class="pre">UniformCorpus.iter_clips()</span></code></a></li>

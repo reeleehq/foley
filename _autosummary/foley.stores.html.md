@@ -168,7 +168,9 @@ entry, following a fallback pointer. The bytes are the provider’s response as
 received — before any watermark or repair — so a quarantined generation comes
 back exactly as it was paid for; [`foley.repair.repair_bytes()`](foley.repair.html.md#foley.repair.repair_bytes) applies the
 same fixes `generate` would, and [`foley.index.ingest.ingest_one()`](foley.index.ingest.html.md#foley.index.ingest.ingest_one)
-(with the entry’s `license`) takes the result into a library.
+(with the entry’s `license`) takes the result into a library. An entry with
+`container: "video"` keeps a muxed video answer whose audio is still to be
+taken out (#176; [`foley.sources.video.audio_track()`](foley.sources.video.html.md#foley.sources.video.audio_track), or replay the request).
 
 * **Raises:**
   [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If neither store knows `key`.

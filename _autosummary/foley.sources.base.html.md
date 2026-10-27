@@ -75,9 +75,10 @@ so the derived permission flags stay single-sourced.
 
 ### Exceptions
 
-| [`SourceConfigurationError`](#foley.sources.base.SourceConfigurationError)   | A source cannot run until the user configures it: a missing key, plan or endpoint.   |
-|-----------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| [`SearchArgumentError`](#foley.sources.base.SearchArgumentError)        | A search argument the source refuses before any call: the caller's error.            |
+| [`SourceConfigurationError`](#foley.sources.base.SourceConfigurationError)                        | A source cannot run until the user configures it: a missing key, plan or endpoint.   |
+|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`SearchArgumentError`](#foley.sources.base.SearchArgumentError)                             | A search argument the source refuses before any call: the caller's error.            |
+| [`UndemuxedAnswer`](#foley.sources.base.UndemuxedAnswer)(message, \*[, clip, cache_key]) | A paid answer that came as a video whose audio track could not be taken out (#176).  |
 
 ### foley.sources.base.CORPUS_REGISTRY *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [CorpusAdapter](#foley.sources.base.CorpusAdapter)]* *= {'bbc_remarc': UniformCorpus(name='bbc_remarc', ring=2, default_license_id='RemArc', source='bbc_remarc', rights_verified=True, tag_hints_from_path=False), 'clotho': ClothoEvalCorpus(name='clotho', ring=0, default_license_id='CC-BY-4.0', source='clotho', rights_verified=True, tag_hints_from_path=False, include_captions=False), 'foleyset': UniformCorpus(name='foleyset', ring=0, default_license_id='CC-BY-4.0', source='foleyset', rights_verified=True, tag_hints_from_path=True), 'fsd50k': <foley.sources.fsd50k.Fsd50kCorpus object>, 'sonniss': UniformCorpus(name='sonniss', ring=2, default_license_id='Sonniss-GDC', source='sonniss', rights_verified=True, tag_hints_from_path=False)}*
 
@@ -181,6 +182,11 @@ warning-and-dropping unsupported ones), builds the audio + a generated
 [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), and returns a [`GeneratedClip`](#foley.sources.base.GeneratedClip). The
 `foley.sources.generate.generate()` façade converges it on the shared
 `ingest_one` pipeline (by-value, operator-consented).
+
+Optional: `demuxer() -> Optional[Callable[[bytes], bytes]]`, for a backend that
+answers with a video (#176): the strategy that takes its audio out (`None` when
+the answer is already audio). The dispatch uses it again when it replays a kept
+video answer; without one, ffmpeg ([`foley.sources.video.audio_track()`](foley.sources.video.html.md#foley.sources.video.audio_track)).
 
 #### generate(prompt, \*\*affordances)
 
@@ -323,6 +329,19 @@ A source cannot run until the user configures it: a missing key, plan or endpoin
 Not transient, so it is never recorded as one failed hit among many: the generate
 and pull façades let it propagate, and its message names what to set (the env var
 and, for a key, its sign-up URL) (#64).
+
+### *exception* foley.sources.base.UndemuxedAnswer(message, , clip=None, cache_key=None)
+
+Bases: [`RuntimeError`](https://docs.python.org/3/builtins/exceptions.html#RuntimeError)
+
+A paid answer that came as a video whose audio track could not be taken out (#176).
+
+MMAudio, ThinkSound and HunyuanVideo-Foley answer with the video, the sound muxed
+in. When ffmpeg cannot demux it, the call is still billed: `clip` is the whole
+answer (`audio_bytes` the video, its licence and notes), so the generations cache
+keeps it and a retry demuxes it without paying again. `None` when the error is
+raised for a cached answer that still cannot be demuxed. `cache_key`: the video’s
+key in the generations cache once kept (`foley.generations.get(cache_key)`).
 
 ### *class* foley.sources.base.UniformCorpus(name, ring, default_license_id, source, rights_verified=True, tag_hints_from_path=False)
 

@@ -1,4 +1,4 @@
-> built 2026-10-27 06:12 UTC from 9f44f4a (main) · foley 0.0.80. Details: build_info.json
+> built 2026-10-27 06:31 UTC from 0ec4e99 (main) · foley 0.0.81. Details: build_info.json
 
 # index.html.md
 
@@ -3271,6 +3271,14 @@ The USD cost of one call to the source `config` declares, or `None` if unknown.
   requested, × the `native_defaults['duration_default_s']` the adapter sends in
   its place, else × `native_defaults['duration_max_s']` (the duration is left to
   the backend: an upper bound), else `None`.
+* `'per_second'` with `billing_increment_s` → the seconds rounded **up** to whole
+  increments first (a provider that bills in blocks: “$0.10 per 10 s”).
+
+```pycon
+>>> estimate_call({"pricing": {"unit": "per_second", "amount_usd": 0.01,
+...     "seconds_from": "video", "billing_increment_s": 10}}, video_duration_s=3)
+0.1
+```
 
 * **Parameters:**
   * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG`.
@@ -6020,7 +6028,9 @@ entry, following a fallback pointer. The bytes are the provider’s response as
 received — before any watermark or repair — so a quarantined generation comes
 back exactly as it was paid for; [`foley.repair.repair_bytes()`](_autosummary/foley.repair.html.md#foley.repair.repair_bytes) applies the
 same fixes `generate` would, and [`foley.index.ingest.ingest_one()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.ingest_one)
-(with the entry’s `license`) takes the result into a library.
+(with the entry’s `license`) takes the result into a library. An entry with
+`container: "video"` keeps a muxed video answer whose audio is still to be
+taken out (#176; [`foley.sources.video.audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track), or replay the request).
 
 * **Raises:**
   [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If neither store knows `key`.
@@ -14077,7 +14087,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'tudum', 'netflix intro', 'ta-dum', 'netflix chime', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel jingle', 'intel bong', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'netflix chime', 'netflix intro', 'ta dum', 'ta-dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel chime', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -15456,9 +15466,10 @@ so the derived permission flags stay single-sourced.
 
 ### Exceptions
 
-| [`SourceConfigurationError`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError)   | A source cannot run until the user configures it: a missing key, plan or endpoint.   |
-|-----------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| [`SearchArgumentError`](_autosummary/foley.sources.base.html.md#foley.sources.base.SearchArgumentError)        | A search argument the source refuses before any call: the caller's error.            |
+| [`SourceConfigurationError`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError)                        | A source cannot run until the user configures it: a missing key, plan or endpoint.   |
+|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`SearchArgumentError`](_autosummary/foley.sources.base.html.md#foley.sources.base.SearchArgumentError)                             | A search argument the source refuses before any call: the caller's error.            |
+| [`UndemuxedAnswer`](_autosummary/foley.sources.base.html.md#foley.sources.base.UndemuxedAnswer)(message, \*[, clip, cache_key]) | A paid answer that came as a video whose audio track could not be taken out (#176).  |
 
 ### foley.sources.base.CORPUS_REGISTRY *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [CorpusAdapter](_autosummary/foley.sources.base.html.md#foley.sources.base.CorpusAdapter)]* *= {'bbc_remarc': UniformCorpus(name='bbc_remarc', ring=2, default_license_id='RemArc', source='bbc_remarc', rights_verified=True, tag_hints_from_path=False), 'clotho': ClothoEvalCorpus(name='clotho', ring=0, default_license_id='CC-BY-4.0', source='clotho', rights_verified=True, tag_hints_from_path=False, include_captions=False), 'foleyset': UniformCorpus(name='foleyset', ring=0, default_license_id='CC-BY-4.0', source='foleyset', rights_verified=True, tag_hints_from_path=True), 'fsd50k': <foley.sources.fsd50k.Fsd50kCorpus object>, 'sonniss': UniformCorpus(name='sonniss', ring=2, default_license_id='Sonniss-GDC', source='sonniss', rights_verified=True, tag_hints_from_path=False)}*
 
@@ -15562,6 +15573,11 @@ warning-and-dropping unsupported ones), builds the audio + a generated
 [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), and returns a [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip). The
 `foley.sources.generate.generate()` façade converges it on the shared
 `ingest_one` pipeline (by-value, operator-consented).
+
+Optional: `demuxer() -> Optional[Callable[[bytes], bytes]]`, for a backend that
+answers with a video (#176): the strategy that takes its audio out (`None` when
+the answer is already audio). The dispatch uses it again when it replays a kept
+video answer; without one, ffmpeg ([`foley.sources.video.audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)).
 
 #### generate(prompt, \*\*affordances)
 
@@ -15704,6 +15720,19 @@ A source cannot run until the user configures it: a missing key, plan or endpoin
 Not transient, so it is never recorded as one failed hit among many: the generate
 and pull façades let it propagate, and its message names what to set (the env var
 and, for a key, its sign-up URL) (#64).
+
+### *exception* foley.sources.base.UndemuxedAnswer(message, , clip=None, cache_key=None)
+
+Bases: [`RuntimeError`](https://docs.python.org/3/builtins/exceptions.html#RuntimeError)
+
+A paid answer that came as a video whose audio track could not be taken out (#176).
+
+MMAudio, ThinkSound and HunyuanVideo-Foley answer with the video, the sound muxed
+in. When ffmpeg cannot demux it, the call is still billed: `clip` is the whole
+answer (`audio_bytes` the video, its licence and notes), so the generations cache
+keeps it and a retry demuxes it without paying again. `None` when the error is
+raised for a cached answer that still cannot be demuxed. `cache_key`: the video’s
+key in the generations cache once kept (`foley.generations.get(cache_key)`).
 
 ### *class* foley.sources.base.UniformCorpus(name, ring, default_license_id, source, rights_verified=True, tag_hints_from_path=False)
 
@@ -16596,6 +16625,16 @@ The account a call is made on, for the generations cache (`'operator'` or a fing
 
 The fal key (see the class docstring for the order); raises if none.
 
+#### demuxer()
+
+How to take the audio out of this endpoint’s answer, or `None` (audio already).
+
+* **Raises:**
+  [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If the endpoint answers with a video and no
+      ffmpeg can open it (before any call, so nothing is paid for).
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)], [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]]
+
 #### generate(prompt, , provider_params=None, \*\*affordances)
 
 Generate a sound for `prompt` on this source’s fal endpoint.
@@ -17270,6 +17309,11 @@ warning-and-dropping unsupported ones), builds the audio + a generated
 [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), and returns a [`GeneratedClip`](_autosummary/foley.sources.html.md#foley.sources.GeneratedClip). The
 `foley.sources.generate.generate()` façade converges it on the shared
 `ingest_one` pipeline (by-value, operator-consented).
+
+Optional: `demuxer() -> Optional[Callable[[bytes], bytes]]`, for a backend that
+answers with a video (#176): the strategy that takes its audio out (`None` when
+the answer is already audio). The dispatch uses it again when it replays a kept
+video answer; without one, ffmpeg ([`foley.sources.video.audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)).
 
 #### generate(prompt, \*\*affordances)
 
@@ -19550,7 +19594,9 @@ entry, following a fallback pointer. The bytes are the provider’s response as
 received — before any watermark or repair — so a quarantined generation comes
 back exactly as it was paid for; [`foley.repair.repair_bytes()`](_autosummary/foley.repair.html.md#foley.repair.repair_bytes) applies the
 same fixes `generate` would, and [`foley.index.ingest.ingest_one()`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.ingest_one)
-(with the entry’s `license`) takes the result into a library.
+(with the entry’s `license`) takes the result into a library. An entry with
+`container: "video"` keeps a muxed video answer whose audio is still to be
+taken out (#176; [`foley.sources.video.audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track), or replay the request).
 
 * **Raises:**
   [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If neither store knows `key`.
@@ -21109,18 +21155,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 06:12 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/9f44f4a3d5adeec8923e2298bdf0890e47548e87"><code>9f44f4a</code></a> on branch <code>main</code>, for **foley 0.0.80** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 06:31 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/0ec4e9943dd4833469108ac77d65b1cf67aa3867"><code>0ec4e99</code></a> on branch <code>main</code>, for **foley 0.0.81** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.80) is behind the latest release on PyPI (0.0.81): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.81) is behind the latest release on PyPI (0.0.82): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/9f44f4a3d5adeec8923e2298bdf0890e47548e87"><code>9f44f4a3d5adeec8923e2298bdf0890e47548e87</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/0ec4e9943dd4833469108ac77d65b1cf67aa3867"><code>0ec4e9943dd4833469108ac77d65b1cf67aa3867</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -21131,9 +21177,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40459504751">40459504751</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40461404888">40461404888</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>9f44f4a3d5adeec8923e2298bdf0890e47548e87</code> (in the history of the built commit) |
+| Event commit | <code>0ec4e9943dd4833469108ac77d65b1cf67aa3867</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -21158,13 +21204,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.81/">0.0.81</a>, newer than the documented version (0.0.80).
+Latest release: <a href="https://pypi.org/project/foley/0.0.82/">0.0.82</a>, newer than the documented version (0.0.81).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 9f44f4a3d5adeec8923e2298bdf0890e47548e87
+git checkout 0ec4e9943dd4833469108ac77d65b1cf67aa3867
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

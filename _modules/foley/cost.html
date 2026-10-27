@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=5c6fbccc"></script>
+    <script src="../../_static/documentation_options.js?v=f81738d5"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.80" />
+  <meta name="docsearch:version" content="0.0.81" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -738,6 +738,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextvars</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextVar</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
@@ -835,6 +836,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">      requested, × the ``native_defaults['duration_default_s']`` the adapter sends in</span>
 <span class="sd">      its place, else × ``native_defaults['duration_max_s']`` (the duration is left to</span>
 <span class="sd">      the backend: an upper bound), else ``None``.</span>
+<span class="sd">    * ``'per_second'`` with ``billing_increment_s`` → the seconds rounded **up** to whole</span>
+<span class="sd">      increments first (a provider that bills in blocks: "$0.10 per 10 s").</span>
+
+<span class="sd">    &gt;&gt;&gt; estimate_call({"pricing": {"unit": "per_second", "amount_usd": 0.01,</span>
+<span class="sd">    ...     "seconds_from": "video", "billing_increment_s": 10}}, video_duration_s=3)</span>
+<span class="sd">    0.1</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        config: A ``SOURCE_CONFIG``.</span>
@@ -857,7 +864,9 @@ window.runMermaid = runMermaid;</script>
         <span class="n">video_s</span> <span class="o">=</span> <span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"video_duration_s"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">pricing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"seconds_from"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"video"</span><span class="p">:</span>  <span class="c1"># billed by the video's length</span>
             <span class="c1"># An unread length (a URL) is an unknown cost: it needs approval.</span>
-            <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">video_s</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">video_s</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">video_s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span> <span class="o">*</span> <span class="n">_billed_seconds</span><span class="p">(</span><span class="n">video_s</span><span class="p">,</span> <span class="n">pricing</span><span class="p">)</span>
         <span class="n">seconds</span> <span class="o">=</span> <span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_s"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">seconds</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">video_s</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># V2A: the sound covers the video</span>
             <span class="n">seconds</span> <span class="o">=</span> <span class="n">video_s</span>
@@ -871,9 +880,27 @@ window.runMermaid = runMermaid;</script>
             <span class="c1"># else the backend's maximum: an upper bound, never zero.</span>
             <span class="n">nd</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_defaults"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
             <span class="n">seconds</span> <span class="o">=</span> <span class="n">nd</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_default_s"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">nd</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_max_s"</span><span class="p">)</span>
-        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">seconds</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">seconds</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span> <span class="o">*</span> <span class="n">_billed_seconds</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="n">pricing</span><span class="p">)</span>
+        <span class="p">)</span>
     <span class="k">return</span> <span class="kc">None</span></div>
 
+
+
+<span class="c1">#: Decimals of blocks kept before rounding up, so float noise (10.0000001 s) stays one</span>
+<span class="c1">#: 10 s block; a real overrun (10.02 s) is a second block, as a block-billing provider</span>
+<span class="c1">#: would charge it.</span>
+<span class="n">_BLOCK_DECIMALS</span> <span class="o">=</span> <span class="mi">6</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_billed_seconds</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="n">pricing</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``seconds`` rounded up to whole ``pricing['billing_increment_s']`` blocks (if any)."""</span>
+    <span class="n">step</span> <span class="o">=</span> <span class="n">pricing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"billing_increment_s"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">step</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">seconds</span><span class="p">)</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">step</span><span class="p">),</span> <span class="n">_BLOCK_DECIMALS</span><span class="p">))</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">step</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">actual_call_cost</span><span class="p">(</span>

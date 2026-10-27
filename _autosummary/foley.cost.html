@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=5c6fbccc"></script>
+    <script src="../_static/documentation_options.js?v=f81738d5"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.80" />
+  <meta name="docsearch:version" content="0.0.81" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -700,7 +700,14 @@ unread length is an unknown cost, which needs approval);</p></li>
 requested, × the <code class="docutils literal notranslate"><span class="pre">native_defaults['duration_default_s']</span></code> the adapter sends in
 its place, else × <code class="docutils literal notranslate"><span class="pre">native_defaults['duration_max_s']</span></code> (the duration is left to
 the backend: an upper bound), else <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'per_second'</span></code> with <code class="docutils literal notranslate"><span class="pre">billing_increment_s</span></code> → the seconds rounded <strong>up</strong> to whole
+increments first (a provider that bills in blocks: “$0.10 per 10 s”).</p></li>
 </ul>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">estimate_call</span><span class="p">({</span><span class="s2">"pricing"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"unit"</span><span class="p">:</span> <span class="s2">"per_second"</span><span class="p">,</span> <span class="s2">"amount_usd"</span><span class="p">:</span> <span class="mf">0.01</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">"seconds_from"</span><span class="p">:</span> <span class="s2">"video"</span><span class="p">,</span> <span class="s2">"billing_increment_s"</span><span class="p">:</span> <span class="mi">10</span><span class="p">}},</span> <span class="n">video_duration_s</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="go">0.1</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
