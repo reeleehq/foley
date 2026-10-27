@@ -603,3 +603,39 @@ def test_both_probes_read_a_real_video(tmp_path):
     for probe in probes:  # bytes: written as .webm (sniffed), then measured
         assert video_mod.video_seconds(out.read_bytes(), probe=probe) == pytest.approx(
             2.0, abs=0.1)
+
+
+# #173: a bare remote URL is never replayed; a RemoteVideo is, by its content
+
+
+def _generate_twice(library, tmp_path, video):
+    from foley.stores import make_generations_store
+
+    cache = make_generations_store(tmp_path / "generations")
+    adapter, runner, _ = _adapter()
+    kw = dict(backend="fal_mirelo_v2a", adapter=adapter, library=library, video=video,
+              generations_cache=cache, provenance_store={})
+    foley.generate("", **kw)
+    return runner, foley.generate("", **kw)
+
+
+def test_a_bare_remote_url_is_never_replayed_from_the_cache(library, tmp_path):
+    runner, second = _generate_twice(library, tmp_path, "https://x/latest.mp4")
+    assert len(runner.calls) == 2  # asked again: what the URL serves may have changed
+    assert any("not replayed from the cache" in n for n in second.notes)
+
+
+def test_a_remote_video_with_its_digest_is_replayed(library, tmp_path):
+    video = foley.RemoteVideo("https://x/latest.mp4", sha256="AB" * 32)
+    runner, second = _generate_twice(library, tmp_path, video)
+    assert len(runner.calls) == 1  # keyed by the content the caller vouched for
+    assert runner.calls[0][1]["video_url"] == "https://x/latest.mp4"  # sent as the URL
+    assert video_mod.video_key(video) == "sha256:" + "ab" * 32
+    assert video_mod.replayable({"video": video})
+
+
+def test_a_remote_video_refuses_what_is_not_a_url_and_a_digest():
+    for url, digest in (("clip.mp4", "ab" * 32), ("data:video/mp4;base64,AA", "ab" * 32),
+                        ("https://x/a.mp4", "abc"), ("https://x/a.mp4", "md5:" + "a" * 32)):
+        with pytest.raises(ValueError, match="RemoteVideo"):
+            foley.RemoteVideo(url, sha256=digest)

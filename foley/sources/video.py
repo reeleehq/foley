@@ -1,13 +1,17 @@
 """Video inputs of video-to-audio generation (#74): what ``video=`` may be, its identity, its length.
 
 A video-to-audio (V2A) backend takes the picture the sound must follow. foley accepts
-it as a **URL** (``http(s)://`` or a ``data:`` URI, sent as is), a **local path**, or
-raw **bytes** (both uploaded by the backend's adapter). Three questions are answered
-here, once, for every V2A backend:
+it as a **URL** (``http(s)://`` or a ``data:`` URI, sent as is), a
+:class:`RemoteVideo` (a URL with the SHA-256 of its content), a **local path**, or raw
+**bytes** (both uploaded by the backend's adapter). These questions are answered here,
+once, for every V2A backend:
 
 * :func:`video_key`: what the generations cache keys the video as. The **content**
-  (``sha256:<hex>`` of the bytes or of the file), never its path, so a moved file hits
-  the cache and an edited one cannot; a remote URL is keyed as the URL.
+  (``sha256:<hex>`` of the bytes, the file or a :class:`RemoteVideo`'s digest), never
+  its path, so a moved file hits the cache and an edited one cannot; a bare remote URL
+  is keyed as the URL.
+* :func:`replayable`: whether an identical request may be served from the cache. Not
+  for a bare remote URL: the content behind it may have changed (#173).
 * :func:`video_seconds`: its length, for a backend priced per second of the video
   (``probe=``; default :func:`default_probe`: ``ffprobe`` on ``PATH``, else mixing's
   ``probe_duration`` through mixing's ffmpeg resolver; ``None`` when it cannot be read,
@@ -27,10 +31,12 @@ Stdlib only (mixing is used when installed, never required).
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import functools
 import hashlib
 import math
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -38,10 +44,49 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Optional, Union
 
-#: What ``video=`` accepts: a URL, a local path, or the encoded bytes.
-VideoInput = Union[str, "os.PathLike[str]", bytes]
 #: URL schemes sent to a backend as is (no upload).
 URL_SCHEMES = ("http://", "https://", "data:")
+#: The key prefix of a video known only by its URL (its content unseen).
+URL_KEY_PREFIX = "url:"
+_SHA256_HEX = re.compile(r"[0-9a-f]{64}")
+
+
+@dataclasses.dataclass(frozen=True)
+class RemoteVideo:
+    """A remote video ``url`` with the SHA-256 of its bytes: keyed, and replayed, by content.
+
+    A bare ``https://`` URL is keyed as the URL, which foley cannot see behind, so an
+    identical request for it is never served from the generations cache (the picture
+    may have changed: ``.../latest.mp4``). A caller who knows the content passes this
+    instead, and a repeat is replayed while the digest is the same (#173).
+
+    >>> RemoteVideo("https://x/clip.mp4", sha256="sha256:" + "ab" * 32).sha256[:4]
+    'abab'
+    >>> RemoteVideo("clip.mp4", sha256="ab" * 32)
+    Traceback (most recent call last):
+    ...
+    ValueError: RemoteVideo.url must be an http(s) URL, got 'clip.mp4'
+    """
+
+    url: str
+    sha256: str
+
+    def __post_init__(self):
+        if not (isinstance(self.url, str) and self.url.startswith(URL_SCHEMES[:2])):
+            raise ValueError(
+                f"RemoteVideo.url must be an http(s) URL, got {self.url!r}"
+            )
+        digest = str(self.sha256).lower().removeprefix("sha256:")
+        if not _SHA256_HEX.fullmatch(digest):
+            raise ValueError(
+                "RemoteVideo.sha256 must be the 64 hex digits of the video's SHA-256 "
+                f"(optionally 'sha256:'-prefixed), got {self.sha256!r}"
+            )
+        object.__setattr__(self, "sha256", digest)
+
+
+#: What ``video=`` accepts: a URL, a :class:`RemoteVideo`, a local path, or the bytes.
+VideoInput = Union[str, RemoteVideo, "os.PathLike[str]", bytes]
 #: Bytes hashed at a time when keying a local file.
 _HASH_CHUNK = 1 << 20
 #: The most :func:`audio_track` lets ffmpeg run (s).
@@ -56,22 +101,35 @@ DEFAULT_VIDEO_SUFFIX = ".mp4"
 Probe = Callable[[str], Optional[float]]
 
 
+def video_url(video: VideoInput) -> Optional[str]:
+    """The URL a backend fetches ``video`` from itself, or ``None`` (a path or bytes).
+
+    >>> video_url("https://x/clip.mp4"), video_url("clip.mp4"), video_url(b"...")
+    ('https://x/clip.mp4', None, None)
+    """
+    if isinstance(video, RemoteVideo):
+        return video.url
+    return video if isinstance(video, str) and video.startswith(URL_SCHEMES) else None
+
+
 def is_url(video: VideoInput) -> bool:
     """Whether ``video`` is a URL a backend can fetch itself.
 
     >>> is_url("https://x/clip.mp4"), is_url("clip.mp4"), is_url(b"...")
     (True, False, False)
     """
-    return isinstance(video, str) and video.startswith(URL_SCHEMES)
+    return video_url(video) is not None
 
 
 def video_key(video: VideoInput) -> str:
-    """The cache identity of ``video``: its content digest, or a remote URL as is.
+    """The cache identity of ``video``: its content digest, or a bare remote URL as is.
 
     >>> video_key(b"abc")[:15]
     'sha256:ba7816bf'
     >>> video_key("https://x/clip.mp4")
     'url:https://x/clip.mp4'
+    >>> video_key(RemoteVideo("https://x/clip.mp4", sha256="ab" * 32))[:11]
+    'sha256:abab'
 
     Raises:
         FileNotFoundError: If ``video`` names a local file that does not exist.
@@ -79,10 +137,12 @@ def video_key(video: VideoInput) -> str:
     """
     if isinstance(video, (bytes, bytearray)):
         return "sha256:" + hashlib.sha256(video).hexdigest()
+    if isinstance(video, RemoteVideo):
+        return "sha256:" + video.sha256
     if is_url(video):
         if video.startswith("data:"):  # the content is in the URI
             return "sha256:" + hashlib.sha256(video.encode()).hexdigest()
-        return "url:" + video
+        return URL_KEY_PREFIX + video
     if isinstance(video, (str, os.PathLike)):
         path = os.fspath(video)
         st = os.stat(path)
@@ -101,6 +161,19 @@ def keyed(affordances: dict) -> dict:
     if affordances.get("video") is None:
         return affordances
     return {**affordances, "video": video_key(affordances["video"])}
+
+
+def replayable(affordances: dict) -> bool:
+    """Whether an identical request may be served from the cache: not when its video is a
+    bare remote URL, whose content foley never saw (#173).
+
+    >>> replayable({"video": "https://x/latest.mp4"}), replayable({"video": b"abc"})
+    (False, True)
+    >>> replayable({"seed": 1})
+    True
+    """
+    video = affordances.get("video")
+    return video is None or not video_key(video).startswith(URL_KEY_PREFIX)
 
 
 @functools.lru_cache(maxsize=64)

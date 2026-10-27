@@ -260,10 +260,11 @@ class FalAdapter:
 
     def _video_url(self, video) -> str:
         """The URL fal fetches ``video`` from: a URL as is, a path or bytes uploaded."""
-        from ..video import is_url, local_video_file
+        from ..video import local_video_file, video_url
 
-        if is_url(video):
-            return video
+        url = video_url(video)
+        if url is not None:
+            return url
         key = self.api_key  # a missing key is its own, clearer refusal
         try:
             with local_video_file(video) as path:
