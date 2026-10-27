@@ -47,15 +47,21 @@ def _wav(freq):
 
 
 class Fake:
-    """A generator that counts calls; ``seeded`` ones sound their seed and record it."""
+    """A generator that counts calls; ``seeded`` ones sound their seed and record it.
 
-    def __init__(self, config, *, seeded):
+    ``echoes``: a seeded backend asked for no seed draws its own and answers with it
+    (its config declares a ``seed_field``); otherwise it records none, and the dispatch
+    layer draws the seed it is sent (#206).
+    """
+
+    def __init__(self, config, *, seeded, echoes=True):
         self.config, self.name, self.seeded, self.calls = config, config["name"], seeded, []
+        self.echoes = echoes
 
     def generate(self, prompt, **affordances):
         self.calls.append(affordances)
         seed = affordances.get("seed") if self.seeded else None
-        if self.seeded and seed is None:
+        if self.seeded and self.echoes and seed is None:
             seed = 1000  # the backend's own draw, recorded
         lic = generated_license(
             source=self.name,
@@ -77,18 +83,19 @@ class Fake:
 def source():
     made = []
 
-    def make(name, *, seeded, paid=True):
+    def make(name, *, seeded, paid=True, echoes=True):
         affordances = ["prompt", "duration_s"] + (["seed"] if seeded else [])
+        echoed = {"seed_field": "seed"} if seeded and echoes else {}
         cfg = {
             "name": name,
             "kind": "generate",
             "supported_affordances": affordances,
             "on_unsupported_param": "warn",
-            "native_defaults": {"duration_min_s": 0.5, "duration_max_s": 30.0},
+            "native_defaults": {"duration_min_s": 0.5, "duration_max_s": 30.0, **echoed},
             "data_egress": "external" if paid else "local",
             "pricing": {"unit": "per_call", "amount_usd": 0.01 if paid else 0.0},
         }
-        adapter = Fake(cfg, seeded=seeded)
+        adapter = Fake(cfg, seeded=seeded, echoes=echoes)
         register_source(name, cfg, adapter)
         made.append(name)
         return adapter
@@ -123,6 +130,42 @@ def test_the_backends_own_seed_seeds_the_rest(library, source):
     source("seeded", seeded=True, paid=False)
     takes = foley.variations("door", 2, backend="seeded", library=library)
     assert [c.sound.license.generation_seed for c in takes] == [1000, 1001]
+
+
+def test_a_seed_drawn_by_the_dispatch_layer_seeds_the_rest(library, source, monkeypatch):
+    """A seeded backend that echoes no seed: the seed drawn for take 0 seeds the rest (#206)."""
+    from foley.sources import _dispatch
+
+    fake = source("silent", seeded=True, echoes=False)
+    monkeypatch.setattr(_dispatch, "draw_seed", lambda: 4242)
+    takes = foley.variations("door", 3, backend="silent", library=library)
+    assert [c.sound.license.generation_seed for c in takes] == [4242, 4243, 4244]
+    assert [call.get("seed") for call in fake.calls] == [4242, 4243, 4244]
+    # A rerun draws another seed, but take 0 is the seedless request it always was: it
+    # replays from the cache with the seed it recorded, so every take replays.
+    monkeypatch.setattr(_dispatch, "draw_seed", lambda: 7)
+    again = foley.variations("door", 3, backend="silent", library=library)
+    assert len(fake.calls) == 3
+    assert [c.sound.license.generation_seed for c in again] == [4242, 4243, 4244]
+    assert [c.sound.id for c in again] == [c.sound.id for c in takes]
+
+
+def test_a_drawn_seed_reaches_the_licence_the_manifest_and_not_the_cache_key(
+    library, source, monkeypatch, _in_memory_generations_cache
+):
+    """Drawn after the cache miss (#206): recorded everywhere, keyed nowhere."""
+    from foley.sources import _dispatch
+
+    source("silent", seeded=True, echoes=False)
+    monkeypatch.setattr(_dispatch, "draw_seed", lambda: 4242)
+    runs = {}
+    foley.obs.enable(prefer_otel=False, run_store=runs)
+    cand = foley.generate("door", backend="silent", library=library)
+    assert cand.sound.license.generation_seed == 4242
+    (manifest,) = runs.values()
+    assert manifest["seeds"][cand.sound.id]["seed"] == 4242
+    (entry,) = _in_memory_generations_cache.requests.values()
+    assert "seed" not in entry["affordances"] and entry["license"]["generation_seed"] == 4242
 
 
 def test_variation_zero_is_the_plain_request(library, source):

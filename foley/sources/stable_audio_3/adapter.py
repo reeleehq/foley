@@ -141,7 +141,10 @@ class StableAudio3Adapter:
 
         ``duration_s`` is clamped to the model's 1..120 s (default 10 s); the model renders
         whole latent frames, so the clip may differ from it by a few milliseconds.
-        ``seed=None`` draws a random seed, recorded in the clip's provenance.
+        ``seed=None`` draws a random seed, recorded in the clip's provenance (the
+        script always takes one). Through :func:`foley.generate` the dispatch layer
+        has already drawn it (:func:`foley.sources._dispatch.draws_seed`, #206); this
+        draw serves a direct call.
         ``provider_params`` (#61) are native script flags merged over the translated
         ones (``seconds``, ``steps``, ``cfg``, ``seed``; any other key is passed as
         ``--<key> <value>``) and recorded in ``generation_params``; the config's

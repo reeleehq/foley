@@ -145,8 +145,12 @@ class StableAudioAdapter:
                 ≤ 1).
             steps: Diffusion steps (native ``num_inference_steps``); default 200.
             seed: Reproducibility seed → a per-device ``torch.Generator``; recorded
-                in provenance. ``None`` draws one (:func:`~foley.sources.base.draw_seed`)
-                and records it, so the clip is reproducible all the same (#163).
+                in provenance.
+                ``None`` draws one (:func:`~foley.sources.base.draw_seed`) and records
+                it, so the clip is reproducible all the same (#163). Through
+                :func:`foley.generate` the dispatch layer has already drawn it
+                (:func:`foley.sources._dispatch.draws_seed`, #206); this draw serves a
+                direct call.
             loop: No native param (a future WEAVE crossfade) — warn-and-drop.
             output_format: No native param (the audio-write layer) — warn-and-drop;
                 the clip is archived as FLAC by ingest regardless.

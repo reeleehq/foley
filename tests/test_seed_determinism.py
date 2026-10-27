@@ -6,7 +6,9 @@ is run against a fake backend whose output depends ONLY on the native seed it re
 same seed must give identical bytes, a different seed different bytes (so a dropped or
 rewritten seed fails). A completeness test fails when a new seed-capable source has no fake.
 And a seedless clip must replay from the seed it recorded (#163): a backend that takes a
-seed but records none is not reproducible.
+seed but records none is not reproducible. That clip is made through the dispatch layer
+(``plan_generation`` / ``run_generation``, the path of :func:`foley.generate`), which
+draws the seed of a source whose response echoes none (#206).
 """
 
 import importlib
@@ -19,6 +21,7 @@ pytest.importorskip("soundfile")
 
 import foley  # noqa: E402
 from foley.audio import encode  # noqa: E402
+from foley.sources._dispatch import plan_generation, run_generation  # noqa: E402
 from foley.sources.fal.adapter import FalAdapter  # noqa: E402
 from foley.sources.registry import SOURCE_REGISTRY, _declared_configs  # noqa: E402
 from foley.sources.stable_audio.adapter import StableAudioAdapter  # noqa: E402
@@ -38,6 +41,9 @@ def _noise(seed: int) -> np.ndarray:
 #: What a fake fal backend draws from when sent no seed (any fixed value).
 _UNSEEDED = 999
 
+#: Seed fields an endpoint answers with a list, one seed per sample (Mirelo's ``seeds``).
+_LIST_SEED_FIELDS = {"seeds"}
+
 
 def _fal(name):
     def make(**_):
@@ -48,7 +54,8 @@ def _fal(name):
             seed = arguments.get("seed", _UNSEEDED)  # seedless: the backend's own noise
             response = {"audio": {"url": "u"}}
             if seed_field:  # like the real endpoint, echo the seed it used
-                response[seed_field] = seed
+                listed = seed_field in _LIST_SEED_FIELDS
+                response[seed_field] = [seed] if listed else seed
             return encode(_noise(seed), SR, fmt="WAV"), response
 
         return FalAdapter(
@@ -163,38 +170,42 @@ def test_same_seed_same_bytes_different_seed_different_bytes(
     assert [c.candidate.sound.license.generation_seed for c in clips] == [7, 7, 8]
 
 
-#: fal sources that accept a seed but declare no ``seed_field``: seedless, they record None.
-_NO_SEED_FIELD = {
-    "fal_mmaudio",
-    "fal_mirelo_v2a",
-    "fal_mmaudio_v2a",
-    "fal_thinksound",
-    "fal_hunyuan_foley",
-}
+def _dispatched(name, adapter, prompt, **affordances):
+    """``prompt`` through the dispatch layer (what :func:`foley.generate` runs).
+
+    Unknown costs approved: a V2A endpoint is priced by a video the fake never reads.
+    """
+    from foley.agent.policy import Budget
+    from foley.cost import spend_scope
+
+    with spend_scope(Budget(approve_unknown_cost=True)):
+        plan = plan_generation(name, prompt, adapter=adapter, **affordances)
+        return run_generation(plan, adapter)
 
 
-@pytest.mark.parametrize(
-    "name",
-    [
-        pytest.param(
-            name,
-            marks=pytest.mark.xfail(
-                raises=AssertionError,
-                strict=True,
-                reason="no seed_field: a seedless call records no seed (reeleehq/foley#206)",
-            ),
-        )
-        if name in _NO_SEED_FIELD
-        else name
-        for name in sorted(FAKES)
-    ],
-)
+@pytest.mark.parametrize("name", sorted(FAKES))
 def test_a_seedless_clip_replays_from_its_recorded_seed(name, tmp_path, monkeypatch):
     adapter = FAKES[name](tmp_path=tmp_path, monkeypatch=monkeypatch)
     extra = _mode_inputs(adapter)
-    first = adapter.generate("a door creak", **extra)
+    first = _dispatched(name, adapter, "a door creak", **extra)
     lic = first.candidate.sound.license
     assert lic.generation_reproducible is True
     assert isinstance(lic.generation_seed, int)
     replay = adapter.generate("a door creak", seed=lic.generation_seed, **extra)
     assert replay.audio_bytes == first.audio_bytes
+
+
+def test_mirelo_echoes_its_seeds_as_a_list_and_the_first_is_recorded():
+    """The fake answers ``seeds`` as a list, like the endpoint: the adapter's list branch."""
+    calls = []
+
+    def fal_runner(endpoint_id, arguments, *, api_key, audio_field="audio"):
+        calls.append(arguments)
+        return encode(_noise(5), SR, fmt="WAV"), {"audio": {"url": "u"}, "seeds": [5]}
+
+    config = SOURCE_REGISTRY["fal_mirelo"]["config"]
+    assert config["native_defaults"]["seed_field"] in _LIST_SEED_FIELDS
+    adapter = FalAdapter(config, api_key="k", runner=fal_runner, demux=lambda a: a)
+    clip = _dispatched("fal_mirelo", adapter, "a door creak")
+    assert "seed" not in calls[0]  # the endpoint echoes its seed: none is drawn
+    assert clip.candidate.sound.license.generation_seed == 5
