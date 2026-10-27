@@ -922,3 +922,24 @@ def test_pinning_the_native_default_model_keys_as_unpinned():
 
     assert key(model="m-1") == key()
     assert key(model="m-2") != key()
+
+
+# #164: estimate() refuses what generate() would refuse, before anything is paid
+
+
+def test_estimate_refuses_a_meaning_carrying_param_the_backend_cannot_honour(monkeypatch):
+    from foley.sources._dispatch import UnsupportedParameter
+
+    import sys
+
+    gen_mod = sys.modules["foley.sources.generate"]  # the module, not the function
+    monkeypatch.setattr(gen_mod, "backend_has_key", lambda name: True)  # both are tried
+
+    with pytest.raises(UnsupportedParameter, match="model"):
+        foley.estimate("generate", backend="fal_sonilo", prompt="rain", model="x")
+    # An order passes such a backend over, as generate_in_order does: the dearer
+    # seedless Sonilo no longer sets the bound for a seeded call.
+    order = ("fal_sonilo", "fal_mmaudio")
+    seeded = foley.estimate("generate", backend=order, prompt="rain", seed=3)
+    assert seeded == foley.estimate("generate", backend="fal_mmaudio", prompt="rain", seed=3)
+    assert seeded < foley.estimate("generate", backend=order, prompt="rain") == 0.0144

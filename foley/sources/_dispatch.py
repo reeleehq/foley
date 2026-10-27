@@ -56,6 +56,7 @@ from .video import replayable as video_replayable
 from .base import (
     check_prompt_influence,
     check_provider_params,
+    SearchArgumentError,
     check_page_depth,
     page_size,
     provider_params_policy,
@@ -952,8 +953,9 @@ def _demux_kept(
 def estimate_generation(backend: str, **affordances) -> Optional[float]:
     """What :func:`plan_generation` would price this call at (same translation and clamp).
 
-    Unsupported parameters are dropped silently here (an estimate never raises for
-    them); the real call still applies the policy.
+    The same unsupported-parameter policy as the call (#164): a meaning-carrying one
+    the backend cannot honour raises :class:`UnsupportedParameter`, as ``generate``
+    would before anything is paid; any other is dropped, silently here.
     """
     from ..cost import estimate_call
     from .registry import SOURCE_REGISTRY, discover_sources, get_source
@@ -964,7 +966,7 @@ def estimate_generation(backend: str, **affordances) -> Optional[float]:
     config = SOURCE_REGISTRY[backend]["config"]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        kept, _ = translate_affordances(config, affordances, on_unsupported="note")
+        kept, _ = translate_affordances(config, affordances)
     return estimate_call(config, **_priced(config, kept))
 
 
@@ -1043,7 +1045,8 @@ def plan_search(
     source as a request that can only fail (#168).
 
     Raises:
-        SearchArgumentError: A ``page`` past the source's result window (a
+        SearchArgumentError: A ``k`` that is not a positive integer (#179), a
+            ``page`` past the source's result window (a
             ``ValueError``, as is every value :func:`translate_affordances` refuses).
 
     Returns:
@@ -1055,6 +1058,8 @@ def plan_search(
     search_kw, notes = translate_affordances(
         config, affordances, on_unsupported=on_unsupported, vocabulary=QUERY_AFFORDANCES
     )
+    if isinstance(k, bool) or not isinstance(k, numbers.Integral) or k < 1:
+        raise SearchArgumentError(f"k must be a positive integer, got {k!r}")
     if search_kw.get("page") is not None:
         check_page_depth(config, search_kw["page"], page_size(config, k))
     if provider_params is not None:

@@ -755,3 +755,17 @@ def test_a_capped_source_reserves_its_paging_fields_from_provider_params(library
     ia, http = _ia()  # no result window: its paging fields stay the caller's to set
     ia.search("door", provider_params={"rows": 30})
     assert http.calls[0]["params"]["rows"] == 30
+
+
+# #179: k < 1 is refused at plan time
+
+
+@pytest.mark.parametrize("bad", [0, -1, 1.5, True, "5"])
+def test_add_from_refuses_a_k_that_is_not_a_positive_integer(library, bad):
+    from foley.sources import add_from
+    from foley.sources.base import SearchArgumentError
+
+    ad, http = _openverse()
+    with pytest.raises(SearchArgumentError, match="k must be a positive integer"):
+        add_from("openverse", query="door", limit=bad, library=library, adapter=ad)
+    assert http.calls == []

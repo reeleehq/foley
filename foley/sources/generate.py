@@ -827,8 +827,8 @@ def provider_params_by_backend(
     (or its own ``{name: {...}}``, unwrapped). Each backend's params are checked against its
     config's ``provider_params`` policy here, before any backend is called.
 
-    >>> provider_params_by_backend({"steps": 8}, ("x",), per_backend=False)
-    {'x': {'steps': 8}}
+    >>> provider_params_by_backend({"steps": 8}, ("stable_audio",), per_backend=False)
+    {'stable_audio': {'steps': 8}}
     >>> provider_params_by_backend({"steps": 8}, ("x", "y"), per_backend=True)
     Traceback (most recent call last):
     ...
