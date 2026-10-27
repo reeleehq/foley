@@ -12,6 +12,10 @@ once, for every V2A backend:
   is keyed as the URL.
 * :func:`replayable`: whether an identical request may be served from the cache. Not
   for a bare remote URL: the content behind it may have changed (#173).
+* :func:`recorded_video_key`: the key as it is **written down** (a cache entry, a run
+  manifest, a licence): a bare URL without its query, fragment or credentials, so a
+  presigned URL's token never reaches a record (#184). The request digest still
+  hashes :func:`video_key`.
 * :func:`video_seconds`: its length, for a backend priced per second of the video
   (``probe=``; default :func:`default_probe`: ``ffprobe`` on ``PATH``, else mixing's
   ``probe_duration`` through mixing's ffmpeg resolver; ``None`` when it cannot be read,
@@ -22,8 +26,8 @@ once, for every V2A backend:
   ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via
   ``ffmpeg`` (:func:`ffmpeg_path`).
 * :func:`keyed`: affordances as they may be recorded (the cache entry, the run
-  manifest): the video replaced by its key, so neither its bytes nor a local path
-  (nor an upload's capability URL) is ever written down.
+  manifest): the video replaced by its recorded key, so neither its bytes nor a local
+  path (nor an upload's capability URL, nor a presigned URL's token) is written down.
 
 Stdlib only (mixing is used when installed, never required).
 """
@@ -174,15 +178,59 @@ def is_video_key(value) -> bool:
     )
 
 
-def keyed(affordances: dict) -> dict:
-    """``affordances`` with a ``video`` replaced by :func:`video_key` (else unchanged).
+#: What stands in for a recorded URL's query and fragment.
+REDACTED_QUERY = "?…"
+
+
+def recorded_video_key(video: VideoInput) -> str:
+    """:func:`video_key` as it is written down: a bare URL keeps its scheme, host and
+    path only (#184): its query, fragment and ``;`` path parameters (a presigned URL's
+    signature, a session id) become :data:`REDACTED_QUERY`, and credentials before
+    the host are dropped. Two URLs that differ only there record (and are found by
+    :meth:`~foley.stores.GenerationsCache.find`) as one, as a re-signed URL should.
+    An already recorded or bare ``url:`` key is redacted the same way.
+
+    >>> recorded_video_key("https://u:p@bucket.s3.example/a.mp4?X-Amz-Signature=s3cr3t")
+    'url:https://bucket.s3.example/a.mp4?…'
+    >>> recorded_video_key("https://[::1]:8080/a.mp4;jsessionid=X#t=2")
+    'url:https://[::1]:8080/a.mp4?…'
+    >>> recorded_video_key("https://x/a.mp4"), recorded_video_key(b"abc")[:11]
+    ('url:https://x/a.mp4', 'sha256:ba78')
+    """
+    is_key = isinstance(video, str) and video.startswith(URL_KEY_PREFIX)
+    key = video if is_key else video_key(video)
+    if not key.startswith(URL_KEY_PREFIX):
+        return key
+    return URL_KEY_PREFIX + _bare_url(key[len(URL_KEY_PREFIX) :])
+
+
+def _bare_url(url: str) -> str:
+    """``url`` without its userinfo, ``;`` parameters, query and fragment (string
+    surgery, so a malformed authority never raises)."""
+    scheme, _, rest = url.partition("://")
+    cut = min(
+        (i for i in (rest.find("?"), rest.find("#")) if i >= 0), default=len(rest)
+    )
+    head, tail = rest[:cut], rest[cut:]
+    authority, slash, path = head.partition("/")
+    authority = authority.rpartition("@")[2]
+    kept = "/".join(seg.partition(";")[0] for seg in path.split("/"))
+    redacted = bool(tail) or kept != path
+    return f"{scheme}://{authority}{slash}{kept}" + (REDACTED_QUERY if redacted else "")
+
+
+def keyed(affordances: dict, *, key: Callable = recorded_video_key) -> dict:
+    """``affordances`` with a ``video`` replaced by its ``key`` (else unchanged).
+
+    The default is the key as it is written down (:func:`recorded_video_key`); the
+    request digest passes ``key=video_key``, the full identity, which is only hashed.
 
     >>> keyed({"video": b"abc", "duration_s": 2})["video"][:15], keyed({"seed": 1})
     ('sha256:ba7816bf', {'seed': 1})
     """
     if affordances.get("video") is None:
         return affordances
-    return {**affordances, "video": video_key(affordances["video"])}
+    return {**affordances, "video": key(affordances["video"])}
 
 
 def fal_immutable_url(url: str) -> bool:

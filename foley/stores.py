@@ -330,11 +330,11 @@ class GenerationsCache:
         reject_renamed(affordances)
         video = affordances.get("video")
         if video is not None:  # kept by its key (#74): a value is found by its key
-            from .sources.video import is_video_key, video_key
+            from .sources.video import is_video_key, recorded_video_key
 
-            if not is_video_key(video):
+            if not is_video_key(video) or str(video).startswith("url:"):
                 try:
-                    video = video_key(video)
+                    video = recorded_video_key(video)  # a URL key is redacted too
                 except FileNotFoundError:  # a path that is gone matches nothing
                     return []
             affordances = {**affordances, "video": video}

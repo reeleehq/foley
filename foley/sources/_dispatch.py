@@ -46,12 +46,13 @@ import time
 import warnings
 from dataclasses import dataclass, field
 from collections.abc import Mapping
-from typing import Optional
+from typing import Callable, Optional
 
 from ocracy.kit import UnsupportedParameter, make_translator
 
 from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES, reject_renamed
 from .video import keyed as video_keyed
+from .video import recorded_video_key, video_key
 from .video import replayable as video_replayable
 from .base import (
     check_prompt_influence,
@@ -257,14 +258,17 @@ def request_digest(
     )
 
 
-def _keyed_request(config: dict, affordances: dict) -> "tuple[dict, Optional[str]]":
+def _keyed_request(
+    config: dict, affordances: dict, *, key: Callable = video_key
+) -> "tuple[dict, Optional[str]]":
     """``(native request, pinned model)``: a pinned model is keyed apart from the request.
 
     A pin equal to the source's ``native_defaults['model_id']`` keys as unpinned. The
     comparison is on the raw value: a source that maps model tokens to native ids
     would compare after that translation.
     """
-    rest = dict(video_keyed(affordances))  # a copy; the video by its content (#74)
+    # A copy; the video by its full identity (#74), which is hashed, never written.
+    rest = dict(video_keyed(affordances, key=key))
     nd = config.get("native_defaults") or {}
     model = rest.pop("model", None)
     if model == nd.get("model_id"):
@@ -418,6 +422,7 @@ class GenerationPlan:
     cached: object = None  # a GeneratedClip served from the cache, or None
     salt: object = None  # the adapter's request_salt() (part of every key)
     kept_key: Optional[str] = None  # where the response was kept (see run_generation)
+    replayable: bool = True  # False: never served from the cache (a bare video URL)
     content_key: Optional[str] = None  # the kept bytes' key in cache.audio (#107)
     provider_params: dict = field(
         default_factory=dict
@@ -503,7 +508,8 @@ def plan_generation(
         plan.request_key = request_digest(
             backend, prompt, config, kept, salt, provider_params=plan.provider_params
         )
-        if reuse_cached and not video_replayable(kept):
+        plan.replayable = video_replayable(kept)  # whatever reuse_cached says (#185)
+        if reuse_cached and not plan.replayable:
             plan.notes.append(
                 "the video is a remote URL whose content foley has not seen: what it "
                 "serves may have changed, so this request is not replayed from the "
@@ -591,9 +597,16 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
                 clip=exc.clip,
                 cache_key=plan.content_key,  # set once its bytes were written
             ) from exc
+        retry = (
+            "a retry takes its audio out without paying again"
+            if plan.replayable
+            else "a retry pays again (a bare video URL is never replayed); its audio "
+            "can still be taken out of the kept video (foley.generations.get(key), "
+            "then foley.sources.video.audio_track)"
+        )
         raise UndemuxedAnswer(
             f"{exc}. The answer is kept in the generations cache ({plan.kept_key}): "
-            "a retry takes its audio out without paying again",
+            f"{retry}",
             clip=exc.clip,
             cache_key=plan.content_key,
         ) from exc
@@ -623,7 +636,7 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
                 f"could not keep the paid generation in the cache: {exc!r}"
             )
         else:
-            if fallback:
+            if fallback and plan.replayable:  # a never-replayed answer has no pointer
                 replay_s = _fallback_replay_s(plan.config)
                 clip.notes.append(
                     "the provider answered a different request than the one asked (a "
@@ -672,8 +685,16 @@ def _answered_key(plan: GenerationPlan, clip) -> str:
     caller's provider param, when one set it, else the native request).
     """
     native, model = _keyed_request(plan.config, plan.affordances)
+    # Compared as the adapter records it (a URL without its token, #184), rebuilt below
+    # from the full request, which is what the digest hashes. Only a URL differs.
+    video = plan.affordances.get("video")
+    recorded = (
+        _keyed_request(plan.config, plan.affordances, key=recorded_video_key)[0]
+        if isinstance(video, str)
+        else native
+    )
     provider_params = dict(plan.provider_params or {})
-    planned = {**native, **provider_params}  # generators append nothing
+    planned = {**recorded, **provider_params}  # generators append nothing
     lic = getattr(getattr(clip.candidate, "sound", None), "license", None)
     sent_params = getattr(lic, "generation_params", None) or {}
 
@@ -735,6 +756,11 @@ def _default_cache():
     return make_generations_store()
 
 
+#: Hex characters of the content key that tell one answer of a never-replayed request
+#: from another (#185): 64 bits, so two answers never share an entry.
+_ANSWER_KEY_CHARS = 16
+
+
 def _store_clip(cache, plan: GenerationPlan, clip, *, container=None) -> None:
     """Keep the paid bytes and the entry of the request they answer.
 
@@ -745,6 +771,11 @@ def _store_clip(cache, plan: GenerationPlan, clip, *, container=None) -> None:
     asked gets a pointer to that entry (see :func:`_fallback_replay_s`), and an
     entry already kept for the request answered is not overwritten: the pointer then
     stands for this generation, so its ingest outcome is recorded there.
+
+    A request that is never replayed (``plan.replayable`` false: a bare video URL) keeps
+    each answer under its own key, ``<request key>-<content key prefix>`` (#185): the
+    next call asks again and may be answered otherwise, so it must not overwrite this
+    entry and orphan its bytes.
     """
     from ..stores import content_key
 
@@ -754,6 +785,10 @@ def _store_clip(cache, plan: GenerationPlan, clip, *, container=None) -> None:
     entry = _clip_entry(plan, clip, key)
     if container is not None:
         entry["container"] = container
+    if not plan.replayable:
+        plan.kept_key = f"{plan.request_key}-{key[:_ANSWER_KEY_CHARS]}"
+        cache.requests[plan.kept_key] = entry
+        return
     kept_key = plan.kept_key or plan.request_key
     if kept_key == plan.request_key:
         cache.requests[kept_key] = entry
