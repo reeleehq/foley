@@ -522,13 +522,13 @@ def test_openverse_excluded_sources_can_only_grow():
 # ---------------------------------------------------------------------------
 
 
-def test_openverse_cc0_licence_id_uses_the_cc0_filter_and_cc_by_the_default():
+def test_openverse_pushes_a_licence_id_into_the_native_filter():
     ad, http = _openverse()
     got = ad.search("door", license="CC0-1.0")
     assert http.calls[0]["params"]["license"] == "cc0"
     assert [c.sound.id for c in got] == ["openverse:a"]
     got = ad.search("door", license="CC-BY-4.0")
-    assert http.calls[1]["params"]["license"] == "cc0,by,pdm"
+    assert http.calls[1]["params"]["license"] == "by"  # narrowed natively too
     assert [c.sound.id for c in got] == ["openverse:b"]
 
 
@@ -543,3 +543,28 @@ def test_a_licence_the_source_does_not_accept_returns_nothing_without_a_request(
     ad, http = make()
     assert ad.search("x", license="CC-BY-SA-4.0") == []
     assert http.calls == []
+
+
+def test_ingest_rejects_a_rights_assertion_for_a_retrieve_backend():
+    import foley
+
+    with pytest.raises(ValueError, match="search constraint"):
+        foley.ingest("door", backend="openverse", license="user-owned")
+
+
+def test_openverse_native_map_covers_every_accepted_licence_and_cc_by_family_is_by():
+    from foley.sources.openverse.config import SOURCE_CONFIG as OV
+
+    assert set(OV["api"]["license_native"]) == set(OV["license"]["accepted_license_ids"])
+    ad, http = _openverse()
+    ad.search("door", license="cc-by")
+    assert http.calls[0]["params"]["license"] == "by"
+
+
+def test_ingest_passes_a_cc_search_licence_to_the_pull_facade(monkeypatch):
+    import foley
+
+    seen = {}
+    monkeypatch.setattr(foley, "add_from", lambda backend, **kw: seen.update(kw) or "ok")
+    assert foley.ingest("door", backend="openverse", license="CC-BY-4.0") == "ok"
+    assert seen["license"] == "CC-BY-4.0" and seen["query"] == "door"

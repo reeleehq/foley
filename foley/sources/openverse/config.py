@@ -43,7 +43,17 @@ SOURCE_CONFIG = {
         "max_page_size": 20,  # anonymous
         "max_query_chars": 200,
         "excluded_sources": ["freesound", "jamendo"],
-        "license_filter": {"cc0": "cc0", "default": "cc0,by,pdm"},
+        # foley licence id -> Openverse's native ``license`` token; what is sent when no
+        # licence narrows the search (or an id has no token: the per-item check narrows).
+        "license_native": {
+            "CC0-1.0": "cc0",
+            "CC-BY-2.0": "by",
+            "CC-BY-2.5": "by",
+            "CC-BY-3.0": "by",
+            "CC-BY-4.0": "by",
+            "PDM-1.0": "pdm",
+        },
+        "license_default": "cc0,by,pdm",
         "user_agent": "foley/1 (https://github.com/reeleehq/foley; sound-effects retrieval)",
     },
     "notice": (

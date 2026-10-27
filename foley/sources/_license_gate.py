@@ -3,68 +3,35 @@
 * :func:`license_for_item`: a source's own licence string through the one SSOT
   (:func:`foley.licensing.license_id_from_cc_url`), checked against the source's
   ``accepted_license_ids``: ``(license_id, verified)`` or ``None`` to drop the item.
-* :func:`wanted_license_ids`: what a caller's ``license=`` asks for, as the narrower
-  set of licence ids an item must be in (``None``: any accepted one).
-* :func:`is_cc0_only`: whether such a request can use a source's CC0-only native filter.
+* :func:`is_cc0_only` / :func:`native_license_filter`: whether (and how) a request from
+  :func:`foley.licensing.wanted_license_ids` is pushed into a source's native query.
 
 Underscore-prefixed, so :func:`foley.sources.registry.discover_sources` skips it. Stdlib only.
 """
 
 from __future__ import annotations
 
-import logging
-import re
 from typing import Optional
 
-from ..licensing import LICENSE_META
 
-_log = logging.getLogger(__name__)
+def native_license_filter(
+    wanted: "Optional[list[str]]", mapping: dict, *, default: str
+) -> str:
+    """The native filter token for ``wanted`` licence ids.
 
-#: A Creative Commons / public-domain id even when foley has no metadata for it
-#: (``CC-BY-SA-4.0``): asking for it is a real request this source just cannot serve.
-_LOOKS_LIKE_CC_ID = re.compile(r"cc-[a-z]|cc0|pdm")
+    ``mapping`` is the source's ``license_native`` config (licence id -> its native token,
+    several ids may share one); ``default`` is sent when nothing narrows (``wanted`` is
+    ``None``) or an id has no native token (the per-item check still narrows).
 
-
-def wanted_license_ids(config: dict, license: Optional[str]) -> "Optional[list[str]]":
-    """The licence ids a ``license=`` request keeps, or ``None`` for every accepted one.
-
-    ``license`` is an explicit licence id (``QUERY_AFFORDANCES['license']``), matched
-    case-insensitively against the source's ``accepted_license_ids``; ``'cc0'`` is the
-    historical alias for the source's ``cc0_license_ids``, and a family prefix with a dash, such as
-    ``'cc-by'``, keeps every accepted id of that family (``CC-BY-3.0``, ``CC-BY-4.0``).
-    ``None``, ``'any'`` and a value that is no licence id at all (``'user-owned'`` aside,
-    e.g. ``'public-domain'``) do not narrow, with a warning for the last (the historical
-    "anything but ``'cc0'``" behaviour). A real licence id the source does not accept
-    gives ``[]``, so nothing is returned: fail closed, never silently broader.
-
-    >>> cfg = {"license": {"accepted_license_ids": ["CC0-1.0", "CC-BY-4.0"],
-    ...                    "cc0_license_ids": ["CC0-1.0"]}}
-    >>> wanted_license_ids(cfg, "cc0"), wanted_license_ids(cfg, "CC-BY-4.0")
-    (['CC0-1.0'], ['CC-BY-4.0'])
-    >>> wanted_license_ids(cfg, "cc-by"), wanted_license_ids(cfg, None), wanted_license_ids(cfg, "gpl")
-    (['CC-BY-4.0'], None, [])
+    >>> m = {"CC0-1.0": "cc0", "CC-BY-3.0": "by", "CC-BY-4.0": "by"}
+    >>> native_license_filter(["CC-BY-3.0", "CC-BY-4.0"], m, default="cc0,by,pdm")
+    'by'
+    >>> native_license_filter(None, m, default="cc0,by,pdm")
+    'cc0,by,pdm'
     """
-    asked = "" if license is None else str(license).strip().lower()
-    if asked in ("", "any"):
-        return None
-    section = config["license"]
-    if asked == "cc0":
-        return list(section["cc0_license_ids"])
-
-    def matches(license_id: str) -> bool:
-        low = license_id.lower()
-        return low == asked or ("-" in asked and low.startswith(asked + "-"))
-
-    if not (_LOOKS_LIKE_CC_ID.match(asked) or any(matches(k) for k in LICENSE_META)):
-        _log.warning(
-            "license=%r is not a licence id; not narrowing the %s search",
-            license,
-            config.get("name"),
-        )
-        return None
-    return [
-        accepted for accepted in section["accepted_license_ids"] if matches(accepted)
-    ]
+    if not wanted or any(i not in mapping for i in wanted):
+        return default
+    return ",".join(dict.fromkeys(mapping[i] for i in wanted))
 
 
 def is_cc0_only(config: dict, wanted: "Optional[list[str]]") -> bool:

@@ -34,9 +34,9 @@ from __future__ import annotations
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
-from ...licensing import ai_scope_from_gen_ai_preference
+from ...licensing import ai_scope_from_gen_ai_preference, wanted_license_ids
 from ..base import api_license, merge_provider_params, resolve_source_key
-from .._license_gate import is_cc0_only, license_for_item, wanted_license_ids
+from .._license_gate import is_cc0_only, license_for_item
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
