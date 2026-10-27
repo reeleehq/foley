@@ -93,7 +93,24 @@ FAKES = {
             "fal_thinksound",
             "fal_hunyuan_foley",
             "fal_mmaudio",
+            "fal_stable_audio_3_audio_to_audio",
+            "fal_stable_audio_3_inpaint",
+            "fal_stable_audio_3_extend",
         )
+    },
+}
+
+#: What a call of each mode needs besides the prompt and the seed: a V2A call its
+#: picture, an edit (#162) its source clip and its op's parameters.
+_MODE_INPUTS = {
+    "v2a": lambda config: {"video": "https://x/shot.mp4"},
+    "edit": lambda config: {
+        "audio": "https://x/take.wav",
+        **{
+            "audio_to_audio": {"strength": 0.5},
+            "inpaint": {"inpaint_start_s": 0.5, "inpaint_end_s": 1.0},
+            "extend": {"extend_after_s": 1.0},
+        }[config["edit_op"]],
     },
 }
 
@@ -128,8 +145,10 @@ def test_same_seed_same_bytes_different_seed_different_bytes(
     name, tmp_path, monkeypatch
 ):
     adapter = FAKES[name](tmp_path=tmp_path, monkeypatch=monkeypatch)
-    v2a = "v2a" in (getattr(adapter, "config", {}).get("modes") or ())
-    extra = {"video": "https://x/shot.mp4"} if v2a else {}  # a V2A call needs its picture
+    config = getattr(adapter, "config", {})
+    extra = {}  # a V2A call needs its picture, an edit its source clip
+    for mode in config.get("modes") or ():
+        extra.update(_MODE_INPUTS.get(mode, lambda config: {})(config))
     clips = [adapter.generate("a door creak", seed=seed, **extra) for seed in (7, 7, 8)]
     first, again, other = (clip.audio_bytes for clip in clips)
     assert first == again

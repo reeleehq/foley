@@ -87,11 +87,23 @@ DEFAULT_V2A_ORDER = ("fal_mirelo_v2a", "fal_sonilo_v2a")
 #: backends: one variable cannot hold a default for both.
 V2A_ORDER_ENV = "FOLEY_V2A_ORDER"
 
-#: The generation modes: text-to-audio and video-to-audio.
-GENERATION_MODES = ("t2a", "v2a")
+#: The generation modes: text-to-audio, video-to-audio, and an edit of a source clip
+#: (#162: audio-to-audio, inpaint, extend; see :func:`foley.edit`).
+GENERATION_MODES = ("t2a", "v2a", "edit")
+
+#: The input that puts a call in each non-text mode, in precedence order (a video wins).
+MODE_INPUTS = {"v2a": "video", "edit": "audio"}
 
 #: Env var opting in to the paid entries of :data:`DEFAULT_GENERATE_ORDER` (``1``).
 GENERATE_PAID_ENV = "FOLEY_GENERATE_PAID"
+
+#: Per mode, the env vars whose setting names that mode's backends (and so opts in to
+#: paying for them). An edit has none: name its backend, or set $FOLEY_GENERATE_PAID.
+_MODE_ORDER_ENVS = {
+    "t2a": (GENERATE_BACKEND_ENV, GENERATE_ORDER_ENV),
+    "v2a": (V2A_ORDER_ENV,),
+    "edit": (),
+}
 
 
 def paid_generation_opted_in(*, mode: str = "t2a") -> bool:
@@ -100,18 +112,13 @@ def paid_generation_opted_in(*, mode: str = "t2a") -> bool:
     Yes when the operator said so: ``$FOLEY_GENERATE_PAID=1`` (any mode), or an order
     or a backend named for that mode (text-to-audio: ``$FOLEY_GENERATE_ORDER`` /
     ``$FOLEY_GENERATE_BACKEND``; video-to-audio: ``$FOLEY_V2A_ORDER``), which opts in
-    that mode only. A provider key in the environment is not consent to spend (#58):
-    keys are set for other tools too.
+    that mode only. An edit has no order variable. A provider key in the environment
+    is not consent to spend (#58): keys are set for other tools too.
     """
     import os
 
     # Naming the backends of one mode's order is consent for that mode only (#74).
-    named = (
-        (V2A_ORDER_ENV,)
-        if mode == "v2a"
-        else (GENERATE_BACKEND_ENV, GENERATE_ORDER_ENV)
-    )
-    if any(os.environ.get(name) for name in named):
+    if any(os.environ.get(name) for name in _MODE_ORDER_ENVS.get(mode, ())):
         return True
     return os.environ.get(GENERATE_PAID_ENV, "").strip().lower() in ("1", "true", "yes")
 
@@ -127,12 +134,55 @@ def backend_is_paid(backend: str) -> bool:
 
 
 def generation_mode(affordances: Mapping) -> str:
-    """``'v2a'`` when the call gives a ``video``, else ``'t2a'``.
+    """``'v2a'`` when the call gives a ``video``, ``'edit'`` when it gives an ``audio``
+    (and no video), else ``'t2a'`` (see :data:`MODE_INPUTS`).
 
     >>> generation_mode({"video": "clip.mp4"}), generation_mode({"duration_s": 2})
     ('v2a', 't2a')
+    >>> generation_mode({"audio": b"RIFF"})
+    'edit'
     """
-    return "v2a" if affordances.get("video") is not None else "t2a"
+    return next(
+        (m for m, name in MODE_INPUTS.items() if affordances.get(name) is not None),
+        "t2a",
+    )
+
+
+def edit_backends(op: str) -> "tuple[str, ...]":
+    """The registered edit sources that do ``op``, in registration order (their configs'
+    ``modes`` and ``edit_op``: data, so a new edit source is found by itself).
+
+    Raises:
+        ValueError: For an op not in :data:`foley.base.EDIT_OPS`.
+    """
+    from ..base import EDIT_OPS
+    from ._dispatch import source_modes
+    from .registry import SOURCE_REGISTRY, discover_sources
+
+    if op not in EDIT_OPS:
+        raise ValueError(f"unknown edit op {op!r}; expected one of {sorted(EDIT_OPS)}")
+    discover_sources()
+    return tuple(
+        name
+        for name, entry in SOURCE_REGISTRY.items()
+        if entry["config"].get("kind") == "generate"
+        and "edit" in source_modes(entry["config"])
+        and entry["config"].get("edit_op") == op
+    )
+
+
+def default_edit_backend(op: str) -> str:
+    """The backend an unnamed :func:`foley.edit` of ``op`` uses: the first of
+    :func:`edit_backends` with its key set, else the last
+    (:func:`first_runnable_backend`).
+
+    Raises:
+        SourceConfigurationError: When no registered source does ``op``.
+    """
+    order = edit_backends(op)
+    if not order:
+        raise SourceConfigurationError(f"no registered backend does the {op} edit")
+    return first_runnable_backend(order)
 
 
 def generate_backend_order(*, mode: str = "t2a") -> "tuple[str, ...]":
@@ -147,6 +197,11 @@ def generate_backend_order(*, mode: str = "t2a") -> "tuple[str, ...]":
 
     if mode not in GENERATION_MODES:
         raise ValueError(f"mode must be one of {GENERATION_MODES}, got {mode!r}")
+    if mode == "edit":  # which backend depends on the op: foley.edit resolves it
+        raise ValueError(
+            "an edit (audio=) has no generation order: name its backend, or call "
+            "foley.edit(sound_id, op), which picks the op's default backend"
+        )
     if mode == "v2a":
         listed = os.environ.get(V2A_ORDER_ENV, "")
         names = tuple(n.strip() for n in listed.split(",") if n.strip())
@@ -255,7 +310,7 @@ _CONSENT_NOTE = "AI-training restriction acknowledged by operator (consent recor
 
 
 class GenerationError(RuntimeError):
-    """Raised by :func:`foley.generate` when a backend yields no stored sound.
+    """Raised by :func:`foley.generate` (and :func:`foley.edit`) when a backend yields no stored sound.
 
     Carries the full :class:`~foley.index.ingest.IngestReport` and the terminal
     :attr:`status` so a caller can react distinctly to ``quarantined`` (QC-rejected —
@@ -311,6 +366,30 @@ class SafetyRefusal(GenerationError):
         self.hits = hits
 
 
+class EditRefusal(GenerationError):
+    """Raised (fail-closed) by :func:`foley.edit` before anything is paid for, when the
+    source sound's rights do not allow an edit of it to be made and kept.
+
+    See :func:`foley.licensing.derivative_refusal`: unverified rights, a licence that
+    forbids modification, a share-alike licence (an edit's own licence cannot carry
+    it), or a licence foley has no row for. Its ``report`` is empty and its ``status``
+    is ``'rights_blocked'``.
+
+    Attributes:
+        source_id: The library id of the sound that was to be edited.
+        reason: Why it was refused.
+    """
+
+    def __init__(self, message: str, *, source_id: str, reason: str):
+        super().__init__(
+            message,
+            report=IngestReport(root=f"edit:{source_id}"),
+            status="rights_blocked",
+        )
+        self.source_id = source_id
+        self.reason = reason
+
+
 class TrademarkRefusal(SafetyRefusal):
     """A :class:`SafetyRefusal` for a prompt naming a trademarked audio logo (report 07 §7.2)."""
 
@@ -355,6 +434,7 @@ def _generate(
     check_prompt: bool = True,
     provider_params: Optional[dict] = None,
     variation: int = 0,
+    derived_from=None,
     **affordances,
 ) -> IngestReport:
     """Generate a sound via ``backend`` and ingest it (by-value) into ``library``.
@@ -449,10 +529,20 @@ def _generate(
         variation: Which variation of the same request this is (#161; see
             :func:`foley.variations`): ``0`` (default) is the request itself, a later
             one is a different paid request in the generations cache.
+        derived_from: For an edit (#162), what the clip derives from: an object whose
+            ``apply(lic)`` narrows the generated licence to the source's rights,
+            records the edit in its ``transformations`` and carries the source's
+            attribution (:class:`foley.sources.edit.EditLineage`, built by
+            :func:`foley.edit`). Applied to the clip's licence right after the call
+            and before the repair, the level, the watermark and the credential, so
+            the stored record says what it was made from. ``None`` (default): not an edit.
         **affordances: Unified generation affordances (``duration_s``, ``model``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format``, ``sample_rate``, ``expand_prompt`` — see
-            :data:`foley.base.GENERATION_AFFORDANCES`).
+            :data:`foley.base.GENERATION_AFFORDANCES`; and an edit's ``audio``,
+            ``strength``, ``inpaint_start_s`` / ``inpaint_end_s``,
+            ``extend_before_s`` / ``extend_after_s`` — see
+            :data:`foley.base.EDIT_AFFORDANCES`).
 
     Returns:
         An :class:`~foley.index.ingest.IngestReport` — inspect ``.ingested`` for the
@@ -546,6 +636,8 @@ def _generate(
         return _error_report(report, backend, exc)
 
     lic = clip.candidate.sound.license
+    if derived_from is not None:  # an edit: the source's rights and credit carry over
+        derived_from.apply(lic)
 
     # Warn-mode: reaching here with a flagged scan means on_flagged='warn'. Stamp the
     # safety flags on the record so the fail-closed keep() gate drops it downstream.
@@ -1046,6 +1138,7 @@ _GENERATE_KNOWN = frozenset(
         "check_prompt",
         "provider_params",
         "variation",
+        "derived_from",
     }
 )
 

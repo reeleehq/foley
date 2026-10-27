@@ -57,6 +57,7 @@ from .registry import (
 from .generate import (
     GenerationError,
     RecognizableVoiceRefusal,
+    EditRefusal,
     SafetyRefusal,
     TrademarkRefusal,
     candidate_of,
@@ -97,6 +98,7 @@ __all__ = [
     "generate",
     "candidate_of",
     "GenerationError",
+    "EditRefusal",
     # generation safety refusals (#9b)
     "SafetyRefusal",
     "TrademarkRefusal",
