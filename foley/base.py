@@ -23,6 +23,7 @@ import json
 import typing
 from dataclasses import dataclass, field
 from enum import Enum
+from collections.abc import Mapping
 from typing import Any, Iterable, Optional, Union
 
 SCHEMA_VERSION: int = 1
@@ -307,6 +308,10 @@ def _decode(tp: Any, value: Any) -> Any:
 
     Returns:
         The value coerced to ``tp`` (or unchanged when no coercion applies).
+
+    Raises:
+        TypeError: A container field given a string or an object, or a dataclass field
+            given anything but an object: JSON that is not this type's (#194).
     """
     if value is None:
         return None
@@ -315,6 +320,8 @@ def _decode(tp: Any, value: Any) -> Any:
         args = [a for a in typing.get_args(tp) if a is not type(None)]
         return _decode(args[0], value) if len(args) == 1 else value
     if origin in (list, set, tuple):
+        if isinstance(value, (str, bytes, Mapping)) or not isinstance(value, Iterable):
+            raise TypeError(f"expected a list for {tp}, got {type(value).__name__}")
         args = typing.get_args(tp)
         item_tp = args[0] if args else object
         seq = [_decode(item_tp, v) for v in value]
@@ -322,6 +329,10 @@ def _decode(tp: Any, value: Any) -> Any:
     if isinstance(tp, type) and issubclass(tp, Enum):
         return tp(value)
     if dataclasses.is_dataclass(tp):
+        if not isinstance(value, Mapping):
+            raise TypeError(
+                f"expected an object for {tp.__name__}, got {type(value).__name__}"
+            )
         return tp.from_dict(value) if hasattr(tp, "from_dict") else tp(**value)
     return value
 

@@ -170,3 +170,62 @@ def test_a_reserved_parameter_name_is_refused(monkeypatch):
     monkeypatch.setattr(mcp, "VERBS", (*mcp.VERBS, mcp.Verb(foley_route)))
     with pytest.raises(ValueError, match="reserved"):
         cli.build_parser()
+
+
+# #194: a bad timeline or item id is an "ok": false row on both surfaces, never a raise
+
+
+_ITEM = {"id": "a", "clip_ref": "s", "onset": "0"}
+
+
+@pytest.mark.parametrize("call", [
+    lambda: mcp.foley_toggle({"items": []}, "zz", True),
+    lambda: mcp.foley_set_gain({"items": [_ITEM]}, "zz", -3.0),
+    lambda: mcp.foley_swap_clip({"items": [_ITEM]}, "zz", "t"),
+    lambda: mcp.foley_nudge([], "a", 0.5),
+    lambda: mcp.foley_nudge({"items": "abc"}, "a", 0.5),
+    lambda: mcp.foley_set_master({"master": "x"}),
+    lambda: mcp.foley_set_master("not a timeline"),
+    lambda: mcp.foley_timeline_captions({"items": [5]}),
+    lambda: mcp.foley_timeline_captions({"items": [{**_ITEM, "placement": "x"}]}),
+    lambda: mcp.foley_timeline_captions({"items": []}, fmt="xyz"),
+    lambda: mcp.foley_weave("text", []),
+], ids=["toggle", "set-gain", "swap-clip", "nudge-list", "nudge-str-items",
+        "master-str", "master-not-obj", "captions-int-item", "captions-str-placement",
+        "captions-fmt", "weave"])
+def test_a_bad_timeline_is_an_invalid_row(call):
+    out = call()
+    assert out["ok"] is False and out["status"] == "invalid" and out["error"]
+
+
+def test_weave_refuses_a_clip_the_library_does_not_hold(fake_embedder):
+    from foley.index import MemoryIndex, SoundLibrary
+
+    idx = MemoryIndex(dim=fake_embedder.dim)
+    mcp._configure(library=SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx,
+                                        embedder=fake_embedder))
+    out = mcp.foley_weave("text", {"items": [_ITEM]})
+    assert out["status"] == "invalid" and out["error"] == (
+        "clip_ref(s) not in the library: ['s']")
+
+
+def test_the_cli_exits_1_on_a_bad_item_id_with_no_traceback(capsys):
+    assert cli.main(["toggle", '{"items": []}', "zz", "true"]) == 1
+    error = json.loads(capsys.readouterr().out)["error"]
+    assert error == "no timeline item with id/clip_ref 'zz'"  # unquoted KeyError
+    assert cli.main(["timeline-captions", '{"items": [5]}']) == 1
+
+
+def test_the_install_hint_reads_foley_s_metadata_and_never_misleads(monkeypatch):
+    import importlib.metadata as md
+
+    monkeypatch.setattr(md, "requires", lambda dist: [
+        "requests ; extra == 'freesound'", "pyloudnorm ; extra == 'test'",
+        "numpy ; extra == 'audio'", "py2mcp ; extra == \"mcp\""])
+    hint = cli._missing_dep_hint
+    assert "foley[freesound]" in hint(ImportError("x", name="requests"))
+    assert "foley[mcp]" in hint(ImportError("x", name="py2mcp"))
+    assert "foley[audio]" in hint(ImportError("x", name="numpy"))
+    oracle = hint(ImportError("install it via 'pip install pyloudnorm'", name="pyloudnorm"))
+    assert "pip install pyloudnorm" in oracle and "foley[" not in oracle  # a test extra
+    assert "reinstall foley" in hint(ImportError("x", name="foley.weave.nope"))

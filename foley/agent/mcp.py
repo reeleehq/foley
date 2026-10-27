@@ -540,18 +540,65 @@ def foley_plan(
 def foley_weave(narration: str, timeline: dict, session: str = "default") -> dict:
     """Render a timeline under the narration; returns the mix by store key + captions + credits."""
     from .. import weave as _weave
+
+    try:
+        tl = _timeline_of(timeline)
+    except (TypeError, ValueError) as exc:  # the input, not the render: a JSON row
+        return _invalid(exc)
+    lib = _lib()
+    missing = sorted(
+        {it.clip_ref for it in tl.items if not _in_library(lib, it.clip_ref)}
+    )
+    if missing:
+        return _invalid(ValueError(f"clip_ref(s) not in the library: {missing}"))
+    return _weave_result_row(_weave(narration, tl, library=lib))
+
+
+def _in_library(lib, sound_id: str) -> bool:
+    try:
+        lib[sound_id]
+    except KeyError:
+        return False
+    return True
+
+
+def _timeline_of(timeline):
+    """The :class:`~foley.base.SoundDesignTimeline` a tool was given as JSON.
+
+    Raises:
+        TypeError: If it is not a JSON object (a list, a string), or its fields are
+            not a timeline's.
+    """
     from ..base import SoundDesignTimeline
 
-    result = _weave(narration, SoundDesignTimeline.from_dict(timeline), library=_lib())
-    return _weave_result_row(result)
+    if not isinstance(timeline, dict):
+        raise TypeError(
+            f"timeline must be a JSON object (a timeline's to_dict()), got "
+            f"{type(timeline).__name__}"
+        )
+    return SoundDesignTimeline.from_dict(timeline)
+
+
+def _invalid_on_bad_input(fn):
+    """A pure timeline tool answers a bad timeline or item id with an ``invalid`` row
+    (#194): its ``KeyError`` / ``TypeError`` / ``ValueError`` can only be the input's."""
+    import functools
+
+    @functools.wraps(fn)
+    def tool(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except (KeyError, TypeError, ValueError) as exc:
+            return _invalid(exc)
+
+    return tool
 
 
 def _tl_op(op, timeline: dict, *args) -> dict:
-    from ..base import SoundDesignTimeline
-
-    return op(SoundDesignTimeline.from_dict(timeline), *args).to_dict()
+    return op(_timeline_of(timeline), *args).to_dict()
 
 
+@_invalid_on_bad_input
 def foley_swap_clip(timeline: dict, item_id: str, sound_id: str) -> dict:
     """Swap a timeline item's clip; returns the new timeline."""
     from ..weave.timeline import swap_clip
@@ -559,6 +606,7 @@ def foley_swap_clip(timeline: dict, item_id: str, sound_id: str) -> dict:
     return _tl_op(swap_clip, timeline, item_id, sound_id)
 
 
+@_invalid_on_bad_input
 def foley_set_gain(timeline: dict, item_id: str, gain_db: float) -> dict:
     """Set a timeline item's gain (dB); returns the new timeline."""
     from ..weave.timeline import set_gain
@@ -566,6 +614,7 @@ def foley_set_gain(timeline: dict, item_id: str, gain_db: float) -> dict:
     return _tl_op(set_gain, timeline, item_id, gain_db)
 
 
+@_invalid_on_bad_input
 def foley_nudge(timeline: dict, item_id: str, delta_s: float) -> dict:
     """Shift a timeline item's onset by ``delta_s`` seconds; returns the new timeline."""
     from ..weave.timeline import nudge
@@ -573,6 +622,7 @@ def foley_nudge(timeline: dict, item_id: str, delta_s: float) -> dict:
     return _tl_op(nudge, timeline, item_id, delta_s)
 
 
+@_invalid_on_bad_input
 def foley_toggle(timeline: dict, item_id: str, enabled: bool) -> dict:
     """Mute/unmute a timeline item; returns the new timeline."""
     from ..weave.timeline import toggle
@@ -580,6 +630,7 @@ def foley_toggle(timeline: dict, item_id: str, enabled: bool) -> dict:
     return _tl_op(toggle, timeline, item_id, enabled)
 
 
+@_invalid_on_bad_input
 def foley_set_master(
     timeline: dict,
     target_lufs: Optional[float] = None,
@@ -590,7 +641,7 @@ def foley_set_master(
     Either field may be set independently — omitting one keeps the podcast default for
     that field (so ``peak_dbfs=-2.0`` alone tightens only the true-peak ceiling).
     """
-    from ..base import MasterProfile, SoundDesignTimeline
+    from ..base import MasterProfile
     from ..weave.timeline import set_master
 
     if target_lufs is None and peak_dbfs is None:
@@ -600,15 +651,17 @@ def foley_set_master(
             target_lufs=target_lufs if target_lufs is not None else -16.0,
             true_peak_db=peak_dbfs if peak_dbfs is not None else -1.0,
         )
-    return set_master(SoundDesignTimeline.from_dict(timeline), profile).to_dict()
+    return set_master(_timeline_of(timeline), profile).to_dict()
 
 
+@_invalid_on_bad_input
 def foley_timeline_captions(timeline: dict, fmt: str = "vtt") -> dict:
     """Export SDH captions for a timeline (``fmt='vtt'`` | ``'srt'``)."""
-    from ..base import SoundDesignTimeline
     from ..weave.timeline import to_srt, to_webvtt
 
-    tl = SoundDesignTimeline.from_dict(timeline)
+    if fmt not in ("vtt", "srt"):
+        raise ValueError(f"fmt must be 'vtt' or 'srt', got {fmt!r}")
+    tl = _timeline_of(timeline)
     return {"vtt": to_webvtt(tl)} if fmt == "vtt" else {"srt": to_srt(tl)}
 
 
@@ -696,7 +749,8 @@ Call foley_capabilities() to see what's installed/degraded here.
 
 def _invalid(exc: Exception) -> dict:
     """The JSON row of an argument the tool refuses (a tool never raises for one)."""
-    return {"ok": False, "status": "invalid", "error": str(exc)}
+    message = exc.args[0] if isinstance(exc, KeyError) and exc.args else str(exc)
+    return {"ok": False, "status": "invalid", "error": str(message)}
 
 
 def foley_guide() -> dict:
