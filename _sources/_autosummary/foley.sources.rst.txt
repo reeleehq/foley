@@ -41,6 +41,7 @@ foley.sources
    .. autosummary::
    
       GenerationError
+      EditRefusal
       SafetyRefusal
       TrademarkRefusal
       RecognizableVoiceRefusal
@@ -55,6 +56,7 @@ foley.sources
    bbc_remarc
    capabilities
    clotho
+   edit
    elevenlabs
    fal
    foleyset

@@ -46,11 +46,12 @@ Three adapter kinds share the one ingest pipeline: the narrow **bulk-corpus**
 
 ### Exceptions
 
-| [`GenerationError`](#foley.sources.GenerationError)(message, \*, report, status)     | Raised by [`foley.generate()`](foley.html.md#foley.generate) when a backend yields no stored sound.        |
-|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| [`SafetyRefusal`](#foley.sources.SafetyRefusal)(message, \*, hits, report)         | Raised (fail-closed) when a generation prompt trips a #9b safety gate.                                                                   |
-| [`TrademarkRefusal`](#foley.sources.TrademarkRefusal)(message, \*, hits, report)      | A [`SafetyRefusal`](#foley.sources.SafetyRefusal) for a prompt naming a trademarked audio logo (report 07 §7.2).          |
-| [`RecognizableVoiceRefusal`](#foley.sources.RecognizableVoiceRefusal)(message, \*, hits, ...) | A [`SafetyRefusal`](#foley.sources.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1). |
+| [`GenerationError`](#foley.sources.GenerationError)(message, \*, report, status)     | Raised by [`foley.generate()`](foley.html.md#foley.generate) (and [`foley.edit()`](foley.html.md#foley.edit)) when a backend yields no stored sound.                                                                                                                                          |
+|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`EditRefusal`](#foley.sources.EditRefusal)(message, \*, source_id, reason)      | Raised (fail-closed) by an edit ([`foley.edit()`](foley.html.md#foley.edit), or [`foley.generate()`](foley.html.md#foley.generate) with an edit backend and `audio=`) before anything is paid for, when the source's rights do not allow an edit of it to be made and kept, or are not given. |
+| [`SafetyRefusal`](#foley.sources.SafetyRefusal)(message, \*, hits, report)         | Raised (fail-closed) when a generation prompt trips a #9b safety gate.                                                                                                                                                                                                                                                                                    |
+| [`TrademarkRefusal`](#foley.sources.TrademarkRefusal)(message, \*, hits, report)      | A [`SafetyRefusal`](#foley.sources.SafetyRefusal) for a prompt naming a trademarked audio logo (report 07 §7.2).                                                                                                                                                                                                                           |
+| [`RecognizableVoiceRefusal`](#foley.sources.RecognizableVoiceRefusal)(message, \*, hits, ...) | A [`SafetyRefusal`](#foley.sources.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1).                                                                                                                                                                                                                  |
 
 ### *class* foley.sources.ClipSpec(path, source_id, meta=dict())
 
@@ -153,6 +154,27 @@ Return the fully-derived rights record for `spec` (licensing SSOT).
 
 * **Type:**
   Bootstrap ring
+
+### *exception* foley.sources.EditRefusal(message, , source_id, reason)
+
+Bases: [`GenerationError`](#foley.sources.GenerationError)
+
+Raised (fail-closed) by an edit ([`foley.edit()`](foley.html.md#foley.edit), or [`foley.generate()`](foley.html.md#foley.generate)
+with an edit backend and `audio=`) before anything is paid for, when the source’s
+rights do not allow an edit of it to be made and kept, or are not given.
+
+See [`foley.licensing.derivative_refusal()`](foley.licensing.html.md#foley.licensing.derivative_refusal): unverified rights, bytes that may
+not be sent on, a licence that forbids modification, a share-alike licence (an
+edit’s own licence cannot carry it), or a licence foley has no row for. Its
+`report` is empty and its `status` is `'rights_blocked'`.
+
+#### source_id
+
+The id of the sound that was to be edited (`None`: not known).
+
+#### reason
+
+Why it was refused.
 
 ### *class* foley.sources.Fsd50kCorpus
 
@@ -294,7 +316,7 @@ not kept in the generations cache, so a replayed clip has none.
 
 Bases: [`RuntimeError`](https://docs.python.org/3/builtins/exceptions.html#RuntimeError)
 
-Raised by [`foley.generate()`](foley.html.md#foley.generate) when a backend yields no stored sound.
+Raised by [`foley.generate()`](foley.html.md#foley.generate) (and [`foley.edit()`](foley.html.md#foley.edit)) when a backend yields no stored sound.
 
 Carries the full [`IngestReport`](foley.index.ingest.html.md#foley.index.ingest.IngestReport) and the terminal
 [`status`](#foley.sources.GenerationError.status) so a caller can react distinctly to `quarantined` (QC-rejected —
@@ -588,7 +610,7 @@ an already-registered name (e.g. a test double) is never overwritten.
 * **Returns:**
   The list of discovered source names.
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, derived_from=None, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -684,10 +706,26 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
   * **variation** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Which variation of the same request this is (#161; see
     [`foley.variations()`](foley.html.md#foley.variations)): `0` (default) is the request itself, a later
     one is a different paid request in the generations cache.
+  * **derived_from** – For an edit (#162: an edit backend given `audio=`), the source
+    clip’s [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord) (what [`foley.edit()`](foley.html.md#foley.edit) passes)
+    or its [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord). **Required** by the `edit`
+    mode, which gates it fail-closed before anything is paid for
+    ([`foley.sources.edit.edit_lineage()`](foley.sources.edit.html.md#foley.sources.edit.edit_lineage), [`EditRefusal`](#foley.sources.EditRefusal)): the edit
+    is keyed by it, and the clip’s licence is narrowed to it, records it in
+    `transformations` (and so in the credits and the content credential)
+    before the repair, the level, the watermark and the credential. A
+    byte-identical sound already in the library with wider rights is not
+    handed back as the edit (`rights_blocked`). Refused for any other mode.
+    A `SoundRecord` with a known digest must be the bytes sent; a
+    `LicenseRecord` (or a bare URL as `audio=`) is the caller’s own,
+    unchecked declaration of the clip’s rights, as `ingest(license=)` is.
   * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format`, `sample_rate`, `expand_prompt` — see
-    [`foley.base.GENERATION_AFFORDANCES`](foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).
+    [`foley.base.GENERATION_AFFORDANCES`](foley.base.html.md#foley.base.GENERATION_AFFORDANCES); and an edit’s `audio`,
+    `strength`, `inpaint_start_s` / `inpaint_end_s`,
+    `extend_before_s` / `extend_after_s` — see
+    [`foley.base.EDIT_AFFORDANCES`](foley.base.html.md#foley.base.EDIT_AFFORDANCES)).
 * **Return type:**
   [`IngestReport`](foley.index.ingest.html.md#foley.index.ingest.IngestReport)
 * **Returns:**
@@ -698,6 +736,8 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
   carries `cache_key`: where its bytes are in the generations cache.
 * **Raises:**
   * [**SafetyRefusal**](#foley.sources.SafetyRefusal) – If the prompt trips a safety gate and `on_flagged='refuse'`.
+  * [**EditRefusal**](#foley.sources.EditRefusal) – For an edit without `derived_from`, or whose source’s rights do
+        not allow it (before anything is paid for).
   * [**WatermarkUnavailable**](foley.provenance.disclosure.html.md#foley.provenance.disclosure.WatermarkUnavailable) – If `watermark=True` but `foley[provenance]` is absent.
 
 ### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
@@ -831,25 +871,26 @@ the default `rings` — it is opt-in only.
 
 ### Modules
 
-| [`base`](foley.sources.base.html.md#module-foley.sources.base)                           | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.                             |
-|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
-| [`bbc_remarc`](foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)               | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                                                |
-| [`capabilities`](foley.sources.capabilities.html.md#module-foley.sources.capabilities)           | What each live source emits, and what foley plans to support: `list_backends` + `ledger`.                  |
-| [`clotho`](foley.sources.clotho.html.md#module-foley.sources.clotho)                       | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.                               |
-| [`elevenlabs`](foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)               | ElevenLabs Sound Effects generate source (hosted; #6).                                                     |
-| [`fal`](foley.sources.fal.html.md#module-foley.sources.fal)                             | fal-hosted generate sources, executed through `falaw` (#73).                                               |
-| [`foleyset`](foley.sources.foleyset.html.md#module-foley.sources.foleyset)                   | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                                  |
-| [`freesound`](foley.sources.freesound.html.md#module-foley.sources.freesound)                 | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).                    |
-| [`fsd50k`](foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                       | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                                            |
-| [`http`](foley.sources.http.html.md#module-foley.sources.http)                           | Injectable HTTP transport for foley's live source adapters.                                                |
-| [`internet_archive`](foley.sources.internet_archive.html.md#module-foley.sources.internet_archive)   | Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (`foley[internet-archive]`). |
-| [`music_library`](foley.sources.music_library.html.md#module-foley.sources.music_library)         | Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.            |
-| [`openverse`](foley.sources.openverse.html.md#module-foley.sources.openverse)                 | Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).                        |
-| [`pull`](foley.sources.pull.html.md#module-foley.sources.pull)                           | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                                     |
-| [`registry`](foley.sources.registry.html.md#module-foley.sources.registry)                   | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).                   |
-| [`resilience`](foley.sources.resilience.html.md#module-foley.sources.resilience)               | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).                  |
-| [`sonniss`](foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                       |
-| [`stable_audio`](foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)           | Stable Audio Open 1.0 generate source (local default; #6).                                                 |
-| [`stable_audio_3`](foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3)       | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).                        |
-| [`video`](foley.sources.video.html.md#module-foley.sources.video)                         | Video inputs of video-to-audio generation (#74): what `video=` may be, its identity, its length.           |
-| [`wikimedia_commons`](foley.sources.wikimedia_commons.html.md#module-foley.sources.wikimedia_commons) | Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).                 |
+| [`base`](foley.sources.base.html.md#module-foley.sources.base)                           | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.                                   |
+|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| [`bbc_remarc`](foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)               | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                                                      |
+| [`capabilities`](foley.sources.capabilities.html.md#module-foley.sources.capabilities)           | What each live source emits, and what foley plans to support: `list_backends` + `ledger`.                        |
+| [`clotho`](foley.sources.clotho.html.md#module-foley.sources.clotho)                       | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.                                     |
+| [`edit`](foley.sources.edit.html.md#module-foley.sources.edit)                           | Edits of a sound (#162): audio-to-audio, inpaint, extend — the parts an edit adds to generation.                 |
+| [`elevenlabs`](foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)               | ElevenLabs Sound Effects generate source (hosted; #6).                                                           |
+| [`fal`](foley.sources.fal.html.md#module-foley.sources.fal)                             | fal-hosted generate sources, executed through `falaw` (#73).                                                     |
+| [`foleyset`](foley.sources.foleyset.html.md#module-foley.sources.foleyset)                   | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                                        |
+| [`freesound`](foley.sources.freesound.html.md#module-foley.sources.freesound)                 | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).                          |
+| [`fsd50k`](foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                       | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                                                  |
+| [`http`](foley.sources.http.html.md#module-foley.sources.http)                           | Injectable HTTP transport for foley's live source adapters.                                                      |
+| [`internet_archive`](foley.sources.internet_archive.html.md#module-foley.sources.internet_archive)   | Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (`foley[internet-archive]`).       |
+| [`music_library`](foley.sources.music_library.html.md#module-foley.sources.music_library)         | Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.                  |
+| [`openverse`](foley.sources.openverse.html.md#module-foley.sources.openverse)                 | Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).                              |
+| [`pull`](foley.sources.pull.html.md#module-foley.sources.pull)                           | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                                           |
+| [`registry`](foley.sources.registry.html.md#module-foley.sources.registry)                   | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).                         |
+| [`resilience`](foley.sources.resilience.html.md#module-foley.sources.resilience)               | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).                        |
+| [`sonniss`](foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                             |
+| [`stable_audio`](foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)           | Stable Audio Open 1.0 generate source (local default; #6).                                                       |
+| [`stable_audio_3`](foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3)       | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).                              |
+| [`video`](foley.sources.video.html.md#module-foley.sources.video)                         | Media inputs of generation (#74, #162): what `video=` (and an edit's `audio=`) may be, its identity, its length. |
+| [`wikimedia_commons`](foley.sources.wikimedia_commons.html.md#module-foley.sources.wikimedia_commons) | Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).                       |

@@ -41,12 +41,15 @@ Design (report 07 · 10 §\`\`provenance/
 
 ### Functions
 
-| [`attribution_line`](#foley.provenance.credits.attribution_line)(source, \*[, fmt])          | Render one sound's TASL attribution line.                                                                     |
-|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| [`credit_entry`](#foley.provenance.credits.credit_entry)(record, \*[, title])            | Build a [`CreditEntry`](#foley.provenance.credits.CreditEntry) from a record (title override optional). |
-| [`credits_for`](#foley.provenance.credits.credits_for)(sounds, \*[, title, ...])        | Build the deduplicated [`Credits`](#foley.provenance.credits.Credits) for the sounds used in a run. |
-| [`credits_manifest`](#foley.provenance.credits.credits_manifest)(credits)                    | The machine-readable manifest for `credits` — a JSON-native dict.                                             |
-| [`render_credits_md`](#foley.provenance.credits.render_credits_md)(credits, \*[, title, ...]) | Render `credits` as a deterministic `CREDITS.md` document.                                                    |
+| [`attribution_line`](#foley.provenance.credits.attribution_line)(source, \*[, fmt])          | Render one sound's TASL attribution line.                                                                                                                                       |
+|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`credit_entry`](#foley.provenance.credits.credit_entry)(record, \*[, title])            | Build a [`CreditEntry`](#foley.provenance.credits.CreditEntry) from a record (title override optional).                                                                   |
+| [`credits_for`](#foley.provenance.credits.credits_for)(sounds, \*[, title, ...])        | Build the deduplicated [`Credits`](#foley.provenance.credits.Credits) for the sounds used in a run.                                                                   |
+| [`credits_manifest`](#foley.provenance.credits.credits_manifest)(credits)                    | The machine-readable manifest for `credits` — a JSON-native dict.                                                                                                               |
+| [`derived_source`](#foley.provenance.credits.derived_source)(transformation)               | The source an edit's `transformations` entry names (see [`derived_sources()`](#foley.provenance.credits.derived_sources)), or `None` for any other entry (a repair, a level). |
+| [`derived_sources`](#foley.provenance.credits.derived_sources)(license)                     | What a clip derives from, read off its licence's `transformations` (#162).                                                                                                      |
+| [`license_display`](#foley.provenance.credits.license_display)(license)                     | The license (name, url): the record's own when populated, else the SSOT table.                                                                                                  |
+| [`render_credits_md`](#foley.provenance.credits.render_credits_md)(credits, \*[, title, ...]) | Render `credits` as a deterministic `CREDITS.md` document.                                                                                                                      |
 
 ### Classes
 
@@ -54,7 +57,7 @@ Design (report 07 · 10 §\`\`provenance/
 |------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | [`Credits`](#foley.provenance.credits.Credits)([entries, title, schema_version])     | A deduplicated, ordered collection of [`CreditEntry`](#foley.provenance.credits.CreditEntry) for one run. |
 
-### *class* foley.provenance.credits.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None)
+### *class* foley.provenance.credits.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list())
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -100,7 +103,10 @@ Render one sound’s TASL attribution line.
 
 A source-supplied `attribution_text` (if non-empty) is returned **verbatim**;
 otherwise the line is synthesized from Title/Author/Source/License, with a
-`(modified)` notice and an AI-disclosure segment appended as applicable.
+`(modified)` notice and an AI-disclosure segment appended as applicable. A clip
+made by editing another (#162) then credits its source: `; derived from` and the
+source’s own credit line (which names the source’s licence, and its own source in
+turn, for an edit of an edit).
 
 * **Parameters:**
   * **source** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`CreditEntry`](#foley.provenance.credits.CreditEntry), [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – A [`CreditEntry`](#foley.provenance.credits.CreditEntry), or any credit input (coerced first).
@@ -116,7 +122,8 @@ otherwise the line is synthesized from Title/Author/Source/License, with a
 Build a [`CreditEntry`](#foley.provenance.credits.CreditEntry) from a record (title override optional).
 
 Every field is read straight off the [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) (flags
-never re-derived); `modified` reflects a non-empty `transformations` list.
+never re-derived); `modified` reflects a non-empty `transformations` list, and
+`derived_from` the sources an edit was made from ([`derived_sources()`](#foley.provenance.credits.derived_sources)).
 
 * **Parameters:**
   * **record** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate),
@@ -155,6 +162,46 @@ the `watermark` / `c2pa_manifest_ref` pass-throughs (`None` until #9b).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.provenance.credits.derived_source(transformation)
+
+The source an edit’s `transformations` entry names (see [`derived_sources()`](#foley.provenance.credits.derived_sources)),
+or `None` for any other entry (a repair, a level).
+
+```pycon
+>>> derived_source("declick") is None
+True
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.provenance.credits.derived_sources(license)
+
+What a clip derives from, read off its licence’s `transformations` (#162).
+
+One dict per edit entry (`kind == 'edit'`, see
+[`foley.sources.edit.EditLineage`](foley.sources.edit.html.md#foley.sources.edit.EditLineage)): the source’s `sound_id`, `content`
+key, `license_id` / `license_name` / `license_url` and its `credit` line,
+so a derived clip’s credit names the source’s licence beside the generator’s.
+
+```pycon
+>>> lic = LicenseRecord(source="g", transformations=["declick", {
+...     "kind": "edit", "op": "extend", "source_id": "s1",
+...     "source_license_id": "CC-BY-NC-4.0", "source_credit": '"Door" by Bob'}])
+>>> [(d["sound_id"], d["license_id"], d["credit"]) for d in derived_sources(lic)]
+[('s1', 'CC-BY-NC-4.0', '"Door" by Bob')]
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.provenance.credits.license_display(license)
+
+The license (name, url): the record’s own when populated, else the SSOT table.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
 ### foley.provenance.credits.render_credits_md(credits, , title=None, heading_level=2)
 

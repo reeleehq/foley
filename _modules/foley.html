@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=0f58e6e2"></script>
+    <script src="../_static/documentation_options.js?v=60a9f236"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.93" />
+  <meta name="docsearch:version" content="0.0.95" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -735,6 +735,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    foley.find("She pushed open the heavy oak door; rain hammered outside.")</span>
 <span class="sd">    foley.search("distant thunder rumble", k=10)</span>
 <span class="sd">    foley.generate("a single wooden door creak", backend="stable_audio")</span>
+<span class="sd">    foley.edit(sound_id, "extend", extend_after_s=2)  # audio-to-audio | inpaint | extend</span>
 <span class="sd">    foley.ingest("~/my_sounds/")</span>
 
 <span class="sd">The design is grounded in the research reports under ``misc/docs/research/``.</span>
@@ -783,6 +784,8 @@ window.runMermaid = runMermaid;</script>
     <span class="n">trim_silence</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EDIT_AFFORDANCES</span><span class="p">,</span>
+    <span class="n">EDIT_OPS</span><span class="p">,</span>
     <span class="n">GENERATION_AFFORDANCES</span><span class="p">,</span>
     <span class="n">MASTER_PROFILES</span><span class="p">,</span>
     <span class="n">QUERY_AFFORDANCES</span><span class="p">,</span>
@@ -912,6 +915,7 @@ window.runMermaid = runMermaid;</script>
 <span class="c1"># The generate facade + its helpers. The generator adapter packages (and their</span>
 <span class="c1"># torch/requests deps) are auto-discovered lazily, so `import foley` stays dol-only.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.sources</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EditRefusal</span><span class="p">,</span>
     <span class="n">GenerationError</span><span class="p">,</span>
     <span class="n">RecognizableVoiceRefusal</span><span class="p">,</span>
     <span class="n">SafetyRefusal</span><span class="p">,</span>
@@ -1002,6 +1006,8 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"Affordance"</span><span class="p">,</span>
     <span class="s2">"QUERY_AFFORDANCES"</span><span class="p">,</span>
     <span class="s2">"GENERATION_AFFORDANCES"</span><span class="p">,</span>
+    <span class="s2">"EDIT_AFFORDANCES"</span><span class="p">,</span>
+    <span class="s2">"EDIT_OPS"</span><span class="p">,</span>
     <span class="c1"># --- base: serialization + models ----------------------------------------</span>
     <span class="s2">"SerializableMixin"</span><span class="p">,</span>
     <span class="s2">"LicenseRecord"</span><span class="p">,</span>
@@ -1134,9 +1140,11 @@ window.runMermaid = runMermaid;</script>
     <span class="c1"># --- source: generation adapters (Stable Audio Open / ElevenLabs) --------</span>
     <span class="s2">"generate"</span><span class="p">,</span>
     <span class="s2">"variations"</span><span class="p">,</span>
+    <span class="s2">"edit"</span><span class="p">,</span>
     <span class="s2">"candidate_of"</span><span class="p">,</span>
     <span class="s2">"RemoteVideo"</span><span class="p">,</span>
     <span class="s2">"GenerationError"</span><span class="p">,</span>
+    <span class="s2">"EditRefusal"</span><span class="p">,</span>
     <span class="c1"># --- provenance: generation disclosure / watermark / safety (#9b) --------</span>
     <span class="s2">"SafetyRefusal"</span><span class="p">,</span>
     <span class="s2">"TrademarkRefusal"</span><span class="p">,</span>
@@ -1422,6 +1430,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">intended_use</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">provider_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">variation</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">derived_from</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Generate a sound effect for ``prompt`` and add it to the library (by-value).</span>
@@ -1521,11 +1530,20 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            (default) is the request itself; a later one is a different paid request</span>
 <span class="sd">            in the generations cache, so it is a new sound even from a backend that</span>
 <span class="sd">            takes no seed. :func:`variations` sets it; most callers never do.</span>
+<span class="sd">        derived_from: For an edit (an edit backend given ``audio=``), the source</span>
+<span class="sd">            clip's :class:`SoundRecord` or :class:`LicenseRecord`: **required** — an</span>
+<span class="sd">            edit without it is refused (:class:`EditRefusal`), as one whose rights</span>
+<span class="sd">            do not allow it, before anything is paid for. The clip's licence is</span>
+<span class="sd">            narrowed to it and records it (credits, content credential).</span>
+<span class="sd">            :func:`edit` passes it; ``None`` (default): a new sound.</span>
 <span class="sd">        **affordances: Unified generation affordances (``duration_s``, ``model``,</span>
 <span class="sd">            ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,</span>
 <span class="sd">            ``output_format``, ``sample_rate``, ``expand_prompt``, ``video`` — see</span>
 <span class="sd">            :data:`GENERATION_AFFORDANCES`). A ``video`` given as a bare remote URL is</span>
-<span class="sd">            never replayed from the cache; :class:`RemoteVideo` keys it by content.</span>
+<span class="sd">            never replayed from the cache; :class:`RemoteVideo` keys it by content. An</span>
+<span class="sd">            edit backend takes ``audio`` (the source clip, with ``derived_from=`` its</span>
+<span class="sd">            rights) and the op's parameters (:data:`EDIT_AFFORDANCES`); for a library</span>
+<span class="sd">            sound, :func:`edit` does both.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The stored :class:`Candidate` (``origin=generated``) — its ``sound`` is the</span>
@@ -1608,6 +1626,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">check_prompt</span><span class="o">=</span><span class="n">check_prompt</span><span class="p">,</span>
             <span class="n">provider_params</span><span class="o">=</span><span class="n">by_backend</span><span class="p">,</span>
             <span class="n">variation</span><span class="o">=</span><span class="n">variation</span><span class="p">,</span>
+            <span class="n">derived_from</span><span class="o">=</span><span class="n">derived_from</span><span class="p">,</span>
             <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="n">results</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span>
@@ -1743,6 +1762,97 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">adapter</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span>
         <span class="nb">isinstance</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="ow">or</span> <span class="n">backend</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"auto"</span><span class="p">)</span>
     <span class="p">)</span>
+
+
+<div class="viewcode-block" id="edit">
+<a class="viewcode-back" href="../_autosummary/foley.html#foley.edit">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">backend</span><span class="p">:</span> <span class="s2">"str | None"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">library</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">budget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Edit a library sound into a new one: audio-to-audio, inpaint or extend (#162).</span>
+
+<span class="sd">    An edit is a generation whose input includes the source clip (the ``edit`` mode),</span>
+<span class="sd">    so it runs through :func:`generate` (cost gate, budget, generations cache, safety</span>
+<span class="sd">    screen, watermark, QC, ingest by-value) with the source's bytes as ``audio=`` and</span>
+<span class="sd">    its record as ``derived_from=``. Before anything is paid for, the op and its</span>
+<span class="sd">    parameters are checked (a window inside the clip) and the source's rights are</span>
+<span class="sd">    gated **fail-closed** (:func:`foley.licensing.derivative_refusal`: verified,</span>
+<span class="sd">    sendable bytes, modifiable, not share-alike, a known licence). The new sound's</span>
+<span class="sd">    licence is the generator's narrowed to the source's (an edit of a non-commercial</span>
+<span class="sd">    sound is non-commercial); its ``transformations`` record the edit (op, parameters,</span>
+<span class="sd">    source id, content and licence), so :func:`credits` credits the source and its</span>
+<span class="sd">    licence beside the generator's, and its content credential declares the source as</span>
+<span class="sd">    an ingredient.</span>
+
+<span class="sd">    ``foley.edit(sound_id, "extend", extend_after_s=2)`` — with paid generation</span>
+<span class="sd">    opted in (``$FOLEY_GENERATE_PAID=1``), or a backend named — is the whole call.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        source: The library id of the sound to edit; its bytes come from the library.</span>
+<span class="sd">        op: ``'audio_to_audio'`` (regenerate the whole clip; ``strength`` 0..1, how</span>
+<span class="sd">            far from the source, 1.0 being pure generation), ``'inpaint'`` (regenerate</span>
+<span class="sd">            ``inpaint_start_s``..``inpaint_end_s``, keep the rest) or ``'extend'``</span>
+<span class="sd">            (``extend_before_s`` and/or ``extend_after_s`` seconds of new sound). See</span>
+<span class="sd">            :data:`EDIT_OPS`.</span>
+<span class="sd">        prompt: What the result should sound like; ``''`` (default): the source's caption.</span>
+<span class="sd">        backend: An edit source doing ``op`` (``'fal_stable_audio_3_audio_to_audio'``,</span>
+<span class="sd">            ``'fal_stable_audio_3_inpaint'``, ``'fal_stable_audio_3_extend'``: fal's</span>
+<span class="sd">            Stable Audio 3 Small-SFX, ``foley[fal]`` + ``$FAL_KEY``). ``None``</span>
+<span class="sd">            (default): the op's default, read from the registry configs' ``edit_op``;</span>
+<span class="sd">            it is paid, so it runs only once paid generation is opted in.</span>
+<span class="sd">        library: The library holding ``source`` and receiving the edit (default: the</span>
+<span class="sd">            process-wide default library).</span>
+<span class="sd">        budget: A :class:`Budget` for this call (see :func:`generate`).</span>
+<span class="sd">        **kwargs: The op's parameters (:data:`EDIT_AFFORDANCES`), other generation</span>
+<span class="sd">            affordances the backend takes (``seed``, ``negative_prompt``, ``steps``,</span>
+<span class="sd">            ``duration_s`` for audio-to-audio: default the source's length), and any</span>
+<span class="sd">            other keyword of :func:`generate` (``adapter=``, ``store=``, ``level=``, …).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The stored :class:`Candidate` (``origin=generated``), as :func:`generate`.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: For an unknown op, a missing, foreign or out-of-range op</span>
+<span class="sd">            parameter, an ``audio=`` or ``derived_from=``, or a backend that does</span>
+<span class="sd">            another op.</span>
+<span class="sd">        KeyError: If ``source`` is not in the library.</span>
+<span class="sd">        EditRefusal: If the source's rights do not allow an edit, or its bytes may not</span>
+<span class="sd">            be sent on (a Freesound API pull); nothing is generated.</span>
+<span class="sd">        LookupError: If the source's bytes are not on this machine (a remote</span>
+<span class="sd">            by-reference sound: fetch it first).</span>
+<span class="sd">        SourceConfigurationError: For an unnamed paid backend without the opt-in.</span>
+<span class="sd">        GenerationError: As :func:`generate`, when the backend yields no stored sound</span>
+<span class="sd">            (``rights_blocked``: a byte-identical sound with wider rights is stored).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.edit</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_edit</span>
+
+    <span class="n">lib</span> <span class="o">=</span> <span class="n">library</span> <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_library</span><span class="p">()</span>
+    <span class="n">call</span> <span class="o">=</span> <span class="n">resolve_edit</span><span class="p">(</span>
+        <span class="n">source</span><span class="p">,</span>
+        <span class="n">op</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="p">,</span>
+        <span class="n">library</span><span class="o">=</span><span class="n">lib</span><span class="p">,</span>
+        <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span>
+        <span class="n">adapter</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"adapter"</span><span class="p">),</span>
+        <span class="n">affordances</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">generate</span><span class="p">(</span>
+        <span class="n">call</span><span class="o">.</span><span class="n">prompt</span><span class="p">,</span>
+        <span class="n">backend</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">backend</span><span class="p">,</span>
+        <span class="n">library</span><span class="o">=</span><span class="n">lib</span><span class="p">,</span>
+        <span class="n">budget</span><span class="o">=</span><span class="n">budget</span><span class="p">,</span>
+        <span class="n">derived_from</span><span class="o">=</span><span class="n">call</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+        <span class="n">audio</span><span class="o">=</span><span class="n">lib</span><span class="o">.</span><span class="n">audio</span><span class="p">(</span><span class="n">source</span><span class="p">),</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_with_call_facts</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>

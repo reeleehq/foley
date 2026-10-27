@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=0f58e6e2"></script>
+    <script src="../_static/documentation_options.js?v=60a9f236"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.93" />
+  <meta name="docsearch:version" content="0.0.95" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -402,6 +402,7 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.bbc_remarc.html">foley.sources.bbc_remarc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.capabilities.html">foley.sources.capabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.clotho.html">foley.sources.clotho</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.edit.html">foley.sources.edit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.elevenlabs.html">foley.sources.elevenlabs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.fal.html">foley.sources.fal</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.foleyset.html">foley.sources.foleyset</a></li>
@@ -562,14 +563,20 @@ item is redistributable but stored by-reference.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.checked_refusal_reason" title="foley.licensing.checked_refusal_reason"><code class="xref py py-obj docutils literal notranslate"><span class="pre">checked_refusal_reason</span></code></a>(record, intended_use)</p></td>
 <td><p><a class="reference internal" href="#foley.licensing.refusal_reason" title="foley.licensing.refusal_reason"><code class="xref py py-func docutils literal notranslate"><span class="pre">refusal_reason()</span></code></a>, fail-closed: an error while checking is itself a reason.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.derive_license_flags" title="foley.licensing.derive_license_flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derive_license_flags</span></code></a>(license_id, *[, overrides])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.derivative_refusal" title="foley.licensing.derivative_refusal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derivative_refusal</span></code></a>(source)</p></td>
+<td><p>Why a sound with rights <code class="docutils literal notranslate"><span class="pre">source</span></code> may not be edited into a new sound, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.derive_license_flags" title="foley.licensing.derive_license_flags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">derive_license_flags</span></code></a>(license_id, *[, overrides])</p></td>
 <td><p>Look up the flag set for a <code class="docutils literal notranslate"><span class="pre">license_id</span></code> (fail-closed fallback), then apply per-source overrides.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.intended_use_for" title="foley.licensing.intended_use_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intended_use_for</span></code></a>([intended_use, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.intended_use_for" title="foley.licensing.intended_use_for"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intended_use_for</span></code></a>([intended_use, ...])</p></td>
 <td><p>The rights intent a verb runs under — every verb and surface resolves it here (#63).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.is_cc_license_token" title="foley.licensing.is_cc_license_token"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_cc_license_token</span></code></a>(token)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.is_cc_license_token" title="foley.licensing.is_cc_license_token"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_cc_license_token</span></code></a>(token)</p></td>
 <td><p>Whether <code class="docutils literal notranslate"><span class="pre">token</span></code> is a search constraint a CC-reading source understands.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.is_share_alike" title="foley.licensing.is_share_alike"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_share_alike</span></code></a>(license_id)</p></td>
+<td><p>Whether <code class="docutils literal notranslate"><span class="pre">license_id</span></code> (or a licence URL / label) is share-alike.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.keep" title="foley.licensing.keep"><code class="xref py py-obj docutils literal notranslate"><span class="pre">keep</span></code></a>(record, intended_use)</p></td>
 <td><p>Fail-closed candidate license gate (report 07 §8.2).</p></td>
@@ -583,17 +590,26 @@ item is redistributable but stored by-reference.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.license_meta" title="foley.licensing.license_meta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">license_meta</span></code></a>(license_id)</p></td>
 <td><p>Return the display <a class="reference internal" href="#foley.licensing.LicenseMeta" title="foley.licensing.LicenseMeta"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseMeta</span></code></a> for <code class="docutils literal notranslate"><span class="pre">license_id</span></code> (fail-closed fallback).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.refusal_reason" title="foley.licensing.refusal_reason"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refusal_reason</span></code></a>(record, intended_use)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.narrow_to_source" title="foley.licensing.narrow_to_source"><code class="xref py py-obj docutils literal notranslate"><span class="pre">narrow_to_source</span></code></a>(output, source)</p></td>
+<td><p>Narrow <code class="docutils literal notranslate"><span class="pre">output</span></code>'s rights to what <code class="docutils literal notranslate"><span class="pre">source</span></code> allows, in place (never widening).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.refusal_reason" title="foley.licensing.refusal_reason"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refusal_reason</span></code></a>(record, intended_use)</p></td>
 <td><p>Why <a class="reference internal" href="#foley.licensing.keep" title="foley.licensing.keep"><code class="xref py py-func docutils literal notranslate"><span class="pre">keep()</span></code></a> refuses <code class="docutils literal notranslate"><span class="pre">record</span></code> for <code class="docutils literal notranslate"><span class="pre">intended_use</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if it keeps it.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.refusals" title="foley.licensing.refusals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refusals</span></code></a>(sound_records, intended_use)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.refusals" title="foley.licensing.refusals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">refusals</span></code></a>(sound_records, intended_use)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">{sound</span> <span class="pre">id:</span> <span class="pre">reason}</span></code> for each sound record <a class="reference internal" href="#foley.licensing.keep" title="foley.licensing.keep"><code class="xref py py-func docutils literal notranslate"><span class="pre">keep()</span></code></a> refuses for <code class="docutils literal notranslate"><span class="pre">intended_use</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.territory_excluded" title="foley.licensing.territory_excluded"><code class="xref py py-obj docutils literal notranslate"><span class="pre">territory_excluded</span></code></a>(excluded, territory)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.territory_excluded" title="foley.licensing.territory_excluded"><code class="xref py py-obj docutils literal notranslate"><span class="pre">territory_excluded</span></code></a>(excluded, territory)</p></td>
 <td><p>Whether <code class="docutils literal notranslate"><span class="pre">territory</span></code> is in <code class="docutils literal notranslate"><span class="pre">excluded</span></code> (<code class="docutils literal notranslate"><span class="pre">&quot;EU&quot;</span></code> covers its member states).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.upload_refusal" title="foley.licensing.upload_refusal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">upload_refusal</span></code></a>(source)</p></td>
+<td><p>Why the bytes of a sound with rights <code class="docutils literal notranslate"><span class="pre">source</span></code> may not be sent to an edit backend, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.licensing.wanted_license_ids" title="foley.licensing.wanted_license_ids"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wanted_license_ids</span></code></a>(config, license)</p></td>
 <td><p>The licence ids a <code class="docutils literal notranslate"><span class="pre">license=</span></code> request keeps, or <code class="docutils literal notranslate"><span class="pre">None</span></code> for every accepted one.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.licensing.wider_rights" title="foley.licensing.wider_rights"><code class="xref py py-obj docutils literal notranslate"><span class="pre">wider_rights</span></code></a>(record, bound)</p></td>
+<td><p>What <code class="docutils literal notranslate"><span class="pre">record</span></code> allows that <code class="docutils literal notranslate"><span class="pre">bound</span></code> does not (<code class="docutils literal notranslate"><span class="pre">[]</span></code>: no wider than <code class="docutils literal notranslate"><span class="pre">bound</span></code>).</p></td>
 </tr>
 </tbody>
 </table>
@@ -842,6 +858,35 @@ reason, so no caller can keep a sound whose licence it could not read.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.licensing.derivative_refusal">
+<span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">derivative_refusal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#derivative_refusal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.derivative_refusal" title="Link to this definition">#</a></dt>
+<dd><p>Why a sound with rights <code class="docutils literal notranslate"><span class="pre">source</span></code> may not be edited into a new sound, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p>The fail-closed gate of an edit (#162), applied by the generation’s <code class="docutils literal notranslate"><span class="pre">edit</span></code> mode
+before anything is paid for. The first unmet requirement: its rights are verified;
+its bytes may be sent on (<a class="reference internal" href="#foley.licensing.upload_refusal" title="foley.licensing.upload_refusal"><code class="xref py py-func docutils literal notranslate"><span class="pre">upload_refusal()</span></code></a>); its licence is not share-alike
+(the edit’s own licence, the generator’s, cannot carry it); its licence has a
+<a class="reference internal" href="#foley.licensing.LICENSE_FLAGS" title="foley.licensing.LICENSE_FLAGS"><code class="xref py py-data docutils literal notranslate"><span class="pre">LICENSE_FLAGS</span></code></a> row (else the edit’s rights cannot be derived); it allows
+modification; it excludes no territory (which the edit’s record could not carry).
+Every other restriction carries over to the edit (<a class="reference internal" href="#foley.licensing.narrow_to_source" title="foley.licensing.narrow_to_source"><code class="xref py py-func docutils literal notranslate"><span class="pre">narrow_to_source()</span></code></a>).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">foley.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ok</span> <span class="o">=</span> <span class="n">apply_license_flags</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"x"</span><span class="p">,</span> <span class="n">license_id</span><span class="o">=</span><span class="s2">"CC-BY-4.0"</span><span class="p">,</span>
+<span class="gp">... </span>                                       <span class="n">rights_verified</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">derivative_refusal</span><span class="p">(</span><span class="n">ok</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">derivative_refusal</span><span class="p">(</span><span class="n">apply_license_flags</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"x"</span><span class="p">,</span>
+<span class="gp">... </span>                                                     <span class="n">license_id</span><span class="o">=</span><span class="s2">"research-only"</span><span class="p">,</span>
+<span class="gp">... </span>                                                     <span class="n">rights_verified</span><span class="o">=</span><span class="kc">True</span><span class="p">)))</span>
+<span class="go">'its licence does not allow modification'</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.licensing.derive_license_flags">
 <span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">derive_license_flags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">license_id</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">overrides</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#derive_license_flags"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.derive_license_flags" title="Link to this definition">#</a></dt>
 <dd><p>Look up the flag set for a <code class="docutils literal notranslate"><span class="pre">license_id</span></code> (fail-closed fallback), then
@@ -898,6 +943,24 @@ alpha-2 code, or <code class="docutils literal notranslate"><span class="pre">&q
 <p><code class="docutils literal notranslate"><span class="pre">None</span></code>/<code class="docutils literal notranslate"><span class="pre">'any'</span></code> (no constraint), <code class="docutils literal notranslate"><span class="pre">'cc0'</span></code>, or a CC / public-domain licence id or
 family (<code class="docutils literal notranslate"><span class="pre">'CC-BY-4.0'</span></code>, <code class="docutils literal notranslate"><span class="pre">'cc-by'</span></code>, <code class="docutils literal notranslate"><span class="pre">'PDM-1.0'</span></code>). Not an ingest-time rights
 assertion such as <code class="docutils literal notranslate"><span class="pre">'user-owned'</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.licensing.is_share_alike">
+<span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">is_share_alike</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">license_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#is_share_alike"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.is_share_alike" title="Link to this definition">#</a></dt>
+<dd><p>Whether <code class="docutils literal notranslate"><span class="pre">license_id</span></code> (or a licence URL / label) is share-alike.</p>
+<p>Read with the same tokens <a class="reference internal" href="#foley.licensing.license_id_from_cc_url" title="foley.licensing.license_id_from_cc_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">license_id_from_cc_url()</span></code></a> refuses share-alike by: no
+<a class="reference internal" href="#foley.licensing.LICENSE_FLAGS" title="foley.licensing.LICENSE_FLAGS"><code class="xref py py-data docutils literal notranslate"><span class="pre">LICENSE_FLAGS</span></code></a> row is share-alike (the mapper sends every such licence to
+<code class="docutils literal notranslate"><span class="pre">'unknown'</span></code>), so this catches an id stamped by hand or by a source.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_share_alike</span><span class="p">(</span><span class="s2">"CC-BY-SA-4.0"</span><span class="p">),</span> <span class="n">is_share_alike</span><span class="p">(</span><span class="s2">"CC-BY-4.0"</span><span class="p">),</span> <span class="n">is_share_alike</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+<span class="go">(True, False, False)</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
@@ -1005,6 +1068,33 @@ unrecognized / <code class="docutils literal notranslate"><span class="pre">Prop
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.licensing.narrow_to_source">
+<span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">narrow_to_source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#narrow_to_source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.narrow_to_source" title="Link to this definition">#</a></dt>
+<dd><p>Narrow <code class="docutils literal notranslate"><span class="pre">output</span></code>’s rights to what <code class="docutils literal notranslate"><span class="pre">source</span></code> allows, in place (never widening).</p>
+<p>An edit is a derivative of its source: it may be used only where both the
+generator’s licence and the source’s allow. Each permission of
+<code class="xref py py-data docutils literal notranslate"><span class="pre">_DERIVATIVE_SHARED_FLAGS</span></code> is kept only when both hold it, attribution is
+required when either requires it, the revenue cap is the lower one, the AI-use
+scope is the stricter one, and the source’s required notice, stated AI-use
+preference and safety flags carry over. <code class="docutils literal notranslate"><span class="pre">cache_bytes_ok</span></code> stays the output’s (it
+is about storing the new bytes). Routed through <a class="reference internal" href="#foley.licensing.apply_license_flags" title="foley.licensing.apply_license_flags"><code class="xref py py-func docutils literal notranslate"><span class="pre">apply_license_flags()</span></code></a>, so the
+flags still come from the policy layer, never set by hand.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">foley.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">out</span> <span class="o">=</span> <span class="n">apply_license_flags</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"g"</span><span class="p">,</span> <span class="n">license_id</span><span class="o">=</span><span class="s2">"Stability-Community"</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">src</span> <span class="o">=</span> <span class="n">apply_license_flags</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"s"</span><span class="p">,</span> <span class="n">license_id</span><span class="o">=</span><span class="s2">"CC-BY-NC-4.0"</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">narrowed</span> <span class="o">=</span> <span class="n">narrow_to_source</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">src</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">narrowed</span><span class="o">.</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">narrowed</span><span class="o">.</span><span class="n">requires_attribution</span><span class="p">,</span> <span class="n">narrowed</span><span class="o">.</span><span class="n">revenue_cap_usd</span>
+<span class="go">(False, True, 1000000)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.licensing.refusal_reason">
 <span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">refusal_reason</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intended_use</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#refusal_reason"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.refusal_reason" title="Link to this definition">#</a></dt>
 <dd><p>Why <a class="reference internal" href="#foley.licensing.keep" title="foley.licensing.keep"><code class="xref py py-func docutils literal notranslate"><span class="pre">keep()</span></code></a> refuses <code class="docutils literal notranslate"><span class="pre">record</span></code> for <code class="docutils literal notranslate"><span class="pre">intended_use</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if it keeps it.</p>
@@ -1055,6 +1145,26 @@ does one that is not a country code: the gate fails closed.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.licensing.upload_refusal">
+<span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">upload_refusal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#upload_refusal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.upload_refusal" title="Link to this definition">#</a></dt>
+<dd><p>Why the bytes of a sound with rights <code class="docutils literal notranslate"><span class="pre">source</span></code> may not be sent to an edit backend, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cache_bytes_ok</span></code> is the source’s terms on its bytes (a Freesound API pull is
+by-reference even under CC0): bytes foley may not keep, it does not upload either.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">foley.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">upload_refusal</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"x"</span><span class="p">,</span> <span class="n">cache_bytes_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span> <span class="ow">is</span> <span class="kc">None</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">upload_refusal</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"freesound"</span><span class="p">))[:</span><span class="mi">30</span><span class="p">]</span>
+<span class="go">'its bytes may not be kept or s'</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.licensing.wanted_license_ids">
 <span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">wanted_license_ids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">license</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#wanted_license_ids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.wanted_license_ids" title="Link to this definition">#</a></dt>
 <dd><p>The licence ids a <code class="docutils literal notranslate"><span class="pre">license=</span></code> request keeps, or <code class="docutils literal notranslate"><span class="pre">None</span></code> for every accepted one.</p>
@@ -1076,6 +1186,29 @@ gives <code class="docutils literal notranslate"><span class="pre">[]</span></co
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.licensing.wider_rights">
+<span class="sig-prename descclassname"><span class="pre">foley.licensing.</span></span><span class="sig-name descname"><span class="pre">wider_rights</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">record</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bound</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/licensing.html#wider_rights"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.licensing.wider_rights" title="Link to this definition">#</a></dt>
+<dd><p>What <code class="docutils literal notranslate"><span class="pre">record</span></code> allows that <code class="docutils literal notranslate"><span class="pre">bound</span></code> does not (<code class="docutils literal notranslate"><span class="pre">[]</span></code>: no wider than <code class="docutils literal notranslate"><span class="pre">bound</span></code>).</p>
+<p>A permission of <code class="xref py py-data docutils literal notranslate"><span class="pre">_DERIVATIVE_SHARED_FLAGS</span></code> it holds and <code class="docutils literal notranslate"><span class="pre">bound</span></code> lacks, an
+attribution or a notice <code class="docutils literal notranslate"><span class="pre">bound</span></code> requires and it does not, a higher (or no)
+revenue cap, a looser AI-use scope, a voice or trademark flag <code class="docutils literal notranslate"><span class="pre">bound</span></code> raises
+and it does not, another stated AI-use preference. How an edit tells that a byte-identical sound
+already in the library is not the edit it made (see <a class="reference internal" href="#foley.licensing.narrow_to_source" title="foley.licensing.narrow_to_source"><code class="xref py py-func docutils literal notranslate"><span class="pre">narrow_to_source()</span></code></a>).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">foley.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">nc</span> <span class="o">=</span> <span class="n">apply_license_flags</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"s"</span><span class="p">,</span> <span class="n">license_id</span><span class="o">=</span><span class="s2">"CC-BY-NC-4.0"</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">by</span> <span class="o">=</span> <span class="n">apply_license_flags</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"s"</span><span class="p">,</span> <span class="n">license_id</span><span class="o">=</span><span class="s2">"CC-BY-4.0"</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">wider_rights</span><span class="p">(</span><span class="n">by</span><span class="p">,</span> <span class="n">nc</span><span class="p">),</span> <span class="n">wider_rights</span><span class="p">(</span><span class="n">nc</span><span class="p">,</span> <span class="n">by</span><span class="p">)</span>
+<span class="go">(['commercial_ok', 'ai_training_ok'], [])</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1147,17 +1280,22 @@ gives <code class="docutils literal notranslate"><span class="pre">[]</span></co
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.apply_license_flags"><code class="docutils literal notranslate"><span class="pre">apply_license_flags()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.cc_refused_terms"><code class="docutils literal notranslate"><span class="pre">cc_refused_terms()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.checked_refusal_reason"><code class="docutils literal notranslate"><span class="pre">checked_refusal_reason()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.derivative_refusal"><code class="docutils literal notranslate"><span class="pre">derivative_refusal()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.derive_license_flags"><code class="docutils literal notranslate"><span class="pre">derive_license_flags()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.intended_use_for"><code class="docutils literal notranslate"><span class="pre">intended_use_for()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.is_cc_license_token"><code class="docutils literal notranslate"><span class="pre">is_cc_license_token()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.is_share_alike"><code class="docutils literal notranslate"><span class="pre">is_share_alike()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.keep"><code class="docutils literal notranslate"><span class="pre">keep()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.keep_sound"><code class="docutils literal notranslate"><span class="pre">keep_sound()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.license_id_from_cc_url"><code class="docutils literal notranslate"><span class="pre">license_id_from_cc_url()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.license_meta"><code class="docutils literal notranslate"><span class="pre">license_meta()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.narrow_to_source"><code class="docutils literal notranslate"><span class="pre">narrow_to_source()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.refusal_reason"><code class="docutils literal notranslate"><span class="pre">refusal_reason()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.refusals"><code class="docutils literal notranslate"><span class="pre">refusals()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.territory_excluded"><code class="docutils literal notranslate"><span class="pre">territory_excluded()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.upload_refusal"><code class="docutils literal notranslate"><span class="pre">upload_refusal()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.wanted_license_ids"><code class="docutils literal notranslate"><span class="pre">wanted_license_ids()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.licensing.wider_rights"><code class="docutils literal notranslate"><span class="pre">wider_rights()</span></code></a></li>
 </ul>
   </nav></div>
 

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=0f58e6e2"></script>
+    <script src="../_static/documentation_options.js?v=60a9f236"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.93" />
+  <meta name="docsearch:version" content="0.0.95" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -402,6 +402,7 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.bbc_remarc.html">foley.sources.bbc_remarc</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.capabilities.html">foley.sources.capabilities</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.clotho.html">foley.sources.clotho</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.edit.html">foley.sources.edit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.elevenlabs.html">foley.sources.elevenlabs</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.fal.html">foley.sources.fal</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.sources.foleyset.html">foley.sources.foleyset</a></li>
@@ -538,10 +539,13 @@ dependency-light.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.disclosure.C2PA_CREATED" title="foley.provenance.disclosure.C2PA_CREATED"><code class="xref py py-obj docutils literal notranslate"><span class="pre">C2PA_CREATED</span></code></a></p></td>
 <td><p>C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.disclosure.TRADEMARK_REGISTRY" title="foley.provenance.disclosure.TRADEMARK_REGISTRY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TRADEMARK_REGISTRY</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.disclosure.INGREDIENT_SOURCE_KEY" title="foley.provenance.disclosure.INGREDIENT_SOURCE_KEY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">INGREDIENT_SOURCE_KEY</span></code></a></p></td>
+<td><p>The key under which an edit's source ingredient carries what foley knows of it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.disclosure.TRADEMARK_REGISTRY" title="foley.provenance.disclosure.TRADEMARK_REGISTRY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TRADEMARK_REGISTRY</span></code></a></p></td>
 <td><p>Seed registry of branded audio logos foley must not knowingly generate for commercial use (report 07 §7.2).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY" title="foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">INGREDIENT_CREDENTIAL_KEY</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY" title="foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">INGREDIENT_CREDENTIAL_KEY</span></code></a></p></td>
 <td><p>The one key under which an ingredient carries foley's full per-sound credential.</p></td>
 </tr>
 </tbody>
@@ -562,16 +566,19 @@ dependency-light.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.disclosure.build_mix_credential" title="foley.provenance.disclosure.build_mix_credential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_mix_credential</span></code></a>(records, *, asset_id, ...)</p></td>
 <td><p>Build the MIX-level C2PA-shaped content credential (report 07 / #9b), as re-asserted by <code class="docutils literal notranslate"><span class="pre">weave.reassert_provenance</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.disclosure.detect_watermark" title="foley.provenance.disclosure.detect_watermark"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detect_watermark</span></code></a>(audio_bytes)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.disclosure.describe_transformation" title="foley.provenance.disclosure.describe_transformation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">describe_transformation</span></code></a>(transformation)</p></td>
+<td><p>A <code class="docutils literal notranslate"><span class="pre">transformations</span></code> entry as one readable line (a C2PA <code class="docutils literal notranslate"><span class="pre">c2pa.edited</span></code> description): a string as is, an edit of another sound (#162) by its op, source and parameters, any other mapping as <code class="docutils literal notranslate"><span class="pre">key=value</span></code> pairs.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.disclosure.detect_watermark" title="foley.provenance.disclosure.detect_watermark"><code class="xref py py-obj docutils literal notranslate"><span class="pre">detect_watermark</span></code></a>(audio_bytes)</p></td>
 <td><p>Detect a foley watermark in <code class="docutils literal notranslate"><span class="pre">audio_bytes</span></code> (lazy AudioSeal).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.disclosure.resolve_watermarker" title="foley.provenance.disclosure.resolve_watermarker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_watermarker</span></code></a>(watermark, watermarker)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.disclosure.resolve_watermarker" title="foley.provenance.disclosure.resolve_watermarker"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_watermarker</span></code></a>(watermark, watermarker)</p></td>
 <td><p>Resolve the effective <a class="reference internal" href="#foley.provenance.disclosure.Watermarker" title="foley.provenance.disclosure.Watermarker"><code class="xref py py-class docutils literal notranslate"><span class="pre">Watermarker</span></code></a> for a generate call.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.disclosure.scan_prompt" title="foley.provenance.disclosure.scan_prompt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scan_prompt</span></code></a>(prompt)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.disclosure.scan_prompt" title="foley.provenance.disclosure.scan_prompt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scan_prompt</span></code></a>(prompt)</p></td>
 <td><p>Scan a generation <code class="docutils literal notranslate"><span class="pre">prompt</span></code> for trademarked-audio-logo + voice-clone risk.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.provenance.disclosure.write_content_credential" title="foley.provenance.disclosure.write_content_credential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_content_credential</span></code></a>(store, asset_id, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.provenance.disclosure.write_content_credential" title="foley.provenance.disclosure.write_content_credential"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_content_credential</span></code></a>(store, asset_id, ...)</p></td>
 <td><p>Write <code class="docutils literal notranslate"><span class="pre">credential</span></code> into <code class="docutils literal notranslate"><span class="pre">store</span></code> keyed by <code class="docutils literal notranslate"><span class="pre">asset_id</span></code>; return <code class="docutils literal notranslate"><span class="pre">asset_id</span></code>.</p></td>
 </tr>
 </tbody>
@@ -674,6 +681,12 @@ content-hash id reproducible so a byte-identical regeneration still dedups
 </dd></dl>
 
 <dl class="py data">
+<dt class="sig sig-object py" id="foley.provenance.disclosure.INGREDIENT_SOURCE_KEY">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.disclosure.</span></span><span class="sig-name descname"><span class="pre">INGREDIENT_SOURCE_KEY</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'foley_source'</span></span><a class="headerlink" href="#foley.provenance.disclosure.INGREDIENT_SOURCE_KEY" title="Link to this definition">#</a></dt>
+<dd><p>The key under which an edit’s source ingredient carries what foley knows of it.</p>
+</dd></dl>
+
+<dl class="py data">
 <dt class="sig sig-object py" id="foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA">
 <span class="sig-prename descclassname"><span class="pre">foley.provenance.disclosure.</span></span><span class="sig-name descname"><span class="pre">IPTC_TRAINED_ALGORITHMIC_MEDIA</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia'</span></span><a class="headerlink" href="#foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA" title="Link to this definition">#</a></dt>
 <dd><p>IPTC digitalSourceType vocabulary (C2PA <code class="docutils literal notranslate"><span class="pre">c2pa.actions</span></code> assertion).</p>
@@ -708,7 +721,7 @@ content-hash id reproducible so a byte-identical regeneration still dedups
 
 <dl class="py data">
 <dt class="sig sig-object py" id="foley.provenance.disclosure.TRADEMARK_REGISTRY">
-<span class="sig-prename descclassname"><span class="pre">foley.provenance.disclosure.</span></span><span class="sig-name descname"><span class="pre">TRADEMARK_REGISTRY</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.provenance.disclosure.TrademarkEntry" title="foley.provenance.disclosure.TrademarkEntry"><span class="pre">TrademarkEntry</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(TrademarkEntry(canonical='THX</span> <span class="pre">Deep</span> <span class="pre">Note',</span> <span class="pre">aliases=frozenset({'deep</span> <span class="pre">note',</span> <span class="pre">'thx'})),</span> <span class="pre">TrademarkEntry(canonical='NBC</span> <span class="pre">chimes',</span> <span class="pre">aliases=frozenset({'nbc</span> <span class="pre">chime',</span> <span class="pre">'nbc</span> <span class="pre">three-note',</span> <span class="pre">'nbc</span> <span class="pre">chimes'})),</span> <span class="pre">TrademarkEntry(canonical='Netflix</span> <span class="pre">Ta-dum',</span> <span class="pre">aliases=frozenset({'netflix</span> <span class="pre">chime',</span> <span class="pre">'netflix</span> <span class="pre">sound',</span> <span class="pre">'ta-dum',</span> <span class="pre">'netflix</span> <span class="pre">intro',</span> <span class="pre">'tudum',</span> <span class="pre">'ta</span> <span class="pre">dum'})),</span> <span class="pre">TrademarkEntry(canonical='MGM</span> <span class="pre">lion</span> <span class="pre">roar',</span> <span class="pre">aliases=frozenset({'mgm</span> <span class="pre">lion',</span> <span class="pre">'mgm</span> <span class="pre">roar',</span> <span class="pre">'metro-goldwyn-mayer</span> <span class="pre">lion'})),</span> <span class="pre">TrademarkEntry(canonical='20th</span> <span class="pre">Century</span> <span class="pre">Fox</span> <span class="pre">fanfare',</span> <span class="pre">aliases=frozenset({'20th</span> <span class="pre">century</span> <span class="pre">fox</span> <span class="pre">fanfare',</span> <span class="pre">'fox</span> <span class="pre">fanfare',</span> <span class="pre">'century</span> <span class="pre">fox</span> <span class="pre">intro'})),</span> <span class="pre">TrademarkEntry(canonical='Intel</span> <span class="pre">five-note</span> <span class="pre">bong',</span> <span class="pre">aliases=frozenset({'intel</span> <span class="pre">bong',</span> <span class="pre">'intel</span> <span class="pre">jingle',</span> <span class="pre">'intel</span> <span class="pre">inside',</span> <span class="pre">'intel</span> <span class="pre">chime'})),</span> <span class="pre">TrademarkEntry(canonical=&quot;Homer</span> <span class="pre">Simpson</span> <span class="pre">D'oh&quot;,</span> <span class="pre">aliases=frozenset({'homer</span> <span class="pre">simpson</span> <span class="pre">doh',</span> <span class="pre">&quot;d'oh&quot;,</span> <span class="pre">'homer</span> <span class="pre">doh'})))</span></span><a class="headerlink" href="#foley.provenance.disclosure.TRADEMARK_REGISTRY" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.disclosure.</span></span><span class="sig-name descname"><span class="pre">TRADEMARK_REGISTRY</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#foley.provenance.disclosure.TrademarkEntry" title="foley.provenance.disclosure.TrademarkEntry"><span class="pre">TrademarkEntry</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(TrademarkEntry(canonical='THX</span> <span class="pre">Deep</span> <span class="pre">Note',</span> <span class="pre">aliases=frozenset({'thx',</span> <span class="pre">'deep</span> <span class="pre">note'})),</span> <span class="pre">TrademarkEntry(canonical='NBC</span> <span class="pre">chimes',</span> <span class="pre">aliases=frozenset({'nbc</span> <span class="pre">chimes',</span> <span class="pre">'nbc</span> <span class="pre">three-note',</span> <span class="pre">'nbc</span> <span class="pre">chime'})),</span> <span class="pre">TrademarkEntry(canonical='Netflix</span> <span class="pre">Ta-dum',</span> <span class="pre">aliases=frozenset({'tudum',</span> <span class="pre">'netflix</span> <span class="pre">intro',</span> <span class="pre">'ta-dum',</span> <span class="pre">'netflix</span> <span class="pre">sound',</span> <span class="pre">'netflix</span> <span class="pre">chime',</span> <span class="pre">'ta</span> <span class="pre">dum'})),</span> <span class="pre">TrademarkEntry(canonical='MGM</span> <span class="pre">lion</span> <span class="pre">roar',</span> <span class="pre">aliases=frozenset({'metro-goldwyn-mayer</span> <span class="pre">lion',</span> <span class="pre">'mgm</span> <span class="pre">lion',</span> <span class="pre">'mgm</span> <span class="pre">roar'})),</span> <span class="pre">TrademarkEntry(canonical='20th</span> <span class="pre">Century</span> <span class="pre">Fox</span> <span class="pre">fanfare',</span> <span class="pre">aliases=frozenset({'fox</span> <span class="pre">fanfare',</span> <span class="pre">'20th</span> <span class="pre">century</span> <span class="pre">fox</span> <span class="pre">fanfare',</span> <span class="pre">'century</span> <span class="pre">fox</span> <span class="pre">intro'})),</span> <span class="pre">TrademarkEntry(canonical='Intel</span> <span class="pre">five-note</span> <span class="pre">bong',</span> <span class="pre">aliases=frozenset({'intel</span> <span class="pre">jingle',</span> <span class="pre">'intel</span> <span class="pre">chime',</span> <span class="pre">'intel</span> <span class="pre">inside',</span> <span class="pre">'intel</span> <span class="pre">bong'})),</span> <span class="pre">TrademarkEntry(canonical=&quot;Homer</span> <span class="pre">Simpson</span> <span class="pre">D'oh&quot;,</span> <span class="pre">aliases=frozenset({&quot;d'oh&quot;,</span> <span class="pre">'homer</span> <span class="pre">doh',</span> <span class="pre">'homer</span> <span class="pre">simpson</span> <span class="pre">doh'})))</span></span><a class="headerlink" href="#foley.provenance.disclosure.TRADEMARK_REGISTRY" title="Link to this definition">#</a></dt>
 <dd><p>Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
 casefolded trigger substrings. Extend freely — this is a best-effort aid, not a
@@ -851,6 +864,28 @@ declared as a <code class="docutils literal notranslate"><span class="pre">compo
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.provenance.disclosure.describe_transformation">
+<span class="sig-prename descclassname"><span class="pre">foley.provenance.disclosure.</span></span><span class="sig-name descname"><span class="pre">describe_transformation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transformation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/provenance/disclosure.html#describe_transformation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.provenance.disclosure.describe_transformation" title="Link to this definition">#</a></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">transformations</span></code> entry as one readable line (a C2PA <code class="docutils literal notranslate"><span class="pre">c2pa.edited</span></code>
+description): a string as is, an edit of another sound (#162) by its op, source and
+parameters, any other mapping as <code class="docutils literal notranslate"><span class="pre">key=value</span></code> pairs.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">describe_transformation</span><span class="p">(</span><span class="s2">"declick"</span><span class="p">)</span>
+<span class="go">'declick'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">describe_transformation</span><span class="p">({</span><span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"edit"</span><span class="p">,</span> <span class="s2">"op"</span><span class="p">:</span> <span class="s2">"extend"</span><span class="p">,</span> <span class="s2">"source_id"</span><span class="p">:</span> <span class="s2">"s1"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">"source_license_id"</span><span class="p">:</span> <span class="s2">"CC-BY-4.0"</span><span class="p">,</span> <span class="s2">"params"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"extend_after_s"</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">}})</span>
+<span class="go">'extend of s1 (CC-BY-4.0): extend_after_s=2.0'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">describe_transformation</span><span class="p">({</span><span class="s2">"gain_db"</span><span class="p">:</span> <span class="o">-</span><span class="mi">3</span><span class="p">,</span> <span class="s2">"target"</span><span class="p">:</span> <span class="s2">"dialogue"</span><span class="p">})</span>
+<span class="go">'gain_db=-3, target=dialogue'</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.provenance.disclosure.detect_watermark">
 <span class="sig-prename descclassname"><span class="pre">foley.provenance.disclosure.</span></span><span class="sig-name descname"><span class="pre">detect_watermark</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio_bytes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/provenance/disclosure.html#detect_watermark"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.provenance.disclosure.detect_watermark" title="Link to this definition">#</a></dt>
 <dd><p>Detect a foley watermark in <code class="docutils literal notranslate"><span class="pre">audio_bytes</span></code> (lazy AudioSeal).</p>
@@ -987,6 +1022,7 @@ cloud <code class="docutils literal notranslate"><span class="pre">dol</span></c
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.C2PA_CREATED"><code class="docutils literal notranslate"><span class="pre">C2PA_CREATED</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.DEFAULT_WATERMARK_MESSAGE"><code class="docutils literal notranslate"><span class="pre">DEFAULT_WATERMARK_MESSAGE</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY"><code class="docutils literal notranslate"><span class="pre">INGREDIENT_CREDENTIAL_KEY</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.INGREDIENT_SOURCE_KEY"><code class="docutils literal notranslate"><span class="pre">INGREDIENT_SOURCE_KEY</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA"><code class="docutils literal notranslate"><span class="pre">IPTC_TRAINED_ALGORITHMIC_MEDIA</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.PromptScan"><code class="docutils literal notranslate"><span class="pre">PromptScan</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.PromptScan.contains_recognizable_voice"><code class="docutils literal notranslate"><span class="pre">PromptScan.contains_recognizable_voice</span></code></a></li>
@@ -1006,6 +1042,7 @@ cloud <code class="docutils literal notranslate"><span class="pre">dol</span></c
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.as_c2pa_ingredient"><code class="docutils literal notranslate"><span class="pre">as_c2pa_ingredient()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.build_content_credential"><code class="docutils literal notranslate"><span class="pre">build_content_credential()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.build_mix_credential"><code class="docutils literal notranslate"><span class="pre">build_mix_credential()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.describe_transformation"><code class="docutils literal notranslate"><span class="pre">describe_transformation()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.detect_watermark"><code class="docutils literal notranslate"><span class="pre">detect_watermark()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.resolve_watermarker"><code class="docutils literal notranslate"><span class="pre">resolve_watermarker()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.provenance.disclosure.scan_prompt"><code class="docutils literal notranslate"><span class="pre">scan_prompt()</span></code></a></li>

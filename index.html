@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="_static/documentation_options.js?v=0f58e6e2"></script>
+    <script src="_static/documentation_options.js?v=60a9f236"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.93" />
+  <meta name="docsearch:version" content="0.0.95" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -401,6 +401,10 @@ for what’s next. Follow along in <a class="reference internal" href="#misc/doc
     <span class="n">intended_use</span><span class="o">=</span><span class="n">use</span><span class="p">,</span>
 <span class="p">)</span>
 
+<span class="c1"># Edit a library sound (fal Stable Audio 3; paid): audio_to_audio (strength=), inpaint</span>
+<span class="c1"># (inpaint_start_s=, inpaint_end_s=) or extend; its licence gates the edit and carries over</span>
+<span class="n">clip</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">sound_id</span><span class="p">,</span> <span class="s2">"extend"</span><span class="p">,</span> <span class="s2">"the door slams shut"</span><span class="p">,</span> <span class="n">extend_after_s</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
 <span class="c1"># Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)</span>
 <span class="n">foley</span><span class="o">.</span><span class="n">ingest</span><span class="p">(</span><span class="s2">"~/my_sounds/"</span><span class="p">,</span> <span class="n">license</span><span class="o">=</span><span class="s2">"user-owned"</span><span class="p">)</span>  <span class="c1"># omit it and rights stay unknown</span>
 <span class="n">foley</span><span class="o">.</span><span class="n">add_from</span><span class="p">(</span>
@@ -449,13 +453,25 @@ drive the agent, a CLI, and external hosts.</p>
 <section id="music-libraries">
 <h2>Music libraries<a class="headerlink" href="#music-libraries" title="Link to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">foley.sources.music_library</span></code> acquires the free tracks a production credits (Kevin MacLeod’s incompetech is built in; the paid Artlist and Epidemic Sound give wishlist rows, never downloads). Each title is fetched politely through foley’s transport (paced per host, <code class="docutils literal notranslate"><span class="pre">429</span></code> / <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> honoured), from the library’s server and then the Internet Archive’s raw copy (a <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> longer than the cap moves on to the archive instead of waiting), checked to be audio (an audio stream and a duration), and recorded with a <code class="docutils literal notranslate"><span class="pre">LicenseRecord</span></code> read from the library’s licence URL. Before anything is fetched, each title’s licence goes through foley’s fail-closed gate for <code class="docutils literal notranslate"><span class="pre">intended_use=</span></code> (default: commercial publishing): a title it refuses, such as one under a NonCommercial licence, is a <code class="docutils literal notranslate"><span class="pre">refused</span></code> row and is not downloaded. Needs <code class="docutils literal notranslate"><span class="pre">foley[music-library]</span></code> and <code class="docutils literal notranslate"><span class="pre">ffprobe</span></code>.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">foley.sources.music_library</span><span class="w"> </span><span class="kn">import</span> <span class="n">acquire</span><span class="p">,</span> <span class="n">attribution_text</span><span class="p">,</span> <span class="n">kept_digests</span><span class="p">,</span> <span class="n">titles_by_library</span><span class="p">,</span> <span class="n">tracks_table</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">foley.sources.music_library</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">acquire</span><span class="p">,</span>
+    <span class="n">attribution_text</span><span class="p">,</span>
+    <span class="n">kept_digests</span><span class="p">,</span>
+    <span class="n">titles_by_library</span><span class="p">,</span>
+    <span class="n">tracks_table</span><span class="p">,</span>
+<span class="p">)</span>
 
-<span class="n">titles</span> <span class="o">=</span> <span class="n">titles_by_library</span><span class="p">(</span><span class="n">video_description</span><span class="p">)[</span><span class="s2">"incompetech"</span><span class="p">]</span>  <span class="c1"># or a list / {title: {metadata}}</span>
-<span class="n">rows</span> <span class="o">=</span> <span class="n">acquire</span><span class="p">(</span><span class="s2">"incompetech"</span><span class="p">,</span> <span class="n">titles</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="s2">"audio/macleod"</span><span class="p">)</span>      <span class="c1"># one row per title: acquired / failed / refused</span>
-<span class="n">table</span> <span class="o">=</span> <span class="n">tracks_table</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>                                      <span class="c1"># CSV; row.row() is the JSON-safe dict</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">attribution_text</span><span class="p">(</span><span class="n">rows</span><span class="p">))</span>                                   <span class="c1"># the blocks to paste under the video</span>
-<span class="n">rows</span> <span class="o">=</span> <span class="n">acquire</span><span class="p">(</span><span class="s2">"incompetech"</span><span class="p">,</span> <span class="n">titles</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="s2">"audio/macleod"</span><span class="p">,</span> <span class="n">kept</span><span class="o">=</span><span class="n">kept_digests</span><span class="p">(</span><span class="n">table</span><span class="p">))</span>  <span class="c1"># a rerun fetches only what is missing</span>
+<span class="n">titles</span> <span class="o">=</span> <span class="n">titles_by_library</span><span class="p">(</span><span class="n">video_description</span><span class="p">)[</span>
+    <span class="s2">"incompetech"</span>
+<span class="p">]</span>  <span class="c1"># or a list / {title: {metadata}}</span>
+<span class="n">rows</span> <span class="o">=</span> <span class="n">acquire</span><span class="p">(</span>
+    <span class="s2">"incompetech"</span><span class="p">,</span> <span class="n">titles</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="s2">"audio/macleod"</span>
+<span class="p">)</span>  <span class="c1"># one row per title: acquired / failed / refused</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">tracks_table</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>  <span class="c1"># CSV; row.row() is the JSON-safe dict</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">attribution_text</span><span class="p">(</span><span class="n">rows</span><span class="p">))</span>  <span class="c1"># the blocks to paste under the video</span>
+<span class="n">rows</span> <span class="o">=</span> <span class="n">acquire</span><span class="p">(</span>
+    <span class="s2">"incompetech"</span><span class="p">,</span> <span class="n">titles</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="s2">"audio/macleod"</span><span class="p">,</span> <span class="n">kept</span><span class="o">=</span><span class="n">kept_digests</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+<span class="p">)</span>  <span class="c1"># a rerun fetches only what is missing</span>
 </pre></div>
 </div>
 </section>
@@ -564,7 +580,7 @@ what’s degraded. Full docs: <strong><a class="reference external" href="https:
 </section>
 </section>
 
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-27 18:04 UTC from <a href="https://github.com/reeleehq/foley/commit/5aaceebcab1d4e0365f81610106f10176ec4c6b4">5aaceeb</a> (main) · foley 0.0.93 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-27 18:14 UTC from <a href="https://github.com/reeleehq/foley/commit/f8ffee5a4dbffe056ecf8b3dd36f745a69408151">f8ffee5</a> (main) · foley 0.0.95 · <a href="about-this-build.html">about this build</a></p>
 
                 </article>
               

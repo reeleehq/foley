@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=0f58e6e2"></script>
+    <script src="../../_static/documentation_options.js?v=60a9f236"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.93" />
+  <meta name="docsearch:version" content="0.0.95" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -737,6 +737,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">typing</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
@@ -873,6 +874,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            the old name raises a ``TypeError`` naming this one (see</span>
 <span class="sd">            :func:`reject_renamed`). For a generation affordance, the generations</span>
 <span class="sd">            cache still reads entries kept under the old name.</span>
+<span class="sd">        bounds: ``(lo, hi)`` for a number (either end ``None``: open), checked</span>
+<span class="sd">            before any call where the affordance's registry says so (see</span>
+<span class="sd">            :func:`check_edit_args`).</span>
 <span class="sd">    """</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -882,7 +886,8 @@ window.runMermaid = runMermaid;</script>
     <span class="n">stage</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"query"</span>
     <span class="n">carries_meaning</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">choices</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">renamed_from</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
+    <span class="n">renamed_from</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">bounds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 
@@ -1009,6 +1014,201 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"generate"</span><span class="p">,</span>
     <span class="p">),</span>
 <span class="p">}</span>
+
+
+<span class="c1">#: Edit-stage parameters (#162): an edit is a generation whose input includes a source</span>
+<span class="c1">#: clip. Only a source whose config declares ``modes=['edit']`` takes them (see</span>
+<span class="c1">#: :func:`foley.edit`); a text-to-audio or video-to-audio source refuses ``audio=``.</span>
+<span class="n">EDIT_AFFORDANCES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Affordance</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"audio"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"audio"</span><span class="p">,</span>
+        <span class="nb">object</span><span class="p">,</span>
+        <span class="s2">"The source clip to edit (a URL, a local path or bytes; keyed by content)"</span><span class="p">,</span>
+        <span class="n">stage</span><span class="o">=</span><span class="s2">"generate"</span><span class="p">,</span>
+        <span class="n">carries_meaning</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="s2">"strength"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"strength"</span><span class="p">,</span>
+        <span class="nb">float</span><span class="p">,</span>
+        <span class="s2">"0..1 how far from the source (1.0 is pure generation); None =&gt; the backend's"</span><span class="p">,</span>
+        <span class="n">stage</span><span class="o">=</span><span class="s2">"generate"</span><span class="p">,</span>
+        <span class="n">carries_meaning</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="s2">"inpaint_start_s"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"inpaint_start_s"</span><span class="p">,</span>
+        <span class="nb">float</span><span class="p">,</span>
+        <span class="s2">"Start of the window to regenerate (s into the source)"</span><span class="p">,</span>
+        <span class="n">stage</span><span class="o">=</span><span class="s2">"generate"</span><span class="p">,</span>
+        <span class="n">carries_meaning</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="s2">"inpaint_end_s"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"inpaint_end_s"</span><span class="p">,</span>
+        <span class="nb">float</span><span class="p">,</span>
+        <span class="s2">"End of the window to regenerate (s into the source)"</span><span class="p">,</span>
+        <span class="n">stage</span><span class="o">=</span><span class="s2">"generate"</span><span class="p">,</span>
+        <span class="n">carries_meaning</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="s2">"extend_before_s"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"extend_before_s"</span><span class="p">,</span>
+        <span class="nb">float</span><span class="p">,</span>
+        <span class="s2">"Seconds of new sound before the source"</span><span class="p">,</span>
+        <span class="n">stage</span><span class="o">=</span><span class="s2">"generate"</span><span class="p">,</span>
+        <span class="n">carries_meaning</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="s2">"extend_after_s"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"extend_after_s"</span><span class="p">,</span>
+        <span class="nb">float</span><span class="p">,</span>
+        <span class="s2">"Seconds of new sound after the source"</span><span class="p">,</span>
+        <span class="n">stage</span><span class="o">=</span><span class="s2">"generate"</span><span class="p">,</span>
+        <span class="n">carries_meaning</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+    <span class="p">),</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="EditOp">
+<a class="viewcode-back" href="../../_autosummary/foley.base.html#foley.EditOp">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EditOp</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One edit operation and the :data:`EDIT_AFFORDANCES` it takes (a row of :data:`EDIT_OPS`).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        name: The op name (``foley.edit(source, op)``; a source config's ``edit_op``).</span>
+<span class="sd">        description: What it does.</span>
+<span class="sd">        requires: Parameters that must all be given.</span>
+<span class="sd">        requires_any: Parameters of which at least one must be given and above 0.</span>
+<span class="sd">        accepts: Optional parameters.</span>
+<span class="sd">        ordered: ``(lo, hi)`` parameter pairs that must satisfy ``lo &lt; hi``.</span>
+<span class="sd">        within_clip: Parameters (times into the source) that may not pass its end.</span>
+<span class="sd">    """</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">requires</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">requires_any</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">accepts</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">ordered</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">within_clip</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Every edit parameter this op takes (the source clip aside)."""</span>
+        <span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">requires</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">requires_any</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">accepts</span><span class="p">)</span></div>
+
+
+
+<span class="c1">#: SSOT: the edit operations (report 13 §3: each is offered by two or more providers).</span>
+<span class="n">EDIT_OPS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">EditOp</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">op</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">op</span>
+    <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="n">EditOp</span><span class="p">(</span>
+            <span class="s2">"audio_to_audio"</span><span class="p">,</span>
+            <span class="s2">"Regenerate the whole clip from the source (strength: how far from it)"</span><span class="p">,</span>
+            <span class="n">accepts</span><span class="o">=</span><span class="p">(</span><span class="s2">"strength"</span><span class="p">,),</span>
+        <span class="p">),</span>
+        <span class="n">EditOp</span><span class="p">(</span>
+            <span class="s2">"inpaint"</span><span class="p">,</span>
+            <span class="s2">"Regenerate one window of the source, keeping the rest"</span><span class="p">,</span>
+            <span class="n">requires</span><span class="o">=</span><span class="p">(</span><span class="s2">"inpaint_start_s"</span><span class="p">,</span> <span class="s2">"inpaint_end_s"</span><span class="p">),</span>
+            <span class="n">ordered</span><span class="o">=</span><span class="p">((</span><span class="s2">"inpaint_start_s"</span><span class="p">,</span> <span class="s2">"inpaint_end_s"</span><span class="p">),),</span>
+            <span class="n">within_clip</span><span class="o">=</span><span class="p">(</span><span class="s2">"inpaint_start_s"</span><span class="p">,</span> <span class="s2">"inpaint_end_s"</span><span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">EditOp</span><span class="p">(</span>
+            <span class="s2">"extend"</span><span class="p">,</span>
+            <span class="s2">"Add new sound before and/or after the source"</span><span class="p">,</span>
+            <span class="n">requires_any</span><span class="o">=</span><span class="p">(</span><span class="s2">"extend_before_s"</span><span class="p">,</span> <span class="s2">"extend_after_s"</span><span class="p">),</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="check_edit_args">
+<a class="viewcode-back" href="../../_autosummary/foley.base.html#foley.check_edit_args">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_edit_args</span><span class="p">(</span>
+    <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">affordances</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">clip_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">limits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Raise ``ValueError`` unless ``affordances`` are a valid call of the edit ``op``.</span>
+
+<span class="sd">    Checked before anything is paid for: the op is known, its required parameters are</span>
+<span class="sd">    given, it is given no other op's parameters, each number is within its</span>
+<span class="sd">    :attr:`Affordance.bounds` and below the backend's own maximum (``limits``: name -&gt;</span>
+<span class="sd">    max), each ``ordered`` pair is increasing, and a time into the source</span>
+<span class="sd">    (:attr:`EditOp.within_clip`) does not pass its end (``clip_s``, when known).</span>
+
+<span class="sd">    &gt;&gt;&gt; check_edit_args("inpaint", {"inpaint_start_s": 1.0, "inpaint_end_s": 2.5})</span>
+<span class="sd">    &gt;&gt;&gt; check_edit_args("inpaint", {"inpaint_start_s": 1.0})</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: the inpaint edit needs inpaint_end_s=</span>
+<span class="sd">    &gt;&gt;&gt; check_edit_args("extend", {"extend_before_s": 0})</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: the extend edit needs one of extend_before_s=, extend_after_s= above 0</span>
+<span class="sd">    &gt;&gt;&gt; check_edit_args("inpaint", {"inpaint_start_s": 1, "inpaint_end_s": 9}, clip_s=4)</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: inpaint_end_s=9 is past the end of the 4 s source clip</span>
+<span class="sd">    """</span>
+    <span class="n">spec</span> <span class="o">=</span> <span class="n">EDIT_OPS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown edit op </span><span class="si">{</span><span class="n">op</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">EDIT_OPS</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">given</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">affordances</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">EDIT_AFFORDANCES</span> <span class="ow">and</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="p">}</span>
+    <span class="n">given</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"audio"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">foreign</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">given</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">params</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">foreign</span><span class="p">:</span>
+        <span class="n">takes</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">="</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">params</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"no edit parameters"</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"the </span><span class="si">{</span><span class="n">op</span><span class="si">}</span><span class="s2"> edit does not take </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s1">='</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">foreign</span><span class="p">)</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"(it takes </span><span class="si">{</span><span class="n">takes</span><span class="si">}</span><span class="s2">)"</span>
+        <span class="p">)</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">requires</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">given</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the </span><span class="si">{</span><span class="n">op</span><span class="si">}</span><span class="s2"> edit needs </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s1">='</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">limits</span> <span class="o">=</span> <span class="n">limits</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">given</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be a number, got </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="n">EDIT_AFFORDANCES</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">bounds</span> <span class="ow">or</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">limits</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">hi</span> <span class="o">=</span> <span class="n">limits</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="n">hi</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">min</span><span class="p">(</span><span class="n">hi</span><span class="p">,</span> <span class="n">limits</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="p">(</span><span class="n">lo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="n">lo</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="p">(</span><span class="n">hi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&gt;</span> <span class="n">hi</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be within [</span><span class="si">{</span><span class="n">lo</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">hi</span><span class="si">}</span><span class="s2">], got </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">spec</span><span class="o">.</span><span class="n">requires_any</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">given</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">requires_any</span><span class="p">):</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">="</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">requires_any</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the </span><span class="si">{</span><span class="n">op</span><span class="si">}</span><span class="s2"> edit needs one of </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="s2"> above 0"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">lo_name</span><span class="p">,</span> <span class="n">hi_name</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">ordered</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">given</span><span class="p">[</span><span class="n">lo_name</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">given</span><span class="p">[</span><span class="n">hi_name</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">lo_name</span><span class="si">}</span><span class="s2"> must be before </span><span class="si">{</span><span class="n">hi_name</span><span class="si">}</span><span class="s2">, got "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">given</span><span class="p">[</span><span class="n">lo_name</span><span class="p">]</span><span class="si">!r}</span><span class="s2"> &gt;= </span><span class="si">{</span><span class="n">given</span><span class="p">[</span><span class="n">hi_name</span><span class="p">]</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="p">)</span>
+    <span class="k">if</span> <span class="n">clip_s</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">within_clip</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">given</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">clip_s</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">given</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">!r}</span><span class="s2"> is past the end of the </span><span class="si">{</span><span class="n">clip_s</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2"> s "</span>
+                    <span class="s2">"source clip"</span>
+                <span class="p">)</span></div>
+
+
+
+<span class="c1">#: The ``kind`` of the ``transformations`` entry an edit appends to its clip's licence</span>
+<span class="c1">#: (#162): what it derives from (see :class:`foley.sources.edit.EditLineage`).</span>
+<span class="n">EDIT_TRANSFORMATION</span> <span class="o">=</span> <span class="s2">"edit"</span>
 
 
 <div class="viewcode-block" id="reject_renamed">

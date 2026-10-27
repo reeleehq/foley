@@ -18,6 +18,9 @@ foley.provenance.credits
       credit_entry
       credits_for
       credits_manifest
+      derived_source
+      derived_sources
+      license_display
       render_credits_md
    
    .. rubric:: Classes

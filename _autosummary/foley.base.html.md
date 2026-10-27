@@ -20,44 +20,49 @@ Serialization contract:
 
 ### Module Attributes
 
-| [`QUERY_AFFORDANCES`](#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).                                                                             |
-|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| [`GENERATION_AFFORDANCES`](#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these).                                                                      |
-| [`ISO_COUNTRY_CODES`](#foley.base.ISO_COUNTRY_CODES)      | The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).                                                                          |
-| [`TERRITORY_ALIASES`](#foley.base.TERRITORY_ALIASES)      | the UK's common one and the EU's code for Greece.                                                                                            |
-| [`WORLDWIDE`](#foley.base.WORLDWIDE)              | The territory of a sound used everywhere (online publishing reaches every country): a licence that excludes any territory refuses it (#175). |
-| [`MASTER_PROFILES`](#foley.base.MASTER_PROFILES)        | The named delivery targets (report 06 §5.2).                                                                                                 |
+| [`QUERY_AFFORDANCES`](#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).                                                                                                                                                                   |
+|-------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`GENERATION_AFFORDANCES`](#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these).                                                                                                                                                            |
+| [`EDIT_AFFORDANCES`](#foley.base.EDIT_AFFORDANCES)       | an edit is a generation whose input includes a source clip.                                                                                                                                                                        |
+| [`EDIT_OPS`](#foley.base.EDIT_OPS)               | each is offered by two or more providers).                                                                                                                                                                                         |
+| [`EDIT_TRANSFORMATION`](#foley.base.EDIT_TRANSFORMATION)    | The `kind` of the `transformations` entry an edit appends to its clip's licence (#162): what it derives from (see [`foley.sources.edit.EditLineage`](foley.sources.edit.html.md#foley.sources.edit.EditLineage)). |
+| [`ISO_COUNTRY_CODES`](#foley.base.ISO_COUNTRY_CODES)      | The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).                                                                                                                                                                |
+| [`TERRITORY_ALIASES`](#foley.base.TERRITORY_ALIASES)      | the UK's common one and the EU's code for Greece.                                                                                                                                                                                  |
+| [`WORLDWIDE`](#foley.base.WORLDWIDE)              | The territory of a sound used everywhere (online publishing reaches every country): a licence that excludes any territory refuses it (#175).                                                                                       |
+| [`MASTER_PROFILES`](#foley.base.MASTER_PROFILES)        | The named delivery targets (report 06 §5.2).                                                                                                                                                                                       |
 
 ### Functions
 
-| [`normalize_territory`](#foley.base.normalize_territory)(territory)      | `territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](#foley.base.WORLDWIDE)), `None` when unstated.   |
-|--------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| [`reject_renamed`](#foley.base.reject_renamed)(names[, vocabulary]) | Raise `TypeError` if any of `names` is an affordance's old spelling.                                                               |
-| [`resolve_master`](#foley.base.resolve_master)(master)              | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.                                            |
+| [`check_edit_args`](#foley.base.check_edit_args)(op, affordances, \*[, ...])   | Raise `ValueError` unless `affordances` are a valid call of the edit `op`.                                                       |
+|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| [`normalize_territory`](#foley.base.normalize_territory)(territory)                | `territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](#foley.base.WORLDWIDE)), `None` when unstated. |
+| [`reject_renamed`](#foley.base.reject_renamed)(names[, vocabulary])           | Raise `TypeError` if any of `names` is an affordance's old spelling.                                                             |
+| [`resolve_master`](#foley.base.resolve_master)(master)                        | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.                                          |
 
 ### Classes
 
-| [`AcquisitionMethod`](#foley.base.AcquisitionMethod)(\*values)                       | How a sound entered foley (retrieval channel or origin).                                 |
-|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| [`Affordance`](#foley.base.Affordance)(name, type, description[, ...])        | Descriptor for a unified parameter affordance (arioso analog).                           |
-| [`Anchor`](#foley.base.Anchor)(\*values)                                  | How a WEAVE `Placement` binds its symbolic time to the narration (report 06 §2.4).       |
-| [`Candidate`](#foley.base.Candidate)(sound[, origin, event, ...])            | A ranked, license-checked, (optionally) verified sound for one SoundEvent.               |
-| [`CandidateOrigin`](#foley.base.CandidateOrigin)(\*values)                         | Whether a candidate was retrieved from the index or freshly generated.                   |
-| [`IntendedUse`](#foley.base.IntendedUse)([commercial, publish, ...])           | What the caller intends to do with a sound; consumed by `keep()`.                        |
-| [`Layer`](#foley.base.Layer)(\*values)                                   | Mix layer (shared by `SoundEvent` now and `TimelineItem` later).                         |
-| [`LicenseRecord`](#foley.base.LicenseRecord)(source[, source_id, ...])           | Per-sound rights + provenance.                                                           |
-| [`MasterProfile`](#foley.base.MasterProfile)([target_lufs, true_peak_db, ...])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).           |
-| [`Placement`](#foley.base.Placement)([anchor, ref, onset, pre_roll, ...])    | WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).      |
-| [`Processing`](#foley.base.Processing)([gain_db, pan, distance, ...])         | HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).            |
-| [`Salience`](#foley.base.Salience)(\*values)                                | How prominent a sound event is within a passage.                                         |
-| [`SerializableMixin`](#foley.base.SerializableMixin)()                               | Adds `to_dict`/`to_json`/`from_dict`/`from_json` to a dataclass.                         |
-| [`SoundDesignTimeline`](#foley.base.SoundDesignTimeline)([items, ...])                 | The editable, re-renderable sound-design plan — the SELECT→WEAVE bridge and render SSOT. |
-| [`SoundEvent`](#foley.base.SoundEvent)(query[, layer, diegetic, ...])         | One salient, physically-audible event decomposed from a passage.                         |
-| [`SoundRecord`](#foley.base.SoundRecord)(id[, content_sha256, hash_algo, ...]) | Canonical SSOT per sound.                                                                |
-| [`StorageMode`](#foley.base.StorageMode)(\*values)                             | How a sound's bytes are held (DERIVED from `license.cache_bytes_ok`).                    |
-| [`TimelineItem`](#foley.base.TimelineItem)(clip_ref[, onset, gain, layer, ...]) | One placed sound on the sound-design timeline — sparse seed + resolved render fields.    |
-| [`Verdict`](#foley.base.Verdict)(match, confidence[, reason, level])       | The result of one verification rung for a candidate.                                     |
-| [`VerifyLevel`](#foley.base.VerifyLevel)(\*values)                             | Which rung of the verification ladder produced a `Verdict`.                              |
+| [`AcquisitionMethod`](#foley.base.AcquisitionMethod)(\*values)                       | How a sound entered foley (retrieval channel or origin).                                                                                                                    |
+|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`Affordance`](#foley.base.Affordance)(name, type, description[, ...])        | Descriptor for a unified parameter affordance (arioso analog).                                                                                                              |
+| [`Anchor`](#foley.base.Anchor)(\*values)                                  | How a WEAVE `Placement` binds its symbolic time to the narration (report 06 §2.4).                                                                                          |
+| [`Candidate`](#foley.base.Candidate)(sound[, origin, event, ...])            | A ranked, license-checked, (optionally) verified sound for one SoundEvent.                                                                                                  |
+| [`CandidateOrigin`](#foley.base.CandidateOrigin)(\*values)                         | Whether a candidate was retrieved from the index or freshly generated.                                                                                                      |
+| [`EditOp`](#foley.base.EditOp)(name, description[, requires, ...])        | One edit operation and the [`EDIT_AFFORDANCES`](#foley.base.EDIT_AFFORDANCES) it takes (a row of [`EDIT_OPS`](#foley.base.EDIT_OPS)). |
+| [`IntendedUse`](#foley.base.IntendedUse)([commercial, publish, ...])           | What the caller intends to do with a sound; consumed by `keep()`.                                                                                                           |
+| [`Layer`](#foley.base.Layer)(\*values)                                   | Mix layer (shared by `SoundEvent` now and `TimelineItem` later).                                                                                                            |
+| [`LicenseRecord`](#foley.base.LicenseRecord)(source[, source_id, ...])           | Per-sound rights + provenance.                                                                                                                                              |
+| [`MasterProfile`](#foley.base.MasterProfile)([target_lufs, true_peak_db, ...])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                                                              |
+| [`Placement`](#foley.base.Placement)([anchor, ref, onset, pre_roll, ...])    | WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).                                                                                         |
+| [`Processing`](#foley.base.Processing)([gain_db, pan, distance, ...])         | HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).                                                                                               |
+| [`Salience`](#foley.base.Salience)(\*values)                                | How prominent a sound event is within a passage.                                                                                                                            |
+| [`SerializableMixin`](#foley.base.SerializableMixin)()                               | Adds `to_dict`/`to_json`/`from_dict`/`from_json` to a dataclass.                                                                                                            |
+| [`SoundDesignTimeline`](#foley.base.SoundDesignTimeline)([items, ...])                 | The editable, re-renderable sound-design plan — the SELECT→WEAVE bridge and render SSOT.                                                                                    |
+| [`SoundEvent`](#foley.base.SoundEvent)(query[, layer, diegetic, ...])         | One salient, physically-audible event decomposed from a passage.                                                                                                            |
+| [`SoundRecord`](#foley.base.SoundRecord)(id[, content_sha256, hash_algo, ...]) | Canonical SSOT per sound.                                                                                                                                                   |
+| [`StorageMode`](#foley.base.StorageMode)(\*values)                             | How a sound's bytes are held (DERIVED from `license.cache_bytes_ok`).                                                                                                       |
+| [`TimelineItem`](#foley.base.TimelineItem)(clip_ref[, onset, gain, layer, ...]) | One placed sound on the sound-design timeline — sparse seed + resolved render fields.                                                                                       |
+| [`Verdict`](#foley.base.Verdict)(match, confidence[, reason, level])       | The result of one verification rung for a candidate.                                                                                                                        |
+| [`VerifyLevel`](#foley.base.VerifyLevel)(\*values)                             | Which rung of the verification ladder produced a `Verdict`.                                                                                                                 |
 
 ### *class* foley.base.AcquisitionMethod(\*values)
 
@@ -65,7 +70,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound entered foley (retrieval channel or origin).
 
-### *class* foley.base.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None)
+### *class* foley.base.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -133,6 +138,15 @@ cache still reads entries kept under the old name.
 * **Type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+#### bounds
+
+`(lo, hi)` for a number (either end `None`: open), checked
+before any call where the affordance’s registry says so (see
+[`check_edit_args()`](#foley.base.check_edit_args)).
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]
+
 ### *class* foley.base.Anchor(\*values)
 
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
@@ -179,7 +193,89 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Whether a candidate was retrieved from the index or freshly generated.
 
-### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from='duration'), 'expand_prompt': Affordance(name='expand_prompt', type=<class 'bool'>, description='Let the backend rewrite the prompt (the prompt it used is recorded)', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'keep_source_audio': Affordance(name='keep_source_audio', type=<class 'bool'>, description="Keep the video's own speech and build the sound around it", default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'sample_rate': Affordance(name='sample_rate', type=<class 'int'>, description='Requested rate (Hz); the actual rate is measured and recorded', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'video': Affordance(name='video', type=<class 'object'>, description='The picture to sound (a URL, a RemoteVideo, a local path or bytes; keyed by content)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None)}*
+### foley.base.EDIT_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](#foley.base.Affordance)]* *= {'audio': Affordance(name='audio', type=<class 'object'>, description='The source clip to edit (a URL, a local path or bytes; keyed by content)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'extend_after_s': Affordance(name='extend_after_s', type=<class 'float'>, description='Seconds of new sound after the source', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=(0.0, None)), 'extend_before_s': Affordance(name='extend_before_s', type=<class 'float'>, description='Seconds of new sound before the source', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=(0.0, None)), 'inpaint_end_s': Affordance(name='inpaint_end_s', type=<class 'float'>, description='End of the window to regenerate (s into the source)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=(0.0, None)), 'inpaint_start_s': Affordance(name='inpaint_start_s', type=<class 'float'>, description='Start of the window to regenerate (s into the source)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=(0.0, None)), 'strength': Affordance(name='strength', type=<class 'float'>, description="0..1 how far from the source (1.0 is pure generation); None => the backend's", default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=(0.0, 1.0))}*
+
+an edit is a generation whose input includes a source
+clip. Only a source whose config declares `modes=['edit']` takes them (see
+[`foley.edit()`](foley.html.md#foley.edit)); a text-to-audio or video-to-audio source refuses `audio=`.
+
+* **Type:**
+  Edit-stage parameters (#162)
+
+### foley.base.EDIT_OPS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [EditOp](#foley.base.EditOp)]* *= {'audio_to_audio': EditOp(name='audio_to_audio', description='Regenerate the whole clip from the source (strength: how far from it)', requires=(), requires_any=(), accepts=('strength',), ordered=(), within_clip=()), 'extend': EditOp(name='extend', description='Add new sound before and/or after the source', requires=(), requires_any=('extend_before_s', 'extend_after_s'), accepts=(), ordered=(), within_clip=()), 'inpaint': EditOp(name='inpaint', description='Regenerate one window of the source, keeping the rest', requires=('inpaint_start_s', 'inpaint_end_s'), requires_any=(), accepts=(), ordered=(('inpaint_start_s', 'inpaint_end_s'),), within_clip=('inpaint_start_s', 'inpaint_end_s'))}*
+
+each is offered by two or more providers).
+
+* **Type:**
+  SSOT
+* **Type:**
+  the edit operations (report 13 §3
+
+### foley.base.EDIT_TRANSFORMATION *= 'edit'*
+
+The `kind` of the `transformations` entry an edit appends to its clip’s licence
+(#162): what it derives from (see [`foley.sources.edit.EditLineage`](foley.sources.edit.html.md#foley.sources.edit.EditLineage)).
+
+### *class* foley.base.EditOp(name, description, requires=(), requires_any=(), accepts=(), ordered=(), within_clip=())
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One edit operation and the [`EDIT_AFFORDANCES`](#foley.base.EDIT_AFFORDANCES) it takes (a row of [`EDIT_OPS`](#foley.base.EDIT_OPS)).
+
+#### name
+
+The op name (`foley.edit(source, op)`; a source config’s `edit_op`).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### description
+
+What it does.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### requires
+
+Parameters that must all be given.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### requires_any
+
+Parameters of which at least one must be given and above 0.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### accepts
+
+Optional parameters.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### ordered
+
+`(lo, hi)` parameter pairs that must satisfy `lo < hi`.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### within_clip
+
+Parameters (times into the source) that may not pass its end.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### *property* params *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)*
+
+Every edit parameter this op takes (the source clip aside).
+
+### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from='duration', bounds=None), 'expand_prompt': Affordance(name='expand_prompt', type=<class 'bool'>, description='Let the backend rewrite the prompt (the prompt it used is recorded)', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'keep_source_audio': Affordance(name='keep_source_audio', type=<class 'bool'>, description="Keep the video's own speech and build the sound around it", default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'sample_rate': Affordance(name='sample_rate', type=<class 'int'>, description='Requested rate (Hz); the actual rate is measured and recorded', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'video': Affordance(name='video', type=<class 'object'>, description='The picture to sound (a URL, a RemoteVideo, a local path or bytes; keyed by content)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=None)}*
 
 Unified generation-stage parameters (generate backends map onto these).
 
@@ -276,7 +372,7 @@ Every field is a no-op at its default, so a sparse item (no `processing`)
 renders untouched; the mixer departs from dry/centered/full-level only when a
 field is set.
 
-### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'include_explicit': Affordance(name='include_explicit', type=<class 'bool'>, description='Also return explicit / sensitive results', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'kind': Affordance(name='kind', type=<class 'str'>, description='Media kind: sfx | music', default='sfx', stage='query', carries_meaning=True, choices=('sfx', 'music'), renamed_from=None), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'page': Affordance(name='page', type=<class 'int'>, description='Results page (1-based; k per page)', default=1, stage='query', carries_meaning=True, choices=None, renamed_from=None), 'query': Affordance(name='query', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False, choices=None, renamed_from='text'), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'sort': Affordance(name='sort', type=<class 'str'>, description='Result order', default='relevance', stage='query', carries_meaning=False, choices=('relevance', 'newest', 'popular', 'duration'), renamed_from=None), 'sources': Affordance(name='sources', type=<class 'list'>, description='Restrict an aggregator to these of its providers', default=None, stage='query', carries_meaning=True, choices=None, renamed_from=None), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None)}*
+### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'include_explicit': Affordance(name='include_explicit', type=<class 'bool'>, description='Also return explicit / sensitive results', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'kind': Affordance(name='kind', type=<class 'str'>, description='Media kind: sfx | music', default='sfx', stage='query', carries_meaning=True, choices=('sfx', 'music'), renamed_from=None, bounds=None), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'page': Affordance(name='page', type=<class 'int'>, description='Results page (1-based; k per page)', default=1, stage='query', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'query': Affordance(name='query', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False, choices=None, renamed_from='text', bounds=None), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'sort': Affordance(name='sort', type=<class 'str'>, description='Result order', default='relevance', stage='query', carries_meaning=False, choices=('relevance', 'newest', 'popular', 'duration'), renamed_from=None, bounds=None), 'sources': Affordance(name='sources', type=<class 'list'>, description='Restrict an aggregator to these of its providers', default=None, stage='query', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None)}*
 
 Unified query-stage parameters (search / find / filter surface).
 
@@ -410,6 +506,35 @@ Which rung of the verification ladder produced a `Verdict`.
 
 The territory of a sound used everywhere (online publishing reaches every country):
 a licence that excludes any territory refuses it (#175).
+
+### foley.base.check_edit_args(op, affordances, , clip_s=None, limits=None)
+
+Raise `ValueError` unless `affordances` are a valid call of the edit `op`.
+
+Checked before anything is paid for: the op is known, its required parameters are
+given, it is given no other op’s parameters, each number is within its
+[`Affordance.bounds`](#foley.base.Affordance.bounds) and below the backend’s own maximum (`limits`: name ->
+max), each `ordered` pair is increasing, and a time into the source
+([`EditOp.within_clip`](#foley.base.EditOp.within_clip)) does not pass its end (`clip_s`, when known).
+
+```pycon
+>>> check_edit_args("inpaint", {"inpaint_start_s": 1.0, "inpaint_end_s": 2.5})
+>>> check_edit_args("inpaint", {"inpaint_start_s": 1.0})
+Traceback (most recent call last):
+...
+ValueError: the inpaint edit needs inpaint_end_s=
+>>> check_edit_args("extend", {"extend_before_s": 0})
+Traceback (most recent call last):
+...
+ValueError: the extend edit needs one of extend_before_s=, extend_after_s= above 0
+>>> check_edit_args("inpaint", {"inpaint_start_s": 1, "inpaint_end_s": 9}, clip_s=4)
+Traceback (most recent call last):
+...
+ValueError: inpaint_end_s=9 is past the end of the 4 s source clip
+```
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### foley.base.normalize_territory(territory)
 

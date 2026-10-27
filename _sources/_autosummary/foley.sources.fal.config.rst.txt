@@ -8,5 +8,6 @@ foley.sources.fal.config
 
    .. autosummary::
    
+      EDIT_SOURCE_CONFIGS
       FAL_SOURCES
    

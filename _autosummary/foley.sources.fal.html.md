@@ -16,6 +16,6 @@ The shared [`FalAdapter`](foley.sources.fal.adapter.html.md#foley.sources.fal.ad
 
 ### Modules
 
-| [`adapter`](foley.sources.fal.adapter.html.md#module-foley.sources.fal.adapter)   | The fal generate adapter — one class for every fal-hosted SFX endpoint, run through `falaw`.   |
-|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| [`config`](foley.sources.fal.config.html.md#module-foley.sources.fal.config)     | `SOURCE_CONFIGS` for the fal-hosted text-to-SFX endpoints, executed through `falaw` (#73).     |
+| [`adapter`](foley.sources.fal.adapter.html.md#module-foley.sources.fal.adapter)   | The fal generate adapter — one class for every fal-hosted SFX endpoint, run through `falaw`.                         |
+|---------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| [`config`](foley.sources.fal.config.html.md#module-foley.sources.fal.config)     | `SOURCE_CONFIGS` for the fal-hosted SFX endpoints (text-, video-to-audio and edits), executed through `falaw` (#73). |

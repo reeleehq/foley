@@ -42,20 +42,22 @@ dependency-light.
 |---------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
 | [`IPTC_TRAINED_ALGORITHMIC_MEDIA`](#foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA) | IPTC digitalSourceType vocabulary (C2PA `c2pa.actions` assertion).                                          |
 | [`C2PA_CREATED`](#foley.provenance.disclosure.C2PA_CREATED)                   | C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).                   |
+| [`INGREDIENT_SOURCE_KEY`](#foley.provenance.disclosure.INGREDIENT_SOURCE_KEY)          | The key under which an edit's source ingredient carries what foley knows of it.                             |
 | [`TRADEMARK_REGISTRY`](#foley.provenance.disclosure.TRADEMARK_REGISTRY)             | Seed registry of branded audio logos foley must not knowingly generate for commercial use (report 07 §7.2). |
 | [`INGREDIENT_CREDENTIAL_KEY`](#foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY)      | The one key under which an ingredient carries foley's full per-sound credential.                            |
 
 ### Functions
 
-| [`art50_checklist`](#foley.provenance.disclosure.art50_checklist)(record)                          | Return the per-clip EU AI Act Art.                                                                                   |
-|---------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| [`as_c2pa_ingredient`](#foley.provenance.disclosure.as_c2pa_ingredient)(credential, \*, index)        | A per-sound content credential, declared as a C2PA `componentOf` ingredient.                                         |
-| [`build_content_credential`](#foley.provenance.disclosure.build_content_credential)(record, \*, asset_id)   | Build the portable, self-asserted C2PA-shaped content-credential dict.                                               |
-| [`build_mix_credential`](#foley.provenance.disclosure.build_mix_credential)(records, \*, asset_id, ...) | Build the MIX-level C2PA-shaped content credential (report 07 / #9b), as re-asserted by `weave.reassert_provenance`. |
-| [`detect_watermark`](#foley.provenance.disclosure.detect_watermark)(audio_bytes)                    | Detect a foley watermark in `audio_bytes` (lazy AudioSeal).                                                          |
-| [`resolve_watermarker`](#foley.provenance.disclosure.resolve_watermarker)(watermark, watermarker)      | Resolve the effective [`Watermarker`](#foley.provenance.disclosure.Watermarker) for a generate call.              |
-| [`scan_prompt`](#foley.provenance.disclosure.scan_prompt)(prompt)                              | Scan a generation `prompt` for trademarked-audio-logo + voice-clone risk.                                            |
-| [`write_content_credential`](#foley.provenance.disclosure.write_content_credential)(store, asset_id, ...)   | Write `credential` into `store` keyed by `asset_id`; return `asset_id`.                                              |
+| [`art50_checklist`](#foley.provenance.disclosure.art50_checklist)(record)                          | Return the per-clip EU AI Act Art.                                                                                                                                                                           |
+|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`as_c2pa_ingredient`](#foley.provenance.disclosure.as_c2pa_ingredient)(credential, \*, index)        | A per-sound content credential, declared as a C2PA `componentOf` ingredient.                                                                                                                                 |
+| [`build_content_credential`](#foley.provenance.disclosure.build_content_credential)(record, \*, asset_id)   | Build the portable, self-asserted C2PA-shaped content-credential dict.                                                                                                                                       |
+| [`build_mix_credential`](#foley.provenance.disclosure.build_mix_credential)(records, \*, asset_id, ...) | Build the MIX-level C2PA-shaped content credential (report 07 / #9b), as re-asserted by `weave.reassert_provenance`.                                                                                         |
+| [`describe_transformation`](#foley.provenance.disclosure.describe_transformation)(transformation)          | A `transformations` entry as one readable line (a C2PA `c2pa.edited` description): a string as is, an edit of another sound (#162) by its op, source and parameters, any other mapping as `key=value` pairs. |
+| [`detect_watermark`](#foley.provenance.disclosure.detect_watermark)(audio_bytes)                    | Detect a foley watermark in `audio_bytes` (lazy AudioSeal).                                                                                                                                                  |
+| [`resolve_watermarker`](#foley.provenance.disclosure.resolve_watermarker)(watermark, watermarker)      | Resolve the effective [`Watermarker`](#foley.provenance.disclosure.Watermarker) for a generate call.                                                                                                      |
+| [`scan_prompt`](#foley.provenance.disclosure.scan_prompt)(prompt)                              | Scan a generation `prompt` for trademarked-audio-logo + voice-clone risk.                                                                                                                                    |
+| [`write_content_credential`](#foley.provenance.disclosure.write_content_credential)(store, asset_id, ...)   | Write `credential` into `store` keyed by `asset_id`; return `asset_id`.                                                                                                                                      |
 
 ### Classes
 
@@ -119,6 +121,10 @@ content-hash id reproducible so a byte-identical regeneration still dedups
 
 The one key under which an ingredient carries foley’s full per-sound credential.
 
+### foley.provenance.disclosure.INGREDIENT_SOURCE_KEY *= 'foley_source'*
+
+The key under which an edit’s source ingredient carries what foley knows of it.
+
 ### foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA *= 'http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia'*
 
 IPTC digitalSourceType vocabulary (C2PA `c2pa.actions` assertion).
@@ -141,7 +147,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'tudum', 'netflix chime', 'netflix sound', 'netflix intro', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel inside', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'ta-dum', 'netflix intro', 'netflix chime', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -257,6 +263,25 @@ declared as a `componentOf` ingredient (via [`as_c2pa_ingredient()`](#foley.prov
 (credentialed) ingredient asserts `c2pa.created` alone.
 
 Signing embeds into WAV only: a credential with a non-WAV `fmt` stays sidecar-only.
+
+### foley.provenance.disclosure.describe_transformation(transformation)
+
+A `transformations` entry as one readable line (a C2PA `c2pa.edited`
+description): a string as is, an edit of another sound (#162) by its op, source and
+parameters, any other mapping as `key=value` pairs.
+
+```pycon
+>>> describe_transformation("declick")
+'declick'
+>>> describe_transformation({"kind": "edit", "op": "extend", "source_id": "s1",
+...     "source_license_id": "CC-BY-4.0", "params": {"extend_after_s": 2.0}})
+'extend of s1 (CC-BY-4.0): extend_after_s=2.0'
+>>> describe_transformation({"gain_db": -3, "target": "dialogue"})
+'gain_db=-3, target=dialogue'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.provenance.disclosure.detect_watermark(audio_bytes)
 

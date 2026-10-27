@@ -32,7 +32,7 @@ reach the pure helpers via `foley.art50_checklist` / `foley.scan_prompt`.
 |------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | [`Credits`](#foley.provenance.Credits)([entries, title, schema_version])     | A deduplicated, ordered collection of [`CreditEntry`](#foley.provenance.CreditEntry) for one run. |
 
-### *class* foley.provenance.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None)
+### *class* foley.provenance.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list())
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -68,7 +68,10 @@ Render one sound’s TASL attribution line.
 
 A source-supplied `attribution_text` (if non-empty) is returned **verbatim**;
 otherwise the line is synthesized from Title/Author/Source/License, with a
-`(modified)` notice and an AI-disclosure segment appended as applicable.
+`(modified)` notice and an AI-disclosure segment appended as applicable. A clip
+made by editing another (#162) then credits its source: `; derived from` and the
+source’s own credit line (which names the source’s licence, and its own source in
+turn, for an edit of an edit).
 
 * **Parameters:**
   * **source** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`CreditEntry`](foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry), [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – A [`CreditEntry`](#foley.provenance.CreditEntry), or any credit input (coerced first).
@@ -84,7 +87,8 @@ otherwise the line is synthesized from Title/Author/Source/License, with a
 Build a [`CreditEntry`](#foley.provenance.CreditEntry) from a record (title override optional).
 
 Every field is read straight off the [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) (flags
-never re-derived); `modified` reflects a non-empty `transformations` list.
+never re-derived); `modified` reflects a non-empty `transformations` list, and
+`derived_from` the sources an edit was made from (`derived_sources()`).
 
 * **Parameters:**
   * **record** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord), [`Candidate`](foley.base.html.md#foley.base.Candidate),

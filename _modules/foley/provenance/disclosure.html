@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=0f58e6e2"></script>
+    <script src="../../../_static/documentation_options.js?v=60a9f236"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.93" />
+  <meta name="docsearch:version" content="0.0.95" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -758,6 +758,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">MutableMapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
 
@@ -794,8 +795,12 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).</span>
 <span class="n">C2PA_CREATED</span> <span class="o">=</span> <span class="s2">"c2pa.created"</span>
 <span class="n">C2PA_PLACED</span> <span class="o">=</span> <span class="s2">"c2pa.placed"</span>
+<span class="n">C2PA_EDITED</span> <span class="o">=</span> <span class="s2">"c2pa.edited"</span>
 <span class="n">C2PA_COMPONENT_OF</span> <span class="o">=</span> <span class="s2">"componentOf"</span>
+<span class="n">C2PA_PARENT_OF</span> <span class="o">=</span> <span class="s2">"parentOf"</span>
 <span class="n">C2PA_INGREDIENT_ID_PREFIX</span> <span class="o">=</span> <span class="s2">"foley:ingredient:"</span>
+<span class="c1">#: The key under which an edit's source ingredient carries what foley knows of it.</span>
+<span class="n">INGREDIENT_SOURCE_KEY</span> <span class="o">=</span> <span class="s2">"foley_source"</span>
 
 
 <span class="c1"># ---------------------------------------------------------------------------</span>
@@ -1276,20 +1281,50 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">lic</span><span class="o">.</span><span class="n">generator_version</span><span class="p">:</span>
         <span class="n">software_agent</span><span class="p">[</span><span class="s2">"version"</span><span class="p">]</span> <span class="o">=</span> <span class="n">lic</span><span class="o">.</span><span class="n">generator_version</span>
 
-    <span class="n">created_action</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="s2">"c2pa.created"</span><span class="p">,</span> <span class="s2">"digitalSourceType"</span><span class="p">:</span> <span class="n">source_type</span><span class="p">}</span>
+    <span class="n">created_action</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="n">C2PA_CREATED</span><span class="p">,</span> <span class="s2">"digitalSourceType"</span><span class="p">:</span> <span class="n">source_type</span><span class="p">}</span>
     <span class="k">if</span> <span class="n">software_agent</span><span class="p">:</span>
         <span class="n">created_action</span><span class="p">[</span><span class="s2">"softwareAgent"</span><span class="p">]</span> <span class="o">=</span> <span class="n">software_agent</span>
     <span class="c1"># Each transformation the licence records (a repair before admission, #107; a</span>
     <span class="c1"># trim) is an edit of the same asset, so the credential says the kept bytes were</span>
     <span class="c1"># edited after creation — the machine-readable twin of the "(modified)" credit.</span>
-    <span class="n">actions</span> <span class="o">=</span> <span class="p">[</span><span class="n">created_action</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span>
-        <span class="p">{</span>
-            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"c2pa.edited"</span><span class="p">,</span>
-            <span class="s2">"softwareAgent"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"foley"</span><span class="p">},</span>
-            <span class="s2">"parameters"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"description"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)},</span>
-        <span class="p">}</span>
-        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">transformations</span> <span class="ow">or</span> <span class="p">[])</span>
-    <span class="p">]</span>
+    <span class="c1"># An edit of another sound (#162) also declares that sound as its parentOf</span>
+    <span class="c1"># ingredient (its id, content key and licence), which its action names.</span>
+    <span class="n">ingredients</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">actions</span> <span class="o">=</span> <span class="p">[</span><span class="n">created_action</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">lic</span><span class="o">.</span><span class="n">transformations</span> <span class="ow">or</span> <span class="p">[]:</span>
+        <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"description"</span><span class="p">:</span> <span class="n">describe_transformation</span><span class="p">(</span><span class="n">t</span><span class="p">)}</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">_edit_source_ingredient</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">ingredients</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">source</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ingredients</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+            <span class="n">parameters</span><span class="p">[</span><span class="s2">"ingredientIds"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">source</span><span class="p">[</span><span class="s2">"instance_id"</span><span class="p">]]</span>
+        <span class="n">actions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"action"</span><span class="p">:</span> <span class="n">C2PA_EDITED</span><span class="p">,</span>
+                <span class="s2">"softwareAgent"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"foley"</span><span class="p">},</span>
+                <span class="s2">"parameters"</span><span class="p">:</span> <span class="n">parameters</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+    <span class="n">creative_work</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"@context"</span><span class="p">:</span> <span class="s2">"https://schema.org"</span><span class="p">,</span>
+        <span class="s2">"@type"</span><span class="p">:</span> <span class="s2">"CreativeWork"</span><span class="p">,</span>
+        <span class="s2">"license"</span><span class="p">:</span> <span class="n">license_ref</span><span class="p">,</span>
+        <span class="s2">"author"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">"@type"</span><span class="p">:</span> <span class="s2">"Organization"</span><span class="p">,</span>
+                <span class="s2">"name"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">creator_name</span> <span class="ow">or</span> <span class="n">lic</span><span class="o">.</span><span class="n">rights_holder</span> <span class="ow">or</span> <span class="n">lic</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">ingredients</span><span class="p">:</span>  <span class="c1"># a derived clip names its sources' licences beside its own</span>
+        <span class="n">creative_work</span><span class="p">[</span><span class="s2">"isBasedOn"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">"@type"</span><span class="p">:</span> <span class="s2">"CreativeWork"</span><span class="p">,</span>
+                <span class="s2">"identifier"</span><span class="p">:</span> <span class="n">i</span><span class="p">[</span><span class="n">INGREDIENT_SOURCE_KEY</span><span class="p">][</span><span class="s2">"sound_id"</span><span class="p">],</span>
+                <span class="s2">"license"</span><span class="p">:</span> <span class="n">i</span><span class="p">[</span><span class="n">INGREDIENT_SOURCE_KEY</span><span class="p">][</span><span class="s2">"license_url"</span><span class="p">]</span>
+                <span class="ow">or</span> <span class="n">i</span><span class="p">[</span><span class="n">INGREDIENT_SOURCE_KEY</span><span class="p">][</span><span class="s2">"license_id"</span><span class="p">],</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ingredients</span>
+        <span class="p">]</span>
 
     <span class="n">ai_use</span> <span class="o">=</span> <span class="s2">"notAllowed"</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">lic</span><span class="o">.</span><span class="n">ai_training_ok</span> <span class="k">else</span> <span class="s2">"allowed"</span>
     <span class="n">assertions</span> <span class="o">=</span> <span class="p">[</span>
@@ -1303,20 +1338,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="p">}</span>
             <span class="p">},</span>
         <span class="p">},</span>
-        <span class="p">{</span>
-            <span class="s2">"label"</span><span class="p">:</span> <span class="s2">"stds.schema-org.CreativeWork"</span><span class="p">,</span>
-            <span class="s2">"data"</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">"@context"</span><span class="p">:</span> <span class="s2">"https://schema.org"</span><span class="p">,</span>
-                <span class="s2">"@type"</span><span class="p">:</span> <span class="s2">"CreativeWork"</span><span class="p">,</span>
-                <span class="s2">"license"</span><span class="p">:</span> <span class="n">license_ref</span><span class="p">,</span>
-                <span class="s2">"author"</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="p">{</span>
-                        <span class="s2">"@type"</span><span class="p">:</span> <span class="s2">"Organization"</span><span class="p">,</span>
-                        <span class="s2">"name"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">creator_name</span> <span class="ow">or</span> <span class="n">lic</span><span class="o">.</span><span class="n">rights_holder</span> <span class="ow">or</span> <span class="n">lic</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
-                    <span class="p">}</span>
-                <span class="p">],</span>
-            <span class="p">},</span>
-        <span class="p">},</span>
+        <span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="s2">"stds.schema-org.CreativeWork"</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">:</span> <span class="n">creative_work</span><span class="p">},</span>
     <span class="p">]</span>
     <span class="c1"># foley-native reproducibility assertion (self-asserted; kept in the local sidecar)</span>
     <span class="k">if</span> <span class="n">lic</span><span class="o">.</span><span class="n">is_ai_generated</span><span class="p">:</span>
@@ -1337,7 +1359,7 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"claim_generator_info"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"foley"</span><span class="p">,</span> <span class="s2">"version"</span><span class="p">:</span> <span class="n">_foley_version</span><span class="p">()}],</span>
         <span class="s2">"format"</span><span class="p">:</span> <span class="n">_MIME_BY_FORMAT</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="n">fmt</span> <span class="ow">or</span> <span class="s2">"wav"</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="s2">"audio/wav"</span><span class="p">),</span>
         <span class="s2">"title"</span><span class="p">:</span> <span class="n">caption</span> <span class="ow">or</span> <span class="n">lic</span><span class="o">.</span><span class="n">generation_prompt</span> <span class="ow">or</span> <span class="n">asset_id</span><span class="p">,</span>
-        <span class="s2">"ingredients"</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="s2">"ingredients"</span><span class="p">:</span> <span class="n">ingredients</span><span class="p">,</span>
         <span class="s2">"assertions"</span><span class="p">:</span> <span class="n">assertions</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="p">{</span>
@@ -1349,6 +1371,53 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"manifest"</span><span class="p">:</span> <span class="n">manifest</span><span class="p">,</span>
     <span class="p">}</span></div>
 
+
+
+<div class="viewcode-block" id="describe_transformation">
+<a class="viewcode-back" href="../../../_autosummary/foley.provenance.disclosure.html#foley.provenance.disclosure.describe_transformation">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">describe_transformation</span><span class="p">(</span><span class="n">transformation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A ``transformations`` entry as one readable line (a C2PA ``c2pa.edited``</span>
+<span class="sd">    description): a string as is, an edit of another sound (#162) by its op, source and</span>
+<span class="sd">    parameters, any other mapping as ``key=value`` pairs.</span>
+
+<span class="sd">    &gt;&gt;&gt; describe_transformation("declick")</span>
+<span class="sd">    'declick'</span>
+<span class="sd">    &gt;&gt;&gt; describe_transformation({"kind": "edit", "op": "extend", "source_id": "s1",</span>
+<span class="sd">    ...     "source_license_id": "CC-BY-4.0", "params": {"extend_after_s": 2.0}})</span>
+<span class="sd">    'extend of s1 (CC-BY-4.0): extend_after_s=2.0'</span>
+<span class="sd">    &gt;&gt;&gt; describe_transformation({"gain_db": -3, "target": "dialogue"})</span>
+<span class="sd">    'gain_db=-3, target=dialogue'</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">EDIT_TRANSFORMATION</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">transformation</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">transformation</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">transformation</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"kind"</span><span class="p">)</span> <span class="o">==</span> <span class="n">EDIT_TRANSFORMATION</span><span class="p">:</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">((</span><span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"params"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="p">)</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'op'</span><span class="p">)</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'source_id'</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">t</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'source_license_id'</span><span class="p">)</span><span class="si">}</span><span class="s2">)"</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">head</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">params</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">params</span> <span class="k">else</span> <span class="n">head</span>
+    <span class="k">return</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">t</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_edit_source_ingredient</span><span class="p">(</span><span class="n">transformation</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The ``parentOf`` ingredient of an edit's source (#162), or ``None`` for any other</span>
+<span class="sd">    transformation: the fields ``c2pa.Builder`` reads, plus what foley knows of the</span>
+<span class="sd">    source (id, content key, licence) under :data:`INGREDIENT_SOURCE_KEY`."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.credits</span><span class="w"> </span><span class="kn">import</span> <span class="n">derived_source</span>
+
+    <span class="n">source</span> <span class="o">=</span> <span class="n">derived_source</span><span class="p">(</span><span class="n">transformation</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">source</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"title"</span><span class="p">:</span> <span class="n">source</span><span class="p">[</span><span class="s2">"credit"</span><span class="p">]</span> <span class="ow">or</span> <span class="n">source</span><span class="p">[</span><span class="s2">"sound_id"</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">"source clip"</span><span class="p">,</span>
+        <span class="s2">"relationship"</span><span class="p">:</span> <span class="n">C2PA_PARENT_OF</span><span class="p">,</span>
+        <span class="s2">"instance_id"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">C2PA_INGREDIENT_ID_PREFIX</span><span class="si">}</span><span class="s2">source:</span><span class="si">{</span><span class="n">index</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">source</span><span class="p">[</span><span class="s1">'sound_id'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">INGREDIENT_SOURCE_KEY</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span>
+    <span class="p">}</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_ref_of</span><span class="p">(</span><span class="n">record</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>

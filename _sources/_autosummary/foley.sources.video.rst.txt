@@ -8,6 +8,8 @@ foley.sources.video
 
    .. autosummary::
    
+      MEDIA
+      MEDIA_INPUTS
       REMOTE_SCHEMES
       URL_SCHEMES
       URL_KEY_PREFIX
@@ -18,11 +20,14 @@ foley.sources.video
       Probe
       AudioStreamCheck
       REDACTED_QUERY
+      DEFAULT_AUDIO_SUFFIX
    
    .. rubric:: Functions
 
    .. autosummary::
    
+      audio_seconds
+      audio_suffix
       audio_track
       default_probe
       fal_immutable_url
@@ -35,6 +40,7 @@ foley.sources.video
       local_video_file
       mixing_seconds
       recorded_video_key
+      remote_media_input
       replayable
       video_key
       video_seconds
@@ -45,5 +51,6 @@ foley.sources.video
 
    .. autosummary::
    
+      MediaInput
       RemoteVideo
    

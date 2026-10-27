@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=0f58e6e2"></script>
+    <script src="../../../_static/documentation_options.js?v=60a9f236"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.93" />
+  <meta name="docsearch:version" content="0.0.95" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -804,11 +804,20 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: backends: one variable cannot hold a default for both.</span>
 <span class="n">V2A_ORDER_ENV</span> <span class="o">=</span> <span class="s2">"FOLEY_V2A_ORDER"</span>
 
-<span class="c1">#: The generation modes: text-to-audio and video-to-audio.</span>
-<span class="n">GENERATION_MODES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"t2a"</span><span class="p">,</span> <span class="s2">"v2a"</span><span class="p">)</span>
+<span class="c1">#: The generation modes: text-to-audio, video-to-audio, and an edit of a source clip</span>
+<span class="c1">#: (#162: audio-to-audio, inpaint, extend; see :func:`foley.edit`).</span>
+<span class="n">GENERATION_MODES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"t2a"</span><span class="p">,</span> <span class="s2">"v2a"</span><span class="p">,</span> <span class="s2">"edit"</span><span class="p">)</span>
 
 <span class="c1">#: Env var opting in to the paid entries of :data:`DEFAULT_GENERATE_ORDER` (``1``).</span>
 <span class="n">GENERATE_PAID_ENV</span> <span class="o">=</span> <span class="s2">"FOLEY_GENERATE_PAID"</span>
+
+<span class="c1">#: Per mode, the env vars whose setting names that mode's backends (and so opts in to</span>
+<span class="c1">#: paying for them). An edit has none: name its backend, or set $FOLEY_GENERATE_PAID.</span>
+<span class="n">_MODE_ORDER_ENVS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"t2a"</span><span class="p">:</span> <span class="p">(</span><span class="n">GENERATE_BACKEND_ENV</span><span class="p">,</span> <span class="n">GENERATE_ORDER_ENV</span><span class="p">),</span>
+    <span class="s2">"v2a"</span><span class="p">:</span> <span class="p">(</span><span class="n">V2A_ORDER_ENV</span><span class="p">,),</span>
+    <span class="s2">"edit"</span><span class="p">:</span> <span class="p">(),</span>
+<span class="p">}</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">paid_generation_opted_in</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"t2a"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -817,18 +826,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Yes when the operator said so: ``$FOLEY_GENERATE_PAID=1`` (any mode), or an order</span>
 <span class="sd">    or a backend named for that mode (text-to-audio: ``$FOLEY_GENERATE_ORDER`` /</span>
 <span class="sd">    ``$FOLEY_GENERATE_BACKEND``; video-to-audio: ``$FOLEY_V2A_ORDER``), which opts in</span>
-<span class="sd">    that mode only. A provider key in the environment is not consent to spend (#58):</span>
-<span class="sd">    keys are set for other tools too.</span>
+<span class="sd">    that mode only. An edit has no order variable. A provider key in the environment</span>
+<span class="sd">    is not consent to spend (#58): keys are set for other tools too.</span>
 <span class="sd">    """</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
     <span class="c1"># Naming the backends of one mode's order is consent for that mode only (#74).</span>
-    <span class="n">named</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="p">(</span><span class="n">V2A_ORDER_ENV</span><span class="p">,)</span>
-        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"v2a"</span>
-        <span class="k">else</span> <span class="p">(</span><span class="n">GENERATE_BACKEND_ENV</span><span class="p">,</span> <span class="n">GENERATE_ORDER_ENV</span><span class="p">)</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">named</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_MODE_ORDER_ENVS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">mode</span><span class="p">,</span> <span class="p">())):</span>
         <span class="k">return</span> <span class="kc">True</span>
     <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">GENERATE_PAID_ENV</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"1"</span><span class="p">,</span> <span class="s2">"true"</span><span class="p">,</span> <span class="s2">"yes"</span><span class="p">)</span>
 
@@ -844,12 +848,57 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">generation_mode</span><span class="p">(</span><span class="n">affordances</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""``'v2a'`` when the call gives a ``video``, else ``'t2a'``.</span>
+<span class="w">    </span><span class="sd">"""``'v2a'`` when the call gives a ``video``, ``'edit'`` when it gives an ``audio``</span>
+<span class="sd">    (and no video), else ``'t2a'`` (see :data:`foley.sources.video.MEDIA`).</span>
 
 <span class="sd">    &gt;&gt;&gt; generation_mode({"video": "clip.mp4"}), generation_mode({"duration_s": 2})</span>
 <span class="sd">    ('v2a', 't2a')</span>
+<span class="sd">    &gt;&gt;&gt; generation_mode({"audio": b"RIFF"})</span>
+<span class="sd">    'edit'</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="s2">"v2a"</span> <span class="k">if</span> <span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"video"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">"t2a"</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.video</span><span class="w"> </span><span class="kn">import</span> <span class="n">MEDIA</span>
+
+    <span class="k">return</span> <span class="nb">next</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">mode</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">MEDIA</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">),</span>
+        <span class="s2">"t2a"</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">edit_backends</span><span class="p">(</span><span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, ...]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The registered edit sources that do ``op``, in registration order (their configs'</span>
+<span class="sd">    ``modes`` and ``edit_op``: data, so a new edit source is found by itself).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: For an op not in :data:`foley.base.EDIT_OPS`.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">EDIT_OPS</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">source_modes</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
+
+    <span class="k">if</span> <span class="n">op</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">EDIT_OPS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown edit op </span><span class="si">{</span><span class="n">op</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">EDIT_OPS</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
+        <span class="n">name</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">SOURCE_REGISTRY</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">entry</span><span class="p">[</span><span class="s2">"config"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"kind"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"generate"</span>
+        <span class="ow">and</span> <span class="s2">"edit"</span> <span class="ow">in</span> <span class="n">source_modes</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s2">"config"</span><span class="p">])</span>
+        <span class="ow">and</span> <span class="n">entry</span><span class="p">[</span><span class="s2">"config"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"edit_op"</span><span class="p">)</span> <span class="o">==</span> <span class="n">op</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">default_edit_backend</span><span class="p">(</span><span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The backend an unnamed :func:`foley.edit` of ``op`` uses: the first of</span>
+<span class="sd">    :func:`edit_backends` with its key set, else the last</span>
+<span class="sd">    (:func:`first_runnable_backend`).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        SourceConfigurationError: When no registered source does ``op``.</span>
+<span class="sd">    """</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="n">edit_backends</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">order</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SourceConfigurationError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no registered backend does the </span><span class="si">{</span><span class="n">op</span><span class="si">}</span><span class="s2"> edit"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">first_runnable_backend</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">generate_backend_order</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"t2a"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, ...]"</span><span class="p">:</span>
@@ -864,6 +913,11 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">if</span> <span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">GENERATION_MODES</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"mode must be one of </span><span class="si">{</span><span class="n">GENERATION_MODES</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">mode</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"edit"</span><span class="p">:</span>  <span class="c1"># which backend depends on the op: foley.edit resolves it</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"an edit (audio=) has no generation order: name its backend, or call "</span>
+            <span class="s2">"foley.edit(sound_id, op), which picks the op's default backend"</span>
+        <span class="p">)</span>
     <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"v2a"</span><span class="p">:</span>
         <span class="n">listed</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">V2A_ORDER_ENV</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
         <span class="n">names</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">listed</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
@@ -974,7 +1028,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="GenerationError">
 <a class="viewcode-back" href="../../../_autosummary/foley.sources.html#foley.GenerationError">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">GenerationError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Raised by :func:`foley.generate` when a backend yields no stored sound.</span>
+<span class="w">    </span><span class="sd">"""Raised by :func:`foley.generate` (and :func:`foley.edit`) when a backend yields no stored sound.</span>
 
 <span class="sd">    Carries the full :class:`~foley.index.ingest.IngestReport` and the terminal</span>
 <span class="sd">    :attr:`status` so a caller can react distinctly to ``quarantined`` (QC-rejected —</span>
@@ -1034,6 +1088,34 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="EditRefusal">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.html#foley.EditRefusal">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EditRefusal</span><span class="p">(</span><span class="n">GenerationError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Raised (fail-closed) by an edit (:func:`foley.edit`, or :func:`foley.generate`</span>
+<span class="sd">    with an edit backend and ``audio=``) before anything is paid for, when the source's</span>
+<span class="sd">    rights do not allow an edit of it to be made and kept, or are not given.</span>
+
+<span class="sd">    See :func:`foley.licensing.derivative_refusal`: unverified rights, bytes that may</span>
+<span class="sd">    not be sent on, a licence that forbids modification, a share-alike licence (an</span>
+<span class="sd">    edit's own licence cannot carry it), or a licence foley has no row for. Its</span>
+<span class="sd">    ``report`` is empty and its ``status`` is ``'rights_blocked'``.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        source_id: The id of the sound that was to be edited (``None``: not known).</span>
+<span class="sd">        reason: Why it was refused.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">source_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">message</span><span class="p">,</span>
+            <span class="n">report</span><span class="o">=</span><span class="n">IngestReport</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="sa">f</span><span class="s2">"edit:</span><span class="si">{</span><span class="n">source_id</span><span class="si">}</span><span class="s2">"</span><span class="p">),</span>
+            <span class="n">status</span><span class="o">=</span><span class="s2">"rights_blocked"</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">source_id</span> <span class="o">=</span> <span class="n">source_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reason</span> <span class="o">=</span> <span class="n">reason</span></div>
+
+
+
 <div class="viewcode-block" id="TrademarkRefusal">
 <a class="viewcode-back" href="../../../_autosummary/foley.sources.html#foley.TrademarkRefusal">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">TrademarkRefusal</span><span class="p">(</span><span class="n">SafetyRefusal</span><span class="p">):</span>
@@ -1087,6 +1169,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">check_prompt</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">variation</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">derived_from</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IngestReport</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Generate a sound via ``backend`` and ingest it (by-value) into ``library``.</span>
@@ -1181,10 +1264,26 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        variation: Which variation of the same request this is (#161; see</span>
 <span class="sd">            :func:`foley.variations`): ``0`` (default) is the request itself, a later</span>
 <span class="sd">            one is a different paid request in the generations cache.</span>
+<span class="sd">        derived_from: For an edit (#162: an edit backend given ``audio=``), the source</span>
+<span class="sd">            clip's :class:`~foley.base.SoundRecord` (what :func:`foley.edit` passes)</span>
+<span class="sd">            or its :class:`~foley.base.LicenseRecord`. **Required** by the ``edit``</span>
+<span class="sd">            mode, which gates it fail-closed before anything is paid for</span>
+<span class="sd">            (:func:`foley.sources.edit.edit_lineage`, :class:`EditRefusal`): the edit</span>
+<span class="sd">            is keyed by it, and the clip's licence is narrowed to it, records it in</span>
+<span class="sd">            ``transformations`` (and so in the credits and the content credential)</span>
+<span class="sd">            before the repair, the level, the watermark and the credential. A</span>
+<span class="sd">            byte-identical sound already in the library with wider rights is not</span>
+<span class="sd">            handed back as the edit (``rights_blocked``). Refused for any other mode.</span>
+<span class="sd">            A ``SoundRecord`` with a known digest must be the bytes sent; a</span>
+<span class="sd">            ``LicenseRecord`` (or a bare URL as ``audio=``) is the caller's own,</span>
+<span class="sd">            unchecked declaration of the clip's rights, as ``ingest(license=)`` is.</span>
 <span class="sd">        **affordances: Unified generation affordances (``duration_s``, ``model``,</span>
 <span class="sd">            ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,</span>
 <span class="sd">            ``output_format``, ``sample_rate``, ``expand_prompt`` — see</span>
-<span class="sd">            :data:`foley.base.GENERATION_AFFORDANCES`).</span>
+<span class="sd">            :data:`foley.base.GENERATION_AFFORDANCES`; and an edit's ``audio``,</span>
+<span class="sd">            ``strength``, ``inpaint_start_s`` / ``inpaint_end_s``,</span>
+<span class="sd">            ``extend_before_s`` / ``extend_after_s`` — see</span>
+<span class="sd">            :data:`foley.base.EDIT_AFFORDANCES`).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        An :class:`~foley.index.ingest.IngestReport` — inspect ``.ingested`` for the</span>
@@ -1195,6 +1294,8 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        SafetyRefusal: If the prompt trips a safety gate and ``on_flagged='refuse'``.</span>
+<span class="sd">        EditRefusal: For an edit without ``derived_from``, or whose source's rights do</span>
+<span class="sd">            not allow it (before anything is paid for).</span>
 <span class="sd">        WatermarkUnavailable: If ``watermark=True`` but ``foley[provenance]`` is absent.</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..index.library</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_library</span>
@@ -1235,6 +1336,9 @@ window.runMermaid = runMermaid;</script>
 
     <span class="n">lib</span> <span class="o">=</span> <span class="n">library</span> <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default_library</span><span class="p">()</span>
     <span class="n">gen</span> <span class="o">=</span> <span class="n">adapter</span> <span class="k">if</span> <span class="n">adapter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">get_source</span><span class="p">(</span><span class="n">backend</span><span class="p">)[</span><span class="s2">"adapter"</span><span class="p">]</span>
+    <span class="c1"># The edit mode's licence gate (#162), fail-closed, before anything is paid for: an</span>
+    <span class="c1"># edit needs its source's rights, which then key it and narrow its licence.</span>
+    <span class="n">lineage</span> <span class="o">=</span> <span class="n">_edit_lineage</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">gen</span><span class="p">,</span> <span class="n">derived_from</span><span class="p">,</span> <span class="n">affordances</span><span class="p">)</span>
 
     <span class="c1"># Everything that can refuse the call — offline egress, an unsupported</span>
     <span class="c1"># meaning-carrying parameter, the run's cost cap, a missing key or plan — is</span>
@@ -1251,6 +1355,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">reuse_cached</span><span class="o">=</span><span class="n">reuse_cached</span><span class="p">,</span>
             <span class="n">provider_params</span><span class="o">=</span><span class="n">provider_params</span><span class="p">,</span>
             <span class="n">variation</span><span class="o">=</span><span class="n">variation</span><span class="p">,</span>
+            <span class="n">lineage</span><span class="o">=</span><span class="n">lineage</span><span class="o">.</span><span class="n">transformation</span><span class="p">()</span> <span class="k">if</span> <span class="n">lineage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="n">UndemuxedAnswer</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># a kept, paid video still not demuxed (#176)</span>
@@ -1278,6 +1383,8 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="n">_error_report</span><span class="p">(</span><span class="n">report</span><span class="p">,</span> <span class="n">backend</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
 
     <span class="n">lic</span> <span class="o">=</span> <span class="n">clip</span><span class="o">.</span><span class="n">candidate</span><span class="o">.</span><span class="n">sound</span><span class="o">.</span><span class="n">license</span>
+    <span class="k">if</span> <span class="n">lineage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># an edit: the source's rights and credit carry over</span>
+        <span class="n">lineage</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">lic</span><span class="p">)</span>
 
     <span class="c1"># Warn-mode: reaching here with a flagged scan means on_flagged='warn'. Stamp the</span>
     <span class="c1"># safety flags on the record so the fail-closed keep() gate drops it downstream.</span>
@@ -1388,6 +1495,11 @@ window.runMermaid = runMermaid;</script>
 
     <span class="n">res</span><span class="o">.</span><span class="n">cache_key</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">content_key</span>  <span class="c1"># where the paid bytes are, whatever the outcome</span>
     <span class="n">record_generation_outcome</span><span class="p">(</span><span class="n">plan</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">generations_cache</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">lineage</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">"skipped_dup"</span><span class="p">:</span>
+        <span class="n">why</span> <span class="o">=</span> <span class="n">lineage</span><span class="o">.</span><span class="n">twin_refusal</span><span class="p">(</span><span class="n">lib</span><span class="p">[</span><span class="n">res</span><span class="o">.</span><span class="n">id</span><span class="p">]</span><span class="o">.</span><span class="n">license</span><span class="p">,</span> <span class="n">lic</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">why</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># never hand back a record wider than the edit's</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">"rights_blocked"</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">why</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"pass"</span><span class="p">,</span> <span class="s2">"warn"</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">check_prompt</span> <span class="ow">and</span> <span class="n">prompt</span><span class="p">:</span>  <span class="c1"># a picture-led (V2A) call may give no prompt</span>
             <span class="n">post_qc</span><span class="p">[</span><span class="s2">"prompt_match"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_prompt_verdict</span><span class="p">(</span>
@@ -1424,6 +1536,33 @@ window.runMermaid = runMermaid;</script>
         <span class="n">res</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_CONSENT_NOTE</span><span class="p">)</span>
     <span class="n">report</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">report</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_edit_lineage</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">adapter</span><span class="p">,</span> <span class="n">derived_from</span><span class="p">,</span> <span class="n">affordances</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The :class:`~foley.sources.edit.EditLineage` of an edit call (an edit source given</span>
+<span class="sd">    an ``audio``), gated (:func:`foley.sources.edit.edit_lineage`); ``None`` otherwise.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        EditRefusal: For an edit without its source's rights, or with rights that do</span>
+<span class="sd">            not allow it.</span>
+<span class="sd">        ValueError: For a ``derived_from`` given to a call that is no edit.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">source_modes</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span>
+
+    <span class="n">config</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="s2">"config"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="n">SOURCE_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="s2">"config"</span><span class="p">,</span> <span class="p">{}</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="s2">"edit"</span> <span class="ow">in</span> <span class="n">source_modes</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="ow">and</span> <span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"audio"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.edit</span><span class="w"> </span><span class="kn">import</span> <span class="n">edit_lineage</span>
+
+        <span class="k">return</span> <span class="n">edit_lineage</span><span class="p">(</span><span class="n">derived_from</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">affordances</span><span class="o">=</span><span class="n">affordances</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">derived_from</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"derived_from= is for an edit (an edit backend given audio=), and "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">backend</span><span class="si">!r}</span><span class="s2"> with these arguments is none"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_error_report</span><span class="p">(</span><span class="n">report</span><span class="p">:</span> <span class="n">IngestReport</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">exc</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IngestReport</span><span class="p">:</span>
@@ -1778,6 +1917,7 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"check_prompt"</span><span class="p">,</span>
         <span class="s2">"provider_params"</span><span class="p">,</span>
         <span class="s2">"variation"</span><span class="p">,</span>
+        <span class="s2">"derived_from"</span><span class="p">,</span>
     <span class="p">}</span>
 <span class="p">)</span>
 

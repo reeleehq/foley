@@ -29,17 +29,22 @@ foley.licensing
       apply_license_flags
       cc_refused_terms
       checked_refusal_reason
+      derivative_refusal
       derive_license_flags
       intended_use_for
       is_cc_license_token
+      is_share_alike
       keep
       keep_sound
       license_id_from_cc_url
       license_meta
+      narrow_to_source
       refusal_reason
       refusals
       territory_excluded
+      upload_refusal
       wanted_license_ids
+      wider_rights
    
    .. rubric:: Classes
 

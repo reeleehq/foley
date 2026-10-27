@@ -10,6 +10,9 @@ foley.base
    
       QUERY_AFFORDANCES
       GENERATION_AFFORDANCES
+      EDIT_AFFORDANCES
+      EDIT_OPS
+      EDIT_TRANSFORMATION
       ISO_COUNTRY_CODES
       TERRITORY_ALIASES
       WORLDWIDE
@@ -19,6 +22,7 @@ foley.base
 
    .. autosummary::
    
+      check_edit_args
       normalize_territory
       reject_renamed
       resolve_master
@@ -32,6 +36,7 @@ foley.base
       Anchor
       Candidate
       CandidateOrigin
+      EditOp
       IntendedUse
       Layer
       LicenseRecord

@@ -1,0 +1,26 @@
+foley.sources.edit
+==================
+
+.. automodule:: foley.sources.edit
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      EditSource
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      edit_lineage
+      resolve_edit
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      EditCall
+      EditLineage
+   

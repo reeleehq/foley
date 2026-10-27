@@ -1,4 +1,4 @@
-> built 2026-10-27 18:04 UTC from 5aaceeb (main) · foley 0.0.93. Details: build_info.json
+> built 2026-10-27 18:14 UTC from f8ffee5 (main) · foley 0.0.95. Details: build_info.json
 
 # index.html.md
 
@@ -73,6 +73,10 @@ clip = foley.generate(
     intended_use=use,
 )
 
+# Edit a library sound (fal Stable Audio 3; paid): audio_to_audio (strength=), inpaint
+# (inpaint_start_s=, inpaint_end_s=) or extend; its licence gates the edit and carries over
+clip = foley.edit(sound_id, "extend", "the door slams shut", extend_after_s=2)
+
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
 foley.add_from(
@@ -102,13 +106,25 @@ drive the agent, a CLI, and external hosts.
 `foley.sources.music_library` acquires the free tracks a production credits (Kevin MacLeod’s incompetech is built in; the paid Artlist and Epidemic Sound give wishlist rows, never downloads). Each title is fetched politely through foley’s transport (paced per host, `429` / `Retry-After` honoured), from the library’s server and then the Internet Archive’s raw copy (a `Retry-After` longer than the cap moves on to the archive instead of waiting), checked to be audio (an audio stream and a duration), and recorded with a `LicenseRecord` read from the library’s licence URL. Before anything is fetched, each title’s licence goes through foley’s fail-closed gate for `intended_use=` (default: commercial publishing): a title it refuses, such as one under a NonCommercial licence, is a `refused` row and is not downloaded. Needs `foley[music-library]` and `ffprobe`.
 
 ```python
-from foley.sources.music_library import acquire, attribution_text, kept_digests, titles_by_library, tracks_table
+from foley.sources.music_library import (
+    acquire,
+    attribution_text,
+    kept_digests,
+    titles_by_library,
+    tracks_table,
+)
 
-titles = titles_by_library(video_description)["incompetech"]  # or a list / {title: {metadata}}
-rows = acquire("incompetech", titles, out="audio/macleod")      # one row per title: acquired / failed / refused
-table = tracks_table(rows)                                      # CSV; row.row() is the JSON-safe dict
-print(attribution_text(rows))                                   # the blocks to paste under the video
-rows = acquire("incompetech", titles, out="audio/macleod", kept=kept_digests(table))  # a rerun fetches only what is missing
+titles = titles_by_library(video_description)[
+    "incompetech"
+]  # or a list / {title: {metadata}}
+rows = acquire(
+    "incompetech", titles, out="audio/macleod"
+)  # one row per title: acquired / failed / refused
+table = tracks_table(rows)  # CSV; row.row() is the JSON-safe dict
+print(attribution_text(rows))  # the blocks to paste under the video
+rows = acquire(
+    "incompetech", titles, out="audio/macleod", kept=kept_digests(table)
+)  # a rerun fetches only what is missing
 ```
 
 ## For AI agents
@@ -2765,44 +2781,49 @@ Serialization contract:
 
 ### Module Attributes
 
-| [`QUERY_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).                                                                             |
-|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| [`GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these).                                                                      |
-| [`ISO_COUNTRY_CODES`](_autosummary/foley.base.html.md#foley.base.ISO_COUNTRY_CODES)      | The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).                                                                          |
-| [`TERRITORY_ALIASES`](_autosummary/foley.base.html.md#foley.base.TERRITORY_ALIASES)      | the UK's common one and the EU's code for Greece.                                                                                            |
-| [`WORLDWIDE`](_autosummary/foley.base.html.md#foley.base.WORLDWIDE)              | The territory of a sound used everywhere (online publishing reaches every country): a licence that excludes any territory refuses it (#175). |
-| [`MASTER_PROFILES`](_autosummary/foley.base.html.md#foley.base.MASTER_PROFILES)        | The named delivery targets (report 06 §5.2).                                                                                                 |
+| [`QUERY_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).                                                                                                                                                                   |
+|-------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these).                                                                                                                                                            |
+| [`EDIT_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.EDIT_AFFORDANCES)       | an edit is a generation whose input includes a source clip.                                                                                                                                                                        |
+| [`EDIT_OPS`](_autosummary/foley.base.html.md#foley.base.EDIT_OPS)               | each is offered by two or more providers).                                                                                                                                                                                         |
+| [`EDIT_TRANSFORMATION`](_autosummary/foley.base.html.md#foley.base.EDIT_TRANSFORMATION)    | The `kind` of the `transformations` entry an edit appends to its clip's licence (#162): what it derives from (see [`foley.sources.edit.EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage)). |
+| [`ISO_COUNTRY_CODES`](_autosummary/foley.base.html.md#foley.base.ISO_COUNTRY_CODES)      | The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).                                                                                                                                                                |
+| [`TERRITORY_ALIASES`](_autosummary/foley.base.html.md#foley.base.TERRITORY_ALIASES)      | the UK's common one and the EU's code for Greece.                                                                                                                                                                                  |
+| [`WORLDWIDE`](_autosummary/foley.base.html.md#foley.base.WORLDWIDE)              | The territory of a sound used everywhere (online publishing reaches every country): a licence that excludes any territory refuses it (#175).                                                                                       |
+| [`MASTER_PROFILES`](_autosummary/foley.base.html.md#foley.base.MASTER_PROFILES)        | The named delivery targets (report 06 §5.2).                                                                                                                                                                                       |
 
 ### Functions
 
-| [`normalize_territory`](_autosummary/foley.base.html.md#foley.base.normalize_territory)(territory)      | `territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](_autosummary/foley.base.html.md#foley.base.WORLDWIDE)), `None` when unstated.   |
-|--------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| [`reject_renamed`](_autosummary/foley.base.html.md#foley.base.reject_renamed)(names[, vocabulary]) | Raise `TypeError` if any of `names` is an affordance's old spelling.                                                               |
-| [`resolve_master`](_autosummary/foley.base.html.md#foley.base.resolve_master)(master)              | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.                                            |
+| [`check_edit_args`](_autosummary/foley.base.html.md#foley.base.check_edit_args)(op, affordances, \*[, ...])   | Raise `ValueError` unless `affordances` are a valid call of the edit `op`.                                                       |
+|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
+| [`normalize_territory`](_autosummary/foley.base.html.md#foley.base.normalize_territory)(territory)                | `territory` as an ISO 3166-1 alpha-2 code (or [`WORLDWIDE`](_autosummary/foley.base.html.md#foley.base.WORLDWIDE)), `None` when unstated. |
+| [`reject_renamed`](_autosummary/foley.base.html.md#foley.base.reject_renamed)(names[, vocabulary])           | Raise `TypeError` if any of `names` is an affordance's old spelling.                                                             |
+| [`resolve_master`](_autosummary/foley.base.html.md#foley.base.resolve_master)(master)                        | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`.                                          |
 
 ### Classes
 
-| [`AcquisitionMethod`](_autosummary/foley.base.html.md#foley.base.AcquisitionMethod)(\*values)                       | How a sound entered foley (retrieval channel or origin).                                 |
-|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
-| [`Affordance`](_autosummary/foley.base.html.md#foley.base.Affordance)(name, type, description[, ...])        | Descriptor for a unified parameter affordance (arioso analog).                           |
-| [`Anchor`](_autosummary/foley.base.html.md#foley.base.Anchor)(\*values)                                  | How a WEAVE `Placement` binds its symbolic time to the narration (report 06 §2.4).       |
-| [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)(sound[, origin, event, ...])            | A ranked, license-checked, (optionally) verified sound for one SoundEvent.               |
-| [`CandidateOrigin`](_autosummary/foley.base.html.md#foley.base.CandidateOrigin)(\*values)                         | Whether a candidate was retrieved from the index or freshly generated.                   |
-| [`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse)([commercial, publish, ...])           | What the caller intends to do with a sound; consumed by `keep()`.                        |
-| [`Layer`](_autosummary/foley.base.html.md#foley.base.Layer)(\*values)                                   | Mix layer (shared by `SoundEvent` now and `TimelineItem` later).                         |
-| [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)(source[, source_id, ...])           | Per-sound rights + provenance.                                                           |
-| [`MasterProfile`](_autosummary/foley.base.html.md#foley.base.MasterProfile)([target_lufs, true_peak_db, ...])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).           |
-| [`Placement`](_autosummary/foley.base.html.md#foley.base.Placement)([anchor, ref, onset, pre_roll, ...])    | WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).      |
-| [`Processing`](_autosummary/foley.base.html.md#foley.base.Processing)([gain_db, pan, distance, ...])         | HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).            |
-| [`Salience`](_autosummary/foley.base.html.md#foley.base.Salience)(\*values)                                | How prominent a sound event is within a passage.                                         |
-| [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)()                               | Adds `to_dict`/`to_json`/`from_dict`/`from_json` to a dataclass.                         |
-| [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.SoundDesignTimeline)([items, ...])                 | The editable, re-renderable sound-design plan — the SELECT→WEAVE bridge and render SSOT. |
-| [`SoundEvent`](_autosummary/foley.base.html.md#foley.base.SoundEvent)(query[, layer, diegetic, ...])         | One salient, physically-audible event decomposed from a passage.                         |
-| [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)(id[, content_sha256, hash_algo, ...]) | Canonical SSOT per sound.                                                                |
-| [`StorageMode`](_autosummary/foley.base.html.md#foley.base.StorageMode)(\*values)                             | How a sound's bytes are held (DERIVED from `license.cache_bytes_ok`).                    |
-| [`TimelineItem`](_autosummary/foley.base.html.md#foley.base.TimelineItem)(clip_ref[, onset, gain, layer, ...]) | One placed sound on the sound-design timeline — sparse seed + resolved render fields.    |
-| [`Verdict`](_autosummary/foley.base.html.md#foley.base.Verdict)(match, confidence[, reason, level])       | The result of one verification rung for a candidate.                                     |
-| [`VerifyLevel`](_autosummary/foley.base.html.md#foley.base.VerifyLevel)(\*values)                             | Which rung of the verification ladder produced a `Verdict`.                              |
+| [`AcquisitionMethod`](_autosummary/foley.base.html.md#foley.base.AcquisitionMethod)(\*values)                       | How a sound entered foley (retrieval channel or origin).                                                                                                                    |
+|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`Affordance`](_autosummary/foley.base.html.md#foley.base.Affordance)(name, type, description[, ...])        | Descriptor for a unified parameter affordance (arioso analog).                                                                                                              |
+| [`Anchor`](_autosummary/foley.base.html.md#foley.base.Anchor)(\*values)                                  | How a WEAVE `Placement` binds its symbolic time to the narration (report 06 §2.4).                                                                                          |
+| [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)(sound[, origin, event, ...])            | A ranked, license-checked, (optionally) verified sound for one SoundEvent.                                                                                                  |
+| [`CandidateOrigin`](_autosummary/foley.base.html.md#foley.base.CandidateOrigin)(\*values)                         | Whether a candidate was retrieved from the index or freshly generated.                                                                                                      |
+| [`EditOp`](_autosummary/foley.base.html.md#foley.base.EditOp)(name, description[, requires, ...])        | One edit operation and the [`EDIT_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.EDIT_AFFORDANCES) it takes (a row of [`EDIT_OPS`](_autosummary/foley.base.html.md#foley.base.EDIT_OPS)). |
+| [`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse)([commercial, publish, ...])           | What the caller intends to do with a sound; consumed by `keep()`.                                                                                                           |
+| [`Layer`](_autosummary/foley.base.html.md#foley.base.Layer)(\*values)                                   | Mix layer (shared by `SoundEvent` now and `TimelineItem` later).                                                                                                            |
+| [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)(source[, source_id, ...])           | Per-sound rights + provenance.                                                                                                                                              |
+| [`MasterProfile`](_autosummary/foley.base.html.md#foley.base.MasterProfile)([target_lufs, true_peak_db, ...])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                                                              |
+| [`Placement`](_autosummary/foley.base.html.md#foley.base.Placement)([anchor, ref, onset, pre_roll, ...])    | WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).                                                                                         |
+| [`Processing`](_autosummary/foley.base.html.md#foley.base.Processing)([gain_db, pan, distance, ...])         | HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).                                                                                               |
+| [`Salience`](_autosummary/foley.base.html.md#foley.base.Salience)(\*values)                                | How prominent a sound event is within a passage.                                                                                                                            |
+| [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)()                               | Adds `to_dict`/`to_json`/`from_dict`/`from_json` to a dataclass.                                                                                                            |
+| [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.SoundDesignTimeline)([items, ...])                 | The editable, re-renderable sound-design plan — the SELECT→WEAVE bridge and render SSOT.                                                                                    |
+| [`SoundEvent`](_autosummary/foley.base.html.md#foley.base.SoundEvent)(query[, layer, diegetic, ...])         | One salient, physically-audible event decomposed from a passage.                                                                                                            |
+| [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)(id[, content_sha256, hash_algo, ...]) | Canonical SSOT per sound.                                                                                                                                                   |
+| [`StorageMode`](_autosummary/foley.base.html.md#foley.base.StorageMode)(\*values)                             | How a sound's bytes are held (DERIVED from `license.cache_bytes_ok`).                                                                                                       |
+| [`TimelineItem`](_autosummary/foley.base.html.md#foley.base.TimelineItem)(clip_ref[, onset, gain, layer, ...]) | One placed sound on the sound-design timeline — sparse seed + resolved render fields.                                                                                       |
+| [`Verdict`](_autosummary/foley.base.html.md#foley.base.Verdict)(match, confidence[, reason, level])       | The result of one verification rung for a candidate.                                                                                                                        |
+| [`VerifyLevel`](_autosummary/foley.base.html.md#foley.base.VerifyLevel)(\*values)                             | Which rung of the verification ladder produced a `Verdict`.                                                                                                                 |
 
 ### *class* foley.base.AcquisitionMethod(\*values)
 
@@ -2810,7 +2831,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound entered foley (retrieval channel or origin).
 
-### *class* foley.base.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None)
+### *class* foley.base.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2878,6 +2899,15 @@ cache still reads entries kept under the old name.
 * **Type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
+#### bounds
+
+`(lo, hi)` for a number (either end `None`: open), checked
+before any call where the affordance’s registry says so (see
+[`check_edit_args()`](_autosummary/foley.base.html.md#foley.base.check_edit_args)).
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]
+
 ### *class* foley.base.Anchor(\*values)
 
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
@@ -2924,7 +2954,89 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Whether a candidate was retrieved from the index or freshly generated.
 
-### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from='duration'), 'expand_prompt': Affordance(name='expand_prompt', type=<class 'bool'>, description='Let the backend rewrite the prompt (the prompt it used is recorded)', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'keep_source_audio': Affordance(name='keep_source_audio', type=<class 'bool'>, description="Keep the video's own speech and build the sound around it", default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'sample_rate': Affordance(name='sample_rate', type=<class 'int'>, description='Requested rate (Hz); the actual rate is measured and recorded', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'video': Affordance(name='video', type=<class 'object'>, description='The picture to sound (a URL, a RemoteVideo, a local path or bytes; keyed by content)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None)}*
+### foley.base.EDIT_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'audio': Affordance(name='audio', type=<class 'object'>, description='The source clip to edit (a URL, a local path or bytes; keyed by content)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'extend_after_s': Affordance(name='extend_after_s', type=<class 'float'>, description='Seconds of new sound after the source', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=(0.0, None)), 'extend_before_s': Affordance(name='extend_before_s', type=<class 'float'>, description='Seconds of new sound before the source', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=(0.0, None)), 'inpaint_end_s': Affordance(name='inpaint_end_s', type=<class 'float'>, description='End of the window to regenerate (s into the source)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=(0.0, None)), 'inpaint_start_s': Affordance(name='inpaint_start_s', type=<class 'float'>, description='Start of the window to regenerate (s into the source)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=(0.0, None)), 'strength': Affordance(name='strength', type=<class 'float'>, description="0..1 how far from the source (1.0 is pure generation); None => the backend's", default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=(0.0, 1.0))}*
+
+an edit is a generation whose input includes a source
+clip. Only a source whose config declares `modes=['edit']` takes them (see
+[`foley.edit()`](_autosummary/foley.html.md#foley.edit)); a text-to-audio or video-to-audio source refuses `audio=`.
+
+* **Type:**
+  Edit-stage parameters (#162)
+
+### foley.base.EDIT_OPS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [EditOp](_autosummary/foley.base.html.md#foley.base.EditOp)]* *= {'audio_to_audio': EditOp(name='audio_to_audio', description='Regenerate the whole clip from the source (strength: how far from it)', requires=(), requires_any=(), accepts=('strength',), ordered=(), within_clip=()), 'extend': EditOp(name='extend', description='Add new sound before and/or after the source', requires=(), requires_any=('extend_before_s', 'extend_after_s'), accepts=(), ordered=(), within_clip=()), 'inpaint': EditOp(name='inpaint', description='Regenerate one window of the source, keeping the rest', requires=('inpaint_start_s', 'inpaint_end_s'), requires_any=(), accepts=(), ordered=(('inpaint_start_s', 'inpaint_end_s'),), within_clip=('inpaint_start_s', 'inpaint_end_s'))}*
+
+each is offered by two or more providers).
+
+* **Type:**
+  SSOT
+* **Type:**
+  the edit operations (report 13 §3
+
+### foley.base.EDIT_TRANSFORMATION *= 'edit'*
+
+The `kind` of the `transformations` entry an edit appends to its clip’s licence
+(#162): what it derives from (see [`foley.sources.edit.EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage)).
+
+### *class* foley.base.EditOp(name, description, requires=(), requires_any=(), accepts=(), ordered=(), within_clip=())
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One edit operation and the [`EDIT_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.EDIT_AFFORDANCES) it takes (a row of [`EDIT_OPS`](_autosummary/foley.base.html.md#foley.base.EDIT_OPS)).
+
+#### name
+
+The op name (`foley.edit(source, op)`; a source config’s `edit_op`).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### description
+
+What it does.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### requires
+
+Parameters that must all be given.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### requires_any
+
+Parameters of which at least one must be given and above 0.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### accepts
+
+Optional parameters.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### ordered
+
+`(lo, hi)` parameter pairs that must satisfy `lo < hi`.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### within_clip
+
+Parameters (times into the source) that may not pass its end.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### *property* params *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)*
+
+Every edit parameter this op takes (the source clip aside).
+
+### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from='duration', bounds=None), 'expand_prompt': Affordance(name='expand_prompt', type=<class 'bool'>, description='Let the backend rewrite the prompt (the prompt it used is recorded)', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'keep_source_audio': Affordance(name='keep_source_audio', type=<class 'bool'>, description="Keep the video's own speech and build the sound around it", default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'sample_rate': Affordance(name='sample_rate', type=<class 'int'>, description='Requested rate (Hz); the actual rate is measured and recorded', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'video': Affordance(name='video', type=<class 'object'>, description='The picture to sound (a URL, a RemoteVideo, a local path or bytes; keyed by content)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None, bounds=None)}*
 
 Unified generation-stage parameters (generate backends map onto these).
 
@@ -3021,7 +3133,7 @@ Every field is a no-op at its default, so a sparse item (no `processing`)
 renders untouched; the mixer departs from dry/centered/full-level only when a
 field is set.
 
-### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'include_explicit': Affordance(name='include_explicit', type=<class 'bool'>, description='Also return explicit / sensitive results', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'kind': Affordance(name='kind', type=<class 'str'>, description='Media kind: sfx | music', default='sfx', stage='query', carries_meaning=True, choices=('sfx', 'music'), renamed_from=None), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'page': Affordance(name='page', type=<class 'int'>, description='Results page (1-based; k per page)', default=1, stage='query', carries_meaning=True, choices=None, renamed_from=None), 'query': Affordance(name='query', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False, choices=None, renamed_from='text'), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'sort': Affordance(name='sort', type=<class 'str'>, description='Result order', default='relevance', stage='query', carries_meaning=False, choices=('relevance', 'newest', 'popular', 'duration'), renamed_from=None), 'sources': Affordance(name='sources', type=<class 'list'>, description='Restrict an aggregator to these of its providers', default=None, stage='query', carries_meaning=True, choices=None, renamed_from=None), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None)}*
+### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'include_explicit': Affordance(name='include_explicit', type=<class 'bool'>, description='Also return explicit / sensitive results', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'kind': Affordance(name='kind', type=<class 'str'>, description='Media kind: sfx | music', default='sfx', stage='query', carries_meaning=True, choices=('sfx', 'music'), renamed_from=None, bounds=None), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'page': Affordance(name='page', type=<class 'int'>, description='Results page (1-based; k per page)', default=1, stage='query', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'query': Affordance(name='query', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False, choices=None, renamed_from='text', bounds=None), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'sort': Affordance(name='sort', type=<class 'str'>, description='Result order', default='relevance', stage='query', carries_meaning=False, choices=('relevance', 'newest', 'popular', 'duration'), renamed_from=None, bounds=None), 'sources': Affordance(name='sources', type=<class 'list'>, description='Restrict an aggregator to these of its providers', default=None, stage='query', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None)}*
 
 Unified query-stage parameters (search / find / filter surface).
 
@@ -3155,6 +3267,35 @@ Which rung of the verification ladder produced a `Verdict`.
 
 The territory of a sound used everywhere (online publishing reaches every country):
 a licence that excludes any territory refuses it (#175).
+
+### foley.base.check_edit_args(op, affordances, , clip_s=None, limits=None)
+
+Raise `ValueError` unless `affordances` are a valid call of the edit `op`.
+
+Checked before anything is paid for: the op is known, its required parameters are
+given, it is given no other op’s parameters, each number is within its
+[`Affordance.bounds`](_autosummary/foley.base.html.md#foley.base.Affordance.bounds) and below the backend’s own maximum (`limits`: name ->
+max), each `ordered` pair is increasing, and a time into the source
+([`EditOp.within_clip`](_autosummary/foley.base.html.md#foley.base.EditOp.within_clip)) does not pass its end (`clip_s`, when known).
+
+```pycon
+>>> check_edit_args("inpaint", {"inpaint_start_s": 1.0, "inpaint_end_s": 2.5})
+>>> check_edit_args("inpaint", {"inpaint_start_s": 1.0})
+Traceback (most recent call last):
+...
+ValueError: the inpaint edit needs inpaint_end_s=
+>>> check_edit_args("extend", {"extend_before_s": 0})
+Traceback (most recent call last):
+...
+ValueError: the extend edit needs one of extend_before_s=, extend_after_s= above 0
+>>> check_edit_args("inpaint", {"inpaint_start_s": 1, "inpaint_end_s": 9}, clip_s=4)
+Traceback (most recent call last):
+...
+ValueError: inpaint_end_s=9 is past the end of the 4 s source clip
+```
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### foley.base.normalize_territory(territory)
 
@@ -5420,6 +5561,7 @@ import foley
 foley.find("She pushed open the heavy oak door; rain hammered outside.")
 foley.search("distant thunder rumble", k=10)
 foley.generate("a single wooden door creak", backend="stable_audio")
+foley.edit(sound_id, "extend", extend_after_s=2)  # audio-to-audio | inpaint | extend
 foley.ingest("~/my_sounds/")
 ```
 
@@ -5517,6 +5659,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`register_source`](_autosummary/foley.html.md#foley.register_source)(name, config[, adapter])            | Register a live source directly (out-of-tree plugin or a test double).                                                                                                         |
 | [`generate`](_autosummary/foley.html.md#foley.generate)(prompt, \*[, backend, library, ...])       | Generate a sound effect for `prompt` and add it to the library (by-value).                                                                                                     |
 | [`variations`](_autosummary/foley.html.md#foley.variations)(prompt, n, \*[, backend, seed, ...])     | `n` variations of one sound for `prompt`: `n` stored, distinct candidates (#161).                                                                                              |
+| [`edit`](_autosummary/foley.html.md#foley.edit)(source, op[, prompt, backend, library, ...])   | Edit a library sound into a new one: audio-to-audio, inpaint or extend (#162).                                                                                                 |
 | [`candidate_of`](_autosummary/foley.html.md#foley.candidate_of)(result)                                | Wrap a stored [`IngestResult`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestResult) as a generated candidate.                                          |
 | `art50_checklist`(record)                                                                            | Return the per-clip EU AI Act Art.                                                                                                                                             |
 | `scan_prompt`(prompt)                                                                                | Scan a generation `prompt` for trademarked-audio-logo + voice-clone risk.                                                                                                      |
@@ -5610,11 +5753,12 @@ lazy-imported inside the audio/QC functions that need them (install via the
 
 ### Exceptions
 
-| [`GenerationError`](_autosummary/foley.html.md#foley.GenerationError)(message, \*, report, status)     | Raised by [`foley.generate()`](_autosummary/foley.html.md#foley.generate) when a backend yields no stored sound.                       |
-|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| [`SafetyRefusal`](_autosummary/foley.html.md#foley.SafetyRefusal)(message, \*, hits, report)         | Raised (fail-closed) when a generation prompt trips a #9b safety gate.                                                                   |
-| [`TrademarkRefusal`](_autosummary/foley.html.md#foley.TrademarkRefusal)(message, \*, hits, report)      | A [`SafetyRefusal`](_autosummary/foley.html.md#foley.SafetyRefusal) for a prompt naming a trademarked audio logo (report 07 §7.2).          |
-| [`RecognizableVoiceRefusal`](_autosummary/foley.html.md#foley.RecognizableVoiceRefusal)(message, \*, hits, ...) | A [`SafetyRefusal`](_autosummary/foley.html.md#foley.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1). |
+| [`GenerationError`](_autosummary/foley.html.md#foley.GenerationError)(message, \*, report, status)     | Raised by [`foley.generate()`](_autosummary/foley.html.md#foley.generate) (and [`foley.edit()`](_autosummary/foley.html.md#foley.edit)) when a backend yields no stored sound.                                                                                                                                          |
+|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`EditRefusal`](_autosummary/foley.html.md#foley.EditRefusal)(message, \*, source_id, reason)      | Raised (fail-closed) by an edit ([`foley.edit()`](_autosummary/foley.html.md#foley.edit), or [`foley.generate()`](_autosummary/foley.html.md#foley.generate) with an edit backend and `audio=`) before anything is paid for, when the source's rights do not allow an edit of it to be made and kept, or are not given. |
+| [`SafetyRefusal`](_autosummary/foley.html.md#foley.SafetyRefusal)(message, \*, hits, report)         | Raised (fail-closed) when a generation prompt trips a #9b safety gate.                                                                                                                                                                                                                                                          |
+| [`TrademarkRefusal`](_autosummary/foley.html.md#foley.TrademarkRefusal)(message, \*, hits, report)      | A [`SafetyRefusal`](_autosummary/foley.html.md#foley.SafetyRefusal) for a prompt naming a trademarked audio logo (report 07 §7.2).                                                                                                                                                                                                 |
+| [`RecognizableVoiceRefusal`](_autosummary/foley.html.md#foley.RecognizableVoiceRefusal)(message, \*, hits, ...) | A [`SafetyRefusal`](_autosummary/foley.html.md#foley.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1).                                                                                                                                                                                        |
 
 ### *class* foley.AcquisitionMethod(\*values)
 
@@ -5622,7 +5766,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound entered foley (retrieval channel or origin).
 
-### *class* foley.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None)
+### *class* foley.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -5689,6 +5833,15 @@ cache still reads entries kept under the old name.
 
 * **Type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+#### bounds
+
+`(lo, hi)` for a number (either end `None`: open), checked
+before any call where the affordance’s registry says so (see
+`check_edit_args()`).
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]
 
 ### *class* foley.Anchor(\*values)
 
@@ -5973,7 +6126,7 @@ no second CLAP forward pass.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
 
-### *class* foley.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None)
+### *class* foley.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list())
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -6008,6 +6161,27 @@ The rendered `CREDITS.md` document.
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 The tiny result of [`decide()`](_autosummary/foley.html.md#foley.decide); `reason` feeds the refine hint + the audit Step.
+
+### *exception* foley.EditRefusal(message, , source_id, reason)
+
+Bases: [`GenerationError`](_autosummary/foley.sources.html.md#foley.sources.GenerationError)
+
+Raised (fail-closed) by an edit ([`foley.edit()`](_autosummary/foley.html.md#foley.edit), or [`foley.generate()`](_autosummary/foley.html.md#foley.generate)
+with an edit backend and `audio=`) before anything is paid for, when the source’s
+rights do not allow an edit of it to be made and kept, or are not given.
+
+See [`foley.licensing.derivative_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal): unverified rights, bytes that may
+not be sent on, a licence that forbids modification, a share-alike licence (an
+edit’s own licence cannot carry it), or a licence foley has no row for. Its
+`report` is empty and its `status` is `'rights_blocked'`.
+
+#### source_id
+
+The id of the sound that was to be edited (`None`: not known).
+
+#### reason
+
+Why it was refused.
 
 ### *class* foley.Embedder(\*args, \*\*kwargs)
 
@@ -6106,7 +6280,7 @@ appeared only in the vector list).
 
 Bases: [`RuntimeError`](https://docs.python.org/3/builtins/exceptions.html#RuntimeError)
 
-Raised by [`foley.generate()`](_autosummary/foley.html.md#foley.generate) when a backend yields no stored sound.
+Raised by [`foley.generate()`](_autosummary/foley.html.md#foley.generate) (and [`foley.edit()`](_autosummary/foley.html.md#foley.edit)) when a backend yields no stored sound.
 
 Carries the full [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport) and the terminal
 [`status`](_autosummary/foley.html.md#foley.GenerationError.status) so a caller can react distinctly to `quarantined` (QC-rejected —
@@ -7362,7 +7536,10 @@ Render one sound’s TASL attribution line.
 
 A source-supplied `attribution_text` (if non-empty) is returned **verbatim**;
 otherwise the line is synthesized from Title/Author/Source/License, with a
-`(modified)` notice and an AI-disclosure segment appended as applicable.
+`(modified)` notice and an AI-disclosure segment appended as applicable. A clip
+made by editing another (#162) then credits its source: `; derived from` and the
+source’s own credit line (which names the source’s licence, and its own source in
+turn, for an edit of an edit).
 
 * **Parameters:**
   * **source** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`CreditEntry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry), [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)]) – A [`CreditEntry`](_autosummary/foley.html.md#foley.CreditEntry), or any credit input (coerced first).
@@ -7505,7 +7682,8 @@ the same key) and immutability (a key always names the exact same bytes).
 Build a [`CreditEntry`](_autosummary/foley.html.md#foley.CreditEntry) from a record (title override optional).
 
 Every field is read straight off the [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) (flags
-never re-derived); `modified` reflects a non-empty `transformations` list.
+never re-derived); `modified` reflects a non-empty `transformations` list, and
+`derived_from` the sources an edit was made from (`derived_sources()`).
 
 * **Parameters:**
   * **record** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate),
@@ -7720,6 +7898,61 @@ Clip duration in seconds: `frames / sample_rate`.
 
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+### foley.edit(source, op, prompt='', , backend=None, library=None, budget=None, \*\*kwargs)
+
+Edit a library sound into a new one: audio-to-audio, inpaint or extend (#162).
+
+An edit is a generation whose input includes the source clip (the `edit` mode),
+so it runs through [`generate()`](_autosummary/foley.html.md#foley.generate) (cost gate, budget, generations cache, safety
+screen, watermark, QC, ingest by-value) with the source’s bytes as `audio=` and
+its record as `derived_from=`. Before anything is paid for, the op and its
+parameters are checked (a window inside the clip) and the source’s rights are
+gated **fail-closed** ([`foley.licensing.derivative_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal): verified,
+sendable bytes, modifiable, not share-alike, a known licence). The new sound’s
+licence is the generator’s narrowed to the source’s (an edit of a non-commercial
+sound is non-commercial); its `transformations` record the edit (op, parameters,
+source id, content and licence), so [`credits()`](_autosummary/foley.html.md#foley.credits) credits the source and its
+licence beside the generator’s, and its content credential declares the source as
+an ingredient.
+
+`foley.edit(sound_id, "extend", extend_after_s=2)` — with paid generation
+opted in (`$FOLEY_GENERATE_PAID=1`), or a backend named — is the whole call.
+
+* **Parameters:**
+  * **source** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The library id of the sound to edit; its bytes come from the library.
+  * **op** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `'audio_to_audio'` (regenerate the whole clip; `strength` 0..1, how
+    far from the source, 1.0 being pure generation), `'inpaint'` (regenerate
+    `inpaint_start_s`..\`\`inpaint_end_s\`\`, keep the rest) or `'extend'`
+    (`extend_before_s` and/or `extend_after_s` seconds of new sound). See
+    `EDIT_OPS`.
+  * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – What the result should sound like; `''` (default): the source’s caption.
+  * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – An edit source doing `op` (`'fal_stable_audio_3_audio_to_audio'`,
+    `'fal_stable_audio_3_inpaint'`, `'fal_stable_audio_3_extend'`: fal’s
+    Stable Audio 3 Small-SFX, `foley[fal]` + `$FAL_KEY`). `None`
+    (default): the op’s default, read from the registry configs’ `edit_op`;
+    it is paid, so it runs only once paid generation is opted in.
+  * **library** – The library holding `source` and receiving the edit (default: the
+    process-wide default library).
+  * **budget** – A [`Budget`](_autosummary/foley.html.md#foley.Budget) for this call (see [`generate()`](_autosummary/foley.html.md#foley.generate)).
+  * **\*\*kwargs** – The op’s parameters (`EDIT_AFFORDANCES`), other generation
+    affordances the backend takes (`seed`, `negative_prompt`, `steps`,
+    `duration_s` for audio-to-audio: default the source’s length), and any
+    other keyword of [`generate()`](_autosummary/foley.html.md#foley.generate) (`adapter=`, `store=`, `level=`, …).
+* **Returns:**
+  The stored [`Candidate`](_autosummary/foley.html.md#foley.Candidate) (`origin=generated`), as [`generate()`](_autosummary/foley.html.md#foley.generate).
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For an unknown op, a missing, foreign or out-of-range op
+        parameter, an `audio=` or `derived_from=`, or a backend that does
+        another op.
+  * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If `source` is not in the library.
+  * [**EditRefusal**](_autosummary/foley.html.md#foley.EditRefusal) – If the source’s rights do not allow an edit, or its bytes may not
+        be sent on (a Freesound API pull); nothing is generated.
+  * [**LookupError**](https://docs.python.org/3/builtins/exceptions.html#LookupError) – If the source’s bytes are not on this machine (a remote
+        by-reference sound: fetch it first).
+  * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – For an unnamed paid backend without the opt-in.
+  * [**GenerationError**](_autosummary/foley.html.md#foley.GenerationError) – As [`generate()`](_autosummary/foley.html.md#foley.generate), when the backend yields no stored sound
+        (`rights_blocked`: a byte-identical sound with wider rights is stored).
 
 ### foley.encode(samples, sample_rate, , fmt='flac', subtype='PCM_24')
 
@@ -7937,7 +8170,7 @@ RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
 
   FusedHit\`s, each carrying its raw component scores.
 
-### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, provider_params=None, variation=0, \*\*affordances)
+### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, provider_params=None, variation=0, derived_from=None, \*\*affordances)
 
 Generate a sound effect for `prompt` and add it to the library (by-value).
 
@@ -8036,11 +8269,20 @@ training uses).
     (default) is the request itself; a later one is a different paid request
     in the generations cache, so it is a new sound even from a backend that
     takes no seed. [`variations()`](_autosummary/foley.html.md#foley.variations) sets it; most callers never do.
+  * **derived_from** – For an edit (an edit backend given `audio=`), the source
+    clip’s [`SoundRecord`](_autosummary/foley.html.md#foley.SoundRecord) or [`LicenseRecord`](_autosummary/foley.html.md#foley.LicenseRecord): **required** — an
+    edit without it is refused ([`EditRefusal`](_autosummary/foley.html.md#foley.EditRefusal)), as one whose rights
+    do not allow it, before anything is paid for. The clip’s licence is
+    narrowed to it and records it (credits, content credential).
+    [`edit()`](_autosummary/foley.html.md#foley.edit) passes it; `None` (default): a new sound.
   * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format`, `sample_rate`, `expand_prompt`, `video` — see
     `GENERATION_AFFORDANCES`). A `video` given as a bare remote URL is
-    never replayed from the cache; [`RemoteVideo`](_autosummary/foley.html.md#foley.RemoteVideo) keys it by content.
+    never replayed from the cache; [`RemoteVideo`](_autosummary/foley.html.md#foley.RemoteVideo) keys it by content. An
+    edit backend takes `audio` (the source clip, with `derived_from=` its
+    rights) and the op’s parameters (`EDIT_AFFORDANCES`); for a library
+    sound, [`edit()`](_autosummary/foley.html.md#foley.edit) does both.
 * **Returns:**
   The stored [`Candidate`](_autosummary/foley.html.md#foley.Candidate) (`origin=generated`) — its `sound` is the
   canonical, by-value [`SoundRecord`](_autosummary/foley.html.md#foley.SoundRecord) (a content-hash id); its `notes`
@@ -12763,17 +13005,22 @@ item is redistributable but stored by-reference.
 | [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                          |
 | [`cc_refused_terms`](_autosummary/foley.licensing.html.md#foley.licensing.cc_refused_terms)(url)                             | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                             |
 | [`checked_refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason)(record, intended_use)      | [`refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.    |
+| [`derivative_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal)(source)                        | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                |
 | [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                               |
 | [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                           |
 | [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                        |
+| [`is_share_alike`](_autosummary/foley.licensing.html.md#foley.licensing.is_share_alike)(license_id)                        | Whether `license_id` (or a licence URL / label) is share-alike.                                                                |
 | [`keep`](_autosummary/foley.licensing.html.md#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                           |
 | [`keep_sound`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) to a `SoundRecord`'s nested license.                |
 | [`license_id_from_cc_url`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                                   |
 | [`license_meta`](_autosummary/foley.licensing.html.md#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback).       |
+| [`narrow_to_source`](_autosummary/foley.licensing.html.md#foley.licensing.narrow_to_source)(output, source)                  | Narrow `output`'s rights to what `source` allows, in place (never widening).                                                   |
 | [`refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason)(record, intended_use)              | Why [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.     |
 | [`refusals`](_autosummary/foley.licensing.html.md#foley.licensing.refusals)(sound_records, intended_use)             | `{sound id: reason}` for each sound record [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses for `intended_use`. |
 | [`territory_excluded`](_autosummary/foley.licensing.html.md#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                        |
+| [`upload_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.upload_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.                                   |
 | [`wanted_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                                  |
+| [`wider_rights`](_autosummary/foley.licensing.html.md#foley.licensing.wider_rights)(record, bound)                       | What `record` allows that `bound` does not (`[]`: no wider than `bound`).                                                      |
 
 ### Classes
 
@@ -12959,6 +13206,33 @@ True
 "its licence could not be checked (AttributeError: 'NoneType' object has no attribute 'rights_verified')"
 ```
 
+### foley.licensing.derivative_refusal(source)
+
+Why a sound with rights `source` may not be edited into a new sound, or `None`.
+
+The fail-closed gate of an edit (#162), applied by the generation’s `edit` mode
+before anything is paid for. The first unmet requirement: its rights are verified;
+its bytes may be sent on ([`upload_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.upload_refusal)); its licence is not share-alike
+(the edit’s own licence, the generator’s, cannot carry it); its licence has a
+[`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) row (else the edit’s rights cannot be derived); it allows
+modification; it excludes no territory (which the edit’s record could not carry).
+Every other restriction carries over to the edit ([`narrow_to_source()`](_autosummary/foley.licensing.html.md#foley.licensing.narrow_to_source)).
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> ok = apply_license_flags(LicenseRecord(source="x", license_id="CC-BY-4.0",
+...                                        rights_verified=True))
+>>> derivative_refusal(ok) is None
+True
+>>> derivative_refusal(apply_license_flags(LicenseRecord(source="x",
+...                                                      license_id="research-only",
+...                                                      rights_verified=True)))
+'its licence does not allow modification'
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.licensing.derive_license_flags(license_id, , overrides=None)
 
 Look up the flag set for a `license_id` (fail-closed fallback), then
@@ -13004,6 +13278,22 @@ Whether `token` is a search constraint a CC-reading source understands.
 `None`/`'any'` (no constraint), `'cc0'`, or a CC / public-domain licence id or
 family (`'CC-BY-4.0'`, `'cc-by'`, `'PDM-1.0'`). Not an ingest-time rights
 assertion such as `'user-owned'`.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.licensing.is_share_alike(license_id)
+
+Whether `license_id` (or a licence URL / label) is share-alike.
+
+Read with the same tokens [`license_id_from_cc_url()`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url) refuses share-alike by: no
+[`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) row is share-alike (the mapper sends every such licence to
+`'unknown'`), so this catches an id stamped by hand or by a source.
+
+```pycon
+>>> is_share_alike("CC-BY-SA-4.0"), is_share_alike("CC-BY-4.0"), is_share_alike(None)
+(True, False, False)
+```
 
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
@@ -13080,6 +13370,31 @@ Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.li
   The mapped [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta), or [`UNKNOWN_LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_META) for an
   unrecognized / `Proprietary-*` id.
 
+### foley.licensing.narrow_to_source(output, source)
+
+Narrow `output`’s rights to what `source` allows, in place (never widening).
+
+An edit is a derivative of its source: it may be used only where both the
+generator’s licence and the source’s allow. Each permission of
+`_DERIVATIVE_SHARED_FLAGS` is kept only when both hold it, attribution is
+required when either requires it, the revenue cap is the lower one, the AI-use
+scope is the stricter one, and the source’s required notice, stated AI-use
+preference and safety flags carry over. `cache_bytes_ok` stays the output’s (it
+is about storing the new bytes). Routed through [`apply_license_flags()`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags), so the
+flags still come from the policy layer, never set by hand.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> out = apply_license_flags(LicenseRecord(source="g", license_id="Stability-Community"))
+>>> src = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0"))
+>>> narrowed = narrow_to_source(out, src)
+>>> narrowed.commercial_ok, narrowed.requires_attribution, narrowed.revenue_cap_usd
+(False, True, 1000000)
+```
+
+* **Return type:**
+  [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
+
 ### foley.licensing.refusal_reason(record, intended_use)
 
 Why [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.
@@ -13122,6 +13437,24 @@ does one that is not a country code: the gate fails closed.
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
+### foley.licensing.upload_refusal(source)
+
+Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.
+
+`cache_bytes_ok` is the source’s terms on its bytes (a Freesound API pull is
+by-reference even under CC0): bytes foley may not keep, it does not upload either.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> upload_refusal(LicenseRecord(source="x", cache_bytes_ok=True)) is None
+True
+>>> upload_refusal(LicenseRecord(source="freesound"))[:30]
+'its bytes may not be kept or s'
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.licensing.wanted_license_ids(config, license)
 
 The licence ids a `license=` request keeps, or `None` for every accepted one.
@@ -13145,6 +13478,27 @@ gives `[]`, so nothing is returned: fail closed, never silently broader.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.licensing.wider_rights(record, bound)
+
+What `record` allows that `bound` does not (`[]`: no wider than `bound`).
+
+A permission of `_DERIVATIVE_SHARED_FLAGS` it holds and `bound` lacks, an
+attribution or a notice `bound` requires and it does not, a higher (or no)
+revenue cap, a looser AI-use scope, a voice or trademark flag `bound` raises
+and it does not, another stated AI-use preference. How an edit tells that a byte-identical sound
+already in the library is not the edit it made (see [`narrow_to_source()`](_autosummary/foley.licensing.html.md#foley.licensing.narrow_to_source)).
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0"))
+>>> by = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-4.0"))
+>>> wider_rights(by, nc), wider_rights(nc, by)
+(['commercial_ok', 'ai_training_ok'], [])
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 
 # _autosummary/foley.obs.html.md
@@ -14124,12 +14478,15 @@ Design (report 07 · 10 §\`\`provenance/
 
 ### Functions
 
-| [`attribution_line`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.attribution_line)(source, \*[, fmt])          | Render one sound's TASL attribution line.                                                                     |
-|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
-| [`credit_entry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.credit_entry)(record, \*[, title])            | Build a [`CreditEntry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry) from a record (title override optional). |
-| [`credits_for`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.credits_for)(sounds, \*[, title, ...])        | Build the deduplicated [`Credits`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.Credits) for the sounds used in a run. |
-| [`credits_manifest`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.credits_manifest)(credits)                    | The machine-readable manifest for `credits` — a JSON-native dict.                                             |
-| [`render_credits_md`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.render_credits_md)(credits, \*[, title, ...]) | Render `credits` as a deterministic `CREDITS.md` document.                                                    |
+| [`attribution_line`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.attribution_line)(source, \*[, fmt])          | Render one sound's TASL attribution line.                                                                                                                                       |
+|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`credit_entry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.credit_entry)(record, \*[, title])            | Build a [`CreditEntry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry) from a record (title override optional).                                                                   |
+| [`credits_for`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.credits_for)(sounds, \*[, title, ...])        | Build the deduplicated [`Credits`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.Credits) for the sounds used in a run.                                                                   |
+| [`credits_manifest`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.credits_manifest)(credits)                    | The machine-readable manifest for `credits` — a JSON-native dict.                                                                                                               |
+| [`derived_source`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.derived_source)(transformation)               | The source an edit's `transformations` entry names (see [`derived_sources()`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.derived_sources)), or `None` for any other entry (a repair, a level). |
+| [`derived_sources`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.derived_sources)(license)                     | What a clip derives from, read off its licence's `transformations` (#162).                                                                                                      |
+| [`license_display`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.license_display)(license)                     | The license (name, url): the record's own when populated, else the SSOT table.                                                                                                  |
+| [`render_credits_md`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.render_credits_md)(credits, \*[, title, ...]) | Render `credits` as a deterministic `CREDITS.md` document.                                                                                                                      |
 
 ### Classes
 
@@ -14137,7 +14494,7 @@ Design (report 07 · 10 §\`\`provenance/
 |------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | [`Credits`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.Credits)([entries, title, schema_version])     | A deduplicated, ordered collection of [`CreditEntry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry) for one run. |
 
-### *class* foley.provenance.credits.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None)
+### *class* foley.provenance.credits.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list())
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -14183,7 +14540,10 @@ Render one sound’s TASL attribution line.
 
 A source-supplied `attribution_text` (if non-empty) is returned **verbatim**;
 otherwise the line is synthesized from Title/Author/Source/License, with a
-`(modified)` notice and an AI-disclosure segment appended as applicable.
+`(modified)` notice and an AI-disclosure segment appended as applicable. A clip
+made by editing another (#162) then credits its source: `; derived from` and the
+source’s own credit line (which names the source’s licence, and its own source in
+turn, for an edit of an edit).
 
 * **Parameters:**
   * **source** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`CreditEntry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry), [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)]) – A [`CreditEntry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry), or any credit input (coerced first).
@@ -14199,7 +14559,8 @@ otherwise the line is synthesized from Title/Author/Source/License, with a
 Build a [`CreditEntry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry) from a record (title override optional).
 
 Every field is read straight off the [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) (flags
-never re-derived); `modified` reflects a non-empty `transformations` list.
+never re-derived); `modified` reflects a non-empty `transformations` list, and
+`derived_from` the sources an edit was made from ([`derived_sources()`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.derived_sources)).
 
 * **Parameters:**
   * **record** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate),
@@ -14238,6 +14599,46 @@ the `watermark` / `c2pa_manifest_ref` pass-throughs (`None` until #9b).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.provenance.credits.derived_source(transformation)
+
+The source an edit’s `transformations` entry names (see [`derived_sources()`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.derived_sources)),
+or `None` for any other entry (a repair, a level).
+
+```pycon
+>>> derived_source("declick") is None
+True
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.provenance.credits.derived_sources(license)
+
+What a clip derives from, read off its licence’s `transformations` (#162).
+
+One dict per edit entry (`kind == 'edit'`, see
+[`foley.sources.edit.EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage)): the source’s `sound_id`, `content`
+key, `license_id` / `license_name` / `license_url` and its `credit` line,
+so a derived clip’s credit names the source’s licence beside the generator’s.
+
+```pycon
+>>> lic = LicenseRecord(source="g", transformations=["declick", {
+...     "kind": "edit", "op": "extend", "source_id": "s1",
+...     "source_license_id": "CC-BY-NC-4.0", "source_credit": '"Door" by Bob'}])
+>>> [(d["sound_id"], d["license_id"], d["credit"]) for d in derived_sources(lic)]
+[('s1', 'CC-BY-NC-4.0', '"Door" by Bob')]
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.provenance.credits.license_display(license)
+
+The license (name, url): the record’s own when populated, else the SSOT table.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
 ### foley.provenance.credits.render_credits_md(credits, , title=None, heading_level=2)
 
@@ -14300,20 +14701,22 @@ dependency-light.
 |---------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|
 | [`IPTC_TRAINED_ALGORITHMIC_MEDIA`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA) | IPTC digitalSourceType vocabulary (C2PA `c2pa.actions` assertion).                                          |
 | [`C2PA_CREATED`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.C2PA_CREATED)                   | C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).                   |
+| [`INGREDIENT_SOURCE_KEY`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.INGREDIENT_SOURCE_KEY)          | The key under which an edit's source ingredient carries what foley knows of it.                             |
 | [`TRADEMARK_REGISTRY`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TRADEMARK_REGISTRY)             | Seed registry of branded audio logos foley must not knowingly generate for commercial use (report 07 §7.2). |
 | [`INGREDIENT_CREDENTIAL_KEY`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.INGREDIENT_CREDENTIAL_KEY)      | The one key under which an ingredient carries foley's full per-sound credential.                            |
 
 ### Functions
 
-| [`art50_checklist`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.art50_checklist)(record)                          | Return the per-clip EU AI Act Art.                                                                                   |
-|---------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| [`as_c2pa_ingredient`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.as_c2pa_ingredient)(credential, \*, index)        | A per-sound content credential, declared as a C2PA `componentOf` ingredient.                                         |
-| [`build_content_credential`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.build_content_credential)(record, \*, asset_id)   | Build the portable, self-asserted C2PA-shaped content-credential dict.                                               |
-| [`build_mix_credential`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.build_mix_credential)(records, \*, asset_id, ...) | Build the MIX-level C2PA-shaped content credential (report 07 / #9b), as re-asserted by `weave.reassert_provenance`. |
-| [`detect_watermark`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.detect_watermark)(audio_bytes)                    | Detect a foley watermark in `audio_bytes` (lazy AudioSeal).                                                          |
-| [`resolve_watermarker`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.resolve_watermarker)(watermark, watermarker)      | Resolve the effective [`Watermarker`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.Watermarker) for a generate call.              |
-| [`scan_prompt`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.scan_prompt)(prompt)                              | Scan a generation `prompt` for trademarked-audio-logo + voice-clone risk.                                            |
-| [`write_content_credential`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.write_content_credential)(store, asset_id, ...)   | Write `credential` into `store` keyed by `asset_id`; return `asset_id`.                                              |
+| [`art50_checklist`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.art50_checklist)(record)                          | Return the per-clip EU AI Act Art.                                                                                                                                                                           |
+|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`as_c2pa_ingredient`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.as_c2pa_ingredient)(credential, \*, index)        | A per-sound content credential, declared as a C2PA `componentOf` ingredient.                                                                                                                                 |
+| [`build_content_credential`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.build_content_credential)(record, \*, asset_id)   | Build the portable, self-asserted C2PA-shaped content-credential dict.                                                                                                                                       |
+| [`build_mix_credential`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.build_mix_credential)(records, \*, asset_id, ...) | Build the MIX-level C2PA-shaped content credential (report 07 / #9b), as re-asserted by `weave.reassert_provenance`.                                                                                         |
+| [`describe_transformation`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.describe_transformation)(transformation)          | A `transformations` entry as one readable line (a C2PA `c2pa.edited` description): a string as is, an edit of another sound (#162) by its op, source and parameters, any other mapping as `key=value` pairs. |
+| [`detect_watermark`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.detect_watermark)(audio_bytes)                    | Detect a foley watermark in `audio_bytes` (lazy AudioSeal).                                                                                                                                                  |
+| [`resolve_watermarker`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.resolve_watermarker)(watermark, watermarker)      | Resolve the effective [`Watermarker`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.Watermarker) for a generate call.                                                                                                      |
+| [`scan_prompt`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.scan_prompt)(prompt)                              | Scan a generation `prompt` for trademarked-audio-logo + voice-clone risk.                                                                                                                                    |
+| [`write_content_credential`](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.write_content_credential)(store, asset_id, ...)   | Write `credential` into `store` keyed by `asset_id`; return `asset_id`.                                                                                                                                      |
 
 ### Classes
 
@@ -14377,6 +14780,10 @@ content-hash id reproducible so a byte-identical regeneration still dedups
 
 The one key under which an ingredient carries foley’s full per-sound credential.
 
+### foley.provenance.disclosure.INGREDIENT_SOURCE_KEY *= 'foley_source'*
+
+The key under which an edit’s source ingredient carries what foley knows of it.
+
 ### foley.provenance.disclosure.IPTC_TRAINED_ALGORITHMIC_MEDIA *= 'http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia'*
 
 IPTC digitalSourceType vocabulary (C2PA `c2pa.actions` assertion).
@@ -14399,7 +14806,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'tudum', 'netflix chime', 'netflix sound', 'netflix intro', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel inside', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'ta-dum', 'netflix intro', 'netflix chime', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -14516,6 +14923,25 @@ declared as a `componentOf` ingredient (via [`as_c2pa_ingredient()`](_autosummar
 
 Signing embeds into WAV only: a credential with a non-WAV `fmt` stays sidecar-only.
 
+### foley.provenance.disclosure.describe_transformation(transformation)
+
+A `transformations` entry as one readable line (a C2PA `c2pa.edited`
+description): a string as is, an edit of another sound (#162) by its op, source and
+parameters, any other mapping as `key=value` pairs.
+
+```pycon
+>>> describe_transformation("declick")
+'declick'
+>>> describe_transformation({"kind": "edit", "op": "extend", "source_id": "s1",
+...     "source_license_id": "CC-BY-4.0", "params": {"extend_after_s": 2.0}})
+'extend of s1 (CC-BY-4.0): extend_after_s=2.0'
+>>> describe_transformation({"gain_db": -3, "target": "dialogue"})
+'gain_db=-3, target=dialogue'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 ### foley.provenance.disclosure.detect_watermark(audio_bytes)
 
 Detect a foley watermark in `audio_bytes` (lazy AudioSeal).
@@ -14612,7 +15038,7 @@ reach the pure helpers via `foley.art50_checklist` / `foley.scan_prompt`.
 |------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | [`Credits`](_autosummary/foley.provenance.html.md#foley.provenance.Credits)([entries, title, schema_version])     | A deduplicated, ordered collection of [`CreditEntry`](_autosummary/foley.provenance.html.md#foley.provenance.CreditEntry) for one run. |
 
-### *class* foley.provenance.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None)
+### *class* foley.provenance.CreditEntry(sound_id, title=None, author=None, author_url=None, source=None, source_url=None, license_id='unknown', license_name=None, license_url=None, modified=False, requires_attribution=False, attribution_text=None, notice_text_required=None, is_ai_generated=False, generator_model=None, disclosure_recommended=False, watermark=None, c2pa_manifest_ref=None, derived_from=list())
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -14648,7 +15074,10 @@ Render one sound’s TASL attribution line.
 
 A source-supplied `attribution_text` (if non-empty) is returned **verbatim**;
 otherwise the line is synthesized from Title/Author/Source/License, with a
-`(modified)` notice and an AI-disclosure segment appended as applicable.
+`(modified)` notice and an AI-disclosure segment appended as applicable. A clip
+made by editing another (#162) then credits its source: `; derived from` and the
+source’s own credit line (which names the source’s licence, and its own source in
+turn, for an edit of an edit).
 
 * **Parameters:**
   * **source** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`CreditEntry`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.CreditEntry), [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)]) – A [`CreditEntry`](_autosummary/foley.provenance.html.md#foley.provenance.CreditEntry), or any credit input (coerced first).
@@ -14664,7 +15093,8 @@ otherwise the line is synthesized from Title/Author/Source/License, with a
 Build a [`CreditEntry`](_autosummary/foley.provenance.html.md#foley.provenance.CreditEntry) from a record (title override optional).
 
 Every field is read straight off the [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) (flags
-never re-derived); `modified` reflects a non-empty `transformations` list.
+never re-derived); `modified` reflects a non-empty `transformations` list, and
+`derived_from` the sources an edit was made from (`derived_sources()`).
 
 * **Parameters:**
   * **record** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate), [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)]) – A [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate),
@@ -16731,6 +17161,222 @@ The clip’s own licence from its metadata row (`unknown` when absent).
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 
 
+# _autosummary/foley.sources.edit.html.md
+
+# foley.sources.edit
+
+Edits of a sound (#162): audio-to-audio, inpaint, extend — the parts an edit adds to generation.
+
+An edit is a generation *mode* (`'edit'`: an edit source given a source clip,
+`audio=`), so it runs through the same dispatch as every generation
+([`foley.generate()`](_autosummary/foley.html.md#foley.generate): cost gate, budget, generations cache, safety screen,
+watermark, ingest, QC). What is particular to an edit lives here:
+
+* [`edit_lineage()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_lineage) — the mode’s licence gate, run by the generation workhorse
+  before anything is paid for. An edit **needs** its source’s rights (`derived_from=`:
+  the source’s [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), or its
+  [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)); without them, or with rights that do not allow
+  > an edit ([`foley.licensing.derivative_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal)), it is refused fail-closed
+  > (`EditRefusal`). This holds for [`foley.edit()`](_autosummary/foley.html.md#foley.edit) and for a raw
+  > `foley.generate(..., audio=...)` alike.
+* [`EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage) — what the edit derives from. It keys the request (an edit’s
+  cache entry is never shared with another source or licence), and is applied to the
+  new clip’s licence before the repair, the watermark, the credential and the ingest:
+  the rights are narrowed to the source’s ([`foley.licensing.narrow_to_source()`](_autosummary/foley.licensing.html.md#foley.licensing.narrow_to_source)),
+  and the edit (op, parameters, source id, content key, licence, credit) is appended
+  to `transformations`, which the credits ([`foley.provenance.credits.derived_sources()`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.derived_sources))
+  and the content credential (a `parentOf` ingredient) read.
+* [`resolve_edit()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.resolve_edit) — what [`foley.edit()`](_autosummary/foley.html.md#foley.edit) adds on top: the source sound from
+  the library (its bytes, which must be sendable), the op and the backend (named, or
+  the op’s default from the registry configs’ `edit_op`).
+
+### Module Attributes
+
+| [`EditSource`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditSource)   | What an edit may be told it derives from (`derived_from=`).   |
+|---------------------------------------------------------------|---------------------------------------------------------------|
+
+### Functions
+
+| [`edit_lineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_lineage)(derived_from, \*, config, ...)      | The gated [`EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage) of an edit call: the edit mode's licence gate (#162).   |
+|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| [`resolve_edit`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.resolve_edit)(source, op[, prompt, backend, ...]) | Resolve an edit of a library sound: its record, its op and its backend.                                                        |
+
+### Classes
+
+| [`EditCall`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditCall)(backend, prompt, source)               | An edit of a library sound, resolved (see [`resolve_edit()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.resolve_edit)).   |
+|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| [`EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage)(op, source_id, source_license, ...) | What an edited clip derives from: the op and its parameters, and the source.                                  |
+
+### *class* foley.sources.edit.EditCall(backend, prompt, source)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+An edit of a library sound, resolved (see [`resolve_edit()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.resolve_edit)).
+
+#### backend
+
+The edit source that will run it.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### prompt
+
+The prompt sent (the source’s caption when none was given).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### source
+
+The source sound’s record (the edit’s `derived_from`).
+
+* **Type:**
+  [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)
+
+### *class* foley.sources.edit.EditLineage(op, source_id, source_license, source_credit, source_content=None, params=dict())
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+What an edited clip derives from: the op and its parameters, and the source.
+
+#### op
+
+The edit op (a [`foley.base.EDIT_OPS`](_autosummary/foley.base.html.md#foley.base.EDIT_OPS) name).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### source_id
+
+The source sound’s id (`None` when only its licence is known).
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+#### source_license
+
+The source’s rights.
+
+* **Type:**
+  [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
+
+#### source_credit
+
+The source’s own credit line
+([`foley.provenance.credits.attribution_line()`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.attribution_line), plain).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### source_content
+
+The content key of the clip sent (its bytes’ digest).
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+#### params
+
+The op’s parameters as given (`strength`, the windows).
+
+* **Type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### apply(lic)
+
+Make `lic` (the new clip’s licence) say what it derives from, in place: its
+rights narrowed to the source’s, the edit appended to its `transformations`.
+
+* **Return type:**
+  [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
+
+#### transformation()
+
+The `transformations` entry recording this edit (JSON-safe; also its key).
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> lin = EditLineage("extend", "s1", LicenseRecord(source="u", license_id="CC0-1.0"),
+...                   '"Door" by u', params={"extend_after_s": 2.0})
+>>> t = lin.transformation()
+>>> t["op"], t["source_license_id"], t["source_license_name"][:7]
+('extend', 'CC0-1.0', 'CC0 1.0')
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### twin_refusal(twin, made)
+
+Why a byte-identical sound already in the library (rights `twin`) may not be
+handed back as this edit (whose narrowed rights are `made`), or `None`.
+
+It may when it is this same edit (its `transformations` hold this one) and
+is no wider than `made` ([`foley.licensing.wider_rights()`](_autosummary/foley.licensing.html.md#foley.licensing.wider_rights)).
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.edit.EditSource
+
+What an edit may be told it derives from (`derived_from=`).
+
+alias of [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) | [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
+
+### foley.sources.edit.edit_lineage(derived_from, , config, affordances)
+
+The gated [`EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage) of an edit call: the edit mode’s licence gate (#162).
+
+Run by the generation workhorse before anything is paid for, for every call of an
+edit source given its source clip (`affordances['audio']`).
+
+* **Parameters:**
+  * **derived_from** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord), [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The source clip’s [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) (what
+    [`foley.edit()`](_autosummary/foley.html.md#foley.edit) passes), or its [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
+    (a clip that is not in the library). Required.
+  * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – The edit source’s config (its `edit_op`).
+  * **affordances** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – The call’s affordances (the clip, the op’s parameters).
+* **Raises:**
+  * [**EditRefusal**](_autosummary/foley.html.md#foley.EditRefusal) – Without `derived_from`; when its rights do not allow the edit
+        ([`foley.licensing.derivative_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal)); or when the clip sent is not
+        the bytes of the `derived_from` record.
+  * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – For a `derived_from` that is neither record.
+* **Return type:**
+  [`EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage)
+
+### foley.sources.edit.resolve_edit(source, op, prompt='', , library, backend=None, adapter=None, affordances=None)
+
+Resolve an edit of a library sound: its record, its op and its backend.
+
+The op’s parameters and the source’s rights are checked by the generation’s edit
+mode itself (`foley.sources._dispatch.translate_affordances()`,
+[`edit_lineage()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_lineage)), before anything is paid for. Checked here is only what must
+be known before the source’s bytes are read from the library.
+
+* **Parameters:**
+  * **source** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The library id of the sound to edit.
+  * **op** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `'audio_to_audio'` | `'inpaint'` | `'extend'` ([`foley.base.EDIT_OPS`](_autosummary/foley.base.html.md#foley.base.EDIT_OPS)).
+  * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – What the edit should sound like; `''`: the source’s caption.
+  * **library** – The [`SoundLibrary`](_autosummary/foley.index.library.html.md#foley.index.library.SoundLibrary) holding `source`.
+  * **backend** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An edit source that does `op`; `None`: the injected `adapter`’s,
+    else the op’s default (`foley.sources.generate.default_edit_backend()`),
+    which is paid, so it needs paid generation opted in
+    (`$FOLEY_GENERATE_PAID=1`; a key in the environment is not consent, #58).
+  * **adapter** – An injected adapter (its config names the backend).
+  * **affordances** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The call’s other keywords (an `audio=` or `derived_from=` is
+    refused: both come from the library).
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For an unknown op, an `audio=` or `derived_from=`, or a backend
+        that does another op.
+  * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If `source` is not in `library`, or `backend` is unknown.
+  * [**EditRefusal**](_autosummary/foley.html.md#foley.EditRefusal) – If the source’s bytes may not be sent on
+        ([`foley.licensing.upload_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.upload_refusal): a by-reference Freesound sound).
+  * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – For an unnamed paid backend without the opt-in.
+* **Return type:**
+  [`EditCall`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditCall)
+
+
 # _autosummary/foley.sources.elevenlabs.adapter.html.md
 
 # foley.sources.elevenlabs.adapter
@@ -16944,8 +17590,11 @@ at `import foley` or during discovery — via the module `__getattr__` below.
 The fal generate adapter — one class for every fal-hosted SFX endpoint, run through `falaw`.
 
 Each fal source (`fal_stable_audio_3`, `fal_elevenlabs`, `fal_sonilo`,
-`fal_mmaudio`; see [`foley.sources.fal.config`](_autosummary/foley.sources.fal.config.html.md#module-foley.sources.fal.config)) gets its own instance of
-[`FalAdapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAdapter), built from its own config. The adapter:
+`fal_mmaudio`, the video-to-audio and the edit endpoints; see
+[`foley.sources.fal.config`](_autosummary/foley.sources.fal.config.html.md#module-foley.sources.fal.config)) gets its own instance of [`FalAdapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAdapter), built
+from its own config. A media input (a `video` to sound, an edit’s source `audio`)
+is sent as a URL (a local path or bytes uploaded) and recorded by its content key. The
+adapter:
 
 1. builds the native request from the already-translated affordances with the same
    `foley.sources._dispatch.native_request()` that keys the generations cache, so
@@ -17012,8 +17661,9 @@ A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.
     `ocracy.kit.using_credentials`: one binding covers every fal source),
     else `$FAL_KEY`, else `$FAL_API_KEY`.
   * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]]) – The transport seam (default [`falaw_runner()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
-  * **uploader** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – `(path, *, api_key) -> url`, how a local `video=` reaches fal
-    (default [`falaw_uploader()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_uploader)); tests pass a fake.
+  * **uploader** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – `(path, *, api_key) -> url`, how a local `video=` or `audio=`
+    (a path or bytes) reaches fal (default [`falaw_uploader()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_uploader)); tests pass
+    a fake.
   * **demux** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)], [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]]) – `(container bytes) -> audio bytes`, for an endpoint that answers
     with a video (`output.container == 'video'`; default
     [`foley.sources.video.audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track), which needs ffmpeg).
@@ -17142,7 +17792,7 @@ so an unchanged file is not uploaded twice).
 
 # foley.sources.fal.config
 
-`SOURCE_CONFIGS` for the fal-hosted text-to-SFX endpoints, executed through `falaw` (#73).
+`SOURCE_CONFIGS` for the fal-hosted SFX endpoints (text-, video-to-audio and edits), executed through `falaw` (#73).
 
 One package, several sources: each fal endpoint is its own foley source (its own params,
 price and licence), and they all share one adapter class
@@ -17159,7 +17809,8 @@ live call each on 2026-10-25. Evidence and the comparison with the other models:
 
 Licences (the per-sound record is fail-closed, so each row says only what is known):
 
-* `fal_stable_audio_3` (and `fal_stable_audio_3_medium`) — Stable Audio 3 weights are under the Stability AI
+* `fal_stable_audio_3` (and `fal_stable_audio_3_medium`, and the three Small-SFX edit
+  endpoints) — Stable Audio 3 weights are under the Stability AI
   Community License (commercial use free under US $1M annual revenue, no use of outputs
   to train competing foundation models; Stability’s licence gives the user the output;
   fal’s terms only disclaim fal’s own rights in it). Its text encoder (T5Gemma) also
@@ -17174,6 +17825,13 @@ Licences (the per-sound record is fail-closed, so each row says only what is kno
   but not specifically for calls billed through fal). Row: `fal-partner-unverified` — usable in a derivative,
   **not** commercially, until the terms are confirmed (foley#77). Narrowing, never widening.
 
+The edit endpoints (#162: `fal_stable_audio_3_audio_to_audio`, `_inpaint`, `_extend`)
+declare `modes=['edit']` and their `edit_op` (a [`foley.base.EDIT_OPS`](_autosummary/foley.base.html.md#foley.base.EDIT_OPS) name), so
+only a call with a source clip (`audio=`, see [`foley.edit()`](_autosummary/foley.html.md#foley.edit)) reaches them, and none
+joins a text-to-audio or video-to-audio order. Their Stable Audio 3 row is the
+generator’s: the edit mode narrows each edit’s rights to its source’s
+([`foley.sources.edit.edit_lineage()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_lineage)).
+
 Pricing is fal’s (`unit`/`amount_usd` as in [`foley.cost.estimate_call()`](_autosummary/foley.cost.html.md#foley.cost.estimate_call)), with the
 date it was read. `per_second` with no requested duration is priced at the
 `duration_default_s` the adapter sends in its place (or the endpoint’s maximum, an upper
@@ -17181,10 +17839,18 @@ bound, when it declares none), never at zero.
 
 ### Module Attributes
 
-| [`FAL_SOURCES`](_autosummary/foley.sources.fal.config.html.md#foley.sources.fal.config.FAL_SOURCES)   | The fal source names, in the order above (the first is the recommended one).   |
-|----------------------------------------------------------------|--------------------------------------------------------------------------------|
+| [`EDIT_SOURCE_CONFIGS`](_autosummary/foley.sources.fal.config.html.md#foley.sources.fal.config.EDIT_SOURCE_CONFIGS)   | named, or picked by foley.edit from their edit_op.                           |
+|------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| [`FAL_SOURCES`](_autosummary/foley.sources.fal.config.html.md#foley.sources.fal.config.FAL_SOURCES)           | The fal source names, in the order above (the first is the recommended one). |
 
-### foley.sources.fal.config.FAL_SOURCES *= ('fal_stable_audio_3', 'fal_stable_audio_3_medium', 'fal_mirelo', 'fal_elevenlabs', 'fal_sonilo', 'fal_mmaudio', 'fal_mirelo_v2a', 'fal_sonilo_v2a', 'fal_mmaudio_v2a', 'fal_thinksound', 'fal_hunyuan_foley')*
+### foley.sources.fal.config.EDIT_SOURCE_CONFIGS *= ({'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-to-audio'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX audio-to-audio (fal)', 'edit_op': 'audio_to_audio', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_audio_to_audio', 'native_defaults': {'distilled': True, 'duration_default_s': 10.0, 'duration_max_s': 120.0, 'duration_min_s': 1.0, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-to-audio', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'duration_s': {'native_name': 'duration'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}, 'strength': {'native_name': 'init_noise_level'}}, 'pricing': {'amount_usd': 0.024, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'duration_s', 'strength'], 'unsupported_affordances': ['loop'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-to-audio'}, {'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-inpainting'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX inpaint (fal)', 'edit_op': 'inpaint', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_inpaint', 'native_defaults': {'distilled': True, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-inpainting', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'inpaint_end_s': {'native_name': 'mask_end_seconds'}, 'inpaint_start_s': {'native_name': 'mask_start_seconds'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}}, 'pricing': {'amount_usd': 0.0259, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'inpaint_start_s', 'inpaint_end_s'], 'unsupported_affordances': ['loop', 'duration_s'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-inpainting'}, {'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-outpainting'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX extend (fal)', 'edit_op': 'extend', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_extend', 'native_defaults': {'distilled': True, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-outpainting', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'extend_after_s': {'max': 120.0, 'native_name': 'extend_seconds_after'}, 'extend_before_s': {'max': 120.0, 'native_name': 'extend_seconds_before'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}}, 'pricing': {'amount_usd': 0.0271, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'extend_before_s', 'extend_after_s'], 'unsupported_affordances': ['loop', 'duration_s'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-outpainting'})*
+
+named, or picked by foley.edit from their edit_op.
+
+* **Type:**
+  The edit sources (#162)
+
+### foley.sources.fal.config.FAL_SOURCES *= ('fal_stable_audio_3', 'fal_stable_audio_3_medium', 'fal_mirelo', 'fal_elevenlabs', 'fal_sonilo', 'fal_mmaudio', 'fal_mirelo_v2a', 'fal_sonilo_v2a', 'fal_mmaudio_v2a', 'fal_thinksound', 'fal_hunyuan_foley', 'fal_stable_audio_3_audio_to_audio', 'fal_stable_audio_3_inpaint', 'fal_stable_audio_3_extend')*
 
 The fal source names, in the order above (the first is the recommended one).
 
@@ -17209,9 +17875,9 @@ The shared [`FalAdapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.s
 
 ### Modules
 
-| [`adapter`](_autosummary/foley.sources.fal.adapter.html.md#module-foley.sources.fal.adapter)   | The fal generate adapter — one class for every fal-hosted SFX endpoint, run through `falaw`.   |
-|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| [`config`](_autosummary/foley.sources.fal.config.html.md#module-foley.sources.fal.config)     | `SOURCE_CONFIGS` for the fal-hosted text-to-SFX endpoints, executed through `falaw` (#73).     |
+| [`adapter`](_autosummary/foley.sources.fal.adapter.html.md#module-foley.sources.fal.adapter)   | The fal generate adapter — one class for every fal-hosted SFX endpoint, run through `falaw`.                         |
+|---------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| [`config`](_autosummary/foley.sources.fal.config.html.md#module-foley.sources.fal.config)     | `SOURCE_CONFIGS` for the fal-hosted SFX endpoints (text-, video-to-audio and edits), executed through `falaw` (#73). |
 
 
 # _autosummary/foley.sources.foleyset.html.md
@@ -17559,11 +18225,12 @@ Three adapter kinds share the one ingest pipeline: the narrow **bulk-corpus**
 
 ### Exceptions
 
-| [`GenerationError`](_autosummary/foley.sources.html.md#foley.sources.GenerationError)(message, \*, report, status)     | Raised by [`foley.generate()`](_autosummary/foley.html.md#foley.generate) when a backend yields no stored sound.        |
-|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| [`SafetyRefusal`](_autosummary/foley.sources.html.md#foley.sources.SafetyRefusal)(message, \*, hits, report)         | Raised (fail-closed) when a generation prompt trips a #9b safety gate.                                                                   |
-| [`TrademarkRefusal`](_autosummary/foley.sources.html.md#foley.sources.TrademarkRefusal)(message, \*, hits, report)      | A [`SafetyRefusal`](_autosummary/foley.sources.html.md#foley.sources.SafetyRefusal) for a prompt naming a trademarked audio logo (report 07 §7.2).          |
-| [`RecognizableVoiceRefusal`](_autosummary/foley.sources.html.md#foley.sources.RecognizableVoiceRefusal)(message, \*, hits, ...) | A [`SafetyRefusal`](_autosummary/foley.sources.html.md#foley.sources.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1). |
+| [`GenerationError`](_autosummary/foley.sources.html.md#foley.sources.GenerationError)(message, \*, report, status)     | Raised by [`foley.generate()`](_autosummary/foley.html.md#foley.generate) (and [`foley.edit()`](_autosummary/foley.html.md#foley.edit)) when a backend yields no stored sound.                                                                                                                                          |
+|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`EditRefusal`](_autosummary/foley.sources.html.md#foley.sources.EditRefusal)(message, \*, source_id, reason)      | Raised (fail-closed) by an edit ([`foley.edit()`](_autosummary/foley.html.md#foley.edit), or [`foley.generate()`](_autosummary/foley.html.md#foley.generate) with an edit backend and `audio=`) before anything is paid for, when the source's rights do not allow an edit of it to be made and kept, or are not given. |
+| [`SafetyRefusal`](_autosummary/foley.sources.html.md#foley.sources.SafetyRefusal)(message, \*, hits, report)         | Raised (fail-closed) when a generation prompt trips a #9b safety gate.                                                                                                                                                                                                                                                                                    |
+| [`TrademarkRefusal`](_autosummary/foley.sources.html.md#foley.sources.TrademarkRefusal)(message, \*, hits, report)      | A [`SafetyRefusal`](_autosummary/foley.sources.html.md#foley.sources.SafetyRefusal) for a prompt naming a trademarked audio logo (report 07 §7.2).                                                                                                                                                                                                                           |
+| [`RecognizableVoiceRefusal`](_autosummary/foley.sources.html.md#foley.sources.RecognizableVoiceRefusal)(message, \*, hits, ...) | A [`SafetyRefusal`](_autosummary/foley.sources.html.md#foley.sources.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1).                                                                                                                                                                                                                  |
 
 ### *class* foley.sources.ClipSpec(path, source_id, meta=dict())
 
@@ -17666,6 +18333,27 @@ Return the fully-derived rights record for `spec` (licensing SSOT).
 
 * **Type:**
   Bootstrap ring
+
+### *exception* foley.sources.EditRefusal(message, , source_id, reason)
+
+Bases: [`GenerationError`](_autosummary/foley.sources.html.md#foley.sources.GenerationError)
+
+Raised (fail-closed) by an edit ([`foley.edit()`](_autosummary/foley.html.md#foley.edit), or [`foley.generate()`](_autosummary/foley.html.md#foley.generate)
+with an edit backend and `audio=`) before anything is paid for, when the source’s
+rights do not allow an edit of it to be made and kept, or are not given.
+
+See [`foley.licensing.derivative_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal): unverified rights, bytes that may
+not be sent on, a licence that forbids modification, a share-alike licence (an
+edit’s own licence cannot carry it), or a licence foley has no row for. Its
+`report` is empty and its `status` is `'rights_blocked'`.
+
+#### source_id
+
+The id of the sound that was to be edited (`None`: not known).
+
+#### reason
+
+Why it was refused.
 
 ### *class* foley.sources.Fsd50kCorpus
 
@@ -17807,7 +18495,7 @@ not kept in the generations cache, so a replayed clip has none.
 
 Bases: [`RuntimeError`](https://docs.python.org/3/builtins/exceptions.html#RuntimeError)
 
-Raised by [`foley.generate()`](_autosummary/foley.html.md#foley.generate) when a backend yields no stored sound.
+Raised by [`foley.generate()`](_autosummary/foley.html.md#foley.generate) (and [`foley.edit()`](_autosummary/foley.html.md#foley.edit)) when a backend yields no stored sound.
 
 Carries the full [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport) and the terminal
 [`status`](_autosummary/foley.sources.html.md#foley.sources.GenerationError.status) so a caller can react distinctly to `quarantined` (QC-rejected —
@@ -18101,7 +18789,7 @@ an already-registered name (e.g. a test double) is never overwritten.
 * **Returns:**
   The list of discovered source names.
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, derived_from=None, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -18197,10 +18885,26 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
   * **variation** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Which variation of the same request this is (#161; see
     [`foley.variations()`](_autosummary/foley.html.md#foley.variations)): `0` (default) is the request itself, a later
     one is a different paid request in the generations cache.
+  * **derived_from** – For an edit (#162: an edit backend given `audio=`), the source
+    clip’s [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) (what [`foley.edit()`](_autosummary/foley.html.md#foley.edit) passes)
+    or its [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord). **Required** by the `edit`
+    mode, which gates it fail-closed before anything is paid for
+    ([`foley.sources.edit.edit_lineage()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_lineage), [`EditRefusal`](_autosummary/foley.sources.html.md#foley.sources.EditRefusal)): the edit
+    is keyed by it, and the clip’s licence is narrowed to it, records it in
+    `transformations` (and so in the credits and the content credential)
+    before the repair, the level, the watermark and the credential. A
+    byte-identical sound already in the library with wider rights is not
+    handed back as the edit (`rights_blocked`). Refused for any other mode.
+    A `SoundRecord` with a known digest must be the bytes sent; a
+    `LicenseRecord` (or a bare URL as `audio=`) is the caller’s own,
+    unchecked declaration of the clip’s rights, as `ingest(license=)` is.
   * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
     `output_format`, `sample_rate`, `expand_prompt` — see
-    [`foley.base.GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES)).
+    [`foley.base.GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES); and an edit’s `audio`,
+    `strength`, `inpaint_start_s` / `inpaint_end_s`,
+    `extend_before_s` / `extend_after_s` — see
+    [`foley.base.EDIT_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.EDIT_AFFORDANCES)).
 * **Return type:**
   [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport)
 * **Returns:**
@@ -18211,6 +18915,8 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
   carries `cache_key`: where its bytes are in the generations cache.
 * **Raises:**
   * [**SafetyRefusal**](_autosummary/foley.sources.html.md#foley.sources.SafetyRefusal) – If the prompt trips a safety gate and `on_flagged='refuse'`.
+  * [**EditRefusal**](_autosummary/foley.sources.html.md#foley.sources.EditRefusal) – For an edit without `derived_from`, or whose source’s rights do
+        not allow it (before anything is paid for).
   * [**WatermarkUnavailable**](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.WatermarkUnavailable) – If `watermark=True` but `foley[provenance]` is absent.
 
 ### foley.sources.generated_license(, source, license_id, generator_model, generation_prompt, rights_verified=True, generator_version=None, generation_seed=None, generation_params=None, generation_prompt_used=None, disclosure_recommended=True, watermark=None, c2pa_manifest_ref=None, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
@@ -18344,28 +19050,29 @@ the default `rings` — it is opt-in only.
 
 ### Modules
 
-| [`base`](_autosummary/foley.sources.base.html.md#module-foley.sources.base)                           | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.                             |
-|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
-| [`bbc_remarc`](_autosummary/foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)               | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                                                |
-| [`capabilities`](_autosummary/foley.sources.capabilities.html.md#module-foley.sources.capabilities)           | What each live source emits, and what foley plans to support: `list_backends` + `ledger`.                  |
-| [`clotho`](_autosummary/foley.sources.clotho.html.md#module-foley.sources.clotho)                       | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.                               |
-| [`elevenlabs`](_autosummary/foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)               | ElevenLabs Sound Effects generate source (hosted; #6).                                                     |
-| [`fal`](_autosummary/foley.sources.fal.html.md#module-foley.sources.fal)                             | fal-hosted generate sources, executed through `falaw` (#73).                                               |
-| [`foleyset`](_autosummary/foley.sources.foleyset.html.md#module-foley.sources.foleyset)                   | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                                  |
-| [`freesound`](_autosummary/foley.sources.freesound.html.md#module-foley.sources.freesound)                 | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).                    |
-| [`fsd50k`](_autosummary/foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                       | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                                            |
-| [`http`](_autosummary/foley.sources.http.html.md#module-foley.sources.http)                           | Injectable HTTP transport for foley's live source adapters.                                                |
-| [`internet_archive`](_autosummary/foley.sources.internet_archive.html.md#module-foley.sources.internet_archive)   | Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (`foley[internet-archive]`). |
-| [`music_library`](_autosummary/foley.sources.music_library.html.md#module-foley.sources.music_library)         | Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.            |
-| [`openverse`](_autosummary/foley.sources.openverse.html.md#module-foley.sources.openverse)                 | Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).                        |
-| [`pull`](_autosummary/foley.sources.pull.html.md#module-foley.sources.pull)                           | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                                     |
-| [`registry`](_autosummary/foley.sources.registry.html.md#module-foley.sources.registry)                   | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).                   |
-| [`resilience`](_autosummary/foley.sources.resilience.html.md#module-foley.sources.resilience)               | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).                  |
-| [`sonniss`](_autosummary/foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                       |
-| [`stable_audio`](_autosummary/foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)           | Stable Audio Open 1.0 generate source (local default; #6).                                                 |
-| [`stable_audio_3`](_autosummary/foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3)       | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).                        |
-| [`video`](_autosummary/foley.sources.video.html.md#module-foley.sources.video)                         | Video inputs of video-to-audio generation (#74): what `video=` may be, its identity, its length.           |
-| [`wikimedia_commons`](_autosummary/foley.sources.wikimedia_commons.html.md#module-foley.sources.wikimedia_commons) | Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).                 |
+| [`base`](_autosummary/foley.sources.base.html.md#module-foley.sources.base)                           | The bulk-corpus source contract — a downloaded corpus as an ingestable stream.                                   |
+|-----------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| [`bbc_remarc`](_autosummary/foley.sources.bbc_remarc.html.md#module-foley.sources.bbc_remarc)               | BBC RemArc (Rewind Archive) — a Ring-2, quarantined corpus.                                                      |
+| [`capabilities`](_autosummary/foley.sources.capabilities.html.md#module-foley.sources.capabilities)           | What each live source emits, and what foley plans to support: `list_backends` + `ledger`.                        |
+| [`clotho`](_autosummary/foley.sources.clotho.html.md#module-foley.sources.clotho)                       | Clotho-eval — a captioned Ring-0 corpus that doubles as a retrieval fixture.                                     |
+| [`edit`](_autosummary/foley.sources.edit.html.md#module-foley.sources.edit)                           | Edits of a sound (#162): audio-to-audio, inpaint, extend — the parts an edit adds to generation.                 |
+| [`elevenlabs`](_autosummary/foley.sources.elevenlabs.html.md#module-foley.sources.elevenlabs)               | ElevenLabs Sound Effects generate source (hosted; #6).                                                           |
+| [`fal`](_autosummary/foley.sources.fal.html.md#module-foley.sources.fal)                             | fal-hosted generate sources, executed through `falaw` (#73).                                                     |
+| [`foleyset`](_autosummary/foley.sources.foleyset.html.md#module-foley.sources.foleyset)                   | FoleySet — a CC-BY, Foley-native starter corpus (Ring 0).                                                        |
+| [`freesound`](_autosummary/foley.sources.freesound.html.md#module-foley.sources.freesound)                 | Freesound APIv2 retrieve source — CC0 sounds, stored by-reference (`foley[freesound]`).                          |
+| [`fsd50k`](_autosummary/foley.sources.fsd50k.html.md#module-foley.sources.fsd50k)                       | FSD50K — the labeled, commercial-safe backbone corpus (Ring 1).                                                  |
+| [`http`](_autosummary/foley.sources.http.html.md#module-foley.sources.http)                           | Injectable HTTP transport for foley's live source adapters.                                                      |
+| [`internet_archive`](_autosummary/foley.sources.internet_archive.html.md#module-foley.sources.internet_archive)   | Internet Archive retrieve source: keyless, opt-in, uploader-asserted licences (`foley[internet-archive]`).       |
+| [`music_library`](_autosummary/foley.sources.music_library.html.md#module-foley.sources.music_library)         | Acquire a licensed music library, with provenance: verified files, a tracks table, attribution.                  |
+| [`openverse`](_autosummary/foley.sources.openverse.html.md#module-foley.sources.openverse)                 | Openverse retrieve source: keyless, licence-rich audio search (`foley[openverse]`).                              |
+| [`pull`](_autosummary/foley.sources.pull.html.md#module-foley.sources.pull)                           | `add_from` — the live-source pull façade (SOURCE → INDEX in one call).                                           |
+| [`registry`](_autosummary/foley.sources.registry.html.md#module-foley.sources.registry)                   | Live-source adapter registry: auto-discovery + lazy loading (arioso's registry, ported).                         |
+| [`resilience`](_autosummary/foley.sources.resilience.html.md#module-foley.sources.resilience)               | Graceful degradation for HTTP source adapters — throttle · backoff · circuit-break (#12).                        |
+| [`sonniss`](_autosummary/foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                             |
+| [`stable_audio`](_autosummary/foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)           | Stable Audio Open 1.0 generate source (local default; #6).                                                       |
+| [`stable_audio_3`](_autosummary/foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3)       | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).                              |
+| [`video`](_autosummary/foley.sources.video.html.md#module-foley.sources.video)                         | Media inputs of generation (#74, #162): what `video=` (and an edit's `audio=`) may be, its identity, its length. |
+| [`wikimedia_commons`](_autosummary/foley.sources.wikimedia_commons.html.md#module-foley.sources.wikimedia_commons) | Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).                       |
 
 
 # _autosummary/foley.sources.http.html.md
@@ -20855,7 +21562,7 @@ use via the module `__getattr__` below, so `import foley` stays dol-only.
 
 # foley.sources.video
 
-Video inputs of video-to-audio generation (#74): what `video=` may be, its identity, its length.
+Media inputs of generation (#74, #162): what `video=` (and an edit’s `audio=`) may be, its identity, its length.
 
 A video-to-audio (V2A) backend takes the picture the sound must follow. foley accepts
 it as a **URL** (`http(s)://` or a `data:` URI, sent as is), a
@@ -20888,47 +21595,61 @@ once, for every V2A backend:
   manifest): the video replaced by its recorded key, so neither its bytes nor a local
   path (nor an upload’s capability URL, nor a presigned URL’s token) is written down.
 
-Stdlib only (mixing is used when installed, never required).
+The source clip of an edit (`audio=`, #162) is a media input too
+([`MEDIA_INPUTS`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA_INPUTS)): it takes the same forms, and is keyed, recorded and replayed by
+the same functions ([`keyed()`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed), [`replayable()`](_autosummary/foley.sources.video.html.md#foley.sources.video.replayable)). Each media input is one row of
+[`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA) (its mode, its upload suffix sniffer, its length probe): the edit’s
+upload suffix is sniffed by [`audio_suffix()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_suffix) and its length read by
+[`audio_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_seconds).
+
+Stdlib only (mixing and soundfile are used when installed, never required).
 
 ### Module Attributes
 
-| [`REMOTE_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.REMOTE_SCHEMES)        | Schemes of a URL the backend fetches from a server (what it serves may change).                    |
-|------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| [`URL_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_SCHEMES)           | URL schemes sent to a backend as is (no upload); a `data:` URI holds its content.                  |
-| [`URL_KEY_PREFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_KEY_PREFIX)        | The key prefix of a video known only by its URL (its content unseen).                              |
-| [`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput)            | a URL, a [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo), a local path, or the bytes. |
-| [`AUDIO_TRACK_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.AUDIO_TRACK_TIMEOUT_S) | The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s).       |
-| [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)       | The most [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) lets ffprobe run (s).  |
-| [`DEFAULT_VIDEO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_VIDEO_SUFFIX)  | The suffix of bytes no signature matches (and of every other ISO BMFF brand).                      |
-| [`Probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.Probe)                 | how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds) reads a local file's length.  |
-| [`AudioStreamCheck`](_autosummary/foley.sources.video.html.md#foley.sources.video.AudioStreamCheck)      | whether a media file has an audio stream (`None`: it cannot tell).                                 |
-| [`REDACTED_QUERY`](_autosummary/foley.sources.video.html.md#foley.sources.video.REDACTED_QUERY)        | What stands in for a recorded URL's query and fragment.                                            |
+| [`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA)                 | the media inputs a backend is given (keyed by content, never by path), in precedence order (a video decides the mode over an audio).   |
+|------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| [`MEDIA_INPUTS`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA_INPUTS)          | The affordances of [`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA).                                                             |
+| [`REMOTE_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.REMOTE_SCHEMES)        | Schemes of a URL the backend fetches from a server (what it serves may change).                                                        |
+| [`URL_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_SCHEMES)           | URL schemes sent to a backend as is (no upload); a `data:` URI holds its content.                                                      |
+| [`URL_KEY_PREFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_KEY_PREFIX)        | The key prefix of a video known only by its URL (its content unseen).                                                                  |
+| [`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput)            | a URL, a [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo), a local path, or the bytes.                                     |
+| [`AUDIO_TRACK_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.AUDIO_TRACK_TIMEOUT_S) | The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s).                                           |
+| [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)       | The most [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) lets ffprobe run (s).                                      |
+| [`DEFAULT_VIDEO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_VIDEO_SUFFIX)  | The suffix of bytes no signature matches (and of every other ISO BMFF brand).                                                          |
+| [`Probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.Probe)                 | how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds) reads a local file's length.                                      |
+| [`AudioStreamCheck`](_autosummary/foley.sources.video.html.md#foley.sources.video.AudioStreamCheck)      | whether a media file has an audio stream (`None`: it cannot tell).                                                                     |
+| [`REDACTED_QUERY`](_autosummary/foley.sources.video.html.md#foley.sources.video.REDACTED_QUERY)        | What stands in for a recorded URL's query and fragment.                                                                                |
+| [`DEFAULT_AUDIO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_AUDIO_SUFFIX)  | The suffix of audio bytes no signature matches.                                                                                        |
 
 ### Functions
 
-| [`audio_track`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s])   | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                                                                                                                                                                                                                                                        |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`default_probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe)(path)                               | [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) (bounded by [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)) when `ffprobe` is on `PATH`, else [`mixing_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds).                                                                                                    |
-| [`fal_immutable_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.fal_immutable_url)(url)                            | falaw's `is_immutable_url` (fal's own CDN mints a new URL per upload), else `False` when falaw is not installed: an unknown URL is taken as mutable.                                                                                                                                                                                                     |
-| [`ffmpeg_path`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                                                                                                                              |
-| [`ffprobe_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])              | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                                                                                                                     |
-| [`has_audio_stream`](_autosummary/foley.sources.video.html.md#foley.sources.video.has_audio_stream)(path, \*[, ffprobe])             | Whether the media file at `path` has an audio stream, or `None` when that cannot be told.                                                                                                                                                                                                                                                                |
-| [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                                                                                                                                                                                                                                                     |
-| [`is_video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_video_key)(value)                               | Whether `value` is already a key [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) makes (as a cache entry keeps it).                                                                                                                                                                                                                         |
-| [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances, \*[, key])                     | `affordances` with a `video` replaced by its `key` (else unchanged).                                                                                                                                                                                                                                                                                     |
-| [`local_video_file`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file)(video, \*[, suffix])             | A local path holding `video` (bytes are written to a temporary file).                                                                                                                                                                                                                                                                                    |
-| [`mixing_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds)(path)                              | The length by mixing's `probe_duration` (`ffmpeg -i` through mixing's ffmpeg resolver, a pip-bundled ffmpeg too), or `None` when mixing's video stack is not installed or finds no ffmpeg.                                                                                                                                                               |
-| [`recorded_video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.recorded_video_key)(video)                         | [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) as it is written down: a bare URL keeps its scheme, host and path only (#184): its query, fragment and `;` path parameters (a presigned URL's signature, a session id) become [`REDACTED_QUERY`](_autosummary/foley.sources.video.html.md#foley.sources.video.REDACTED_QUERY), and credentials before the host are dropped. |
-| [`replayable`](_autosummary/foley.sources.video.html.md#foley.sources.video.replayable)(affordances, \*[, is_immutable])       | Whether an identical request may be served from the cache (#173).                                                                                                                                                                                                                                                                                        |
-| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                                  | The cache identity of `video`: its content digest, or a bare remote URL as is.                                                                                                                                                                                                                                                                           |
-| [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, probe])                 | The length of a local `video` in seconds, or `None` when it cannot be read.                                                                                                                                                                                                                                                                              |
-| [`video_suffix`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix)(data)                                | The file suffix of encoded video `data`, sniffed from its first bytes.                                                                                                                                                                                                                                                                                   |
-| [`video_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_url)(video)                                  | The URL a backend fetches `video` from itself, or `None` (a path or bytes).                                                                                                                                                                                                                                                                              |
+| [`audio_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_seconds)(audio)                            | The length of an audio input (bytes or a local path) in seconds, or `None`.                                                                                                                                                                                                                                                                              |
+|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`audio_suffix`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_suffix)(data)                              | The file suffix of encoded audio `data` (flac, wav, mp3, ogg), sniffed from its first bytes.                                                                                                                                                                                                                                                             |
+| [`audio_track`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s]) | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                                                                                                                                                                                                                                                        |
+| [`default_probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe)(path)                             | [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) (bounded by [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)) when `ffprobe` is on `PATH`, else [`mixing_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds).                                                                                                    |
+| [`fal_immutable_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.fal_immutable_url)(url)                          | falaw's `is_immutable_url` (fal's own CDN mints a new URL per upload), else `False` when falaw is not installed: an unknown URL is taken as mutable.                                                                                                                                                                                                     |
+| [`ffmpeg_path`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)()                                   | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                                                                                                                              |
+| [`ffprobe_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])            | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                                                                                                                     |
+| [`has_audio_stream`](_autosummary/foley.sources.video.html.md#foley.sources.video.has_audio_stream)(path, \*[, ffprobe])           | Whether the media file at `path` has an audio stream, or `None` when that cannot be told.                                                                                                                                                                                                                                                                |
+| [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                                   | Whether `video` is a URL a backend can fetch itself.                                                                                                                                                                                                                                                                                                     |
+| [`is_video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_video_key)(value)                             | Whether `value` is already a key [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) makes (as a cache entry keeps it).                                                                                                                                                                                                                         |
+| [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances, \*[, key])                   | `affordances` with each media input ([`MEDIA_INPUTS`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA_INPUTS)) replaced by its `key`.                                                                                                                                                                                                                               |
+| [`local_video_file`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file)(video, \*[, suffix])           | A local path holding `video` (bytes are written to a temporary file).                                                                                                                                                                                                                                                                                    |
+| [`mixing_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds)(path)                            | The length by mixing's `probe_duration` (`ffmpeg -i` through mixing's ffmpeg resolver, a pip-bundled ffmpeg too), or `None` when mixing's video stack is not installed or finds no ffmpeg.                                                                                                                                                               |
+| [`recorded_video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.recorded_video_key)(video)                       | [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) as it is written down: a bare URL keeps its scheme, host and path only (#184): its query, fragment and `;` path parameters (a presigned URL's signature, a session id) become [`REDACTED_QUERY`](_autosummary/foley.sources.video.html.md#foley.sources.video.REDACTED_QUERY), and credentials before the host are dropped. |
+| [`remote_media_input`](_autosummary/foley.sources.video.html.md#foley.sources.video.remote_media_input)(affordances)                 | The name of the first media input given as a bare remote URL, or `None`.                                                                                                                                                                                                                                                                                 |
+| [`replayable`](_autosummary/foley.sources.video.html.md#foley.sources.video.replayable)(affordances, \*[, is_immutable])     | Whether an identical request may be served from the cache (#173).                                                                                                                                                                                                                                                                                        |
+| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                                | The cache identity of `video`: its content digest, or a bare remote URL as is.                                                                                                                                                                                                                                                                           |
+| [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, probe])               | The length of a local `video` in seconds, or `None` when it cannot be read.                                                                                                                                                                                                                                                                              |
+| [`video_suffix`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix)(data)                              | The file suffix of encoded video `data`, sniffed from its first bytes.                                                                                                                                                                                                                                                                                   |
+| [`video_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_url)(video)                                | The URL a backend fetches `video` from itself, or `None` (a path or bytes).                                                                                                                                                                                                                                                                              |
 
 ### Classes
 
-| [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo)(\*, url, sha256)   | A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.   |
-|---------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| [`MediaInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.MediaInput)(name, mode, does, covers, ...)   | One media input of generation (a row of [`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA)): the affordance that carries it, the mode it puts a call in, and how foley reads it.   |
+|----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo)(\*, url, sha256)                | A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.                                                                                                   |
 
 ### foley.sources.video.AUDIO_TRACK_TIMEOUT_S *= 120.0*
 
@@ -20944,9 +21665,98 @@ whether a media file has an audio stream
 
 alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
+### foley.sources.video.DEFAULT_AUDIO_SUFFIX *= '.wav'*
+
+The suffix of audio bytes no signature matches.
+
 ### foley.sources.video.DEFAULT_VIDEO_SUFFIX *= '.mp4'*
 
 The suffix of bytes no signature matches (and of every other ISO BMFF brand).
+
+### foley.sources.video.MEDIA *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [MediaInput](_autosummary/foley.sources.video.html.md#foley.sources.video.MediaInput)]* *= {'audio': MediaInput(name='audio', mode='edit', does='edits a source clip', covers='to match the source clip', suffix_of='audio_suffix', seconds_of='audio_seconds'), 'video': MediaInput(name='video', mode='v2a', does='sounds a picture', covers='to cover the video', suffix_of='video_suffix', seconds_of='video_seconds')}*
+
+the media inputs a backend is given (keyed by content, never by path), in
+precedence order (a video decides the mode over an audio).
+
+* **Type:**
+  SSOT
+
+### foley.sources.video.MEDIA_INPUTS *= ('video', 'audio')*
+
+The affordances of [`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA).
+
+### *class* foley.sources.video.MediaInput(name, mode, does, covers, suffix_of, seconds_of)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One media input of generation (a row of [`MEDIA`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA)): the affordance that
+carries it, the mode it puts a call in, and how foley reads it.
+
+#### name
+
+The affordance (`video`, `audio`).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### mode
+
+The generation mode a call given it is in (`v2a`, `edit`).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### does
+
+What a source taking it does (said when it is missing).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### covers
+
+How a `duration_s` set to its length is noted.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### suffix_of
+
+The name of this module’s sniffer of its bytes’ file suffix.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### seconds_of
+
+The name of this module’s probe of its length. Both are looked up
+when called, so a test can stand in for the probe.
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### *property* needed *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+What a source taking it says when a call lacks it.
+
+```pycon
+>>> MEDIA["audio"].needed
+'needs an audio= (it edits a source clip)'
+```
+
+#### seconds(value)
+
+Its length in seconds, or `None` (a URL, an unreadable input).
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+#### suffix(data)
+
+The file suffix its `data` is uploaded under (sniffed from its first bytes).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.sources.video.PROBE_TIMEOUT_S *= 30.0*
 
@@ -21009,6 +21819,33 @@ a URL, a [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.
   What `video=` accepts
 
 alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo) | `os.PathLike[str]` | [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.sources.video.audio_seconds(audio)
+
+The length of an audio input (bytes or a local path) in seconds, or `None`.
+
+`None` for a URL (not fetched), without `soundfile`, or when it cannot be read.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### foley.sources.video.audio_suffix(data)
+
+The file suffix of encoded audio `data` (flac, wav, mp3, ogg), sniffed from its first bytes.
+
+Anything unrecognised is [`DEFAULT_AUDIO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_AUDIO_SUFFIX).
+
+```pycon
+>>> audio_suffix(b"fLaC\x00"), audio_suffix(b"RIFF\x00\x00\x00\x00WAVEfmt ")
+('.flac', '.wav')
+>>> audio_suffix(b"ID3\x04"), audio_suffix(b"\xff\xfb\x90"), audio_suffix(b"OggS")
+('.mp3', '.mp3', '.ogg')
+>>> audio_suffix(b"?")
+'.wav'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.sources.video.audio_track(container, , ffmpeg=None, timeout_s=120.0)
 
@@ -21099,14 +21936,17 @@ Whether `value` is already a key [`video_key()`](_autosummary/foley.sources.vide
 
 ### foley.sources.video.keyed(affordances, \*, key=<function recorded_video_key>)
 
-`affordances` with a `video` replaced by its `key` (else unchanged).
+`affordances` with each media input ([`MEDIA_INPUTS`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA_INPUTS)) replaced by its `key`.
 
 The default is the key as it is written down ([`recorded_video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.recorded_video_key)); the
 request digest passes `key=video_key`, the full identity, which is only hashed.
+Unchanged when the call has no media input.
 
 ```pycon
 >>> keyed({"video": b"abc", "duration_s": 2})["video"][:15], keyed({"seed": 1})
 ('sha256:ba7816bf', {'seed': 1})
+>>> keyed({"audio": b"abc"})["audio"] == keyed({"video": b"abc"})["video"]
+True
 ```
 
 * **Return type:**
@@ -21153,22 +21993,34 @@ An already recorded or bare `url:` key is redacted the same way.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
+### foley.sources.video.remote_media_input(affordances)
+
+The name of the first media input given as a bare remote URL, or `None`.
+
+```pycon
+>>> remote_media_input({"audio": "https://x/a.wav"}), remote_media_input({"video": b"x"})
+('audio', None)
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.sources.video.replayable(affordances, \*, is_immutable=<function fal_immutable_url>)
 
 Whether an identical request may be served from the cache (#173).
 
-Not when its video is a bare remote URL whose content foley never saw, unless
-`is_immutable(url)` says it never serves other bytes (default:
-[`fal_immutable_url()`](_autosummary/foley.sources.video.html.md#foley.sources.video.fal_immutable_url), fal’s own CDN). Decided from the value alone: no file
-is read.
+Not when a media input ([`MEDIA_INPUTS`](_autosummary/foley.sources.video.html.md#foley.sources.video.MEDIA_INPUTS)) is a bare remote URL whose content
+foley never saw, unless `is_immutable(url)` says it never serves other bytes
+(default: [`fal_immutable_url()`](_autosummary/foley.sources.video.html.md#foley.sources.video.fal_immutable_url), fal’s own CDN). Decided from the values
+alone: no file is read.
 
 ```pycon
 >>> replayable({"video": "https://x/latest.mp4"}), replayable({"video": b"abc"})
 (False, True)
 >>> replayable({"video": "https://x/a.mp4"}, is_immutable=lambda url: True)
 True
->>> replayable({"seed": 1})
-True
+>>> replayable({"seed": 1}), replayable({"audio": "https://x/take.wav"})
+(True, False)
 ```
 
 * **Return type:**
@@ -23115,7 +23967,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 18:04 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/5aaceebcab1d4e0365f81610106f10176ec4c6b4"><code>5aaceeb</code></a> on branch <code>main</code>, for **foley 0.0.93** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 18:14 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/f8ffee5a4dbffe056ecf8b3dd36f745a69408151"><code>f8ffee5</code></a> on branch <code>main</code>, for **foley 0.0.95** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -23124,9 +23976,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/5aaceebcab1d4e0365f81610106f10176ec4c6b4"><code>5aaceebcab1d4e0365f81610106f10176ec4c6b4</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/f8ffee5a4dbffe056ecf8b3dd36f745a69408151"><code>f8ffee5a4dbffe056ecf8b3dd36f745a69408151</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
-| Tags at this commit | none                                                                                                                                                  |
+| Tags at this commit | <code>0.0.95</code>                                                                                                                                   |
 | Working tree        | clean                                                                                                                                                 |
 | Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
@@ -23135,9 +23987,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40553780554">40553780554</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40556867452">40556867452</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>5aaceebcab1d4e0365f81610106f10176ec4c6b4</code> (in the history of the built commit) |
+| Event commit | <code>e654a81556252b99821c1a8a8929dbf50dda3ae6</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -23162,13 +24014,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.93/">0.0.93</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.95/">0.0.95</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 5aaceebcab1d4e0365f81610106f10176ec4c6b4
+git checkout f8ffee5a4dbffe056ecf8b3dd36f745a69408151
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

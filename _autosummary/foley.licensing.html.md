@@ -40,17 +40,22 @@ item is redistributable but stored by-reference.
 | [`apply_license_flags`](#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                          |
 | [`cc_refused_terms`](#foley.licensing.cc_refused_terms)(url)                             | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                             |
 | [`checked_refusal_reason`](#foley.licensing.checked_refusal_reason)(record, intended_use)      | [`refusal_reason()`](#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.    |
+| [`derivative_refusal`](#foley.licensing.derivative_refusal)(source)                        | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                |
 | [`derive_license_flags`](#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                               |
 | [`intended_use_for`](#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                           |
 | [`is_cc_license_token`](#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                        |
+| [`is_share_alike`](#foley.licensing.is_share_alike)(license_id)                        | Whether `license_id` (or a licence URL / label) is share-alike.                                                                |
 | [`keep`](#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                           |
 | [`keep_sound`](#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](#foley.licensing.keep) to a `SoundRecord`'s nested license.                |
 | [`license_id_from_cc_url`](#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                                   |
 | [`license_meta`](#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback).       |
+| [`narrow_to_source`](#foley.licensing.narrow_to_source)(output, source)                  | Narrow `output`'s rights to what `source` allows, in place (never widening).                                                   |
 | [`refusal_reason`](#foley.licensing.refusal_reason)(record, intended_use)              | Why [`keep()`](#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.     |
 | [`refusals`](#foley.licensing.refusals)(sound_records, intended_use)             | `{sound id: reason}` for each sound record [`keep()`](#foley.licensing.keep) refuses for `intended_use`. |
 | [`territory_excluded`](#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                        |
+| [`upload_refusal`](#foley.licensing.upload_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.                                   |
 | [`wanted_license_ids`](#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                                  |
+| [`wider_rights`](#foley.licensing.wider_rights)(record, bound)                       | What `record` allows that `bound` does not (`[]`: no wider than `bound`).                                                      |
 
 ### Classes
 
@@ -236,6 +241,33 @@ True
 "its licence could not be checked (AttributeError: 'NoneType' object has no attribute 'rights_verified')"
 ```
 
+### foley.licensing.derivative_refusal(source)
+
+Why a sound with rights `source` may not be edited into a new sound, or `None`.
+
+The fail-closed gate of an edit (#162), applied by the generation’s `edit` mode
+before anything is paid for. The first unmet requirement: its rights are verified;
+its bytes may be sent on ([`upload_refusal()`](#foley.licensing.upload_refusal)); its licence is not share-alike
+(the edit’s own licence, the generator’s, cannot carry it); its licence has a
+[`LICENSE_FLAGS`](#foley.licensing.LICENSE_FLAGS) row (else the edit’s rights cannot be derived); it allows
+modification; it excludes no territory (which the edit’s record could not carry).
+Every other restriction carries over to the edit ([`narrow_to_source()`](#foley.licensing.narrow_to_source)).
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> ok = apply_license_flags(LicenseRecord(source="x", license_id="CC-BY-4.0",
+...                                        rights_verified=True))
+>>> derivative_refusal(ok) is None
+True
+>>> derivative_refusal(apply_license_flags(LicenseRecord(source="x",
+...                                                      license_id="research-only",
+...                                                      rights_verified=True)))
+'its licence does not allow modification'
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.licensing.derive_license_flags(license_id, , overrides=None)
 
 Look up the flag set for a `license_id` (fail-closed fallback), then
@@ -281,6 +313,22 @@ Whether `token` is a search constraint a CC-reading source understands.
 `None`/`'any'` (no constraint), `'cc0'`, or a CC / public-domain licence id or
 family (`'CC-BY-4.0'`, `'cc-by'`, `'PDM-1.0'`). Not an ingest-time rights
 assertion such as `'user-owned'`.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.licensing.is_share_alike(license_id)
+
+Whether `license_id` (or a licence URL / label) is share-alike.
+
+Read with the same tokens [`license_id_from_cc_url()`](#foley.licensing.license_id_from_cc_url) refuses share-alike by: no
+[`LICENSE_FLAGS`](#foley.licensing.LICENSE_FLAGS) row is share-alike (the mapper sends every such licence to
+`'unknown'`), so this catches an id stamped by hand or by a source.
+
+```pycon
+>>> is_share_alike("CC-BY-SA-4.0"), is_share_alike("CC-BY-4.0"), is_share_alike(None)
+(True, False, False)
+```
 
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
@@ -357,6 +405,31 @@ Return the display [`LicenseMeta`](#foley.licensing.LicenseMeta) for `license_id
   The mapped [`LicenseMeta`](#foley.licensing.LicenseMeta), or [`UNKNOWN_LICENSE_META`](#foley.licensing.UNKNOWN_LICENSE_META) for an
   unrecognized / `Proprietary-*` id.
 
+### foley.licensing.narrow_to_source(output, source)
+
+Narrow `output`’s rights to what `source` allows, in place (never widening).
+
+An edit is a derivative of its source: it may be used only where both the
+generator’s licence and the source’s allow. Each permission of
+`_DERIVATIVE_SHARED_FLAGS` is kept only when both hold it, attribution is
+required when either requires it, the revenue cap is the lower one, the AI-use
+scope is the stricter one, and the source’s required notice, stated AI-use
+preference and safety flags carry over. `cache_bytes_ok` stays the output’s (it
+is about storing the new bytes). Routed through [`apply_license_flags()`](#foley.licensing.apply_license_flags), so the
+flags still come from the policy layer, never set by hand.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> out = apply_license_flags(LicenseRecord(source="g", license_id="Stability-Community"))
+>>> src = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0"))
+>>> narrowed = narrow_to_source(out, src)
+>>> narrowed.commercial_ok, narrowed.requires_attribution, narrowed.revenue_cap_usd
+(False, True, 1000000)
+```
+
+* **Return type:**
+  [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
+
 ### foley.licensing.refusal_reason(record, intended_use)
 
 Why [`keep()`](#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.
@@ -399,6 +472,24 @@ does one that is not a country code: the gate fails closed.
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
+### foley.licensing.upload_refusal(source)
+
+Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.
+
+`cache_bytes_ok` is the source’s terms on its bytes (a Freesound API pull is
+by-reference even under CC0): bytes foley may not keep, it does not upload either.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> upload_refusal(LicenseRecord(source="x", cache_bytes_ok=True)) is None
+True
+>>> upload_refusal(LicenseRecord(source="freesound"))[:30]
+'its bytes may not be kept or s'
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### foley.licensing.wanted_license_ids(config, license)
 
 The licence ids a `license=` request keeps, or `None` for every accepted one.
@@ -422,3 +513,24 @@ gives `[]`, so nothing is returned: fail closed, never silently broader.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.licensing.wider_rights(record, bound)
+
+What `record` allows that `bound` does not (`[]`: no wider than `bound`).
+
+A permission of `_DERIVATIVE_SHARED_FLAGS` it holds and `bound` lacks, an
+attribution or a notice `bound` requires and it does not, a higher (or no)
+revenue cap, a looser AI-use scope, a voice or trademark flag `bound` raises
+and it does not, another stated AI-use preference. How an edit tells that a byte-identical sound
+already in the library is not the edit it made (see [`narrow_to_source()`](#foley.licensing.narrow_to_source)).
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0"))
+>>> by = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-4.0"))
+>>> wider_rights(by, nc), wider_rights(nc, by)
+(['commercial_ok', 'ai_training_ok'], [])
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]

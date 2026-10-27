@@ -69,6 +69,10 @@ clip = foley.generate(
     intended_use=use,
 )
 
+# Edit a library sound (fal Stable Audio 3; paid): audio_to_audio (strength=), inpaint
+# (inpaint_start_s=, inpaint_end_s=) or extend; its licence gates the edit and carries over
+clip = foley.edit(sound_id, "extend", "the door slams shut", extend_after_s=2)
+
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
 foley.add_from(
@@ -98,13 +102,25 @@ drive the agent, a CLI, and external hosts.
 `foley.sources.music_library` acquires the free tracks a production credits (Kevin MacLeod’s incompetech is built in; the paid Artlist and Epidemic Sound give wishlist rows, never downloads). Each title is fetched politely through foley’s transport (paced per host, `429` / `Retry-After` honoured), from the library’s server and then the Internet Archive’s raw copy (a `Retry-After` longer than the cap moves on to the archive instead of waiting), checked to be audio (an audio stream and a duration), and recorded with a `LicenseRecord` read from the library’s licence URL. Before anything is fetched, each title’s licence goes through foley’s fail-closed gate for `intended_use=` (default: commercial publishing): a title it refuses, such as one under a NonCommercial licence, is a `refused` row and is not downloaded. Needs `foley[music-library]` and `ffprobe`.
 
 ```python
-from foley.sources.music_library import acquire, attribution_text, kept_digests, titles_by_library, tracks_table
+from foley.sources.music_library import (
+    acquire,
+    attribution_text,
+    kept_digests,
+    titles_by_library,
+    tracks_table,
+)
 
-titles = titles_by_library(video_description)["incompetech"]  # or a list / {title: {metadata}}
-rows = acquire("incompetech", titles, out="audio/macleod")      # one row per title: acquired / failed / refused
-table = tracks_table(rows)                                      # CSV; row.row() is the JSON-safe dict
-print(attribution_text(rows))                                   # the blocks to paste under the video
-rows = acquire("incompetech", titles, out="audio/macleod", kept=kept_digests(table))  # a rerun fetches only what is missing
+titles = titles_by_library(video_description)[
+    "incompetech"
+]  # or a list / {title: {metadata}}
+rows = acquire(
+    "incompetech", titles, out="audio/macleod"
+)  # one row per title: acquired / failed / refused
+table = tracks_table(rows)  # CSV; row.row() is the JSON-safe dict
+print(attribution_text(rows))  # the blocks to paste under the video
+rows = acquire(
+    "incompetech", titles, out="audio/macleod", kept=kept_digests(table)
+)  # a rerun fetches only what is missing
 ```
 
 ## For AI agents

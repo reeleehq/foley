@@ -3,8 +3,11 @@
 The fal generate adapter — one class for every fal-hosted SFX endpoint, run through `falaw`.
 
 Each fal source (`fal_stable_audio_3`, `fal_elevenlabs`, `fal_sonilo`,
-`fal_mmaudio`; see [`foley.sources.fal.config`](foley.sources.fal.config.html.md#module-foley.sources.fal.config)) gets its own instance of
-[`FalAdapter`](#foley.sources.fal.adapter.FalAdapter), built from its own config. The adapter:
+`fal_mmaudio`, the video-to-audio and the edit endpoints; see
+[`foley.sources.fal.config`](foley.sources.fal.config.html.md#module-foley.sources.fal.config)) gets its own instance of [`FalAdapter`](#foley.sources.fal.adapter.FalAdapter), built
+from its own config. A media input (a `video` to sound, an edit’s source `audio`)
+is sent as a URL (a local path or bytes uploaded) and recorded by its content key. The
+adapter:
 
 1. builds the native request from the already-translated affordances with the same
    `foley.sources._dispatch.native_request()` that keys the generations cache, so
@@ -71,8 +74,9 @@ A fal-hosted generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#
     `ocracy.kit.using_credentials`: one binding covers every fal source),
     else `$FAL_KEY`, else `$FAL_API_KEY`.
   * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]]) – The transport seam (default [`falaw_runner()`](#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
-  * **uploader** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – `(path, *, api_key) -> url`, how a local `video=` reaches fal
-    (default [`falaw_uploader()`](#foley.sources.fal.adapter.falaw_uploader)); tests pass a fake.
+  * **uploader** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – `(path, *, api_key) -> url`, how a local `video=` or `audio=`
+    (a path or bytes) reaches fal (default [`falaw_uploader()`](#foley.sources.fal.adapter.falaw_uploader)); tests pass
+    a fake.
   * **demux** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)], [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]]) – `(container bytes) -> audio bytes`, for an endpoint that answers
     with a video (`output.container == 'video'`; default
     [`foley.sources.video.audio_track()`](foley.sources.video.html.md#foley.sources.video.audio_track), which needs ffmpeg).

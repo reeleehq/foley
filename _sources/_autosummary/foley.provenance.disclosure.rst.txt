@@ -11,6 +11,7 @@ foley.provenance.disclosure
       DEFAULT_WATERMARK_MESSAGE
       IPTC_TRAINED_ALGORITHMIC_MEDIA
       C2PA_CREATED
+      INGREDIENT_SOURCE_KEY
       TRADEMARK_REGISTRY
       INGREDIENT_CREDENTIAL_KEY
    
@@ -22,6 +23,7 @@ foley.provenance.disclosure
       as_c2pa_ingredient
       build_content_credential
       build_mix_credential
+      describe_transformation
       detect_watermark
       resolve_watermarker
       scan_prompt

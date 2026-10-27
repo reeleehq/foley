@@ -71,6 +71,7 @@
       register_source
       generate
       variations
+      edit
       candidate_of
       art50_checklist
       scan_prompt
@@ -168,6 +169,7 @@
    .. autosummary::
    
       GenerationError
+      EditRefusal
       SafetyRefusal
       TrademarkRefusal
       RecognizableVoiceRefusal
