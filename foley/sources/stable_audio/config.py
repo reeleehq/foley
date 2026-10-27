@@ -71,6 +71,7 @@ SOURCE_CONFIG = {
         "audio_start_in_s": 0.0,
         "duration_default_s": 10.0,  # NOT the 47.55s model max
         "duration_max_s": 47.55,
+        "sample_rate": 44100,  # the model's fixed output rate (the pipeline reports it)
         "num_inference_steps_default": 200,
         # A distilled checkpoint (post-trained for CFG 1, ~8 steps) sets this True,
         # with prompt_influence's native_default 1.0: a requested prompt_influence is
@@ -109,5 +110,8 @@ SOURCE_CONFIG = {
         "source": "local inference",
         "seen": "2026-10-04",
     },
+    # Vendor facts a config cannot imply (foley.capabilities_of); only documented ones.
+    # "watermarked" is vendor-side (foley's own AudioSeal is separate): local weights have none.
+    "capabilities": {"watermarked": False},
     "data_egress": "local",  # runs entirely on-device (offline-capable; report 12)
 }

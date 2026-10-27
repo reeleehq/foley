@@ -116,6 +116,7 @@ SOURCE_CONFIGS = (
             "duration_default_s": 10.0,  # fal's own default is 30 s, long for an effect
             "duration_min_s": 1.0,
             "duration_max_s": 120.0,
+            "sample_rate": 44100,  # SAME-Small autoencoder; read live 2026-10-25 (report 17)
             # Sent on every call; prompt expansion would rewrite the prompt we record.
             "fixed_arguments": {
                 "enable_prompt_expansion": False,
