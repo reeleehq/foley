@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=e264953e"></script>
+    <script src="../../../_static/documentation_options.js?v=0a7e36fc"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.77" />
+  <meta name="docsearch:version" content="0.0.78" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -785,6 +785,7 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"key_fingerprint"</span><span class="p">,</span>
     <span class="s2">"source_account_id"</span><span class="p">,</span>
     <span class="s2">"SourceConfigurationError"</span><span class="p">,</span>
+    <span class="s2">"SearchArgumentError"</span><span class="p">,</span>
     <span class="s2">"ClipSpec"</span><span class="p">,</span>
     <span class="s2">"CorpusAdapter"</span><span class="p">,</span>
     <span class="s2">"SourceAdapter"</span><span class="p">,</span>
@@ -812,6 +813,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Not transient, so it is never recorded as one failed hit among many: the generate</span>
 <span class="sd">    and pull façades let it propagate, and its message names what to set (the env var</span>
 <span class="sd">    and, for a key, its sign-up URL) (#64).</span>
+<span class="sd">    """</span></div>
+
+
+
+<div class="viewcode-block" id="SearchArgumentError">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.SearchArgumentError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SearchArgumentError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A search argument the source refuses before any call: the caller's error.</span>
+
+<span class="sd">    A ``ValueError``, so ``except ValueError`` still catches it; its own type lets the</span>
+<span class="sd">    pull façade raise it rather than record it as a failed search, as it records a</span>
+<span class="sd">    transient one (a garbled response is a ``ValueError`` too) (#169).</span>
 <span class="sd">    """</span></div>
 
 
@@ -1057,7 +1070,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">check_page_depth</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">per_page</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Raise ``ValueError`` for a ``page`` that reaches past the source's result window.</span>
+<span class="w">    </span><span class="sd">"""Raise :class:`SearchArgumentError` for a ``page`` past the source's result window.</span>
 
 <span class="sd">    ``param_map['page']['result_window']`` is the deepest result one query serves</span>
 <span class="sd">    (offset + limit): a page that ends past it can only come back short, empty or as</span>
@@ -1070,13 +1083,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &gt;&gt;&gt; check_page_depth(cfg, 13, 20)</span>
 <span class="sd">    Traceback (most recent call last):</span>
 <span class="sd">    ...</span>
-<span class="sd">    ValueError: page 13 (20 a page) asks for results 241-260, past the 240 results this source serves per query</span>
+<span class="sd">    foley.sources.base.SearchArgumentError: page 13 (20 a page) asks for results 241-260, past the 240 results this source serves per query</span>
 <span class="sd">    """</span>
     <span class="n">window</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"page"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"result_window"</span><span class="p">)</span>
     <span class="n">end</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">page</span><span class="p">)</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">per_page</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">window</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">page</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">end</span> <span class="o">&gt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">window</span><span class="p">):</span>
         <span class="n">first</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">page</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">per_page</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+        <span class="k">raise</span> <span class="n">SearchArgumentError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">"page </span><span class="si">{</span><span class="n">page</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">per_page</span><span class="si">}</span><span class="s2"> a page) asks for results </span><span class="si">{</span><span class="n">first</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">end</span><span class="si">}</span><span class="s2">, past "</span>
             <span class="sa">f</span><span class="s2">"the </span><span class="si">{</span><span class="n">window</span><span class="si">}</span><span class="s2"> results this source serves per query"</span>
         <span class="p">)</span>

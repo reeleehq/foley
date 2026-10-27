@@ -77,6 +77,7 @@ so the derived permission flags stay single-sourced.
 
 | [`SourceConfigurationError`](#foley.sources.base.SourceConfigurationError)   | A source cannot run until the user configures it: a missing key, plan or endpoint.   |
 |-----------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`SearchArgumentError`](#foley.sources.base.SearchArgumentError)        | A search argument the source refuses before any call: the caller's error.            |
 
 ### foley.sources.base.CORPUS_REGISTRY *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [CorpusAdapter](#foley.sources.base.CorpusAdapter)]* *= {'bbc_remarc': UniformCorpus(name='bbc_remarc', ring=2, default_license_id='RemArc', source='bbc_remarc', rights_verified=True, tag_hints_from_path=False), 'clotho': ClothoEvalCorpus(name='clotho', ring=0, default_license_id='CC-BY-4.0', source='clotho', rights_verified=True, tag_hints_from_path=False, include_captions=False), 'foleyset': UniformCorpus(name='foleyset', ring=0, default_license_id='CC-BY-4.0', source='foleyset', rights_verified=True, tag_hints_from_path=True), 'fsd50k': <foley.sources.fsd50k.Fsd50kCorpus object>, 'sonniss': UniformCorpus(name='sonniss', ring=2, default_license_id='Sonniss-GDC', source='sonniss', rights_verified=True, tag_hints_from_path=False)}*
 
@@ -259,6 +260,16 @@ not kept in the generations cache, so a replayed clip has none.
 
 * **Type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### *exception* foley.sources.base.SearchArgumentError
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A search argument the source refuses before any call: the caller’s error.
+
+A `ValueError`, so `except ValueError` still catches it; its own type lets the
+pull façade raise it rather than record it as a failed search, as it records a
+transient one (a garbled response is a `ValueError` too) (#169).
 
 ### *class* foley.sources.base.SourceAdapter(\*args, \*\*kwargs)
 

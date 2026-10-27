@@ -1,4 +1,4 @@
-> built 2026-10-27 05:36 UTC from 75d0cf5 (main) · foley 0.0.77. Details: build_info.json
+> built 2026-10-27 05:52 UTC from 1a11bd0 (main) · foley 0.0.78. Details: build_info.json
 
 # index.html.md
 
@@ -7110,8 +7110,10 @@ applies the by-reference storage gate from the sound’s own license.
   stored records (each `storage_mode == by_reference` for Freesound) and
   `.summary()` for counts, exactly like [`foley.ingest()`](_autosummary/foley.html.md#foley.ingest).
 * **Raises:**
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – A search argument the source refuses before any call, e.g. a
-        `page` past its result window (Openverse serves ~240 results a query).
+  * [**SearchArgumentError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SearchArgumentError) – A search argument the source refuses before any call
+        (a `ValueError`), e.g. a `page` past its result window (Openverse
+        serves ~240 results a query), or Freesound’s `kind` and
+        `ucs_category` naming two different top levels.
   * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – A missing key or optional dependency.
 
 ### foley.apply_license_flags(record, , overrides=None)
@@ -14049,7 +14051,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'tudum', 'netflix chime', 'ta-dum', 'ta dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'tudum', 'ta dum', 'netflix sound', 'ta-dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -15430,6 +15432,7 @@ so the derived permission flags stay single-sourced.
 
 | [`SourceConfigurationError`](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError)   | A source cannot run until the user configures it: a missing key, plan or endpoint.   |
 |-----------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`SearchArgumentError`](_autosummary/foley.sources.base.html.md#foley.sources.base.SearchArgumentError)        | A search argument the source refuses before any call: the caller's error.            |
 
 ### foley.sources.base.CORPUS_REGISTRY *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [CorpusAdapter](_autosummary/foley.sources.base.html.md#foley.sources.base.CorpusAdapter)]* *= {'bbc_remarc': UniformCorpus(name='bbc_remarc', ring=2, default_license_id='RemArc', source='bbc_remarc', rights_verified=True, tag_hints_from_path=False), 'clotho': ClothoEvalCorpus(name='clotho', ring=0, default_license_id='CC-BY-4.0', source='clotho', rights_verified=True, tag_hints_from_path=False, include_captions=False), 'foleyset': UniformCorpus(name='foleyset', ring=0, default_license_id='CC-BY-4.0', source='foleyset', rights_verified=True, tag_hints_from_path=True), 'fsd50k': <foley.sources.fsd50k.Fsd50kCorpus object>, 'sonniss': UniformCorpus(name='sonniss', ring=2, default_license_id='Sonniss-GDC', source='sonniss', rights_verified=True, tag_hints_from_path=False)}*
 
@@ -15612,6 +15615,16 @@ not kept in the generations cache, so a replayed clip has none.
 
 * **Type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### *exception* foley.sources.base.SearchArgumentError
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A search argument the source refuses before any call: the caller’s error.
+
+A `ValueError`, so `except ValueError` still catches it; its own type lets the
+pull façade raise it rather than record it as a failed search, as it records a
+transient one (a garbled response is a `ValueError` too) (#169).
 
 ### *class* foley.sources.base.SourceAdapter(\*args, \*\*kwargs)
 
@@ -16878,10 +16891,12 @@ before it becomes a candidate.
     translated to Freesound’s native key.
   * **page** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The results page (1-based, `k` per page).
   * **kind** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `sfx` (default, no filter) or `music` (the Broad Sound
-    Taxonomy’s “Music” top level).
+    Taxonomy’s “Music” top level). With a `ucs_category` that maps to
+    another top level it raises `SearchArgumentError` (nothing could match).
   * **similar_to** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A Freesound sound id (either id form): “more like this one”.
   * **ucs_category** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A UCS CatID or category, mapped to a coarse Broad Sound
-    Taxonomy `category` pre-filter (no filter if it is not recognised).
+    Taxonomy `category` pre-filter (no filter if it is not recognised;
+    `SearchArgumentError` if `kind` asks for another top level).
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native Freesound search params foley has no affordance
     for, merged over the translated ones (#61), e.g.
     `{"filter": "ac_brightness:[50 TO 100]"}`. Per the config’s
@@ -17489,8 +17504,10 @@ applies the by-reference storage gate from the sound’s own license.
   stored records (each `storage_mode == by_reference` for Freesound) and
   `.summary()` for counts, exactly like [`foley.ingest()`](_autosummary/foley.html.md#foley.ingest).
 * **Raises:**
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – A search argument the source refuses before any call, e.g. a
-        `page` past its result window (Openverse serves ~240 results a query).
+  * [**SearchArgumentError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SearchArgumentError) – A search argument the source refuses before any call
+        (a `ValueError`), e.g. a `page` past its result window (Openverse
+        serves ~240 results a query), or Freesound’s `kind` and
+        `ucs_category` naming two different top levels.
   * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – A missing key or optional dependency.
 
 ### foley.sources.api_license(, source, license_id, rights_verified, overrides=None, source_id=None, source_url=None, license_url=None, creator_name=None, attribution_text=None)
@@ -18298,8 +18315,10 @@ applies the by-reference storage gate from the sound’s own license.
   stored records (each `storage_mode == by_reference` for Freesound) and
   `.summary()` for counts, exactly like [`foley.ingest()`](_autosummary/foley.html.md#foley.ingest).
 * **Raises:**
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – A search argument the source refuses before any call, e.g. a
-        `page` past its result window (Openverse serves ~240 results a query).
+  * [**SearchArgumentError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SearchArgumentError) – A search argument the source refuses before any call
+        (a `ValueError`), e.g. a `page` past its result window (Openverse
+        serves ~240 results a query), or Freesound’s `kind` and
+        `ucs_category` naming two different top levels.
   * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – A missing key or optional dependency.
 
 
@@ -20878,16 +20897,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 05:36 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/75d0cf5391bd20d19eaa9a00f256a796c8622b6b"><code>75d0cf5</code></a> on branch <code>main</code>, for **foley 0.0.77** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 05:52 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/1a11bd01b477482bea6c2644976cb68e1427803a"><code>1a11bd0</code></a> on branch <code>main</code>, for **foley 0.0.78** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.78) is behind the latest release on PyPI (0.0.79): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/75d0cf5391bd20d19eaa9a00f256a796c8622b6b"><code>75d0cf5391bd20d19eaa9a00f256a796c8622b6b</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/1a11bd01b477482bea6c2644976cb68e1427803a"><code>1a11bd01b477482bea6c2644976cb68e1427803a</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20898,9 +20919,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40456075723">40456075723</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40457151762">40457151762</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>75d0cf5391bd20d19eaa9a00f256a796c8622b6b</code> (in the history of the built commit) |
+| Event commit | <code>1a11bd01b477482bea6c2644976cb68e1427803a</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20925,13 +20946,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.77/">0.0.77</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.79/">0.0.79</a>, newer than the documented version (0.0.78).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 75d0cf5391bd20d19eaa9a00f256a796c8622b6b
+git checkout 1a11bd01b477482bea6c2644976cb68e1427803a
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

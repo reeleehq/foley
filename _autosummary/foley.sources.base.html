@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=e264953e"></script>
+    <script src="../_static/documentation_options.js?v=0a7e36fc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.77" />
+  <meta name="docsearch:version" content="0.0.78" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -627,6 +627,9 @@ so the derived permission flags stay single-sourced.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.base.SourceConfigurationError" title="foley.sources.base.SourceConfigurationError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SourceConfigurationError</span></code></a></p></td>
 <td><p>A source cannot run until the user configures it: a missing key, plan or endpoint.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.base.SearchArgumentError" title="foley.sources.base.SearchArgumentError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SearchArgumentError</span></code></a></p></td>
+<td><p>A search argument the source refuses before any call: the caller's error.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -869,6 +872,16 @@ not kept in the generations cache, so a replayed clip has none.</p>
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="foley.sources.base.SearchArgumentError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.base.</span></span><span class="sig-name descname"><span class="pre">SearchArgumentError</span></span><a class="reference internal" href="../_modules/foley/sources/base.html#SearchArgumentError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.base.SearchArgumentError" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></a></p>
+<p>A search argument the source refuses before any call: the caller’s error.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>, so <code class="docutils literal notranslate"><span class="pre">except</span> <span class="pre">ValueError</span></code> still catches it; its own type lets the
+pull façade raise it rather than record it as a failed search, as it records a
+transient one (a garbled response is a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> too) (#169).</p>
 </dd></dl>
 
 <dl class="py class">
@@ -1511,6 +1524,7 @@ block the operator’s key and plan apply again.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.GeneratedClip.raw"><code class="docutils literal notranslate"><span class="pre">GeneratedClip.raw</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.SearchArgumentError"><code class="docutils literal notranslate"><span class="pre">SearchArgumentError</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.SourceAdapter"><code class="docutils literal notranslate"><span class="pre">SourceAdapter</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.SourceAdapter.download"><code class="docutils literal notranslate"><span class="pre">SourceAdapter.download()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.base.SourceAdapter.get"><code class="docutils literal notranslate"><span class="pre">SourceAdapter.get()</span></code></a></li>

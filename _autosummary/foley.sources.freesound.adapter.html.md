@@ -121,10 +121,12 @@ before it becomes a candidate.
     translated to Freesound’s native key.
   * **page** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The results page (1-based, `k` per page).
   * **kind** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `sfx` (default, no filter) or `music` (the Broad Sound
-    Taxonomy’s “Music” top level).
+    Taxonomy’s “Music” top level). With a `ucs_category` that maps to
+    another top level it raises `SearchArgumentError` (nothing could match).
   * **similar_to** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A Freesound sound id (either id form): “more like this one”.
   * **ucs_category** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A UCS CatID or category, mapped to a coarse Broad Sound
-    Taxonomy `category` pre-filter (no filter if it is not recognised).
+    Taxonomy `category` pre-filter (no filter if it is not recognised;
+    `SearchArgumentError` if `kind` asks for another top level).
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native Freesound search params foley has no affordance
     for, merged over the translated ones (#61), e.g.
     `{"filter": "ac_brightness:[50 TO 100]"}`. Per the config’s

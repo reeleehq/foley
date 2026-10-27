@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=e264953e"></script>
+    <script src="../_static/documentation_options.js?v=0a7e36fc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.77" />
+  <meta name="docsearch:version" content="0.0.78" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -650,10 +650,12 @@ kept, so NC / SA / ND never come back.</p></li>
 translated to Freesound’s native key.</p></li>
 <li><p><strong>page</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – The results page (1-based, <code class="docutils literal notranslate"><span class="pre">k</span></code> per page).</p></li>
 <li><p><strong>kind</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – <code class="docutils literal notranslate"><span class="pre">sfx</span></code> (default, no filter) or <code class="docutils literal notranslate"><span class="pre">music</span></code> (the Broad Sound
-Taxonomy’s “Music” top level).</p></li>
+Taxonomy’s “Music” top level). With a <code class="docutils literal notranslate"><span class="pre">ucs_category</span></code> that maps to
+another top level it raises <code class="docutils literal notranslate"><span class="pre">SearchArgumentError</span></code> (nothing could match).</p></li>
 <li><p><strong>similar_to</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – A Freesound sound id (either id form): “more like this one”.</p></li>
 <li><p><strong>ucs_category</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – A UCS CatID or category, mapped to a coarse Broad Sound
-Taxonomy <code class="docutils literal notranslate"><span class="pre">category</span></code> pre-filter (no filter if it is not recognised).</p></li>
+Taxonomy <code class="docutils literal notranslate"><span class="pre">category</span></code> pre-filter (no filter if it is not recognised;
+<code class="docutils literal notranslate"><span class="pre">SearchArgumentError</span></code> if <code class="docutils literal notranslate"><span class="pre">kind</span></code> asks for another top level).</p></li>
 <li><p><strong>provider_params</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span>) – Native Freesound search params foley has no affordance
 for, merged over the translated ones (#61), e.g.
 <code class="docutils literal notranslate"><span class="pre">{&quot;filter&quot;:</span> <span class="pre">&quot;ac_brightness:[50</span> <span class="pre">TO</span> <span class="pre">100]&quot;}</span></code>. Per the config’s
