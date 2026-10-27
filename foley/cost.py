@@ -160,8 +160,10 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
     return None
 
 
-#: Slack when rounding seconds up to billing blocks, so 10.0000001 s stays one 10 s block.
-_BLOCK_SLACK = 1e-9
+#: Decimals of blocks kept before rounding up, so float noise (10.0000001 s) stays one
+#: 10 s block; a real overrun (10.02 s) is a second block, as a block-billing provider
+#: would charge it.
+_BLOCK_DECIMALS = 6
 
 
 def _billed_seconds(seconds, pricing: dict) -> float:
@@ -169,7 +171,7 @@ def _billed_seconds(seconds, pricing: dict) -> float:
     step = pricing.get("billing_increment_s")
     if not step:
         return float(seconds)
-    return math.ceil(float(seconds) / float(step) - _BLOCK_SLACK) * float(step)
+    return math.ceil(round(float(seconds) / float(step), _BLOCK_DECIMALS)) * float(step)
 
 
 def actual_call_cost(

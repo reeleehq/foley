@@ -276,7 +276,7 @@ class FalAdapter:
                 f"({type(exc).__name__}); nothing was generated"
             ) from exc
 
-    def _demuxer(self) -> Optional[Callable[[bytes], bytes]]:
+    def demuxer(self) -> Optional[Callable[[bytes], bytes]]:
         """How to take the audio out of this endpoint's answer, or ``None`` (audio already).
 
         Raises:
@@ -326,7 +326,7 @@ class FalAdapter:
         """
         notes: list = []
         nd = self.config.get("native_defaults") or {}
-        demux = self._demuxer()  # before the upload and the call: nothing spent yet
+        demux = self.demuxer()  # before the upload and the call: nothing spent yet
         args = merge_provider_params(
             self.native_arguments(prompt, **affordances),
             provider_params,

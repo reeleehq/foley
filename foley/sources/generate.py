@@ -47,7 +47,7 @@ from ..index.ingest import IngestReport, IngestResult, ingest_one
 from ..qc import DEFAULT_MIN_STATUS
 from ._dispatch import plan_generation, record_generation_outcome, run_generation
 from ..runtime import EgressBlocked
-from .base import SourceConfigurationError
+from .base import SourceConfigurationError, UndemuxedAnswer
 from .registry import get_source
 
 #: The order :func:`foley.generate` tries backends in when none is named. ElevenLabs
@@ -496,18 +496,20 @@ def _generate(
     # meaning-carrying parameter, the run's cost cap, a missing key or plan — is
     # decided here, BEFORE any provider is called, and raises (#53 #57 #64). A paid
     # request seen before is served from the generations cache (#59).
-    plan = plan_generation(
-        backend,
-        prompt,
-        adapter=gen,
-        on_unsupported=on_unsupported,
-        cache=generations_cache,
-        reuse_cached=reuse_cached,
-        provider_params=provider_params,
-        **affordances,
-    )
-
     report = IngestReport(root=f"{backend}:{prompt}")
+    try:
+        plan = plan_generation(
+            backend,
+            prompt,
+            adapter=gen,
+            on_unsupported=on_unsupported,
+            cache=generations_cache,
+            reuse_cached=reuse_cached,
+            provider_params=provider_params,
+            **affordances,
+        )
+    except UndemuxedAnswer as exc:  # a kept, paid video still not demuxed (#176)
+        return _error_report(report, backend, exc)
     # A synthesis failure (rate-limit / model load / bad response) yields an
     # inspectable report with one error entry; a configuration error propagates.
     try:
@@ -528,15 +530,7 @@ def _generate(
     except (SourceConfigurationError, EgressBlocked):
         raise  # not configured, or offline without the model's weights: say so
     except Exception as exc:
-        report.record(
-            IngestResult(
-                id=f"{backend}:generate",
-                status="error",
-                error=f"{type(exc).__name__}: {exc}",
-            )
-        )
-        report.exception = exc
-        return report
+        return _error_report(report, backend, exc)
 
     lic = clip.candidate.sound.license
 
@@ -684,6 +678,21 @@ def _generate(
     if res.status in ("pass", "warn") and not lic.ai_training_ok:
         res.notes.append(_CONSENT_NOTE)
     report.record(res)
+    return report
+
+
+def _error_report(report: IngestReport, backend: str, exc: Exception) -> IngestReport:
+    """``report`` with the one error entry of a failed generation (its ``cache_key`` when
+    the paid bytes were kept, as an :class:`~foley.sources.base.UndemuxedAnswer` says)."""
+    report.record(
+        IngestResult(
+            id=f"{backend}:generate",
+            status="error",
+            error=f"{type(exc).__name__}: {exc}",
+            cache_key=getattr(exc, "cache_key", None),
+        )
+    )
+    report.exception = exc
     return report
 
 

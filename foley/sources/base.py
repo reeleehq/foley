@@ -833,12 +833,20 @@ class UndemuxedAnswer(RuntimeError):
     in. When ffmpeg cannot demux it, the call is still billed: ``clip`` is the whole
     answer (``audio_bytes`` the video, its licence and notes), so the generations cache
     keeps it and a retry demuxes it without paying again. ``None`` when the error is
-    raised for a cached answer that still cannot be demuxed.
+    raised for a cached answer that still cannot be demuxed. ``cache_key``: the video's
+    key in the generations cache once kept (``foley.generations.get(cache_key)``).
     """
 
-    def __init__(self, message: str, *, clip: Optional[GeneratedClip] = None):
+    def __init__(
+        self,
+        message: str,
+        *,
+        clip: Optional[GeneratedClip] = None,
+        cache_key: Optional[str] = None,
+    ):
         super().__init__(message)
         self.clip = clip
+        self.cache_key = cache_key
 
 
 @runtime_checkable
