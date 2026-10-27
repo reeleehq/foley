@@ -31,14 +31,15 @@ Ingestion (decode / QC / embed / tag / store) is NOT reimplemented here — the
 
 from __future__ import annotations
 
-import re
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import ai_scope_from_gen_ai_preference, wanted_license_ids
 from ..base import (
     api_license,
+    check_provider_params,
     merge_provider_params,
+    names_field,
     native_choice,
     SearchArgumentError,
     page_size,
@@ -49,9 +50,6 @@ from ..base import (
 from .._license_gate import is_cc0_only, license_for_item
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
-
-#: A double-quoted Solr phrase (a backslash escapes), blanked before a field is looked for.
-_QUOTED = re.compile(r'"(?:\\.|[^"\\])*"')
 
 #: Preview keys in the Freesound ``previews`` object, best (highest fidelity) first.
 _PREVIEW_KEYS = (
@@ -104,33 +102,31 @@ def _category_filter(
 
 
 def _check_provider_category(
-    config: dict, category: Optional[str], provider_filter
+    config: dict, category: Optional[str], provider_params: dict
 ) -> None:
-    """Refuse a provider ``filter`` with its own category clause when foley sends one.
+    """Refuse a provider filter with its own category clause when foley sends one.
 
     The two would be ANDed, and a sound has one top level, so a different one could
     only match nothing (#181), as :func:`_category_filter` refuses for ``kind`` and
-    ``ucs_category``. Quoted phrases are not read as clauses.
+    ``ucs_category``. ``provider_params`` are the checked ones
+    (:func:`~foley.sources.base.check_provider_params`); quoted phrases are not read
+    as clauses (:func:`~foley.sources.base.names_field`).
 
     >>> from foley.sources.freesound.config import SOURCE_CONFIG as cfg
-    >>> _check_provider_category(cfg, "Music", 'tag:"category:x" subcategory:y')
-    >>> _check_provider_category(cfg, None, 'category:"Soundscapes"')
-    >>> _check_provider_category(cfg, "Music", '-category:"Soundscapes"')
+    >>> _check_provider_category(cfg, "Music", {"filter": 'tag:"category:x" subcategory:y'})
+    >>> _check_provider_category(cfg, None, {"filter": 'category:"Soundscapes"'})
+    >>> _check_provider_category(cfg, "Music", {"filter": '-category:"Soundscapes"'})
     Traceback (most recent call last):
     ...
     foley.sources.base.SearchArgumentError: provider_params['filter'] names a category, but foley already filters on category:"Music" (from kind= or ucs_category=): pass the category in one place
     """
-    if not category or not provider_filter:
-        return
-    template = config["param_map"]["ucs_category"]["to_native"]
-    field = template.split(":", 1)[0]
-    if re.search(
-        rf"(?<![\w.]){re.escape(field)}\s*:", _QUOTED.sub('""', str(provider_filter))
-    ):
+    row = config["param_map"]["ucs_category"]
+    key, field = row["native_name"], row["field"]
+    if category and names_field(str(provider_params.get(key) or ""), field):
         raise SearchArgumentError(
-            f"provider_params['filter'] names a {field}, but foley already filters "
-            f"on {template.format(category=category)} (from kind= or ucs_category=): "
-            f"pass the {field} in one place"
+            f"provider_params[{key!r}] names a {field}, but foley already filters "
+            f"on {row['to_native'].format(category=category)} (from kind= or "
+            f"ucs_category=): pass the {field} in one place"
         )
 
 
@@ -255,9 +251,9 @@ class FreesoundAdapter:
                 ``provider_params`` policy, a ``filter`` is appended to foley's as one
                 group (the licence filter cannot be replaced or widened, and a
                 category clause is refused when ``kind`` / ``ucs_category`` already
-                send one), ``fields`` are
-                appended to foley's (the licence fields cannot be dropped), and
-                ``query`` is refused; the per-item licence re-check still applies.
+                send one), ``fields`` are appended to foley's (the licence fields
+                cannot be dropped), and ``query`` is refused; the per-item licence
+                re-check still applies.
             **kw: Ignored extra affordances (``on_unsupported_param='warn'``).
 
         Returns:
@@ -280,7 +276,10 @@ class FreesoundAdapter:
         elif only is not None:
             filters.append(license_map["to_native_attribution"])
         pm = self.config["param_map"]
+        policy = provider_params_policy(self.config)
+        provider_params = check_provider_params(provider_params, policy=policy)
         category = _category_filter(self.config, kind, ucs_category)
+        _check_provider_category(self.config, category, provider_params)
         if category:
             filters.append(pm["ucs_category"]["to_native"].format(category=category))
         if duration_range is not None:
@@ -298,12 +297,7 @@ class FreesoundAdapter:
         if similar_to:
             native = self.config["param_map"]["similar_to"]["native_name"]
             params[native] = _raw_id(similar_to)
-        params = merge_provider_params(
-            params, provider_params, policy=provider_params_policy(self.config)
-        )
-        _check_provider_category(
-            self.config, category, (provider_params or {}).get("filter")
-        )
+        params = merge_provider_params(params, provider_params, policy=policy)
 
         data = self.invoke_native(
             self.config["api"]["search_endpoint"]["path"], **params

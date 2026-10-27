@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
@@ -60,6 +61,7 @@ __all__ = [
     "check_provider_params",
     "require_params_mapping",
     "merge_provider_params",
+    "names_field",
     "recorded_params",
     "native_adherence",
     "resolve_source_key",
@@ -304,27 +306,75 @@ def _append_spec(spec) -> "tuple[str, bool]":
     return spec["joiner"], bool(spec.get("group", True))
 
 
+def _unquoted(value: str) -> str:
+    """``value`` with its double-quoted phrases blanked and its escapes neutralised.
+
+    A backslash escapes the next character, inside or outside quotes. A quoted phrase
+    becomes spaces, and an escape outside one (the backslash and its character)
+    becomes ``__``: still part of a name, never syntax. The length holds; an unclosed
+    quote or a trailing backslash is kept, for the caller to refuse.
+
+    >>> _unquoted(r'tag:"a (b" x\\(y "c')
+    'tag:      x__y " '
+    """
+    out: "list[str]" = []
+    quoted, escaped, opened = False, False, 0
+    for ch in value:
+        if escaped:
+            escaped = False
+            out.append(" " if quoted else "_")
+        elif ch == "\\":
+            escaped = True
+            out.append(" " if quoted else "_")
+        elif ch == '"':
+            quoted, opened = not quoted, len(out)
+            out.append(" ")
+        else:
+            out.append(" " if quoted else ch)
+    if quoted:
+        out[opened] = '"'
+    if escaped:
+        out[-1] = "\\"
+    return "".join(out)
+
+
+def names_field(clause: str, field: str) -> bool:
+    """Whether a Solr-ish ``clause`` names ``field`` as a field (``field:``).
+
+    Not inside a quoted phrase, not as part of another name (``subcategory:``,
+    ``ac_category:``, ``foo.category:``) and not escaped (``category\\:``); a prefix
+    (``+``, ``-``, ``(``, ``{!tag=t}``) or a space before the colon still counts.
+
+    >>> names_field('-category:"Music"', "category")
+    True
+    >>> names_field('{!tag=t}category :Fx', "category")
+    True
+    >>> names_field('tag:"category:x" subcategory:y ac_category:z', "category")
+    False
+    >>> names_field(r'tag:\\"x category:"Music"', "category")
+    True
+    >>> names_field(r'category\\:x', "category")
+    False
+    """
+    pattern = rf"(?<![\w.]){re.escape(field)}\s*:"
+    return re.search(pattern, _unquoted(str(clause))) is not None
+
+
 def _check_grouped(key: str, value: str) -> None:
     """Refuse a value that could escape the ``(...)`` group it is wrapped in.
 
     Parentheses outside double quotes (a backslash escapes) must balance and never
     close more than they opened, so ``x) OR (license:*`` cannot widen the clause.
     """
-    depth, quoted, escaped = 0, False, False
-    for ch in value:
-        if escaped:
-            escaped = False
-        elif ch == "\\":
-            escaped = True
-        elif ch == '"':
-            quoted = not quoted
-        elif not quoted and ch == "(":
+    bare, depth = _unquoted(value), 0
+    for ch in bare:
+        if ch == "(":
             depth += 1
-        elif not quoted and ch == ")":
+        elif ch == ")":
             depth -= 1
             if depth < 0:
                 break
-    if depth != 0 or quoted or escaped:
+    if depth != 0 or '"' in bare or bare.endswith("\\"):
         raise ValueError(
             f"provider_params[{key!r}] has unbalanced parentheses or quotes: it is "
             f"appended as one group and may not close it ({value!r})"

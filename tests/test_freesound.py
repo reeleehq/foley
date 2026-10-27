@@ -859,7 +859,13 @@ def test_a_provider_category_clause_conflicting_with_foleys_is_refused(
     from foley.sources.base import SearchArgumentError
 
     transport = _transport()
-    for clause in ('category:"Soundscapes"', 'NOT category:"Music"', "(category:Fx)"):
+    clauses = (
+        'category:"Soundscapes"',
+        'NOT category:"Music"',
+        "(category:Fx)",
+        'tag:\\"x category:"Music"',  # an escaped quote opens no phrase
+    )
+    for clause in clauses:
         with pytest.raises(SearchArgumentError, match="in one place"):
             add_from("freesound", query="rain", adapter=_adapter(transport),
                      library=library, provider_params={"filter": clause},

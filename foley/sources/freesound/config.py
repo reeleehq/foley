@@ -69,6 +69,9 @@ SOURCE_CONFIG = {
         # (rain may be filed as a sound effect or a soundscape) sends no pre-filter.
         "ucs_category": {
             "native_name": "filter",
+            # The Solr field to_native filters on: a provider filter naming it as
+            # well is refused (#181).
+            "field": "category",
             "to_native": 'category:"{category}"',
             "bst_category_by_ucs_category": {
                 "AMBIENCE": "Soundscapes",
