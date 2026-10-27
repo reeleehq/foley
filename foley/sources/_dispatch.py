@@ -651,7 +651,7 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
         The :class:`~foley.sources.base.GeneratedClip`, its notes prefixed with the
         plan's, and ``candidate.cost_estimate_usd`` / ``cost_actual_usd`` set.
     """
-    from ..cost import release
+    from ..cost import release, settle
     from ..runtime import EgressBlocked
     from .base import SourceConfigurationError, UndemuxedAnswer
 
@@ -662,7 +662,17 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
         clip.notes = [*plan.notes, *clip.notes]
         return clip
     # plan_generation already reserved the estimate on every budget in force.
-    reserved = plan.estimate_usd if plan.request_key is not None else None
+    paid = plan.request_key is not None
+    reserved = plan.estimate_usd if paid else None
+
+    def settled(clip_) -> None:  # the actual cost, when known, replaces the estimate
+        if paid:
+            settle(reserved, _billed(plan, clip_.candidate.cost_actual_usd))
+
+    def released() -> None:  # nothing was sent: only a paid call reserved anything
+        if paid:
+            release(reserved)
+
     try:
         extra = (
             {"provider_params": plan.provider_params} if plan.provider_params else {}
@@ -673,11 +683,12 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
             affordances["seed"] = draw_seed()
         clip = adapter.generate(plan.prompt, **affordances, **extra)
     except (SourceConfigurationError, EgressBlocked):
-        release(reserved)  # refused before any request was sent (incl. offline weights)
+        released()  # refused before any request was sent (incl. offline weights)
         raise
     except UndemuxedAnswer as exc:  # billed: keep the answer, so a retry is free
         if plan.request_key is None or exc.clip is None:
             raise
+        settled(exc.clip)  # it was billed
         cache = cache if cache is not None else _default_cache()
         try:
             plan.kept_key = _answered_key(plan, exc.clip)
@@ -702,17 +713,18 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
             cache_key=plan.content_key,
         ) from exc
     except ImportError as exc:
-        release(reserved)
+        released()
         raise SourceConfigurationError(
             f"{plan.backend!r} needs an optional dependency that is not installed "
             f"({exc.name or exc}): pip install 'foley[{_extra_of(plan)}]'"
         ) from exc
     except Exception as exc:
         if provider_refused(exc):
-            release(reserved)  # the provider answered with an error: nothing billed
+            released()  # the provider answered with an error: nothing billed
         raise
     # Any other failure keeps the reservation: the request may have been sent and
     # billed (a read timeout after the server accepted it).
+    settled(clip)
     clip.notes = [*plan.notes, *clip.notes]
     clip.candidate.cost_estimate_usd = plan.estimate_usd
     if plan.request_key is not None:
@@ -768,6 +780,22 @@ def draws_seed(config: dict) -> bool:
     takes_seed = "seed" in (config.get("supported_affordances") or ())
     echoes_seed = bool((config.get("native_defaults") or {}).get("seed_field"))
     return takes_seed and not echoes_seed
+
+
+def _billed(plan: GenerationPlan, actual: Optional[float]) -> Optional[float]:
+    """What a paid call is settled at: its actual cost, except where the estimate is
+    the exact price and the actual a lower measure of it.
+
+    A source billed by the video's length (``pricing.seconds_from == 'video'``,
+    HunyuanVideo-Foley's 10 s blocks) is quoted exactly from the video, while its
+    actual is measured from the audio it returned, which can be shorter: settling to
+    that would undercut what the provider bills, so the higher of the two stands.
+    """
+    estimate = plan.estimate_usd
+    exact = (plan.config.get("pricing") or {}).get("seconds_from") == "video"
+    if exact and estimate is not None and actual is not None:
+        return max(estimate, actual)
+    return actual
 
 
 def _extra_of(plan: GenerationPlan) -> str:
@@ -875,6 +903,10 @@ def _default_cache():
 #: from another (#185): 64 bits, so two answers never share an entry.
 _ANSWER_KEY_CHARS = 16
 
+#: How an adapter's note on what its call cost begins (#186), so a replay marks it as
+#: the first generation's: a replay costs nothing.
+COST_NOTE_PREFIX = "cost from "
+
 
 def _store_clip(cache, plan: GenerationPlan, clip, *, container=None) -> None:
     """Keep the paid bytes and the entry of the request they answer.
@@ -939,6 +971,7 @@ def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
         "tags": list(sound.tags or []),
         "notes": [n for n in clip.notes if n not in plan.notes],  # the adapter's own
         "estimate_usd": plan.estimate_usd,
+        "actual_usd": clip.candidate.cost_actual_usd,  # the first generation's (#186)
         "at": time.time(),  # so GenerationsCache.find lists newest first
     }
 
@@ -1029,6 +1062,11 @@ def _cached_clip(cache, request_key: str, notes: list, config: dict, *, demux=No
     if entry.get("fallback") and not via_fallback:
         # Generated as another request's fallback; this request is the one it answers.
         kept_notes = [f"when first generated, as a fallback: {n}" for n in kept_notes]
+    else:  # a cost note is the first generation's: this replay cost nothing (#186)
+        kept_notes = [
+            f"when first generated: {n}" if n.startswith(COST_NOTE_PREFIX) else n
+            for n in kept_notes
+        ]
     return GeneratedClip(
         audio_bytes=audio,
         candidate=Candidate(sound=record, origin=CandidateOrigin.generated),

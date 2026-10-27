@@ -580,10 +580,13 @@ SOURCE_CONFIGS = (
         license={"default_license_id": "research-only", "cache_bytes_ok": True},
         commercial_ok=False,
         # Billed per *compute* second: not knowable before the call, so the estimate is
-        # unknown (an unknown cost needs approval) and so is the actual.
+        # unknown (an unknown cost needs approval); the actual is priced from the run
+        # time fal reports (#186), unknown when it reports none.
         pricing={
             "unit": "per_compute_second",
             "amount_usd": 0.001,
+            # fal's run metric the actual cost is priced from (#186; falaw#125).
+            "compute_seconds_field": "inference_time",
             "source": _FAL_V2A_PRICING_SOURCE,
             "seen": _SEEN_V2A,
         },

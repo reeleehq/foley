@@ -174,22 +174,52 @@ def _billed_seconds(seconds, pricing: dict) -> float:
     return math.ceil(round(float(seconds) / float(step), _BLOCK_DECIMALS)) * float(step)
 
 
+def _finite_non_negative(value) -> bool:
+    """Whether ``value`` is a real number (not a bool), finite and >= 0."""
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and value >= 0
+    )
+
+
 def actual_call_cost(
-    config: dict, *, duration_s: Optional[float] = None
+    config: dict,
+    *,
+    duration_s: Optional[float] = None,
+    compute_s: Optional[float] = None,
 ) -> Optional[float]:
     """What a call just made costs at the declared price, for the duration actually sent.
 
     The same pricing rule as :func:`estimate_call`, so the estimate and the actual
     cannot disagree on it; ``None`` (unknown) when a per-second source was left to
-    choose its own length.
+    choose its own length. A source billed per compute second (unknown beforehand) is
+    priced from ``compute_s``, the run time the provider reported (#186), and is
+    ``None`` without it.
 
     >>> cfg = {"pricing": {"unit": "per_second", "amount_usd": 0.002}}
     >>> actual_call_cost(cfg, duration_s=3.0)
     0.006
     >>> actual_call_cost(cfg) is None
     True
+    >>> gpu = {"pricing": {"unit": "per_compute_second", "amount_usd": 0.001}}
+    >>> actual_call_cost(gpu, compute_s=42.0), actual_call_cost(gpu) is None
+    (0.042, True)
+
+    Only a finite number of seconds >= 0 is priced (a NaN, a negative, a bool or a
+    string is ``None``: an unknown cost is never guessed):
+
+    >>> [actual_call_cost(gpu, compute_s=s) for s in (float("nan"), -1.0, True, "3")]
+    [None, None, None, None]
     """
-    if duration_s is None and (config.get("pricing") or {}).get("unit") == "per_second":
+    pricing = config.get("pricing") or {}
+    if pricing.get("unit") == "per_compute_second":
+        amount = pricing.get("amount_usd")
+        if amount is None or not _finite_non_negative(compute_s):
+            return None
+        return round(float(amount) * float(compute_s), 10)
+    if duration_s is None and pricing.get("unit") == "per_second":
         return None
     # A source billed by its video's length bills the seconds it actually produced.
     return estimate_call(config, duration_s=duration_s, video_duration_s=duration_s)

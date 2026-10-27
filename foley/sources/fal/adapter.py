@@ -52,8 +52,9 @@ FAL_CREDENTIAL = "fal"
 #: The env vars falaw reads a fal key from, in order.
 FAL_KEY_ENV_VARS = ("FAL_KEY", "FAL_API_KEY")
 
-#: ``runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)``.
-Runner = Callable[..., "tuple[bytes, dict]"]
+#: ``runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)``,
+#: or a :class:`FalAnswer` (that two-tuple, with fal's run ``.metrics``, #186).
+Runner = Callable[..., "tuple[bytes, dict] | FalAnswer"]
 
 
 def audio_url(response: dict, field: str = "audio") -> Optional[str]:
@@ -83,10 +84,35 @@ def falaw_uploader(path: str, *, api_key: str) -> str:
         return falaw.upload(path)
 
 
+class FalAnswer(tuple):
+    """A runner's ``(media, response)``, with fal's run ``metrics`` beside it.
+
+    Still the two-tuple every runner answers (``media, response = answer``), so a
+    caller that does not know about metrics is unchanged; ``.metrics`` is fal's
+    ``Completed.metrics`` (``inference_time``), or ``None``.
+    """
+
+    metrics: Optional[dict]
+
+    def __new__(cls, media: bytes, response: dict, metrics: Optional[dict] = None):
+        answer = super().__new__(cls, (media, response))
+        answer.metrics = metrics
+        return answer
+
+    def __getnewargs__(self):
+        """What copy, deepcopy and pickle rebuild it from (the metrics included)."""
+        return (*self, self.metrics)
+
+
 def falaw_runner(
     endpoint_id: str, arguments: dict, *, api_key: str, audio_field: str = "audio"
-) -> "tuple[bytes, dict]":
+) -> FalAnswer:
     """Call a fal endpoint through falaw and return ``(audio bytes, raw response)``.
+
+    A :class:`FalAnswer`: its ``.metrics`` are fal's ``Completed.metrics``
+    (``inference_time``: the seconds the runner spent), which falaw carries on its
+    ``done`` event (falaw#125); ``None`` when fal reported none (or an older falaw
+    dropped them).
 
     ``refresh=True`` skips falaw's cache read and keeps its write (see the module
     docstring: foley's generations cache owns replay). The audio is downloaded by
@@ -108,9 +134,17 @@ def falaw_runner(
         fe.FalAccountLocked,
         fe.FalNonCanonicalArgument,
     )
+    metrics: dict = {}
+
+    def on_event(event) -> None:  # fal's run metrics ride the "done" event (falaw#125)
+        if getattr(event, "kind", None) == "done" and getattr(event, "metrics", None):
+            metrics.update(event.metrics)
+
     with falaw.using_fal_credentials(api_key):
         try:
-            response = falaw.cached_call_fal(endpoint_id, arguments, refresh=True)
+            response = falaw.cached_call_fal(
+                endpoint_id, arguments, refresh=True, on_event=on_event
+            )
         except refusals as exc:
             raise SourceConfigurationError(
                 f"fal refused {endpoint_id} before generating anything: {exc}"
@@ -123,7 +157,7 @@ def falaw_runner(
             )
         path = falaw.materialize_asset(url, key_hint="foley")
     with open(path, "rb") as f:
-        return f.read(), response
+        return FalAnswer(f.read(), response, metrics or None)
 
 
 class FalAdapter:
@@ -262,12 +296,20 @@ class FalAdapter:
         Raises:
             SourceConfigurationError: If no fal key is available (before any call).
         """
-        return self._runner(
+        media, response, _ = self._call(arguments)
+        return media, response
+
+    def _call(self, arguments: dict) -> "tuple[bytes, dict, Optional[dict]]":
+        """:meth:`invoke_native` with the run metrics the runner reported: a
+        :class:`FalAnswer`'s ``.metrics``; ``None`` for a plain ``(media, response)``."""
+        answer = self._runner(
             self.config["api"]["endpoint_id"],
             arguments,
             api_key=self.api_key,
             audio_field=(self.config.get("output") or {}).get("audio_field", "audio"),
         )
+        media, response = answer
+        return media, response, getattr(answer, "metrics", None)
 
     def _media_url(self, media, *, kind: str = "video") -> str:
         """The URL fal fetches a media input from: a URL as is, a path or bytes uploaded
@@ -367,7 +409,7 @@ class FalAdapter:
                 f"{nd['duration_default_s']:g} s"
             )
         endpoint = self.config["api"]["endpoint_id"]
-        audio, response = self.invoke_native(args)
+        audio, response, metrics = self._call(args)
         undemuxed = None  # the call is paid: a failed demux still returns the answer
         if demux is not None:
             try:
@@ -416,7 +458,9 @@ class FalAdapter:
         )
         record = SoundRecord(id=f"{self.name}:pending", license=lic, caption=prompt)
         candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
-        candidate.cost_actual_usd = _actual_cost(self.config, args, audio)
+        candidate.cost_actual_usd = _actual_cost(
+            self.config, args, audio, metrics=metrics, notes=notes
+        )
         clip = GeneratedClip(
             audio_bytes=audio,
             candidate=candidate,
@@ -434,19 +478,54 @@ class FalAdapter:
         return clip
 
 
-def _actual_cost(config: dict, args: dict, audio: bytes) -> Optional[float]:
+def _actual_cost(
+    config: dict,
+    args: dict,
+    audio: bytes,
+    *,
+    metrics: Optional[dict] = None,
+    notes: Optional[list] = None,
+) -> Optional[float]:
     """What the call just made costs (see :func:`foley.cost.actual_call_cost`): for the
     duration sent, or for a source billed by the video's length (#74), for the length
-    of the audio it returned (``None`` when that cannot be read)."""
+    of the audio it returned (``None`` when that cannot be read), or for a source
+    billed per compute second, for the run time fal reported (#186: the pricing row's
+    ``compute_seconds_field`` of the run ``metrics``; ``None`` without it), noted as
+    an observed run time, not an invoice figure."""
     from ...cost import actual_call_cost
 
-    from .._dispatch import source_modes
+    from .._dispatch import COST_NOTE_PREFIX, source_modes
+
+    pricing = config.get("pricing") or {}
+    if pricing.get("unit") == "per_compute_second":
+        seconds = _compute_seconds(metrics, pricing.get("compute_seconds_field"))
+        cost = actual_call_cost(config, compute_s=seconds)
+        if cost is not None and notes is not None:
+            notes.append(
+                f"{COST_NOTE_PREFIX}fal's reported run time ({seconds:g} s): an "
+                "observed run time, not an invoice figure"
+            )
+        return cost
 
     if "v2a" in source_modes(config):  # billed for the sound it made (#74)
         seconds = _audio_seconds(audio)
         return None if seconds is None else actual_call_cost(config, duration_s=seconds)
     name = (config["param_map"].get("duration_s") or {}).get("native_name")
     return actual_call_cost(config, duration_s=args.get(name) if name else None)
+
+
+def _compute_seconds(metrics: Optional[dict], field: Optional[str]):
+    """The run time fal reported, ``metrics[field]`` as is (``None`` when absent).
+
+    Not validated here: :func:`foley.cost.actual_call_cost` prices only a finite
+    number >= 0, and is ``None`` (unknown, never guessed) for anything else.
+
+    >>> _compute_seconds({"inference_time": 3.5}, "inference_time")
+    3.5
+    >>> _compute_seconds(None, "inference_time") is None
+    True
+    """
+    return (metrics or {}).get(field) if field else None
 
 
 def _audio_seconds(audio: bytes) -> Optional[float]:
