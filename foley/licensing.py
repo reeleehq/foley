@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from typing import Optional
 
@@ -969,20 +970,157 @@ def checked_refusal_reason(
         return f"its licence could not be checked ({type(exc).__name__}: {exc})"
 
 
+def placed_record(library, sound_id: str, *, missing=None, unreadable=None):
+    """``library``'s record for ``sound_id`` as a rights gate reads it, never raising.
+
+    The one lookup every placed-sound gate uses (a plan's, a weave's, the MCP verbs'),
+    so they agree on what "no record" means (#208):
+
+    * ``missing`` when there is no entry: ``library`` is ``None``, or the lookup
+      raises a ``LookupError`` (the id is genuinely absent);
+    * ``unreadable`` (default ``None``) when the lookup fails any other way (a corrupt
+      stored record, a broken backend): an entry that is there but cannot be judged;
+    * ``None`` when the value has no ``.license`` (a plain-mapping library of audio
+      arrays holds sounds, not records).
+
+    ``None`` is what the fail-closed gate (:func:`refusals`) refuses under an explicit
+    intent, and what the no-intent path only warns about, so a bad library can make a
+    gated call refuse but never make an ungated one raise.
+
+    >>> from foley.base import SoundRecord
+    >>> rec = SoundRecord(id="a", license=LicenseRecord(source="user"))
+    >>> placed_record({"a": rec}, "a") is rec
+    True
+    >>> placed_record({"a": rec}, "b", missing="own"), placed_record(None, "a")
+    ('own', None)
+    >>> placed_record({"a": [0.0, 0.1]}, "a") is None  # audio, not a record
+    True
+    >>> class Corrupt(dict):
+    ...     def __getitem__(self, k):
+    ...         raise ValueError("bad JSON")
+    >>> placed_record(Corrupt(), "a", missing="own") is None
+    True
+    """
+    if library is None:
+        return missing
+    try:
+        value = library[sound_id]
+        return value if hasattr(value, "license") else None
+    except LookupError:
+        return missing
+    except Exception as exc:  # noqa: BLE001 - an unreadable record is no record
+        _log.debug(
+            "no readable record for %r: %s: %s", sound_id, type(exc).__name__, exc
+        )
+        return unreadable
+
+
+#: The reason a placed sound with no record (nothing to read a licence from) is refused.
+NO_RECORD_REASON = "it has no record in the library, so its licence cannot be checked"
+
+
 def refusals(sound_records, intended_use: IntendedUse) -> "dict[str, str]":
     """``{sound id: reason}`` for each sound record :func:`keep` refuses for ``intended_use``.
 
     The re-check a placed sound gets where it is used (a plan, a weave), whatever
     intent it was found under (#191). Takes :class:`~foley.base.SoundRecord` s (each
     judged by its ``.license`` through :func:`checked_refusal_reason`, so fail-closed:
-    a record without a readable licence is refused). Empty when every sound is kept.
+    a record without a readable licence is refused), or a mapping ``{sound id: record}``
+    in which a ``None`` record (the sound has none) is refused too. Empty when every
+    sound is kept.
+
+    >>> refusals({"a": None}, IntendedUse())
+    {'a': 'it has no record in the library, so its licence cannot be checked'}
     """
+    if isinstance(sound_records, Mapping):
+        pairs = sound_records.items()
+    else:
+        pairs = ((record.id, record) for record in sound_records)
     out: "dict[str, str]" = {}
-    for record in sound_records:
+    for sound_id, record in pairs:
+        if record is None:
+            out[sound_id] = NO_RECORD_REASON
+            continue
         reason = checked_refusal_reason(getattr(record, "license", None), intended_use)
         if reason is not None:
-            out[record.id] = reason
+            out[sound_id] = reason
     return out
+
+
+class LicenseRefusal(ValueError):
+    """A plan or a weave refused because a placed sound's licence does not serve the intent.
+
+    Raised by :func:`foley.plan` and :func:`foley.weave` when they are given an
+    explicit ``intended_use=`` (#208). ``refused`` is ``{sound id: reason}`` for every
+    refused sound (:func:`refusals`); the message names each of them.
+
+    >>> err = LicenseRefusal({"a": "no grant in EU"})
+    >>> err.refused, str(err)
+    ({'a': 'no grant in EU'}, 'not licensed for this use: a: no grant in EU')
+    """
+
+    def __init__(self, refused: "Mapping[str, str]"):
+        self.refused = dict(refused)
+        why = "; ".join(f"{sid}: {reason}" for sid, reason in self.refused.items())
+        super().__init__(f"not licensed for this use: {why}")
+
+
+def check_placed(
+    records: "Mapping[str, object]",
+    intended_use: Optional[IntendedUse],
+    *,
+    what: str,
+) -> None:
+    """The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.
+
+    With an explicit ``intended_use``, fail-closed: raise :class:`LicenseRefusal`
+    naming every sound in ``records`` (``{sound id: SoundRecord or None}``) the
+    intent does not keep. With ``None`` (the migration default, #208), nothing is
+    refused, but if :data:`DEFAULT_INTENDED_USE` would refuse anything, one
+    ``FutureWarning`` names each such id and reason: a future release gates by default.
+
+    Args:
+        records: The placed sounds, by id (``None`` for one with no record).
+        intended_use: The caller's rights intent, or ``None`` (today's behaviour).
+        what: The façade's name, for the warning (``"foley.plan"``); the warning
+            points at the first caller outside foley.
+
+    Raises:
+        LicenseRefusal: If ``intended_use`` is given and refuses any sound.
+    """
+    if intended_use is not None:
+        refused = refusals(records, intended_use)
+        if refused:
+            raise LicenseRefusal(refused)
+        return
+    refused = refusals(records, DEFAULT_INTENDED_USE)
+    if refused:
+        import warnings
+
+        why = "; ".join(f"{sid}: {reason}" for sid, reason in refused.items())
+        warnings.warn(
+            f"{what}: {len(refused)} sound(s) are not licensed for the default rights "
+            f"intent (commercial publishing) and are used anyway: {why}. A future "
+            "release gates by default (fail-closed) and will refuse them. Pass "
+            "intended_use=foley.DEFAULT_INTENDED_USE to opt in now, or "
+            "intended_use=foley.IntendedUse(...) for your actual use.",
+            FutureWarning,
+            stacklevel=_outside_foley_stacklevel(),
+        )
+
+
+def _outside_foley_stacklevel() -> int:
+    """The ``stacklevel`` of the first frame outside the foley package (its caller's)."""
+    import os
+    import sys
+
+    root = os.path.dirname(os.path.abspath(__file__)) + os.sep
+    frame, level = sys._getframe(1), 1
+    while frame is not None and os.path.abspath(frame.f_code.co_filename).startswith(
+        root
+    ):
+        frame, level = frame.f_back, level + 1
+    return level
 
 
 _log = logging.getLogger(__name__)

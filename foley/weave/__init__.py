@@ -56,6 +56,8 @@ from .timeline import (
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from numpy import ndarray
 
+    from ..base import IntendedUse
+
     from ..provenance import Credits
 
 #: The synthetic library key WEAVE binds raw narration audio under (when the caller
@@ -172,6 +174,34 @@ def _used_records(library, timeline) -> list:
         except Exception:
             continue  # a clip with no record (e.g. injected narration) is skipped
     return records
+
+
+def _placed_records(narration, timeline, library) -> dict:
+    """``{id: record or None}`` for every enabled clip, plus a library-ref narration.
+
+    What :func:`weave`'s rights gate judges: each clip's record as ``library`` holds it
+    now (``None`` when it has none or it cannot be read, which the fail-closed gate
+    refuses; :func:`~foley.licensing.placed_record`), and the narration's when it is a
+    ``str`` with a record there (a narration that is only audio has no licence to check;
+    one whose record is there but cannot be read is judged as ``None``, refused).
+    """
+    from ..licensing import placed_record
+
+    placed = {
+        it.clip_ref: placed_record(library, it.clip_ref)
+        for it in timeline.items
+        if it.enabled
+    }
+    if isinstance(narration, str):  # a library ref: judged when it has a record
+        absent, unreadable = object(), object()
+        record = placed_record(
+            library, narration, missing=absent, unreadable=unreadable
+        )
+        if record is unreadable:  # there, but its record cannot be read: refused
+            placed[narration] = None
+        elif record is not None and record is not absent:
+            placed[narration] = record
+    return placed
 
 
 def _build_credits(records) -> "Credits":
@@ -363,6 +393,7 @@ def weave(
     sign_cert=None,
     export_captions: bool = True,
     provenance_store=None,
+    intended_use: "Optional[IntendedUse]" = None,
 ) -> WeaveResult:
     """Weave the chosen sounds under ``narration`` into a mastered, editable mix.
 
@@ -393,12 +424,27 @@ def weave(
             with :func:`foley.provenance.make_c2pa_signer`); omit for the sidecar only.
         export_captions: If ``True`` (default), emit WebVTT + SRT SDH captions.
         provenance_store: An optional ``MutableMapping`` to persist the C2PA sidecar.
+        intended_use: The rights intent the mix is for (#208). Given, the gate is
+            fail-closed: every *enabled* clip is judged by its record in ``library``
+            (a clip with no record is refused), and so is the narration when it is a
+            library ref; any refusal raises before rendering. ``None`` (default)
+            renders as before but warns (``FutureWarning``) about what
+            :data:`~foley.licensing.DEFAULT_INTENDED_USE` would refuse: a future
+            release gates by default.
 
     Returns:
         A :class:`WeaveResult`.
+
+    Raises:
+        LicenseRefusal: If ``intended_use`` is given and refuses a clip or the
+            narration (``.refused`` names each id and reason).
     """
     from .. import obs
+    from ..licensing import check_placed
 
+    check_placed(
+        _placed_records(narration, timeline, library), intended_use, what="foley.weave"
+    )
     tl = replace(timeline, master=resolve_master(master))
     lib, tl = _bind_narration(narration, tl, library, sr)
 

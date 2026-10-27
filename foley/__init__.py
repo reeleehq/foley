@@ -54,6 +54,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 """
 
 import contextlib
+from typing import Optional
 
 from . import audio
 from .audio import (
@@ -99,12 +100,14 @@ from .base import (
     resolve_master,
 )
 from .licensing import (
+    DEFAULT_INTENDED_USE,
     LICENSE_FLAGS,
     LICENSE_META,
     UNKNOWN_LICENSE_FLAGS,
     UNKNOWN_LICENSE_META,
     LicenseFlags,
     LicenseMeta,
+    LicenseRefusal,
     apply_license_flags,
     derive_license_flags,
     keep,
@@ -302,6 +305,8 @@ __all__ = [
     "Verdict",
     "Candidate",
     "IntendedUse",
+    "DEFAULT_INTENDED_USE",
+    "LicenseRefusal",
     "TimelineItem",
     "SoundDesignTimeline",
     "Anchor",
@@ -613,21 +618,25 @@ def search(
     min_snr=None,
     duration_range=None,
     rerank: bool = False,
+    intended_use: Optional[IntendedUse] = None,
+    library=None,
 ):
     """Hybrid (CLAP vector ⊕ BM25) search of the default library.
 
     Convenience wrapper over ``foley.library.search(...)`` — see
     :meth:`foley.index.SoundLibrary.search`. Constructs the process-wide default
-    library (local stores + CLAP + best available index) on first use.
+    library (local stores + CLAP + best available index) on first use; pass
+    ``library=`` to search another.
 
-    ``commercial_ok`` defaults to the one rights intent every verb shares
+    **Rights intent.** With an explicit ``intended_use`` (#208), every row goes through
+    the fail-closed gate (:func:`foley.agent.policy.gate_candidates`): only sounds the
+    intent keeps come back, each ``license_ok=True`` (a territory-excluded or
+    unverified licence is dropped). Without one, the filter is today's: ``commercial_ok``
+    defaults to the one rights intent every verb shares
     (:data:`foley.licensing.DEFAULT_INTENDED_USE`: commercial), so only commercially
-    usable sounds come back; pass ``commercial_ok=False`` to include the rest.
+    usable, verified sounds come back; pass ``commercial_ok=False`` to include the rest.
     """
-    from .licensing import intended_use_for
-
-    commercial = intended_use_for(commercial_ok=commercial_ok).commercial
-    lib = default_library()
+    lib = library if library is not None else default_library()
     kw = dict(
         k=k,
         filters=filters,
@@ -636,22 +645,41 @@ def search(
         duration_range=duration_range,
         rerank=rerank,
     )
+    if intended_use is not None:
+        use = _rights_intent(intended_use, commercial_ok)
+        return _gated(
+            lib.search(query, commercial_ok=use.commercial or None, **kw), use
+        )
+    from .licensing import intended_use_for
+
+    commercial = intended_use_for(commercial_ok=commercial_ok).commercial
     hits = lib.search(query, commercial_ok=commercial or None, **kw)
     if commercial and not hits:
         _warn_if_hidden(lib.search(query, commercial_ok=None, **kw))
     return hits
 
 
-def similar(sound_id: str, *, k: int = 10, commercial_ok=None):
+def similar(
+    sound_id: str,
+    *,
+    k: int = 10,
+    commercial_ok=None,
+    intended_use: Optional[IntendedUse] = None,
+    library=None,
+):
     """Find sounds similar to a stored sound (audio<->audio) in the default library.
 
-    See :meth:`foley.index.SoundLibrary.similar`. Like :func:`search`, only sounds
-    cleared for the default (commercial) intent are returned unless
-    ``commercial_ok=False``.
+    See :meth:`foley.index.SoundLibrary.similar`. Gated like :func:`search`: with an
+    explicit ``intended_use`` only the neighbours it keeps (fail-closed, each
+    ``license_ok=True``); without one, only sounds cleared for the default
+    (commercial) intent unless ``commercial_ok=False``.
     """
+    lib = library if library is not None else default_library()
+    hits = lib.similar(sound_id, k=k)
+    if intended_use is not None:
+        return _gated(hits, _rights_intent(intended_use, commercial_ok))
     from .licensing import intended_use_for
 
-    hits = default_library().similar(sound_id, k=k)
     if not intended_use_for(commercial_ok=commercial_ok).commercial:
         return hits
     kept = [
@@ -662,6 +690,20 @@ def similar(sound_id: str, *, k: int = 10, commercial_ok=None):
     if not kept:
         _warn_if_hidden(hits)
     return kept
+
+
+def _rights_intent(intended_use, commercial_ok) -> IntendedUse:
+    """The explicit intent, checked against a ``commercial_ok`` that may contradict it."""
+    from .licensing import intended_use_for
+
+    return intended_use_for(intended_use, commercial_ok=commercial_ok)
+
+
+def _gated(hits, intended_use: IntendedUse) -> list:
+    """The rows ``intended_use`` keeps (fail-closed), each ``license_ok=True``."""
+    from .agent.policy import gate_candidates
+
+    return gate_candidates(list(hits), intended_use)
 
 
 def _warn_if_hidden(hidden) -> None:
