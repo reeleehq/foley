@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=d59c1f54"></script>
+    <script src="../../../../_static/documentation_options.js?v=71e49b4d"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.74" />
+  <meta name="docsearch:version" content="0.0.75" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -741,9 +741,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
-
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">...base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">GENERATION_AFFORDANCES</span><span class="p">,</span>
@@ -788,6 +788,18 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"url"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">value</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="falaw_uploader">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.falaw_uploader">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">falaw_uploader</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A fal-fetchable URL for the local file at ``path`` (``falaw.upload``: content-addressed,</span>
+<span class="sd">    so an unchanged file is not uploaded twice)."""</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">falaw</span>  <span class="c1"># lazy: the foley[fal] extra</span>
+
+    <span class="k">with</span> <span class="n">falaw</span><span class="o">.</span><span class="n">using_fal_credentials</span><span class="p">(</span><span class="n">api_key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">falaw</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
 
 
 
@@ -851,6 +863,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            ``ocracy.kit.using_credentials``: one binding covers every fal source),</span>
 <span class="sd">            else ``$FAL_KEY``, else ``$FAL_API_KEY``.</span>
 <span class="sd">        runner: The transport seam (default :func:`falaw_runner`); tests pass a fake.</span>
+<span class="sd">        uploader: ``(path, *, api_key) -&gt; url``, how a local ``video=`` reaches fal</span>
+<span class="sd">            (default :func:`falaw_uploader`); tests pass a fake.</span>
 <span class="sd">        http: Accepted and ignored: the registry passes a resilient HTTP transport to</span>
 <span class="sd">            external sources, but this adapter's transport is falaw (which retries and</span>
 <span class="sd">            classifies errors itself).</span>
@@ -862,12 +876,14 @@ window.runMermaid = runMermaid;</script>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">runner</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Runner</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">uploader</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">http</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span> <span class="o">=</span> <span class="n">api_key</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">:</span> <span class="n">Runner</span> <span class="o">=</span> <span class="n">runner</span> <span class="k">if</span> <span class="n">runner</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">falaw_runner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_uploader</span> <span class="o">=</span> <span class="n">uploader</span> <span class="k">if</span> <span class="n">uploader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">falaw_uploader</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[Optional[str], bool]"</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""``(key, is_operators)``: the first of ``api_key=``, a key bound for this</span>
@@ -928,10 +944,25 @@ window.runMermaid = runMermaid;</script>
         <span class="n">reject_renamed</span><span class="p">(</span><span class="n">affordances</span><span class="p">)</span>  <span class="c1"># generate() builds its payload here too</span>
         <span class="n">nd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_defaults"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
         <span class="n">param_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">]</span>
+        <span class="n">affordances</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">affordances</span><span class="p">)</span>
+        <span class="n">video</span> <span class="o">=</span> <span class="n">affordances</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"video"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"video"</span> <span class="ow">in</span> <span class="n">param_map</span> <span class="ow">and</span> <span class="n">video</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># V2A: nothing to sound otherwise</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> sounds a picture: pass video="</span><span class="p">)</span>
         <span class="n">args</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">nd</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fixed_arguments"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span>
         <span class="n">args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_integral</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">native_request</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">affordances</span><span class="p">)))</span>
-        <span class="n">args</span><span class="p">[</span><span class="n">param_map</span><span class="p">[</span><span class="s2">"prompt"</span><span class="p">][</span><span class="s2">"native_name"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">prompt</span>
+        <span class="k">if</span> <span class="n">prompt</span> <span class="ow">or</span> <span class="n">param_map</span><span class="p">[</span><span class="s2">"prompt"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"required"</span><span class="p">):</span>  <span class="c1"># a V2A prompt is optional</span>
+            <span class="n">args</span><span class="p">[</span><span class="n">param_map</span><span class="p">[</span><span class="s2">"prompt"</span><span class="p">][</span><span class="s2">"native_name"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">prompt</span>
         <span class="n">duration_name</span> <span class="o">=</span> <span class="p">(</span><span class="n">param_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_s"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_name"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">video</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">args</span><span class="p">[</span><span class="n">param_map</span><span class="p">[</span><span class="s2">"video"</span><span class="p">][</span><span class="s2">"native_name"</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_video_url</span><span class="p">(</span><span class="n">video</span><span class="p">)</span>
+            <span class="c1"># The dispatch set duration_s to cover the video; a direct call gets it here.</span>
+            <span class="k">if</span> <span class="n">duration_name</span> <span class="ow">and</span> <span class="n">duration_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                <span class="n">video_s</span> <span class="o">=</span> <span class="n">_video_seconds</span><span class="p">(</span><span class="n">video</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">video_s</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="n">nd</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_min_s"</span><span class="p">),</span> <span class="n">nd</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_max_s"</span><span class="p">)</span>
+                    <span class="n">args</span><span class="p">[</span><span class="n">duration_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                        <span class="n">lo</span> <span class="ow">or</span> <span class="n">video_s</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">video_s</span><span class="p">,</span> <span class="n">hi</span> <span class="ow">or</span> <span class="n">video_s</span><span class="p">)</span>
+                    <span class="p">)</span>
         <span class="n">default_s</span> <span class="o">=</span> <span class="n">nd</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_default_s"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">duration_name</span> <span class="ow">and</span> <span class="n">duration_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">args</span> <span class="ow">and</span> <span class="n">default_s</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">args</span><span class="p">[</span><span class="n">duration_name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">default_s</span><span class="p">)</span>
@@ -958,6 +989,36 @@ window.runMermaid = runMermaid;</script>
             <span class="n">audio_field</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"audio_field"</span><span class="p">,</span> <span class="s2">"audio"</span><span class="p">),</span>
         <span class="p">)</span></div>
 
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_video_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">video</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The URL fal fetches ``video`` from: a URL as is, a path or bytes uploaded."""</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..video</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_url</span><span class="p">,</span> <span class="n">local_video_file</span>
+
+        <span class="k">if</span> <span class="n">is_url</span><span class="p">(</span><span class="n">video</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">video</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span>  <span class="c1"># a missing key is its own, clearer refusal</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">local_video_file</span><span class="p">(</span><span class="n">video</span><span class="p">)</span> <span class="k">as</span> <span class="n">path</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_uploader</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">api_key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># nothing was generated, so nothing was billed</span>
+            <span class="k">raise</span> <span class="n">SourceConfigurationError</span><span class="p">(</span>  <span class="c1"># the type only: no path or URL in notes</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: could not upload the video to fal "</span>
+                <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">); nothing was generated"</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_recordable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">affordances</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``args`` as the licence records them: the video by its key (#74), never the</span>
+<span class="sd">        uploaded URL (anyone holding it can fetch the picture) nor a ``data:`` URI.</span>
+
+<span class="sd">        The key is also what the request was keyed on, so the answered request matches</span>
+<span class="sd">        the planned one and a repeat is served from the generations cache.</span>
+<span class="sd">        """</span>
+        <span class="n">video_field</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"video"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_name"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">video_field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">args</span> <span class="ow">or</span> <span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"video"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">args</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..video</span><span class="w"> </span><span class="kn">import</span> <span class="n">video_key</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">args</span><span class="p">,</span> <span class="n">video_field</span><span class="p">:</span> <span class="n">video_key</span><span class="p">(</span><span class="n">affordances</span><span class="p">[</span><span class="s2">"video"</span><span class="p">])}</span>
 
 <div class="viewcode-block" id="FalAdapter.generate">
 <a class="viewcode-back" href="../../../../_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.FalAdapter.generate">[docs]</a>
@@ -986,9 +1047,13 @@ window.runMermaid = runMermaid;</script>
             <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">native_adherence</span>
 
             <span class="n">native_adherence</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">affordances</span><span class="p">[</span><span class="s2">"prompt_influence"</span><span class="p">],</span> <span class="n">notes</span><span class="p">)</span>
+        <span class="n">duration_name</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_s"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">"native_name"</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_s"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="ow">and</span> <span class="n">nd</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_default_s"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">duration_name</span><span class="p">)</span> <span class="o">==</span> <span class="n">nd</span><span class="p">[</span><span class="s2">"duration_default_s"</span><span class="p">]</span>  <span class="c1"># not the video's</span>
         <span class="p">):</span>
             <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"no duration asked: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> sent its default "</span>
@@ -1026,14 +1091,15 @@ window.runMermaid = runMermaid;</script>
             <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">generation_seed</span><span class="o">=</span><span class="n">_as_int</span><span class="p">(</span><span class="n">seed</span><span class="p">),</span>
             <span class="n">generation_params</span><span class="o">=</span><span class="n">recorded_params</span><span class="p">(</span>
-                <span class="p">{</span><span class="o">**</span><span class="n">args</span><span class="p">,</span> <span class="s2">"fal_endpoint"</span><span class="p">:</span> <span class="n">endpoint</span><span class="p">},</span> <span class="n">provider_params</span>
+                <span class="p">{</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_recordable</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">affordances</span><span class="p">),</span> <span class="s2">"fal_endpoint"</span><span class="p">:</span> <span class="n">endpoint</span><span class="p">},</span>
+                <span class="n">provider_params</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">source_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"website"</span><span class="p">),</span>
             <span class="n">attribution_text</span><span class="o">=</span><span class="n">lic_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"attribution_text"</span><span class="p">),</span>
         <span class="p">)</span>
         <span class="n">record</span> <span class="o">=</span> <span class="n">SoundRecord</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">:pending"</span><span class="p">,</span> <span class="n">license</span><span class="o">=</span><span class="n">lic</span><span class="p">,</span> <span class="n">caption</span><span class="o">=</span><span class="n">prompt</span><span class="p">)</span>
         <span class="n">candidate</span> <span class="o">=</span> <span class="n">Candidate</span><span class="p">(</span><span class="n">sound</span><span class="o">=</span><span class="n">record</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="n">CandidateOrigin</span><span class="o">.</span><span class="n">generated</span><span class="p">)</span>
-        <span class="n">candidate</span><span class="o">.</span><span class="n">cost_actual_usd</span> <span class="o">=</span> <span class="n">_actual_cost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+        <span class="n">candidate</span><span class="o">.</span><span class="n">cost_actual_usd</span> <span class="o">=</span> <span class="n">_actual_cost</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">audio</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">GeneratedClip</span><span class="p">(</span>
             <span class="n">audio_bytes</span><span class="o">=</span><span class="n">audio</span><span class="p">,</span>
             <span class="n">candidate</span><span class="o">=</span><span class="n">candidate</span><span class="p">,</span>
@@ -1044,13 +1110,38 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_actual_cost</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""What the call just made costs, for the duration actually sent (see</span>
-<span class="sd">    :func:`foley.cost.actual_call_cost`)."""</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_actual_cost</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">audio</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""What the call just made costs (see :func:`foley.cost.actual_call_cost`): for the</span>
+<span class="sd">    duration sent, or for a source billed by the video's length (#74), for the length</span>
+<span class="sd">    of the audio it returned (``None`` when that cannot be read)."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">...cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">actual_call_cost</span>
 
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">source_modes</span>
+
+    <span class="k">if</span> <span class="s2">"v2a"</span> <span class="ow">in</span> <span class="n">source_modes</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>  <span class="c1"># billed for the sound it made (#74)</span>
+        <span class="n">seconds</span> <span class="o">=</span> <span class="n">_audio_seconds</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">seconds</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">actual_call_cost</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">duration_s</span><span class="o">=</span><span class="n">seconds</span><span class="p">)</span>
     <span class="n">name</span> <span class="o">=</span> <span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_s"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_name"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">actual_call_cost</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">duration_s</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">name</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_video_seconds</span><span class="p">(</span><span class="n">video</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The video's length (:func:`foley.sources.video.video_seconds`), via the module so</span>
+<span class="sd">    tests can stand in for ``ffprobe``."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">video</span> <span class="k">as</span> <span class="n">video_mod</span>
+
+    <span class="k">return</span> <span class="n">video_mod</span><span class="o">.</span><span class="n">video_seconds</span><span class="p">(</span><span class="n">video</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_audio_seconds</span><span class="p">(</span><span class="n">audio</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The length of encoded ``audio`` in seconds, or ``None`` when it cannot be read."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">soundfile</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sf</span>
+
+        <span class="n">info</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">audio</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">info</span><span class="o">.</span><span class="n">frames</span> <span class="o">/</span> <span class="n">info</span><span class="o">.</span><span class="n">samplerate</span> <span class="k">if</span> <span class="n">info</span><span class="o">.</span><span class="n">samplerate</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - an unreadable clip is an unknown cost</span>
+        <span class="k">return</span> <span class="kc">None</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_integral</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">native</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>

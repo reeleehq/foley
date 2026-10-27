@@ -10,9 +10,9 @@ The shared [`FalAdapter`](foley.sources.fal.adapter.html.md#foley.sources.fal.ad
 
 ### Classes
 
-| `Adapter`                                         |                                                                                                                                        |
-|---------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| `FalAdapter`(config, \*[, api_key, runner, http]) | A fal-hosted generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+| `Adapter`                                        |                                                                                                                                        |
+|--------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| `FalAdapter`(config, \*[, api_key, runner, ...]) | A fal-hosted generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
 
 ### Modules
 

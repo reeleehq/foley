@@ -139,6 +139,11 @@ The USD cost of one call to the source `config` declares, or `None` if unknown.
 
 * `'free'` (local inference, a free API tier) → `0.0`;
 * `'per_call'` → `amount_usd`;
+* `'per_second'` with `seconds_from='video'` → `amount_usd` × the video’s
+  length (`video_duration_s`, measured by the dispatch), else `None` (an
+  unread length is an unknown cost, which needs approval);
+* `'per_second'` with a video (`video_duration_s`) → × the requested
+  `duration_s` capped at the video’s length, else × the video’s length;
 * `'per_second'` → `amount_usd` × the requested `duration_s`; when none is
   requested, × the `native_defaults['duration_default_s']` the adapter sends in
   its place, else × `native_defaults['duration_max_s']` (the duration is left to

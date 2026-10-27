@@ -1,0 +1,23 @@
+foley.sources.video
+===================
+
+.. automodule:: foley.sources.video
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      VideoInput
+      URL_SCHEMES
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      is_url
+      keyed
+      local_video_file
+      video_key
+      video_seconds
+   

@@ -33,15 +33,16 @@ is an error, never a fall-through to the network.
 
 ### Functions
 
-| [`audio_url`](#foley.sources.fal.adapter.audio_url)(response[, field])                      | The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...]}`.   |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
-| [`falaw_runner`](#foley.sources.fal.adapter.falaw_runner)(endpoint_id, arguments, \*, api_key) | Call a fal endpoint through falaw and return `(audio bytes, raw response)`.            |
+| [`audio_url`](#foley.sources.fal.adapter.audio_url)(response[, field])                      | The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...]}`.                                              |
+|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| [`falaw_runner`](#foley.sources.fal.adapter.falaw_runner)(endpoint_id, arguments, \*, api_key) | Call a fal endpoint through falaw and return `(audio bytes, raw response)`.                                                       |
+| [`falaw_uploader`](#foley.sources.fal.adapter.falaw_uploader)(path, \*, api_key)                 | A fal-fetchable URL for the local file at `path` (`falaw.upload`: content-addressed, so an unchanged file is not uploaded twice). |
 
 ### Classes
 
-| [`Adapter`](#foley.sources.fal.adapter.Adapter)                                         | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                    |
-|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| [`FalAdapter`](#foley.sources.fal.adapter.FalAdapter)(config, \*[, api_key, runner, http]) | A fal-hosted generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+| [`Adapter`](#foley.sources.fal.adapter.Adapter)                                        | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                    |
+|-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| [`FalAdapter`](#foley.sources.fal.adapter.FalAdapter)(config, \*[, api_key, runner, ...]) | A fal-hosted generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
 
 ### foley.sources.fal.adapter.Adapter
 
@@ -55,7 +56,7 @@ The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).
 
 The env vars falaw reads a fal key from, in order.
 
-### *class* foley.sources.fal.adapter.FalAdapter(config, , api_key=None, runner=None, http=None)
+### *class* foley.sources.fal.adapter.FalAdapter(config, , api_key=None, runner=None, uploader=None, http=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -70,6 +71,8 @@ A fal-hosted generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#
     `ocracy.kit.using_credentials`: one binding covers every fal source),
     else `$FAL_KEY`, else `$FAL_API_KEY`.
   * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]]) – The transport seam (default [`falaw_runner()`](#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
+  * **uploader** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – `(path, *, api_key) -> url`, how a local `video=` reaches fal
+    (default [`falaw_uploader()`](#foley.sources.fal.adapter.falaw_uploader)); tests pass a fake.
   * **http** – Accepted and ignored: the registry passes a resilient HTTP transport to
     external sources, but this adapter’s transport is falaw (which retries and
     classifies errors itself).
@@ -168,3 +171,11 @@ docstring: foley’s generations cache owns replay). The audio is downloaded by
   * [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If the response carries no audio URL.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.sources.fal.adapter.falaw_uploader(path, , api_key)
+
+A fal-fetchable URL for the local file at `path` (`falaw.upload`: content-addressed,
+so an unchanged file is not uploaded twice).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)

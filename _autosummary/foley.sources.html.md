@@ -822,4 +822,5 @@ the default `rings` — it is opt-in only.
 | [`sonniss`](foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                       |
 | [`stable_audio`](foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)           | Stable Audio Open 1.0 generate source (local default; #6).                                                 |
 | [`stable_audio_3`](foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3)       | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).                        |
+| [`video`](foley.sources.video.html.md#module-foley.sources.video)                         | Video inputs of video-to-audio generation (#74): what `video=` may be, its identity, its length.           |
 | [`wikimedia_commons`](foley.sources.wikimedia_commons.html.md#module-foley.sources.wikimedia_commons) | Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).                 |

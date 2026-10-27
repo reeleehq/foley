@@ -69,4 +69,5 @@ foley.sources
    sonniss
    stable_audio
    stable_audio_3
+   video
    wikimedia_commons

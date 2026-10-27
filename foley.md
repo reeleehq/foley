@@ -1,4 +1,4 @@
-> built 2026-10-27 04:09 UTC from 497516d (main) · foley 0.0.74. Details: build_info.json
+> built 2026-10-27 04:49 UTC from 81b065b (main) · foley 0.0.75. Details: build_info.json
 
 # index.html.md
 
@@ -56,6 +56,11 @@ clip = foley.generate(
 # notes say which backends were skipped and why
 clip = foley.generate("a single wooden door creak", duration_s=3, level="sfx_fg")
 clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
+
+# Sound timed to picture (video-to-audio): video= walks the V2A order (Mirelo SFX 2.0,
+# then Sonilo, both on fal; FOLEY_V2A_ORDER replaces it). Their fal-route output terms
+# are unverified, so name the backend (its licence is then gated by keep()) — #170
+clip = foley.generate("", backend="fal_mirelo_v2a", video="shot.mp4", duration_s=6)
 
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
@@ -2784,7 +2789,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Whether a candidate was retrieved from the index or freshly generated.
 
-### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from='duration'), 'expand_prompt': Affordance(name='expand_prompt', type=<class 'bool'>, description='Let the backend rewrite the prompt (the prompt it used is recorded)', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'sample_rate': Affordance(name='sample_rate', type=<class 'int'>, description='Requested rate (Hz); the actual rate is measured and recorded', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None)}*
+### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from='duration'), 'expand_prompt': Affordance(name='expand_prompt', type=<class 'bool'>, description='Let the backend rewrite the prompt (the prompt it used is recorded)', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'keep_source_audio': Affordance(name='keep_source_audio', type=<class 'bool'>, description="Keep the video's own speech and build the sound around it", default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'sample_rate': Affordance(name='sample_rate', type=<class 'int'>, description='Requested rate (Hz); the actual rate is measured and recorded', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'video': Affordance(name='video', type=<class 'object'>, description='The picture to sound (a URL, a local path or bytes; keyed by content)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None)}*
 
 Unified generation-stage parameters (generate backends map onto these).
 
@@ -3208,6 +3213,11 @@ The USD cost of one call to the source `config` declares, or `None` if unknown.
 
 * `'free'` (local inference, a free API tier) → `0.0`;
 * `'per_call'` → `amount_usd`;
+* `'per_second'` with `seconds_from='video'` → `amount_usd` × the video’s
+  length (`video_duration_s`, measured by the dispatch), else `None` (an
+  unread length is an unknown cost, which needs approval);
+* `'per_second'` with a video (`video_duration_s`) → × the requested
+  `duration_s` capped at the video’s length, else × the video’s length;
 * `'per_second'` → `amount_usd` × the requested `duration_s`; when none is
   requested, × the `native_defaults['duration_default_s']` the adapter sends in
   its place, else × `native_defaults['duration_max_s']` (the duration is left to
@@ -13933,7 +13943,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'tudum', 'netflix intro', 'ta-dum', 'netflix chime', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta-dum', 'ta dum', 'netflix chime', 'tudum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel chime', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16381,15 +16391,16 @@ is an error, never a fall-through to the network.
 
 ### Functions
 
-| [`audio_url`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.audio_url)(response[, field])                      | The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...]}`.   |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
-| [`falaw_runner`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner)(endpoint_id, arguments, \*, api_key) | Call a fal endpoint through falaw and return `(audio bytes, raw response)`.            |
+| [`audio_url`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.audio_url)(response[, field])                      | The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...]}`.                                              |
+|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| [`falaw_runner`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner)(endpoint_id, arguments, \*, api_key) | Call a fal endpoint through falaw and return `(audio bytes, raw response)`.                                                       |
+| [`falaw_uploader`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_uploader)(path, \*, api_key)                 | A fal-fetchable URL for the local file at `path` (`falaw.upload`: content-addressed, so an unchanged file is not uploaded twice). |
 
 ### Classes
 
-| [`Adapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.Adapter)                                         | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                    |
-|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| [`FalAdapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAdapter)(config, \*[, api_key, runner, http]) | A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+| [`Adapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.Adapter)                                        | Registry convention (arioso): the loader imports `adapter.Adapter`.                                                                    |
+|-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| [`FalAdapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAdapter)(config, \*[, api_key, runner, ...]) | A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
 
 ### foley.sources.fal.adapter.Adapter
 
@@ -16403,7 +16414,7 @@ The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).
 
 The env vars falaw reads a fal key from, in order.
 
-### *class* foley.sources.fal.adapter.FalAdapter(config, , api_key=None, runner=None, http=None)
+### *class* foley.sources.fal.adapter.FalAdapter(config, , api_key=None, runner=None, uploader=None, http=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -16418,6 +16429,8 @@ A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.
     `ocracy.kit.using_credentials`: one binding covers every fal source),
     else `$FAL_KEY`, else `$FAL_API_KEY`.
   * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]]) – The transport seam (default [`falaw_runner()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
+  * **uploader** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – `(path, *, api_key) -> url`, how a local `video=` reaches fal
+    (default [`falaw_uploader()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_uploader)); tests pass a fake.
   * **http** – Accepted and ignored: the registry passes a resilient HTTP transport to
     external sources, but this adapter’s transport is falaw (which retries and
     classifies errors itself).
@@ -16517,6 +16530,14 @@ docstring: foley’s generations cache owns replay). The audio is downloaded by
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
+### foley.sources.fal.adapter.falaw_uploader(path, , api_key)
+
+A fal-fetchable URL for the local file at `path` (`falaw.upload`: content-addressed,
+so an unchanged file is not uploaded twice).
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 
 # _autosummary/foley.sources.fal.config.html.md
 
@@ -16564,7 +16585,7 @@ bound, when it declares none), never at zero.
 | [`FAL_SOURCES`](_autosummary/foley.sources.fal.config.html.md#foley.sources.fal.config.FAL_SOURCES)   | The fal source names, in the order above (the first is the recommended one).   |
 |----------------------------------------------------------------|--------------------------------------------------------------------------------|
 
-### foley.sources.fal.config.FAL_SOURCES *= ('fal_stable_audio_3', 'fal_stable_audio_3_medium', 'fal_mirelo', 'fal_elevenlabs', 'fal_sonilo', 'fal_mmaudio')*
+### foley.sources.fal.config.FAL_SOURCES *= ('fal_stable_audio_3', 'fal_stable_audio_3_medium', 'fal_mirelo', 'fal_elevenlabs', 'fal_sonilo', 'fal_mmaudio', 'fal_mirelo_v2a', 'fal_sonilo_v2a')*
 
 The fal source names, in the order above (the first is the recommended one).
 
@@ -16583,9 +16604,9 @@ The shared [`FalAdapter`](_autosummary/foley.sources.fal.adapter.html.md#foley.s
 
 ### Classes
 
-| `Adapter`                                         |                                                                                                                                        |
-|---------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| `FalAdapter`(config, \*[, api_key, runner, http]) | A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
+| `Adapter`                                        |                                                                                                                                        |
+|--------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| `FalAdapter`(config, \*[, api_key, runner, ...]) | A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.GenerateAdapter)). |
 
 ### Modules
 
@@ -17711,6 +17732,7 @@ the default `rings` — it is opt-in only.
 | [`sonniss`](_autosummary/foley.sources.sonniss.html.md#module-foley.sources.sonniss)                     | Sonniss GameAudioGDC — a Ring-2, quarantined corpus.                                                       |
 | [`stable_audio`](_autosummary/foley.sources.stable_audio.html.md#module-foley.sources.stable_audio)           | Stable Audio Open 1.0 generate source (local default; #6).                                                 |
 | [`stable_audio_3`](_autosummary/foley.sources.stable_audio_3.html.md#module-foley.sources.stable_audio_3)       | Stable Audio 3 Small-SFX generate source (local, CPU, no GPU and no HF token; #72).                        |
+| [`video`](_autosummary/foley.sources.video.html.md#module-foley.sources.video)                         | Video inputs of video-to-audio generation (#74): what `video=` may be, its identity, its length.           |
 | [`wikimedia_commons`](_autosummary/foley.sources.wikimedia_commons.html.md#module-foley.sources.wikimedia_commons) | Wikimedia Commons retrieve source: keyless, licence per file (`foley[wikimedia-commons]`).                 |
 
 
@@ -18727,6 +18749,118 @@ use via the module `__getattr__` below, so `import foley` stays dol-only.
 | [`adapter`](_autosummary/foley.sources.stable_audio_3.adapter.html.md#module-foley.sources.stable_audio_3.adapter)   | Stable Audio 3 Small-SFX generate adapter: Stability's TFLite CPU build, run as a process.   |
 |--------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
 | [`config`](_autosummary/foley.sources.stable_audio_3.config.html.md#module-foley.sources.stable_audio_3.config)     | `SOURCE_CONFIG` for the local Stable Audio 3 Small-SFX generator (#72 · report 13 · 17).     |
+
+
+# _autosummary/foley.sources.video.html.md
+
+# foley.sources.video
+
+Video inputs of video-to-audio generation (#74): what `video=` may be, its identity, its length.
+
+A video-to-audio (V2A) backend takes the picture the sound must follow. foley accepts
+it as a **URL** (`http(s)://` or a `data:` URI, sent as is), a **local path**, or
+raw **bytes** (both uploaded by the backend’s adapter). Three questions are answered
+here, once, for every V2A backend:
+
+* [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key): what the generations cache keys the video as. The **content**
+  (`sha256:<hex>` of the bytes or of the file), never its path, so a moved file hits
+  the cache and an edited one cannot; a remote URL is keyed as the URL.
+* [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds): its length, for a backend priced per second of the video
+  (`ffprobe` when on `PATH`; `None` when it cannot be read, which prices the call
+  as an unknown cost, needing approval).
+* [`local_video_file()`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file): a local file for an uploader (bytes are written to a
+  temporary file).
+* [`keyed()`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed): affordances as they may be recorded (the cache entry, the run
+  manifest): the video replaced by its key, so neither its bytes nor a local path
+  (nor an upload’s capability URL) is ever written down.
+
+Stdlib only.
+
+### Module Attributes
+
+| [`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput)   | a URL, a local path, or the encoded bytes.       |
+|---------------------------------------------------------------|--------------------------------------------------|
+| [`URL_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_SCHEMES)  | URL schemes sent to a backend as is (no upload). |
+
+### Functions
+
+| [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                       | Whether `video` is a URL a backend can fetch itself.                                                                    |
+|--------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances)                  | `affordances` with a `video` replaced by [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) (else unchanged). |
+| [`local_video_file`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file)(video)             | A local path holding `video` (bytes are written to a temporary file).                                                   |
+| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                    | The cache identity of `video`: its content digest, or a remote URL as is.                                               |
+| [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, ffprobe]) | The length of a local `video` in seconds, or `None` when it cannot be read.                                             |
+
+### foley.sources.video.URL_SCHEMES *= ('http://', 'https://', 'data:')*
+
+URL schemes sent to a backend as is (no upload).
+
+### foley.sources.video.VideoInput
+
+a URL, a local path, or the encoded bytes.
+
+* **Type:**
+  What `video=` accepts
+
+alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | `os.PathLike[str]` | [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.sources.video.is_url(video)
+
+Whether `video` is a URL a backend can fetch itself.
+
+```pycon
+>>> is_url("https://x/clip.mp4"), is_url("clip.mp4"), is_url(b"...")
+(True, False, False)
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.sources.video.keyed(affordances)
+
+`affordances` with a `video` replaced by [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) (else unchanged).
+
+```pycon
+>>> keyed({"video": b"abc", "duration_s": 2})["video"][:15], keyed({"seed": 1})
+('sha256:ba7816bf', {'seed': 1})
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.sources.video.local_video_file(video)
+
+A local path holding `video` (bytes are written to a temporary file).
+
+* **Return type:**
+  [`Iterator`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.video.video_key(video)
+
+The cache identity of `video`: its content digest, or a remote URL as is.
+
+```pycon
+>>> video_key(b"abc")[:15]
+'sha256:ba7816bf'
+>>> video_key("https://x/clip.mp4")
+'url:https://x/clip.mp4'
+```
+
+* **Raises:**
+  * [**FileNotFoundError**](https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError) – If `video` names a local file that does not exist.
+  * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If `video` is none of a URL, a path or bytes.
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.video.video_seconds(video, , ffprobe=None)
+
+The length of a local `video` in seconds, or `None` when it cannot be read.
+
+Read by `ffprobe` (`ffprobe=` names the binary; default: the one on `PATH`).
+A URL is not fetched to measure it: `None`.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 
 # _autosummary/foley.sources.wikimedia_commons.adapter.html.md
@@ -20592,18 +20726,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 04:09 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/497516da95b0bba38d2159899d10641ba11349e3"><code>497516d</code></a> on branch <code>main</code>, for **foley 0.0.74** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 04:49 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/81b065b4bd923706fd94b5d2fafb6bbf18877f92"><code>81b065b</code></a> on branch <code>main</code>, for **foley 0.0.75** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.74) is behind the latest release on PyPI (0.0.75): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/497516da95b0bba38d2159899d10641ba11349e3"><code>497516da95b0bba38d2159899d10641ba11349e3</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/81b065b4bd923706fd94b5d2fafb6bbf18877f92"><code>81b065b4bd923706fd94b5d2fafb6bbf18877f92</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20614,9 +20746,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40447948264">40447948264</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40451663167">40451663167</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>497516da95b0bba38d2159899d10641ba11349e3</code> (in the history of the built commit) |
+| Event commit | <code>81b065b4bd923706fd94b5d2fafb6bbf18877f92</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20641,13 +20773,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.75/">0.0.75</a>, newer than the documented version (0.0.74).
+Latest release: <a href="https://pypi.org/project/foley/0.0.75/">0.0.75</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 497516da95b0bba38d2159899d10641ba11349e3
+git checkout 81b065b4bd923706fd94b5d2fafb6bbf18877f92
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
