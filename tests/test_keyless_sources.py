@@ -490,6 +490,17 @@ def test_an_or_in_the_ia_q_stays_inside_the_and_clause():
         ia.search("door", provider_params={"q": "x) OR (mediatype:*"})
 
 
+def test_add_from_raises_an_unbalanced_ia_q_before_searching(library):
+    """An escaping ``q`` is the caller's error, never a failed search (#181)."""
+    from foley.sources import add_from
+
+    ia, http = _ia()
+    with pytest.raises(ValueError, match="unbalanced"):
+        add_from("internet_archive", query="door", library=library, adapter=ia,
+                 provider_params={"q": "x) OR (mediatype:*"})
+    assert http.calls == []
+
+
 @pytest.mark.parametrize(
     "make, key",
     [

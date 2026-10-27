@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
@@ -60,6 +61,7 @@ __all__ = [
     "check_provider_params",
     "require_params_mapping",
     "merge_provider_params",
+    "names_field",
     "recorded_params",
     "native_adherence",
     "resolve_source_key",
@@ -234,7 +236,9 @@ def check_provider_params(
     (one that decides what foley screened, recorded or wrote: the prompt, an output
     path, the model) and a ``priced`` key (one that changes what the call costs, which
     foley estimated and reserved from its own request) are refused, before anything
-    is sent or paid for.
+    is sent or paid for. So is a grouped ``append`` value that would close its
+    ``(...)`` group: checked here, a search refuses it before its try, as it does a
+    reserved key, rather than recording it as a failed search (#181).
 
     >>> check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})
     {'steps': 8}
@@ -249,8 +253,9 @@ def check_provider_params(
 
     Raises:
         TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.
-        ValueError: If a key is ``reserved`` or ``priced`` by the policy, or the
-            source declares no policy at all.
+        ValueError: If a key is ``reserved`` or ``priced`` by the policy, an
+            ``append``-ed value would escape its group, or the source declares no
+            policy at all.
     """
     if provider_params is None:
         return {}
@@ -287,6 +292,10 @@ def check_provider_params(
                 "estimates and reserves from its own request: use the unified "
                 "argument (e.g. duration_s=) or the source config instead"
             )
+    append = policy.get("append") or {}
+    for key, value in provider_params.items():
+        if key in append and _append_spec(append[key])[1] and value is not None:
+            _check_grouped(key, str(value))
     return dict(provider_params)
 
 
@@ -297,27 +306,75 @@ def _append_spec(spec) -> "tuple[str, bool]":
     return spec["joiner"], bool(spec.get("group", True))
 
 
+def _unquoted(value: str) -> str:
+    """``value`` with its double-quoted phrases blanked and its escapes neutralised.
+
+    A backslash escapes the next character, inside or outside quotes. A quoted phrase
+    becomes spaces, and an escape outside one (the backslash and its character)
+    becomes ``__``: still part of a name, never syntax. The length holds; an unclosed
+    quote or a trailing backslash is kept, for the caller to refuse.
+
+    >>> _unquoted(r'tag:"a (b" x\\(y "c')
+    'tag:      x__y " '
+    """
+    out: "list[str]" = []
+    quoted, escaped, opened = False, False, 0
+    for ch in value:
+        if escaped:
+            escaped = False
+            out.append(" " if quoted else "_")
+        elif ch == "\\":
+            escaped = True
+            out.append(" " if quoted else "_")
+        elif ch == '"':
+            quoted, opened = not quoted, len(out)
+            out.append(" ")
+        else:
+            out.append(" " if quoted else ch)
+    if quoted:
+        out[opened] = '"'
+    if escaped:
+        out[-1] = "\\"
+    return "".join(out)
+
+
+def names_field(clause: str, field: str) -> bool:
+    """Whether a Solr-ish ``clause`` names ``field`` as a field (``field:``).
+
+    Not inside a quoted phrase, not as part of another name (``subcategory:``,
+    ``ac_category:``, ``foo.category:``) and not escaped (``category\\:``); a prefix
+    (``+``, ``-``, ``(``, ``{!tag=t}``) or a space before the colon still counts.
+
+    >>> names_field('-category:"Music"', "category")
+    True
+    >>> names_field('{!tag=t}category :Fx', "category")
+    True
+    >>> names_field('tag:"category:x" subcategory:y ac_category:z', "category")
+    False
+    >>> names_field(r'tag:\\"x category:"Music"', "category")
+    True
+    >>> names_field(r'category\\:x', "category")
+    False
+    """
+    pattern = rf"(?<![\w.]){re.escape(field)}\s*:"
+    return re.search(pattern, _unquoted(str(clause))) is not None
+
+
 def _check_grouped(key: str, value: str) -> None:
     """Refuse a value that could escape the ``(...)`` group it is wrapped in.
 
     Parentheses outside double quotes (a backslash escapes) must balance and never
     close more than they opened, so ``x) OR (license:*`` cannot widen the clause.
     """
-    depth, quoted, escaped = 0, False, False
-    for ch in value:
-        if escaped:
-            escaped = False
-        elif ch == "\\":
-            escaped = True
-        elif ch == '"':
-            quoted = not quoted
-        elif not quoted and ch == "(":
+    bare, depth = _unquoted(value), 0
+    for ch in bare:
+        if ch == "(":
             depth += 1
-        elif not quoted and ch == ")":
+        elif ch == ")":
             depth -= 1
             if depth < 0:
                 break
-    if depth != 0 or quoted or escaped:
+    if depth != 0 or '"' in bare or bare.endswith("\\"):
         raise ValueError(
             f"provider_params[{key!r}] has unbalanced parentheses or quotes: it is "
             f"appended as one group and may not close it ({value!r})"
@@ -487,8 +544,7 @@ def merge_provider_params(
             continue  # nothing to append
         joiner, grouped = _append_spec(append[key])
         value = str(value)
-        if grouped:
-            _check_grouped(key, value)
+        if grouped:  # balanced: check_provider_params refused one that is not
             value = f"({value})"
         base = out.get(key)
         out[key] = value if base in (None, "") else f"{base}{joiner}{value}"
