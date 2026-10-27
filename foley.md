@@ -1,4 +1,4 @@
-> built 2026-10-27 05:52 UTC from 1a11bd0 (main) · foley 0.0.78. Details: build_info.json
+> built 2026-10-27 05:57 UTC from 8d97921 (main) · foley 0.0.79. Details: build_info.json
 
 # index.html.md
 
@@ -14051,7 +14051,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'tudum', 'ta dum', 'netflix sound', 'ta-dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta-dum', 'netflix chime', 'netflix intro', 'ta dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel inside', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -18907,10 +18907,11 @@ here, once, for every V2A backend:
   (`sha256:<hex>` of the bytes or of the file), never its path, so a moved file hits
   the cache and an edited one cannot; a remote URL is keyed as the URL.
 * [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds): its length, for a backend priced per second of the video
-  (`ffprobe` when on `PATH`; `None` when it cannot be read, which prices the call
-  as an unknown cost, needing approval).
+  (`probe=`; default [`default_probe()`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe): `ffprobe` on `PATH`, else mixing’s
+  `probe_duration` through mixing’s ffmpeg resolver; `None` when it cannot be read,
+  which prices the call as an unknown cost, needing approval).
 * [`local_video_file()`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file): a local file for an uploader (bytes are written to a
-  temporary file).
+  temporary file whose suffix is sniffed from them: [`video_suffix()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix)).
 * [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track): the audio of a backend’s muxed video answer (MMAudio,
   ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via
   `ffmpeg` ([`ffmpeg_path()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)).
@@ -18918,29 +18919,53 @@ here, once, for every V2A backend:
   manifest): the video replaced by its key, so neither its bytes nor a local path
   (nor an upload’s capability URL) is ever written down.
 
-Stdlib only.
+Stdlib only (mixing is used when installed, never required).
 
 ### Module Attributes
 
-| [`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput)            | a URL, a local path, or the encoded bytes.                                                   |
-|------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
-| [`URL_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_SCHEMES)           | URL schemes sent to a backend as is (no upload).                                             |
-| [`AUDIO_TRACK_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.AUDIO_TRACK_TIMEOUT_S) | The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s). |
+| [`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput)            | a URL, a local path, or the encoded bytes.                                                        |
+|------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| [`URL_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_SCHEMES)           | URL schemes sent to a backend as is (no upload).                                                  |
+| [`AUDIO_TRACK_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.AUDIO_TRACK_TIMEOUT_S) | The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s).      |
+| [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)       | The most [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) lets ffprobe run (s). |
+| [`DEFAULT_VIDEO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_VIDEO_SUFFIX)  | The suffix of bytes no signature matches (and of every other ISO BMFF brand).                     |
+| [`Probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.Probe)                 | how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds) reads a local file's length. |
 
 ### Functions
 
-| [`audio_track`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s])   | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                       |
-|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| [`ffmpeg_path`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                             |
-| [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                    |
-| [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances)                                | `affordances` with a `video` replaced by [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) (else unchanged). |
-| [`local_video_file`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file)(video)                           | A local path holding `video` (bytes are written to a temporary file).                                                   |
-| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                                  | The cache identity of `video`: its content digest, or a remote URL as is.                                               |
-| [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, ffprobe])               | The length of a local `video` in seconds, or `None` when it cannot be read.                                             |
+| [`audio_track`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s])   | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                                                                                                                                                     |
+|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`default_probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe)(path)                               | [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) (bounded by [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)) when `ffprobe` is on `PATH`, else [`mixing_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds). |
+| [`ffmpeg_path`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                           |
+| [`ffprobe_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])              | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                  |
+| [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                                                                                                                                                  |
+| [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances)                                | `affordances` with a `video` replaced by [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) (else unchanged).                                                                                                                               |
+| [`local_video_file`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file)(video, \*[, suffix])             | A local path holding `video` (bytes are written to a temporary file).                                                                                                                                                                                 |
+| [`mixing_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds)(path)                              | The length by mixing's `probe_duration` (`ffmpeg -i` through mixing's ffmpeg resolver, a pip-bundled ffmpeg too), or `None` when mixing's video stack is not installed or finds no ffmpeg.                                                            |
+| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                                  | The cache identity of `video`: its content digest, or a remote URL as is.                                                                                                                                                                             |
+| [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, probe])                 | The length of a local `video` in seconds, or `None` when it cannot be read.                                                                                                                                                                           |
+| [`video_suffix`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix)(data)                                | The file suffix of encoded video `data`, sniffed from its first bytes.                                                                                                                                                                                |
 
 ### foley.sources.video.AUDIO_TRACK_TIMEOUT_S *= 120.0*
 
 The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s).
+
+### foley.sources.video.DEFAULT_VIDEO_SUFFIX *= '.mp4'*
+
+The suffix of bytes no signature matches (and of every other ISO BMFF brand).
+
+### foley.sources.video.PROBE_TIMEOUT_S *= 30.0*
+
+The most [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) lets ffprobe run (s).
+
+### foley.sources.video.Probe
+
+how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds) reads a local file’s length.
+
+* **Type:**
+  `video -> seconds | None`
+
+alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
 ### foley.sources.video.URL_SCHEMES *= ('http://', 'https://', 'data:')*
 
@@ -18968,12 +18993,29 @@ carries a streaming placeholder size).
 * **Return type:**
   [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
 
+### foley.sources.video.default_probe(path)
+
+[`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) (bounded by [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)) when `ffprobe` is on
+`PATH`, else [`mixing_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds). Never both: a file that stalls ffprobe would
+stall mixing’s unbounded `ffmpeg -i` too.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
 ### foley.sources.video.ffmpeg_path()
 
 An `ffmpeg` binary: mixing’s resolver (a pip-bundled one too), else `PATH`.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.video.ffprobe_seconds(path, , ffprobe=None)
+
+The length of the video file at `path` by `ffprobe` (default: the one on
+`PATH`), or `None` when there is none or it cannot read it.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### foley.sources.video.is_url(video)
 
@@ -18999,12 +19041,25 @@ Whether `video` is a URL a backend can fetch itself.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.sources.video.local_video_file(video)
+### foley.sources.video.local_video_file(video, , suffix=None)
 
 A local path holding `video` (bytes are written to a temporary file).
 
+`suffix` names the temporary file’s format; default: [`video_suffix()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix) of the
+bytes. A path is yielded as is.
+
 * **Return type:**
   [`Iterator`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.video.mixing_seconds(path)
+
+The length by mixing’s `probe_duration` (`ffmpeg -i` through mixing’s ffmpeg
+resolver, a pip-bundled ffmpeg too), or `None` when mixing’s video stack is not
+installed or finds no ffmpeg. Unbounded: mixing’s probe has no timeout yet
+(reeleehq/mixing#88).
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### foley.sources.video.video_key(video)
 
@@ -19023,15 +19078,42 @@ The cache identity of `video`: its content digest, or a remote URL as is.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
-### foley.sources.video.video_seconds(video, , ffprobe=None)
+### foley.sources.video.video_seconds(video, , probe=None)
 
 The length of a local `video` in seconds, or `None` when it cannot be read.
 
-Read by `ffprobe` (`ffprobe=` names the binary; default: the one on `PATH`).
-A URL is not fetched to measure it: `None`.
+`probe(path) -> seconds | None` reads it (default: [`default_probe()`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe)); a
+probe that raises counts as unreadable. A URL is not fetched to measure it:
+`None`.
+
+```pycon
+>>> video_seconds(b"...", probe=lambda path: 4.5)
+4.5
+>>> video_seconds("https://x/clip.mp4", probe=lambda path: 4.5) is None
+True
+```
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### foley.sources.video.video_suffix(data)
+
+The file suffix of encoded video `data`, sniffed from its first bytes.
+
+An uploader (and ffmpeg) names the format by the suffix, so a WebM written as
+`.mp4` goes out mislabelled. Anything unrecognised is `.mp4`.
+
+```pycon
+>>> video_suffix(b"\x00\x00\x00\x18ftypqt  \x00"), video_suffix(b"\x00\x00\x00\x18ftypisom")
+('.mov', '.mp4')
+>>> video_suffix(b"\x1a\x45\xdf\xa3\x9f\x42\x82\x84webm"), video_suffix(b"\x1a\x45\xdf\xa3")
+('.webm', '.mkv')
+>>> video_suffix(b"RIFF\x00\x00\x00\x00AVI "), video_suffix(b"OggS"), video_suffix(b"?")
+('.avi', '.ogv', '.mp4')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 
 # _autosummary/foley.sources.wikimedia_commons.adapter.html.md
@@ -20897,18 +20979,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 05:52 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/1a11bd01b477482bea6c2644976cb68e1427803a"><code>1a11bd0</code></a> on branch <code>main</code>, for **foley 0.0.78** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 05:57 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/8d97921357328a92d0fb2aab79fa123822fb24f1"><code>8d97921</code></a> on branch <code>main</code>, for **foley 0.0.79** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.78) is behind the latest release on PyPI (0.0.79): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.79) is ahead of the latest release on PyPI (0.0.78): these docs describe unreleased code.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/1a11bd01b477482bea6c2644976cb68e1427803a"><code>1a11bd01b477482bea6c2644976cb68e1427803a</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/8d97921357328a92d0fb2aab79fa123822fb24f1"><code>8d97921357328a92d0fb2aab79fa123822fb24f1</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20919,9 +21001,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40457151762">40457151762</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40458085388">40458085388</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>1a11bd01b477482bea6c2644976cb68e1427803a</code> (in the history of the built commit) |
+| Event commit | <code>8d97921357328a92d0fb2aab79fa123822fb24f1</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20946,13 +21028,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.79/">0.0.79</a>, newer than the documented version (0.0.78).
+Latest release: <a href="https://pypi.org/project/foley/0.0.78/">0.0.78</a>, older than the documented version (0.0.79).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 1a11bd01b477482bea6c2644976cb68e1427803a
+git checkout 8d97921357328a92d0fb2aab79fa123822fb24f1
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

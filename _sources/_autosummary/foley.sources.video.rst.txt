@@ -11,16 +11,23 @@ foley.sources.video
       VideoInput
       URL_SCHEMES
       AUDIO_TRACK_TIMEOUT_S
+      PROBE_TIMEOUT_S
+      DEFAULT_VIDEO_SUFFIX
+      Probe
    
    .. rubric:: Functions
 
    .. autosummary::
    
       audio_track
+      default_probe
       ffmpeg_path
+      ffprobe_seconds
       is_url
       keyed
       local_video_file
+      mixing_seconds
       video_key
       video_seconds
+      video_suffix
    
