@@ -100,6 +100,15 @@ FAKES = {
     },
 }
 
+def _mode_inputs(adapter) -> dict:
+    """What a call of ``adapter``'s modes needs besides the prompt and the seed."""
+    config = getattr(adapter, "config", {})
+    extra: dict = {}
+    for mode in config.get("modes") or ():
+        extra.update(_MODE_INPUTS.get(mode, lambda config: {})(config))
+    return extra
+
+
 #: What a call of each mode needs besides the prompt and the seed: a V2A call its
 #: picture, an edit (#162) its source clip and its op's parameters.
 _MODE_INPUTS = {
@@ -145,10 +154,7 @@ def test_same_seed_same_bytes_different_seed_different_bytes(
     name, tmp_path, monkeypatch
 ):
     adapter = FAKES[name](tmp_path=tmp_path, monkeypatch=monkeypatch)
-    config = getattr(adapter, "config", {})
-    extra = {}  # a V2A call needs its picture, an edit its source clip
-    for mode in config.get("modes") or ():
-        extra.update(_MODE_INPUTS.get(mode, lambda config: {})(config))
+    extra = _mode_inputs(adapter)
     clips = [adapter.generate("a door creak", seed=seed, **extra) for seed in (7, 7, 8)]
     first, again, other = (clip.audio_bytes for clip in clips)
     assert first == again
@@ -185,8 +191,7 @@ _NO_SEED_FIELD = {
 )
 def test_a_seedless_clip_replays_from_its_recorded_seed(name, tmp_path, monkeypatch):
     adapter = FAKES[name](tmp_path=tmp_path, monkeypatch=monkeypatch)
-    v2a = "v2a" in (getattr(adapter, "config", {}).get("modes") or ())
-    extra = {"video": "https://x/shot.mp4"} if v2a else {}
+    extra = _mode_inputs(adapter)
     first = adapter.generate("a door creak", **extra)
     lic = first.candidate.sound.license
     assert lic.generation_reproducible is True
