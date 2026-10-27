@@ -66,7 +66,7 @@ def test_commons_declares_its_own_429_waits_and_the_transport_honours_them():
 
 
 def test_licence_strings_must_agree_and_all_parse():
-    from foley.sources._keyless import license_for_item
+    from foley.sources._license_gate import license_for_item
     from foley.sources.wikimedia_commons.config import SOURCE_CONFIG as C
 
     by, sa = (
@@ -515,3 +515,31 @@ def test_openverse_excluded_sources_can_only_grow():
     ov.search("door", provider_params={"excluded_source": "wikimedia_audio"})
     excluded = http.calls[0]["params"]["excluded_source"].split(",")
     assert excluded[-1] == "wikimedia_audio" and "freesound" in excluded
+
+
+# ---------------------------------------------------------------------------
+# license= is a licence id on every source (#131)
+# ---------------------------------------------------------------------------
+
+
+def test_openverse_cc0_licence_id_uses_the_cc0_filter_and_cc_by_the_default():
+    ad, http = _openverse()
+    got = ad.search("door", license="CC0-1.0")
+    assert http.calls[0]["params"]["license"] == "cc0"
+    assert [c.sound.id for c in got] == ["openverse:a"]
+    got = ad.search("door", license="CC-BY-4.0")
+    assert http.calls[1]["params"]["license"] == "cc0,by,pdm"
+    assert [c.sound.id for c in got] == ["openverse:b"]
+
+
+def test_commons_cc_by_licence_id_drops_cc0_and_the_public_domain_claims():
+    ad, _ = _commons()
+    got = ad.search("sigh", license="CC-BY-4.0")
+    assert [c.sound.id for c in got] == ["wikimedia_commons:2"]
+
+
+@pytest.mark.parametrize("make", [_commons, _openverse])
+def test_a_licence_the_source_does_not_accept_returns_nothing_without_a_request(make):
+    ad, http = make()
+    assert ad.search("x", license="CC-BY-SA-4.0") == []
+    assert http.calls == []

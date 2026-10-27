@@ -7,9 +7,6 @@
   with its own waits (Commons) declares ``retry`` in its config.
 * :func:`strip_html`: the HTML-bearing metadata fields (Commons ``Artist``,
   ``ImageDescription``) as plain text.
-* :func:`license_for_item`: a source's own licence string through the one SSOT
-  (:func:`foley.licensing.license_id_from_cc_url`), checked against the source's
-  ``accepted_license_ids``: ``(license_id, verified)`` or ``None`` to drop the item.
 
 Underscore-prefixed, so :func:`foley.sources.registry.discover_sources` skips it. Stdlib only.
 """
@@ -62,29 +59,3 @@ def raw_id(prefix: str, source_id: str) -> str:
     """``source_id`` without its ``prefix`` (either id form is accepted)."""
     s = str(source_id)
     return s[len(prefix) :] if s.startswith(prefix) else s
-
-
-def license_for_item(
-    config: dict, *candidates: Optional[str], only: Optional[list] = None
-) -> "Optional[tuple[str, bool]]":
-    """The ``(license_id, verified)`` of an item, or ``None`` when it must be dropped.
-
-    ``candidates`` are the source's licence strings for the item (a licence URL and/or a
-    short label). Every non-empty one must parse to a known licence and they must agree: a
-    share-alike URL is not cleared by a looser label next to it. The id must also be in
-    the config's ``accepted_license_ids`` (and in ``only``, when a narrower set is asked
-    for, e.g. CC0 alone). Anything else (share-alike, no-derivatives, non-commercial,
-    unknown, empty) is dropped: fail closed.
-    """
-    from ..licensing import license_id_from_cc_url
-
-    parsed = [license_id_from_cc_url(t) for t in candidates if t and str(t).strip()]
-    ids = {license_id for license_id, _ in parsed}
-    if not parsed or "unknown" in ids or len(ids) != 1:
-        return None
-    (license_id,) = ids
-    if license_id not in config["license"]["accepted_license_ids"]:
-        return None
-    if only is not None and license_id not in only:
-        return None
-    return license_id, all(verified for _, verified in parsed)

@@ -23,7 +23,8 @@ import re
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
-from .._keyless import get_bytes, get_json, license_for_item, raw_id, strip_html
+from .._keyless import get_bytes, get_json, raw_id, strip_html
+from .._license_gate import license_for_item, wanted_license_ids
 from ..base import api_license, merge_provider_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -98,12 +99,16 @@ class WikimediaCommonsAdapter:
         """Search Commons audio for ``query``; return licence-checked candidates.
 
         Args:
-            license: ``'cc0'`` (default) keeps CC0 files only; anything else (``None``,
-                ``'cc-by'``) also keeps CC-BY and the unverified public-domain claims.
+            license: A licence id (``'cc0'`` is an alias for CC0-1.0; ``'cc-by'`` the
+                CC-BY ids) keeps only files under it; ``None`` also keeps CC-BY and the
+                unverified public-domain claims.
             k: Max files requested (the API's limit is 50).
             provider_params: Native search params merged over the translated ones
                 (#61); the per-item licence check still applies.
         """
+        wanted = wanted_license_ids(self.config, license)
+        if wanted == []:  # a licence this source does not accept: nothing can match
+            return []
         api = self.config["api"]
         params = dict(
             generator="search",
@@ -122,7 +127,6 @@ class WikimediaCommonsAdapter:
             ((data.get("query") or {}).get("pages") or {}).values(),
             key=lambda p: p.get("index", 0),  # the search rank
         )
-        wanted = self.config["license"]["cc0_license_ids"] if license == "cc0" else None
         out = []
         for page in pages:
             cand = self._candidate(page, only=wanted)

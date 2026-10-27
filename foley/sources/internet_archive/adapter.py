@@ -15,7 +15,8 @@ import re
 from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
-from .._keyless import get_bytes, get_json, license_for_item, raw_id, strip_html
+from .._keyless import get_bytes, get_json, raw_id, strip_html
+from .._license_gate import license_for_item, wanted_license_ids
 from ..base import SourceConfigurationError, api_license, merge_provider_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -73,12 +74,15 @@ class InternetArchiveAdapter:
     ) -> "list[Candidate]":
         """Search archive audio for ``query``; return candidates (all unverified).
 
-        ``license='cc0'`` keeps CC0 items only; any other value keeps every accepted
-        licence. The query always asks for items with a ``licenseurl``.
+        ``license`` is a licence id (``'CC0-1.0'``; ``'cc0'`` is an alias) and keeps only
+        items under it; ``None`` keeps every accepted licence. The query always asks for items with a ``licenseurl``.
         ``provider_params`` are native advancedsearch params merged over the
         translated ones (#61); a ``q`` is ANDed onto foley's as one group, never
         replaces it (the config's ``provider_params`` policy).
         """
+        only = wanted_license_ids(self.config, license)
+        if only == []:  # a licence this source does not accept: nothing can match
+            return []
         api = self.config["api"]
         params = {
             "q": f"({_lucene_escape(query)}) AND mediatype:audio AND {api['licensed_clause']}",
@@ -92,7 +96,6 @@ class InternetArchiveAdapter:
         docs = (
             self.invoke_native(api["search_url"], **params).get("response") or {}
         ).get("docs", [])
-        only = self.config["license"]["cc0_license_ids"] if license == "cc0" else None
         return [
             c for c in (self._candidate(d, only=only) for d in docs) if c is not None
         ]

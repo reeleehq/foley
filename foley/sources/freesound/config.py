@@ -40,7 +40,7 @@ SOURCE_CONFIG = {
             "native_name": "filter",
             "to_native": "duration:[{lo} TO {hi}]",
         },
-        # CC0 alone (the default) or CC0 + Attribution (``license`` other than 'cc0',
+        # CC0 alone (the default) or CC0 + Attribution (a ``license`` other than CC0,
         # #78); pushed into the server-side Solr filter. "Attribution NonCommercial" is
         # never asked for.
         "license": {
