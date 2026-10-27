@@ -238,7 +238,10 @@ class FalAdapter:
         return args
 
     def invoke_native(self, arguments: dict) -> "tuple[bytes, dict]":
-        """Call this source's fal endpoint with native ``arguments``; return ``(audio, response)``.
+        """Call this source's fal endpoint with native ``arguments``; return ``(media, response)``.
+
+        ``media`` is the bytes at the response's ``output.audio_field``: the audio, or
+        for an endpoint that answers with a video (``output.container``), the video.
 
         The public entry below foley's translation (#61): ``arguments`` are sent as
         is (no fixed arguments or default duration are added). No licence record is
@@ -321,6 +324,7 @@ class FalAdapter:
         """
         notes: list = []
         nd = self.config.get("native_defaults") or {}
+        demux = self._demuxer()  # before the upload and the call: nothing spent yet
         args = merge_provider_params(
             self.native_arguments(prompt, **affordances),
             provider_params,
@@ -343,10 +347,17 @@ class FalAdapter:
                 f"{nd['duration_default_s']:g} s"
             )
         endpoint = self.config["api"]["endpoint_id"]
-        demux = self._demuxer()  # before the call: a paid video we cannot open is lost
         audio, response = self.invoke_native(args)
         if demux is not None:
-            audio = demux(audio)
+            try:
+                audio = demux(audio)
+            except Exception as exc:  # the call is paid: say so, and where the video is
+                url = audio_url(response, self.config["output"]["audio_field"])
+                raise RuntimeError(
+                    f"{self.name}: the generation was billed, but its audio could not "
+                    f"be taken out of the video ({type(exc).__name__}); the video is "
+                    f"at {url} (an expiring fal URL) and in falaw's asset store"
+                ) from exc
             notes.append(f"{self.name} answered with a video: its audio track was kept")
         seed_field = nd.get("seed_field")
         seed = (

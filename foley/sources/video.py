@@ -41,6 +41,8 @@ VideoInput = Union[str, "os.PathLike[str]", bytes]
 URL_SCHEMES = ("http://", "https://", "data:")
 #: Bytes hashed at a time when keying a local file.
 _HASH_CHUNK = 1 << 20
+#: The most :func:`audio_track` lets ffmpeg run (s).
+AUDIO_TRACK_TIMEOUT_S = 120.0
 
 
 def is_url(video: VideoInput) -> bool:
@@ -127,9 +129,15 @@ def ffmpeg_path() -> Optional[str]:
 
 
 def audio_track(
-    container: bytes, *, ffmpeg: Optional[str] = None, timeout_s: float = 120.0
+    container: bytes,
+    *,
+    ffmpeg: Optional[str] = None,
+    timeout_s: float = AUDIO_TRACK_TIMEOUT_S,
 ) -> bytes:
     """The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).
+
+    Written to a file, not a pipe, so ffmpeg can finish the WAV header (a piped WAV
+    carries a streaming placeholder size).
 
     Raises:
         RuntimeError: If no ``ffmpeg`` is found, or it cannot read an audio stream.
@@ -137,18 +145,20 @@ def audio_track(
     exe = ffmpeg or ffmpeg_path()
     if exe is None:
         raise RuntimeError("no ffmpeg found to take the audio out of the video")
-    with local_video_file(container) as path:
+    with local_video_file(container) as path, tempfile.TemporaryDirectory() as tmp:
+        out = os.path.join(tmp, "audio.wav")
         proc = subprocess.run(
             [exe, "-hide_banner", "-nostdin", "-loglevel", "error", "-i", path,
-             "-vn", "-acodec", "pcm_s16le", "-f", "wav", "pipe:1"],
+             "-vn", "-acodec", "pcm_s16le", out],
             capture_output=True, timeout=timeout_s,
         )  # fmt: skip
-    if proc.returncode != 0 or not proc.stdout:
+        wav = open(out, "rb").read() if os.path.exists(out) else b""
+    if proc.returncode != 0 or not wav:
         raise RuntimeError(
             "ffmpeg could not take the audio out of the video: "
             + proc.stderr.decode(errors="replace").strip()[-300:]
         )
-    return proc.stdout
+    return wav
 
 
 def video_seconds(

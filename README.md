@@ -57,7 +57,9 @@ clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
 clip = foley.generate("", backend="fal_mirelo_v2a", video="shot.mp4", duration_s=6)
 # Non-commercial V2A, named only: fal_mmaudio_v2a (CC BY-NC), fal_thinksound (research
 # only), fal_hunyuan_foley (no grant in the EU, UK or KR: say where it is used)
-use = foley.IntendedUse(commercial=False, territory="US")
+use = foley.IntendedUse(commercial=False, territory="US")  # every place it is shown
+clip = foley.generate("rain on a tin roof", backend="fal_hunyuan_foley", video="shot.mp4",
+                      intended_use=use)
 
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown

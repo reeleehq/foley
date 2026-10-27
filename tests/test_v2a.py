@@ -451,3 +451,95 @@ def test_thinksound_cost_is_unknown_and_hunyuan_is_the_videos_length(monkeypatch
     assert estimate_generation("fal_thinksound", video=b"x") is None  # compute seconds
     assert estimate_generation("fal_hunyuan_foley", prompt="rain", video=b"x") == pytest.approx(0.2)
     assert estimate_generation("fal_mmaudio_v2a", video=b"x") == pytest.approx(0.02)
+
+
+class VideoRunner(Runner):
+    """Answers as the muxed endpoints do: the media under ``video``, a video URL."""
+
+    def __call__(self, endpoint_id, arguments, *, api_key, audio_field="audio"):
+        assert audio_field == "video"  # the adapter reads the field the config names
+        self.calls.append((endpoint_id, dict(arguments)))
+        from foley.sources.fal.adapter import audio_url
+
+        response = {"video": {"url": "https://fal.media/v.mp4"}}
+        assert audio_url(response, audio_field) == "https://fal.media/v.mp4"
+        return b"MUXED-VIDEO", response
+
+
+@pytest.mark.parametrize("name", ["fal_mmaudio_v2a", "fal_thinksound", "fal_hunyuan_foley"])
+def test_each_muxed_endpoint_is_read_from_video_and_demuxed(name):
+    seen = []
+    adapter = FalAdapter(CONFIGS[name], api_key="k", runner=VideoRunner(),
+                         uploader=Uploader(), demux=lambda b: seen.append(b) or _wav(1.0))
+    clip = adapter.generate("rain", video="https://x/shot.mp4")
+    assert seen == [b"MUXED-VIDEO"] and clip.audio_bytes == _wav(1.0)
+
+
+@pytest.mark.parametrize("name, field", [("fal_mmaudio_v2a", "prompt"),
+                                         ("fal_hunyuan_foley", "text_prompt")])
+def test_a_required_prompt_is_always_sent(name, field):
+    adapter = FalAdapter(CONFIGS[name], api_key="k", runner=VideoRunner(),
+                         uploader=Uploader(), demux=lambda b: b)
+    assert field in adapter.native_arguments("", video="https://x/shot.mp4")
+
+
+@pytest.mark.parametrize("spelling", ["UK", "uk", " GB ", "gb", "KR", "EL", "FR", "RE", "GF"])
+def test_every_spelling_of_an_excluded_territory_is_refused(spelling):
+    from foley.licensing import keep
+
+    use = IntendedUse(commercial=False, territory=spelling)
+    assert keep(_record("Tencent-Hunyuan-Community"), use) is False
+
+
+@pytest.mark.parametrize("bad", ["Europe", "United Kingdom", "France", "GBR", "KOR", "XX"])
+def test_a_territory_that_is_not_a_country_code_raises(bad):
+    with pytest.raises(ValueError, match="ISO 3166-1 alpha-2"):
+        IntendedUse(commercial=False, territory=bad)
+
+
+def test_a_blank_territory_is_unstated_and_fails_closed():
+    from foley.licensing import keep, territory_excluded
+
+    assert IntendedUse(territory="  ").territory is None
+    assert keep(_record("Tencent-Hunyuan-Community"), IntendedUse(commercial=False,
+                                                                territory="")) is False
+    assert territory_excluded({"KR"}, "Korea") is True  # unreadable: excluded
+
+
+def test_the_refusal_says_what_failed():
+    from foley.sources.generate import generation_rights_refusal
+
+    nc = IntendedUse(commercial=False)
+    why = generation_rights_refusal("fal_hunyuan_foley", nc)
+    assert why and "state the territory" in why and "commercial_ok=False" not in why
+    assert generation_rights_refusal(
+        "fal_hunyuan_foley", IntendedUse(commercial=False, territory="US")) is None
+    assert "publish" in generation_rights_refusal("fal_thinksound", nc)
+    assert "commercial_ok=False" in generation_rights_refusal("fal_mmaudio_v2a",
+                                                               IntendedUse())
+
+
+def test_a_demux_failure_after_the_paid_call_says_it_was_billed():
+    def broken(_):
+        raise RuntimeError("no audio stream")
+
+    adapter = FalAdapter(CONFIGS["fal_mmaudio_v2a"], api_key="k", runner=VideoRunner(),
+                         uploader=Uploader(), demux=broken)
+    with pytest.raises(RuntimeError, match="billed.*fal.media/v.mp4"):
+        adapter.generate("rain", video="https://x/shot.mp4")
+
+
+def test_the_extracted_wav_has_a_real_header(tmp_path):
+    import subprocess
+    import wave
+
+    ffmpeg = video_mod.ffmpeg_path()
+    if ffmpeg is None:
+        pytest.skip("no ffmpeg")
+    mp4 = tmp_path / "v.mp4"
+    subprocess.run([ffmpeg, "-loglevel", "error", "-f", "lavfi", "-i",
+                    "color=c=black:s=64x64:d=2", "-f", "lavfi", "-i",
+                    "sine=frequency=440:duration=2", "-shortest", "-c:v", "libx264",
+                    "-c:a", "aac", str(mp4)], check=True)
+    with wave.open(io.BytesIO(video_mod.audio_track(mp4.read_bytes()))) as w:
+        assert w.getnframes() / w.getframerate() == pytest.approx(2.0, abs=0.15)

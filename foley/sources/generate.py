@@ -216,7 +216,7 @@ def generation_rights_refusal(backend: str, intended_use) -> Optional[str]:
     plan) has no fixed row, is not judged here, and is gated after generation as
     before.
     """
-    from ..licensing import keep
+    from ..licensing import refusal_reason
     from .base import generated_license
     from .registry import SOURCE_REGISTRY, discover_sources
 
@@ -233,13 +233,18 @@ def generation_rights_refusal(backend: str, intended_use) -> Optional[str]:
         generation_prompt="",
         attribution_text=lic_cfg.get("attribution_text"),
     )
-    if keep(probe, intended_use):
+    why = refusal_reason(probe, intended_use)
+    if why is None:
         return None
+    hint = (
+        "declare a non-commercial use (commercial_ok=False)"
+        if intended_use.commercial and not probe.commercial_ok
+        else "change the IntendedUse as the reason says"
+    )
     return (
-        f"{backend!r} generates under {license_id!r}, which this use does not allow "
-        f"(commercial={intended_use.commercial}); nothing was generated. Pick a backend "
-        "whose licence fits (fal_stable_audio_3 is commercial under $1M revenue), or "
-        "declare a non-commercial use (commercial_ok=False)."
+        f"{backend!r} generates under {license_id!r}, which this use does not allow: "
+        f"{why}; nothing was generated. Pick a backend whose licence fits "
+        f"(fal_stable_audio_3 is commercial under $1M revenue), or {hint}."
     )
 
 

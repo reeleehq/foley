@@ -23,7 +23,7 @@ import re
 from dataclasses import dataclass, replace
 from typing import Optional
 
-from .base import IntendedUse, LicenseRecord
+from .base import IntendedUse, LicenseRecord, normalize_territory
 
 #: The ONE rights intent every verb and surface defaults to (#63, maintainer decision
 #: 2026-10-03): commercial publishing, attributable. NC and SA material is refused
@@ -581,9 +581,12 @@ def ai_use_permitted(
     return False  # 'none' or an unrecognised scope: fail closed
 
 
-#: The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU".
+#: The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU",
+#: with the outermost regions that carry their own codes (France's: Réunion, French
+#: Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin), which are EU territory.
 EU_MEMBER_STATES: frozenset = frozenset(
     "AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE"
+    " RE GF GP MQ YT MF"
     .split()
 )  # fmt: skip
 
@@ -598,20 +601,60 @@ LICENSE_EXCLUDED_TERRITORIES: "dict[str, frozenset]" = {
 def territory_excluded(excluded, territory: Optional[str]) -> bool:
     """Whether ``territory`` is in ``excluded`` (``"EU"`` covers its member states).
 
-    An unstated territory (``None``) counts as excluded whenever anything is: the gate
-    fails closed.
+    An unstated territory (``None``) counts as excluded whenever anything is, and so
+    does one that is not a country code: the gate fails closed.
 
     >>> territory_excluded({"EU", "GB"}, "fr"), territory_excluded({"EU"}, "US")
     (True, False)
-    >>> territory_excluded({"KR"}, None), territory_excluded(set(), None)
+    >>> territory_excluded({"KR"}, None), territory_excluded({"GB"}, "uk")
+    (True, True)
+    >>> territory_excluded({"KR"}, "Korea"), territory_excluded(set(), None)
     (True, False)
     """
     if not excluded:
         return False
-    if territory is None:
+    try:
+        code = normalize_territory(territory)
+    except ValueError:
         return True
-    code = territory.strip().upper()
+    if code is None:
+        return True
     return code in excluded or ("EU" in excluded and code in EU_MEMBER_STATES)
+
+
+def refusal_reason(record: LicenseRecord, intended_use: IntendedUse) -> Optional[str]:
+    """Why :func:`keep` refuses ``record`` for ``intended_use``, or ``None`` if it keeps it.
+
+    The one rule, read as text: the first requirement the record does not meet.
+    """
+    if not record.rights_verified:
+        return "its rights are not verified"
+    if intended_use.commercial and not record.commercial_ok:
+        return "it is not cleared for commercial use"
+    if intended_use.publish and not record.embed_in_derivative_ok:
+        return "it may not be published in a derivative work (publish=True)"
+    if intended_use.redistribute_standalone and not record.redistribute_standalone_ok:
+        return "it may not be redistributed on its own"
+    if intended_use.will_train and not ai_use_permitted(
+        record, open_source_model=False, commercial=intended_use.commercial
+    ):
+        return "it may not be used to train a model"  # the trainer's model is unknown
+    cap = record.revenue_cap_usd
+    if cap is not None and intended_use.revenue_usd >= cap:
+        return f"its licence stops at ${cap:,} of revenue"
+    if record.requires_attribution and not intended_use.can_attribute:
+        return "it requires attribution"
+    if not intended_use.allow_voice_or_trademark and (
+        record.contains_recognizable_voice or record.potential_trademark
+    ):
+        return "it is flagged for a recognizable voice or a trademark"
+    excluded = LICENSE_EXCLUDED_TERRITORIES.get(record.license_id, ())
+    if territory_excluded(excluded, intended_use.territory):
+        where = ", ".join(sorted(excluded))
+        if intended_use.territory is None:
+            return f"its licence grants nothing in {where}: state the territory"
+        return f"its licence grants nothing in {where} ({intended_use.territory})"
+    return None
 
 
 def keep(record: LicenseRecord, intended_use: IntendedUse) -> bool:
@@ -628,33 +671,7 @@ def keep(record: LicenseRecord, intended_use: IntendedUse) -> bool:
         ``True`` only if every requirement in ``intended_use`` is satisfied by
         ``record``; ``False`` otherwise (including unverified rights).
     """
-    if not record.rights_verified:
-        return False
-    if intended_use.commercial and not record.commercial_ok:
-        return False
-    if intended_use.publish and not record.embed_in_derivative_ok:
-        return False
-    if intended_use.redistribute_standalone and not record.redistribute_standalone_ok:
-        return False
-    if intended_use.will_train and not ai_use_permitted(
-        record, open_source_model=False, commercial=intended_use.commercial
-    ):
-        return (
-            False  # the trainer's model is unknown here, so a scoped grant fails closed
-        )
-    cap = record.revenue_cap_usd
-    if cap is not None and intended_use.revenue_usd >= cap:
-        return False
-    if record.requires_attribution and not intended_use.can_attribute:
-        return False
-    if not intended_use.allow_voice_or_trademark and (
-        record.contains_recognizable_voice or record.potential_trademark
-    ):
-        return False
-    excluded = LICENSE_EXCLUDED_TERRITORIES.get(record.license_id, ())
-    if territory_excluded(excluded, intended_use.territory):
-        return False  # no grant where it is used, or the territory was not stated
-    return True
+    return refusal_reason(record, intended_use) is None
 
 
 def keep_sound(sound_record, intended_use: IntendedUse) -> bool:
