@@ -563,7 +563,8 @@ def _cmd_agent_install(args) -> int:
     return 0
 
 
-#: Map an optional dependency's import name to the ``foley[extra]`` that ships it.
+#: Import names whose distribution is named otherwise, or is shipped by an extra the
+#: package metadata cannot tell (the rest is read from foley's own ``Requires-Dist``).
 _MODULE_TO_EXTRA = {
     "numpy": "audio",
     "soundfile": "audio",
@@ -578,20 +579,45 @@ _MODULE_TO_EXTRA = {
     "sqlite_vec": "index-sqlite",
     "panns_inference": "tag",
 }
+#: Extras for developing foley, never offered as the way to run a command.
+_DEV_EXTRAS = frozenset({"test", "dev", "docs"})
+
+
+def _extras_by_module() -> dict:
+    """``{import name: extra}`` from foley's own metadata (``Requires-Dist``), so the
+    hint cannot drift from ``pyproject.toml``; :data:`_MODULE_TO_EXTRA` wins.
+
+    A distribution is matched to the module of the same name (``-`` read as ``_``);
+    the first extra that ships it is named.
+    """
+    import re
+    from importlib.metadata import PackageNotFoundError, requires
+
+    try:
+        reqs = requires("foley") or []
+    except PackageNotFoundError:  # run from a source tree with no metadata
+        reqs = []
+    found = {}
+    for req in reqs:
+        m = re.match(r"\s*([A-Za-z0-9_.\-]+).*extra\s*==\s*['\"]([^'\"]+)['\"]", req)
+        if m and m.group(2) not in _DEV_EXTRAS:
+            found.setdefault(m.group(1).lower().replace("-", "_"), m.group(2))
+    return {**found, **_MODULE_TO_EXTRA}
 
 
 def _missing_dep_hint(exc: ImportError) -> str:
     """A check_requirements-style install hint for a missing optional dependency."""
     module = (getattr(exc, "name", "") or "").split(".")[0]
-    extra = _MODULE_TO_EXTRA.get(module)
+    if module == "foley":  # a module of foley itself: the install is broken
+        return f"foley is missing one of its own modules ({exc}): reinstall foley."
+    extra = _extras_by_module().get(module)
     if extra:
         return (
             f"foley needs the optional dependency {module!r} for this command. "
-            f"Install it with:  pip install 'foley[{extra}]'  "
-            "(the CLAP model downloads on first use)."
+            f"Install it with:  pip install 'foley[{extra}]'"
         )
-    if module:  # not shipped by an extra: the error says what to install (#188)
-        return f"foley needs {module!r}, which no foley extra installs: {exc}"
+    if module:  # the error says what to install (#188: mixing's names pyloudnorm's)
+        return f"foley needs {module!r}: {exc}"
     return (
         "foley could not import a required module. "
         "Install the relevant extra, e.g. pip install 'foley[audio,clap]'."

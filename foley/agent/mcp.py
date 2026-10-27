@@ -545,7 +545,21 @@ def foley_weave(narration: str, timeline: dict, session: str = "default") -> dic
         tl = _timeline_of(timeline)
     except (TypeError, ValueError) as exc:  # the input, not the render: a JSON row
         return _invalid(exc)
-    return _weave_result_row(_weave(narration, tl, library=_lib()))
+    lib = _lib()
+    missing = sorted(
+        {it.clip_ref for it in tl.items if not _in_library(lib, it.clip_ref)}
+    )
+    if missing:
+        return _invalid(ValueError(f"clip_ref(s) not in the library: {missing}"))
+    return _weave_result_row(_weave(narration, tl, library=lib))
+
+
+def _in_library(lib, sound_id: str) -> bool:
+    try:
+        lib[sound_id]
+    except KeyError:
+        return False
+    return True
 
 
 def _timeline_of(timeline):
@@ -645,6 +659,8 @@ def foley_timeline_captions(timeline: dict, fmt: str = "vtt") -> dict:
     """Export SDH captions for a timeline (``fmt='vtt'`` | ``'srt'``)."""
     from ..weave.timeline import to_srt, to_webvtt
 
+    if fmt not in ("vtt", "srt"):
+        raise ValueError(f"fmt must be 'vtt' or 'srt', got {fmt!r}")
     tl = _timeline_of(timeline)
     return {"vtt": to_webvtt(tl)} if fmt == "vtt" else {"srt": to_srt(tl)}
 
