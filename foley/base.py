@@ -642,6 +642,11 @@ class LicenseRecord(SerializableMixin):
     transformations: list = field(
         default_factory=list
     )  # ordered ops; non-empty => "(modified)"
+    # The licence ids of every sound this one derives from (an edit's source, and the
+    # sources that source derived from, #214). Each one bounds the derived flags:
+    # ``apply_license_flags`` ANDs their rows in, so a re-derivation from
+    # ``license_id`` (a restamp) can never widen a derivative. Empty: not derived.
+    derived_from_license_ids: list = field(default_factory=list)
 
     # generation (present iff AI-generated)
     is_ai_generated: bool = False

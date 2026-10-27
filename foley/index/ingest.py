@@ -798,7 +798,12 @@ def _restamped(lic: LicenseRecord, license_id: str) -> LicenseRecord:
     from dataclasses import replace
 
     changed = license_id != lic.license_id
-    new = replace(lic, license_id=license_id, transformations=list(lic.transformations))
+    new = replace(
+        lic,
+        license_id=license_id,
+        transformations=list(lic.transformations),
+        derived_from_license_ids=list(lic.derived_from_license_ids),
+    )
     apply_license_flags(new, overrides=_source_overrides(lic, license_id))
     new.rights_verified = license_id in ASSERTABLE_LICENSE_IDS
     new.verified_at = _now_iso() if new.rights_verified else None
@@ -832,7 +837,12 @@ def _rederived_from_url(lic: LicenseRecord) -> LicenseRecord:
     from ..licensing import license_id_from_cc_url
 
     license_id, verified = license_id_from_cc_url(lic.license_url)
-    new = replace(lic, license_id=license_id, transformations=list(lic.transformations))
+    new = replace(
+        lic,
+        license_id=license_id,
+        transformations=list(lic.transformations),
+        derived_from_license_ids=list(lic.derived_from_license_ids),
+    )
     apply_license_flags(new, overrides=_source_overrides(lic, license_id))
     new.rights_verified = verified
     return new

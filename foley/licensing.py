@@ -543,11 +543,57 @@ def derive_license_flags(
     return flags
 
 
+def derived_license_ids(record: LicenseRecord) -> "list[str]":
+    """The licence ids of every sound ``record`` derives from (``[]``: not derived).
+
+    Its :attr:`~foley.base.LicenseRecord.derived_from_license_ids` (#214), plus the
+    ``source_license_id`` of each edit entry in its ``transformations`` (#162), so a
+    record stored before the field existed is still bounded by its source. In order,
+    without repeats.
+
+    >>> from foley.base import LicenseRecord
+    >>> derived_license_ids(LicenseRecord(source="g"))
+    []
+    >>> derived_license_ids(LicenseRecord(source="g", derived_from_license_ids=["CC-BY-4.0"],
+    ...     transformations=["declick", {"kind": "edit", "source_license_id": "CC-BY-NC-4.0"}]))
+    ['CC-BY-4.0', 'CC-BY-NC-4.0']
+    """
+    from .base import EDIT_TRANSFORMATION
+
+    ids = list(record.derived_from_license_ids or ())
+    for t in record.transformations or ():
+        if isinstance(t, dict) and t.get("kind") == EDIT_TRANSFORMATION:
+            ids.append(t.get("source_license_id") or "unknown")  # fail closed
+    return list(dict.fromkeys(ids))
+
+
+def _bounded_by(flags: LicenseFlags, bound: LicenseFlags) -> LicenseFlags:
+    """``flags`` no wider than ``bound``: each permission of
+    :data:`_DERIVATIVE_SHARED_FLAGS` only when both hold it, attribution when either
+    requires it, the lower revenue cap. ``cache_bytes_ok`` stays ``flags``' (it is about
+    storing these bytes, not the source's)."""
+    caps = [c for c in (flags.revenue_cap_usd, bound.revenue_cap_usd) if c is not None]
+    return replace(
+        flags,
+        **{
+            n: bool(getattr(flags, n) and getattr(bound, n))
+            for n in _DERIVATIVE_SHARED_FLAGS
+        },
+        requires_attribution=flags.requires_attribution or bound.requires_attribution,
+        revenue_cap_usd=min(caps) if caps else None,
+    )
+
+
 def apply_license_flags(
     record: LicenseRecord, *, overrides: Optional[dict] = None
 ) -> LicenseRecord:
     """Populate ``record``'s eight derived flags from its ``license_id``
     (+ overrides), in place, and return it.
+
+    A derivative (an edit, #162) stays bounded by every licence it derives from
+    (:func:`derived_license_ids`): each one's row is ANDed in after the overrides, so
+    re-deriving its flags (a restamp to the generator's licence, a reload) never widens
+    them back (#214). A record that derives from nothing is unaffected.
 
     Does NOT touch ``rights_verified`` — verification is a separate concern.
 
@@ -558,8 +604,16 @@ def apply_license_flags(
 
     Returns:
         The same (mutated) ``record``.
+
+    >>> from foley.base import LicenseRecord
+    >>> edit = LicenseRecord(source="g", license_id="Stability-Community",
+    ...                      derived_from_license_ids=["CC-BY-NC-4.0"])
+    >>> apply_license_flags(edit, overrides={"commercial_ok": True}).commercial_ok
+    False
     """
     f = derive_license_flags(record.license_id, overrides=overrides)
+    for source_license_id in derived_license_ids(record):
+        f = _bounded_by(f, derive_license_flags(source_license_id))
     record.commercial_ok = f.commercial_ok
     record.embed_in_derivative_ok = f.embed_in_derivative_ok
     record.redistribute_standalone_ok = f.redistribute_standalone_ok
@@ -831,6 +885,18 @@ def narrow_to_source(output: LicenseRecord, source: LicenseRecord) -> LicenseRec
     >>> narrowed.commercial_ok, narrowed.requires_attribution, narrowed.revenue_cap_usd
     (False, True, 1000000)
     """
+    # Recorded first, so the narrowing outlives this call: every later re-derivation of
+    # the output's flags (apply_license_flags) is bounded by the source's licence, and
+    # by the licences the source itself derives from (#214).
+    output.derived_from_license_ids = list(
+        dict.fromkeys(
+            [
+                *derived_license_ids(output),
+                *derived_license_ids(source),
+                source.license_id,
+            ]
+        )
+    )
     # The source's row too: a hand-set flag never grants more than its licence id does.
     row = derive_license_flags(source.license_id)
     overrides = {
