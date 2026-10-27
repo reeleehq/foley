@@ -20,6 +20,8 @@ once, for every V2A backend:
   (``probe=``; default :func:`default_probe`: ``ffprobe`` on ``PATH``, else mixing's
   ``probe_duration`` through mixing's ffmpeg resolver; ``None`` when it cannot be read,
   which prices the call as an unknown cost, needing approval).
+* :func:`has_audio_stream`: whether a media file has an audio stream (``ffprobe``,
+  else ``soundfile``; ``None`` when it cannot tell).
 * :func:`local_video_file`: a local file for an uploader (bytes are written to a
   temporary file whose suffix is sniffed from them: :func:`video_suffix`).
 * :func:`audio_track`: the audio of a backend's muxed video answer (MMAudio,
@@ -109,6 +111,9 @@ _ISO_BRAND_SUFFIX = {b"qt  ": ".mov"}
 DEFAULT_VIDEO_SUFFIX = ".mp4"
 #: ``video -> seconds | None``: how :func:`video_seconds` reads a local file's length.
 Probe = Callable[[str], Optional[float]]
+#: ``path -> True | False | None``: whether a media file has an audio stream
+#: (``None``: it cannot tell). :func:`has_audio_stream` is the default.
+AudioStreamCheck = Callable[[str], Optional[bool]]
 
 
 def video_url(video: VideoInput) -> Optional[str]:
@@ -385,6 +390,45 @@ def ffprobe_seconds(path: str, *, ffprobe: Optional[str] = None) -> Optional[flo
         return float(out.stdout.strip())
     except (OSError, subprocess.SubprocessError, ValueError):
         return None
+
+
+def has_audio_stream(path: str, *, ffprobe: Optional[str] = None) -> Optional[bool]:
+    """Whether the media file at ``path`` has an audio stream, or ``None`` when that
+    cannot be told.
+
+    By ``ffprobe`` (default: the one on ``PATH``; bounded by :data:`PROBE_TIMEOUT_S`):
+    ``True`` when it lists an audio stream, ``False`` when it lists none or cannot
+    read the file (a video-only mp4, a gif, an error page), ``None`` when it cannot
+    run or runs too long. Without ``ffprobe``, by ``soundfile`` (the decoder
+    :func:`foley.audio.load` uses): ``True`` when it decodes the file to one or more
+    channels, else ``None`` (it reads no video container, so its refusal says
+    nothing). A caller that needs an answer treats ``None`` as no (fail closed).
+    """
+    exe = ffprobe or shutil.which("ffprobe")
+    if exe is None:
+        return _soundfile_has_audio(path)
+    try:
+        out = subprocess.run(
+            [exe, "-v", "error", "-select_streams", "a",
+             "-show_entries", "stream=codec_type", "-of", "csv=p=0", path],
+            capture_output=True, text=True, timeout=PROBE_TIMEOUT_S,
+        )  # fmt: skip
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return out.returncode == 0 and "audio" in out.stdout.split()
+
+
+def _soundfile_has_audio(path: str) -> Optional[bool]:
+    """``True`` when ``soundfile`` decodes ``path`` to at least one channel, else ``None``."""
+    try:
+        import soundfile
+    except ImportError:  # foley's audio extra is not installed
+        return None
+    try:
+        info = soundfile.info(path)
+    except Exception:  # noqa: BLE001 - a format libsndfile does not read: unknown
+        return None
+    return True if info.channels > 0 and info.frames > 0 else None
 
 
 def mixing_seconds(path: str) -> Optional[float]:

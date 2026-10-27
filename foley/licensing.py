@@ -256,6 +256,33 @@ def _has_phrase(tokens: "list[str]", *phrase: str) -> bool:
     return any(tuple(tokens[i : i + n]) == phrase for i in range(len(tokens) - n + 1))
 
 
+def _refused_cc_terms(tokens: "list[str]") -> "tuple[str, ...]":
+    """The NoDerivatives / ShareAlike terms among a CC string's ``tokens``."""
+    toks = set(tokens)
+    nd = bool(toks & _ND_TOKENS) or any(
+        _has_phrase(tokens, "no", w) for w in ("derivatives", "derivs")
+    )
+    sa = bool(toks & _SA_TOKENS) or _has_phrase(tokens, "share", "alike")
+    return (("NoDerivatives",) if nd else ()) + (("ShareAlike",) if sa else ())
+
+
+def cc_refused_terms(url: Optional[str]) -> "tuple[str, ...]":
+    """The NoDerivatives / ShareAlike terms of a CC licence URL or label.
+
+    :func:`license_id_from_cc_url` refuses these on purpose (foley has no licence row
+    expressing them, so it maps them to ``'unknown'``); this says *why* a URL was
+    refused, for a message that is not "cannot read a licence".
+
+    >>> cc_refused_terms("https://creativecommons.org/licenses/by-nc-sa/4.0/")
+    ('ShareAlike',)
+    >>> cc_refused_terms("CC BY-ND-SA"), cc_refused_terms("https://creativecommons.org/licenses/by/4.0/")
+    (('NoDerivatives', 'ShareAlike'), ())
+    >>> cc_refused_terms(None)
+    ()
+    """
+    return _refused_cc_terms(_cc_tokens(url)) if url else ()
+
+
 def license_id_from_cc_url(url: Optional[str]) -> "tuple[str, bool]":
     """Map a Creative-Commons license URL **or label** to ``(license_id, verified)``.
 
@@ -289,13 +316,7 @@ def license_id_from_cc_url(url: Optional[str]) -> "tuple[str, bool]":
         return "unknown", False
     tokens = _cc_tokens(url)
     toks = set(tokens)
-    if (
-        toks & _ND_TOKENS
-        or toks & _SA_TOKENS
-        or _has_phrase(tokens, "no", "derivatives")
-        or _has_phrase(tokens, "no", "derivs")
-        or _has_phrase(tokens, "share", "alike")
-    ):
+    if _refused_cc_terms(tokens):
         return "unknown", False
     if "publicdomain" in toks or _has_phrase(tokens, "public", "domain"):
         tokens = _without_path_language(url, tokens)

@@ -163,3 +163,73 @@ def test_load_adapter_auto_wraps_external_source_transport():
     adapter = _load_adapter("freesound", SOURCE_CONFIG)  # external live source
     # the adapter's transport is the throttle/backoff/breaker wrapper, not the bare default
     assert hasattr(adapter._http, "reset")
+
+
+# --- Retry-After hardening (#201): HTTP-dates, unusable values, a wait over the cap ---
+
+
+def _retried_once(retry_after, *, retry=None, wall_clock=lambda: 0.0):
+    """The sleeps of one 429 (with ``retry_after``) then a 200."""
+    sleeps, answers = [], [_Resp(429, {"Retry-After": retry_after}), _Resp(200)]
+    w = resilient(
+        lambda *a, **k: answers.pop(0),
+        retry=retry or RetryPolicy(max_attempts=3, base_delay_s=1.0),
+        clock=lambda: 0.0,
+        sleep=sleeps.append,
+        wall_clock=wall_clock,
+    )
+    assert w("GET", "u").status_code == 200
+    return sleeps
+
+
+def test_an_http_date_retry_after_is_read_against_the_wall_clock():
+    when = "Wed, 21 Oct 2026 07:28:00 GMT"  # 1792567680 s since the epoch
+    assert _retried_once(when, wall_clock=lambda: 1792567670.0) == [10.0]
+
+
+@pytest.mark.parametrize(
+    "raw", ["-5", "nan", "inf", "-inf", "soon", "", "Wed, 21 Oct 2015 07:28:00 GMT"]
+)
+def test_an_unusable_retry_after_falls_back_to_the_backoff(raw):
+    """Negative, not finite, unreadable, or a date already past: the backoff
+    (1 s, the first step), never a negative or NaN sleep."""
+    assert _retried_once(raw, wall_clock=lambda: 1792567600.0) == [1.0]
+
+
+def test_integer_retry_after_and_its_cap_are_unchanged_by_default():
+    assert _retried_once("7") == [7.0]
+    assert _retried_once("600") == [30.0], "the default policy waits the cap"
+
+
+def test_a_policy_that_gives_up_over_the_cap_raises_without_waiting():
+    from foley.sources.resilience import RetryAfterTooLong
+
+    sleeps = []
+    w = resilient(
+        lambda *a, **k: _Resp(429, {"Retry-After": "600"}),
+        retry=RetryPolicy(max_delay_s=120.0, give_up_over_max_delay=True),
+        clock=lambda: 0.0,
+        sleep=sleeps.append,
+    )
+    with pytest.raises(RetryAfterTooLong) as info:
+        w("GET", "u")
+    assert isinstance(info.value, SourceUnavailable) and sleeps == []
+    assert (info.value.retry_after_s, info.value.max_delay_s) == (600.0, 120.0)
+    assert _retried_once(
+        "120", retry=RetryPolicy(max_delay_s=120.0, give_up_over_max_delay=True)
+    ) == [120.0], "at the cap is still waited"
+
+
+def test_pace_per_host_paces_each_host_on_its_own():
+    from foley.sources.resilience import pace_per_host
+
+    now, slept = [0.0], []
+    wait = pace_per_host({"per_min": 60}, clock=lambda: now[0], sleep=slept.append)
+    wait("https://a.org/1")
+    wait("https://b.org/1")
+    now[0] = 0.25
+    wait("https://A.org/2")  # host names are case-insensitive
+    assert slept == [0.75]
+    nothing = pace_per_host(None, clock=lambda: 0.0, sleep=slept.append)
+    nothing("https://a.org/1"), nothing("https://a.org/2")
+    assert slept == [0.75]
