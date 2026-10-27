@@ -14,6 +14,10 @@ once, for every V2A backend:
   is keyed as the URL.
 * [`replayable()`](#foley.sources.video.replayable): whether an identical request may be served from the cache. Not
   for a bare remote URL: the content behind it may have changed (#173).
+* [`recorded_video_key()`](#foley.sources.video.recorded_video_key): the key as it is **written down** (a cache entry, a run
+  manifest, a licence): a bare URL without its query, fragment or credentials, so a
+  presigned URL’s token never reaches a record (#184). The request digest still
+  hashes [`video_key()`](#foley.sources.video.video_key).
 * [`video_seconds()`](#foley.sources.video.video_seconds): its length, for a backend priced per second of the video
   (`probe=`; default [`default_probe()`](#foley.sources.video.default_probe): `ffprobe` on `PATH`, else mixing’s
   `probe_duration` through mixing’s ffmpeg resolver; `None` when it cannot be read,
@@ -24,8 +28,8 @@ once, for every V2A backend:
   ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via
   `ffmpeg` ([`ffmpeg_path()`](#foley.sources.video.ffmpeg_path)).
 * [`keyed()`](#foley.sources.video.keyed): affordances as they may be recorded (the cache entry, the run
-  manifest): the video replaced by its key, so neither its bytes nor a local path
-  (nor an upload’s capability URL) is ever written down.
+  manifest): the video replaced by its recorded key, so neither its bytes nor a local
+  path (nor an upload’s capability URL, nor a presigned URL’s token) is written down.
 
 Stdlib only (mixing is used when installed, never required).
 
@@ -40,25 +44,27 @@ Stdlib only (mixing is used when installed, never required).
 | [`PROBE_TIMEOUT_S`](#foley.sources.video.PROBE_TIMEOUT_S)       | The most [`ffprobe_seconds()`](#foley.sources.video.ffprobe_seconds) lets ffprobe run (s).  |
 | [`DEFAULT_VIDEO_SUFFIX`](#foley.sources.video.DEFAULT_VIDEO_SUFFIX)  | The suffix of bytes no signature matches (and of every other ISO BMFF brand).                      |
 | [`Probe`](#foley.sources.video.Probe)                 | how [`video_seconds()`](#foley.sources.video.video_seconds) reads a local file's length.  |
+| [`REDACTED_QUERY`](#foley.sources.video.REDACTED_QUERY)        | What stands in for a recorded URL's query and fragment.                                            |
 
 ### Functions
 
-| [`audio_track`](#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s])   | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                                                                                                                                                     |
-|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`default_probe`](#foley.sources.video.default_probe)(path)                               | [`ffprobe_seconds()`](#foley.sources.video.ffprobe_seconds) (bounded by [`PROBE_TIMEOUT_S`](#foley.sources.video.PROBE_TIMEOUT_S)) when `ffprobe` is on `PATH`, else [`mixing_seconds()`](#foley.sources.video.mixing_seconds). |
-| [`fal_immutable_url`](#foley.sources.video.fal_immutable_url)(url)                            | falaw's `is_immutable_url` (fal's own CDN mints a new URL per upload), else `False` when falaw is not installed: an unknown URL is taken as mutable.                                                                                                  |
-| [`ffmpeg_path`](#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                           |
-| [`ffprobe_seconds`](#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])              | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                  |
-| [`is_url`](#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                                                                                                                                                  |
-| [`is_video_key`](#foley.sources.video.is_video_key)(value)                               | Whether `value` is already a key [`video_key()`](#foley.sources.video.video_key) makes (as a cache entry keeps it).                                                                                                                      |
-| [`keyed`](#foley.sources.video.keyed)(affordances)                                | `affordances` with a `video` replaced by [`video_key()`](#foley.sources.video.video_key) (else unchanged).                                                                                                                               |
-| [`local_video_file`](#foley.sources.video.local_video_file)(video, \*[, suffix])             | A local path holding `video` (bytes are written to a temporary file).                                                                                                                                                                                 |
-| [`mixing_seconds`](#foley.sources.video.mixing_seconds)(path)                              | The length by mixing's `probe_duration` (`ffmpeg -i` through mixing's ffmpeg resolver, a pip-bundled ffmpeg too), or `None` when mixing's video stack is not installed or finds no ffmpeg.                                                            |
-| [`replayable`](#foley.sources.video.replayable)(affordances, \*[, is_immutable])       | Whether an identical request may be served from the cache (#173).                                                                                                                                                                                     |
-| [`video_key`](#foley.sources.video.video_key)(video)                                  | The cache identity of `video`: its content digest, or a bare remote URL as is.                                                                                                                                                                        |
-| [`video_seconds`](#foley.sources.video.video_seconds)(video, \*[, probe])                 | The length of a local `video` in seconds, or `None` when it cannot be read.                                                                                                                                                                           |
-| [`video_suffix`](#foley.sources.video.video_suffix)(data)                                | The file suffix of encoded video `data`, sniffed from its first bytes.                                                                                                                                                                                |
-| [`video_url`](#foley.sources.video.video_url)(video)                                  | The URL a backend fetches `video` from itself, or `None` (a path or bytes).                                                                                                                                                                           |
+| [`audio_track`](#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s])   | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                                                                                                                                                                                                                                                        |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`default_probe`](#foley.sources.video.default_probe)(path)                               | [`ffprobe_seconds()`](#foley.sources.video.ffprobe_seconds) (bounded by [`PROBE_TIMEOUT_S`](#foley.sources.video.PROBE_TIMEOUT_S)) when `ffprobe` is on `PATH`, else [`mixing_seconds()`](#foley.sources.video.mixing_seconds).                                                                                                    |
+| [`fal_immutable_url`](#foley.sources.video.fal_immutable_url)(url)                            | falaw's `is_immutable_url` (fal's own CDN mints a new URL per upload), else `False` when falaw is not installed: an unknown URL is taken as mutable.                                                                                                                                                                                                     |
+| [`ffmpeg_path`](#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                                                                                                                              |
+| [`ffprobe_seconds`](#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])              | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                                                                                                                     |
+| [`is_url`](#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                                                                                                                                                                                                                                                     |
+| [`is_video_key`](#foley.sources.video.is_video_key)(value)                               | Whether `value` is already a key [`video_key()`](#foley.sources.video.video_key) makes (as a cache entry keeps it).                                                                                                                                                                                                                         |
+| [`keyed`](#foley.sources.video.keyed)(affordances, \*[, key])                     | `affordances` with a `video` replaced by its `key` (else unchanged).                                                                                                                                                                                                                                                                                     |
+| [`local_video_file`](#foley.sources.video.local_video_file)(video, \*[, suffix])             | A local path holding `video` (bytes are written to a temporary file).                                                                                                                                                                                                                                                                                    |
+| [`mixing_seconds`](#foley.sources.video.mixing_seconds)(path)                              | The length by mixing's `probe_duration` (`ffmpeg -i` through mixing's ffmpeg resolver, a pip-bundled ffmpeg too), or `None` when mixing's video stack is not installed or finds no ffmpeg.                                                                                                                                                               |
+| [`recorded_video_key`](#foley.sources.video.recorded_video_key)(video)                         | [`video_key()`](#foley.sources.video.video_key) as it is written down: a bare URL keeps its scheme, host and path only (#184): its query, fragment and `;` path parameters (a presigned URL's signature, a session id) become [`REDACTED_QUERY`](#foley.sources.video.REDACTED_QUERY), and credentials before the host are dropped. |
+| [`replayable`](#foley.sources.video.replayable)(affordances, \*[, is_immutable])       | Whether an identical request may be served from the cache (#173).                                                                                                                                                                                                                                                                                        |
+| [`video_key`](#foley.sources.video.video_key)(video)                                  | The cache identity of `video`: its content digest, or a bare remote URL as is.                                                                                                                                                                                                                                                                           |
+| [`video_seconds`](#foley.sources.video.video_seconds)(video, \*[, probe])                 | The length of a local `video` in seconds, or `None` when it cannot be read.                                                                                                                                                                                                                                                                              |
+| [`video_suffix`](#foley.sources.video.video_suffix)(data)                                | The file suffix of encoded video `data`, sniffed from its first bytes.                                                                                                                                                                                                                                                                                   |
+| [`video_url`](#foley.sources.video.video_url)(video)                                  | The URL a backend fetches `video` from itself, or `None` (a path or bytes).                                                                                                                                                                                                                                                                              |
 
 ### Classes
 
@@ -85,6 +91,10 @@ how [`video_seconds()`](#foley.sources.video.video_seconds) reads a local file�
   `video -> seconds | None`
 
 alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
+
+### foley.sources.video.REDACTED_QUERY *= '?…'*
+
+What stands in for a recorded URL’s query and fragment.
 
 ### foley.sources.video.REMOTE_SCHEMES *= ('http://', 'https://')*
 
@@ -202,9 +212,12 @@ Whether `value` is already a key [`video_key()`](#foley.sources.video.video_key)
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
-### foley.sources.video.keyed(affordances)
+### foley.sources.video.keyed(affordances, \*, key=<function recorded_video_key>)
 
-`affordances` with a `video` replaced by [`video_key()`](#foley.sources.video.video_key) (else unchanged).
+`affordances` with a `video` replaced by its `key` (else unchanged).
+
+The default is the key as it is written down ([`recorded_video_key()`](#foley.sources.video.recorded_video_key)); the
+request digest passes `key=video_key`, the full identity, which is only hashed.
 
 ```pycon
 >>> keyed({"video": b"abc", "duration_s": 2})["video"][:15], keyed({"seed": 1})
@@ -233,6 +246,27 @@ installed or finds no ffmpeg. Unbounded: mixing’s probe has no timeout yet
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### foley.sources.video.recorded_video_key(video)
+
+[`video_key()`](#foley.sources.video.video_key) as it is written down: a bare URL keeps its scheme, host and
+path only (#184): its query, fragment and `;` path parameters (a presigned URL’s
+signature, a session id) become [`REDACTED_QUERY`](#foley.sources.video.REDACTED_QUERY), and credentials before
+the host are dropped. Two URLs that differ only there record (and are found by
+[`find()`](foley.stores.html.md#foley.stores.GenerationsCache.find)) as one, as a re-signed URL should.
+An already recorded or bare `url:` key is redacted the same way.
+
+```pycon
+>>> recorded_video_key("https://u:p@bucket.s3.example/a.mp4?X-Amz-Signature=s3cr3t")
+'url:https://bucket.s3.example/a.mp4?…'
+>>> recorded_video_key("https://[::1]:8080/a.mp4;jsessionid=X#t=2")
+'url:https://[::1]:8080/a.mp4?…'
+>>> recorded_video_key("https://x/a.mp4"), recorded_video_key(b"abc")[:11]
+('url:https://x/a.mp4', 'sha256:ba78')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.sources.video.replayable(affordances, \*, is_immutable=<function fal_immutable_url>)
 

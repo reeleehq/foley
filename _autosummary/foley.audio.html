@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=04662272"></script>
+    <script src="../_static/documentation_options.js?v=339ea818"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.85" />
+  <meta name="docsearch:version" content="0.0.86" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -743,7 +743,7 @@ applies it only to a clip just over the clipping gate.</p>
 <li><p><strong>sample_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Sample rate in Hz (passed to the true-peak measurement).</p></li>
 <li><p><strong>ceiling_dbtp</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – The true-peak ceiling in dBTP (default: foley’s -1 dBTP).</p></li>
 <li><p><strong>oversample</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</span>) – Oversampling factor for the true-peak estimate (default: the
-QC table’s <code class="docutils literal notranslate"><span class="pre">true_peak_oversample</span></code>).</p></li>
+QC table’s <code class="docutils literal notranslate"><span class="pre">true_peak_oversample</span></code>, <code class="docutils literal notranslate"><span class="pre">None</span></code>: mixing’s own).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -754,7 +754,7 @@ QC table’s <code class="docutils literal notranslate"><span class="pre">true_p
 as is — when the clip is already under the ceiling or is silent.</p>
 </dd>
 </dl>
-<p>Lazy dependency: <code class="docutils literal notranslate"><span class="pre">numpy</span></code> (via <a class="reference internal" href="foley.qc.html#foley.qc.true_peak_dbtp" title="foley.qc.true_peak_dbtp"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.qc.true_peak_dbtp()</span></code></a>).</p>
+<p>Lazy dependency: <code class="docutils literal notranslate"><span class="pre">mixing[loudness]</span></code> (via <a class="reference internal" href="foley.qc.html#foley.qc.true_peak_dbtp" title="foley.qc.true_peak_dbtp"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.qc.true_peak_dbtp()</span></code></a>).</p>
 </dd></dl>
 
 <dl class="py function">

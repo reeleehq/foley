@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=04662272"></script>
+    <script src="../../_static/documentation_options.js?v=339ea818"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.85" />
+  <meta name="docsearch:version" content="0.0.86" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -727,10 +727,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    This module imports **stdlib only** at the top level. ``numpy`` is</span>
 <span class="sd">    lazy-imported inside each function body (like ``foley.audio``), so</span>
 <span class="sd">    ``import foley.qc`` succeeds on a bare install with no scientific stack.</span>
-<span class="sd">    The :func:`measure_lufs` meter (:mod:`mixing.loudness`, via</span>
-<span class="sd">    :func:`foley.audio.integrated_lufs`) is lazy and it returns ``None`` when it</span>
-<span class="sd">    (or a measurable clip) is absent; everything else is</span>
-<span class="sd">    numpy-only.</span>
+<span class="sd">    The loudness and true-peak meters (:mod:`mixing.loudness`: :func:`measure_lufs`</span>
+<span class="sd">    via :func:`foley.audio.integrated_lufs`, and :func:`true_peak_dbtp`) are lazy;</span>
+<span class="sd">    :func:`run_qc` reports ``None`` for each when mixing (or a measurable clip) is</span>
+<span class="sd">    absent. Everything else is numpy-only.</span>
 
 <span class="sd">Waveform convention:</span>
 <span class="sd">    ``samples`` is a float array shaped ``(frames,)`` (mono) or</span>
@@ -824,7 +824,9 @@ window.runMermaid = runMermaid;</script>
     <span class="n">clip_reject_run</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1"># any run &gt;= 10 samples =&gt; fail</span>
     <span class="c1"># true peak</span>
     <span class="n">true_peak_max_dbtp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
-    <span class="n">true_peak_oversample</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
+    <span class="c1">#: ``None``: mixing's own factor (4x, raised under 48 kHz so the oversampled rate</span>
+    <span class="c1">#: stays at least 192 kHz): the limiter uses the same, so the two agree.</span>
+    <span class="n">true_peak_oversample</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="c1"># dc offset</span>
     <span class="n">dc_offset_fail</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>  <span class="c1"># |mean| &gt; 0.01 =&gt; correct/warn</span>
     <span class="n">dc_offset_warn</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.001</span>  <span class="c1"># 0.001..0.01 =&gt; note</span>
@@ -894,28 +896,6 @@ window.runMermaid = runMermaid;</script>
     <span class="n">starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">diff</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
     <span class="n">ends</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">diff</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ends</span> <span class="o">-</span> <span class="n">starts</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_upsample_fft</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="s2">"np.ndarray"</span><span class="p">,</span> <span class="n">factor</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"np.ndarray"</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Band-limited ``factor``x upsampling of a 1-D real signal via zero-padding</span>
-<span class="sd">    the ``rfft`` spectrum. Amplitude-preserving (scaled by ``factor``)."""</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-
-    <span class="n">n</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">factor</span> <span class="o">&lt;=</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">x</span>
-    <span class="n">n_up</span> <span class="o">=</span> <span class="n">n</span> <span class="o">*</span> <span class="n">factor</span>
-    <span class="n">spec</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">rfft</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="n">spec_up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_up</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">complex</span><span class="p">)</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">spec_up</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-    <span class="n">spec_up</span><span class="p">[:</span><span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[:</span><span class="n">m</span><span class="p">]</span>
-    <span class="c1"># For even n, bin n//2 is the original Nyquist (a real cosine at f_s/2). After</span>
-    <span class="c1"># zero-pad upsampling it is no longer the Nyquist of the longer signal, so its</span>
-    <span class="c1"># energy must be split in half — else the reconstruction (and the true-peak</span>
-    <span class="c1"># estimate riding on it) over-reports by up to +6 dB (cf. scipy.signal.resample).</span>
-    <span class="k">if</span> <span class="n">n</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">m</span> <span class="o">==</span> <span class="n">n</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">spec_up</span><span class="p">[</span><span class="n">n</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*=</span> <span class="mf">0.5</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">irfft</span><span class="p">(</span><span class="n">spec_up</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n_up</span><span class="p">)</span> <span class="o">*</span> <span class="n">factor</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_frame_rms</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="s2">"np.ndarray"</span><span class="p">,</span> <span class="n">frame_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">hop</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"np.ndarray"</span><span class="p">:</span>
@@ -1054,26 +1034,29 @@ window.runMermaid = runMermaid;</script>
     <span class="n">samples</span><span class="p">:</span> <span class="s2">"np.ndarray"</span><span class="p">,</span>
     <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">oversample</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_QC_THRESHOLDS</span><span class="o">.</span><span class="n">true_peak_oversample</span><span class="p">,</span>
+    <span class="n">oversample</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_QC_THRESHOLDS</span><span class="o">.</span><span class="n">true_peak_oversample</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Inter-sample true-peak level in dBTP.</span>
+<span class="w">    </span><span class="sd">"""Inter-sample true-peak level in dBTP (``-inf`` for a silent clip).</span>
 
-<span class="sd">    Each channel is band-limited-upsampled ``oversample``x (numpy FFT), the</span>
-<span class="sd">    peak magnitude is taken across all channels, and converted to dBTP. Returns</span>
-<span class="sd">    ``-inf`` for a fully silent clip. ``sample_rate`` is accepted for interface</span>
-<span class="sd">    symmetry (FFT interpolation is rate-independent).</span>
+<span class="sd">    The fleet's one true-peak meter, :func:`mixing.loudness.true_peak_db` (#190): a</span>
+<span class="sd">    windowed-sinc ``oversample``x interpolation (default ``None``: mixing's own 4x,</span>
+<span class="sd">    raised for rates under 48 kHz, the factor its limiter uses too),</span>
+<span class="sd">    chunked, so it costs little memory on a long programme, with the signal taken as</span>
+<span class="sd">    silent outside its span (no wrap-around over-read at the edges). Content between</span>
+<span class="sd">    about 0.47 fs and Nyquist reads up to ~0.5 dB low.</span>
+
+<span class="sd">    Lazy dependency: ``mixing[loudness]`` (``foley[audio]``).</span>
 <span class="sd">    """</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-    <span class="n">a</span> <span class="o">=</span> <span class="n">_as_2d</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
-    <span class="n">peak</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
-        <span class="n">up</span> <span class="o">=</span> <span class="n">_upsample_fft</span><span class="p">(</span><span class="n">a</span><span class="p">[:,</span> <span class="n">c</span><span class="p">],</span> <span class="n">oversample</span><span class="p">)</span>
-        <span class="n">chan_peak</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">up</span><span class="p">)))</span> <span class="k">if</span> <span class="n">up</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="mf">0.0</span>
-        <span class="n">peak</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">peak</span><span class="p">,</span> <span class="n">chan_peak</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">peak</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"-inf"</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="mf">20.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">peak</span><span class="p">))</span></div>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">loudness_component</span>
+
+    <span class="n">factor</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">oversample</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="n">oversample</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span>
+        <span class="n">loudness_component</span><span class="p">()</span><span class="o">.</span><span class="n">true_peak_db</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">samples</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">sample_rate</span><span class="p">),</span> <span class="n">oversampling</span><span class="o">=</span><span class="n">factor</span>
+        <span class="p">)</span>
+    <span class="p">)</span></div>
 
 
 
@@ -1316,9 +1299,12 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
     <span class="n">dc</span> <span class="o">=</span> <span class="n">dc_offset</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
     <span class="n">edge</span> <span class="o">=</span> <span class="n">needs_edge_fade</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">rel_peak_dbfs</span><span class="o">=</span><span class="n">thresholds</span><span class="o">.</span><span class="n">edge_rel_peak_dbfs</span><span class="p">)</span>
-    <span class="n">true_peak</span> <span class="o">=</span> <span class="n">true_peak_dbtp</span><span class="p">(</span>
-        <span class="n">a</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="n">thresholds</span><span class="o">.</span><span class="n">true_peak_oversample</span>
-    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">true_peak</span> <span class="o">=</span> <span class="n">true_peak_dbtp</span><span class="p">(</span>
+            <span class="n">a</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="n">thresholds</span><span class="o">.</span><span class="n">true_peak_oversample</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>  <span class="c1"># no mixing[loudness]: not measured, as LUFS</span>
+        <span class="n">true_peak</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">snr</span> <span class="o">=</span> <span class="n">estimate_snr</span><span class="p">(</span>
         <span class="n">a</span><span class="p">,</span>
         <span class="n">sample_rate</span><span class="p">,</span>

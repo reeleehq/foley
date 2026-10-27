@@ -1,4 +1,4 @@
-> built 2026-10-27 07:20 UTC from 03f65e0 (main) · foley 0.0.85. Details: build_info.json
+> built 2026-10-27 07:46 UTC from 6616f4c (main) · foley 0.0.86. Details: build_info.json
 
 # index.html.md
 
@@ -2481,14 +2481,14 @@ applies it only to a clip just over the clipping gate.
   * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz (passed to the true-peak measurement).
   * **ceiling_dbtp** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The true-peak ceiling in dBTP (default: foley’s -1 dBTP).
   * **oversample** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Oversampling factor for the true-peak estimate (default: the
-    QC table’s `true_peak_oversample`).
+    QC table’s `true_peak_oversample`, `None`: mixing’s own).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 * **Returns:**
   `(attenuated, gain_db)`. `gain_db` is `0.0` — and `samples` comes back
   as is — when the clip is already under the ceiling or is silent.
 
-Lazy dependency: `numpy` (via [`foley.qc.true_peak_dbtp()`](_autosummary/foley.qc.html.md#foley.qc.true_peak_dbtp)).
+Lazy dependency: `mixing[loudness]` (via [`foley.qc.true_peak_dbtp()`](_autosummary/foley.qc.html.md#foley.qc.true_peak_dbtp)).
 
 ### foley.audio.load(src, , target_sr=None, mono=False, dtype='float32')
 
@@ -5413,7 +5413,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`dc_offset`](_autosummary/foley.html.md#foley.dc_offset)(samples)                                  | Largest per-channel absolute DC offset, `max_c |mean_n x[n, c]|`.                                                                                                              |
 | [`is_silent`](_autosummary/foley.html.md#foley.is_silent)(samples, \*[, rms_floor_dbfs])            | Return `True` when whole-clip RMS falls below `rms_floor_dbfs`.                                                                                                                |
 | [`detect_clipping`](_autosummary/foley.html.md#foley.detect_clipping)(samples, \*[, full_scale, ...])     | Detect hard (flat-topped) clipping.                                                                                                                                            |
-| [`true_peak_dbtp`](_autosummary/foley.html.md#foley.true_peak_dbtp)(samples, sample_rate, \*[, ...])     | Inter-sample true-peak level in dBTP.                                                                                                                                          |
+| [`true_peak_dbtp`](_autosummary/foley.html.md#foley.true_peak_dbtp)(samples, sample_rate, \*[, ...])     | Inter-sample true-peak level in dBTP (`-inf` for a silent clip).                                                                                                               |
 | [`estimate_snr`](_autosummary/foley.html.md#foley.estimate_snr)(samples, sample_rate, \*[, ...])       | Estimate SNR in dB (advisory — a busy-street SFX legitimately scores low).                                                                                                     |
 | [`needs_edge_fade`](_autosummary/foley.html.md#foley.needs_edge_fade)(samples, \*[, rel_peak_dbfs])       | Return `True` when the first or last sample sits above `rel_peak_dbfs` relative to the clip peak — i.e. a nonzero boundary that clicks under narration and needs a short fade. |
 | [`measure_lufs`](_autosummary/foley.html.md#foley.measure_lufs)(samples, sample_rate, \*[, ...])       | Integrated loudness (LUFS, ITU-R BS.1770-4) via [`foley.audio.integrated_lufs()`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs).                    |
@@ -6546,7 +6546,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Overall verdict for a clip (subclasses `str` so it is JSON-safe).
 
-### *class* foley.QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)
+### *class* foley.QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -6554,6 +6554,14 @@ All Tier-0 QC defaults (report 08 §3 table), each an explicit field.
 
 Grouped by check. Pass a customized instance to [`run_qc()`](_autosummary/foley.html.md#foley.run_qc) (or the
 per-check keyword arguments) to override any threshold without editing code.
+
+#### true_peak_oversample *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[int](https://docs.python.org/3/builtins/functions.html#int)]* *= None*
+
+mixing’s own factor (4x, raised under 48 kHz so the oversampled rate
+stays at least 192 kHz): the limiter uses the same, so the two agree.
+
+* **Type:**
+  `None`
 
 ### *exception* foley.RecognizableVoiceRefusal(message, , hits, report)
 
@@ -8053,7 +8061,7 @@ Ingest every audio file under `path` and return an [`IngestReport`](_autosummary
 * **Returns:**
   An [`IngestReport`](_autosummary/foley.html.md#foley.IngestReport) (with `.summary()` counts and per-file results).
 
-### foley.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, commercial=None)
+### foley.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, commercial=None)
 
 Ingest one clip into `library` and return an [`IngestResult`](_autosummary/foley.html.md#foley.IngestResult).
 
@@ -8692,7 +8700,7 @@ records in place:
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `license` or `select` is unknown.
 
-### foley.run_qc(samples, sample_rate, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
+### foley.run_qc(samples, sample_rate, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
 
 Run every Tier-0 check and fold the results into a [`QCReport`](_autosummary/foley.html.md#foley.QCReport).
 
@@ -8936,14 +8944,18 @@ axis 0, preserving its channel layout.
 
 Lazy dependency: `librosa`.
 
-### foley.true_peak_dbtp(samples, sample_rate, , oversample=4)
+### foley.true_peak_dbtp(samples, sample_rate, , oversample=None)
 
-Inter-sample true-peak level in dBTP.
+Inter-sample true-peak level in dBTP (`-inf` for a silent clip).
 
-Each channel is band-limited-upsampled `oversample``x (numpy FFT), the
-peak magnitude is taken across all channels, and converted to dBTP. Returns
-``-inf` for a fully silent clip. `sample_rate` is accepted for interface
-symmetry (FFT interpolation is rate-independent).
+The fleet’s one true-peak meter, `mixing.loudness.true_peak_db()` (#190): a
+windowed-sinc `oversample``x interpolation (default ``None`: mixing’s own 4x,
+raised for rates under 48 kHz, the factor its limiter uses too),
+chunked, so it costs little memory on a long programme, with the signal taken as
+silent outside its span (no wrap-around over-read at the edges). Content between
+about 0.47 fs and Nyquist reads up to ~0.5 dB low.
+
+Lazy dependency: `mixing[loudness]` (`foley[audio]`).
 
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
@@ -10155,7 +10167,7 @@ Ingest every audio file under `path` and return an [`IngestReport`](_autosummary
 * **Returns:**
   An [`IngestReport`](_autosummary/foley.index.html.md#foley.index.IngestReport) (with `.summary()` counts and per-file results).
 
-### foley.index.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, commercial=None)
+### foley.index.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, commercial=None)
 
 Ingest one clip into `library` and return an [`IngestResult`](_autosummary/foley.index.html.md#foley.index.IngestResult).
 
@@ -10870,7 +10882,7 @@ Ingest every audio file under `path` and return an [`IngestReport`](_autosummary
 * **Returns:**
   An [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport) (with `.summary()` counts and per-file results).
 
-### foley.index.ingest.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, commercial=None)
+### foley.index.ingest.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, commercial=None)
 
 Ingest one clip into `library` and return an [`IngestResult`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestResult).
 
@@ -14206,7 +14218,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix intro', 'netflix sound', 'tudum', 'ta-dum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel jingle', 'intel bong', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta-dum', 'ta dum', 'tudum', 'netflix chime', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -14721,10 +14733,10 @@ Zero-dependency import contract:
 : This module imports **stdlib only** at the top level. `numpy` is
   lazy-imported inside each function body (like `foley.audio`), so
   `import foley.qc` succeeds on a bare install with no scientific stack.
-  The [`measure_lufs()`](_autosummary/foley.qc.html.md#foley.qc.measure_lufs) meter (`mixing.loudness`, via
-  [`foley.audio.integrated_lufs()`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs)) is lazy and it returns `None` when it
-  (or a measurable clip) is absent; everything else is
-  numpy-only.
+  The loudness and true-peak meters (`mixing.loudness`: [`measure_lufs()`](_autosummary/foley.qc.html.md#foley.qc.measure_lufs)
+  via [`foley.audio.integrated_lufs()`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs), and [`true_peak_dbtp()`](_autosummary/foley.qc.html.md#foley.qc.true_peak_dbtp)) are lazy;
+  [`run_qc()`](_autosummary/foley.qc.html.md#foley.qc.run_qc) reports `None` for each when mixing (or a measurable clip) is
+  absent. Everything else is numpy-only.
 
 Waveform convention:
 : `samples` is a float array shaped `(frames,)` (mono) or
@@ -14758,7 +14770,7 @@ sound_record.qc = report.to_dict()   # becomes filterable metadata
 | [`measure_lufs`](_autosummary/foley.qc.html.md#foley.qc.measure_lufs)(samples, sample_rate, \*[, ...])   | Integrated loudness (LUFS, ITU-R BS.1770-4) via [`foley.audio.integrated_lufs()`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs).                    |
 | [`needs_edge_fade`](_autosummary/foley.qc.html.md#foley.qc.needs_edge_fade)(samples, \*[, rel_peak_dbfs])   | Return `True` when the first or last sample sits above `rel_peak_dbfs` relative to the clip peak — i.e. a nonzero boundary that clicks under narration and needs a short fade. |
 | [`run_qc`](_autosummary/foley.qc.html.md#foley.qc.run_qc)(samples, sample_rate, \*[, thresholds])  | Run every Tier-0 check and fold the results into a [`QCReport`](_autosummary/foley.qc.html.md#foley.qc.QCReport).                                                                  |
-| [`true_peak_dbtp`](_autosummary/foley.qc.html.md#foley.qc.true_peak_dbtp)(samples, sample_rate, \*[, ...]) | Inter-sample true-peak level in dBTP.                                                                                                                                          |
+| [`true_peak_dbtp`](_autosummary/foley.qc.html.md#foley.qc.true_peak_dbtp)(samples, sample_rate, \*[, ...]) | Inter-sample true-peak level in dBTP (`-inf` for a silent clip).                                                                                                               |
 
 ### Classes
 
@@ -14775,7 +14787,7 @@ stored (their notes travel with the record); only `fail` clips are quarantined.
 * **Type:**
   The admission floor foley’s ingest uses unless told otherwise
 
-### foley.qc.DEFAULT_QC_THRESHOLDS *= QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)*
+### foley.qc.DEFAULT_QC_THRESHOLDS *= QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)*
 
 The shipped default thresholds; the default for every keyword below.
 
@@ -14816,7 +14828,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Overall verdict for a clip (subclasses `str` so it is JSON-safe).
 
-### *class* foley.qc.QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)
+### *class* foley.qc.QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -14824,6 +14836,14 @@ All Tier-0 QC defaults (report 08 §3 table), each an explicit field.
 
 Grouped by check. Pass a customized instance to [`run_qc()`](_autosummary/foley.qc.html.md#foley.qc.run_qc) (or the
 per-check keyword arguments) to override any threshold without editing code.
+
+#### true_peak_oversample *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[int](https://docs.python.org/3/builtins/functions.html#int)]* *= None*
+
+mixing’s own factor (4x, raised under 48 kHz so the oversampled rate
+stays at least 192 kHz): the limiter uses the same, so the two agree.
+
+* **Type:**
+  `None`
 
 ### foley.qc.QC_STATUS_RANK *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)* *= {'fail': 0, 'pass': 2, 'warn': 1}*
 
@@ -14940,7 +14960,7 @@ narration and needs a short fade.
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
-### foley.qc.run_qc(samples, sample_rate, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
+### foley.qc.run_qc(samples, sample_rate, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
 
 Run every Tier-0 check and fold the results into a [`QCReport`](_autosummary/foley.qc.html.md#foley.qc.QCReport).
 
@@ -14969,14 +14989,18 @@ stage).
 * **Returns:**
   A populated [`QCReport`](_autosummary/foley.qc.html.md#foley.qc.QCReport).
 
-### foley.qc.true_peak_dbtp(samples, sample_rate, , oversample=4)
+### foley.qc.true_peak_dbtp(samples, sample_rate, , oversample=None)
 
-Inter-sample true-peak level in dBTP.
+Inter-sample true-peak level in dBTP (`-inf` for a silent clip).
 
-Each channel is band-limited-upsampled `oversample``x (numpy FFT), the
-peak magnitude is taken across all channels, and converted to dBTP. Returns
-``-inf` for a fully silent clip. `sample_rate` is accepted for interface
-symmetry (FFT interpolation is rate-independent).
+The fleet’s one true-peak meter, `mixing.loudness.true_peak_db()` (#190): a
+windowed-sinc `oversample``x interpolation (default ``None`: mixing’s own 4x,
+raised for rates under 48 kHz, the factor its limiter uses too),
+chunked, so it costs little memory on a long programme, with the signal taken as
+silent outside its span (no wrap-around over-read at the edges). Content between
+about 0.47 fs and Nyquist reads up to ~0.5 dB low.
+
+Lazy dependency: `mixing[loudness]` (`foley[audio]`).
 
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
@@ -15115,7 +15139,7 @@ True when at least one fix was applied.
 
 The QC report of the clip as it now stands (`after` when repaired).
 
-### foley.repair.repair(samples, sample_rate, , report=None, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), min_status=QCStatus.warn, fade_s=0.02, ceiling_dbtp=-1.5, max_clipped_ratio=0.001, max_clipped_run=50)
+### foley.repair.repair(samples, sample_rate, , report=None, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), min_status=QCStatus.warn, fade_s=0.02, ceiling_dbtp=-1.5, max_clipped_ratio=0.001, max_clipped_run=50)
 
 Apply the fixes `report` suggests to `samples` and QC the result again.
 
@@ -15148,7 +15172,7 @@ clears here clears there.
 
 Lazy dependencies: `numpy`; `soxr` when `sample_rate` is not the working rate.
 
-### foley.repair.repair_bytes(audio_bytes, , policy=True, admit=QCStatus.warn, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
+### foley.repair.repair_bytes(audio_bytes, , policy=True, admit=QCStatus.warn, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
 
 [`repair()`](_autosummary/foley.repair.html.md#foley.repair.repair) over an encoded clip: decode, QC, apply `policy`, re-encode if it cleared.
 
@@ -15176,7 +15200,7 @@ decode and nothing else.
 
 Lazy dependencies: `soundfile`, `numpy`; `soxr` off the working rate.
 
-### foley.repair.suggested_fixes(report, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
+### foley.repair.suggested_fixes(report, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
 
 The fixes `report` calls for: [`FIX_FADE`](_autosummary/foley.repair.html.md#foley.repair.FIX_FADE) (an edge click) and/or
 `FIX_LIMIT` (a clip event, or a true peak over the ceiling).
@@ -15184,7 +15208,7 @@ The fixes `report` calls for: [`FIX_FADE`](_autosummary/foley.repair.html.md#fol
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### foley.repair.unrepairable(report, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), max_clipped_ratio=0.001, max_clipped_run=50)
+### foley.repair.unrepairable(report, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), max_clipped_ratio=0.001, max_clipped_run=50)
 
 Why `report`’s faults are beyond a Tier-0 repair — `None` when they are not.
 
@@ -19099,6 +19123,10 @@ once, for every V2A backend:
   is keyed as the URL.
 * [`replayable()`](_autosummary/foley.sources.video.html.md#foley.sources.video.replayable): whether an identical request may be served from the cache. Not
   for a bare remote URL: the content behind it may have changed (#173).
+* [`recorded_video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.recorded_video_key): the key as it is **written down** (a cache entry, a run
+  manifest, a licence): a bare URL without its query, fragment or credentials, so a
+  presigned URL’s token never reaches a record (#184). The request digest still
+  hashes [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key).
 * [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds): its length, for a backend priced per second of the video
   (`probe=`; default [`default_probe()`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe): `ffprobe` on `PATH`, else mixing’s
   `probe_duration` through mixing’s ffmpeg resolver; `None` when it cannot be read,
@@ -19109,8 +19137,8 @@ once, for every V2A backend:
   ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via
   `ffmpeg` ([`ffmpeg_path()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)).
 * [`keyed()`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed): affordances as they may be recorded (the cache entry, the run
-  manifest): the video replaced by its key, so neither its bytes nor a local path
-  (nor an upload’s capability URL) is ever written down.
+  manifest): the video replaced by its recorded key, so neither its bytes nor a local
+  path (nor an upload’s capability URL, nor a presigned URL’s token) is written down.
 
 Stdlib only (mixing is used when installed, never required).
 
@@ -19125,25 +19153,27 @@ Stdlib only (mixing is used when installed, never required).
 | [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)       | The most [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) lets ffprobe run (s).  |
 | [`DEFAULT_VIDEO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_VIDEO_SUFFIX)  | The suffix of bytes no signature matches (and of every other ISO BMFF brand).                      |
 | [`Probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.Probe)                 | how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds) reads a local file's length.  |
+| [`REDACTED_QUERY`](_autosummary/foley.sources.video.html.md#foley.sources.video.REDACTED_QUERY)        | What stands in for a recorded URL's query and fragment.                                            |
 
 ### Functions
 
-| [`audio_track`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s])   | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                                                                                                                                                     |
-|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`default_probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe)(path)                               | [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) (bounded by [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)) when `ffprobe` is on `PATH`, else [`mixing_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds). |
-| [`fal_immutable_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.fal_immutable_url)(url)                            | falaw's `is_immutable_url` (fal's own CDN mints a new URL per upload), else `False` when falaw is not installed: an unknown URL is taken as mutable.                                                                                                  |
-| [`ffmpeg_path`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                           |
-| [`ffprobe_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])              | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                  |
-| [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                                                                                                                                                  |
-| [`is_video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_video_key)(value)                               | Whether `value` is already a key [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) makes (as a cache entry keeps it).                                                                                                                      |
-| [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances)                                | `affordances` with a `video` replaced by [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) (else unchanged).                                                                                                                               |
-| [`local_video_file`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file)(video, \*[, suffix])             | A local path holding `video` (bytes are written to a temporary file).                                                                                                                                                                                 |
-| [`mixing_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds)(path)                              | The length by mixing's `probe_duration` (`ffmpeg -i` through mixing's ffmpeg resolver, a pip-bundled ffmpeg too), or `None` when mixing's video stack is not installed or finds no ffmpeg.                                                            |
-| [`replayable`](_autosummary/foley.sources.video.html.md#foley.sources.video.replayable)(affordances, \*[, is_immutable])       | Whether an identical request may be served from the cache (#173).                                                                                                                                                                                     |
-| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                                  | The cache identity of `video`: its content digest, or a bare remote URL as is.                                                                                                                                                                        |
-| [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, probe])                 | The length of a local `video` in seconds, or `None` when it cannot be read.                                                                                                                                                                           |
-| [`video_suffix`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix)(data)                                | The file suffix of encoded video `data`, sniffed from its first bytes.                                                                                                                                                                                |
-| [`video_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_url)(video)                                  | The URL a backend fetches `video` from itself, or `None` (a path or bytes).                                                                                                                                                                           |
+| [`audio_track`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s])   | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                                                                                                                                                                                                                                                        |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`default_probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe)(path)                               | [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) (bounded by [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)) when `ffprobe` is on `PATH`, else [`mixing_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds).                                                                                                    |
+| [`fal_immutable_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.fal_immutable_url)(url)                            | falaw's `is_immutable_url` (fal's own CDN mints a new URL per upload), else `False` when falaw is not installed: an unknown URL is taken as mutable.                                                                                                                                                                                                     |
+| [`ffmpeg_path`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                                                                                                                              |
+| [`ffprobe_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])              | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                                                                                                                     |
+| [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                                                                                                                                                                                                                                                     |
+| [`is_video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_video_key)(value)                               | Whether `value` is already a key [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) makes (as a cache entry keeps it).                                                                                                                                                                                                                         |
+| [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances, \*[, key])                     | `affordances` with a `video` replaced by its `key` (else unchanged).                                                                                                                                                                                                                                                                                     |
+| [`local_video_file`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file)(video, \*[, suffix])             | A local path holding `video` (bytes are written to a temporary file).                                                                                                                                                                                                                                                                                    |
+| [`mixing_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds)(path)                              | The length by mixing's `probe_duration` (`ffmpeg -i` through mixing's ffmpeg resolver, a pip-bundled ffmpeg too), or `None` when mixing's video stack is not installed or finds no ffmpeg.                                                                                                                                                               |
+| [`recorded_video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.recorded_video_key)(video)                         | [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) as it is written down: a bare URL keeps its scheme, host and path only (#184): its query, fragment and `;` path parameters (a presigned URL's signature, a session id) become [`REDACTED_QUERY`](_autosummary/foley.sources.video.html.md#foley.sources.video.REDACTED_QUERY), and credentials before the host are dropped. |
+| [`replayable`](_autosummary/foley.sources.video.html.md#foley.sources.video.replayable)(affordances, \*[, is_immutable])       | Whether an identical request may be served from the cache (#173).                                                                                                                                                                                                                                                                                        |
+| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                                  | The cache identity of `video`: its content digest, or a bare remote URL as is.                                                                                                                                                                                                                                                                           |
+| [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, probe])                 | The length of a local `video` in seconds, or `None` when it cannot be read.                                                                                                                                                                                                                                                                              |
+| [`video_suffix`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix)(data)                                | The file suffix of encoded video `data`, sniffed from its first bytes.                                                                                                                                                                                                                                                                                   |
+| [`video_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_url)(video)                                  | The URL a backend fetches `video` from itself, or `None` (a path or bytes).                                                                                                                                                                                                                                                                              |
 
 ### Classes
 
@@ -19170,6 +19200,10 @@ how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.v
   `video -> seconds | None`
 
 alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
+
+### foley.sources.video.REDACTED_QUERY *= '?…'*
+
+What stands in for a recorded URL’s query and fragment.
 
 ### foley.sources.video.REMOTE_SCHEMES *= ('http://', 'https://')*
 
@@ -19287,9 +19321,12 @@ Whether `value` is already a key [`video_key()`](_autosummary/foley.sources.vide
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
-### foley.sources.video.keyed(affordances)
+### foley.sources.video.keyed(affordances, \*, key=<function recorded_video_key>)
 
-`affordances` with a `video` replaced by [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) (else unchanged).
+`affordances` with a `video` replaced by its `key` (else unchanged).
+
+The default is the key as it is written down ([`recorded_video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.recorded_video_key)); the
+request digest passes `key=video_key`, the full identity, which is only hashed.
 
 ```pycon
 >>> keyed({"video": b"abc", "duration_s": 2})["video"][:15], keyed({"seed": 1})
@@ -19318,6 +19355,27 @@ installed or finds no ffmpeg. Unbounded: mixing’s probe has no timeout yet
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### foley.sources.video.recorded_video_key(video)
+
+[`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) as it is written down: a bare URL keeps its scheme, host and
+path only (#184): its query, fragment and `;` path parameters (a presigned URL’s
+signature, a session id) become [`REDACTED_QUERY`](_autosummary/foley.sources.video.html.md#foley.sources.video.REDACTED_QUERY), and credentials before
+the host are dropped. Two URLs that differ only there record (and are found by
+[`find()`](_autosummary/foley.stores.html.md#foley.stores.GenerationsCache.find)) as one, as a re-signed URL should.
+An already recorded or bare `url:` key is redacted the same way.
+
+```pycon
+>>> recorded_video_key("https://u:p@bucket.s3.example/a.mp4?X-Amz-Signature=s3cr3t")
+'url:https://bucket.s3.example/a.mp4?…'
+>>> recorded_video_key("https://[::1]:8080/a.mp4;jsessionid=X#t=2")
+'url:https://[::1]:8080/a.mp4?…'
+>>> recorded_video_key("https://x/a.mp4"), recorded_video_key(b"abc")[:11]
+('url:https://x/a.mp4', 'sha256:ba78')
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.sources.video.replayable(affordances, \*, is_immutable=<function fal_immutable_url>)
 
@@ -20585,6 +20643,11 @@ The default `engine='auto'` masters fully in-process (portable, testable).
 errors, so weaving never depends on it. `ffmpeg` is a WEAVE system requirement (see
 [`foley.weave.requirements`](_autosummary/foley.weave.requirements.html.md#module-foley.weave.requirements)); everything is lazy so `import foley.weave` stays dol-only.
 
+### Module Attributes
+
+| [`TRIM_MARGIN_DB`](_autosummary/foley.weave.master.html.md#foley.weave.master.TRIM_MARGIN_DB)   | How far under the ceiling a trim aims, so the rounding of a float32 mix never reads over it (a few 1e-7 dB at most).   |
+|-------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+
 ### Functions
 
 | [`lookahead_true_peak_limit`](_autosummary/foley.weave.master.html.md#foley.weave.master.lookahead_true_peak_limit)(mix, sample_rate, ...)   | Hold `mix`'s inter-sample true peak at/below `ceiling_db` with a lookahead limiter.   |
@@ -20609,22 +20672,23 @@ Return the plain-dict form (for `WeaveResult.master_report` / obs).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
+### foley.weave.master.TRIM_MARGIN_DB *= 1e-05*
+
+How far under the ceiling a trim aims, so the rounding of a float32 mix never
+reads over it (a few 1e-7 dB at most).
+
 ### foley.weave.master.lookahead_true_peak_limit(mix, sample_rate, ceiling_db)
 
 Hold `mix`’s inter-sample true peak at/below `ceiling_db` with a lookahead limiter.
 
 The default `Limiter` (foley#91): `mixing.loudness.limit_peaks()` with
 `true_peak=True` turns down the peaks (the gain eases in and out over its 50 ms
-window), not the whole program. Its polyphase true-peak meter reads under foley’s
-FFT one ([`foley.qc.true_peak_dbtp()`](_autosummary/foley.qc.html.md#foley.qc.true_peak_dbtp), which the master report uses) on content
-near Nyquist, so whatever is left over that meter is then trimmed statically
-([`foley.audio.limit_true_peak()`](_autosummary/foley.audio.html.md#foley.audio.limit_true_peak)): the ceiling holds by the number the report
-shows, at the cost of turning the whole program down by that residual (about a
-dB on full-band noise; nothing on band-limited material). Deterministic, never
-raises the level; `mix` comes back as is (same object) when nothing is over,
-else with the same shape and dtype. A non-finite sample is limited as silence
-and put back where it was, so it neither spreads over the limiter’s window nor
-lets the overs around it through.
+window), not the whole program. What it leaves over the ceiling (it interpolates
+its gain between samples; reeleehq/mixing#92) is trimmed by [`master()`](_autosummary/foley.weave.master.html.md#foley.weave.master.master), which
+measures the result once. Deterministic, never raises the level; `mix` comes back
+as is (same object) when nothing is over, else with the same shape and dtype. A
+non-finite sample is limited as silence and put back where it was, so it neither
+spreads over the limiter’s window nor lets the overs around it through.
 
 * **Return type:**
   `ndarray`
@@ -20646,8 +20710,9 @@ Master `mix` to `profile` — LUFS-normalise then true-peak-limit (report 06 §5
     `profile.max_limiting_db` over the ceiling for it to take back down; an
     injected limiter gets a mix already held at the ceiling’s sample peak (no
     headroom is assumed of a stage foley does not know). In-process engine
-    only; the true peak in the report is always measured here, never taken
-    from the limiter.
+    only; the true peak in the report is always measured here, once, never
+    taken from the limiter, and whatever any limiter leaves over the ceiling is
+    trimmed by a static gain, so the ceiling holds by the reported number.
   * **meter** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A [`foley.audio.Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter) for the loudness stages (default
     [`foley.audio.DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER)).
 * **Return type:**
@@ -21274,20 +21339,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 07:20 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/03f65e0751b45c0a0747bc09af051e3bb30fe4c3"><code>03f65e0</code></a> on branch <code>main</code>, for **foley 0.0.85** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 07:46 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/6616f4cc549bb25edd71a3c60788f1a9dbcef996"><code>6616f4c</code></a> on branch <code>main</code>, for **foley 0.0.86** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.85) is behind the latest release on PyPI (0.0.86): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/03f65e0751b45c0a0747bc09af051e3bb30fe4c3"><code>03f65e0751b45c0a0747bc09af051e3bb30fe4c3</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/6616f4cc549bb25edd71a3c60788f1a9dbcef996"><code>6616f4cc549bb25edd71a3c60788f1a9dbcef996</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
-| Tags at this commit | <code>0.0.85</code>                                                                                                                                   |
+| Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
 | Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
@@ -21296,9 +21359,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40466260232">40466260232</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40468529067">40468529067</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>dee6a1ba93bacca3425592671eb3d1bd345696cd</code> (in the history of the built commit) |
+| Event commit | <code>7487f9588828a7a1d752b26751e302df17ae1a10</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -21323,13 +21386,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.86/">0.0.86</a>, newer than the documented version (0.0.85).
+Latest release: <a href="https://pypi.org/project/foley/0.0.86/">0.0.86</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 03f65e0751b45c0a0747bc09af051e3bb30fe4c3
+git checkout 6616f4cc549bb25edd71a3c60788f1a9dbcef996
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

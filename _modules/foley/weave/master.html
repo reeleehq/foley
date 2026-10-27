@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=04662272"></script>
+    <script src="../../../_static/documentation_options.js?v=339ea818"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.85" />
+  <meta name="docsearch:version" content="0.0.86" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -795,6 +795,37 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">true_peak_dbtp</span><span class="p">(</span><span class="n">mix</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">))</span>
 
 
+<span class="c1">#: How far under the ceiling a trim aims, so the rounding of a float32 mix never</span>
+<span class="c1">#: reads over it (a few 1e-7 dB at most).</span>
+<span class="n">TRIM_MARGIN_DB</span> <span class="o">=</span> <span class="mf">1e-5</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_held_at_ceiling</span><span class="p">(</span>
+    <span class="n">mix</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ceiling_db</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[ndarray, float]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``(mix, its true peak)`` with what a limiter left over ``ceiling_db`` trimmed.</span>
+
+<span class="sd">    One measurement (#159): a static gain scales the true peak exactly, so a trimmed</span>
+<span class="sd">    mix's peak is the ceiling and is not measured again (the gain is taken</span>
+<span class="sd">    :data:`TRIM_MARGIN_DB` lower, so float32 rounding cannot put it over). A</span>
+<span class="sd">    non-finite sample is measured as silence, so it cannot hide the overs around it.</span>
+<span class="sd">    ``mix`` comes back as is (same object) when it is under; a trim keeps its dtype.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        TypeError: If ``mix`` is not floating point (a limiter that returned ints).</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">mix</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"a limiter must return float samples, got </span><span class="si">{</span><span class="n">mix</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">mix</span><span class="p">)</span>
+    <span class="n">tp</span> <span class="o">=</span> <span class="n">_tp</span><span class="p">(</span><span class="n">mix</span> <span class="k">if</span> <span class="n">finite</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">finite</span><span class="p">,</span> <span class="n">mix</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">sample_rate</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">tp</span><span class="p">)</span> <span class="ow">or</span> <span class="n">tp</span> <span class="o">&lt;=</span> <span class="n">ceiling_db</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">mix</span><span class="p">,</span> <span class="n">tp</span>
+    <span class="n">gain</span> <span class="o">=</span> <span class="n">db_to_lin</span><span class="p">(</span><span class="n">ceiling_db</span> <span class="o">-</span> <span class="n">tp</span> <span class="o">-</span> <span class="n">TRIM_MARGIN_DB</span><span class="p">)</span>  <span class="c1"># float64, then one cast</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">mix</span> <span class="o">*</span> <span class="n">gain</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">mix</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">ceiling_db</span><span class="p">)</span>
+
+
 <div class="viewcode-block" id="lookahead_true_peak_limit">
 <a class="viewcode-back" href="../../../_autosummary/foley.weave.master.html#foley.weave.lookahead_true_peak_limit">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">lookahead_true_peak_limit</span><span class="p">(</span>
@@ -804,20 +835,16 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    The default :data:`Limiter` (foley#91): :func:`mixing.loudness.limit_peaks` with</span>
 <span class="sd">    ``true_peak=True`` turns down the peaks (the gain eases in and out over its 50 ms</span>
-<span class="sd">    window), not the whole program. Its polyphase true-peak meter reads under foley's</span>
-<span class="sd">    FFT one (:func:`foley.qc.true_peak_dbtp`, which the master report uses) on content</span>
-<span class="sd">    near Nyquist, so whatever is left over that meter is then trimmed statically</span>
-<span class="sd">    (:func:`foley.audio.limit_true_peak`): the ceiling holds by the number the report</span>
-<span class="sd">    shows, at the cost of turning the whole program down by that residual (about a</span>
-<span class="sd">    dB on full-band noise; nothing on band-limited material). Deterministic, never</span>
-<span class="sd">    raises the level; ``mix`` comes back as is (same object) when nothing is over,</span>
-<span class="sd">    else with the same shape and dtype. A non-finite sample is limited as silence</span>
-<span class="sd">    and put back where it was, so it neither spreads over the limiter's window nor</span>
-<span class="sd">    lets the overs around it through.</span>
+<span class="sd">    window), not the whole program. What it leaves over the ceiling (it interpolates</span>
+<span class="sd">    its gain between samples; reeleehq/mixing#92) is trimmed by :func:`master`, which</span>
+<span class="sd">    measures the result once. Deterministic, never raises the level; ``mix`` comes back</span>
+<span class="sd">    as is (same object) when nothing is over, else with the same shape and dtype. A</span>
+<span class="sd">    non-finite sample is limited as silence and put back where it was, so it neither</span>
+<span class="sd">    spreads over the limiter's window nor lets the overs around it through.</span>
 <span class="sd">    """</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">limit_true_peak</span><span class="p">,</span> <span class="n">loudness_component</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">loudness_component</span>
 
     <span class="n">frames</span> <span class="o">=</span> <span class="n">mix</span> <span class="k">if</span> <span class="n">mix</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">mix</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>  <span class="c1"># the limiter's (n, channels)</span>
     <span class="n">finite</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span>
@@ -825,7 +852,6 @@ window.runMermaid = runMermaid;</script>
     <span class="n">out</span> <span class="o">=</span> <span class="n">loudness_component</span><span class="p">()</span><span class="o">.</span><span class="n">limit_peaks</span><span class="p">(</span>
         <span class="n">work</span><span class="p">,</span> <span class="n">ceiling</span><span class="o">=</span><span class="n">db_to_lin</span><span class="p">(</span><span class="n">ceiling_db</span><span class="p">),</span> <span class="n">true_peak</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fs</span><span class="o">=</span><span class="n">sample_rate</span>
     <span class="p">)</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">limit_true_peak</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">ceiling_dbtp</span><span class="o">=</span><span class="n">ceiling_db</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">out</span> <span class="ow">is</span> <span class="n">work</span><span class="p">:</span>  <span class="c1"># nothing over the ceiling</span>
         <span class="k">return</span> <span class="n">mix</span>
     <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">mix</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># a fresh array from either stage</span>
@@ -946,8 +972,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            ``profile.max_limiting_db`` over the ceiling for it to take back down; an</span>
 <span class="sd">            injected limiter gets a mix already held at the ceiling's sample peak (no</span>
 <span class="sd">            headroom is assumed of a stage foley does not know). In-process engine</span>
-<span class="sd">            only; the true peak in the report is always measured here, never taken</span>
-<span class="sd">            from the limiter.</span>
+<span class="sd">            only; the true peak in the report is always measured here, once, never</span>
+<span class="sd">            taken from the limiter, and whatever any limiter leaves over the ceiling is</span>
+<span class="sd">            trimmed by a static gain, so the ceiling holds by the reported number.</span>
 <span class="sd">        meter: A :data:`foley.audio.Meter` for the loudness stages (default</span>
 <span class="sd">            :data:`foley.audio.DEFAULT_METER`).</span>
 
@@ -991,8 +1018,8 @@ window.runMermaid = runMermaid;</script>
     <span class="n">limited_mix</span> <span class="o">=</span> <span class="p">(</span><span class="n">limiter</span> <span class="ow">or</span> <span class="n">lookahead_true_peak_limit</span><span class="p">)(</span>
         <span class="n">normalized</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">profile</span><span class="o">.</span><span class="n">true_peak_db</span>
     <span class="p">)</span>
+    <span class="n">limited_mix</span><span class="p">,</span> <span class="n">tp</span> <span class="o">=</span> <span class="n">_held_at_ceiling</span><span class="p">(</span><span class="n">limited_mix</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">profile</span><span class="o">.</span><span class="n">true_peak_db</span><span class="p">)</span>
     <span class="n">limited</span> <span class="o">=</span> <span class="n">limited_mix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">normalized</span>
-    <span class="n">tp</span> <span class="o">=</span> <span class="n">_tp</span><span class="p">(</span><span class="n">limited_mix</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">)</span>
     <span class="n">output_lufs</span> <span class="o">=</span> <span class="n">_measure_lufs</span><span class="p">(</span><span class="n">limited_mix</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">meter</span><span class="o">=</span><span class="n">meter</span><span class="p">)</span>
     <span class="n">gain_db</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">output_lufs</span> <span class="o">-</span> <span class="n">input_lufs</span>

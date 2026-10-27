@@ -12,10 +12,10 @@ Zero-dependency import contract:
 : This module imports **stdlib only** at the top level. `numpy` is
   lazy-imported inside each function body (like `foley.audio`), so
   `import foley.qc` succeeds on a bare install with no scientific stack.
-  The [`measure_lufs()`](#foley.qc.measure_lufs) meter (`mixing.loudness`, via
-  [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs)) is lazy and it returns `None` when it
-  (or a measurable clip) is absent; everything else is
-  numpy-only.
+  The loudness and true-peak meters (`mixing.loudness`: [`measure_lufs()`](#foley.qc.measure_lufs)
+  via [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs), and [`true_peak_dbtp()`](#foley.qc.true_peak_dbtp)) are lazy;
+  [`run_qc()`](#foley.qc.run_qc) reports `None` for each when mixing (or a measurable clip) is
+  absent. Everything else is numpy-only.
 
 Waveform convention:
 : `samples` is a float array shaped `(frames,)` (mono) or
@@ -49,7 +49,7 @@ sound_record.qc = report.to_dict()   # becomes filterable metadata
 | [`measure_lufs`](#foley.qc.measure_lufs)(samples, sample_rate, \*[, ...])   | Integrated loudness (LUFS, ITU-R BS.1770-4) via [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs).                    |
 | [`needs_edge_fade`](#foley.qc.needs_edge_fade)(samples, \*[, rel_peak_dbfs])   | Return `True` when the first or last sample sits above `rel_peak_dbfs` relative to the clip peak — i.e. a nonzero boundary that clicks under narration and needs a short fade. |
 | [`run_qc`](#foley.qc.run_qc)(samples, sample_rate, \*[, thresholds])  | Run every Tier-0 check and fold the results into a [`QCReport`](#foley.qc.QCReport).                                                                  |
-| [`true_peak_dbtp`](#foley.qc.true_peak_dbtp)(samples, sample_rate, \*[, ...]) | Inter-sample true-peak level in dBTP.                                                                                                                                          |
+| [`true_peak_dbtp`](#foley.qc.true_peak_dbtp)(samples, sample_rate, \*[, ...]) | Inter-sample true-peak level in dBTP (`-inf` for a silent clip).                                                                                                               |
 
 ### Classes
 
@@ -66,7 +66,7 @@ stored (their notes travel with the record); only `fail` clips are quarantined.
 * **Type:**
   The admission floor foley’s ingest uses unless told otherwise
 
-### foley.qc.DEFAULT_QC_THRESHOLDS *= QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)*
+### foley.qc.DEFAULT_QC_THRESHOLDS *= QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)*
 
 The shipped default thresholds; the default for every keyword below.
 
@@ -107,7 +107,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Overall verdict for a clip (subclasses `str` so it is JSON-safe).
 
-### *class* foley.qc.QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)
+### *class* foley.qc.QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -115,6 +115,14 @@ All Tier-0 QC defaults (report 08 §3 table), each an explicit field.
 
 Grouped by check. Pass a customized instance to [`run_qc()`](#foley.qc.run_qc) (or the
 per-check keyword arguments) to override any threshold without editing code.
+
+#### true_peak_oversample *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[int](https://docs.python.org/3/builtins/functions.html#int)]* *= None*
+
+mixing’s own factor (4x, raised under 48 kHz so the oversampled rate
+stays at least 192 kHz): the limiter uses the same, so the two agree.
+
+* **Type:**
+  `None`
 
 ### foley.qc.QC_STATUS_RANK *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)* *= {'fail': 0, 'pass': 2, 'warn': 1}*
 
@@ -231,7 +239,7 @@ narration and needs a short fade.
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
-### foley.qc.run_qc(samples, sample_rate, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
+### foley.qc.run_qc(samples, sample_rate, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
 
 Run every Tier-0 check and fold the results into a [`QCReport`](#foley.qc.QCReport).
 
@@ -260,14 +268,18 @@ stage).
 * **Returns:**
   A populated [`QCReport`](#foley.qc.QCReport).
 
-### foley.qc.true_peak_dbtp(samples, sample_rate, , oversample=4)
+### foley.qc.true_peak_dbtp(samples, sample_rate, , oversample=None)
 
-Inter-sample true-peak level in dBTP.
+Inter-sample true-peak level in dBTP (`-inf` for a silent clip).
 
-Each channel is band-limited-upsampled `oversample``x (numpy FFT), the
-peak magnitude is taken across all channels, and converted to dBTP. Returns
-``-inf` for a fully silent clip. `sample_rate` is accepted for interface
-symmetry (FFT interpolation is rate-independent).
+The fleet’s one true-peak meter, `mixing.loudness.true_peak_db()` (#190): a
+windowed-sinc `oversample``x interpolation (default ``None`: mixing’s own 4x,
+raised for rates under 48 kHz, the factor its limiter uses too),
+chunked, so it costs little memory on a long programme, with the signal taken as
+silent outside its span (no wrap-around over-read at the edges). Content between
+about 0.47 fs and Nyquist reads up to ~0.5 dB low.
+
+Lazy dependency: `mixing[loudness]` (`foley[audio]`).
 
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)

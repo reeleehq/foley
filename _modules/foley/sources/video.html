@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=04662272"></script>
+    <script src="../../../_static/documentation_options.js?v=339ea818"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.85" />
+  <meta name="docsearch:version" content="0.0.86" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -729,6 +729,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">  is keyed as the URL.</span>
 <span class="sd">* :func:`replayable`: whether an identical request may be served from the cache. Not</span>
 <span class="sd">  for a bare remote URL: the content behind it may have changed (#173).</span>
+<span class="sd">* :func:`recorded_video_key`: the key as it is **written down** (a cache entry, a run</span>
+<span class="sd">  manifest, a licence): a bare URL without its query, fragment or credentials, so a</span>
+<span class="sd">  presigned URL's token never reaches a record (#184). The request digest still</span>
+<span class="sd">  hashes :func:`video_key`.</span>
 <span class="sd">* :func:`video_seconds`: its length, for a backend priced per second of the video</span>
 <span class="sd">  (``probe=``; default :func:`default_probe`: ``ffprobe`` on ``PATH``, else mixing's</span>
 <span class="sd">  ``probe_duration`` through mixing's ffmpeg resolver; ``None`` when it cannot be read,</span>
@@ -739,8 +743,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">  ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via</span>
 <span class="sd">  ``ffmpeg`` (:func:`ffmpeg_path`).</span>
 <span class="sd">* :func:`keyed`: affordances as they may be recorded (the cache entry, the run</span>
-<span class="sd">  manifest): the video replaced by its key, so neither its bytes nor a local path</span>
-<span class="sd">  (nor an upload's capability URL) is ever written down.</span>
+<span class="sd">  manifest): the video replaced by its recorded key, so neither its bytes nor a local</span>
+<span class="sd">  path (nor an upload's capability URL, nor a presigned URL's token) is written down.</span>
 
 <span class="sd">Stdlib only (mixing is used when installed, never required).</span>
 <span class="sd">"""</span>
@@ -906,17 +910,64 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="c1">#: What stands in for a recorded URL's query and fragment.</span>
+<span class="n">REDACTED_QUERY</span> <span class="o">=</span> <span class="s2">"?…"</span>
+
+
+<div class="viewcode-block" id="recorded_video_key">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.recorded_video_key">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">recorded_video_key</span><span class="p">(</span><span class="n">video</span><span class="p">:</span> <span class="n">VideoInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">""":func:`video_key` as it is written down: a bare URL keeps its scheme, host and</span>
+<span class="sd">    path only (#184): its query, fragment and ``;`` path parameters (a presigned URL's</span>
+<span class="sd">    signature, a session id) become :data:`REDACTED_QUERY`, and credentials before</span>
+<span class="sd">    the host are dropped. Two URLs that differ only there record (and are found by</span>
+<span class="sd">    :meth:`~foley.stores.GenerationsCache.find`) as one, as a re-signed URL should.</span>
+<span class="sd">    An already recorded or bare ``url:`` key is redacted the same way.</span>
+
+<span class="sd">    &gt;&gt;&gt; recorded_video_key("https://u:p@bucket.s3.example/a.mp4?X-Amz-Signature=s3cr3t")</span>
+<span class="sd">    'url:https://bucket.s3.example/a.mp4?…'</span>
+<span class="sd">    &gt;&gt;&gt; recorded_video_key("https://[::1]:8080/a.mp4;jsessionid=X#t=2")</span>
+<span class="sd">    'url:https://[::1]:8080/a.mp4?…'</span>
+<span class="sd">    &gt;&gt;&gt; recorded_video_key("https://x/a.mp4"), recorded_video_key(b"abc")[:11]</span>
+<span class="sd">    ('url:https://x/a.mp4', 'sha256:ba78')</span>
+<span class="sd">    """</span>
+    <span class="n">is_key</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">video</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">URL_KEY_PREFIX</span><span class="p">)</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">video</span> <span class="k">if</span> <span class="n">is_key</span> <span class="k">else</span> <span class="n">video_key</span><span class="p">(</span><span class="n">video</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">URL_KEY_PREFIX</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">key</span>
+    <span class="k">return</span> <span class="n">URL_KEY_PREFIX</span> <span class="o">+</span> <span class="n">_bare_url</span><span class="p">(</span><span class="n">key</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">URL_KEY_PREFIX</span><span class="p">)</span> <span class="p">:])</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bare_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``url`` without its userinfo, ``;`` parameters, query and fragment (string</span>
+<span class="sd">    surgery, so a malformed authority never raises)."""</span>
+    <span class="n">scheme</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">rest</span> <span class="o">=</span> <span class="n">url</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"://"</span><span class="p">)</span>
+    <span class="n">cut</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+        <span class="p">(</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="n">rest</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"?"</span><span class="p">),</span> <span class="n">rest</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"#"</span><span class="p">))</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">rest</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">head</span><span class="p">,</span> <span class="n">tail</span> <span class="o">=</span> <span class="n">rest</span><span class="p">[:</span><span class="n">cut</span><span class="p">],</span> <span class="n">rest</span><span class="p">[</span><span class="n">cut</span><span class="p">:]</span>
+    <span class="n">authority</span><span class="p">,</span> <span class="n">slash</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="n">head</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+    <span class="n">authority</span> <span class="o">=</span> <span class="n">authority</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="s2">"@"</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">kept</span> <span class="o">=</span> <span class="s2">"/"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">seg</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">";"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">seg</span> <span class="ow">in</span> <span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"/"</span><span class="p">))</span>
+    <span class="n">redacted</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">tail</span><span class="p">)</span> <span class="ow">or</span> <span class="n">kept</span> <span class="o">!=</span> <span class="n">path</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">scheme</span><span class="si">}</span><span class="s2">://</span><span class="si">{</span><span class="n">authority</span><span class="si">}{</span><span class="n">slash</span><span class="si">}{</span><span class="n">kept</span><span class="si">}</span><span class="s2">"</span> <span class="o">+</span> <span class="p">(</span><span class="n">REDACTED_QUERY</span> <span class="k">if</span> <span class="n">redacted</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+
+
 <div class="viewcode-block" id="keyed">
 <a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.keyed">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">keyed</span><span class="p">(</span><span class="n">affordances</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""``affordances`` with a ``video`` replaced by :func:`video_key` (else unchanged).</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">keyed</span><span class="p">(</span><span class="n">affordances</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">recorded_video_key</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``affordances`` with a ``video`` replaced by its ``key`` (else unchanged).</span>
+
+<span class="sd">    The default is the key as it is written down (:func:`recorded_video_key`); the</span>
+<span class="sd">    request digest passes ``key=video_key``, the full identity, which is only hashed.</span>
 
 <span class="sd">    &gt;&gt;&gt; keyed({"video": b"abc", "duration_s": 2})["video"][:15], keyed({"seed": 1})</span>
 <span class="sd">    ('sha256:ba7816bf', {'seed': 1})</span>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"video"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">affordances</span>
-    <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">affordances</span><span class="p">,</span> <span class="s2">"video"</span><span class="p">:</span> <span class="n">video_key</span><span class="p">(</span><span class="n">affordances</span><span class="p">[</span><span class="s2">"video"</span><span class="p">])}</span></div>
+    <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">affordances</span><span class="p">,</span> <span class="s2">"video"</span><span class="p">:</span> <span class="n">key</span><span class="p">(</span><span class="n">affordances</span><span class="p">[</span><span class="s2">"video"</span><span class="p">])}</span></div>
 
 
 

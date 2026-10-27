@@ -16,6 +16,7 @@ foley.sources.video
       PROBE_TIMEOUT_S
       DEFAULT_VIDEO_SUFFIX
       Probe
+      REDACTED_QUERY
    
    .. rubric:: Functions
 
@@ -31,6 +32,7 @@ foley.sources.video
       keyed
       local_video_file
       mixing_seconds
+      recorded_video_key
       replayable
       video_key
       video_seconds

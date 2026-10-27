@@ -180,14 +180,14 @@ applies it only to a clip just over the clipping gate.
   * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz (passed to the true-peak measurement).
   * **ceiling_dbtp** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The true-peak ceiling in dBTP (default: foley’s -1 dBTP).
   * **oversample** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Oversampling factor for the true-peak estimate (default: the
-    QC table’s `true_peak_oversample`).
+    QC table’s `true_peak_oversample`, `None`: mixing’s own).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 * **Returns:**
   `(attenuated, gain_db)`. `gain_db` is `0.0` — and `samples` comes back
   as is — when the clip is already under the ceiling or is silent.
 
-Lazy dependency: `numpy` (via [`foley.qc.true_peak_dbtp()`](foley.qc.html.md#foley.qc.true_peak_dbtp)).
+Lazy dependency: `mixing[loudness]` (via [`foley.qc.true_peak_dbtp()`](foley.qc.html.md#foley.qc.true_peak_dbtp)).
 
 ### foley.audio.load(src, , target_sr=None, mono=False, dtype='float32')
 

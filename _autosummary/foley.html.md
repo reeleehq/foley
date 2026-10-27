@@ -79,7 +79,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`dc_offset`](#foley.dc_offset)(samples)                                  | Largest per-channel absolute DC offset, `max_c |mean_n x[n, c]|`.                                                                                                              |
 | [`is_silent`](#foley.is_silent)(samples, \*[, rms_floor_dbfs])            | Return `True` when whole-clip RMS falls below `rms_floor_dbfs`.                                                                                                                |
 | [`detect_clipping`](#foley.detect_clipping)(samples, \*[, full_scale, ...])     | Detect hard (flat-topped) clipping.                                                                                                                                            |
-| [`true_peak_dbtp`](#foley.true_peak_dbtp)(samples, sample_rate, \*[, ...])     | Inter-sample true-peak level in dBTP.                                                                                                                                          |
+| [`true_peak_dbtp`](#foley.true_peak_dbtp)(samples, sample_rate, \*[, ...])     | Inter-sample true-peak level in dBTP (`-inf` for a silent clip).                                                                                                               |
 | [`estimate_snr`](#foley.estimate_snr)(samples, sample_rate, \*[, ...])       | Estimate SNR in dB (advisory — a busy-street SFX legitimately scores low).                                                                                                     |
 | [`needs_edge_fade`](#foley.needs_edge_fade)(samples, \*[, rel_peak_dbfs])       | Return `True` when the first or last sample sits above `rel_peak_dbfs` relative to the clip peak — i.e. a nonzero boundary that clicks under narration and needs a short fade. |
 | [`measure_lufs`](#foley.measure_lufs)(samples, sample_rate, \*[, ...])       | Integrated loudness (LUFS, ITU-R BS.1770-4) via [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs).                    |
@@ -1212,7 +1212,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Overall verdict for a clip (subclasses `str` so it is JSON-safe).
 
-### *class* foley.QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)
+### *class* foley.QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -1220,6 +1220,14 @@ All Tier-0 QC defaults (report 08 §3 table), each an explicit field.
 
 Grouped by check. Pass a customized instance to [`run_qc()`](#foley.run_qc) (or the
 per-check keyword arguments) to override any threshold without editing code.
+
+#### true_peak_oversample *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[int](https://docs.python.org/3/builtins/functions.html#int)]* *= None*
+
+mixing’s own factor (4x, raised under 48 kHz so the oversampled rate
+stays at least 192 kHz): the limiter uses the same, so the two agree.
+
+* **Type:**
+  `None`
 
 ### *exception* foley.RecognizableVoiceRefusal(message, , hits, report)
 
@@ -2719,7 +2727,7 @@ Ingest every audio file under `path` and return an [`IngestReport`](#foley.Inges
 * **Returns:**
   An [`IngestReport`](#foley.IngestReport) (with `.summary()` counts and per-file results).
 
-### foley.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, commercial=None)
+### foley.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, commercial=None)
 
 Ingest one clip into `library` and return an [`IngestResult`](#foley.IngestResult).
 
@@ -3358,7 +3366,7 @@ records in place:
 * **Raises:**
   [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `license` or `select` is unknown.
 
-### foley.run_qc(samples, sample_rate, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=4, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
+### foley.run_qc(samples, sample_rate, , thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100))
 
 Run every Tier-0 check and fold the results into a [`QCReport`](#foley.QCReport).
 
@@ -3602,14 +3610,18 @@ axis 0, preserving its channel layout.
 
 Lazy dependency: `librosa`.
 
-### foley.true_peak_dbtp(samples, sample_rate, , oversample=4)
+### foley.true_peak_dbtp(samples, sample_rate, , oversample=None)
 
-Inter-sample true-peak level in dBTP.
+Inter-sample true-peak level in dBTP (`-inf` for a silent clip).
 
-Each channel is band-limited-upsampled `oversample``x (numpy FFT), the
-peak magnitude is taken across all channels, and converted to dBTP. Returns
-``-inf` for a fully silent clip. `sample_rate` is accepted for interface
-symmetry (FFT interpolation is rate-independent).
+The fleet’s one true-peak meter, `mixing.loudness.true_peak_db()` (#190): a
+windowed-sinc `oversample``x interpolation (default ``None`: mixing’s own 4x,
+raised for rates under 48 kHz, the factor its limiter uses too),
+chunked, so it costs little memory on a long programme, with the signal taken as
+silent outside its span (no wrap-around over-read at the edges). Content between
+about 0.47 fs and Nyquist reads up to ~0.5 dB low.
+
+Lazy dependency: `mixing[loudness]` (`foley[audio]`).
 
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)

@@ -4,6 +4,12 @@ foley.weave.master
 .. automodule:: foley.weave.master
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      TRIM_MARGIN_DB
+   
    .. rubric:: Functions
 
    .. autosummary::
