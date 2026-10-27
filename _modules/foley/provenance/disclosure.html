@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=7ada5fdd"></script>
+    <script src="../../../_static/documentation_options.js?v=b153cf10"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.63" />
+  <meta name="docsearch:version" content="0.0.64" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -760,6 +760,8 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">MutableMapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.._version</span><span class="w"> </span><span class="kn">import</span> <span class="n">foley_version</span> <span class="k">as</span> <span class="n">_foley_version</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Candidate</span><span class="p">,</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">SoundRecord</span>
@@ -1236,15 +1238,6 @@ window.runMermaid = runMermaid;</script>
 <span class="p">}</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_foley_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
-
-        <span class="k">return</span> <span class="n">version</span><span class="p">(</span><span class="s2">"foley"</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>
-        <span class="k">return</span> <span class="s2">"unknown"</span>
-
-
 <div class="viewcode-block" id="build_content_credential">
 <a class="viewcode-back" href="../../../_autosummary/foley.provenance.disclosure.html#foley.provenance.disclosure.build_content_credential">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">build_content_credential</span><span class="p">(</span>
@@ -1402,6 +1395,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    declared as a ``componentOf`` ingredient (via :func:`as_c2pa_ingredient`) and its</span>
 <span class="sd">    ``placed`` action names it through ``parameters.ingredientIds``. A mix with no</span>
 <span class="sd">    (credentialed) ingredient asserts ``c2pa.created`` alone.</span>
+
+<span class="sd">    Signing embeds into WAV only: a credential with a non-WAV ``fmt`` stays sidecar-only.</span>
 <span class="sd">    """</span>
     <span class="n">ingredients</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">records</span><span class="p">:</span>

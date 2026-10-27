@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=7ada5fdd"></script>
+    <script src="../../_static/documentation_options.js?v=b153cf10"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.63" />
+  <meta name="docsearch:version" content="0.0.64" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -914,6 +914,10 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">lic</span><span class="p">,</span> <span class="s2">"is_ai_generated"</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
 
 
+<span class="c1">#: The one container the signer embeds into (the mix is rendered to WAV before signing).</span>
+<span class="n">_SIGNABLE_MIME</span> <span class="o">=</span> <span class="s2">"audio/wav"</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_c2pa_sign_wav</span><span class="p">(</span><span class="n">wav_bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">manifest</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">signer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Promote ``manifest`` into a signed, EMBEDDED C2PA manifest over ``wav_bytes``.</span>
 
@@ -933,7 +937,7 @@ window.runMermaid = runMermaid;</script>
 
     <span class="n">builder</span> <span class="o">=</span> <span class="n">c2pa</span><span class="o">.</span><span class="n">Builder</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">manifest</span><span class="p">))</span>
     <span class="n">dest</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
-    <span class="n">builder</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">signer</span><span class="p">,</span> <span class="s2">"audio/wav"</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">wav_bytes</span><span class="p">),</span> <span class="n">dest</span><span class="p">)</span>
+    <span class="n">builder</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">signer</span><span class="p">,</span> <span class="n">_SIGNABLE_MIME</span><span class="p">,</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">wav_bytes</span><span class="p">),</span> <span class="n">dest</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">dest</span><span class="o">.</span><span class="n">getvalue</span><span class="p">()</span>
 
 
@@ -951,6 +955,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    weaving never depends on it and a mis-versioned signer degrades gracefully.</span>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">cert</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">manifest_format</span> <span class="o">=</span> <span class="p">(</span><span class="n">credential</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"manifest"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"format"</span><span class="p">,</span> <span class="n">_SIGNABLE_MIME</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">manifest_format</span> <span class="o">!=</span> <span class="n">_SIGNABLE_MIME</span><span class="p">:</span>
+        <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">"C2PA signing supports WAV only (manifest format </span><span class="si">%r</span><span class="s2">); sidecar-only"</span><span class="p">,</span>
+            <span class="n">manifest_format</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
 
@@ -1045,7 +1056,10 @@ window.runMermaid = runMermaid;</script>
             <span class="n">asset_id</span><span class="o">=</span><span class="n">asset_id</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
-        <span class="k">pass</span>  <span class="c1"># fail-safe: never block the render on provenance</span>
+        <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">"provenance re-assertion failed; weaving continues without the mix credential"</span><span class="p">,</span>
+            <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>  <span class="c1"># fail-safe: never block the render on provenance</span>
     <span class="k">return</span> <span class="n">out</span></div>
 
 
