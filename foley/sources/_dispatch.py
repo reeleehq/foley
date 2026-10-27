@@ -51,6 +51,7 @@ from ocracy.kit import UnsupportedParameter, make_translator
 
 from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES, reject_renamed
 from .video import keyed as video_keyed
+from .video import replayable as video_replayable
 from .base import (
     check_prompt_influence,
     check_provider_params,
@@ -444,7 +445,9 @@ def plan_generation(
         config: The source config (default: ``adapter.config``, else the registry's).
         on_unsupported: See :func:`translate_affordances`.
         cache: A :class:`~foley.stores.GenerationsCache` (default: the local one).
-        reuse_cached: Serve an identical paid request from the cache (default ``True``).
+        reuse_cached: Serve an identical paid request from the cache (default ``True``;
+            never for a video given as a bare remote URL, see
+            :func:`foley.sources.video.replayable`).
         provider_params: Vendor-native params foley has no affordance for (#61). Kept
             out of the translation (the unsupported-parameter policy never sees them),
             checked against the source's ``provider_params`` policy first (a reserved
@@ -498,6 +501,14 @@ def plan_generation(
         plan.request_key = request_digest(
             backend, prompt, config, kept, salt, provider_params=plan.provider_params
         )
+        if reuse_cached and not video_replayable(kept):
+            plan.notes.append(
+                "the video is a remote URL whose content foley has not seen: what it "
+                "serves may have changed, so this request is not replayed from the "
+                "cache (pass video=foley.RemoteVideo(url=..., sha256=...) to key it by "
+                "content)"
+            )
+            reuse_cached = False
         if reuse_cached:
             # A paid sound already on this disk needs no egress and no spend.
             cache = cache if cache is not None else _default_cache()

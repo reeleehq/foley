@@ -203,6 +203,7 @@ from .sources import (
     candidate_of,
 )
 from .sources import generate as _generate_backend
+from .sources.video import RemoteVideo  # a video URL keyed by its content (#173)
 
 # --- eval: Tier-1 retrieval metrics + the nDCG PR gate (numpy lazy) -----------
 from . import eval  # noqa: A004 - deliberate: foley.eval is the retrieval-eval subpackage
@@ -417,6 +418,7 @@ __all__ = [
     # --- source: generation adapters (Stable Audio Open / ElevenLabs) --------
     "generate",
     "candidate_of",
+    "RemoteVideo",
     "GenerationError",
     # --- provenance: generation disclosure / watermark / safety (#9b) --------
     "SafetyRefusal",
@@ -782,8 +784,9 @@ def generate(
             ``ValueError`` before anything is paid for: use the unified argument.
         **affordances: Unified generation affordances (``duration_s``, ``model``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
-            ``output_format``, ``sample_rate``, ``expand_prompt`` — see
-            :data:`GENERATION_AFFORDANCES`).
+            ``output_format``, ``sample_rate``, ``expand_prompt``, ``video`` — see
+            :data:`GENERATION_AFFORDANCES`). A ``video`` given as a bare remote URL is
+            never replayed from the cache; :class:`RemoteVideo` keys it by content.
 
     Returns:
         The stored :class:`Candidate` (``origin=generated``) — its ``sound`` is the

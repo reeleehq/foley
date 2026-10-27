@@ -254,7 +254,8 @@ GENERATION_AFFORDANCES: dict[str, Affordance] = {
     "video": Affordance(
         "video",
         object,
-        "The picture to sound (a URL, a local path or bytes; keyed by content)",
+        "The picture to sound (a URL, a RemoteVideo, a local path or bytes; keyed "
+        "by content)",
         stage="generate",
         carries_meaning=True,
     ),

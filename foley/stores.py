@@ -326,6 +326,16 @@ class GenerationsCache:
         and come last, in listing order.
         """
         reject_renamed(affordances)
+        video = affordances.get("video")
+        if video is not None:  # kept by its key (#74): a value is found by its key
+            from .sources.video import is_video_key, video_key
+
+            if not is_video_key(video):
+                try:
+                    video = video_key(video)
+                except FileNotFoundError:  # a path that is gone matches nothing
+                    return []
+            affordances = {**affordances, "video": video}
         hits = []
         for key in list(self.requests):
             try:
