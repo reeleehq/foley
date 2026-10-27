@@ -25,6 +25,7 @@ from dataclasses import dataclass, field, replace
 from contextvars import ContextVar
 from typing import Callable, MutableMapping, Optional
 
+from .._version import foley_version as _foley_version
 from .redact import RedactionMode, Redactor
 from .run_artifact import RunManifest, SpanRecord, Step, emit_run_manifest
 from .trace import GENAI, Tracer, get_tracer
@@ -135,15 +136,6 @@ def _default_store() -> MutableMapping:
 
         _DEFAULT_STORE = make_run_store()
     return _DEFAULT_STORE
-
-
-def _foley_version() -> str:
-    try:
-        from importlib.metadata import version
-
-        return version("foley")
-    except Exception:  # pragma: no cover
-        return "unknown"
 
 
 # ---------------------------------------------------------------------------

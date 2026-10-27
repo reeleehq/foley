@@ -44,6 +44,8 @@ import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, MutableMapping, Optional, Protocol, runtime_checkable
 
+from .._version import foley_version as _foley_version
+
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from ..base import Candidate, LicenseRecord, SoundRecord
 
@@ -486,15 +488,6 @@ _MIME_BY_FORMAT = {
 }
 
 
-def _foley_version() -> str:
-    try:
-        from importlib.metadata import version
-
-        return version("foley")
-    except Exception:  # pragma: no cover
-        return "unknown"
-
-
 def build_content_credential(
     record: "CreditInput", *, asset_id: str, asset_hash: Optional[dict] = None
 ) -> dict:
@@ -644,6 +637,8 @@ def build_mix_credential(records, *, asset_id, ai_disclosed, watermark_meta, fmt
     declared as a ``componentOf`` ingredient (via :func:`as_c2pa_ingredient`) and its
     ``placed`` action names it through ``parameters.ingredientIds``. A mix with no
     (credentialed) ingredient asserts ``c2pa.created`` alone.
+
+    Signing embeds into WAV only: a credential with a non-WAV ``fmt`` stays sidecar-only.
     """
     ingredients = []
     for r in records:
