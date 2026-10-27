@@ -827,3 +827,82 @@ def test_a_non_derived_record_keeps_its_single_licence():
     labels = {a["label"]: a["data"] for a in cred["manifest"]["assertions"]}
     assert labels["stds.schema-org.CreativeWork"]["license"] == (
         "https://creativecommons.org/licenses/by/4.0/")
+
+
+def test_a_stored_null_lineage_reads_as_empty_and_never_crashes_a_restamp():
+    from foley.index.ingest import _rederived_from_url, _restamped
+    from foley.licensing import narrow_to_source
+
+    payload = _rights("CC-BY-NC-4.0").to_dict()
+    payload["derived_from_license_ids"] = None  # a JSON null in a stored record
+    payload["transformations"] = None
+    lic = LicenseRecord.from_dict(payload)
+    assert lic.derived_from_license_ids == [] and lic.transformations == []
+    lic.derived_from_license_ids = None  # set by hand after construction
+    lic.transformations = None
+    assert _restamped(lic, "CC0-1.0").derived_from_license_ids == []
+    lic.license_url = "https://creativecommons.org/licenses/by/4.0/"
+    assert _rederived_from_url(lic).derived_from_license_ids == []
+    out = apply_license_flags(LicenseRecord(source="g", license_id="Stability-Community"))
+    out.derived_from_license_ids = None
+    assert narrow_to_source(out, lic).derived_from_license_ids == ["CC-BY-NC-4.0"]
+
+
+def test_a_bootstrap_repair_keeps_the_lineage_and_never_widens_an_edit(library):
+    from types import SimpleNamespace
+
+    from foley.bootstrap import _repair_stored
+    from foley.index.ingest import IngestResult
+
+    sid = _add(library, "CC-BY-NC-4.0")
+    cand, _, _ = _edit(library, "extend", sid)
+    fresh = _rights("CC0-1.0")  # what the corpus metadata now says
+    res = IngestResult(id=cand.sound.id, status="skipped_dup")
+    _repair_stored(library, cand.sound.id, fresh, SimpleNamespace(meta={}), res)
+    lic = library.meta[cand.sound.id].license
+    assert lic.license_id == "CC0-1.0"
+    assert lic.derived_from_license_ids == ["CC-BY-NC-4.0"]
+    assert lic.transformations == cand.sound.license.transformations
+    assert lic.commercial_ok is False and lic.requires_attribution is True
+
+
+def test_a_legacy_edit_of_an_edit_is_bounded_by_its_parent_only():
+    """Pins a known limit (#214): an edit of an edit stored before
+    ``derived_from_license_ids`` keeps only its direct parent's licence (its edit
+    entry), so a restamp loses the grandparent's bound. No backfill is attempted."""
+    from foley.licensing import derived_license_ids, narrow_to_source
+
+    grandparent = _rights("CC-BY-NC-4.0")
+    parent = apply_license_flags(LicenseRecord(source="g", license_id="Stability-Community"))
+    narrow_to_source(parent, grandparent)
+    child = apply_license_flags(LicenseRecord(source="g", license_id="Stability-Community"))
+    narrow_to_source(child, parent)
+    child.transformations.append(
+        {"kind": "edit", "source_license_id": "Stability-Community"})
+    assert child.commercial_ok is False  # the new model: the chain binds it
+    payload = child.to_dict()
+    del payload["derived_from_license_ids"]  # as an 0.0.95 edit was stored
+    legacy = LicenseRecord.from_dict({**payload, "license_id": "CC0-1.0"})
+    assert derived_license_ids(legacy) == ["Stability-Community"]
+    restamped = apply_license_flags(legacy)
+    assert restamped.commercial_ok is True  # the NC grandparent is lost (known limit)
+    assert restamped.revenue_cap_usd == 1_000_000  # the parent's bound still holds
+
+
+def test_a_credential_listing_several_licences_says_all_of_them_apply(library):
+    from foley.provenance.disclosure import (
+        DERIVED_LICENSES_STATEMENT,
+        build_content_credential,
+    )
+
+    sid = _add(library, "CC-BY-NC-4.0")
+    cand, _, _ = _edit(library, "extend", sid)
+    cred = build_content_credential(cand.sound.license, asset_id="a")
+    work = {a["label"]: a["data"] for a in cred["manifest"]["assertions"]}[
+        "stds.schema-org.CreativeWork"]
+    assert isinstance(work["license"], list) and len(work["license"]) == 2
+    assert work["description"] == DERIVED_LICENSES_STATEMENT
+    plain = build_content_credential(_rights("CC-BY-4.0"), asset_id="b")
+    plain_work = {a["label"]: a["data"] for a in plain["manifest"]["assertions"]}[
+        "stds.schema-org.CreativeWork"]
+    assert "description" not in plain_work

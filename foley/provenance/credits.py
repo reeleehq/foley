@@ -82,8 +82,10 @@ class CreditEntry(SerializableMixin):
     # What an edit (#162) derives from, one dict per source (see derived_sources):
     # its id, content key, licence id / name / URL and its own credit line.
     derived_from: list = field(default_factory=list)
-    # Every licence the clip is bounded by besides its own (#214): its sources', and
-    # their sources' (foley.licensing.derived_license_ids). Empty: not derived.
+    # The licence of every sound the clip derives from (#214): its sources', and their
+    # sources' (foley.licensing.derived_license_ids). Each bounds it on top of its own
+    # licence_id, which may appear here too (an edit of a clip under the same licence).
+    # Empty: not derived.
     derived_license_ids: list = field(default_factory=list)
 
 
@@ -200,7 +202,8 @@ def credit_entry(record: CreditInput, *, title: Optional[str] = None) -> CreditE
     Every field is read straight off the :class:`~foley.base.LicenseRecord` (flags
     never re-derived); ``modified`` reflects a non-empty ``transformations`` list, and
     ``derived_from`` the sources an edit was made from (:func:`derived_sources`),
-    ``derived_license_ids`` every licence besides its own that bounds it.
+    ``derived_license_ids`` the licence of every sound it derives from (each bounds
+    it on top of its own).
 
     Args:
         record: A :class:`~foley.base.SoundRecord`, :class:`~foley.base.Candidate`,

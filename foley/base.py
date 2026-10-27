@@ -685,6 +685,14 @@ class LicenseRecord(SerializableMixin):
     verified_at: Optional[str] = None
     schema_version: int = SCHEMA_VERSION
 
+    def __post_init__(self):
+        # A stored JSON ``null`` (or a caller's ``None``) for a lineage list reads as
+        # empty, so no re-derivation or copy of the record trips on ``list(None)``.
+        if self.transformations is None:
+            self.transformations = []
+        if self.derived_from_license_ids is None:
+            self.derived_from_license_ids = []
+
 
 # ---------------------------------------------------------------------------
 # SoundRecord — canonical per-sound record

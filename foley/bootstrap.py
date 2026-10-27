@@ -33,7 +33,12 @@ from pathlib import Path
 from typing import Optional
 
 from .index.ingest import IngestReport, IngestResult, content_id, ingest_one
-from .licensing import DEFAULT_INTENDED_USE, derive_license_flags, keep
+from .licensing import (
+    DEFAULT_INTENDED_USE,
+    carry_lineage,
+    derive_license_flags,
+    keep,
+)
 from .sources.base import CorpusAdapter, bulk_license, select_corpora
 
 #: The intended use the Ring-1 commercial filter checks each clip against.
@@ -164,7 +169,7 @@ def _repair_stored(library, sound_id: str, lic, spec, res: IngestResult) -> None
         lic.rights_verified,
         lic.license_url,
     ):
-        lic.transformations = list(old.transformations)
+        carry_lineage(lic, old)  # keeps the edits and the licences bounding them
         rec.license = lic
         changes.append(f"licence {old.license_id} -> {lic.license_id}")
     withheld = spec.meta.get("withheld_caption")

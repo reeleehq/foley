@@ -566,6 +566,8 @@ def build_content_credential(
     derived = _derived_license_refs(lic, ingredients)
     if derived:  # a derived clip is under its own licence AND its sources' (#214)
         creative_work["license"] = list(dict.fromkeys([license_ref, *derived]))
+        # schema.org reads a list of licences as alternatives; this one is cumulative.
+        creative_work["description"] = DERIVED_LICENSES_STATEMENT
     if ingredients:  # ... and names each source it was made from
         creative_work["isBasedOn"] = [
             {
@@ -665,6 +667,14 @@ def _edit_source_ingredient(transformation, *, index: int) -> Optional[dict]:
         "instance_id": f"{C2PA_INGREDIENT_ID_PREFIX}source:{index}:{source['sound_id']}",
         INGREDIENT_SOURCE_KEY: source,
     }
+
+
+#: The ``CreativeWork.description`` of a derived clip, whose ``license`` is a list: every
+#: listed licence applies at once (the clip is bound by all of them), not a choice of one.
+DERIVED_LICENSES_STATEMENT = (
+    "Derived work: ALL of the listed licences apply together (the terms of each one "
+    "bind this work); they are not alternatives to choose between."
+)
 
 
 def _derived_license_refs(lic, ingredients) -> "list[str]":
