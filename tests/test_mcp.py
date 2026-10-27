@@ -341,3 +341,58 @@ def test_foley_find_returns_json_candidate_rows():
     finally:
         mcp._STATE.clear()
         mcp._STATE.update(saved)
+
+
+# --- #191: every verb that finds, places or renders a sound gates it under its intent
+
+
+def _hunyuan(wired, sid="rain"):
+    """Give ``sid`` a licence that grants nothing in the EU, GB or KR."""
+    wired.recs[sid] = SoundRecord(
+        **{**wired.recs[sid].__dict__, "license": LicenseRecord(
+            source="fal_hunyuan_foley", license_id="Tencent-Hunyuan-Community",
+            commercial_ok=True, rights_verified=True)}
+    )
+
+
+def test_search_and_similar_to_gate_rows_under_the_territory(wired):
+    _hunyuan(wired)
+    for verb, arg in ((mcp.foley_search, "x"), (mcp.foley_similar_to, "door")):
+        unstated = [r["id"] for r in verb(arg, k=5)]
+        assert "rain" not in unstated and unstated  # unstated territory: refused
+        assert "rain" not in [r["id"] for r in verb(arg, k=5, territory="FR")]
+        rows = verb(arg, k=5, territory="US")
+        assert "rain" in [r["id"] for r in rows]
+        assert all(r["license_ok"] is True for r in rows)
+        assert verb(arg, territory="Mars")[0]["status"] == "invalid"
+
+
+def test_search_drops_unverified_rights_even_for_non_commercial_use(wired):
+    rec = wired.recs["thunder"]
+    wired.recs["thunder"] = SoundRecord(**{**rec.__dict__, "license": LicenseRecord(
+        source="user", license_id="CC0-1.0", commercial_ok=True, rights_verified=False)})
+    ids = [r["id"] for r in mcp.foley_search("x", k=5, commercial_ok=False)]
+    assert "thunder" not in ids and "door" in ids
+
+
+def test_plan_and_weave_recheck_picks_under_their_own_intent(wired):
+    _hunyuan(wired)
+    mcp.foley_search("x", k=5, territory="US")  # found (and cached) under a US intent
+    mcp.foley_pick("door")
+    mcp.foley_pick("rain")
+    out = mcp.foley_plan(transcript="rain fell")
+    assert out["status"] == "refused" and set(out["refused"]) == {"rain"}
+    assert "grants nothing" in out["refused"]["rain"] and json.dumps(out)
+    tl = mcp.foley_plan(transcript="rain fell", territory="US")
+    assert {it["clip_ref"] for it in tl["items"]} == {"door", "rain"}
+    for territory in (None, "GB", "WORLD"):
+        out = mcp.foley_weave("nar", tl, territory=territory)
+        assert out["status"] == "refused" and set(out["refused"]) == {"rain"}
+    woven = mcp.foley_weave("nar", tl, territory="US")
+    assert woven["audio_ref"] is not None
+    woven_tl = woven["timeline"]  # WEAVE gave each item its id
+    muted = mcp.foley_toggle(woven_tl, next(
+        it["id"] for it in woven_tl["items"] if it["clip_ref"] == "rain"), False)
+    assert mcp.foley_weave("nar", muted)["audio_ref"] is not None  # a muted clip is not used
+    assert mcp.foley_plan(territory="Mars")["status"] == "invalid"
+    assert mcp.foley_weave("nar", tl, territory="Mars")["status"] == "invalid"

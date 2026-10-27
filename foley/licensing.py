@@ -713,6 +713,24 @@ def keep_sound(sound_record, intended_use: IntendedUse) -> bool:
     return keep(sound_record.license, intended_use)
 
 
+def refusals(sound_records, intended_use: IntendedUse) -> "dict[str, str]":
+    """``{sound id: reason}`` for each record :func:`keep` refuses for ``intended_use``.
+
+    The re-check a placed sound gets where it is used (a plan, a weave), whatever
+    intent it was found under (#191). Fail-closed: a record whose licence cannot be
+    read is refused, with the error as its reason. Empty when every sound is kept.
+    """
+    out: "dict[str, str]" = {}
+    for record in sound_records:
+        try:
+            reason = refusal_reason(record.license, intended_use)
+        except Exception as exc:  # noqa: BLE001 - fail closed on ANY gate error
+            reason = f"its licence could not be checked ({type(exc).__name__}: {exc})"
+        if reason is not None:
+            out[str(getattr(record, "id", record))] = reason
+    return out
+
+
 _log = logging.getLogger(__name__)
 
 #: A Creative Commons / public-domain id even when foley has no metadata for it

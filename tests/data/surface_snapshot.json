@@ -15,13 +15,15 @@
       "commercial_ok": true,
       "ucs_category": null,
       "rerank": false,
-      "session": "default"
+      "session": "default",
+      "territory": null
     },
     "foley_similar_to": {
       "sound_id": "<required>",
       "k": 10,
       "commercial_ok": true,
-      "session": "default"
+      "session": "default",
+      "territory": null
     },
     "foley_preview": {
       "sound_id": "<required>",
@@ -64,12 +66,16 @@
     "foley_plan": {
       "session": "default",
       "transcript": null,
-      "candidate_ids": null
+      "candidate_ids": null,
+      "commercial_ok": true,
+      "territory": null
     },
     "foley_weave": {
       "narration": "<required>",
       "timeline": "<required>",
-      "session": "default"
+      "session": "default",
+      "commercial_ok": true,
+      "territory": null
     },
     "foley_swap_clip": {
       "timeline": "<required>",
