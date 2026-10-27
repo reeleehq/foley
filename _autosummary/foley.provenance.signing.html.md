@@ -38,9 +38,10 @@ inside the functions.
 
 ### Functions
 
-| [`make_c2pa_signer`](#foley.provenance.signing.make_c2pa_signer)(cert_chain_pem, ...[, alg, ...])   | A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.           |
-|------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
-| [`make_self_signed_c2pa_certs`](#foley.provenance.signing.make_self_signed_c2pa_certs)(\*[, ...])              | A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` (ES256) for dev and tests. |
+| [`c2pa_key_usage`](#foley.provenance.signing.c2pa_key_usage)(\*\*on)                            | An `x509.KeyUsage` with every flag off except those set in `on` (lazy `cryptography`).   |
+|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| [`make_c2pa_signer`](#foley.provenance.signing.make_c2pa_signer)(cert_chain_pem, ...[, alg, ...]) | A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.         |
+| [`make_self_signed_c2pa_certs`](#foley.provenance.signing.make_self_signed_c2pa_certs)(\*[, ...])            | A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` for dev and tests.       |
 
 ### foley.provenance.signing.C2PA_SIGNING_EKU_OIDS *= frozenset({'1.3.6.1.4.1.62558.2.1', '1.3.6.1.5.5.7.3.36', '1.3.6.1.5.5.7.3.4', '1.3.6.1.5.5.7.3.8', '1.3.6.1.5.5.7.3.9'})*
 
@@ -75,6 +76,13 @@ C2PA validators require an Organization in the end-entity subject.
 The SSOT for which algorithms [`make_c2pa_signer()`](#foley.provenance.signing.make_c2pa_signer) offers (PS\* = RSA-PSS). A new
 algorithm is a new row; `c2pa.C2paSigningAlg` must have the upper-cased name.
 
+### foley.provenance.signing.c2pa_key_usage(\*\*on)
+
+An `x509.KeyUsage` with every flag off except those set in `on` (lazy `cryptography`).
+
+* **Return type:**
+  x509.KeyUsage
+
 ### foley.provenance.signing.make_c2pa_signer(cert_chain_pem, private_key_pem, , alg='es256', tsa_url=None, password=None)
 
 A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.
@@ -94,15 +102,25 @@ A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.
         no acceptable ExtendedKeyUsage, an invalid validity window, or an RSA key under [`MIN_RSA_KEY_BITS`](#foley.provenance.signing.MIN_RSA_KEY_BITS)).
   * [**ImportError**](https://docs.python.org/3/builtins/exceptions.html#ImportError) – `c2pa-python` / `cryptography` missing (`pip install 'foley[c2pa]'`).
 
-### foley.provenance.signing.make_self_signed_c2pa_certs(, common_name='foley-dev-signer', valid_days=3650)
+### foley.provenance.signing.make_self_signed_c2pa_certs(, common_name='foley-dev-signer', valid_days=3650, backdate_days=1, key=None, end_entity_extensions=None)
 
-A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` (ES256) for dev and tests.
+A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` for dev and tests.
 
 A CA plus an end-entity certificate with the profile C2PA requires. The chain is
 **not** trusted by validators; use a real CA for anything you publish. The key is
 PKCS#8 PEM.
 
-Lazy dependency: `cryptography`.
-
+* **Parameters:**
+  * **key** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`object`](https://docs.python.org/3/builtins/functions.html#object), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – the end-entity private key, any family `make_c2pa_signer` supports
+    (a `cryptography` private key object, or PEM text/bytes). Default: a
+    fresh ES256 (P-256) key. The CA is always ES256.
+  * **end_entity_extensions** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Iterable`](https://docs.python.org/3/library/typing.html#typing.Iterable)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`object`](https://docs.python.org/3/builtins/functions.html#object), [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]]) – `[(extension, critical), ...]` replacing the default
+    end-entity profile (BasicConstraints, KeyUsage, ExtendedKeyUsage), e.g. to
+    make a deliberately non-conformant chain for negative tests.
+  * **backdate_days** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – days before now that the certificates start being valid
+    (negative: not yet valid). A negative `valid_days` smaller in magnitude than
+    `backdate_days` gives an expired chain.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+Lazy dependency: `cryptography`.

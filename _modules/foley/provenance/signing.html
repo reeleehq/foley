@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=b153cf10"></script>
+    <script src="../../../_static/documentation_options.js?v=152b4b09"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.64" />
+  <meta name="docsearch:version" content="0.0.65" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -743,7 +743,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -980,18 +980,56 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="c2pa_key_usage">
+<a class="viewcode-back" href="../../../_autosummary/foley.provenance.signing.html#foley.provenance.c2pa_key_usage">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">c2pa_key_usage</span><span class="p">(</span><span class="o">**</span><span class="n">on</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"x509.KeyUsage"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""An ``x509.KeyUsage`` with every flag off except those set in ``on`` (lazy ``cryptography``)."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography</span><span class="w"> </span><span class="kn">import</span> <span class="n">x509</span>
+
+    <span class="n">flags</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="s2">"digital_signature"</span><span class="p">,</span>
+            <span class="s2">"content_commitment"</span><span class="p">,</span>
+            <span class="s2">"key_encipherment"</span><span class="p">,</span>
+            <span class="s2">"data_encipherment"</span><span class="p">,</span>
+            <span class="s2">"key_agreement"</span><span class="p">,</span>
+            <span class="s2">"key_cert_sign"</span><span class="p">,</span>
+            <span class="s2">"crl_sign"</span><span class="p">,</span>
+            <span class="s2">"encipher_only"</span><span class="p">,</span>
+            <span class="s2">"decipher_only"</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">x509</span><span class="o">.</span><span class="n">KeyUsage</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">flags</span><span class="p">,</span> <span class="o">**</span><span class="n">on</span><span class="p">})</span></div>
+
+
+
 <div class="viewcode-block" id="make_self_signed_c2pa_certs">
 <a class="viewcode-back" href="../../../_autosummary/foley.provenance.signing.html#foley.provenance.make_self_signed_c2pa_certs">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">make_self_signed_c2pa_certs</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">common_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SELF_SIGNED_COMMON_NAME</span><span class="p">,</span>
     <span class="n">valid_days</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">SELF_SIGNED_VALID_DAYS</span><span class="p">,</span>
+    <span class="n">backdate_days</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">SELF_SIGNED_BACKDATE_DAYS</span><span class="p">,</span>
+    <span class="n">key</span><span class="p">:</span> <span class="s2">"Union[PemLike, object, None]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">end_entity_extensions</span><span class="p">:</span> <span class="s2">"Optional[Iterable[tuple[object, bool]]]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[str, str]"</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A throwaway C2PA-conformant ``(cert_chain_pem, private_key_pem)`` (ES256) for dev and tests.</span>
+<span class="w">    </span><span class="sd">"""A throwaway C2PA-conformant ``(cert_chain_pem, private_key_pem)`` for dev and tests.</span>
 
 <span class="sd">    A CA plus an end-entity certificate with the profile C2PA requires. The chain is</span>
 <span class="sd">    **not** trusted by validators; use a real CA for anything you publish. The key is</span>
 <span class="sd">    PKCS#8 PEM.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        key: the end-entity private key, any family ``make_c2pa_signer`` supports</span>
+<span class="sd">            (a ``cryptography`` private key object, or PEM text/bytes). Default: a</span>
+<span class="sd">            fresh ES256 (P-256) key. The CA is always ES256.</span>
+<span class="sd">        end_entity_extensions: ``[(extension, critical), ...]`` replacing the default</span>
+<span class="sd">            end-entity profile (BasicConstraints, KeyUsage, ExtendedKeyUsage), e.g. to</span>
+<span class="sd">            make a deliberately non-conformant chain for negative tests.</span>
+<span class="sd">        backdate_days: days before now that the certificates start being valid</span>
+<span class="sd">            (negative: not yet valid). A negative ``valid_days`` smaller in magnitude than</span>
+<span class="sd">            ``backdate_days`` gives an expired chain.</span>
 
 <span class="sd">    Lazy dependency: ``cryptography``.</span>
 <span class="sd">    """</span>
@@ -1001,27 +1039,18 @@ window.runMermaid = runMermaid;</script>
     <span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.x509.oid</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExtendedKeyUsageOID</span><span class="p">,</span> <span class="n">NameOID</span>
 
     <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
-    <span class="n">not_before</span> <span class="o">=</span> <span class="n">now</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">SELF_SIGNED_BACKDATE_DAYS</span><span class="p">)</span>
+    <span class="n">not_before</span> <span class="o">=</span> <span class="n">now</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">backdate_days</span><span class="p">)</span>
     <span class="n">not_after</span> <span class="o">=</span> <span class="n">now</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">valid_days</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_key_usage</span><span class="p">(</span><span class="o">**</span><span class="n">on</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"x509.KeyUsage"</span><span class="p">:</span>
-        <span class="n">flags</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span>
-            <span class="p">(</span>
-                <span class="s2">"digital_signature"</span><span class="p">,</span>
-                <span class="s2">"content_commitment"</span><span class="p">,</span>
-                <span class="s2">"key_encipherment"</span><span class="p">,</span>
-                <span class="s2">"data_encipherment"</span><span class="p">,</span>
-                <span class="s2">"key_agreement"</span><span class="p">,</span>
-                <span class="s2">"key_cert_sign"</span><span class="p">,</span>
-                <span class="s2">"crl_sign"</span><span class="p">,</span>
-                <span class="s2">"encipher_only"</span><span class="p">,</span>
-                <span class="s2">"decipher_only"</span><span class="p">,</span>
-            <span class="p">),</span>
-            <span class="kc">False</span><span class="p">,</span>
+    <span class="n">ca_key</span> <span class="o">=</span> <span class="n">ec</span><span class="o">.</span><span class="n">generate_private_key</span><span class="p">(</span><span class="n">ec</span><span class="o">.</span><span class="n">SECP256R1</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ee_key</span> <span class="o">=</span> <span class="n">ec</span><span class="o">.</span><span class="n">generate_private_key</span><span class="p">(</span><span class="n">ec</span><span class="o">.</span><span class="n">SECP256R1</span><span class="p">())</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
+        <span class="n">ee_key</span> <span class="o">=</span> <span class="n">serialization</span><span class="o">.</span><span class="n">load_pem_private_key</span><span class="p">(</span>
+            <span class="n">key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">key</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="kc">None</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">x509</span><span class="o">.</span><span class="n">KeyUsage</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">flags</span><span class="p">,</span> <span class="o">**</span><span class="n">on</span><span class="p">})</span>
-
-    <span class="n">ca_key</span><span class="p">,</span> <span class="n">ee_key</span> <span class="o">=</span> <span class="p">(</span><span class="n">ec</span><span class="o">.</span><span class="n">generate_private_key</span><span class="p">(</span><span class="n">ec</span><span class="o">.</span><span class="n">SECP256R1</span><span class="p">())</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ee_key</span> <span class="o">=</span> <span class="n">key</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="n">cn</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"x509.Name"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">x509</span><span class="o">.</span><span class="n">Name</span><span class="p">(</span>
@@ -1057,7 +1086,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">ca_key</span><span class="p">,</span>
         <span class="mi">1</span><span class="p">,</span>
         <span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">BasicConstraints</span><span class="p">(</span><span class="n">ca</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">path_length</span><span class="o">=</span><span class="kc">None</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
-        <span class="p">(</span><span class="n">_key_usage</span><span class="p">(</span><span class="n">key_cert_sign</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">crl_sign</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">c2pa_key_usage</span><span class="p">(</span><span class="n">key_cert_sign</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">crl_sign</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
     <span class="p">)</span>
     <span class="n">ee</span> <span class="o">=</span> <span class="n">build</span><span class="p">(</span>
         <span class="n">name</span><span class="p">(</span><span class="n">common_name</span><span class="p">),</span>
@@ -1065,9 +1094,15 @@ window.runMermaid = runMermaid;</script>
         <span class="n">ee_key</span><span class="p">,</span>
         <span class="n">ca_key</span><span class="p">,</span>
         <span class="mi">2</span><span class="p">,</span>
-        <span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">BasicConstraints</span><span class="p">(</span><span class="n">ca</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">path_length</span><span class="o">=</span><span class="kc">None</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
-        <span class="p">(</span><span class="n">_key_usage</span><span class="p">(</span><span class="n">digital_signature</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
-        <span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">ExtendedKeyUsage</span><span class="p">([</span><span class="n">ExtendedKeyUsageOID</span><span class="o">.</span><span class="n">EMAIL_PROTECTION</span><span class="p">]),</span> <span class="kc">True</span><span class="p">),</span>
+        <span class="o">*</span><span class="p">(</span>
+            <span class="n">end_entity_extensions</span>
+            <span class="k">if</span> <span class="n">end_entity_extensions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">BasicConstraints</span><span class="p">(</span><span class="n">ca</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">path_length</span><span class="o">=</span><span class="kc">None</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
+                <span class="p">(</span><span class="n">c2pa_key_usage</span><span class="p">(</span><span class="n">digital_signature</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
+                <span class="p">(</span><span class="n">x509</span><span class="o">.</span><span class="n">ExtendedKeyUsage</span><span class="p">([</span><span class="n">ExtendedKeyUsageOID</span><span class="o">.</span><span class="n">EMAIL_PROTECTION</span><span class="p">]),</span> <span class="kc">True</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
         <span class="p">(</span>
             <span class="n">x509</span><span class="o">.</span><span class="n">AuthorityKeyIdentifier</span><span class="o">.</span><span class="n">from_issuer_public_key</span><span class="p">(</span><span class="n">ca_key</span><span class="o">.</span><span class="n">public_key</span><span class="p">()),</span>
             <span class="kc">False</span><span class="p">,</span>

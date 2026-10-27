@@ -23,7 +23,7 @@ reach the pure helpers via `foley.art50_checklist` / `foley.scan_prompt`.
 | [`credits_for`](#foley.provenance.credits_for)(sounds, \*[, title, ...])             | Build the deduplicated [`Credits`](#foley.provenance.Credits) for the sounds used in a run. |
 | [`credits_manifest`](#foley.provenance.credits_manifest)(credits)                         | The machine-readable manifest for `credits` — a JSON-native dict.                                             |
 | [`make_c2pa_signer`](#foley.provenance.make_c2pa_signer)(cert_chain_pem, ...[, alg, ...]) | A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.                              |
-| [`make_self_signed_c2pa_certs`](#foley.provenance.make_self_signed_c2pa_certs)(\*[, ...])            | A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` (ES256) for dev and tests.                    |
+| [`make_self_signed_c2pa_certs`](#foley.provenance.make_self_signed_c2pa_certs)(\*[, ...])            | A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` for dev and tests.                            |
 | [`render_credits_md`](#foley.provenance.render_credits_md)(credits, \*[, title, ...])      | Render `credits` as a deterministic `CREDITS.md` document.                                                    |
 
 ### Classes
@@ -143,18 +143,28 @@ A `c2pa.Signer` for `foley.weave(..., sign_cert=...)` from a cert chain and key.
         no acceptable ExtendedKeyUsage, an invalid validity window, or an RSA key under `MIN_RSA_KEY_BITS`).
   * [**ImportError**](https://docs.python.org/3/builtins/exceptions.html#ImportError) – `c2pa-python` / `cryptography` missing (`pip install 'foley[c2pa]'`).
 
-### foley.provenance.make_self_signed_c2pa_certs(, common_name='foley-dev-signer', valid_days=3650)
+### foley.provenance.make_self_signed_c2pa_certs(, common_name='foley-dev-signer', valid_days=3650, backdate_days=1, key=None, end_entity_extensions=None)
 
-A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` (ES256) for dev and tests.
+A throwaway C2PA-conformant `(cert_chain_pem, private_key_pem)` for dev and tests.
 
 A CA plus an end-entity certificate with the profile C2PA requires. The chain is
 **not** trusted by validators; use a real CA for anything you publish. The key is
 PKCS#8 PEM.
 
-Lazy dependency: `cryptography`.
-
+* **Parameters:**
+  * **key** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`object`](https://docs.python.org/3/builtins/functions.html#object), [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – the end-entity private key, any family `make_c2pa_signer` supports
+    (a `cryptography` private key object, or PEM text/bytes). Default: a
+    fresh ES256 (P-256) key. The CA is always ES256.
+  * **end_entity_extensions** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Iterable`](https://docs.python.org/3/library/typing.html#typing.Iterable)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`object`](https://docs.python.org/3/builtins/functions.html#object), [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]]) – `[(extension, critical), ...]` replacing the default
+    end-entity profile (BasicConstraints, KeyUsage, ExtendedKeyUsage), e.g. to
+    make a deliberately non-conformant chain for negative tests.
+  * **backdate_days** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – days before now that the certificates start being valid
+    (negative: not yet valid). A negative `valid_days` smaller in magnitude than
+    `backdate_days` gives an expired chain.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+Lazy dependency: `cryptography`.
 
 ### foley.provenance.render_credits_md(credits, , title=None, heading_level=2)
 
