@@ -1,4 +1,4 @@
-> built 2026-10-27 06:44 UTC from 9accce6 (main) · foley 0.0.82. Details: build_info.json
+> built 2026-10-27 07:01 UTC from 77681e0 (main) · foley 0.0.83. Details: build_info.json
 
 # index.html.md
 
@@ -116,7 +116,14 @@ result.weave.credits  # attribution    result.timeline             # still edita
 
 `foley.score(...)` is the stable contract `braidio`/`nw` call. The same surface is available as
 **MCP tools** (`foley_score`, `foley_guide`, `foley_search`, `foley_preview`, `foley_weave`, …) —
-serve them over stdio (`foley-mcp`) or authenticated HTTP (`foley-mcp --http --token …`).
+serve them over stdio (`foley-mcp`) or authenticated HTTP (`foley-mcp --http --token …`) — and as
+**CLI commands** generated from the same verb table (`foley.agent.mcp.VERBS`), JSON in and out:
+
+```default
+foley score "Rain on the roof, then thunder." --territory US
+foley generate "a glass shatters" --no-commercial-ok
+foley find --help
+```
 
 Ship the **agent kit** into your agent host (a `foley-sound-design` skill, a `/foley-score`
 slash command, and a `sound-designer` subagent):
@@ -1099,8 +1106,9 @@ and per-session [`foley.agent.session.SessionStore`](_autosummary/foley.agent.se
 
 ### Module Attributes
 
-| [`TOOLS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.TOOLS)   | The full JSON-safe tool surface (SSOT), in a stable order.   |
-|----------------------------------------------------------|--------------------------------------------------------------|
+| [`VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS)   | MCP's tools and the CLI's generated commands are both read from it.                                                                                                             |
+|----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`TOOLS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.TOOLS)   | The MCP tool surface at import, in the table's order (kept for callers that read it; the server reads [`VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS) when it is built). |
 
 ### Functions
 
@@ -1131,10 +1139,47 @@ and per-session [`foley.agent.session.SessionStore`](_autosummary/foley.agent.se
 | [`make_http_app`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.make_http_app)(\*, auth[, path, ...])             | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.      |
 | [`serve`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.serve)(\*[, name, runtime])                       | Build and run the foley MCP server over stdio (blocks); enforces an offline posture.      |
 | [`serve_http`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.serve_http)(\*[, host, port, path])               | Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).          |
+| [`surface_snapshot`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.surface_snapshot)([verbs])                        | `{tool name: {parameter: default}}` of the MCP tools, plus the CLI commands.              |
+
+### Classes
+
+| [`Verb`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.Verb)(fn[, mcp, cli, why])   | One verb of foley's JSON-safe surface: the function and the surfaces it is on (#62).   |
+|------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
 
 ### foley.agent.mcp.TOOLS *= [<function foley_find>, <function foley_search>, <function foley_similar_to>, <function foley_preview>, <function foley_refine>, <function foley_pick>, <function foley_drop_pick>, <function foley_reject>, <function foley_list_picks>, <function foley_generate>, <function foley_plan>, <function foley_weave>, <function foley_swap_clip>, <function foley_set_gain>, <function foley_nudge>, <function foley_toggle>, <function foley_set_master>, <function foley_timeline_captions>, <function foley_score>, <function foley_guide>, <function foley_capabilities>, <function foley_status>]*
 
-The full JSON-safe tool surface (SSOT), in a stable order.
+The MCP tool surface at import, in the table’s order (kept for callers that read it;
+the server reads [`VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS) when it is built).
+
+### foley.agent.mcp.VERBS *= (Verb(fn=<function foley_find>, mcp=True, cli=True, why=''), Verb(fn=<function foley_search>, mcp=True, cli=False, why="the CLI's own \`foley search\` prints readable rows (it predates the table)"), Verb(fn=<function foley_similar_to>, mcp=True, cli=True, why=''), Verb(fn=<function foley_preview>, mcp=True, cli=True, why=''), Verb(fn=<function foley_refine>, mcp=True, cli=True, why=''), Verb(fn=<function foley_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_drop_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_reject>, mcp=True, cli=True, why=''), Verb(fn=<function foley_list_picks>, mcp=True, cli=True, why=''), Verb(fn=<function foley_generate>, mcp=True, cli=True, why=''), Verb(fn=<function foley_plan>, mcp=True, cli=True, why=''), Verb(fn=<function foley_weave>, mcp=True, cli=True, why=''), Verb(fn=<function foley_swap_clip>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_gain>, mcp=True, cli=True, why=''), Verb(fn=<function foley_nudge>, mcp=True, cli=True, why=''), Verb(fn=<function foley_toggle>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_master>, mcp=True, cli=True, why=''), Verb(fn=<function foley_timeline_captions>, mcp=True, cli=True, why=''), Verb(fn=<function foley_score>, mcp=True, cli=True, why=''), Verb(fn=<function foley_guide>, mcp=True, cli=True, why=''), Verb(fn=<function foley_capabilities>, mcp=True, cli=True, why=''), Verb(fn=<function foley_status>, mcp=True, cli=True, why=''))*
+
+MCP’s tools and the CLI’s generated
+commands are both read from it.
+
+* **Type:**
+  The verb table (SSOT), in a stable order
+
+### *class* foley.agent.mcp.Verb(fn, mcp=True, cli=True, why='')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One verb of foley’s JSON-safe surface: the function and the surfaces it is on (#62).
+
+The function is the verb: JSON in, JSON out, a thin call into the façade. MCP serves
+it as the tool `fn.__name__`; the `foley` CLI as the command of that name
+without its `foley_` prefix ([`foley.cli.build_parser()`](_autosummary/foley.cli.html.md#foley.cli.build_parser)). Adding a verb here
+adds it to both, with no surface code.
+
+#### *property* command *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+`foley_similar_to` -> `similar-to`.
+
+* **Type:**
+  The CLI command name
+
+#### why *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= ''*
+
+Why a surface is off (said where the flag is set, so it is never a silent gap).
 
 ### foley.agent.mcp.build_mcp_server(, library=None, session='default', runtime=None, byte_store=None, include=None, name='foley', max_usd=None)
 
@@ -1383,6 +1428,17 @@ Wraps [`make_http_app()`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.m
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.agent.mcp.surface_snapshot(verbs=None)
+
+`{tool name: {parameter: default}}` of the MCP tools, plus the CLI commands.
+
+What an agent or a script binds to by name, without py2mcp: a test pins it, so a
+renamed tool or a changed default is a decision, never an accident (#62). A
+parameter with no default maps to `"<required>"`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 
 # _autosummary/foley.agent.policy.html.md
@@ -3094,31 +3150,67 @@ Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterPr
 
 # foley.cli
 
-The `foley` command-line interface (stdlib `argparse`, zero new deps).
+The `foley` command-line interface (`argparse`, the verbs generated by `cw`).
 
-Subcommands:
+Two kinds of command share one parser:
 
-```default
-foley demo                       # offline ingest->search over the bundled fixture
-foley bootstrap [--rings 0,1] [--corpora fsd50k,foleyset] [--data-dir DIR]
-                [--accept-ai-restricted] [--no-commercial-filter]
-foley ingest PATH [--license ID] [--min-status warn|pass|fail] [--no-qc]
-foley search QUERY [-k N] [--commercial-ok]
-```
+* **the verbs** (#62): every verb of [`foley.agent.mcp.VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS), the table MCP serves
+  too, generated by `cw` from its signature and docstring, so a verb added there is a
+  command here with no CLI code. Its result is printed as JSON; a dict argument (a
+  timeline) is given as JSON; a result with `"ok": false` exits 1:
+  ```default
+  foley find "The door creaked open in the storm." --territory US
+  foley score "Rain on the roof." --no-commercial-ok
+  foley generate "a glass shatters" --backend elevenlabs
+  foley set-master '{"items": []}' --target-lufs -16
+  ```
+* **the commands written here**, for what is not a verb (bulk corpora, folders, the
+  agent kit, the evaluation harness):
+  ```default
+  foley demo                       # offline ingest->search over the bundled fixture
+  foley bootstrap [--rings 0,1] [--corpora fsd50k,foleyset] [--data-dir DIR]
+                  [--accept-ai-restricted] [--no-commercial-filter]
+  foley ingest PATH [--license ID] [--min-status warn|pass|fail] [--no-qc]
+  foley search QUERY [-k N] [--commercial-ok]
+  ```
 
-Wired as the `foley` console entry point (`[project.scripts]`). Every command
-is a thin call into the library facade ([`foley.bootstrap()`](_autosummary/foley.html.md#foley.bootstrap), [`foley.demo()`](_autosummary/foley.html.md#foley.demo),
-[`foley.ingest()`](_autosummary/foley.html.md#foley.ingest), [`foley.search()`](_autosummary/foley.html.md#foley.search)); the CLI only parses args and prints.
+Wired as the `foley` console entry point (`[project.scripts]`). Every command is a
+thin call into the library facade; the CLI only parses args and prints.
+
+### Module Attributes
+
+| [`RESERVED_VERB_PARAMS`](_autosummary/foley.cli.html.md#foley.cli.RESERVED_VERB_PARAMS)   | the parser's own namespace keys (`command` its subcommand, `func` a written command's handler, `_cw` cw's).   |
+|-------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
 
 ### Functions
 
-| [`build_parser`](_autosummary/foley.cli.html.md#foley.cli.build_parser)()   | Build the `foley` argument parser.          |
-|-------------------------------------------------------------------|---------------------------------------------|
-| [`main`](_autosummary/foley.cli.html.md#foley.cli.main)([argv])     | Entry point for the `foley` console script. |
+| [`add_verbs`](_autosummary/foley.cli.html.md#foley.cli.add_verbs)(parser[, verbs])   | Add the CLI-enabled verbs of `verbs` (default: [`foley.agent.mcp.VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS)) to `parser`'s subcommands, one command each (#62).   |
+|-------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`build_parser`](_autosummary/foley.cli.html.md#foley.cli.build_parser)()               | Build the `foley` argument parser: the commands written here, then the verbs.                                                                                                                     |
+| [`main`](_autosummary/foley.cli.html.md#foley.cli.main)([argv])                 | Entry point for the `foley` console script.                                                                                                                                                       |
+
+### foley.cli.RESERVED_VERB_PARAMS *= frozenset({'_cw', 'command', 'func'})*
+
+the parser’s own namespace keys
+(`command` its subcommand, `func` a written command’s handler, `_cw` cw’s).
+
+* **Type:**
+  Parameter names a verb may not take on the CLI
+
+### foley.cli.add_verbs(parser, verbs=None)
+
+Add the CLI-enabled verbs of `verbs` (default: [`foley.agent.mcp.VERBS`](_autosummary/foley.agent.mcp.html.md#foley.agent.mcp.VERBS))
+to `parser`’s subcommands, one command each (#62).
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If a verb’s command clashes with a written one, or it takes a
+      parameter named in [`RESERVED_VERB_PARAMS`](_autosummary/foley.cli.html.md#foley.cli.RESERVED_VERB_PARAMS).
+* **Return type:**
+  [`ArgumentParser`](https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser)
 
 ### foley.cli.build_parser()
 
-Build the `foley` argument parser.
+Build the `foley` argument parser: the commands written here, then the verbs.
 
 * **Return type:**
   [`ArgumentParser`](https://docs.python.org/3/library/argparse.html#argparse.ArgumentParser)
@@ -8950,7 +9042,7 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 | [`provenance`](_autosummary/foley.provenance.html.md#module-foley.provenance)     | Provenance layer for foley — attribution/credits (and, later, disclosure).                                                                           |
 | [`agent_kit`](_autosummary/foley.agent_kit.html.md#module-foley.agent_kit)       | Install foley's shipped agent kit — the consumer skill + Claude slash command + subagent.                                                            |
 | [`base`](_autosummary/foley.base.html.md#module-foley.base)                 | Canonical data models for foley — the single source of truth (SSOT) types.                                                                           |
-| [`cli`](_autosummary/foley.cli.html.md#module-foley.cli)                   | The `foley` command-line interface (stdlib `argparse`, zero new deps).                                                                               |
+| [`cli`](_autosummary/foley.cli.html.md#module-foley.cli)                   | The `foley` command-line interface (`argparse`, the verbs generated by `cw`).                                                                        |
 | [`cost`](_autosummary/foley.cost.html.md#module-foley.cost)                 | Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).                                                                  |
 | [`level`](_autosummary/foley.level.html.md#module-foley.level)               | Level a clip to a stated loudness target for its class, so relative levels are sane.                                                                 |
 | [`licensing`](_autosummary/foley.licensing.html.md#module-foley.licensing)       | License policy for foley: the license_id -> flag-set SSOT, flag derivation (with per-source overrides), and the fail-closed candidate `keep()` gate. |
@@ -14110,7 +14202,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'netflix chime', 'netflix intro', 'ta-dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta-dum', 'tudum', 'ta dum', 'netflix chime', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel jingle', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -21178,18 +21270,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 06:44 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/9accce6a337b9089963855434bd5b8991b10c16b"><code>9accce6</code></a> on branch <code>main</code>, for **foley 0.0.82** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 07:01 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/77681e094c3c49d34958fe42d00eec831fd8e57d"><code>77681e0</code></a> on branch <code>main</code>, for **foley 0.0.83** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.82) is behind the latest release on PyPI (0.0.83): `pip install foley` gives newer code than these docs describe.
+- The documented version (0.0.83) is behind the latest release on PyPI (0.0.84): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/9accce6a337b9089963855434bd5b8991b10c16b"><code>9accce6a337b9089963855434bd5b8991b10c16b</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/77681e094c3c49d34958fe42d00eec831fd8e57d"><code>77681e094c3c49d34958fe42d00eec831fd8e57d</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -21200,9 +21292,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40462610171">40462610171</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40464378592">40464378592</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>9accce6a337b9089963855434bd5b8991b10c16b</code> (in the history of the built commit) |
+| Event commit | <code>77681e094c3c49d34958fe42d00eec831fd8e57d</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -21227,13 +21319,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.83/">0.0.83</a>, newer than the documented version (0.0.82).
+Latest release: <a href="https://pypi.org/project/foley/0.0.84/">0.0.84</a>, newer than the documented version (0.0.83).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 9accce6a337b9089963855434bd5b8991b10c16b
+git checkout 77681e094c3c49d34958fe42d00eec831fd8e57d
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

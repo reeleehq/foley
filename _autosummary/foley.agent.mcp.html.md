@@ -16,8 +16,9 @@ and per-session [`foley.agent.session.SessionStore`](foley.agent.session.html.md
 
 ### Module Attributes
 
-| [`TOOLS`](#foley.agent.mcp.TOOLS)   | The full JSON-safe tool surface (SSOT), in a stable order.   |
-|----------------------------------------------------------|--------------------------------------------------------------|
+| [`VERBS`](#foley.agent.mcp.VERBS)   | MCP's tools and the CLI's generated commands are both read from it.                                                                                                             |
+|----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`TOOLS`](#foley.agent.mcp.TOOLS)   | The MCP tool surface at import, in the table's order (kept for callers that read it; the server reads [`VERBS`](#foley.agent.mcp.VERBS) when it is built). |
 
 ### Functions
 
@@ -48,10 +49,47 @@ and per-session [`foley.agent.session.SessionStore`](foley.agent.session.html.md
 | [`make_http_app`](#foley.agent.mcp.make_http_app)(\*, auth[, path, ...])             | Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.      |
 | [`serve`](#foley.agent.mcp.serve)(\*[, name, runtime])                       | Build and run the foley MCP server over stdio (blocks); enforces an offline posture.      |
 | [`serve_http`](#foley.agent.mcp.serve_http)(\*[, host, port, path])               | Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).          |
+| [`surface_snapshot`](#foley.agent.mcp.surface_snapshot)([verbs])                        | `{tool name: {parameter: default}}` of the MCP tools, plus the CLI commands.              |
+
+### Classes
+
+| [`Verb`](#foley.agent.mcp.Verb)(fn[, mcp, cli, why])   | One verb of foley's JSON-safe surface: the function and the surfaces it is on (#62).   |
+|------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
 
 ### foley.agent.mcp.TOOLS *= [<function foley_find>, <function foley_search>, <function foley_similar_to>, <function foley_preview>, <function foley_refine>, <function foley_pick>, <function foley_drop_pick>, <function foley_reject>, <function foley_list_picks>, <function foley_generate>, <function foley_plan>, <function foley_weave>, <function foley_swap_clip>, <function foley_set_gain>, <function foley_nudge>, <function foley_toggle>, <function foley_set_master>, <function foley_timeline_captions>, <function foley_score>, <function foley_guide>, <function foley_capabilities>, <function foley_status>]*
 
-The full JSON-safe tool surface (SSOT), in a stable order.
+The MCP tool surface at import, in the table’s order (kept for callers that read it;
+the server reads [`VERBS`](#foley.agent.mcp.VERBS) when it is built).
+
+### foley.agent.mcp.VERBS *= (Verb(fn=<function foley_find>, mcp=True, cli=True, why=''), Verb(fn=<function foley_search>, mcp=True, cli=False, why="the CLI's own \`foley search\` prints readable rows (it predates the table)"), Verb(fn=<function foley_similar_to>, mcp=True, cli=True, why=''), Verb(fn=<function foley_preview>, mcp=True, cli=True, why=''), Verb(fn=<function foley_refine>, mcp=True, cli=True, why=''), Verb(fn=<function foley_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_drop_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_reject>, mcp=True, cli=True, why=''), Verb(fn=<function foley_list_picks>, mcp=True, cli=True, why=''), Verb(fn=<function foley_generate>, mcp=True, cli=True, why=''), Verb(fn=<function foley_plan>, mcp=True, cli=True, why=''), Verb(fn=<function foley_weave>, mcp=True, cli=True, why=''), Verb(fn=<function foley_swap_clip>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_gain>, mcp=True, cli=True, why=''), Verb(fn=<function foley_nudge>, mcp=True, cli=True, why=''), Verb(fn=<function foley_toggle>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_master>, mcp=True, cli=True, why=''), Verb(fn=<function foley_timeline_captions>, mcp=True, cli=True, why=''), Verb(fn=<function foley_score>, mcp=True, cli=True, why=''), Verb(fn=<function foley_guide>, mcp=True, cli=True, why=''), Verb(fn=<function foley_capabilities>, mcp=True, cli=True, why=''), Verb(fn=<function foley_status>, mcp=True, cli=True, why=''))*
+
+MCP’s tools and the CLI’s generated
+commands are both read from it.
+
+* **Type:**
+  The verb table (SSOT), in a stable order
+
+### *class* foley.agent.mcp.Verb(fn, mcp=True, cli=True, why='')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One verb of foley’s JSON-safe surface: the function and the surfaces it is on (#62).
+
+The function is the verb: JSON in, JSON out, a thin call into the façade. MCP serves
+it as the tool `fn.__name__`; the `foley` CLI as the command of that name
+without its `foley_` prefix ([`foley.cli.build_parser()`](foley.cli.html.md#foley.cli.build_parser)). Adding a verb here
+adds it to both, with no surface code.
+
+#### *property* command *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+`foley_similar_to` -> `similar-to`.
+
+* **Type:**
+  The CLI command name
+
+#### why *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= ''*
+
+Why a surface is off (said where the flag is set, so it is never a silent gap).
 
 ### foley.agent.mcp.build_mcp_server(, library=None, session='default', runtime=None, byte_store=None, include=None, name='foley', max_usd=None)
 
@@ -300,3 +338,14 @@ Wraps [`make_http_app()`](#foley.agent.mcp.make_http_app) and runs it with uvico
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### foley.agent.mcp.surface_snapshot(verbs=None)
+
+`{tool name: {parameter: default}}` of the MCP tools, plus the CLI commands.
+
+What an agent or a script binds to by name, without py2mcp: a test pins it, so a
+renamed tool or a changed default is a decision, never an accident (#62). A
+parameter with no default maps to `"<required>"`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

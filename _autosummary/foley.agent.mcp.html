@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=cfefb2bf"></script>
+    <script src="../_static/documentation_options.js?v=6b9736a6"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.82" />
+  <meta name="docsearch:version" content="0.0.83" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -504,8 +504,11 @@ and per-session <a class="reference internal" href="foley.agent.session.html#fol
 <p class="rubric">Module Attributes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.mcp.TOOLS" title="foley.agent.mcp.TOOLS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TOOLS</span></code></a></p></td>
-<td><p>The full JSON-safe tool surface (SSOT), in a stable order.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.mcp.VERBS" title="foley.agent.mcp.VERBS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VERBS</span></code></a></p></td>
+<td><p>MCP's tools and the CLI's generated commands are both read from it.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.agent.mcp.TOOLS" title="foley.agent.mcp.TOOLS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TOOLS</span></code></a></p></td>
+<td><p>The MCP tool surface at import, in the table's order (kept for callers that read it; the server reads <a class="reference internal" href="#foley.agent.mcp.VERBS" title="foley.agent.mcp.VERBS"><code class="xref py py-data docutils literal notranslate"><span class="pre">VERBS</span></code></a> when it is built).</p></td>
 </tr>
 </tbody>
 </table>
@@ -591,13 +594,68 @@ and per-session <a class="reference internal" href="foley.agent.session.html#fol
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.agent.mcp.serve_http" title="foley.agent.mcp.serve_http"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serve_http</span></code></a>(*[, host, port, path])</p></td>
 <td><p>Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.mcp.surface_snapshot" title="foley.agent.mcp.surface_snapshot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">surface_snapshot</span></code></a>([verbs])</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{tool</span> <span class="pre">name:</span> <span class="pre">{parameter:</span> <span class="pre">default}}</span></code> of the MCP tools, plus the CLI commands.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.agent.mcp.Verb" title="foley.agent.mcp.Verb"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Verb</span></code></a>(fn[, mcp, cli, why])</p></td>
+<td><p>One verb of foley's JSON-safe surface: the function and the surfaces it is on (#62).</p></td>
+</tr>
 </tbody>
 </table>
 </div>
 <dl class="py data">
 <dt class="sig sig-object py" id="foley.agent.mcp.TOOLS">
 <span class="sig-prename descclassname"><span class="pre">foley.agent.mcp.</span></span><span class="sig-name descname"><span class="pre">TOOLS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;function</span> <span class="pre">foley_find&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_search&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_similar_to&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_preview&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_refine&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_pick&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_drop_pick&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_reject&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_list_picks&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_generate&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_plan&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_weave&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_swap_clip&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_set_gain&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_nudge&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_toggle&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_set_master&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_timeline_captions&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_score&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_guide&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_capabilities&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">foley_status&gt;]</span></span><a class="headerlink" href="#foley.agent.mcp.TOOLS" title="Link to this definition">#</a></dt>
-<dd><p>The full JSON-safe tool surface (SSOT), in a stable order.</p>
+<dd><p>The MCP tool surface at import, in the table’s order (kept for callers that read it;
+the server reads <a class="reference internal" href="#foley.agent.mcp.VERBS" title="foley.agent.mcp.VERBS"><code class="xref py py-data docutils literal notranslate"><span class="pre">VERBS</span></code></a> when it is built).</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.agent.mcp.VERBS">
+<span class="sig-prename descclassname"><span class="pre">foley.agent.mcp.</span></span><span class="sig-name descname"><span class="pre">VERBS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(Verb(fn=&lt;function</span> <span class="pre">foley_find&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_search&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=False,</span> <span class="pre">why=&quot;the</span> <span class="pre">CLI's</span> <span class="pre">own</span> <span class="pre">`foley</span> <span class="pre">search`</span> <span class="pre">prints</span> <span class="pre">readable</span> <span class="pre">rows</span> <span class="pre">(it</span> <span class="pre">predates</span> <span class="pre">the</span> <span class="pre">table)&quot;),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_similar_to&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_preview&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_refine&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_pick&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_drop_pick&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_reject&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_list_picks&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_generate&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_plan&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_weave&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_swap_clip&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_set_gain&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_nudge&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_toggle&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_set_master&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_timeline_captions&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_score&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_guide&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_capabilities&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''),</span> <span class="pre">Verb(fn=&lt;function</span> <span class="pre">foley_status&gt;,</span> <span class="pre">mcp=True,</span> <span class="pre">cli=True,</span> <span class="pre">why=''))</span></span><a class="headerlink" href="#foley.agent.mcp.VERBS" title="Link to this definition">#</a></dt>
+<dd><p>MCP’s tools and the CLI’s generated
+commands are both read from it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The verb table (SSOT), in a stable order</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.agent.mcp.Verb">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.agent.mcp.</span></span><span class="sig-name descname"><span class="pre">Verb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mcp</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cli</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">why</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/mcp.html#Verb"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.mcp.Verb" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One verb of foley’s JSON-safe surface: the function and the surfaces it is on (#62).</p>
+<p>The function is the verb: JSON in, JSON out, a thin call into the façade. MCP serves
+it as the tool <code class="docutils literal notranslate"><span class="pre">fn.__name__</span></code>; the <code class="docutils literal notranslate"><span class="pre">foley</span></code> CLI as the command of that name
+without its <code class="docutils literal notranslate"><span class="pre">foley_</span></code> prefix (<a class="reference internal" href="foley.cli.html#foley.cli.build_parser" title="foley.cli.build_parser"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.cli.build_parser()</span></code></a>). Adding a verb here
+adds it to both, with no surface code.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="foley.agent.mcp.Verb.command">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">command</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#foley.agent.mcp.Verb.command" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">foley_similar_to</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">similar-to</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The CLI command name</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.agent.mcp.Verb.why">
+<span class="sig-name descname"><span class="pre">why</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></span><a class="headerlink" href="#foley.agent.mcp.Verb.why" title="Link to this definition">#</a></dt>
+<dd><p>Why a surface is off (said where the flag is set, so it is never a silent gap).</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py function">
@@ -949,6 +1007,20 @@ gunicorn, a parent FastAPI). <code class="docutils literal notranslate"><span cl
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.agent.mcp.surface_snapshot">
+<span class="sig-prename descclassname"><span class="pre">foley.agent.mcp.</span></span><span class="sig-name descname"><span class="pre">surface_snapshot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/mcp.html#surface_snapshot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.mcp.surface_snapshot" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">{tool</span> <span class="pre">name:</span> <span class="pre">{parameter:</span> <span class="pre">default}}</span></code> of the MCP tools, plus the CLI commands.</p>
+<p>What an agent or a script binds to by name, without py2mcp: a test pins it, so a
+renamed tool or a changed default is a decision, never an accident (#62). A
+parameter with no default maps to <code class="docutils literal notranslate"><span class="pre">&quot;&lt;required&gt;&quot;</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -999,6 +1071,12 @@ gunicorn, a parent FastAPI). <code class="docutils literal notranslate"><span cl
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.TOOLS"><code class="docutils literal notranslate"><span class="pre">TOOLS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.VERBS"><code class="docutils literal notranslate"><span class="pre">VERBS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.Verb"><code class="docutils literal notranslate"><span class="pre">Verb</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.Verb.command"><code class="docutils literal notranslate"><span class="pre">Verb.command</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.Verb.why"><code class="docutils literal notranslate"><span class="pre">Verb.why</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.build_mcp_server"><code class="docutils literal notranslate"><span class="pre">build_mcp_server()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.foley_capabilities"><code class="docutils literal notranslate"><span class="pre">foley_capabilities()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.foley_drop_pick"><code class="docutils literal notranslate"><span class="pre">foley_drop_pick()</span></code></a></li>
@@ -1025,6 +1103,7 @@ gunicorn, a parent FastAPI). <code class="docutils literal notranslate"><span cl
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.make_http_app"><code class="docutils literal notranslate"><span class="pre">make_http_app()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.serve"><code class="docutils literal notranslate"><span class="pre">serve()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.serve_http"><code class="docutils literal notranslate"><span class="pre">serve_http()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.agent.mcp.surface_snapshot"><code class="docutils literal notranslate"><span class="pre">surface_snapshot()</span></code></a></li>
 </ul>
   </nav></div>
 

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=cfefb2bf"></script>
+    <script src="../../../_static/documentation_options.js?v=6b9736a6"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.82" />
+  <meta name="docsearch:version" content="0.0.83" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -733,7 +733,8 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_INTENDED_USE</span><span class="p">,</span> <span class="n">intended_use_for</span>
 
@@ -1519,39 +1520,113 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="c1">#: The full JSON-safe tool surface (SSOT), in a stable order.</span>
-<span class="n">TOOLS</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">foley_find</span><span class="p">,</span>
-    <span class="n">foley_search</span><span class="p">,</span>
-    <span class="n">foley_similar_to</span><span class="p">,</span>
-    <span class="n">foley_preview</span><span class="p">,</span>
-    <span class="n">foley_refine</span><span class="p">,</span>
-    <span class="n">foley_pick</span><span class="p">,</span>
-    <span class="n">foley_drop_pick</span><span class="p">,</span>
-    <span class="n">foley_reject</span><span class="p">,</span>
-    <span class="n">foley_list_picks</span><span class="p">,</span>
-    <span class="n">foley_generate</span><span class="p">,</span>
-    <span class="n">foley_plan</span><span class="p">,</span>
-    <span class="n">foley_weave</span><span class="p">,</span>
-    <span class="n">foley_swap_clip</span><span class="p">,</span>
-    <span class="n">foley_set_gain</span><span class="p">,</span>
-    <span class="n">foley_nudge</span><span class="p">,</span>
-    <span class="n">foley_toggle</span><span class="p">,</span>
-    <span class="n">foley_set_master</span><span class="p">,</span>
-    <span class="n">foley_timeline_captions</span><span class="p">,</span>
-    <span class="n">foley_score</span><span class="p">,</span>
-    <span class="n">foley_guide</span><span class="p">,</span>
-    <span class="n">foley_capabilities</span><span class="p">,</span>
-    <span class="n">foley_status</span><span class="p">,</span>
-<span class="p">]</span>
+<div class="viewcode-block" id="Verb">
+<a class="viewcode-back" href="../../../_autosummary/foley.agent.mcp.html#foley.Verb">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Verb</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One verb of foley's JSON-safe surface: the function and the surfaces it is on (#62).</span>
+
+<span class="sd">    The function is the verb: JSON in, JSON out, a thin call into the façade. MCP serves</span>
+<span class="sd">    it as the tool ``fn.__name__``; the ``foley`` CLI as the command of that name</span>
+<span class="sd">    without its ``foley_`` prefix (:func:`foley.cli.build_parser`). Adding a verb here</span>
+<span class="sd">    adds it to both, with no surface code.</span>
+<span class="sd">    """</span>
+
+    <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span>
+    <span class="n">mcp</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">cli</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="c1">#: Why a surface is off (said where the flag is set, so it is never a silent gap).</span>
+    <span class="n">why</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">command</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The CLI command name: ``foley_similar_to`` -&gt; ``similar-to``."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"foley_"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">"-"</span><span class="p">)</span></div>
+
+
+
+<span class="c1">#: The verb table (SSOT), in a stable order: MCP's tools and the CLI's generated</span>
+<span class="c1">#: commands are both read from it.</span>
+<span class="n">VERBS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_find</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span>
+        <span class="n">foley_search</span><span class="p">,</span>
+        <span class="n">cli</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">why</span><span class="o">=</span><span class="s2">"the CLI's own `foley search` prints readable rows (it predates the table)"</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_similar_to</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_preview</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_refine</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_pick</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_drop_pick</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_reject</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_list_picks</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_generate</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_plan</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_weave</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_swap_clip</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_set_gain</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_nudge</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_toggle</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_set_master</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_timeline_captions</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_score</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_guide</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_capabilities</span><span class="p">),</span>
+    <span class="n">Verb</span><span class="p">(</span><span class="n">foley_status</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="c1">#: The MCP tool surface at import, in the table's order (kept for callers that read it;</span>
+<span class="c1">#: the server reads :data:`VERBS` when it is built).</span>
+<span class="n">TOOLS</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">fn</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">VERBS</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">mcp</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="surface_snapshot">
+<a class="viewcode-back" href="../../../_autosummary/foley.agent.mcp.html#foley.surface_snapshot">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">surface_snapshot</span><span class="p">(</span><span class="n">verbs</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``{tool name: {parameter: default}}`` of the MCP tools, plus the CLI commands.</span>
+
+<span class="sd">    What an agent or a script binds to by name, without py2mcp: a test pins it, so a</span>
+<span class="sd">    renamed tool or a changed default is a decision, never an accident (#62). A</span>
+<span class="sd">    parameter with no default maps to ``"&lt;required&gt;"``.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+
+    <span class="n">verbs</span> <span class="o">=</span> <span class="n">VERBS</span> <span class="k">if</span> <span class="n">verbs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">verbs</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="s2">"&lt;required&gt;"</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="o">.</span><span class="n">empty</span> <span class="k">else</span> <span class="n">p</span><span class="o">.</span><span class="n">default</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"mcp"</span><span class="p">:</span> <span class="p">{</span><span class="n">v</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">params</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">fn</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">verbs</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">mcp</span><span class="p">},</span>
+        <span class="s2">"cli"</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">command</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">verbs</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">cli</span><span class="p">),</span>
+    <span class="p">}</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_tools</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">include</span><span class="p">:</span> <span class="s2">"Optional[list[str]]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""The tool list, optionally subset by name (``include``)."""</span>
-    <span class="n">tools</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">TOOLS</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""The tool list, optionally subset by name (``include``).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If ``include`` names a tool that does not exist (a typo would</span>
+<span class="sd">            otherwise serve a smaller surface than asked for, silently).</span>
+<span class="sd">    """</span>
+    <span class="n">tools</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">v</span><span class="o">.</span><span class="n">fn</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">VERBS</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">mcp</span>
+    <span class="p">]</span>  <span class="c1"># read now: a verb added to the table is served</span>
     <span class="k">if</span> <span class="n">include</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">by_name</span> <span class="o">=</span> <span class="p">{</span><span class="n">fn</span><span class="o">.</span><span class="vm">__name__</span><span class="p">:</span> <span class="n">fn</span> <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">tools</span><span class="p">}</span>
-        <span class="n">tools</span> <span class="o">=</span> <span class="p">[</span><span class="n">by_name</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">include</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">by_name</span><span class="p">]</span>
+        <span class="n">unknown</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">include</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">by_name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no such foley MCP tool(s): </span><span class="si">{</span><span class="n">unknown</span><span class="si">}</span><span class="s2">; see mcp.TOOLS"</span><span class="p">)</span>
+        <span class="n">tools</span> <span class="o">=</span> <span class="p">[</span><span class="n">by_name</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">include</span><span class="p">]</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">_under_bound_runtime</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span> <span class="k">for</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">tools</span><span class="p">]</span>
 
 

@@ -4,10 +4,17 @@ foley.cli
 .. automodule:: foley.cli
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      RESERVED_VERB_PARAMS
+   
    .. rubric:: Functions
 
    .. autosummary::
    
+      add_verbs
       build_parser
       main
    

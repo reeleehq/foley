@@ -112,7 +112,14 @@ result.weave.credits  # attribution    result.timeline             # still edita
 
 `foley.score(...)` is the stable contract `braidio`/`nw` call. The same surface is available as
 **MCP tools** (`foley_score`, `foley_guide`, `foley_search`, `foley_preview`, `foley_weave`, …) —
-serve them over stdio (`foley-mcp`) or authenticated HTTP (`foley-mcp --http --token …`).
+serve them over stdio (`foley-mcp`) or authenticated HTTP (`foley-mcp --http --token …`) — and as
+**CLI commands** generated from the same verb table (`foley.agent.mcp.VERBS`), JSON in and out:
+
+```default
+foley score "Rain on the roof, then thunder." --territory US
+foley generate "a glass shatters" --no-commercial-ok
+foley find --help
+```
 
 Ship the **agent kit** into your agent host (a `foley-sound-design` skill, a `/foley-score`
 slash command, and a `sound-designer` subagent):

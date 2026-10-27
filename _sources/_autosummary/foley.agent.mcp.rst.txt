@@ -8,6 +8,7 @@ foley.agent.mcp
 
    .. autosummary::
    
+      VERBS
       TOOLS
    
    .. rubric:: Functions
@@ -40,4 +41,11 @@ foley.agent.mcp
       make_http_app
       serve
       serve_http
+      surface_snapshot
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Verb
    
