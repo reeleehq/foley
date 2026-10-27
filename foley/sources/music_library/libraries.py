@@ -41,6 +41,9 @@ from ...base import LicenseRecord
 from ...licensing import cc_refused_terms, derive_license_flags, license_id_from_cc_url
 from ..base import api_license
 
+#: The :mod:`foley.sources` sub-package whose sources the libraries are (the
+#: source-name check leaves its own declarations out).
+_SOURCE_MODULE: str = "music_library"
 #: The extension a track is saved with when its library names no other.
 DFLT_SUFFIX: str = ".mp3"
 #: The licence id of a paid library's row: no rights are claimed (fail-closed).
@@ -140,12 +143,40 @@ def register_music_library(library: MusicLibrary, *, replace: bool = False) -> N
     (``cache_bytes_ok``); the uses a production makes of them are gated per title by
     :func:`~foley.sources.music_library.acquire` (``intended_use``).
 
+    A library's name is also its live-source name (``foley.add_from(name, ...)``),
+    so it may not be the name of a source another :mod:`foley.sources` module
+    declares, or one registered directly (``openverse``, ``freesound``, a ``fal_*``
+    endpoint, ...): that library would silently take the source over, or silently
+    never become one.
+
     Raises:
         MusicLibraryError: If the name is taken (and not ``replace``), or a free
             library has no ``track_url`` rule or a licence that does not allow
             keeping the files (a ShareAlike / NoDerivatives licence, refused on
             purpose; a licence URL foley cannot read; a licence whose flags say no).
+        SourceNameCollision: If the name is another module's source name.
     """
+    _check_library(library, replace=replace)
+    _refuse_source_name(library)
+    MUSIC_LIBRARIES[library.name] = library
+
+
+def _refuse_source_name(library: MusicLibrary) -> None:
+    """Raise if ``library``'s name is a source name another module owns."""
+    from ..registry import SourceNameCollision, declared_source_names
+
+    names = declared_source_names(exclude=(_SOURCE_MODULE,))
+    if library.name in names:
+        owner = names[library.name]
+        where = f"foley.sources.{owner}" if owner else "a directly registered source"
+        raise SourceNameCollision(
+            f"music library {library.name!r}: that name is already a source "
+            f"({where}); a library is a source of its own name, so pick another"
+        )
+
+
+def _check_library(library: MusicLibrary, *, replace: bool) -> None:
+    """The checks every registration makes (the built-ins' too)."""
     if library.name in MUSIC_LIBRARIES and not replace:
         raise MusicLibraryError(
             f"music library {library.name!r} is already registered; pass replace=True"
@@ -163,7 +194,6 @@ def register_music_library(library: MusicLibrary, *, replace: bool = False) -> N
                 f"{library.license_id!r} on its own (a human must check them), so "
                 "acquire would refuse every title"
             )
-    MUSIC_LIBRARIES[library.name] = library
 
 
 def _not_keepable(library: MusicLibrary) -> str:
@@ -273,5 +303,8 @@ BUILTIN_LIBRARIES: tuple[MusicLibrary, ...] = (
     ),
 )
 
+# The built-ins skip the source-name check (it imports every other source's config;
+# discover_sources refuses a clash anyway, and a test pins the built-ins' names).
 for _library in BUILTIN_LIBRARIES:
-    register_music_library(_library, replace=True)  # idempotent on reload
+    _check_library(_library, replace=True)  # idempotent on reload
+    MUSIC_LIBRARIES[_library.name] = _library

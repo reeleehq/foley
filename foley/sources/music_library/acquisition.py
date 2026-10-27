@@ -58,8 +58,8 @@ from typing import Any, Optional, Union
 from ...base import IntendedUse, LicenseRecord, SerializableMixin
 from ...licensing import DEFAULT_INTENDED_USE, LicenseFlags, refusal_reason
 from ..http import Transport
-from ..resilience import RetryAfterTooLong, SourceUnavailable, pace_per_host
-from .fetch import Fetch, make_fetch, music_library_config
+from ..resilience import RetryAfterTooLong, SourceUnavailable
+from .fetch import Fetch, library_fetch, music_library_config
 from .libraries import MusicLibrary, MusicLibraryError, music_library, track_license
 from .mirrors import DFLT_MIRRORS, Mirror, mirror_name
 from .verify import Verify, probe_verify, require_probe
@@ -271,21 +271,14 @@ def acquire(
         ]
     if verify is probe_verify:
         require_probe()  # stop before the first download, not after it
-    if fetch is None:
-        from ...runtime import EXTERNAL, require_egress
-
-        egress = config.get("data_egress") or EXTERNAL
-        require_egress(egress, what=f"music library {lib.name!r}")
-        fetch = make_fetch(transport=transport, config=config, clock=clock, sleep=sleep)
-    else:
-        own_fetch = fetch
-        wait = pace_per_host(config.get("rate"), clock=clock, sleep=sleep)
-
-        def paced(url: str) -> bytes:  # the caller's fetch, paced per host
-            wait(url)
-            return own_fetch(url)
-
-        fetch = paced
+    fetch = library_fetch(
+        fetch=fetch,
+        transport=transport,
+        config=config,
+        what=f"music library {lib.name!r}",
+        clock=clock,
+        sleep=sleep,
+    )
     store = files_store(out)
     return [
         _refused(lib, title, extra, reason=refusals[title])
@@ -358,7 +351,7 @@ def _acquire_title(
         if held is not None and _sha256(held) == kept["sha256"]:
             source = {"url": kept.get("url"), "mirror": kept.get("mirror")}
             return _held(lib, KEPT, held, verify(held), file=name, **source, **common)
-        data, duration, url, mirror = _fetch_verified(
+        data, duration, url, mirror = fetch_verified(
             page, mirrors=mirrors, fetch=fetch, verify=verify
         )
     except _TITLE_ERRORS as e:
@@ -450,7 +443,7 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _fetch_verified(
+def fetch_verified(
     url: str,
     *,
     mirrors: Sequence[Mirror],
@@ -459,7 +452,11 @@ def _fetch_verified(
 ) -> "tuple[bytes, float, str, str]":
     """``(bytes, seconds, the URL that served them, its mirror's name)`` from the
     first of ``mirrors`` whose bytes ``verify`` accepts; every mirror's reason in one
-    :class:`MusicLibraryError` when none does."""
+    :class:`MusicLibraryError` when none does.
+
+    The one mirror chain: :func:`acquire` and the registered library sources'
+    ``download`` (:mod:`foley.sources.music_library.adapter`) both run it.
+    """
     reasons = []
     for mirror in mirrors:
         where = mirror(url)
