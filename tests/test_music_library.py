@@ -5,6 +5,7 @@ clock)."""
 from __future__ import annotations
 
 import csv
+import functools
 import hashlib
 import io
 import json
@@ -16,12 +17,15 @@ from dataclasses import dataclass, field
 import pytest
 
 import foley.licensing
-from foley.base import LicenseRecord
+from foley.base import IntendedUse, LicenseRecord
+from foley.sources import video
 from foley.sources.music_library import (
     ACQUIRED,
     FAILED,
     KEPT,
     MUSIC_LIBRARIES,
+    REFUSED,
+    TRACK_COLUMNS,
     WISHLIST,
     AcquiredTrack,
     MusicLibrary,
@@ -30,6 +34,7 @@ from foley.sources.music_library import (
     acquire,
     attribution_text,
     kept_digests,
+    kept_sources,
     probe_verify,
     register_music_library,
     titles_by_library,
@@ -103,9 +108,14 @@ def _url(title):
     return MUSIC_LIBRARIES["incompetech"].track_url(title)
 
 
-def _acquire(titles, fetch, **kw):
+def _acquire(titles, fetch, clock=None, **kw):
+    """``acquire`` over a fake ``fetch``, timed by a fake clock (the pace costs no time)."""
+    clock = clock or Clock()
     kw.setdefault("out", {})
-    return acquire("incompetech", titles, fetch=fetch, verify=_ok, **kw)
+    return acquire(
+        "incompetech", titles, fetch=fetch, verify=_ok,
+        clock=clock, sleep=clock.sleep, **kw,
+    )  # fmt: skip
 
 
 def _via_transport(titles, transport, clock=None, **kw):
@@ -121,8 +131,8 @@ def _via_transport(titles, transport, clock=None, **kw):
 
 
 def test_titles_are_fetched_verified_and_recorded_with_their_licence():
-    fetch, store = Fetcher({_url("A"): b"aa", _url("B"): b"bb"}), {}
-    rows = _acquire(["A", "B"], fetch, out=store)
+    fetch, store, clock = Fetcher({_url("A"): b"aa", _url("B"): b"bb"}), {}, Clock()
+    rows = _acquire(["A", "B"], fetch, out=store, clock=clock)
     assert [(r.title, r.status, r.file) for r in rows] == [
         ("A", ACQUIRED, "A.mp3"),
         ("B", ACQUIRED, "B.mp3"),
@@ -139,14 +149,16 @@ def test_titles_are_fetched_verified_and_recorded_with_their_licence():
     assert lic.rights_verified and lic.requires_attribution and lic.commercial_ok
     assert row.sha256 == lic.content_sha256 == hashlib.sha256(b"aa").hexdigest()
     assert lic.source == "incompetech" and lic.source_url == _url("A")
+    assert clock.slept == [2.0], "one pause: the second request to the same host"
     assert attribution_text(rows).startswith('"A" Kevin MacLeod (incompetech.com)\n')
 
 
 def test_the_archive_copy_is_recorded_as_where_the_bytes_came_from():
     """The site refuses; the Internet Archive serves. The row says so: `url` is the
-    archive's, `page_url` the library's."""
-    (row,) = _acquire(["A"], Fetcher({wayback(_url("A")): b"aa"}))
-    assert row.status == ACQUIRED
+    archive's, `page_url` the library's, and no pause is spent switching hosts."""
+    clock = Clock()
+    (row,) = _acquire(["A"], Fetcher({wayback(_url("A")): b"aa"}), clock=clock)
+    assert row.status == ACQUIRED and clock.slept == []
     assert row.url == wayback(_url("A"))
     assert row.page_url == _url("A")
     assert row.mirror == "wayback"
@@ -239,10 +251,16 @@ def test_metadata_rides_the_row_into_the_tracks_table():
     assert track.metadata == {"feel": "Bright", "tags": {"k": 1}}
     (row,) = csv.DictReader(io.StringIO(tracks_table([track])))
     assert row["credited_by"] == "vid1; vid2" and row["feel"] == "Bright"
-    assert row["tags"] == '{"k": 1}'
+    assert row["tags"] == '{"k": 1}' and "extra" not in row
     assert row["license"] == "CC-BY-4.0" and row["duration_s"] == "1.5"
-    assert row["rights_verified"] == "True"
-    for clash in ({"license": "cc0-1.0"}, {"status": "acquired"}, {"sha256": "x"}):
+    assert row["rights_verified"] == "True" and row["commercial_ok"] == "True"
+    for clash in (
+        {"license": "cc0-1.0"},
+        {"status": "acquired"},
+        {"sha256": "x"},
+        {"commercial_ok": True},  # a licence flag: the library states it
+        {"cache_bytes_ok": True},
+    ):
         with pytest.raises(MusicLibraryError, match="drop them"):
             _acquire({"A": clash}, Fetcher({}))
 
@@ -318,14 +336,32 @@ def _mp3(tmp_path):
     return path.read_bytes()
 
 
-@pytest.mark.skipif(
+_needs_ffmpeg = pytest.mark.skipif(
     not (shutil.which("ffprobe") and shutil.which("ffmpeg")), reason="no ffmpeg"
 )
+
+
+@_needs_ffmpeg
 def test_probe_verify_reads_audio_and_refuses_an_error_page(tmp_path):
     assert probe_verify(_mp3(tmp_path)) == pytest.approx(1.0, abs=0.1)
     for bad in (b"<html>403 Forbidden</html>", b""):
         with pytest.raises(MusicLibraryError):
             probe_verify(bad)
+
+
+@_needs_ffmpeg
+@pytest.mark.parametrize("suffix", [".mp4", ".gif"])
+def test_probe_verify_refuses_a_real_video_without_audio(tmp_path, suffix):
+    path = tmp_path / f"picture{suffix}"
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "testsrc=d=1:s=64x64:r=5",
+         str(path)],
+        check=True,
+    )  # fmt: skip
+    assert video.has_audio_stream(str(path)) is False
+    assert video.default_probe(str(path)) > 0, "it has a duration"
+    with pytest.raises(MusicLibraryError, match="no audio stream"):
+        probe_verify(path.read_bytes(), suffix=suffix)
 
 
 def test_probe_verify_uses_the_injected_probe_on_a_file():
@@ -335,7 +371,73 @@ def test_probe_verify_uses_the_injected_probe_on_a_file():
         seen.append(open(path, "rb").read())
         return 2.25
 
-    assert probe_verify(b"abc", probe=probe) == 2.25 and seen == [b"abc"]
+    def has_audio(path):
+        seen.append(path)
+        return True
+
+    assert probe_verify(b"abc", probe=probe, has_audio=has_audio) == 2.25
+    assert seen[1:] == [b"abc"] and seen[0].endswith(".mp3")
+
+
+@pytest.mark.parametrize(
+    "has_audio, message",
+    [(False, "no audio stream"), (None, "cannot tell whether the file has an audio")],
+)
+def test_a_file_without_an_audio_stream_is_refused_even_with_a_duration(
+    has_audio, message
+):
+    """A video-only mp4 or a gif has a duration but no audio: an's ffprobe_verify
+    refused it, and so does probe_verify (an unknown answer refuses too)."""
+    verify = functools.partial(
+        probe_verify, probe=lambda path: 2.0, has_audio=lambda path: has_audio
+    )
+    with pytest.raises(MusicLibraryError, match=message):
+        verify(b"GIF89a...")
+    store = {}
+    (row,) = acquire(
+        "incompetech", ["A"], out=store, fetch=Fetcher({_url("A"): b"GIF89a"}),
+        verify=verify, sleep=lambda s: None,
+    )  # fmt: skip
+    assert row.status == FAILED and message in row.error and store == {}
+
+
+def _fake_ffprobe(tmp_path, *, stdout, code=0):
+    """An executable that answers like ffprobe: prints ``stdout``, exits ``code``."""
+    exe = tmp_path / "ffprobe"
+    exe.write_text(
+        f"#!{sys.executable}\nimport sys\nsys.stdout.write({stdout!r})\nsys.exit({code})\n"
+    )
+    exe.chmod(0o755)
+    return str(exe)
+
+
+@pytest.mark.parametrize(
+    "stdout, code, expected",
+    [
+        ("audio\n", 0, True),
+        ("", 0, False),
+        ("video\n", 0, False),
+        ("audio\n", 1, False),
+    ],
+)
+def test_has_audio_stream_reads_ffprobe_streams(tmp_path, stdout, code, expected):
+    exe = _fake_ffprobe(tmp_path, stdout=stdout, code=code)
+    assert video.has_audio_stream(str(tmp_path), ffprobe=exe) is expected
+
+
+def test_has_audio_stream_without_ffprobe_falls_back_to_soundfile(
+    tmp_path, monkeypatch
+):
+    np = pytest.importorskip("numpy")
+    sf = pytest.importorskip("soundfile")
+    wav, junk = tmp_path / "tone.wav", tmp_path / "page.mp3"
+    sf.write(str(wav), np.zeros(4800, dtype="float32"), 48000)
+    junk.write_bytes(b"<html>403</html>")
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+    assert video.has_audio_stream(str(wav)) is True
+    assert video.has_audio_stream(str(junk)) is None, "cannot tell, not 'no'"
+    monkeypatch.setitem(sys.modules, "soundfile", None)
+    assert video.has_audio_stream(str(wav)) is None, "no decoder: cannot tell"
 
 
 # --- foley's machinery: the transport, resilience, licensing SSOT --------------------
@@ -353,13 +455,38 @@ def test_a_429_with_retry_after_is_retried_after_the_advertised_wait():
     assert transport.calls[0][2]["User-Agent"].startswith("foley-music-library")
 
 
-def test_a_long_retry_after_is_honoured_up_to_the_configured_cap():
+def test_a_retry_after_over_the_cap_moves_on_to_the_next_mirror():
+    """Waiting the 120 s cap again and again for a server that asked for 600 s is
+    wasted: the archive is asked instead, at once."""
     url = _url("A")
     throttled = Resp(status_code=429, headers={"Retry-After": "600"})
+    transport = FakeTransport(
+        {url: [throttled, Resp(content=b"aa")], wayback(url): [Resp(content=b"aa")]}
+    )
+    clock = Clock()
+    (row,) = _via_transport(["A"], transport, clock=clock)
+    assert (row.status, row.mirror) == (ACQUIRED, "wayback")
+    assert [c[1] for c in transport.calls] == [url, wayback(url)]
+    assert clock.slept == []
+
+
+def test_a_retry_after_within_the_cap_is_waited_on_the_same_mirror():
+    url = _url("A")
+    throttled = Resp(status_code=429, headers={"Retry-After": "120"})
     transport = FakeTransport({url: [throttled, Resp(content=b"aa")]})
     clock = Clock()
     (row,) = _via_transport(["A"], transport, clock=clock)
-    assert row.status == ACQUIRED and 120.0 in clock.slept
+    assert (row.status, row.mirror) == (ACQUIRED, "direct") and clock.slept == [120.0]
+
+
+def test_a_failed_row_names_the_long_retry_after_of_every_mirror():
+    url = _url("A")
+    throttled = Resp(status_code=429, headers={"Retry-After": "3600"})
+    transport = FakeTransport({url: [throttled], wayback(url): [throttled]})
+    clock = Clock()
+    (row,) = _via_transport(["A"], transport, clock=clock)
+    assert row.status == FAILED and row.error.count("3600 s") == 2
+    assert "next mirror" in row.error and clock.slept == []
 
 
 def test_one_host_is_paced_and_switching_to_the_archive_costs_no_pause():
@@ -421,31 +548,189 @@ def test_licence_ids_come_from_license_id_from_cc_url(monkeypatch):
     assert (lic.license_id, lic.rights_verified) == real(calls[0])
 
 
-def test_a_library_whose_licence_foley_cannot_read_is_refused():
-    def rule(title):
-        return f"https://x.org/{title}.mp3"
+def _rule(title):
+    return f"https://x.org/{title}.mp3"
 
-    for url in (
-        "https://x.org/our-licence",  # not a CC URL
-        "https://creativecommons.org/licenses/by-nd/4.0/",  # ND: fails closed
-    ):
-        with pytest.raises(MusicLibraryError, match="cannot read a licence"):
-            register_music_library(
-                MusicLibrary("x", "X", license_url=url, track_url=rule)
-            )
+
+@pytest.mark.parametrize(
+    "url, message",
+    [
+        ("https://x.org/our-licence", "cannot read a licence"),  # not a CC URL
+        ("https://creativecommons.org/licenses/by-nd/4.0/", "NoDerivatives terms"),
+        ("https://creativecommons.org/licenses/by-sa/4.0/", "ShareAlike terms"),
+    ],
+)
+def test_a_library_whose_files_may_not_be_kept_is_refused(url, message):
+    """Registration checks keeping the files only; ShareAlike / NoDerivatives are a
+    deliberate refusal, said as such (not "cannot read")."""
+    with pytest.raises(MusicLibraryError, match=message) as info:
+        register_music_library(MusicLibrary("x", "X", license_url=url, track_url=_rule))
+    if "creativecommons" in url:
+        assert "on purpose" in str(info.value)
+        assert "cannot read" not in str(info.value)
     assert "x" not in MUSIC_LIBRARIES
 
 
-def test_a_public_domain_mark_library_is_acquired_but_never_verified():
+_NC_URL = "https://creativecommons.org/licenses/by-nc/4.0/"
+_NON_COMMERCIAL = IntendedUse(commercial=False, publish=True, can_attribute=True)
+
+
+def test_a_non_commercial_library_registers_but_its_titles_are_refused_by_default():
+    lib = MusicLibrary("nc_lib", "N", license_url=_NC_URL, track_url=_rule)
+    register_music_library(lib, replace=True)
+    try:
+        fetch, store = Fetcher({_rule("A"): b"aa"}), {}
+        (row,) = acquire("nc_lib", ["A"], out=store, fetch=fetch, verify=_ok)
+        assert row.status == REFUSED and "commercial use" in row.error
+        assert fetch.calls == [] and store == {}, "a refused title is not fetched"
+        assert row.license.license_id == "CC-BY-NC-4.0" and row.page_url == _rule("A")
+        assert attribution_text([row]) == "" and kept_digests([row]) == {}
+        (csv_row,) = csv.DictReader(io.StringIO(tracks_table([row])))
+        assert csv_row["status"] == REFUSED and csv_row["commercial_ok"] == "False"
+        (row,) = acquire(
+            "nc_lib", ["A"], out=store, fetch=fetch, verify=_ok,
+            intended_use=_NON_COMMERCIAL, sleep=lambda s: None,
+        )  # fmt: skip
+        assert row.status == ACQUIRED and store == {"A.mp3": b"aa"}
+    finally:
+        MUSIC_LIBRARIES.pop("nc_lib", None)
+
+
+def test_a_refused_batch_needs_no_probe_and_no_egress(monkeypatch):
+    import foley
+
+    monkeypatch.setattr(shutil, "which", lambda name: None)
+    monkeypatch.setitem(sys.modules, "mixing.video.shot_boundaries", None)
+    lib = MusicLibrary("nc_lib", "N", license_url=_NC_URL, track_url=_rule)
+    transport = FakeTransport({})
+    with foley.offline():
+        rows = acquire(lib, ["A", "B"], out={}, transport=transport)
+    assert [r.status for r in rows] == [REFUSED, REFUSED] and transport.calls == []
+
+
+def test_the_licence_gate_fails_closed(monkeypatch):
+    def broken(record, intended_use):
+        raise TypeError("a gate bug")
+
+    monkeypatch.setattr(
+        "foley.sources.music_library.acquisition.refusal_reason", broken
+    )
+    fetch = Fetcher({_url("A"): b"aa"})
+    (row,) = _acquire(["A"], fetch)
+    assert row.status == REFUSED and "could not decide" in row.error
+    assert fetch.calls == []
+
+
+def test_a_public_domain_mark_library_is_refused_its_rights_unverified():
+    """The Public Domain Mark is a claim, never verified: foley's gate refuses it."""
     lib = MusicLibrary(
         "pdm_lib",
         "Someone",
         license_url="https://creativecommons.org/publicdomain/mark/1.0/",
         track_url=lambda t: f"https://pd.example/{t}.mp3",
     )
-    (row,) = acquire(lib, ["A"], out={}, fetch=lambda url: b"aa", verify=_ok)
-    assert row.status == ACQUIRED
+    fetch = Fetcher({"https://pd.example/A.mp3": b"aa"})
+    (row,) = acquire(lib, ["A"], out={}, fetch=fetch, verify=_ok)
+    assert row.status == REFUSED and "not verified" in row.error and fetch.calls == []
     assert row.license.license_id == "PDM-1.0" and not row.license.rights_verified
+
+
+def test_the_tracks_table_has_a_commercial_ok_column():
+    assert (
+        TRACK_COLUMNS.index("commercial_ok")
+        == TRACK_COLUMNS.index("rights_verified") + 1
+    )
+
+
+def test_a_body_declared_over_max_bytes_is_refused_before_it_is_read():
+    class Huge:
+        status_code = 200
+        headers = {"Content-Type": "audio/mpeg", "Content-Length": "999999999"}
+
+        @property
+        def content(self):
+            raise AssertionError("the body was read")
+
+    url = _url("A")
+    huge = Huge()
+    transport = FakeTransport({url: [huge]})
+    (row,) = _via_transport(["A"], transport)
+    assert row.status == FAILED and "declares 999999999 bytes" in row.error
+
+
+def test_a_body_over_max_bytes_without_a_header_is_refused_after_it_is_read():
+    """A partial config is laid over the defaults (the user agent is still there)."""
+    url = _url("A")
+    transport = FakeTransport({url: [Resp(content=b"aaaa")]})
+    (row,) = _via_transport(["A"], transport, config={"max_bytes": 3})
+    assert row.status == FAILED and "is over 3 bytes" in row.error
+    assert transport.calls[0][2]["User-Agent"].startswith("foley-music-library")
+
+
+def test_a_config_rate_paces_a_fetch_of_ones_own():
+    clock = Clock()
+    rows = _acquire(
+        ["A", "B"], Fetcher({_url("A"): b"a", _url("B"): b"b"}),
+        clock=clock, config={"rate": {"per_min": 6}},
+    )  # fmt: skip
+    assert [r.status for r in rows] == [ACQUIRED, ACQUIRED] and clock.slept == [10.0]
+
+
+def test_a_bug_in_the_fetch_stops_the_batch():
+    """A ``KeyError`` from a fetch is a bug (a config without a key), not a lost title."""
+
+    def fetch(url):
+        return {}["user_agent"]
+
+    with pytest.raises(KeyError):
+        _acquire(["A", "B"], fetch)
+
+
+def test_a_store_refusal_names_no_local_directory(tmp_path):
+    lib = MusicLibrary(
+        "x", "X", license_url="https://creativecommons.org/licenses/by/4.0/",
+        track_url=_rule, file_name=lambda t: "../../evil_" + t,
+    )  # fmt: skip
+    out = tmp_path / "o"
+    (row,) = acquire(
+        lib, ["A"], out=out, fetch=Fetcher({_rule("A"): b"a"}), verify=_ok,
+        sleep=lambda s: None,
+    )  # fmt: skip
+    assert row.status == FAILED and row.error.startswith("could not save")
+    assert str(tmp_path) not in row.error and "/tmp" not in row.error
+    assert not list(tmp_path.rglob("evil*"))
+    (row,) = _acquire(["x" * 300], Fetcher({_url("x" * 300): b"a"}), out=out)
+    assert row.status == FAILED and "too long" in row.error
+    assert str(tmp_path) not in row.error
+
+
+def test_a_kept_row_keeps_the_url_and_mirror_that_served_it(tmp_path):
+    url = _url("A")
+    transport = FakeTransport({wayback(url): [Resp(content=b"aa")]})
+    out = tmp_path / "lib"
+    table = tracks_table(_via_transport(["A"], transport, out=out))
+    transport.calls.clear()
+    (row,) = _via_transport(["A"], transport, out=out, kept=kept_sources(table))
+    assert (row.status, row.url, row.mirror) == (KEPT, wayback(url), "wayback")
+    assert transport.calls == [] and row.page_url == url
+    (row,) = _via_transport(["A"], transport, out=out, kept=kept_digests(table))
+    assert (row.status, row.url, row.mirror) == (KEPT, None, None), "a digest only"
+    with pytest.raises(MusicLibraryError, match="kept value"):
+        _via_transport(["A"], transport, out=out, kept={"A.mp3": {"url": url}})
+
+
+def test_acquire_reads_a_library_from_the_libraries_it_is_given():
+    lib = MusicLibrary(
+        "mine", "Me", license_url="https://creativecommons.org/licenses/by/4.0/",
+        track_url=_rule,
+    )  # fmt: skip
+    rows = acquire(
+        "mine", ["A"], libraries={"mine": lib}, out={},
+        fetch=Fetcher({_rule("A"): b"a"}), verify=_ok, sleep=lambda s: None,
+    )  # fmt: skip
+    assert [(r.library, r.status) for r in rows] == [("mine", ACQUIRED)]
+    with pytest.raises(MusicLibraryError, match="no music library 'incompetech'"):
+        acquire("incompetech", ["A"], libraries={"mine": lib}, out={})
 
 
 def test_fetch_and_transport_are_one_seam_or_the_other():

@@ -7,13 +7,18 @@ predictably instead of hammering the API or crashing a run:
 * **throttle** — a token bucket honouring the source config's declared ``rate``
   (``per_min`` / ``per_day``) so foley never exceeds the published limits;
 * **backoff** — exponential retry on ``429`` / ``5xx`` (and transport exceptions),
-  honouring a ``Retry-After`` header when present;
+  honouring a ``Retry-After`` header when present (delta-seconds or an HTTP-date;
+  a value that is negative, not finite or unreadable falls back to the backoff), up
+  to the policy's ``max_delay_s``; a policy with ``give_up_over_max_delay`` raises
+  :class:`RetryAfterTooLong` instead of waiting the cap (a caller with a mirror
+  moves on to it);
 * **circuit-break** — after N consecutive failures the breaker opens and fast-fails
   with :class:`SourceUnavailable` for a cool-down window (no thundering herd).
 
 :func:`per_host` gives each host its own wrapped transport (its own pace and breaker),
 for a caller that fetches from several websites through one transport (a music
-library and its Wayback mirror).
+library and its Wayback mirror); :func:`pace_per_host` is that pace alone, for a
+caller whose requests do not go through a transport.
 
 All timing goes through injected ``clock`` / ``sleep`` callables (default
 ``time.monotonic`` / ``time.sleep``) so the whole thing is deterministically testable
@@ -22,8 +27,11 @@ with a fake clock and a no-op sleep — no real network, no real waiting. Stdlib
 
 from __future__ import annotations
 
+import math
 import time
 from dataclasses import dataclass, field
+from datetime import timezone
+from email.utils import parsedate_to_datetime
 from typing import Callable, Optional
 from urllib.parse import urlsplit
 
@@ -36,6 +44,19 @@ class SourceUnavailable(RuntimeError):
     """Raised when a source's circuit breaker is open or its retries are exhausted."""
 
 
+class RetryAfterTooLong(SourceUnavailable):
+    """A ``Retry-After`` asked for longer than the policy waits, and the policy gives
+    up rather than wait its cap (:attr:`RetryPolicy.give_up_over_max_delay`).
+
+    ``retry_after_s`` is what the server asked for, ``max_delay_s`` the cap.
+    """
+
+    def __init__(self, message: str, *, retry_after_s: float, max_delay_s: float):
+        super().__init__(message)
+        self.retry_after_s = retry_after_s
+        self.max_delay_s = max_delay_s
+
+
 @dataclass
 class RetryPolicy:
     """Exponential-backoff retry policy for transient HTTP failures."""
@@ -45,6 +66,9 @@ class RetryPolicy:
     base_delay_s: float = 0.5
     max_delay_s: float = 30.0
     respect_retry_after: bool = True
+    #: ``True``: a ``Retry-After`` above ``max_delay_s`` raises
+    #: :class:`RetryAfterTooLong` at once; ``False``: it is waited at ``max_delay_s``.
+    give_up_over_max_delay: bool = False
 
 
 @dataclass
@@ -141,16 +165,60 @@ def _backoff_delay(attempt: int, retry: RetryPolicy) -> float:
     return min(retry.base_delay_s * (2**attempt), retry.max_delay_s)
 
 
-def _retry_delay(resp, attempt: int, retry: RetryPolicy) -> float:
-    """Backoff delay for a retryable response, honouring ``Retry-After`` when present."""
+def retry_after_seconds(raw, *, now: Optional[float] = None) -> Optional[float]:
+    """The seconds a ``Retry-After`` value asks to wait, or ``None`` when it is unusable.
+
+    ``raw`` is delta-seconds (``"120"``) or an HTTP-date, read relative to ``now``
+    (wall-clock epoch seconds; default :func:`time.time`). A negative, non-finite or
+    unreadable value, and a date in the past, are ``None``: the caller backs off.
+
+    >>> retry_after_seconds("37"), retry_after_seconds(" 1.5 ")
+    (37.0, 1.5)
+    >>> retry_after_seconds("Wed, 21 Oct 2026 07:28:00 GMT", now=1792567600.0)
+    80.0
+    >>> [retry_after_seconds(v) for v in ("-5", "nan", "inf", "soon", None)]
+    [None, None, None, None, None]
+    """
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    try:
+        seconds = float(text)
+    except ValueError:
+        try:
+            when = parsedate_to_datetime(text)
+        except (TypeError, ValueError, IndexError):
+            return None
+        if when.tzinfo is None:  # "-0000" or no zone: an HTTP-date is GMT
+            when = when.replace(tzinfo=timezone.utc)
+        seconds = when.timestamp() - (time.time() if now is None else now)
+    if not math.isfinite(seconds) or seconds < 0:
+        return None
+    return seconds
+
+
+def _retry_delay(
+    resp, attempt: int, retry: RetryPolicy, *, now: Optional[float] = None
+) -> float:
+    """Backoff delay for a retryable response, honouring a usable ``Retry-After``.
+
+    Raises:
+        RetryAfterTooLong: When the ``Retry-After`` is above ``retry.max_delay_s``
+            and ``retry.give_up_over_max_delay``.
+    """
     if retry.respect_retry_after:
         headers = getattr(resp, "headers", None) or {}
         raw = headers.get("Retry-After") or headers.get("retry-after")
-        if raw is not None:
-            try:
-                return min(float(raw), retry.max_delay_s)
-            except (TypeError, ValueError):
-                pass
+        asked = retry_after_seconds(raw, now=now)
+        if asked is not None:
+            if asked > retry.max_delay_s and retry.give_up_over_max_delay:
+                raise RetryAfterTooLong(
+                    f"the server asks to retry after {asked:g} s, over the "
+                    f"{retry.max_delay_s:g} s this source waits",
+                    retry_after_s=asked,
+                    max_delay_s=retry.max_delay_s,
+                )
+            return min(asked, retry.max_delay_s)
     return _backoff_delay(attempt, retry)
 
 
@@ -163,6 +231,7 @@ def resilient(
     clock: Callable[[], float] = time.monotonic,
     sleep: Callable[[float], None] = time.sleep,
     resend_after_transport_error: bool = True,
+    wall_clock: Callable[[], float] = time.time,
 ):
     """Wrap a :class:`~foley.sources.http.Transport` with throttle + backoff + circuit-break.
 
@@ -178,10 +247,13 @@ def resilient(
             have accepted — and billed — the request before the connection failed, so
             re-sending would be an unauthorized second paid call. Status-coded
             rejections (429 / 5xx) are still retried: those are answers, not charges.
+        wall_clock: Epoch-seconds time source, for a ``Retry-After`` HTTP-date
+            (injected for tests).
 
     Returns:
         A transport with the same signature, plus a ``.reset()`` method. Raises
-        :class:`SourceUnavailable` when the breaker is open or retries are exhausted.
+        :class:`SourceUnavailable` when the breaker is open or retries are exhausted
+        (:class:`RetryAfterTooLong` when the policy gives up on a long wait).
     """
     retry = retry or RetryPolicy()
     _breaker = _CircuitBreaker(breaker or BreakerPolicy(), clock=clock)
@@ -211,7 +283,7 @@ def resilient(
             if resp.status_code in retry.retry_on:
                 _breaker.on_failure()
                 if attempt + 1 < retry.max_attempts:
-                    sleep(_retry_delay(resp, attempt, retry))
+                    sleep(_retry_delay(resp, attempt, retry, now=wall_clock()))
                     continue
                 if _breaker.is_open:
                     raise SourceUnavailable(
@@ -266,6 +338,40 @@ def per_host(make: Callable[[], Callable]) -> Callable:
     return transport
 
 
+def pace_per_host(
+    rate: Optional[dict],
+    *,
+    clock: Callable[[], float] = time.monotonic,
+    sleep: Callable[[float], None] = time.sleep,
+) -> Callable[[str], None]:
+    """``wait(url)``: before a request to ``url``, wait out its host's pace.
+
+    The throttle of :func:`resilient` (``rate``'s ``per_min``; ``per_day`` raises
+    :class:`SourceUnavailable` past its cap) without the transport around it, one per
+    host, for a caller whose requests are its own (a ``url -> bytes`` function).
+    No ``rate`` waits for nothing.
+
+    >>> slept, now = [], [0.0]
+    >>> wait = pace_per_host({"per_min": 30}, clock=lambda: now[0], sleep=slept.append)
+    >>> for url in ("https://a.org/1", "https://b.org/1", "https://a.org/2"):
+    ...     wait(url)
+    >>> slept
+    [2.0]
+    """
+    rate = rate or {}
+    buckets: dict = {}
+
+    def wait(url: str) -> None:
+        host = urlsplit(url).netloc.lower()
+        if host not in buckets:
+            buckets[host] = _TokenBucket(
+                per_min=rate.get("per_min"), per_day=rate.get("per_day"), clock=clock
+            )
+        buckets[host].take(sleep)
+
+    return wait
+
+
 def make_resilient_transport_from_config(config: dict, *, base=None, **inject):
     """Build a resilient transport from a source ``config`` (its ``rate`` drives the throttle).
 
@@ -273,7 +379,8 @@ def make_resilient_transport_from_config(config: dict, *, base=None, **inject):
         config: A ``SOURCE_CONFIG`` dict (reads ``config['rate']`` and, if present,
             ``config['retry']``: :class:`RetryPolicy` fields).
         base: The base transport (default: :func:`foley.sources.http.requests_transport`).
-        **inject: ``retry`` / ``breaker`` / ``clock`` / ``sleep`` overrides.
+        **inject: ``retry`` / ``breaker`` / ``clock`` / ``sleep`` / ``wall_clock``
+            overrides.
 
     Returns:
         A resilient transport wrapping ``base``.

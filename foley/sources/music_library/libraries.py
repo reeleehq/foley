@@ -10,8 +10,12 @@ license by hand, never downloads.
 The licence is never typed in: :func:`track_license` reads it from the library's
 licence URL with :func:`foley.licensing.license_id_from_cc_url` (the one CC parser,
 which never widens rights) and builds the :class:`~foley.base.LicenseRecord` with
-flags derived from that id. A free library whose URL foley cannot read is refused at
-registration (fail-closed), and a paid one claims no rights at all.
+flags derived from that id. A free library whose licence does not let foley keep the
+files (``cache_bytes_ok``: a URL foley cannot read, or a ShareAlike / NoDerivatives
+licence, which foley refuses on purpose) is refused at registration (fail-closed),
+and a paid one claims no rights at all. Whether a title may be used for a
+production is :func:`~foley.sources.music_library.acquire`'s ``intended_use`` gate,
+not registration's.
 
 >>> lib = MUSIC_LIBRARIES["incompetech"]
 >>> lib.track_url("Sneaky Snitch")
@@ -34,7 +38,7 @@ from typing import Optional, Union
 from urllib.parse import quote
 
 from ...base import LicenseRecord
-from ...licensing import derive_license_flags, license_id_from_cc_url
+from ...licensing import cc_refused_terms, derive_license_flags, license_id_from_cc_url
 from ..base import api_license
 
 #: The extension a track is saved with when its library names no other.
@@ -132,10 +136,15 @@ MUSIC_LIBRARIES: dict[str, MusicLibrary] = {}
 def register_music_library(library: MusicLibrary, *, replace: bool = False) -> None:
     """Add ``library`` to :data:`MUSIC_LIBRARIES` (``replace`` to redefine one).
 
+    A free library is checked for one licence right only, keeping the files
+    (``cache_bytes_ok``); the uses a production makes of them are gated per title by
+    :func:`~foley.sources.music_library.acquire` (``intended_use``).
+
     Raises:
         MusicLibraryError: If the name is taken (and not ``replace``), or a free
-            library has no ``track_url`` rule, a licence URL foley cannot read, or a
-            licence that does not allow keeping the files (``cache_bytes_ok``).
+            library has no ``track_url`` rule or a licence that does not allow
+            keeping the files (a ShareAlike / NoDerivatives licence, refused on
+            purpose; a licence URL foley cannot read; a licence whose flags say no).
     """
     if library.name in MUSIC_LIBRARIES and not replace:
         raise MusicLibraryError(
@@ -146,19 +155,31 @@ def register_music_library(library: MusicLibrary, *, replace: bool = False) -> N
             raise MusicLibraryError(
                 f"music library {library.name!r} is free but has no track_url rule"
             )
-        if library.license_id == "unknown":
-            raise MusicLibraryError(
-                f"music library {library.name!r}: foley cannot read a licence from "
-                f"{library.license_url!r} (license_id_from_cc_url fails closed on it); "
-                "register it with a Creative Commons licence URL foley knows, or as "
-                "paid (license_url=None)"
-            )
         if not derive_license_flags(library.license_id).cache_bytes_ok:
-            raise MusicLibraryError(
-                f"music library {library.name!r}: its licence ({library.license_id}) "
-                "does not allow keeping the files, so they cannot be acquired"
-            )
+            raise MusicLibraryError(_not_keepable(library))
     MUSIC_LIBRARIES[library.name] = library
+
+
+def _not_keepable(library: MusicLibrary) -> str:
+    """Why ``library``'s files may not be kept: refused terms, an unread URL, or flags."""
+    where = f"music library {library.name!r}"
+    terms = cc_refused_terms(library.license_url)
+    if terms:
+        return (
+            f"{where}: its licence ({library.license_url!r}) has "
+            f"{' and '.join(terms)} terms, which foley refuses on purpose (it has no "
+            "licence row that can honour them), so its files are not acquired"
+        )
+    if library.license_id == "unknown":
+        return (
+            f"{where}: foley cannot read a licence from {library.license_url!r} "
+            "(license_id_from_cc_url fails closed on it); register it with a "
+            "Creative Commons licence URL foley knows, or as paid (license_url=None)"
+        )
+    return (
+        f"{where}: its licence ({library.license_id}) does not allow keeping the "
+        "files, so they cannot be acquired"
+    )
 
 
 def music_library(

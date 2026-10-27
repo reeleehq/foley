@@ -16,16 +16,19 @@ collect the attribution lines the licence asks for. :func:`acquire` is that scri
   the paid ``artlist`` and ``epidemic_sound``, whose titles become wishlist rows.
 - **Licences come from foley's SSOT**: each row's
   :class:`~foley.base.LicenseRecord` is built from the library's licence URL by
-  :func:`foley.licensing.license_id_from_cc_url` (:func:`track_license`); a paid
-  library claims no rights.
+  :func:`foley.licensing.license_id_from_cc_url` (:func:`track_license`) and gated
+  by :func:`foley.licensing.refusal_reason` for ``acquire``'s ``intended_use``
+  (default: commercial publishing) before anything is fetched; a refused title is a
+  ``refused`` row. A paid library claims no rights.
 - **Fetching is foley's**: a :class:`~foley.sources.http.Transport` wrapped per host
   by :func:`foley.sources.resilience.resilient` (pace, ``429`` / ``Retry-After``,
   breaker), with the library's own server then the Internet Archive's raw copy as
   mirrors (:func:`direct`, :func:`wayback`); :func:`probe_verify` checks each file
-  with foley's media probe.
+  has an audio stream and a length, with foley's media probes.
 - **Rows are portable** (:class:`AcquiredTrack`): ``.row()`` is flat and JSON-safe,
-  :func:`tracks_table` writes them as CSV and :func:`kept_digests` reads a table
-  back, so a rerun fetches only what it lacks.
+  :func:`tracks_table` writes them as CSV and :func:`kept_digests` (or
+  :func:`kept_sources`, with each file's URL) reads a table back, so a rerun fetches
+  only what it lacks.
 
 This is not a live search source (it has no ``search`` / ``download`` adapter and no
 ``config.py``), so :func:`foley.sources.registry.discover_sources` does not list it;
@@ -46,6 +49,7 @@ from .acquisition import (
     FAILED,
     HELD,
     KEPT,
+    REFUSED,
     TRACK_COLUMNS,
     WISHLIST,
     AcquiredTrack,
@@ -53,10 +57,17 @@ from .acquisition import (
     attribution_text,
     files_store,
     kept_digests,
+    kept_sources,
     tracks_table,
 )
 from .credit_parser import titles_by_library, titles_from_json
-from .fetch import MUSIC_LIBRARY_HTTP, fetch_audio, make_fetch, polite_transport
+from .fetch import (
+    MUSIC_LIBRARY_HTTP,
+    fetch_audio,
+    make_fetch,
+    music_library_config,
+    polite_transport,
+)
 from .libraries import (
     BUILTIN_LIBRARIES,
     MUSIC_LIBRARIES,
@@ -80,6 +91,7 @@ __all__ = [
     "KEPT",
     "MUSIC_LIBRARIES",
     "MUSIC_LIBRARY_HTTP",
+    "REFUSED",
     "TRACK_COLUMNS",
     "WAYBACK_RAW",
     "WISHLIST",
@@ -93,9 +105,11 @@ __all__ = [
     "fetch_audio",
     "files_store",
     "kept_digests",
+    "kept_sources",
     "make_fetch",
     "mirror_name",
     "music_library",
+    "music_library_config",
     "polite_transport",
     "probe_available",
     "probe_verify",
