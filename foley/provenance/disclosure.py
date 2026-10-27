@@ -573,6 +573,7 @@ def build_content_credential(
                 "label": "foley.generation",
                 "data": {
                     "prompt": lic.generation_prompt,
+                    "prompt_used": lic.generation_prompt_used,
                     "seed": lic.generation_seed,
                     "params": lic.generation_params or {},
                     "watermark": lic.watermark,
@@ -772,6 +773,7 @@ def art50_checklist(record: "CreditInput") -> dict:
             "generator_model": lic.generator_model,
             "generator_version": lic.generator_version,
             "generation_prompt": lic.generation_prompt,
+            "generation_prompt_used": lic.generation_prompt_used,
             "generation_seed": lic.generation_seed,
             "source": lic.source,
             "license_id": lic.license_id,

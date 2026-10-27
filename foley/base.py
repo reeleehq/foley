@@ -206,6 +206,18 @@ GENERATION_AFFORDANCES: dict[str, Affordance] = {
     "output_format": Affordance(
         "output_format", str, "wav|opus|mp3", "wav", "generate"
     ),
+    "sample_rate": Affordance(
+        "sample_rate",
+        int,
+        "Requested rate (Hz); the actual rate is measured and recorded",
+        stage="generate",
+    ),
+    "expand_prompt": Affordance(
+        "expand_prompt",
+        bool,
+        "Let the backend rewrite the prompt (the prompt it used is recorded)",
+        stage="generate",
+    ),
 }
 
 
@@ -382,7 +394,8 @@ class LicenseRecord(SerializableMixin):
     is_ai_generated: bool = False
     generator_model: Optional[str] = None
     generator_version: Optional[str] = None
-    generation_prompt: Optional[str] = None
+    generation_prompt: Optional[str] = None  # the prompt foley sent
+    generation_prompt_used: Optional[str] = None  # the one the backend reports using
     generation_seed: Optional[int] = None
     generation_params: dict = field(default_factory=dict)
     watermark: Optional[dict] = (
@@ -397,11 +410,14 @@ class LicenseRecord(SerializableMixin):
         ``None`` for a sound that was not generated. A backend with no seed
         (ElevenLabs, Sonilo) records none, so its clips read ``False`` rather than
         carrying a seed that would reproduce nothing (#75). A seed is necessary, not
-        sufficient: a hosted endpoint can change its model behind the same id.
+        sufficient: a hosted endpoint can change its model behind the same id. A
+        prompt the backend rewrote (``expand_prompt``) is ``False`` too: replaying it
+        runs the rewrite again.
         """
         if not self.is_ai_generated:
             return None
-        return self.generation_seed is not None
+        rewritten = self.generation_prompt_used not in (None, self.generation_prompt)
+        return self.generation_seed is not None and not rewritten
 
     # safety / disclosure
     contains_recognizable_voice: bool = False

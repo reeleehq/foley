@@ -40,6 +40,7 @@ from ..base import (
     native_adherence,
     recorded_params,
     bound_source_account,
+    native_output_format as native_output_format_for,
     operator_env_key,
     resolve_source_key,
     source_account_id,
@@ -305,6 +306,7 @@ class ElevenLabsAdapter:
         seed: Optional[int] = None,
         loop: bool = False,
         output_format: str = "wav",
+        sample_rate: Optional[int] = None,
         provider_params: Optional[dict] = None,
         **kw,
     ) -> GeneratedClip:
@@ -328,6 +330,9 @@ class ElevenLabsAdapter:
                 translated to the native enum; ``wav`` is the lossless ``pcm_48000``
                 wrapped in a WAV header here, falling back to MP3 (with a note) if
                 the account's plan refuses PCM. Ingest re-archives to FLAC.
+            sample_rate: The rate (Hz) to ask for; it picks the native enum for
+                ``output_format`` (``wav`` at 22050 is ``pcm_22050``). A rate the
+                format lacks keeps its default rate, with a note.
             provider_params: Native request fields merged over the translated ones
                 (#61): JSON body fields, except ``output_format``, which replaces the
                 native format sent as the URL query param. Recorded in
@@ -344,7 +349,13 @@ class ElevenLabsAdapter:
         """
         license_id = self.plan  # fail closed BEFORE the paid call
         notes: list = []
-        native_output_format = self._resolve_output_format(output_format, notes)
+        overridden = "output_format" in (provider_params or {})  # it decides the rate
+        native_output_format = native_output_format_for(
+            self.config,
+            output_format,
+            sample_rate=sample_rate,
+            notes=None if overridden else notes,
+        )
         self._warn_unsupported(
             notes, negative_prompt=negative_prompt, steps=steps, seed=seed, **kw
         )
@@ -409,18 +420,6 @@ class ElevenLabsAdapter:
         )
 
     # -- helpers ------------------------------------------------------------
-
-    def _resolve_output_format(self, output_format: str, notes: list) -> str:
-        """Translate a coarse foley token to the native enum (with a fallback note)."""
-        table = self.config["param_map"]["output_format"]["to_native_map"]
-        native = table.get(output_format)
-        if native is None:
-            native = self.config["native_defaults"]["output_format"]
-            notes.append(
-                f"output_format {output_format!r} not offered by ElevenLabs SFX; "
-                f"using {native!r}"
-            )
-        return native
 
     def _invoke_with_fallback(self, native_output_format: str, body: dict, notes: list):
         """Call the endpoint; on a 4xx for a format with a declared fallback, retry once.

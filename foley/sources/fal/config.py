@@ -40,6 +40,12 @@ from __future__ import annotations
 
 import copy
 
+from ..elevenlabs.config import MP3_BY_RATE as _EL_MP3_BY_RATE
+from ..elevenlabs.config import PCM_RATES as _EL_PCM_RATES
+
+#: ElevenLabs formats the direct API offers and fal's endpoint does not (report 17 §3).
+_FAL_EL_LACKS = frozenset({"pcm_32000", "mp3_24000_48"})
+
 #: fal's documented pricing and model pages (read 2026-10-25).
 _FAL_PRICING_SOURCE = "fal pricing API (GET /v1/models/pricing?endpoint_id=...)"
 _SEEN = "2026-10-25"
@@ -88,6 +94,9 @@ SOURCE_CONFIGS = (
             "negative_prompt": {"native_name": "negative_prompt"},
             "steps": {"native_name": "num_inference_steps"},
             "seed": {"native_name": "seed"},
+            # fal's LLM prompt rewrite (#75); off unless asked (fixed_arguments below),
+            # and the prompt the endpoint used is recorded beside the one sent.
+            "expand_prompt": {"native_name": "enable_prompt_expansion"},
             "output_format": {
                 "native_name": "output_format",
                 "to_native_map": {
@@ -106,6 +115,7 @@ SOURCE_CONFIGS = (
             "steps",
             "seed",
             "output_format",
+            "expand_prompt",
         ],
         unsupported_affordances=["loop"],
         native_defaults={
@@ -117,7 +127,7 @@ SOURCE_CONFIGS = (
             "duration_min_s": 1.0,
             "duration_max_s": 120.0,
             "sample_rate": 44100,  # SAME-Small autoencoder; read live 2026-10-25 (report 17)
-            # Sent on every call; prompt expansion would rewrite the prompt we record.
+            # Sent on every call: prompt expansion only when expand_prompt=True asks.
             "fixed_arguments": {
                 "enable_prompt_expansion": False,
                 "enable_safety_checker": True,
@@ -236,6 +246,21 @@ SOURCE_CONFIGS = (
                     "mp3": "mp3_44100_128",
                     "opus": "opus_48000_128",
                 },
+                # fal's enum (report 17 §3): the direct API's, less _FAL_EL_LACKS.
+                "by": "sample_rate",
+                "to_native_by_rate": {
+                    "wav": {
+                        r: f"pcm_{r}"
+                        for r in _EL_PCM_RATES
+                        if f"pcm_{r}" not in _FAL_EL_LACKS
+                    },
+                    "mp3": {
+                        r: f
+                        for r, f in _EL_MP3_BY_RATE.items()
+                        if f not in _FAL_EL_LACKS
+                    },
+                    "opus": {48000: "opus_48000_128"},
+                },
             },
         },
         supported_affordances=[
@@ -244,6 +269,7 @@ SOURCE_CONFIGS = (
             "prompt_influence",
             "loop",
             "output_format",
+            "sample_rate",
         ],
         unsupported_affordances=["negative_prompt", "steps", "seed"],
         native_defaults={
