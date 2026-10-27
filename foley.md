@@ -1,4 +1,4 @@
-> built 2026-10-27 04:49 UTC from 81b065b (main) · foley 0.0.75. Details: build_info.json
+> built 2026-10-27 05:19 UTC from fc77484 (main) · foley 0.0.76. Details: build_info.json
 
 # index.html.md
 
@@ -61,6 +61,11 @@ clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
 # then Sonilo, both on fal; FOLEY_V2A_ORDER replaces it). Their fal-route output terms
 # are unverified, so name the backend (its licence is then gated by keep()) — #170
 clip = foley.generate("", backend="fal_mirelo_v2a", video="shot.mp4", duration_s=6)
+# Non-commercial V2A, named only: fal_mmaudio_v2a (CC BY-NC), fal_thinksound (research
+# only), fal_hunyuan_foley (no grant in the EU, UK or KR: say where it is used)
+use = foley.IntendedUse(commercial=False, territory="US")  # every place it is shown
+clip = foley.generate("rain on a tin roof", backend="fal_hunyuan_foley", video="shot.mp4",
+                      intended_use=use)
 
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
@@ -2637,13 +2642,16 @@ Serialization contract:
 | [`QUERY_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).        |
 |-------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | [`GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these). |
+| [`ISO_COUNTRY_CODES`](_autosummary/foley.base.html.md#foley.base.ISO_COUNTRY_CODES)      | The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).     |
+| [`TERRITORY_ALIASES`](_autosummary/foley.base.html.md#foley.base.TERRITORY_ALIASES)      | the UK's common one and the EU's code for Greece.                       |
 | [`MASTER_PROFILES`](_autosummary/foley.base.html.md#foley.base.MASTER_PROFILES)        | The named delivery targets (report 06 §5.2).                            |
 
 ### Functions
 
-| [`reject_renamed`](_autosummary/foley.base.html.md#foley.base.reject_renamed)(names[, vocabulary])   | Raise `TypeError` if any of `names` is an affordance's old spelling.                    |
-|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| [`resolve_master`](_autosummary/foley.base.html.md#foley.base.resolve_master)(master)                | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`. |
+| [`normalize_territory`](_autosummary/foley.base.html.md#foley.base.normalize_territory)(territory)      | `territory` as an ISO 3166-1 alpha-2 code, `None` when unstated.                        |
+|--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [`reject_renamed`](_autosummary/foley.base.html.md#foley.base.reject_renamed)(names[, vocabulary]) | Raise `TypeError` if any of `names` is an affordance's old spelling.                    |
+| [`resolve_master`](_autosummary/foley.base.html.md#foley.base.resolve_master)(master)              | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`. |
 
 ### Classes
 
@@ -2793,11 +2801,23 @@ Whether a candidate was retrieved from the index or freshly generated.
 
 Unified generation-stage parameters (generate backends map onto these).
 
-### *class* foley.base.IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False)
+### foley.base.ISO_COUNTRY_CODES *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)* *= frozenset({'AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW', 'AX', 'AZ', 'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BL', 'BM', 'BN', 'BO', 'BQ', 'BR', 'BS', 'BT', 'BV', 'BW', 'BY', 'BZ', 'CA', 'CC', 'CD', 'CF', 'CG', 'CH', 'CI', 'CK', 'CL', 'CM', 'CN', 'CO', 'CR', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ', 'DE', 'DJ', 'DK', 'DM', 'DO', 'DZ', 'EC', 'EE', 'EG', 'EH', 'ER', 'ES', 'ET', 'FI', 'FJ', 'FK', 'FM', 'FO', 'FR', 'GA', 'GB', 'GD', 'GE', 'GF', 'GG', 'GH', 'GI', 'GL', 'GM', 'GN', 'GP', 'GQ', 'GR', 'GS', 'GT', 'GU', 'GW', 'GY', 'HK', 'HM', 'HN', 'HR', 'HT', 'HU', 'ID', 'IE', 'IL', 'IM', 'IN', 'IO', 'IQ', 'IR', 'IS', 'IT', 'JE', 'JM', 'JO', 'JP', 'KE', 'KG', 'KH', 'KI', 'KM', 'KN', 'KP', 'KR', 'KW', 'KY', 'KZ', 'LA', 'LB', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT', 'LU', 'LV', 'LY', 'MA', 'MC', 'MD', 'ME', 'MF', 'MG', 'MH', 'MK', 'ML', 'MM', 'MN', 'MO', 'MP', 'MQ', 'MR', 'MS', 'MT', 'MU', 'MV', 'MW', 'MX', 'MY', 'MZ', 'NA', 'NC', 'NE', 'NF', 'NG', 'NI', 'NL', 'NO', 'NP', 'NR', 'NU', 'NZ', 'OM', 'PA', 'PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PM', 'PN', 'PR', 'PS', 'PT', 'PW', 'PY', 'QA', 'RE', 'RO', 'RS', 'RU', 'RW', 'SA', 'SB', 'SC', 'SD', 'SE', 'SG', 'SH', 'SI', 'SJ', 'SK', 'SL', 'SM', 'SN', 'SO', 'SR', 'SS', 'ST', 'SV', 'SX', 'SY', 'SZ', 'TC', 'TD', 'TF', 'TG', 'TH', 'TJ', 'TK', 'TL', 'TM', 'TN', 'TO', 'TR', 'TT', 'TV', 'TW', 'TZ', 'UA', 'UG', 'UM', 'US', 'UY', 'UZ', 'VA', 'VC', 'VE', 'VG', 'VI', 'VN', 'VU', 'WF', 'WS', 'YE', 'YT', 'ZA', 'ZM', 'ZW'})*
+
+The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).
+
+### *class* foley.base.IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False, territory=None)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
 What the caller intends to do with a sound; consumed by `keep()`.
+
+#### territory *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= None*
+
+Where the sound is used (ISO 3166-1 alpha-2, e.g. `"US"`; `"UK"` reads as
+`"GB"`). Only a licence that excludes territories asks
+(`foley.licensing.LICENSE_EXCLUDED_TERRITORIES`); for one, `None` fails
+closed. Name every place the sound is distributed: online publishing reaches
+them all.
 
 ### *class* foley.base.Layer(\*values)
 
@@ -2971,6 +2991,14 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound’s bytes are held (DERIVED from `license.cache_bytes_ok`).
 
+### foley.base.TERRITORY_ALIASES *= {'EL': 'GR', 'UK': 'GB'}*
+
+the UK’s common one and the EU’s
+code for Greece.
+
+* **Type:**
+  Spellings that name a country by another code
+
 ### *class* foley.base.TimelineItem(clip_ref, onset=None, gain=0.0, layer=Layer.sfx_fg, loop=False, id=None, placement=None, processing=None, event=None, enabled=True)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
@@ -2995,6 +3023,21 @@ The result of one verification rung for a candidate.
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
 
 Which rung of the verification ladder produced a `Verdict`.
+
+### foley.base.normalize_territory(territory)
+
+`territory` as an ISO 3166-1 alpha-2 code, `None` when unstated.
+
+```pycon
+>>> normalize_territory(" uk "), normalize_territory("EL"), normalize_territory("")
+('GB', 'GR', None)
+```
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If it is not a country code (a name, an alpha-3 code, a region):
+      a licence gate cannot judge what it cannot read.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.base.reject_renamed(names, vocabulary=None)
 
@@ -3213,6 +3256,8 @@ The USD cost of one call to the source `config` declares, or `None` if unknown.
 
 * `'free'` (local inference, a free API tier) → `0.0`;
 * `'per_call'` → `amount_usd`;
+* `'per_compute_second'` (billed by the provider’s run time) → `None`: unknown
+  before the call, so it needs approval;
 * `'per_second'` with `seconds_from='video'` → `amount_usd` × the video’s
   length (`video_duration_s`, measured by the dispatch), else `None` (an
   unread length is an unknown cost, which needs approval);
@@ -6062,11 +6107,19 @@ library would have served. A plain attribute, never serialized (like
 What the provider returned besides the audio of a generation (#61; see
 [`foley.sources.base.GeneratedClip.raw`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)). A plain attribute, never serialized.
 
-### *class* foley.IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False)
+### *class* foley.IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False, territory=None)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
 What the caller intends to do with a sound; consumed by `keep()`.
+
+#### territory *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= None*
+
+Where the sound is used (ISO 3166-1 alpha-2, e.g. `"US"`; `"UK"` reads as
+`"GB"`). Only a licence that excludes territories asks
+(`foley.licensing.LICENSE_EXCLUDED_TERRITORIES`); for one, `None` fails
+closed. Name every place the sound is distributed: online publishing reaches
+them all.
 
 ### *class* foley.Judge(\*args, \*\*kwargs)
 
@@ -10506,7 +10559,7 @@ module costs only the stdlib.
 |----------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
 | [`IngestResult`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestResult)(id, status[, record, qc, ...]) | The outcome of ingesting one clip.                              |
 
-### foley.index.ingest.ASSERTABLE_LICENSE_IDS *= frozenset({'CC-BY-2.0', 'CC-BY-2.5', 'CC-BY-3.0', 'CC-BY-4.0', 'CC-BY-NC-2.0', 'CC-BY-NC-2.5', 'CC-BY-NC-3.0', 'CC-BY-NC-4.0', 'CC-Sampling+-1.0', 'CC0-1.0', 'MIT', 'Pixabay-Content', 'RemArc', 'Sonniss-GDC', 'Stability-Community', 'elevenlabs-free-plan', 'elevenlabs-paid-plan', 'fal-partner-unverified', 'user-owned'})*
+### foley.index.ingest.ASSERTABLE_LICENSE_IDS *= frozenset({'CC-BY-2.0', 'CC-BY-2.5', 'CC-BY-3.0', 'CC-BY-4.0', 'CC-BY-NC-2.0', 'CC-BY-NC-2.5', 'CC-BY-NC-3.0', 'CC-BY-NC-4.0', 'CC-Sampling+-1.0', 'CC0-1.0', 'MIT', 'Pixabay-Content', 'RemArc', 'Sonniss-GDC', 'Stability-Community', 'Tencent-Hunyuan-Community', 'elevenlabs-free-plan', 'elevenlabs-paid-plan', 'fal-partner-unverified', 'research-only', 'user-owned'})*
 
 The ids a caller may assert on ingest / restamp (`foley ingest --license`).
 
@@ -12401,31 +12454,35 @@ item is redistributable but stored by-reference.
 
 ### Module Attributes
 
-| [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE)     | The ONE rights intent every verb and surface defaults to (#63, maintainer decision 2026-10-03): commercial publishing, attributable.   |
-|---------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| [`UNKNOWN_LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_FLAGS)    | Fail-closed fallback for unknown / `Proprietary-*` license ids (all False, cap None).                                                  |
-| [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS)            | `license_id` -> default flag set (report 07 §8.1 seed table).                                                                          |
-| [`CC_VERSIONS`](_autosummary/foley.licensing.html.md#foley.licensing.CC_VERSIONS)              | The CC versions foley has rows for (Freesound, FSD50K, Clotho and Wikimedia use these).                                                |
-| [`DEFAULT_CC_VERSION`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_CC_VERSION)       | The version assumed when a source gives a CC family with no version at all (Freesound's search labels: `"Attribution"`).               |
-| [`UNKNOWN_LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_META)     | Fail-closed display fallback for unknown / `Proprietary-*` license ids.                                                                |
-| [`LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_META)             | `license_id` -> display name + canonical URL (one row per [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) key).         |
-| [`AI_TRAINING_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.AI_TRAINING_SCOPES)       | The `ai_training_scope` values (`None` = no narrowing beyond `ai_training_ok`).                                                        |
-| [`GEN_AI_PREFERENCE_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.GEN_AI_PREFERENCE_SCOPES) | Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.                                                       |
+| [`DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE)         | The ONE rights intent every verb and surface defaults to (#63, maintainer decision 2026-10-03): commercial publishing, attributable.                                                                                                                       |
+|-------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`UNKNOWN_LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_FLAGS)        | Fail-closed fallback for unknown / `Proprietary-*` license ids (all False, cap None).                                                                                                                                                                      |
+| [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS)                | `license_id` -> default flag set (report 07 §8.1 seed table).                                                                                                                                                                                              |
+| [`CC_VERSIONS`](_autosummary/foley.licensing.html.md#foley.licensing.CC_VERSIONS)                  | The CC versions foley has rows for (Freesound, FSD50K, Clotho and Wikimedia use these).                                                                                                                                                                    |
+| [`DEFAULT_CC_VERSION`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_CC_VERSION)           | The version assumed when a source gives a CC family with no version at all (Freesound's search labels: `"Attribution"`).                                                                                                                                   |
+| [`UNKNOWN_LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_META)         | Fail-closed display fallback for unknown / `Proprietary-*` license ids.                                                                                                                                                                                    |
+| [`LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_META)                 | `license_id` -> display name + canonical URL (one row per [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) key).                                                                                                                             |
+| [`AI_TRAINING_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.AI_TRAINING_SCOPES)           | The `ai_training_scope` values (`None` = no narrowing beyond `ai_training_ok`).                                                                                                                                                                            |
+| [`GEN_AI_PREFERENCE_SCOPES`](_autosummary/foley.licensing.html.md#foley.licensing.GEN_AI_PREFERENCE_SCOPES)     | Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.                                                                                                                                                                           |
+| [`EU_MEMBER_STATES`](_autosummary/foley.licensing.html.md#foley.licensing.EU_MEMBER_STATES)             | The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU", with the EU territories that carry their own codes: France's outermost regions (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and Finland's Åland. |
+| [`LICENSE_EXCLUDED_TERRITORIES`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_EXCLUDED_TERRITORIES) | `license_id` -> the territories where it grants nothing (ISO 3166-1 alpha-2 codes, plus `"EU"` for every member state).                                                                                                                                    |
 
 ### Functions
 
-| [`ai_scope_from_gen_ai_preference`](_autosummary/foley.licensing.html.md#foley.licensing.ai_scope_from_gen_ai_preference)(preference)       | Map a Freesound `gen_ai_preference` to `(ai_training_ok override, scope)`.                                               |
-|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| [`ai_use_permitted`](_autosummary/foley.licensing.html.md#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                  |
-| [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                    |
-| [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                         |
-| [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, commercial_ok])   | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                     |
-| [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                  |
-| [`keep`](_autosummary/foley.licensing.html.md#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                     |
-| [`keep_sound`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) to a `SoundRecord`'s nested license.          |
-| [`license_id_from_cc_url`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                             |
-| [`license_meta`](_autosummary/foley.licensing.html.md#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback). |
-| [`wanted_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                            |
+| [`ai_scope_from_gen_ai_preference`](_autosummary/foley.licensing.html.md#foley.licensing.ai_scope_from_gen_ai_preference)(preference)       | Map a Freesound `gen_ai_preference` to `(ai_training_ok override, scope)`.                                                 |
+|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
+| [`ai_use_permitted`](_autosummary/foley.licensing.html.md#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                    |
+| [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                      |
+| [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                           |
+| [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, commercial_ok])   | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                       |
+| [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                    |
+| [`keep`](_autosummary/foley.licensing.html.md#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                       |
+| [`keep_sound`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) to a `SoundRecord`'s nested license.            |
+| [`license_id_from_cc_url`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                               |
+| [`license_meta`](_autosummary/foley.licensing.html.md#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback).   |
+| [`refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason)(record, intended_use)              | Why [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it. |
+| [`territory_excluded`](_autosummary/foley.licensing.html.md#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                    |
+| [`wanted_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                              |
 
 ### Classes
 
@@ -12447,12 +12504,19 @@ The version assumed when a source gives a CC family with no version at all
 (Freesound’s search labels: `"Attribution"`). Rights are the same across versions;
 only the credit’s version is a guess, so the record keeps the label it was given.
 
-### foley.licensing.DEFAULT_INTENDED_USE *= IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False)*
+### foley.licensing.DEFAULT_INTENDED_USE *= IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False, territory=None)*
 
 The ONE rights intent every verb and surface defaults to (#63, maintainer decision
 2026-10-03): commercial publishing, attributable. NC and SA material is refused
 unless a caller explicitly passes a different [`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse) (or
 `commercial_ok=False`). Treat it as read-only; copy with `dataclasses.replace`.
+
+### foley.licensing.EU_MEMBER_STATES *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)* *= frozenset({'AT', 'AX', 'BE', 'BG', 'CY', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FR', 'GF', 'GP', 'GR', 'HR', 'HU', 'IE', 'IT', 'LT', 'LU', 'LV', 'MF', 'MQ', 'MT', 'NL', 'PL', 'PT', 'RE', 'RO', 'SE', 'SI', 'SK', 'YT'})*
+
+The EU’s member states (ISO 3166-1 alpha-2), for a licence that excludes “EU”,
+with the EU territories that carry their own codes: France’s outermost regions
+(Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and
+Finland’s Åland. (The Canaries, Azores, Madeira, Ceuta and Melilla have none.)
 
 ### foley.licensing.GEN_AI_PREFERENCE_SCOPES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[bool](https://docs.python.org/3/builtins/functions.html#bool)], [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]]]* *= {'no-additional-preferences': (None, None), 'no-gen-ai': (False, 'none'), 'noncommercial-open-source-models': (None, 'nc_open_source_only'), 'open-source-models': (None, 'open_source_only')}*
 
@@ -12460,7 +12524,13 @@ Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.
 `None` as the override leaves the CC row’s flag alone. An unlisted value fails
 closed (see [`ai_scope_from_gen_ai_preference()`](_autosummary/foley.licensing.html.md#foley.licensing.ai_scope_from_gen_ai_preference)).
 
-### foley.licensing.LICENSE_FLAGS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseFlags](_autosummary/foley.licensing.html.md#foley.licensing.LicenseFlags)]* *= {'CC-BY-2.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-2.5': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-3.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-4.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.5': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-3.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-4.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-Sampling+-1.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC0-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'ElevenLabs-SFX': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'MIT': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'PDM-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'Pixabay-Content': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'RemArc': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'Sonniss-GDC': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'Stability-Community': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=1000000), 'elevenlabs-free-plan': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'elevenlabs-paid-plan': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'fal-partner-unverified': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'unknown': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'user-owned': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None)}*
+### foley.licensing.LICENSE_EXCLUDED_TERRITORIES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)]* *= {'Tencent-Hunyuan-Community': frozenset({'EU', 'GB', 'GG', 'GI', 'IM', 'JE', 'KR'})}*
+
+`license_id` -> the territories where it grants nothing (ISO 3166-1 alpha-2
+codes, plus `"EU"` for every member state). A row here makes the territory part
+of the use: [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses when it is excluded, and when it is not stated.
+
+### foley.licensing.LICENSE_FLAGS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseFlags](_autosummary/foley.licensing.html.md#foley.licensing.LicenseFlags)]* *= {'CC-BY-2.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-2.5': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-3.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-4.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-2.5': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-3.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-BY-NC-4.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC-Sampling+-1.0': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'CC0-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'ElevenLabs-SFX': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'MIT': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=True, revenue_cap_usd=None), 'PDM-1.0': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None), 'Pixabay-Content': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'RemArc': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'Sonniss-GDC': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'Stability-Community': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=1000000), 'Tencent-Hunyuan-Community': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'elevenlabs-free-plan': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=True, revenue_cap_usd=None), 'elevenlabs-paid-plan': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'fal-partner-unverified': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=True, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=True, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'research-only': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=True, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'unknown': LicenseFlags(commercial_ok=False, embed_in_derivative_ok=False, redistribute_standalone_ok=False, cache_bytes_ok=False, modification_ok=False, ai_training_ok=False, requires_attribution=False, revenue_cap_usd=None), 'user-owned': LicenseFlags(commercial_ok=True, embed_in_derivative_ok=True, redistribute_standalone_ok=True, cache_bytes_ok=True, modification_ok=True, ai_training_ok=True, requires_attribution=False, revenue_cap_usd=None)}*
 
 `license_id` -> default flag set (report 07 §8.1 seed table).
 
@@ -12474,7 +12544,7 @@ ai_training, requires_attribution, revenue_cap_usd
 * **Type:**
   SSOT
 
-### foley.licensing.LICENSE_META *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseMeta](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta)]* *= {'CC-BY-2.0': LicenseMeta(display_name='CC BY 2.0', url='https://creativecommons.org/licenses/by/2.0/'), 'CC-BY-2.5': LicenseMeta(display_name='CC BY 2.5', url='https://creativecommons.org/licenses/by/2.5/'), 'CC-BY-3.0': LicenseMeta(display_name='CC BY 3.0', url='https://creativecommons.org/licenses/by/3.0/'), 'CC-BY-4.0': LicenseMeta(display_name='CC BY 4.0', url='https://creativecommons.org/licenses/by/4.0/'), 'CC-BY-NC-2.0': LicenseMeta(display_name='CC BY-NC 2.0', url='https://creativecommons.org/licenses/by-nc/2.0/'), 'CC-BY-NC-2.5': LicenseMeta(display_name='CC BY-NC 2.5', url='https://creativecommons.org/licenses/by-nc/2.5/'), 'CC-BY-NC-3.0': LicenseMeta(display_name='CC BY-NC 3.0', url='https://creativecommons.org/licenses/by-nc/3.0/'), 'CC-BY-NC-4.0': LicenseMeta(display_name='CC BY-NC 4.0', url='https://creativecommons.org/licenses/by-nc/4.0/'), 'CC-Sampling+-1.0': LicenseMeta(display_name='CC Sampling+ 1.0', url='https://creativecommons.org/licenses/sampling+/1.0/'), 'CC0-1.0': LicenseMeta(display_name='CC0 1.0 Universal (Public Domain Dedication)', url='https://creativecommons.org/publicdomain/zero/1.0/'), 'ElevenLabs-SFX': LicenseMeta(display_name='ElevenLabs Sound Effects Terms (legacy: paid plan assumed)', url='https://elevenlabs.io/terms-of-use'), 'MIT': LicenseMeta(display_name='MIT License', url='https://opensource.org/license/mit'), 'PDM-1.0': LicenseMeta(display_name='Public Domain Mark 1.0 (unverified claim)', url='https://creativecommons.org/publicdomain/mark/1.0/'), 'Pixabay-Content': LicenseMeta(display_name='Pixabay Content License', url='https://pixabay.com/service/license-summary/'), 'RemArc': LicenseMeta(display_name='BBC RemArc Licence', url='https://sound-effects.bbcrewind.co.uk/licensing'), 'Sonniss-GDC': LicenseMeta(display_name='Sonniss GDC Game Audio Bundle License', url='https://sonniss.com/gdc-bundle-license'), 'Stability-Community': LicenseMeta(display_name='Stability AI Community License', url='https://stability.ai/community-license-agreement'), 'elevenlabs-free-plan': LicenseMeta(display_name='ElevenLabs Terms (free plan: non-commercial, attribution required)', url='https://elevenlabs.io/terms-of-use'), 'elevenlabs-paid-plan': LicenseMeta(display_name='ElevenLabs Terms (paid plan)', url='https://elevenlabs.io/terms-of-use'), 'fal-partner-unverified': LicenseMeta(display_name='fal.ai partner model (vendor terms for fal-routed calls unverified: treated as non-commercial)', url='https://fal.ai/legal/terms-of-service'), 'unknown': LicenseMeta(display_name='Unknown / unverified license', url=None), 'user-owned': LicenseMeta(display_name='User-owned / original work', url=None)}*
+### foley.licensing.LICENSE_META *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [LicenseMeta](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta)]* *= {'CC-BY-2.0': LicenseMeta(display_name='CC BY 2.0', url='https://creativecommons.org/licenses/by/2.0/'), 'CC-BY-2.5': LicenseMeta(display_name='CC BY 2.5', url='https://creativecommons.org/licenses/by/2.5/'), 'CC-BY-3.0': LicenseMeta(display_name='CC BY 3.0', url='https://creativecommons.org/licenses/by/3.0/'), 'CC-BY-4.0': LicenseMeta(display_name='CC BY 4.0', url='https://creativecommons.org/licenses/by/4.0/'), 'CC-BY-NC-2.0': LicenseMeta(display_name='CC BY-NC 2.0', url='https://creativecommons.org/licenses/by-nc/2.0/'), 'CC-BY-NC-2.5': LicenseMeta(display_name='CC BY-NC 2.5', url='https://creativecommons.org/licenses/by-nc/2.5/'), 'CC-BY-NC-3.0': LicenseMeta(display_name='CC BY-NC 3.0', url='https://creativecommons.org/licenses/by-nc/3.0/'), 'CC-BY-NC-4.0': LicenseMeta(display_name='CC BY-NC 4.0', url='https://creativecommons.org/licenses/by-nc/4.0/'), 'CC-Sampling+-1.0': LicenseMeta(display_name='CC Sampling+ 1.0', url='https://creativecommons.org/licenses/sampling+/1.0/'), 'CC0-1.0': LicenseMeta(display_name='CC0 1.0 Universal (Public Domain Dedication)', url='https://creativecommons.org/publicdomain/zero/1.0/'), 'ElevenLabs-SFX': LicenseMeta(display_name='ElevenLabs Sound Effects Terms (legacy: paid plan assumed)', url='https://elevenlabs.io/terms-of-use'), 'MIT': LicenseMeta(display_name='MIT License', url='https://opensource.org/license/mit'), 'PDM-1.0': LicenseMeta(display_name='Public Domain Mark 1.0 (unverified claim)', url='https://creativecommons.org/publicdomain/mark/1.0/'), 'Pixabay-Content': LicenseMeta(display_name='Pixabay Content License', url='https://pixabay.com/service/license-summary/'), 'RemArc': LicenseMeta(display_name='BBC RemArc Licence', url='https://sound-effects.bbcrewind.co.uk/licensing'), 'Sonniss-GDC': LicenseMeta(display_name='Sonniss GDC Game Audio Bundle License', url='https://sonniss.com/gdc-bundle-license'), 'Stability-Community': LicenseMeta(display_name='Stability AI Community License', url='https://stability.ai/community-license-agreement'), 'Tencent-Hunyuan-Community': LicenseMeta(display_name='Tencent Hunyuan Community License (not valid in the EU, the UK or South Korea)', url='https://huggingface.co/tencent/HunyuanVideo-Foley/blob/main/LICENSE'), 'elevenlabs-free-plan': LicenseMeta(display_name='ElevenLabs Terms (free plan: non-commercial, attribution required)', url='https://elevenlabs.io/terms-of-use'), 'elevenlabs-paid-plan': LicenseMeta(display_name='ElevenLabs Terms (paid plan)', url='https://elevenlabs.io/terms-of-use'), 'fal-partner-unverified': LicenseMeta(display_name='fal.ai partner model (vendor terms for fal-routed calls unverified: treated as non-commercial)', url='https://fal.ai/legal/terms-of-service'), 'research-only': LicenseMeta(display_name='Research use only (no commercial or public use)', url=None), 'unknown': LicenseMeta(display_name='Unknown / unverified license', url=None), 'user-owned': LicenseMeta(display_name='User-owned / original work', url=None)}*
 
 `license_id` -> display name + canonical URL (one row per
 [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) key). Used only for human-readable credits; never for
@@ -12665,6 +12735,34 @@ Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.li
 * **Returns:**
   The mapped [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta), or [`UNKNOWN_LICENSE_META`](_autosummary/foley.licensing.html.md#foley.licensing.UNKNOWN_LICENSE_META) for an
   unrecognized / `Proprietary-*` id.
+
+### foley.licensing.refusal_reason(record, intended_use)
+
+Why [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.
+
+The one rule, read as text: the first requirement the record does not meet.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.licensing.territory_excluded(excluded, territory)
+
+Whether `territory` is in `excluded` (`"EU"` covers its member states).
+
+An unstated territory (`None`) counts as excluded whenever anything is, and so
+does one that is not a country code: the gate fails closed.
+
+```pycon
+>>> territory_excluded({"EU", "GB"}, "fr"), territory_excluded({"EU"}, "US")
+(True, False)
+>>> territory_excluded({"KR"}, None), territory_excluded({"GB"}, "uk")
+(True, True)
+>>> territory_excluded({"KR"}, "Korea"), territory_excluded(set(), None)
+(True, False)
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ### foley.licensing.wanted_license_ids(config, license)
 
@@ -13943,7 +14041,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta-dum', 'ta dum', 'netflix chime', 'tudum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel chime', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'ta-dum', 'netflix intro', 'ta dum', 'tudum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16414,7 +16512,7 @@ The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).
 
 The env vars falaw reads a fal key from, in order.
 
-### *class* foley.sources.fal.adapter.FalAdapter(config, , api_key=None, runner=None, uploader=None, http=None)
+### *class* foley.sources.fal.adapter.FalAdapter(config, , api_key=None, runner=None, uploader=None, demux=None, http=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -16431,6 +16529,9 @@ A fal-hosted generate adapter (a [`GenerateAdapter`](_autosummary/foley.sources.
   * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]]) – The transport seam (default [`falaw_runner()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
   * **uploader** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – `(path, *, api_key) -> url`, how a local `video=` reaches fal
     (default [`falaw_uploader()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_uploader)); tests pass a fake.
+  * **demux** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)], [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]]) – `(container bytes) -> audio bytes`, for an endpoint that answers
+    with a video (`output.container == 'video'`; default
+    [`foley.sources.video.audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track), which needs ffmpeg).
   * **http** – Accepted and ignored: the registry passes a resilient HTTP transport to
     external sources, but this adapter’s transport is falaw (which retries and
     classifies errors itself).
@@ -16463,7 +16564,10 @@ the endpoint’s response (its audio is a URL, not the bytes).
 
 #### invoke_native(arguments)
 
-Call this source’s fal endpoint with native `arguments`; return `(audio, response)`.
+Call this source’s fal endpoint with native `arguments`; return `(media, response)`.
+
+`media` is the bytes at the response’s `output.audio_field`: the audio, or
+for an endpoint that answers with a video (`output.container`), the video.
 
 The public entry below foley’s translation (#61): `arguments` are sent as
 is (no fixed arguments or default duration are added). No licence record is
@@ -16585,7 +16689,7 @@ bound, when it declares none), never at zero.
 | [`FAL_SOURCES`](_autosummary/foley.sources.fal.config.html.md#foley.sources.fal.config.FAL_SOURCES)   | The fal source names, in the order above (the first is the recommended one).   |
 |----------------------------------------------------------------|--------------------------------------------------------------------------------|
 
-### foley.sources.fal.config.FAL_SOURCES *= ('fal_stable_audio_3', 'fal_stable_audio_3_medium', 'fal_mirelo', 'fal_elevenlabs', 'fal_sonilo', 'fal_mmaudio', 'fal_mirelo_v2a', 'fal_sonilo_v2a')*
+### foley.sources.fal.config.FAL_SOURCES *= ('fal_stable_audio_3', 'fal_stable_audio_3_medium', 'fal_mirelo', 'fal_elevenlabs', 'fal_sonilo', 'fal_mmaudio', 'fal_mirelo_v2a', 'fal_sonilo_v2a', 'fal_mmaudio_v2a', 'fal_thinksound', 'fal_hunyuan_foley')*
 
 The fal source names, in the order above (the first is the recommended one).
 
@@ -18770,6 +18874,9 @@ here, once, for every V2A backend:
   as an unknown cost, needing approval).
 * [`local_video_file()`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file): a local file for an uploader (bytes are written to a
   temporary file).
+* [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track): the audio of a backend’s muxed video answer (MMAudio,
+  ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via
+  `ffmpeg` ([`ffmpeg_path()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)).
 * [`keyed()`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed): affordances as they may be recorded (the cache entry, the run
   manifest): the video replaced by its key, so neither its bytes nor a local path
   (nor an upload’s capability URL) is ever written down.
@@ -18778,18 +18885,25 @@ Stdlib only.
 
 ### Module Attributes
 
-| [`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput)   | a URL, a local path, or the encoded bytes.       |
-|---------------------------------------------------------------|--------------------------------------------------|
-| [`URL_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_SCHEMES)  | URL schemes sent to a backend as is (no upload). |
+| [`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput)            | a URL, a local path, or the encoded bytes.                                                   |
+|------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| [`URL_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_SCHEMES)           | URL schemes sent to a backend as is (no upload).                                             |
+| [`AUDIO_TRACK_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.AUDIO_TRACK_TIMEOUT_S) | The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s). |
 
 ### Functions
 
-| [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                       | Whether `video` is a URL a backend can fetch itself.                                                                    |
-|--------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances)                  | `affordances` with a `video` replaced by [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) (else unchanged). |
-| [`local_video_file`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file)(video)             | A local path holding `video` (bytes are written to a temporary file).                                                   |
-| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                    | The cache identity of `video`: its content digest, or a remote URL as is.                                               |
-| [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, ffprobe]) | The length of a local `video` in seconds, or `None` when it cannot be read.                                             |
+| [`audio_track`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s])   | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                       |
+|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| [`ffmpeg_path`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                             |
+| [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                    |
+| [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances)                                | `affordances` with a `video` replaced by [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) (else unchanged). |
+| [`local_video_file`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file)(video)                           | A local path holding `video` (bytes are written to a temporary file).                                                   |
+| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                                  | The cache identity of `video`: its content digest, or a remote URL as is.                                               |
+| [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, ffprobe])               | The length of a local `video` in seconds, or `None` when it cannot be read.                                             |
+
+### foley.sources.video.AUDIO_TRACK_TIMEOUT_S *= 120.0*
+
+The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s).
 
 ### foley.sources.video.URL_SCHEMES *= ('http://', 'https://', 'data:')*
 
@@ -18803,6 +18917,26 @@ a URL, a local path, or the encoded bytes.
   What `video=` accepts
 
 alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | `os.PathLike[str]` | [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.sources.video.audio_track(container, , ffmpeg=None, timeout_s=120.0)
+
+The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).
+
+Written to a file, not a pipe, so ffmpeg can finish the WAV header (a piped WAV
+carries a streaming placeholder size).
+
+* **Raises:**
+  [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If no `ffmpeg` is found, it cannot read an audio stream, or it
+      runs past `timeout_s`.
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.sources.video.ffmpeg_path()
+
+An `ffmpeg` binary: mixing’s resolver (a pip-bundled one too), else `PATH`.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.sources.video.is_url(video)
 
@@ -20726,7 +20860,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 04:49 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/81b065b4bd923706fd94b5d2fafb6bbf18877f92"><code>81b065b</code></a> on branch <code>main</code>, for **foley 0.0.75** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 05:19 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/fc774845be8f9d8f73a61252d119c82f88b49f4c"><code>fc77484</code></a> on branch <code>main</code>, for **foley 0.0.76** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -20735,7 +20869,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/81b065b4bd923706fd94b5d2fafb6bbf18877f92"><code>81b065b4bd923706fd94b5d2fafb6bbf18877f92</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/fc774845be8f9d8f73a61252d119c82f88b49f4c"><code>fc774845be8f9d8f73a61252d119c82f88b49f4c</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20746,9 +20880,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40451663167">40451663167</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40454503216">40454503216</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>81b065b4bd923706fd94b5d2fafb6bbf18877f92</code> (in the history of the built commit) |
+| Event commit | <code>fc774845be8f9d8f73a61252d119c82f88b49f4c</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20773,13 +20907,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.75/">0.0.75</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.76/">0.0.76</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 81b065b4bd923706fd94b5d2fafb6bbf18877f92
+git checkout fc774845be8f9d8f73a61252d119c82f88b49f4c
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

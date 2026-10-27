@@ -10,11 +10,14 @@ foley.sources.video
    
       VideoInput
       URL_SCHEMES
+      AUDIO_TRACK_TIMEOUT_S
    
    .. rubric:: Functions
 
    .. autosummary::
    
+      audio_track
+      ffmpeg_path
       is_url
       keyed
       local_video_file

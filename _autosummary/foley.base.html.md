@@ -23,13 +23,16 @@ Serialization contract:
 | [`QUERY_AFFORDANCES`](#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).        |
 |-------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | [`GENERATION_AFFORDANCES`](#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these). |
+| [`ISO_COUNTRY_CODES`](#foley.base.ISO_COUNTRY_CODES)      | The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).     |
+| [`TERRITORY_ALIASES`](#foley.base.TERRITORY_ALIASES)      | the UK's common one and the EU's code for Greece.                       |
 | [`MASTER_PROFILES`](#foley.base.MASTER_PROFILES)        | The named delivery targets (report 06 §5.2).                            |
 
 ### Functions
 
-| [`reject_renamed`](#foley.base.reject_renamed)(names[, vocabulary])   | Raise `TypeError` if any of `names` is an affordance's old spelling.                    |
-|----------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| [`resolve_master`](#foley.base.resolve_master)(master)                | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`. |
+| [`normalize_territory`](#foley.base.normalize_territory)(territory)      | `territory` as an ISO 3166-1 alpha-2 code, `None` when unstated.                        |
+|--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [`reject_renamed`](#foley.base.reject_renamed)(names[, vocabulary]) | Raise `TypeError` if any of `names` is an affordance's old spelling.                    |
+| [`resolve_master`](#foley.base.resolve_master)(master)              | Resolve a master spec (profile name, explicit profile, or `None`) to a `MasterProfile`. |
 
 ### Classes
 
@@ -179,11 +182,23 @@ Whether a candidate was retrieved from the index or freshly generated.
 
 Unified generation-stage parameters (generate backends map onto these).
 
-### *class* foley.base.IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False)
+### foley.base.ISO_COUNTRY_CODES *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)* *= frozenset({'AD', 'AE', 'AF', 'AG', 'AI', 'AL', 'AM', 'AO', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AW', 'AX', 'AZ', 'BA', 'BB', 'BD', 'BE', 'BF', 'BG', 'BH', 'BI', 'BJ', 'BL', 'BM', 'BN', 'BO', 'BQ', 'BR', 'BS', 'BT', 'BV', 'BW', 'BY', 'BZ', 'CA', 'CC', 'CD', 'CF', 'CG', 'CH', 'CI', 'CK', 'CL', 'CM', 'CN', 'CO', 'CR', 'CU', 'CV', 'CW', 'CX', 'CY', 'CZ', 'DE', 'DJ', 'DK', 'DM', 'DO', 'DZ', 'EC', 'EE', 'EG', 'EH', 'ER', 'ES', 'ET', 'FI', 'FJ', 'FK', 'FM', 'FO', 'FR', 'GA', 'GB', 'GD', 'GE', 'GF', 'GG', 'GH', 'GI', 'GL', 'GM', 'GN', 'GP', 'GQ', 'GR', 'GS', 'GT', 'GU', 'GW', 'GY', 'HK', 'HM', 'HN', 'HR', 'HT', 'HU', 'ID', 'IE', 'IL', 'IM', 'IN', 'IO', 'IQ', 'IR', 'IS', 'IT', 'JE', 'JM', 'JO', 'JP', 'KE', 'KG', 'KH', 'KI', 'KM', 'KN', 'KP', 'KR', 'KW', 'KY', 'KZ', 'LA', 'LB', 'LC', 'LI', 'LK', 'LR', 'LS', 'LT', 'LU', 'LV', 'LY', 'MA', 'MC', 'MD', 'ME', 'MF', 'MG', 'MH', 'MK', 'ML', 'MM', 'MN', 'MO', 'MP', 'MQ', 'MR', 'MS', 'MT', 'MU', 'MV', 'MW', 'MX', 'MY', 'MZ', 'NA', 'NC', 'NE', 'NF', 'NG', 'NI', 'NL', 'NO', 'NP', 'NR', 'NU', 'NZ', 'OM', 'PA', 'PE', 'PF', 'PG', 'PH', 'PK', 'PL', 'PM', 'PN', 'PR', 'PS', 'PT', 'PW', 'PY', 'QA', 'RE', 'RO', 'RS', 'RU', 'RW', 'SA', 'SB', 'SC', 'SD', 'SE', 'SG', 'SH', 'SI', 'SJ', 'SK', 'SL', 'SM', 'SN', 'SO', 'SR', 'SS', 'ST', 'SV', 'SX', 'SY', 'SZ', 'TC', 'TD', 'TF', 'TG', 'TH', 'TJ', 'TK', 'TL', 'TM', 'TN', 'TO', 'TR', 'TT', 'TV', 'TW', 'TZ', 'UA', 'UG', 'UM', 'US', 'UY', 'UZ', 'VA', 'VC', 'VE', 'VG', 'VI', 'VN', 'VU', 'WF', 'WS', 'YE', 'YT', 'ZA', 'ZM', 'ZW'})*
+
+The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).
+
+### *class* foley.base.IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False, territory=None)
 
 Bases: [`SerializableMixin`](#foley.base.SerializableMixin)
 
 What the caller intends to do with a sound; consumed by `keep()`.
+
+#### territory *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= None*
+
+Where the sound is used (ISO 3166-1 alpha-2, e.g. `"US"`; `"UK"` reads as
+`"GB"`). Only a licence that excludes territories asks
+(`foley.licensing.LICENSE_EXCLUDED_TERRITORIES`); for one, `None` fails
+closed. Name every place the sound is distributed: online publishing reaches
+them all.
 
 ### *class* foley.base.Layer(\*values)
 
@@ -357,6 +372,14 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound’s bytes are held (DERIVED from `license.cache_bytes_ok`).
 
+### foley.base.TERRITORY_ALIASES *= {'EL': 'GR', 'UK': 'GB'}*
+
+the UK’s common one and the EU’s
+code for Greece.
+
+* **Type:**
+  Spellings that name a country by another code
+
 ### *class* foley.base.TimelineItem(clip_ref, onset=None, gain=0.0, layer=Layer.sfx_fg, loop=False, id=None, placement=None, processing=None, event=None, enabled=True)
 
 Bases: [`SerializableMixin`](#foley.base.SerializableMixin)
@@ -381,6 +404,21 @@ The result of one verification rung for a candidate.
 Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
 
 Which rung of the verification ladder produced a `Verdict`.
+
+### foley.base.normalize_territory(territory)
+
+`territory` as an ISO 3166-1 alpha-2 code, `None` when unstated.
+
+```pycon
+>>> normalize_territory(" uk "), normalize_territory("EL"), normalize_territory("")
+('GB', 'GR', None)
+```
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If it is not a country code (a name, an alpha-3 code, a region):
+      a licence gate cannot judge what it cannot read.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.base.reject_renamed(names, vocabulary=None)
 

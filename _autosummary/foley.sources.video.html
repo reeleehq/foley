@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=71e49b4d"></script>
+    <script src="../_static/documentation_options.js?v=461c1127"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.75" />
+  <meta name="docsearch:version" content="0.0.76" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -504,6 +504,9 @@ the cache and an edited one cannot; a remote URL is keyed as the URL.</p></li>
 as an unknown cost, needing approval).</p></li>
 <li><p><a class="reference internal" href="#foley.sources.video.local_video_file" title="foley.sources.video.local_video_file"><code class="xref py py-func docutils literal notranslate"><span class="pre">local_video_file()</span></code></a>: a local file for an uploader (bytes are written to a
 temporary file).</p></li>
+<li><p><a class="reference internal" href="#foley.sources.video.audio_track" title="foley.sources.video.audio_track"><code class="xref py py-func docutils literal notranslate"><span class="pre">audio_track()</span></code></a>: the audio of a backend’s muxed video answer (MMAudio,
+ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via
+<code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> (<a class="reference internal" href="#foley.sources.video.ffmpeg_path" title="foley.sources.video.ffmpeg_path"><code class="xref py py-func docutils literal notranslate"><span class="pre">ffmpeg_path()</span></code></a>).</p></li>
 <li><p><a class="reference internal" href="#foley.sources.video.keyed" title="foley.sources.video.keyed"><code class="xref py py-func docutils literal notranslate"><span class="pre">keyed()</span></code></a>: affordances as they may be recorded (the cache entry, the run
 manifest): the video replaced by its key, so neither its bytes nor a local path
 (nor an upload’s capability URL) is ever written down.</p></li>
@@ -518,12 +521,21 @@ manifest): the video replaced by its key, so neither its bytes nor a local path
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.URL_SCHEMES" title="foley.sources.video.URL_SCHEMES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">URL_SCHEMES</span></code></a></p></td>
 <td><p>URL schemes sent to a backend as is (no upload).</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.AUDIO_TRACK_TIMEOUT_S" title="foley.sources.video.AUDIO_TRACK_TIMEOUT_S"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AUDIO_TRACK_TIMEOUT_S</span></code></a></p></td>
+<td><p>The most <a class="reference internal" href="#foley.sources.video.audio_track" title="foley.sources.video.audio_track"><code class="xref py py-func docutils literal notranslate"><span class="pre">audio_track()</span></code></a> lets ffmpeg run (s).</p></td>
+</tr>
 </tbody>
 </table>
 </div>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.audio_track" title="foley.sources.video.audio_track"><code class="xref py py-obj docutils literal notranslate"><span class="pre">audio_track</span></code></a>(container, *[, ffmpeg, timeout_s])</p></td>
+<td><p>The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.ffmpeg_path" title="foley.sources.video.ffmpeg_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ffmpeg_path</span></code></a>()</p></td>
+<td><p>An <code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> binary: mixing's resolver (a pip-bundled one too), else <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.is_url" title="foley.sources.video.is_url"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_url</span></code></a>(video)</p></td>
 <td><p>Whether <code class="docutils literal notranslate"><span class="pre">video</span></code> is a URL a backend can fetch itself.</p></td>
 </tr>
@@ -543,6 +555,12 @@ manifest): the video replaced by its key, so neither its bytes nor a local path
 </table>
 </div>
 <dl class="py data">
+<dt class="sig sig-object py" id="foley.sources.video.AUDIO_TRACK_TIMEOUT_S">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">AUDIO_TRACK_TIMEOUT_S</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">120.0</span></span><a class="headerlink" href="#foley.sources.video.AUDIO_TRACK_TIMEOUT_S" title="Link to this definition">#</a></dt>
+<dd><p>The most <a class="reference internal" href="#foley.sources.video.audio_track" title="foley.sources.video.audio_track"><code class="xref py py-func docutils literal notranslate"><span class="pre">audio_track()</span></code></a> lets ffmpeg run (s).</p>
+</dd></dl>
+
+<dl class="py data">
 <dt class="sig sig-object py" id="foley.sources.video.URL_SCHEMES">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">URL_SCHEMES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('http://',</span> <span class="pre">'https://',</span> <span class="pre">'data:')</span></span><a class="headerlink" href="#foley.sources.video.URL_SCHEMES" title="Link to this definition">#</a></dt>
 <dd><p>URL schemes sent to a backend as is (no upload).</p>
@@ -558,6 +576,34 @@ manifest): the video replaced by its key, so neither its bytes nor a local path
 </dd>
 </dl>
 <p>alias of <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <code class="xref py py-class docutils literal notranslate"><span class="pre">os.PathLike[str]</span></code> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.video.audio_track">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">audio_track</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">container</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">ffmpeg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">120.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/video.html#audio_track"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.video.audio_track" title="Link to this definition">#</a></dt>
+<dd><p>The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).</p>
+<p>Written to a file, not a pipe, so ffmpeg can finish the WAV header (a piped WAV
+carries a streaming placeholder size).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.15)"><strong>RuntimeError</strong></a> – If no <code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> is found, it cannot read an audio stream, or it
+    runs past <code class="docutils literal notranslate"><span class="pre">timeout_s</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.video.ffmpeg_path">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">ffmpeg_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/video.html#ffmpeg_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.video.ffmpeg_path" title="Link to this definition">#</a></dt>
+<dd><p>An <code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> binary: mixing’s resolver (a pip-bundled one too), else <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -686,8 +732,11 @@ A URL is not fetched to measure it: <code class="docutils literal notranslate"><
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.AUDIO_TRACK_TIMEOUT_S"><code class="docutils literal notranslate"><span class="pre">AUDIO_TRACK_TIMEOUT_S</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.URL_SCHEMES"><code class="docutils literal notranslate"><span class="pre">URL_SCHEMES</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.VideoInput"><code class="docutils literal notranslate"><span class="pre">VideoInput</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.audio_track"><code class="docutils literal notranslate"><span class="pre">audio_track()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.ffmpeg_path"><code class="docutils literal notranslate"><span class="pre">ffmpeg_path()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.is_url"><code class="docutils literal notranslate"><span class="pre">is_url()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.keyed"><code class="docutils literal notranslate"><span class="pre">keyed()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.local_video_file"><code class="docutils literal notranslate"><span class="pre">local_video_file()</span></code></a></li>

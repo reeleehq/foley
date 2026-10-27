@@ -17,6 +17,8 @@ foley.licensing
       LICENSE_META
       AI_TRAINING_SCOPES
       GEN_AI_PREFERENCE_SCOPES
+      EU_MEMBER_STATES
+      LICENSE_EXCLUDED_TERRITORIES
    
    .. rubric:: Functions
 
@@ -32,6 +34,8 @@ foley.licensing
       keep_sound
       license_id_from_cc_url
       license_meta
+      refusal_reason
+      territory_excluded
       wanted_license_ids
    
    .. rubric:: Classes

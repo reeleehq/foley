@@ -10,12 +10,15 @@ foley.base
    
       QUERY_AFFORDANCES
       GENERATION_AFFORDANCES
+      ISO_COUNTRY_CODES
+      TERRITORY_ALIASES
       MASTER_PROFILES
    
    .. rubric:: Functions
 
    .. autosummary::
    
+      normalize_territory
       reject_renamed
       resolve_master
    

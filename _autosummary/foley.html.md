@@ -891,11 +891,19 @@ library would have served. A plain attribute, never serialized (like
 What the provider returned besides the audio of a generation (#61; see
 [`foley.sources.base.GeneratedClip.raw`](foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)). A plain attribute, never serialized.
 
-### *class* foley.IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False)
+### *class* foley.IntendedUse(commercial=True, publish=True, redistribute_standalone=False, will_train=False, can_attribute=True, revenue_usd=0, allow_voice_or_trademark=False, territory=None)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
 What the caller intends to do with a sound; consumed by `keep()`.
+
+#### territory *: [Optional](https://docs.python.org/3/library/typing.html#typing.Optional)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= None*
+
+Where the sound is used (ISO 3166-1 alpha-2, e.g. `"US"`; `"UK"` reads as
+`"GB"`). Only a licence that excludes territories asks
+(`foley.licensing.LICENSE_EXCLUDED_TERRITORIES`); for one, `None` fails
+closed. Name every place the sound is distributed: online publishing reaches
+them all.
 
 ### *class* foley.Judge(\*args, \*\*kwargs)
 

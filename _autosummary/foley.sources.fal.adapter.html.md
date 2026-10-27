@@ -56,7 +56,7 @@ The credential name falaw binds a fal key under (`falaw.using_fal_credentials`).
 
 The env vars falaw reads a fal key from, in order.
 
-### *class* foley.sources.fal.adapter.FalAdapter(config, , api_key=None, runner=None, uploader=None, http=None)
+### *class* foley.sources.fal.adapter.FalAdapter(config, , api_key=None, runner=None, uploader=None, demux=None, http=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -73,6 +73,9 @@ A fal-hosted generate adapter (a [`GenerateAdapter`](foley.sources.base.html.md#
   * **runner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]]) – The transport seam (default [`falaw_runner()`](#foley.sources.fal.adapter.falaw_runner)); tests pass a fake.
   * **uploader** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – `(path, *, api_key) -> url`, how a local `video=` reaches fal
     (default [`falaw_uploader()`](#foley.sources.fal.adapter.falaw_uploader)); tests pass a fake.
+  * **demux** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)], [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]]) – `(container bytes) -> audio bytes`, for an endpoint that answers
+    with a video (`output.container == 'video'`; default
+    [`foley.sources.video.audio_track()`](foley.sources.video.html.md#foley.sources.video.audio_track), which needs ffmpeg).
   * **http** – Accepted and ignored: the registry passes a resilient HTTP transport to
     external sources, but this adapter’s transport is falaw (which retries and
     classifies errors itself).
@@ -105,7 +108,10 @@ the endpoint’s response (its audio is a URL, not the bytes).
 
 #### invoke_native(arguments)
 
-Call this source’s fal endpoint with native `arguments`; return `(audio, response)`.
+Call this source’s fal endpoint with native `arguments`; return `(media, response)`.
+
+`media` is the bytes at the response’s `output.audio_field`: the audio, or
+for an endpoint that answers with a video (`output.container`), the video.
 
 The public entry below foley’s translation (#61): `arguments` are sent as
 is (no fixed arguments or default duration are added). No licence record is

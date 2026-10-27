@@ -15,6 +15,9 @@ here, once, for every V2A backend:
   as an unknown cost, needing approval).
 * [`local_video_file()`](#foley.sources.video.local_video_file): a local file for an uploader (bytes are written to a
   temporary file).
+* [`audio_track()`](#foley.sources.video.audio_track): the audio of a backend’s muxed video answer (MMAudio,
+  ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via
+  `ffmpeg` ([`ffmpeg_path()`](#foley.sources.video.ffmpeg_path)).
 * [`keyed()`](#foley.sources.video.keyed): affordances as they may be recorded (the cache entry, the run
   manifest): the video replaced by its key, so neither its bytes nor a local path
   (nor an upload’s capability URL) is ever written down.
@@ -23,18 +26,25 @@ Stdlib only.
 
 ### Module Attributes
 
-| [`VideoInput`](#foley.sources.video.VideoInput)   | a URL, a local path, or the encoded bytes.       |
-|---------------------------------------------------------------|--------------------------------------------------|
-| [`URL_SCHEMES`](#foley.sources.video.URL_SCHEMES)  | URL schemes sent to a backend as is (no upload). |
+| [`VideoInput`](#foley.sources.video.VideoInput)            | a URL, a local path, or the encoded bytes.                                                   |
+|------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| [`URL_SCHEMES`](#foley.sources.video.URL_SCHEMES)           | URL schemes sent to a backend as is (no upload).                                             |
+| [`AUDIO_TRACK_TIMEOUT_S`](#foley.sources.video.AUDIO_TRACK_TIMEOUT_S) | The most [`audio_track()`](#foley.sources.video.audio_track) lets ffmpeg run (s). |
 
 ### Functions
 
-| [`is_url`](#foley.sources.video.is_url)(video)                       | Whether `video` is a URL a backend can fetch itself.                                                                    |
-|--------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| [`keyed`](#foley.sources.video.keyed)(affordances)                  | `affordances` with a `video` replaced by [`video_key()`](#foley.sources.video.video_key) (else unchanged). |
-| [`local_video_file`](#foley.sources.video.local_video_file)(video)             | A local path holding `video` (bytes are written to a temporary file).                                                   |
-| [`video_key`](#foley.sources.video.video_key)(video)                    | The cache identity of `video`: its content digest, or a remote URL as is.                                               |
-| [`video_seconds`](#foley.sources.video.video_seconds)(video, \*[, ffprobe]) | The length of a local `video` in seconds, or `None` when it cannot be read.                                             |
+| [`audio_track`](#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s])   | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                       |
+|----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| [`ffmpeg_path`](#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                             |
+| [`is_url`](#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                    |
+| [`keyed`](#foley.sources.video.keyed)(affordances)                                | `affordances` with a `video` replaced by [`video_key()`](#foley.sources.video.video_key) (else unchanged). |
+| [`local_video_file`](#foley.sources.video.local_video_file)(video)                           | A local path holding `video` (bytes are written to a temporary file).                                                   |
+| [`video_key`](#foley.sources.video.video_key)(video)                                  | The cache identity of `video`: its content digest, or a remote URL as is.                                               |
+| [`video_seconds`](#foley.sources.video.video_seconds)(video, \*[, ffprobe])               | The length of a local `video` in seconds, or `None` when it cannot be read.                                             |
+
+### foley.sources.video.AUDIO_TRACK_TIMEOUT_S *= 120.0*
+
+The most [`audio_track()`](#foley.sources.video.audio_track) lets ffmpeg run (s).
 
 ### foley.sources.video.URL_SCHEMES *= ('http://', 'https://', 'data:')*
 
@@ -48,6 +58,26 @@ a URL, a local path, or the encoded bytes.
   What `video=` accepts
 
 alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | `os.PathLike[str]` | [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.sources.video.audio_track(container, , ffmpeg=None, timeout_s=120.0)
+
+The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).
+
+Written to a file, not a pipe, so ffmpeg can finish the WAV header (a piped WAV
+carries a streaming placeholder size).
+
+* **Raises:**
+  [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If no `ffmpeg` is found, it cannot read an audio stream, or it
+      runs past `timeout_s`.
+* **Return type:**
+  [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+
+### foley.sources.video.ffmpeg_path()
+
+An `ffmpeg` binary: mixing’s resolver (a pip-bundled one too), else `PATH`.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.sources.video.is_url(video)
 

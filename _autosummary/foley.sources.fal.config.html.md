@@ -42,6 +42,6 @@ bound, when it declares none), never at zero.
 | [`FAL_SOURCES`](#foley.sources.fal.config.FAL_SOURCES)   | The fal source names, in the order above (the first is the recommended one).   |
 |----------------------------------------------------------------|--------------------------------------------------------------------------------|
 
-### foley.sources.fal.config.FAL_SOURCES *= ('fal_stable_audio_3', 'fal_stable_audio_3_medium', 'fal_mirelo', 'fal_elevenlabs', 'fal_sonilo', 'fal_mmaudio', 'fal_mirelo_v2a', 'fal_sonilo_v2a')*
+### foley.sources.fal.config.FAL_SOURCES *= ('fal_stable_audio_3', 'fal_stable_audio_3_medium', 'fal_mirelo', 'fal_elevenlabs', 'fal_sonilo', 'fal_mmaudio', 'fal_mirelo_v2a', 'fal_sonilo_v2a', 'fal_mmaudio_v2a', 'fal_thinksound', 'fal_hunyuan_foley')*
 
 The fal source names, in the order above (the first is the recommended one).

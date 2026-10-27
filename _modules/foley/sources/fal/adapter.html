@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=71e49b4d"></script>
+    <script src="../../../../_static/documentation_options.js?v=461c1127"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.75" />
+  <meta name="docsearch:version" content="0.0.76" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -865,6 +865,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        runner: The transport seam (default :func:`falaw_runner`); tests pass a fake.</span>
 <span class="sd">        uploader: ``(path, *, api_key) -&gt; url``, how a local ``video=`` reaches fal</span>
 <span class="sd">            (default :func:`falaw_uploader`); tests pass a fake.</span>
+<span class="sd">        demux: ``(container bytes) -&gt; audio bytes``, for an endpoint that answers</span>
+<span class="sd">            with a video (``output.container == 'video'``; default</span>
+<span class="sd">            :func:`foley.sources.video.audio_track`, which needs ffmpeg).</span>
 <span class="sd">        http: Accepted and ignored: the registry passes a resilient HTTP transport to</span>
 <span class="sd">            external sources, but this adapter's transport is falaw (which retries and</span>
 <span class="sd">            classifies errors itself).</span>
@@ -877,6 +880,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">api_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">runner</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Runner</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">uploader</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">demux</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">bytes</span><span class="p">],</span> <span class="nb">bytes</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">http</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span>
@@ -884,6 +888,7 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">_api_key</span> <span class="o">=</span> <span class="n">api_key</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_runner</span><span class="p">:</span> <span class="n">Runner</span> <span class="o">=</span> <span class="n">runner</span> <span class="k">if</span> <span class="n">runner</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">falaw_runner</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_uploader</span> <span class="o">=</span> <span class="n">uploader</span> <span class="k">if</span> <span class="n">uploader</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">falaw_uploader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_demux</span> <span class="o">=</span> <span class="n">demux</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[Optional[str], bool]"</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""``(key, is_operators)``: the first of ``api_key=``, a key bound for this</span>
@@ -972,7 +977,10 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="FalAdapter.invoke_native">
 <a class="viewcode-back" href="../../../../_autosummary/foley.sources.fal.adapter.html#foley.sources.fal.adapter.FalAdapter.invoke_native">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">invoke_native</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[bytes, dict]"</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Call this source's fal endpoint with native ``arguments``; return ``(audio, response)``.</span>
+<span class="w">        </span><span class="sd">"""Call this source's fal endpoint with native ``arguments``; return ``(media, response)``.</span>
+
+<span class="sd">        ``media`` is the bytes at the response's ``output.audio_field``: the audio, or</span>
+<span class="sd">        for an endpoint that answers with a video (``output.container``), the video.</span>
 
 <span class="sd">        The public entry below foley's translation (#61): ``arguments`` are sent as</span>
 <span class="sd">        is (no fixed arguments or default duration are added). No licence record is</span>
@@ -1006,6 +1014,26 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">); nothing was generated"</span>
             <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_demuxer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">bytes</span><span class="p">],</span> <span class="nb">bytes</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""How to take the audio out of this endpoint's answer, or ``None`` (audio already).</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            SourceConfigurationError: If the endpoint answers with a video and no</span>
+<span class="sd">                ffmpeg can open it (before any call, so nothing is paid for).</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"output"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"container"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"video"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_demux</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_demux</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..video</span><span class="w"> </span><span class="kn">import</span> <span class="n">audio_track</span><span class="p">,</span> <span class="n">ffmpeg_path</span>
+
+        <span class="k">if</span> <span class="n">ffmpeg_path</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">SourceConfigurationError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> answers with a video and foley needs ffmpeg to keep its "</span>
+                <span class="s2">"audio: install ffmpeg (or imageio-ffmpeg); nothing was generated"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">audio_track</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_recordable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">affordances</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""``args`` as the licence records them: the video by its key (#74), never the</span>
 <span class="sd">        uploaded URL (anyone holding it can fetch the picture) nor a ``data:`` URI.</span>
@@ -1038,6 +1066,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        """</span>
         <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="n">nd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_defaults"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">demux</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_demuxer</span><span class="p">()</span>  <span class="c1"># before the upload and the call: nothing spent yet</span>
         <span class="n">args</span> <span class="o">=</span> <span class="n">merge_provider_params</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">native_arguments</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">),</span>
             <span class="n">provider_params</span><span class="p">,</span>
@@ -1061,6 +1090,17 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
         <span class="n">endpoint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"api"</span><span class="p">][</span><span class="s2">"endpoint_id"</span><span class="p">]</span>
         <span class="n">audio</span><span class="p">,</span> <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">invoke_native</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">demux</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">audio</span> <span class="o">=</span> <span class="n">demux</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># the call is paid: say so, and where the video is</span>
+                <span class="n">url</span> <span class="o">=</span> <span class="n">audio_url</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"output"</span><span class="p">][</span><span class="s2">"audio_field"</span><span class="p">])</span>
+                <span class="n">where</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"; the video is at </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2"> (an expiring fal URL)"</span> <span class="k">if</span> <span class="n">url</span> <span class="k">else</span> <span class="s2">""</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: the generation was billed, but its audio could not "</span>
+                    <span class="sa">f</span><span class="s2">"be taken out of the video (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">)</span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> answered with a video: its audio track was kept"</span><span class="p">)</span>
         <span class="n">seed_field</span> <span class="o">=</span> <span class="n">nd</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"seed_field"</span><span class="p">)</span>
         <span class="n">seed</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">seed_field</span><span class="p">)</span>
