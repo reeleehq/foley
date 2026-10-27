@@ -1,4 +1,4 @@
-> built 2026-10-27 05:57 UTC from 8d97921 (main) · foley 0.0.79. Details: build_info.json
+> built 2026-10-27 06:12 UTC from 9f44f4a (main) · foley 0.0.80. Details: build_info.json
 
 # index.html.md
 
@@ -2801,7 +2801,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Whether a candidate was retrieved from the index or freshly generated.
 
-### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from='duration'), 'expand_prompt': Affordance(name='expand_prompt', type=<class 'bool'>, description='Let the backend rewrite the prompt (the prompt it used is recorded)', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'keep_source_audio': Affordance(name='keep_source_audio', type=<class 'bool'>, description="Keep the video's own speech and build the sound around it", default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'sample_rate': Affordance(name='sample_rate', type=<class 'int'>, description='Requested rate (Hz); the actual rate is measured and recorded', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'video': Affordance(name='video', type=<class 'object'>, description='The picture to sound (a URL, a local path or bytes; keyed by content)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None)}*
+### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from='duration'), 'expand_prompt': Affordance(name='expand_prompt', type=<class 'bool'>, description='Let the backend rewrite the prompt (the prompt it used is recorded)', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'keep_source_audio': Affordance(name='keep_source_audio', type=<class 'bool'>, description="Keep the video's own speech and build the sound around it", default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'sample_rate': Affordance(name='sample_rate', type=<class 'int'>, description='Requested rate (Hz); the actual rate is measured and recorded', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'video': Affordance(name='video', type=<class 'object'>, description='The picture to sound (a URL, a RemoteVideo, a local path or bytes; keyed by content)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None)}*
 
 Unified generation-stage parameters (generate backends map onto these).
 
@@ -5419,6 +5419,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`PannsTagger`](_autosummary/foley.html.md#foley.PannsTagger)(\*[, device, threshold])              | PANNs CNN14 supervised tagger over the 527 AudioSet classes (`foley[tag]`).                                                          |
 | [`IngestResult`](_autosummary/foley.html.md#foley.IngestResult)(id, status[, record, qc, ...])       | The outcome of ingesting one clip.                                                                                                   |
 | [`IngestReport`](_autosummary/foley.html.md#foley.IngestReport)(root[, results, notes])              | The rolled-up outcome of a folder ingest (JSON-serializable).                                                                        |
+| [`RemoteVideo`](_autosummary/foley.html.md#foley.RemoteVideo)(\*, url, sha256)                      | A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.                                                 |
 | [`RunManifest`](_autosummary/foley.html.md#foley.RunManifest)(run_id, op[, created_at, ...])        | The reproducible run-artifact for one foley operation (trace ⊕ plan ⊕ provenance).                                                   |
 | [`SpanRecord`](_autosummary/foley.html.md#foley.SpanRecord)(name, span_id[, parent_id, kind, ...]) | One node of the run's span tree (the trace half of the artifact).                                                                    |
 | [`Judge`](_autosummary/foley.html.md#foley.Judge)(\*args, \*\*kwargs)                         | One rung of the verify ladder: does this candidate match this event? (report 10 §4.2).                                               |
@@ -6443,6 +6444,30 @@ per-check keyword arguments) to override any threshold without editing code.
 Bases: [`SafetyRefusal`](_autosummary/foley.sources.html.md#foley.sources.SafetyRefusal)
 
 A [`SafetyRefusal`](_autosummary/foley.html.md#foley.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1).
+
+### *class* foley.RemoteVideo(, url, sha256)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.
+
+A bare `https://` URL is keyed as the URL, which foley cannot see behind, so an
+identical request for it is never served from the generations cache (the picture
+may have changed: `.../latest.mp4`). A caller who knows the content passes this
+instead, and a repeat is replayed while the digest is the same (#173).
+
+The digest is **trusted, not checked** (foley does not fetch the URL): it is
+recorded as the input’s identity in the cache key and the licence’s
+`generation_params`, as a digest foley computed would be.
+
+```pycon
+>>> RemoteVideo(url="https://x/clip.mp4", sha256="sha256:" + "ab" * 32).sha256[:4]
+'abab'
+>>> RemoteVideo(url="clip.mp4", sha256="ab" * 32)
+Traceback (most recent call last):
+...
+ValueError: RemoteVideo.url must be an http(s) URL, got 'clip.mp4'
+```
 
 ### *class* foley.RunManifest(run_id, op, created_at=None, foley_version=None, inputs=dict(), params=dict(), spans=list(), steps=list(), ingest_report=None, result_ids=list(), candidate_scores=list(), credits_ref=None, disclosure_refs=dict(), seeds=dict(), plan_ref=None, trace_ref=None, status='ok', error=None, schema_version=1)
 
@@ -7806,8 +7831,9 @@ training uses).
     `ValueError` before anything is paid for: use the unified argument.
   * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
-    `output_format`, `sample_rate`, `expand_prompt` — see
-    `GENERATION_AFFORDANCES`).
+    `output_format`, `sample_rate`, `expand_prompt`, `video` — see
+    `GENERATION_AFFORDANCES`). A `video` given as a bare remote URL is
+    never replayed from the cache; [`RemoteVideo`](_autosummary/foley.html.md#foley.RemoteVideo) keys it by content.
 * **Returns:**
   The stored [`Candidate`](_autosummary/foley.html.md#foley.Candidate) (`origin=generated`) — its `sound` is the
   canonical, by-value [`SoundRecord`](_autosummary/foley.html.md#foley.SoundRecord) (a content-hash id); its `notes`
@@ -14051,7 +14077,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta-dum', 'netflix chime', 'netflix intro', 'ta dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel inside', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'tudum', 'netflix intro', 'ta-dum', 'netflix chime', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel jingle', 'intel bong', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -18899,13 +18925,17 @@ use via the module `__getattr__` below, so `import foley` stays dol-only.
 Video inputs of video-to-audio generation (#74): what `video=` may be, its identity, its length.
 
 A video-to-audio (V2A) backend takes the picture the sound must follow. foley accepts
-it as a **URL** (`http(s)://` or a `data:` URI, sent as is), a **local path**, or
-raw **bytes** (both uploaded by the backend’s adapter). Three questions are answered
-here, once, for every V2A backend:
+it as a **URL** (`http(s)://` or a `data:` URI, sent as is), a
+[`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo) (a URL with the SHA-256 of its content), a **local path**, or raw
+**bytes** (both uploaded by the backend’s adapter). These questions are answered here,
+once, for every V2A backend:
 
 * [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key): what the generations cache keys the video as. The **content**
-  (`sha256:<hex>` of the bytes or of the file), never its path, so a moved file hits
-  the cache and an edited one cannot; a remote URL is keyed as the URL.
+  (`sha256:<hex>` of the bytes, the file or a [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo)’s digest), never
+  its path, so a moved file hits the cache and an edited one cannot; a bare remote URL
+  is keyed as the URL.
+* [`replayable()`](_autosummary/foley.sources.video.html.md#foley.sources.video.replayable): whether an identical request may be served from the cache. Not
+  for a bare remote URL: the content behind it may have changed (#173).
 * [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds): its length, for a backend priced per second of the video
   (`probe=`; default [`default_probe()`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe): `ffprobe` on `PATH`, else mixing’s
   `probe_duration` through mixing’s ffmpeg resolver; `None` when it cannot be read,
@@ -18923,28 +18953,39 @@ Stdlib only (mixing is used when installed, never required).
 
 ### Module Attributes
 
-| [`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput)            | a URL, a local path, or the encoded bytes.                                                        |
-|------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [`URL_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_SCHEMES)           | URL schemes sent to a backend as is (no upload).                                                  |
-| [`AUDIO_TRACK_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.AUDIO_TRACK_TIMEOUT_S) | The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s).      |
-| [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)       | The most [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) lets ffprobe run (s). |
-| [`DEFAULT_VIDEO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_VIDEO_SUFFIX)  | The suffix of bytes no signature matches (and of every other ISO BMFF brand).                     |
-| [`Probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.Probe)                 | how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds) reads a local file's length. |
+| [`REMOTE_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.REMOTE_SCHEMES)        | Schemes of a URL the backend fetches from a server (what it serves may change).                    |
+|------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| [`URL_SCHEMES`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_SCHEMES)           | URL schemes sent to a backend as is (no upload); a `data:` URI holds its content.                  |
+| [`URL_KEY_PREFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.URL_KEY_PREFIX)        | The key prefix of a video known only by its URL (its content unseen).                              |
+| [`VideoInput`](_autosummary/foley.sources.video.html.md#foley.sources.video.VideoInput)            | a URL, a [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo), a local path, or the bytes. |
+| [`AUDIO_TRACK_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.AUDIO_TRACK_TIMEOUT_S) | The most [`audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track) lets ffmpeg run (s).       |
+| [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)       | The most [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) lets ffprobe run (s).  |
+| [`DEFAULT_VIDEO_SUFFIX`](_autosummary/foley.sources.video.html.md#foley.sources.video.DEFAULT_VIDEO_SUFFIX)  | The suffix of bytes no signature matches (and of every other ISO BMFF brand).                      |
+| [`Probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.Probe)                 | how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds) reads a local file's length.  |
 
 ### Functions
 
 | [`audio_track`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)(container, \*[, ffmpeg, timeout_s])   | The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).                                                                                                                                                                     |
 |----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`default_probe`](_autosummary/foley.sources.video.html.md#foley.sources.video.default_probe)(path)                               | [`ffprobe_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds) (bounded by [`PROBE_TIMEOUT_S`](_autosummary/foley.sources.video.html.md#foley.sources.video.PROBE_TIMEOUT_S)) when `ffprobe` is on `PATH`, else [`mixing_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds). |
+| [`fal_immutable_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.fal_immutable_url)(url)                            | falaw's `is_immutable_url` (fal's own CDN mints a new URL per upload), else `False` when falaw is not installed: an unknown URL is taken as mutable.                                                                                                  |
 | [`ffmpeg_path`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffmpeg_path)()                                     | An `ffmpeg` binary: mixing's resolver (a pip-bundled one too), else `PATH`.                                                                                                                                                                           |
 | [`ffprobe_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.ffprobe_seconds)(path, \*[, ffprobe])              | The length of the video file at `path` by `ffprobe` (default: the one on `PATH`), or `None` when there is none or it cannot read it.                                                                                                                  |
 | [`is_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_url)(video)                                     | Whether `video` is a URL a backend can fetch itself.                                                                                                                                                                                                  |
+| [`is_video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.is_video_key)(value)                               | Whether `value` is already a key [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) makes (as a cache entry keeps it).                                                                                                                      |
 | [`keyed`](_autosummary/foley.sources.video.html.md#foley.sources.video.keyed)(affordances)                                | `affordances` with a `video` replaced by [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) (else unchanged).                                                                                                                               |
 | [`local_video_file`](_autosummary/foley.sources.video.html.md#foley.sources.video.local_video_file)(video, \*[, suffix])             | A local path holding `video` (bytes are written to a temporary file).                                                                                                                                                                                 |
 | [`mixing_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.mixing_seconds)(path)                              | The length by mixing's `probe_duration` (`ffmpeg -i` through mixing's ffmpeg resolver, a pip-bundled ffmpeg too), or `None` when mixing's video stack is not installed or finds no ffmpeg.                                                            |
-| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                                  | The cache identity of `video`: its content digest, or a remote URL as is.                                                                                                                                                                             |
+| [`replayable`](_autosummary/foley.sources.video.html.md#foley.sources.video.replayable)(affordances, \*[, is_immutable])       | Whether an identical request may be served from the cache (#173).                                                                                                                                                                                     |
+| [`video_key`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key)(video)                                  | The cache identity of `video`: its content digest, or a bare remote URL as is.                                                                                                                                                                        |
 | [`video_seconds`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_seconds)(video, \*[, probe])                 | The length of a local `video` in seconds, or `None` when it cannot be read.                                                                                                                                                                           |
 | [`video_suffix`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_suffix)(data)                                | The file suffix of encoded video `data`, sniffed from its first bytes.                                                                                                                                                                                |
+| [`video_url`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_url)(video)                                  | The URL a backend fetches `video` from itself, or `None` (a path or bytes).                                                                                                                                                                           |
+
+### Classes
+
+| [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo)(\*, url, sha256)   | A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.   |
+|---------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
 
 ### foley.sources.video.AUDIO_TRACK_TIMEOUT_S *= 120.0*
 
@@ -18967,18 +19008,50 @@ how [`video_seconds()`](_autosummary/foley.sources.video.html.md#foley.sources.v
 
 alias of [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`float`](https://docs.python.org/3/builtins/functions.html#float) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
+### foley.sources.video.REMOTE_SCHEMES *= ('http://', 'https://')*
+
+Schemes of a URL the backend fetches from a server (what it serves may change).
+
+### *class* foley.sources.video.RemoteVideo(, url, sha256)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.
+
+A bare `https://` URL is keyed as the URL, which foley cannot see behind, so an
+identical request for it is never served from the generations cache (the picture
+may have changed: `.../latest.mp4`). A caller who knows the content passes this
+instead, and a repeat is replayed while the digest is the same (#173).
+
+The digest is **trusted, not checked** (foley does not fetch the URL): it is
+recorded as the input’s identity in the cache key and the licence’s
+`generation_params`, as a digest foley computed would be.
+
+```pycon
+>>> RemoteVideo(url="https://x/clip.mp4", sha256="sha256:" + "ab" * 32).sha256[:4]
+'abab'
+>>> RemoteVideo(url="clip.mp4", sha256="ab" * 32)
+Traceback (most recent call last):
+...
+ValueError: RemoteVideo.url must be an http(s) URL, got 'clip.mp4'
+```
+
+### foley.sources.video.URL_KEY_PREFIX *= 'url:'*
+
+The key prefix of a video known only by its URL (its content unseen).
+
 ### foley.sources.video.URL_SCHEMES *= ('http://', 'https://', 'data:')*
 
-URL schemes sent to a backend as is (no upload).
+URL schemes sent to a backend as is (no upload); a `data:` URI holds its content.
 
 ### foley.sources.video.VideoInput
 
-a URL, a local path, or the encoded bytes.
+a URL, a [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo), a local path, or the bytes.
 
 * **Type:**
   What `video=` accepts
 
-alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | `os.PathLike[str]` | [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
+alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`RemoteVideo`](_autosummary/foley.sources.video.html.md#foley.sources.video.RemoteVideo) | `os.PathLike[str]` | [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
 
 ### foley.sources.video.audio_track(container, , ffmpeg=None, timeout_s=120.0)
 
@@ -19002,6 +19075,14 @@ stall mixing’s unbounded `ffmpeg -i` too.
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
+### foley.sources.video.fal_immutable_url(url)
+
+falaw’s `is_immutable_url` (fal’s own CDN mints a new URL per upload), else
+`False` when falaw is not installed: an unknown URL is taken as mutable.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
 ### foley.sources.video.ffmpeg_path()
 
 An `ffmpeg` binary: mixing’s resolver (a pip-bundled one too), else `PATH`.
@@ -19024,6 +19105,20 @@ Whether `video` is a URL a backend can fetch itself.
 ```pycon
 >>> is_url("https://x/clip.mp4"), is_url("clip.mp4"), is_url(b"...")
 (True, False, False)
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### foley.sources.video.is_video_key(value)
+
+Whether `value` is already a key [`video_key()`](_autosummary/foley.sources.video.html.md#foley.sources.video.video_key) makes (as a cache entry keeps it).
+
+```pycon
+>>> is_video_key("sha256:" + "ab" * 32), is_video_key("url:https://x/a.mp4")
+(True, True)
+>>> is_video_key("clip.mp4"), is_video_key(b"sha256:")
+(False, False)
 ```
 
 * **Return type:**
@@ -19061,15 +19156,38 @@ installed or finds no ffmpeg. Unbounded: mixing’s probe has no timeout yet
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
+### foley.sources.video.replayable(affordances, \*, is_immutable=<function fal_immutable_url>)
+
+Whether an identical request may be served from the cache (#173).
+
+Not when its video is a bare remote URL whose content foley never saw, unless
+`is_immutable(url)` says it never serves other bytes (default:
+[`fal_immutable_url()`](_autosummary/foley.sources.video.html.md#foley.sources.video.fal_immutable_url), fal’s own CDN). Decided from the value alone: no file
+is read.
+
+```pycon
+>>> replayable({"video": "https://x/latest.mp4"}), replayable({"video": b"abc"})
+(False, True)
+>>> replayable({"video": "https://x/a.mp4"}, is_immutable=lambda url: True)
+True
+>>> replayable({"seed": 1})
+True
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
 ### foley.sources.video.video_key(video)
 
-The cache identity of `video`: its content digest, or a remote URL as is.
+The cache identity of `video`: its content digest, or a bare remote URL as is.
 
 ```pycon
 >>> video_key(b"abc")[:15]
 'sha256:ba7816bf'
 >>> video_key("https://x/clip.mp4")
 'url:https://x/clip.mp4'
+>>> video_key(RemoteVideo(url="https://x/clip.mp4", sha256="ab" * 32))[:11]
+'sha256:abab'
 ```
 
 * **Raises:**
@@ -19114,6 +19232,18 @@ An uploader (and ffmpeg) names the format by the suffix, so a WebM written as
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.sources.video.video_url(video)
+
+The URL a backend fetches `video` from itself, or `None` (a path or bytes).
+
+```pycon
+>>> video_url("https://x/clip.mp4"), video_url("clip.mp4"), video_url(b"...")
+('https://x/clip.mp4', None, None)
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 
 # _autosummary/foley.sources.wikimedia_commons.adapter.html.md
@@ -20979,18 +21109,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 05:57 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/8d97921357328a92d0fb2aab79fa123822fb24f1"><code>8d97921</code></a> on branch <code>main</code>, for **foley 0.0.79** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 06:12 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/9f44f4a3d5adeec8923e2298bdf0890e47548e87"><code>9f44f4a</code></a> on branch <code>main</code>, for **foley 0.0.80** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.79) is ahead of the latest release on PyPI (0.0.78): these docs describe unreleased code.
+- The documented version (0.0.80) is behind the latest release on PyPI (0.0.81): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/8d97921357328a92d0fb2aab79fa123822fb24f1"><code>8d97921357328a92d0fb2aab79fa123822fb24f1</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/9f44f4a3d5adeec8923e2298bdf0890e47548e87"><code>9f44f4a3d5adeec8923e2298bdf0890e47548e87</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -21001,9 +21131,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40458085388">40458085388</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40459504751">40459504751</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>8d97921357328a92d0fb2aab79fa123822fb24f1</code> (in the history of the built commit) |
+| Event commit | <code>9f44f4a3d5adeec8923e2298bdf0890e47548e87</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -21028,13 +21158,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.78/">0.0.78</a>, older than the documented version (0.0.79).
+Latest release: <a href="https://pypi.org/project/foley/0.0.81/">0.0.81</a>, newer than the documented version (0.0.80).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 8d97921357328a92d0fb2aab79fa123822fb24f1
+git checkout 9f44f4a3d5adeec8923e2298bdf0890e47548e87
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -199,6 +199,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`PannsTagger`](#foley.PannsTagger)(\*[, device, threshold])              | PANNs CNN14 supervised tagger over the 527 AudioSet classes (`foley[tag]`).                                                          |
 | [`IngestResult`](#foley.IngestResult)(id, status[, record, qc, ...])       | The outcome of ingesting one clip.                                                                                                   |
 | [`IngestReport`](#foley.IngestReport)(root[, results, notes])              | The rolled-up outcome of a folder ingest (JSON-serializable).                                                                        |
+| [`RemoteVideo`](#foley.RemoteVideo)(\*, url, sha256)                      | A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.                                                 |
 | [`RunManifest`](#foley.RunManifest)(run_id, op[, created_at, ...])        | The reproducible run-artifact for one foley operation (trace ⊕ plan ⊕ provenance).                                                   |
 | [`SpanRecord`](#foley.SpanRecord)(name, span_id[, parent_id, kind, ...]) | One node of the run's span tree (the trace half of the artifact).                                                                    |
 | [`Judge`](#foley.Judge)(\*args, \*\*kwargs)                         | One rung of the verify ladder: does this candidate match this event? (report 10 §4.2).                                               |
@@ -1223,6 +1224,30 @@ per-check keyword arguments) to override any threshold without editing code.
 Bases: [`SafetyRefusal`](foley.sources.html.md#foley.sources.SafetyRefusal)
 
 A [`SafetyRefusal`](#foley.SafetyRefusal) for a prompt requesting a recognizable / cloned voice (report 07 §7.1).
+
+### *class* foley.RemoteVideo(, url, sha256)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A remote video `url` with the SHA-256 of its bytes: keyed, and replayed, by content.
+
+A bare `https://` URL is keyed as the URL, which foley cannot see behind, so an
+identical request for it is never served from the generations cache (the picture
+may have changed: `.../latest.mp4`). A caller who knows the content passes this
+instead, and a repeat is replayed while the digest is the same (#173).
+
+The digest is **trusted, not checked** (foley does not fetch the URL): it is
+recorded as the input’s identity in the cache key and the licence’s
+`generation_params`, as a digest foley computed would be.
+
+```pycon
+>>> RemoteVideo(url="https://x/clip.mp4", sha256="sha256:" + "ab" * 32).sha256[:4]
+'abab'
+>>> RemoteVideo(url="clip.mp4", sha256="ab" * 32)
+Traceback (most recent call last):
+...
+ValueError: RemoteVideo.url must be an http(s) URL, got 'clip.mp4'
+```
 
 ### *class* foley.RunManifest(run_id, op, created_at=None, foley_version=None, inputs=dict(), params=dict(), spans=list(), steps=list(), ingest_report=None, result_ids=list(), candidate_scores=list(), credits_ref=None, disclosure_refs=dict(), seeds=dict(), plan_ref=None, trace_ref=None, status='ok', error=None, schema_version=1)
 
@@ -2586,8 +2611,9 @@ training uses).
     `ValueError` before anything is paid for: use the unified argument.
   * **\*\*affordances** – Unified generation affordances (`duration_s`, `model`,
     `prompt_influence`, `negative_prompt`, `steps`, `seed`, `loop`,
-    `output_format`, `sample_rate`, `expand_prompt` — see
-    `GENERATION_AFFORDANCES`).
+    `output_format`, `sample_rate`, `expand_prompt`, `video` — see
+    `GENERATION_AFFORDANCES`). A `video` given as a bare remote URL is
+    never replayed from the cache; [`RemoteVideo`](#foley.RemoteVideo) keys it by content.
 * **Returns:**
   The stored [`Candidate`](#foley.Candidate) (`origin=generated`) — its `sound` is the
   canonical, by-value [`SoundRecord`](#foley.SoundRecord) (a content-hash id); its `notes`

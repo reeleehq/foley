@@ -148,6 +148,7 @@
       PannsTagger
       IngestResult
       IngestReport
+      RemoteVideo
       RunManifest
       SpanRecord
       Judge

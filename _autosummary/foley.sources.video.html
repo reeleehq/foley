@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=ae06b2e5"></script>
+    <script src="../_static/documentation_options.js?v=5c6fbccc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.79" />
+  <meta name="docsearch:version" content="0.0.80" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -492,13 +492,17 @@
 <span id="foley-sources-video"></span><h1>foley.sources.video<a class="headerlink" href="#module-foley.sources.video" title="Link to this heading">#</a></h1>
 <p>Video inputs of video-to-audio generation (#74): what <code class="docutils literal notranslate"><span class="pre">video=</span></code> may be, its identity, its length.</p>
 <p>A video-to-audio (V2A) backend takes the picture the sound must follow. foley accepts
-it as a <strong>URL</strong> (<code class="docutils literal notranslate"><span class="pre">http(s)://</span></code> or a <code class="docutils literal notranslate"><span class="pre">data:</span></code> URI, sent as is), a <strong>local path</strong>, or
-raw <strong>bytes</strong> (both uploaded by the backend’s adapter). Three questions are answered
-here, once, for every V2A backend:</p>
+it as a <strong>URL</strong> (<code class="docutils literal notranslate"><span class="pre">http(s)://</span></code> or a <code class="docutils literal notranslate"><span class="pre">data:</span></code> URI, sent as is), a
+<a class="reference internal" href="#foley.sources.video.RemoteVideo" title="foley.sources.video.RemoteVideo"><code class="xref py py-class docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a> (a URL with the SHA-256 of its content), a <strong>local path</strong>, or raw
+<strong>bytes</strong> (both uploaded by the backend’s adapter). These questions are answered here,
+once, for every V2A backend:</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="#foley.sources.video.video_key" title="foley.sources.video.video_key"><code class="xref py py-func docutils literal notranslate"><span class="pre">video_key()</span></code></a>: what the generations cache keys the video as. The <strong>content</strong>
-(<code class="docutils literal notranslate"><span class="pre">sha256:&lt;hex&gt;</span></code> of the bytes or of the file), never its path, so a moved file hits
-the cache and an edited one cannot; a remote URL is keyed as the URL.</p></li>
+(<code class="docutils literal notranslate"><span class="pre">sha256:&lt;hex&gt;</span></code> of the bytes, the file or a <a class="reference internal" href="#foley.sources.video.RemoteVideo" title="foley.sources.video.RemoteVideo"><code class="xref py py-class docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a>’s digest), never
+its path, so a moved file hits the cache and an edited one cannot; a bare remote URL
+is keyed as the URL.</p></li>
+<li><p><a class="reference internal" href="#foley.sources.video.replayable" title="foley.sources.video.replayable"><code class="xref py py-func docutils literal notranslate"><span class="pre">replayable()</span></code></a>: whether an identical request may be served from the cache. Not
+for a bare remote URL: the content behind it may have changed (#173).</p></li>
 <li><p><a class="reference internal" href="#foley.sources.video.video_seconds" title="foley.sources.video.video_seconds"><code class="xref py py-func docutils literal notranslate"><span class="pre">video_seconds()</span></code></a>: its length, for a backend priced per second of the video
 (<code class="docutils literal notranslate"><span class="pre">probe=</span></code>; default <a class="reference internal" href="#foley.sources.video.default_probe" title="foley.sources.video.default_probe"><code class="xref py py-func docutils literal notranslate"><span class="pre">default_probe()</span></code></a>: <code class="docutils literal notranslate"><span class="pre">ffprobe</span></code> on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, else mixing’s
 <code class="docutils literal notranslate"><span class="pre">probe_duration</span></code> through mixing’s ffmpeg resolver; <code class="docutils literal notranslate"><span class="pre">None</span></code> when it cannot be read,
@@ -516,11 +520,17 @@ manifest): the video replaced by its key, so neither its bytes nor a local path
 <p class="rubric">Module Attributes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.VideoInput" title="foley.sources.video.VideoInput"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VideoInput</span></code></a></p></td>
-<td><p>a URL, a local path, or the encoded bytes.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.REMOTE_SCHEMES" title="foley.sources.video.REMOTE_SCHEMES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">REMOTE_SCHEMES</span></code></a></p></td>
+<td><p>Schemes of a URL the backend fetches from a server (what it serves may change).</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.URL_SCHEMES" title="foley.sources.video.URL_SCHEMES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">URL_SCHEMES</span></code></a></p></td>
-<td><p>URL schemes sent to a backend as is (no upload).</p></td>
+<td><p>URL schemes sent to a backend as is (no upload); a <code class="docutils literal notranslate"><span class="pre">data:</span></code> URI holds its content.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.URL_KEY_PREFIX" title="foley.sources.video.URL_KEY_PREFIX"><code class="xref py py-obj docutils literal notranslate"><span class="pre">URL_KEY_PREFIX</span></code></a></p></td>
+<td><p>The key prefix of a video known only by its URL (its content unseen).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.VideoInput" title="foley.sources.video.VideoInput"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VideoInput</span></code></a></p></td>
+<td><p>a URL, a <a class="reference internal" href="#foley.sources.video.RemoteVideo" title="foley.sources.video.RemoteVideo"><code class="xref py py-class docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a>, a local path, or the bytes.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.AUDIO_TRACK_TIMEOUT_S" title="foley.sources.video.AUDIO_TRACK_TIMEOUT_S"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AUDIO_TRACK_TIMEOUT_S</span></code></a></p></td>
 <td><p>The most <a class="reference internal" href="#foley.sources.video.audio_track" title="foley.sources.video.audio_track"><code class="xref py py-func docutils literal notranslate"><span class="pre">audio_track()</span></code></a> lets ffmpeg run (s).</p></td>
@@ -546,14 +556,20 @@ manifest): the video replaced by its key, so neither its bytes nor a local path
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.default_probe" title="foley.sources.video.default_probe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">default_probe</span></code></a>(path)</p></td>
 <td><p><a class="reference internal" href="#foley.sources.video.ffprobe_seconds" title="foley.sources.video.ffprobe_seconds"><code class="xref py py-func docutils literal notranslate"><span class="pre">ffprobe_seconds()</span></code></a> (bounded by <a class="reference internal" href="#foley.sources.video.PROBE_TIMEOUT_S" title="foley.sources.video.PROBE_TIMEOUT_S"><code class="xref py py-data docutils literal notranslate"><span class="pre">PROBE_TIMEOUT_S</span></code></a>) when <code class="docutils literal notranslate"><span class="pre">ffprobe</span></code> is on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, else <a class="reference internal" href="#foley.sources.video.mixing_seconds" title="foley.sources.video.mixing_seconds"><code class="xref py py-func docutils literal notranslate"><span class="pre">mixing_seconds()</span></code></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.ffmpeg_path" title="foley.sources.video.ffmpeg_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ffmpeg_path</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.fal_immutable_url" title="foley.sources.video.fal_immutable_url"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fal_immutable_url</span></code></a>(url)</p></td>
+<td><p>falaw's <code class="docutils literal notranslate"><span class="pre">is_immutable_url</span></code> (fal's own CDN mints a new URL per upload), else <code class="docutils literal notranslate"><span class="pre">False</span></code> when falaw is not installed: an unknown URL is taken as mutable.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.ffmpeg_path" title="foley.sources.video.ffmpeg_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ffmpeg_path</span></code></a>()</p></td>
 <td><p>An <code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> binary: mixing's resolver (a pip-bundled one too), else <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.ffprobe_seconds" title="foley.sources.video.ffprobe_seconds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ffprobe_seconds</span></code></a>(path, *[, ffprobe])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.ffprobe_seconds" title="foley.sources.video.ffprobe_seconds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ffprobe_seconds</span></code></a>(path, *[, ffprobe])</p></td>
 <td><p>The length of the video file at <code class="docutils literal notranslate"><span class="pre">path</span></code> by <code class="docutils literal notranslate"><span class="pre">ffprobe</span></code> (default: the one on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>), or <code class="docutils literal notranslate"><span class="pre">None</span></code> when there is none or it cannot read it.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.is_url" title="foley.sources.video.is_url"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_url</span></code></a>(video)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.is_url" title="foley.sources.video.is_url"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_url</span></code></a>(video)</p></td>
 <td><p>Whether <code class="docutils literal notranslate"><span class="pre">video</span></code> is a URL a backend can fetch itself.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.is_video_key" title="foley.sources.video.is_video_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_video_key</span></code></a>(value)</p></td>
+<td><p>Whether <code class="docutils literal notranslate"><span class="pre">value</span></code> is already a key <a class="reference internal" href="#foley.sources.video.video_key" title="foley.sources.video.video_key"><code class="xref py py-func docutils literal notranslate"><span class="pre">video_key()</span></code></a> makes (as a cache entry keeps it).</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.keyed" title="foley.sources.video.keyed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">keyed</span></code></a>(affordances)</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">affordances</span></code> with a <code class="docutils literal notranslate"><span class="pre">video</span></code> replaced by <a class="reference internal" href="#foley.sources.video.video_key" title="foley.sources.video.video_key"><code class="xref py py-func docutils literal notranslate"><span class="pre">video_key()</span></code></a> (else unchanged).</p></td>
@@ -564,14 +580,29 @@ manifest): the video replaced by its key, so neither its bytes nor a local path
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.mixing_seconds" title="foley.sources.video.mixing_seconds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mixing_seconds</span></code></a>(path)</p></td>
 <td><p>The length by mixing's <code class="docutils literal notranslate"><span class="pre">probe_duration</span></code> (<code class="docutils literal notranslate"><span class="pre">ffmpeg</span> <span class="pre">-i</span></code> through mixing's ffmpeg resolver, a pip-bundled ffmpeg too), or <code class="docutils literal notranslate"><span class="pre">None</span></code> when mixing's video stack is not installed or finds no ffmpeg.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.video_key" title="foley.sources.video.video_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video_key</span></code></a>(video)</p></td>
-<td><p>The cache identity of <code class="docutils literal notranslate"><span class="pre">video</span></code>: its content digest, or a remote URL as is.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.replayable" title="foley.sources.video.replayable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">replayable</span></code></a>(affordances, *[, is_immutable])</p></td>
+<td><p>Whether an identical request may be served from the cache (#173).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.video_seconds" title="foley.sources.video.video_seconds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video_seconds</span></code></a>(video, *[, probe])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.video_key" title="foley.sources.video.video_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video_key</span></code></a>(video)</p></td>
+<td><p>The cache identity of <code class="docutils literal notranslate"><span class="pre">video</span></code>: its content digest, or a bare remote URL as is.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.video_seconds" title="foley.sources.video.video_seconds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video_seconds</span></code></a>(video, *[, probe])</p></td>
 <td><p>The length of a local <code class="docutils literal notranslate"><span class="pre">video</span></code> in seconds, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when it cannot be read.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.video_suffix" title="foley.sources.video.video_suffix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video_suffix</span></code></a>(data)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.video.video_suffix" title="foley.sources.video.video_suffix"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video_suffix</span></code></a>(data)</p></td>
 <td><p>The file suffix of encoded video <code class="docutils literal notranslate"><span class="pre">data</span></code>, sniffed from its first bytes.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.video_url" title="foley.sources.video.video_url"><code class="xref py py-obj docutils literal notranslate"><span class="pre">video_url</span></code></a>(video)</p></td>
+<td><p>The URL a backend fetches <code class="docutils literal notranslate"><span class="pre">video</span></code> from itself, or <code class="docutils literal notranslate"><span class="pre">None</span></code> (a path or bytes).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.video.RemoteVideo" title="foley.sources.video.RemoteVideo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a>(*, url, sha256)</p></td>
+<td><p>A remote video <code class="docutils literal notranslate"><span class="pre">url</span></code> with the SHA-256 of its bytes: keyed, and replayed, by content.</p></td>
 </tr>
 </tbody>
 </table>
@@ -607,21 +638,57 @@ manifest): the video replaced by its key, so neither its bytes nor a local path
 </dd></dl>
 
 <dl class="py data">
+<dt class="sig sig-object py" id="foley.sources.video.REMOTE_SCHEMES">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">REMOTE_SCHEMES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('http://',</span> <span class="pre">'https://')</span></span><a class="headerlink" href="#foley.sources.video.REMOTE_SCHEMES" title="Link to this definition">#</a></dt>
+<dd><p>Schemes of a URL the backend fetches from a server (what it serves may change).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.sources.video.RemoteVideo">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">RemoteVideo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sha256</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/video.html#RemoteVideo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.video.RemoteVideo" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A remote video <code class="docutils literal notranslate"><span class="pre">url</span></code> with the SHA-256 of its bytes: keyed, and replayed, by content.</p>
+<p>A bare <code class="docutils literal notranslate"><span class="pre">https://</span></code> URL is keyed as the URL, which foley cannot see behind, so an
+identical request for it is never served from the generations cache (the picture
+may have changed: <code class="docutils literal notranslate"><span class="pre">.../latest.mp4</span></code>). A caller who knows the content passes this
+instead, and a repeat is replayed while the digest is the same (#173).</p>
+<p>The digest is <strong>trusted, not checked</strong> (foley does not fetch the URL): it is
+recorded as the input’s identity in the cache key and the licence’s
+<code class="docutils literal notranslate"><span class="pre">generation_params</span></code>, as a digest foley computed would be.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RemoteVideo</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">"https://x/clip.mp4"</span><span class="p">,</span> <span class="n">sha256</span><span class="o">=</span><span class="s2">"sha256:"</span> <span class="o">+</span> <span class="s2">"ab"</span> <span class="o">*</span> <span class="mi">32</span><span class="p">)</span><span class="o">.</span><span class="n">sha256</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span>
+<span class="go">'abab'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RemoteVideo</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">"clip.mp4"</span><span class="p">,</span> <span class="n">sha256</span><span class="o">=</span><span class="s2">"ab"</span> <span class="o">*</span> <span class="mi">32</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">ValueError</span>: <span class="n">RemoteVideo.url must be an http(s) URL, got 'clip.mp4'</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.sources.video.URL_KEY_PREFIX">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">URL_KEY_PREFIX</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'url:'</span></span><a class="headerlink" href="#foley.sources.video.URL_KEY_PREFIX" title="Link to this definition">#</a></dt>
+<dd><p>The key prefix of a video known only by its URL (its content unseen).</p>
+</dd></dl>
+
+<dl class="py data">
 <dt class="sig sig-object py" id="foley.sources.video.URL_SCHEMES">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">URL_SCHEMES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('http://',</span> <span class="pre">'https://',</span> <span class="pre">'data:')</span></span><a class="headerlink" href="#foley.sources.video.URL_SCHEMES" title="Link to this definition">#</a></dt>
-<dd><p>URL schemes sent to a backend as is (no upload).</p>
+<dd><p>URL schemes sent to a backend as is (no upload); a <code class="docutils literal notranslate"><span class="pre">data:</span></code> URI holds its content.</p>
 </dd></dl>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="foley.sources.video.VideoInput">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">VideoInput</span></span><a class="headerlink" href="#foley.sources.video.VideoInput" title="Link to this definition">#</a></dt>
-<dd><p>a URL, a local path, or the encoded bytes.</p>
+<dd><p>a URL, a <a class="reference internal" href="#foley.sources.video.RemoteVideo" title="foley.sources.video.RemoteVideo"><code class="xref py py-class docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a>, a local path, or the bytes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>What <code class="docutils literal notranslate"><span class="pre">video=</span></code> accepts</p>
 </dd>
 </dl>
-<p>alias of <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <code class="xref py py-class docutils literal notranslate"><span class="pre">os.PathLike[str]</span></code> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a></p>
+<p>alias of <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference internal" href="#foley.sources.video.RemoteVideo" title="foley.sources.video.RemoteVideo"><code class="xref py py-class docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a> | <code class="xref py py-class docutils literal notranslate"><span class="pre">os.PathLike[str]</span></code> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a></p>
 </dd></dl>
 
 <dl class="py function">
@@ -655,6 +722,18 @@ stall mixing’s unbounded <code class="docutils literal notranslate"><span clas
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.video.fal_immutable_url">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">fal_immutable_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/video.html#fal_immutable_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.video.fal_immutable_url" title="Link to this definition">#</a></dt>
+<dd><p>falaw’s <code class="docutils literal notranslate"><span class="pre">is_immutable_url</span></code> (fal’s own CDN mints a new URL per upload), else
+<code class="docutils literal notranslate"><span class="pre">False</span></code> when falaw is not installed: an unknown URL is taken as mutable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.video.ffmpeg_path">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">ffmpeg_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/video.html#ffmpeg_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.video.ffmpeg_path" title="Link to this definition">#</a></dt>
 <dd><p>An <code class="docutils literal notranslate"><span class="pre">ffmpeg</span></code> binary: mixing’s resolver (a pip-bundled one too), else <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</p>
@@ -683,6 +762,23 @@ stall mixing’s unbounded <code class="docutils literal notranslate"><span clas
 <dd><p>Whether <code class="docutils literal notranslate"><span class="pre">video</span></code> is a URL a backend can fetch itself.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_url</span><span class="p">(</span><span class="s2">"https://x/clip.mp4"</span><span class="p">),</span> <span class="n">is_url</span><span class="p">(</span><span class="s2">"clip.mp4"</span><span class="p">),</span> <span class="n">is_url</span><span class="p">(</span><span class="sa">b</span><span class="s2">"..."</span><span class="p">)</span>
 <span class="go">(True, False, False)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.video.is_video_key">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">is_video_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/video.html#is_video_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.video.is_video_key" title="Link to this definition">#</a></dt>
+<dd><p>Whether <code class="docutils literal notranslate"><span class="pre">value</span></code> is already a key <a class="reference internal" href="#foley.sources.video.video_key" title="foley.sources.video.video_key"><code class="xref py py-func docutils literal notranslate"><span class="pre">video_key()</span></code></a> makes (as a cache entry keeps it).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">is_video_key</span><span class="p">(</span><span class="s2">"sha256:"</span> <span class="o">+</span> <span class="s2">"ab"</span> <span class="o">*</span> <span class="mi">32</span><span class="p">),</span> <span class="n">is_video_key</span><span class="p">(</span><span class="s2">"url:https://x/a.mp4"</span><span class="p">)</span>
+<span class="go">(True, True)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">is_video_key</span><span class="p">(</span><span class="s2">"clip.mp4"</span><span class="p">),</span> <span class="n">is_video_key</span><span class="p">(</span><span class="sa">b</span><span class="s2">"sha256:"</span><span class="p">)</span>
+<span class="go">(False, False)</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -735,13 +831,38 @@ installed or finds no ffmpeg. Unbounded: mixing’s probe has no timeout yet
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.video.replayable">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">replayable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">affordances</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_immutable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">fal_immutable_url&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/video.html#replayable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.video.replayable" title="Link to this definition">#</a></dt>
+<dd><p>Whether an identical request may be served from the cache (#173).</p>
+<p>Not when its video is a bare remote URL whose content foley never saw, unless
+<code class="docutils literal notranslate"><span class="pre">is_immutable(url)</span></code> says it never serves other bytes (default:
+<a class="reference internal" href="#foley.sources.video.fal_immutable_url" title="foley.sources.video.fal_immutable_url"><code class="xref py py-func docutils literal notranslate"><span class="pre">fal_immutable_url()</span></code></a>, fal’s own CDN). Decided from the value alone: no file
+is read.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">replayable</span><span class="p">({</span><span class="s2">"video"</span><span class="p">:</span> <span class="s2">"https://x/latest.mp4"</span><span class="p">}),</span> <span class="n">replayable</span><span class="p">({</span><span class="s2">"video"</span><span class="p">:</span> <span class="sa">b</span><span class="s2">"abc"</span><span class="p">})</span>
+<span class="go">(False, True)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">replayable</span><span class="p">({</span><span class="s2">"video"</span><span class="p">:</span> <span class="s2">"https://x/a.mp4"</span><span class="p">},</span> <span class="n">is_immutable</span><span class="o">=</span><span class="k">lambda</span> <span class="n">url</span><span class="p">:</span> <span class="kc">True</span><span class="p">)</span>
+<span class="go">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">replayable</span><span class="p">({</span><span class="s2">"seed"</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.video.video_key">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">video_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">video</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/video.html#video_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.video.video_key" title="Link to this definition">#</a></dt>
-<dd><p>The cache identity of <code class="docutils literal notranslate"><span class="pre">video</span></code>: its content digest, or a remote URL as is.</p>
+<dd><p>The cache identity of <code class="docutils literal notranslate"><span class="pre">video</span></code>: its content digest, or a bare remote URL as is.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">video_key</span><span class="p">(</span><span class="sa">b</span><span class="s2">"abc"</span><span class="p">)[:</span><span class="mi">15</span><span class="p">]</span>
 <span class="go">'sha256:ba7816bf'</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">video_key</span><span class="p">(</span><span class="s2">"https://x/clip.mp4"</span><span class="p">)</span>
 <span class="go">'url:https://x/clip.mp4'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">video_key</span><span class="p">(</span><span class="n">RemoteVideo</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">"https://x/clip.mp4"</span><span class="p">,</span> <span class="n">sha256</span><span class="o">=</span><span class="s2">"ab"</span> <span class="o">*</span> <span class="mi">32</span><span class="p">))[:</span><span class="mi">11</span><span class="p">]</span>
+<span class="go">'sha256:abab'</span>
 </pre></div>
 </div>
 <dl class="field-list simple">
@@ -794,6 +915,21 @@ probe that raises counts as unreadable. A URL is not fetched to measure it:
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.video.video_url">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.video.</span></span><span class="sig-name descname"><span class="pre">video_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">video</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/video.html#video_url"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.video.video_url" title="Link to this definition">#</a></dt>
+<dd><p>The URL a backend fetches <code class="docutils literal notranslate"><span class="pre">video</span></code> from itself, or <code class="docutils literal notranslate"><span class="pre">None</span></code> (a path or bytes).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">video_url</span><span class="p">(</span><span class="s2">"https://x/clip.mp4"</span><span class="p">),</span> <span class="n">video_url</span><span class="p">(</span><span class="s2">"clip.mp4"</span><span class="p">),</span> <span class="n">video_url</span><span class="p">(</span><span class="sa">b</span><span class="s2">"..."</span><span class="p">)</span>
+<span class="go">('https://x/clip.mp4', None, None)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -851,19 +987,26 @@ probe that raises counts as unreadable. A URL is not fetched to measure it:
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.DEFAULT_VIDEO_SUFFIX"><code class="docutils literal notranslate"><span class="pre">DEFAULT_VIDEO_SUFFIX</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.PROBE_TIMEOUT_S"><code class="docutils literal notranslate"><span class="pre">PROBE_TIMEOUT_S</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.Probe"><code class="docutils literal notranslate"><span class="pre">Probe</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.REMOTE_SCHEMES"><code class="docutils literal notranslate"><span class="pre">REMOTE_SCHEMES</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.RemoteVideo"><code class="docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.URL_KEY_PREFIX"><code class="docutils literal notranslate"><span class="pre">URL_KEY_PREFIX</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.URL_SCHEMES"><code class="docutils literal notranslate"><span class="pre">URL_SCHEMES</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.VideoInput"><code class="docutils literal notranslate"><span class="pre">VideoInput</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.audio_track"><code class="docutils literal notranslate"><span class="pre">audio_track()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.default_probe"><code class="docutils literal notranslate"><span class="pre">default_probe()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.fal_immutable_url"><code class="docutils literal notranslate"><span class="pre">fal_immutable_url()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.ffmpeg_path"><code class="docutils literal notranslate"><span class="pre">ffmpeg_path()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.ffprobe_seconds"><code class="docutils literal notranslate"><span class="pre">ffprobe_seconds()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.is_url"><code class="docutils literal notranslate"><span class="pre">is_url()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.is_video_key"><code class="docutils literal notranslate"><span class="pre">is_video_key()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.keyed"><code class="docutils literal notranslate"><span class="pre">keyed()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.local_video_file"><code class="docutils literal notranslate"><span class="pre">local_video_file()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.mixing_seconds"><code class="docutils literal notranslate"><span class="pre">mixing_seconds()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.replayable"><code class="docutils literal notranslate"><span class="pre">replayable()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.video_key"><code class="docutils literal notranslate"><span class="pre">video_key()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.video_seconds"><code class="docutils literal notranslate"><span class="pre">video_seconds()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.video_suffix"><code class="docutils literal notranslate"><span class="pre">video_suffix()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.video.video_url"><code class="docutils literal notranslate"><span class="pre">video_url()</span></code></a></li>
 </ul>
   </nav></div>
 

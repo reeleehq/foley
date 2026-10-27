@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=ae06b2e5"></script>
+    <script src="../_static/documentation_options.js?v=5c6fbccc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.79" />
+  <meta name="docsearch:version" content="0.0.80" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -952,40 +952,43 @@ lazy-imported inside the audio/QC functions that need them (install via the
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.IngestReport" title="foley.IngestReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IngestReport</span></code></a>(root[, results, notes])</p></td>
 <td><p>The rolled-up outcome of a folder ingest (JSON-serializable).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.RunManifest" title="foley.RunManifest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunManifest</span></code></a>(run_id, op[, created_at, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.RemoteVideo" title="foley.RemoteVideo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a>(*, url, sha256)</p></td>
+<td><p>A remote video <code class="docutils literal notranslate"><span class="pre">url</span></code> with the SHA-256 of its bytes: keyed, and replayed, by content.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.RunManifest" title="foley.RunManifest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunManifest</span></code></a>(run_id, op[, created_at, ...])</p></td>
 <td><p>The reproducible run-artifact for one foley operation (trace ⊕ plan ⊕ provenance).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.SpanRecord" title="foley.SpanRecord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpanRecord</span></code></a>(name, span_id[, parent_id, kind, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.SpanRecord" title="foley.SpanRecord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpanRecord</span></code></a>(name, span_id[, parent_id, kind, ...])</p></td>
 <td><p>One node of the run's span tree (the trace half of the artifact).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Judge" title="foley.Judge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Judge</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.Judge" title="foley.Judge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Judge</span></code></a>(*args, **kwargs)</p></td>
 <td><p>One rung of the verify ladder: does this candidate match this event? (report 10 §4.2).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.Budget" title="foley.Budget"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Budget</span></code></a>([max_refine_loops, max_generations, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Budget" title="foley.Budget"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Budget</span></code></a>([max_refine_loops, max_generations, ...])</p></td>
 <td><p>Bounded-cost accounting: per-event loop counts, and a cumulative dollar cap (#57).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Decision" title="foley.Decision"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Decision</span></code></a>(action[, candidate, reason])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.Decision" title="foley.Decision"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Decision</span></code></a>(action[, candidate, reason])</p></td>
 <td><p>The tiny result of <a class="reference internal" href="#foley.decide" title="foley.decide"><code class="xref py py-func docutils literal notranslate"><span class="pre">decide()</span></code></a>; <code class="docutils literal notranslate"><span class="pre">reason</span></code> feeds the refine hint + the audit Step.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.WeaveResult" title="foley.WeaveResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WeaveResult</span></code></a>(audio, sr, timeline, credits, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.WeaveResult" title="foley.WeaveResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WeaveResult</span></code></a>(audio, sr, timeline, credits, ...)</p></td>
 <td><p>The output of <a class="reference internal" href="foley.weave.html#module-foley.weave" title="foley.weave"><code class="xref py py-func docutils literal notranslate"><span class="pre">weave()</span></code></a> — the v1 Definition-of-Done deliverable.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.ScoreResult" title="foley.ScoreResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScoreResult</span></code></a>(timeline, events[, weave])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.ScoreResult" title="foley.ScoreResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScoreResult</span></code></a>(timeline, events[, weave])</p></td>
 <td><p>The output of <a class="reference internal" href="#foley.score" title="foley.score"><code class="xref py py-func docutils literal notranslate"><span class="pre">score()</span></code></a> — the editable plan + per-event rationale (+ mix when woven).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.ScoredEvent" title="foley.ScoredEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScoredEvent</span></code></a>(segment, query, sound_id, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.ScoredEvent" title="foley.ScoredEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScoredEvent</span></code></a>(segment, query, sound_id, ...)</p></td>
 <td><p>One chosen sound placed for a narration event (a JSON-friendly rationale row).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.SessionStore" title="foley.SessionStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SessionStore</span></code></a>([session_id, candidates, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.SessionStore" title="foley.SessionStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SessionStore</span></code></a>([session_id, candidates, ...])</p></td>
 <td><p>Three namespaced stores for one audition session (candidates / picks / rejects).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.RuntimeConfig" title="foley.RuntimeConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RuntimeConfig</span></code></a>([offline, data_egress_allow, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.RuntimeConfig" title="foley.RuntimeConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RuntimeConfig</span></code></a>([offline, data_egress_allow, ...])</p></td>
 <td><p>A frozen runtime posture — the local-first / offline contract as data.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Credits" title="foley.Credits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Credits</span></code></a>([entries, title, schema_version])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.Credits" title="foley.Credits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Credits</span></code></a>([entries, title, schema_version])</p></td>
 <td><p>A deduplicated, ordered collection of <a class="reference internal" href="#foley.CreditEntry" title="foley.CreditEntry"><code class="xref py py-class docutils literal notranslate"><span class="pre">CreditEntry</span></code></a> for one run.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.CreditEntry" title="foley.CreditEntry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CreditEntry</span></code></a>(sound_id[, title, author, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.CreditEntry" title="foley.CreditEntry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CreditEntry</span></code></a>(sound_id[, title, author, ...])</p></td>
 <td><p>One rendered TASL credit for a single sound (a flat, serializable row).</p></td>
 </tr>
 </tbody>
@@ -2364,6 +2367,30 @@ per-check keyword arguments) to override any threshold without editing code.</p>
 <span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">RecognizableVoiceRefusal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">hits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">report</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/generate.html#RecognizableVoiceRefusal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.RecognizableVoiceRefusal" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="foley.sources.html#foley.sources.SafetyRefusal" title="foley.sources.generate.SafetyRefusal"><code class="xref py py-class docutils literal notranslate"><span class="pre">SafetyRefusal</span></code></a></p>
 <p>A <a class="reference internal" href="#foley.SafetyRefusal" title="foley.SafetyRefusal"><code class="xref py py-class docutils literal notranslate"><span class="pre">SafetyRefusal</span></code></a> for a prompt requesting a recognizable / cloned voice (report 07 §7.1).</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.RemoteVideo">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">RemoteVideo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sha256</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/video.html#RemoteVideo"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.RemoteVideo" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>A remote video <code class="docutils literal notranslate"><span class="pre">url</span></code> with the SHA-256 of its bytes: keyed, and replayed, by content.</p>
+<p>A bare <code class="docutils literal notranslate"><span class="pre">https://</span></code> URL is keyed as the URL, which foley cannot see behind, so an
+identical request for it is never served from the generations cache (the picture
+may have changed: <code class="docutils literal notranslate"><span class="pre">.../latest.mp4</span></code>). A caller who knows the content passes this
+instead, and a repeat is replayed while the digest is the same (#173).</p>
+<p>The digest is <strong>trusted, not checked</strong> (foley does not fetch the URL): it is
+recorded as the input’s identity in the cache key and the licence’s
+<code class="docutils literal notranslate"><span class="pre">generation_params</span></code>, as a digest foley computed would be.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">RemoteVideo</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">"https://x/clip.mp4"</span><span class="p">,</span> <span class="n">sha256</span><span class="o">=</span><span class="s2">"sha256:"</span> <span class="o">+</span> <span class="s2">"ab"</span> <span class="o">*</span> <span class="mi">32</span><span class="p">)</span><span class="o">.</span><span class="n">sha256</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span>
+<span class="go">'abab'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">RemoteVideo</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">"clip.mp4"</span><span class="p">,</span> <span class="n">sha256</span><span class="o">=</span><span class="s2">"ab"</span> <span class="o">*</span> <span class="mi">32</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">ValueError</span>: <span class="n">RemoteVideo.url must be an http(s) URL, got 'clip.mp4'</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
@@ -4157,8 +4184,9 @@ prompt, an output path) or prices (<code class="docutils literal notranslate"><s
 <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> before anything is paid for: use the unified argument.</p></li>
 <li><p><strong>**affordances</strong> – Unified generation affordances (<code class="docutils literal notranslate"><span class="pre">duration_s</span></code>, <code class="docutils literal notranslate"><span class="pre">model</span></code>,
 <code class="docutils literal notranslate"><span class="pre">prompt_influence</span></code>, <code class="docutils literal notranslate"><span class="pre">negative_prompt</span></code>, <code class="docutils literal notranslate"><span class="pre">steps</span></code>, <code class="docutils literal notranslate"><span class="pre">seed</span></code>, <code class="docutils literal notranslate"><span class="pre">loop</span></code>,
-<code class="docutils literal notranslate"><span class="pre">output_format</span></code>, <code class="docutils literal notranslate"><span class="pre">sample_rate</span></code>, <code class="docutils literal notranslate"><span class="pre">expand_prompt</span></code> — see
-<code class="xref py py-data docutils literal notranslate"><span class="pre">GENERATION_AFFORDANCES</span></code>).</p></li>
+<code class="docutils literal notranslate"><span class="pre">output_format</span></code>, <code class="docutils literal notranslate"><span class="pre">sample_rate</span></code>, <code class="docutils literal notranslate"><span class="pre">expand_prompt</span></code>, <code class="docutils literal notranslate"><span class="pre">video</span></code> — see
+<code class="xref py py-data docutils literal notranslate"><span class="pre">GENERATION_AFFORDANCES</span></code>). A <code class="docutils literal notranslate"><span class="pre">video</span></code> given as a bare remote URL is
+never replayed from the cache; <a class="reference internal" href="#foley.RemoteVideo" title="foley.RemoteVideo"><code class="xref py py-class docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a> keys it by content.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -5827,6 +5855,7 @@ escalates to the injected/​default judge for that rung and returns <em>its</em
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.QCStatus"><code class="docutils literal notranslate"><span class="pre">QCStatus</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.QCThresholds"><code class="docutils literal notranslate"><span class="pre">QCThresholds</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.RecognizableVoiceRefusal"><code class="docutils literal notranslate"><span class="pre">RecognizableVoiceRefusal</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.RemoteVideo"><code class="docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.RunManifest"><code class="docutils literal notranslate"><span class="pre">RunManifest</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.RuntimeConfig"><code class="docutils literal notranslate"><span class="pre">RuntimeConfig</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.RuntimeConfig.allows"><code class="docutils literal notranslate"><span class="pre">RuntimeConfig.allows()</span></code></a></li>

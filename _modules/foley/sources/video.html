@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=ae06b2e5"></script>
+    <script src="../../../_static/documentation_options.js?v=5c6fbccc"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.79" />
+  <meta name="docsearch:version" content="0.0.80" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -718,13 +718,17 @@ window.runMermaid = runMermaid;</script>
 <span></span><span class="sd">"""Video inputs of video-to-audio generation (#74): what ``video=`` may be, its identity, its length.</span>
 
 <span class="sd">A video-to-audio (V2A) backend takes the picture the sound must follow. foley accepts</span>
-<span class="sd">it as a **URL** (``http(s)://`` or a ``data:`` URI, sent as is), a **local path**, or</span>
-<span class="sd">raw **bytes** (both uploaded by the backend's adapter). Three questions are answered</span>
-<span class="sd">here, once, for every V2A backend:</span>
+<span class="sd">it as a **URL** (``http(s)://`` or a ``data:`` URI, sent as is), a</span>
+<span class="sd">:class:`RemoteVideo` (a URL with the SHA-256 of its content), a **local path**, or raw</span>
+<span class="sd">**bytes** (both uploaded by the backend's adapter). These questions are answered here,</span>
+<span class="sd">once, for every V2A backend:</span>
 
 <span class="sd">* :func:`video_key`: what the generations cache keys the video as. The **content**</span>
-<span class="sd">  (``sha256:&lt;hex&gt;`` of the bytes or of the file), never its path, so a moved file hits</span>
-<span class="sd">  the cache and an edited one cannot; a remote URL is keyed as the URL.</span>
+<span class="sd">  (``sha256:&lt;hex&gt;`` of the bytes, the file or a :class:`RemoteVideo`'s digest), never</span>
+<span class="sd">  its path, so a moved file hits the cache and an edited one cannot; a bare remote URL</span>
+<span class="sd">  is keyed as the URL.</span>
+<span class="sd">* :func:`replayable`: whether an identical request may be served from the cache. Not</span>
+<span class="sd">  for a bare remote URL: the content behind it may have changed (#173).</span>
 <span class="sd">* :func:`video_seconds`: its length, for a backend priced per second of the video</span>
 <span class="sd">  (``probe=``; default :func:`default_probe`: ``ffprobe`` on ``PATH``, else mixing's</span>
 <span class="sd">  ``probe_duration`` through mixing's ffmpeg resolver; ``None`` when it cannot be read,</span>
@@ -744,10 +748,12 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
@@ -755,10 +761,58 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="c1">#: What ``video=`` accepts: a URL, a local path, or the encoded bytes.</span>
-<span class="n">VideoInput</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"os.PathLike[str]"</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]</span>
-<span class="c1">#: URL schemes sent to a backend as is (no upload).</span>
-<span class="n">URL_SCHEMES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"http://"</span><span class="p">,</span> <span class="s2">"https://"</span><span class="p">,</span> <span class="s2">"data:"</span><span class="p">)</span>
+<span class="c1">#: Schemes of a URL the backend fetches from a server (what it serves may change).</span>
+<span class="n">REMOTE_SCHEMES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"http://"</span><span class="p">,</span> <span class="s2">"https://"</span><span class="p">)</span>
+<span class="c1">#: URL schemes sent to a backend as is (no upload); a ``data:`` URI holds its content.</span>
+<span class="n">URL_SCHEMES</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">REMOTE_SCHEMES</span><span class="p">,</span> <span class="s2">"data:"</span><span class="p">)</span>
+<span class="c1">#: The key prefix of a video known only by its URL (its content unseen).</span>
+<span class="n">URL_KEY_PREFIX</span> <span class="o">=</span> <span class="s2">"url:"</span>
+<span class="n">_SHA256_HEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[0-9a-f]</span><span class="si">{64}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="RemoteVideo">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.RemoteVideo">[docs]</a>
+<span class="nd">@dataclasses</span><span class="o">.</span><span class="n">dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">RemoteVideo</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A remote video ``url`` with the SHA-256 of its bytes: keyed, and replayed, by content.</span>
+
+<span class="sd">    A bare ``https://`` URL is keyed as the URL, which foley cannot see behind, so an</span>
+<span class="sd">    identical request for it is never served from the generations cache (the picture</span>
+<span class="sd">    may have changed: ``.../latest.mp4``). A caller who knows the content passes this</span>
+<span class="sd">    instead, and a repeat is replayed while the digest is the same (#173).</span>
+
+<span class="sd">    The digest is **trusted, not checked** (foley does not fetch the URL): it is</span>
+<span class="sd">    recorded as the input's identity in the cache key and the licence's</span>
+<span class="sd">    ``generation_params``, as a digest foley computed would be.</span>
+
+<span class="sd">    &gt;&gt;&gt; RemoteVideo(url="https://x/clip.mp4", sha256="sha256:" + "ab" * 32).sha256[:4]</span>
+<span class="sd">    'abab'</span>
+<span class="sd">    &gt;&gt;&gt; RemoteVideo(url="clip.mp4", sha256="ab" * 32)</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: RemoteVideo.url must be an http(s) URL, got 'clip.mp4'</span>
+<span class="sd">    """</span>
+
+    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">sha256</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">REMOTE_SCHEMES</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"RemoteVideo.url must be an http(s) URL, got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="n">digest</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sha256</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"sha256:"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_SHA256_HEX</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">digest</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">"RemoteVideo.sha256 must be the 64 hex digits of the video's SHA-256 "</span>
+                <span class="sa">f</span><span class="s2">"(optionally 'sha256:'-prefixed), got </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sha256</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"sha256"</span><span class="p">,</span> <span class="n">digest</span><span class="p">)</span></div>
+
+
+
+<span class="c1">#: What ``video=`` accepts: a URL, a :class:`RemoteVideo`, a local path, or the bytes.</span>
+<span class="n">VideoInput</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">RemoteVideo</span><span class="p">,</span> <span class="s2">"os.PathLike[str]"</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]</span>
 <span class="c1">#: Bytes hashed at a time when keying a local file.</span>
 <span class="n">_HASH_CHUNK</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">20</span>
 <span class="c1">#: The most :func:`audio_track` lets ffmpeg run (s).</span>
@@ -773,27 +827,43 @@ window.runMermaid = runMermaid;</script>
 <span class="n">Probe</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span>
 
 
+<div class="viewcode-block" id="video_url">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.video_url">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">video_url</span><span class="p">(</span><span class="n">video</span><span class="p">:</span> <span class="n">VideoInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The URL a backend fetches ``video`` from itself, or ``None`` (a path or bytes).</span>
+
+<span class="sd">    &gt;&gt;&gt; video_url("https://x/clip.mp4"), video_url("clip.mp4"), video_url(b"...")</span>
+<span class="sd">    ('https://x/clip.mp4', None, None)</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">RemoteVideo</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">video</span><span class="o">.</span><span class="n">url</span>
+    <span class="k">return</span> <span class="n">video</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">video</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">URL_SCHEMES</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span></div>
+
+
+
 <div class="viewcode-block" id="is_url">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.sources.video.is_url">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.is_url">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">is_url</span><span class="p">(</span><span class="n">video</span><span class="p">:</span> <span class="n">VideoInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Whether ``video`` is a URL a backend can fetch itself.</span>
 
 <span class="sd">    &gt;&gt;&gt; is_url("https://x/clip.mp4"), is_url("clip.mp4"), is_url(b"...")</span>
 <span class="sd">    (True, False, False)</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">video</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">URL_SCHEMES</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">video_url</span><span class="p">(</span><span class="n">video</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
 
 
 
 <div class="viewcode-block" id="video_key">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.sources.video.video_key">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.video_key">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">video_key</span><span class="p">(</span><span class="n">video</span><span class="p">:</span> <span class="n">VideoInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""The cache identity of ``video``: its content digest, or a remote URL as is.</span>
+<span class="w">    </span><span class="sd">"""The cache identity of ``video``: its content digest, or a bare remote URL as is.</span>
 
 <span class="sd">    &gt;&gt;&gt; video_key(b"abc")[:15]</span>
 <span class="sd">    'sha256:ba7816bf'</span>
 <span class="sd">    &gt;&gt;&gt; video_key("https://x/clip.mp4")</span>
 <span class="sd">    'url:https://x/clip.mp4'</span>
+<span class="sd">    &gt;&gt;&gt; video_key(RemoteVideo(url="https://x/clip.mp4", sha256="ab" * 32))[:11]</span>
+<span class="sd">    'sha256:abab'</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        FileNotFoundError: If ``video`` names a local file that does not exist.</span>
@@ -801,10 +871,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">)):</span>
         <span class="k">return</span> <span class="s2">"sha256:"</span> <span class="o">+</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">video</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="n">RemoteVideo</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">"sha256:"</span> <span class="o">+</span> <span class="n">video</span><span class="o">.</span><span class="n">sha256</span>
     <span class="k">if</span> <span class="n">is_url</span><span class="p">(</span><span class="n">video</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">video</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"data:"</span><span class="p">):</span>  <span class="c1"># the content is in the URI</span>
             <span class="k">return</span> <span class="s2">"sha256:"</span> <span class="o">+</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">video</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
-        <span class="k">return</span> <span class="s2">"url:"</span> <span class="o">+</span> <span class="n">video</span>
+        <span class="k">return</span> <span class="n">URL_KEY_PREFIX</span> <span class="o">+</span> <span class="n">video</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)):</span>
         <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">fspath</span><span class="p">(</span><span class="n">video</span><span class="p">)</span>
         <span class="n">st</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
@@ -815,8 +887,27 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="is_video_key">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.is_video_key">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">is_video_key</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether ``value`` is already a key :func:`video_key` makes (as a cache entry keeps it).</span>
+
+<span class="sd">    &gt;&gt;&gt; is_video_key("sha256:" + "ab" * 32), is_video_key("url:https://x/a.mp4")</span>
+<span class="sd">    (True, True)</span>
+<span class="sd">    &gt;&gt;&gt; is_video_key("clip.mp4"), is_video_key(b"sha256:")</span>
+<span class="sd">    (False, False)</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">digest</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"sha256:"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">URL_KEY_PREFIX</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+        <span class="n">digest</span> <span class="o">!=</span> <span class="n">value</span> <span class="ow">and</span> <span class="nb">bool</span><span class="p">(</span><span class="n">_SHA256_HEX</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">digest</span><span class="p">))</span>
+    <span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="keyed">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.sources.video.keyed">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.keyed">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">keyed</span><span class="p">(</span><span class="n">affordances</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""``affordances`` with a ``video`` replaced by :func:`video_key` (else unchanged).</span>
 
@@ -826,6 +917,45 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"video"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">affordances</span>
     <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">affordances</span><span class="p">,</span> <span class="s2">"video"</span><span class="p">:</span> <span class="n">video_key</span><span class="p">(</span><span class="n">affordances</span><span class="p">[</span><span class="s2">"video"</span><span class="p">])}</span></div>
+
+
+
+<div class="viewcode-block" id="fal_immutable_url">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.fal_immutable_url">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fal_immutable_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""falaw's ``is_immutable_url`` (fal's own CDN mints a new URL per upload), else</span>
+<span class="sd">    ``False`` when falaw is not installed: an unknown URL is taken as mutable."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">falaw.content</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_immutable_url</span>
+
+        <span class="k">return</span> <span class="n">is_immutable_url</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - no falaw, a broken one, a URL it cannot parse</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="replayable">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.replayable">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">replayable</span><span class="p">(</span>
+    <span class="n">affordances</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">is_immutable</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="n">fal_immutable_url</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether an identical request may be served from the cache (#173).</span>
+
+<span class="sd">    Not when its video is a bare remote URL whose content foley never saw, unless</span>
+<span class="sd">    ``is_immutable(url)`` says it never serves other bytes (default:</span>
+<span class="sd">    :func:`fal_immutable_url`, fal's own CDN). Decided from the value alone: no file</span>
+<span class="sd">    is read.</span>
+
+<span class="sd">    &gt;&gt;&gt; replayable({"video": "https://x/latest.mp4"}), replayable({"video": b"abc"})</span>
+<span class="sd">    (False, True)</span>
+<span class="sd">    &gt;&gt;&gt; replayable({"video": "https://x/a.mp4"}, is_immutable=lambda url: True)</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; replayable({"seed": 1})</span>
+<span class="sd">    True</span>
+<span class="sd">    """</span>
+    <span class="n">video</span> <span class="o">=</span> <span class="n">affordances</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"video"</span><span class="p">)</span>
+    <span class="n">remote</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">video</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">video</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">REMOTE_SCHEMES</span><span class="p">)</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="n">remote</span> <span class="ow">or</span> <span class="n">is_immutable</span><span class="p">(</span><span class="n">video</span><span class="p">)</span></div>
 
 
 
@@ -841,7 +971,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="video_suffix">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.sources.video.video_suffix">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.video_suffix">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">video_suffix</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">"""The file suffix of encoded video ``data``, sniffed from its first bytes.</span>
 
@@ -869,7 +999,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="local_video_file">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.sources.video.local_video_file">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.local_video_file">[docs]</a>
 <span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">local_video_file</span><span class="p">(</span>
     <span class="n">video</span><span class="p">:</span> <span class="n">VideoInput</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">suffix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -893,7 +1023,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="ffmpeg_path">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.sources.video.ffmpeg_path">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.ffmpeg_path">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">ffmpeg_path</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""An ``ffmpeg`` binary: mixing's resolver (a pip-bundled one too), else ``PATH``."""</span>
     <span class="k">try</span><span class="p">:</span>
@@ -906,7 +1036,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="audio_track">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.sources.video.audio_track">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.audio_track">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">audio_track</span><span class="p">(</span>
     <span class="n">container</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
@@ -946,7 +1076,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="ffprobe_seconds">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.sources.video.ffprobe_seconds">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.ffprobe_seconds">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">ffprobe_seconds</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">ffprobe</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The length of the video file at ``path`` by ``ffprobe`` (default: the one on</span>
 <span class="sd">    ``PATH``), or ``None`` when there is none or it cannot read it."""</span>
@@ -966,7 +1096,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="mixing_seconds">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.sources.video.mixing_seconds">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.mixing_seconds">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">mixing_seconds</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The length by mixing's ``probe_duration`` (``ffmpeg -i`` through mixing's ffmpeg</span>
 <span class="sd">    resolver, a pip-bundled ffmpeg too), or ``None`` when mixing's video stack is not</span>
@@ -984,7 +1114,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="default_probe">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.sources.video.default_probe">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.default_probe">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">default_probe</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">""":func:`ffprobe_seconds` (bounded by :data:`PROBE_TIMEOUT_S`) when ``ffprobe`` is on</span>
 <span class="sd">    ``PATH``, else :func:`mixing_seconds`. Never both: a file that stalls ffprobe would</span>
@@ -996,7 +1126,7 @@ window.runMermaid = runMermaid;</script>
 
 
 <div class="viewcode-block" id="video_seconds">
-<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.sources.video.video_seconds">[docs]</a>
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.video.html#foley.video_seconds">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">video_seconds</span><span class="p">(</span>
     <span class="n">video</span><span class="p">:</span> <span class="n">VideoInput</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">probe</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Probe</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
