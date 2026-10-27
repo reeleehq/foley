@@ -1725,9 +1725,25 @@ def test_elevenlabs_sample_rate_picks_the_native_enum():
     _el_adapter(transport).generate("rain", output_format="wav", sample_rate=22050)
     assert transport.calls[0].params["output_format"] == "pcm_22050"
     transport = FakeTransport()
-    clip = _el_adapter(transport).generate("rain", output_format="wav", sample_rate=32000)
+    clip = _el_adapter(transport).generate("rain", output_format="wav", sample_rate=11025)
     assert transport.calls[0].params["output_format"] == "pcm_48000"
-    assert any("32000 Hz is not offered" in n for n in clip.notes)
+    assert any("11025 Hz is not offered" in n for n in clip.notes)
+    transport = FakeTransport()  # a provider param that sets the format decides the rate
+    clip = _el_adapter(transport).generate(
+        "rain", sample_rate=11025, provider_params={"output_format": "pcm_16000"}
+    )
+    assert transport.calls[0].params["output_format"] == "pcm_16000"
+    assert not any("not offered" in n for n in clip.notes)
+
+
+def test_elevenlabs_pcm_at_a_rate_falls_back_to_mp3_when_refused():
+    transport = _RefusePcm(403)
+    clip = _el_adapter(transport).generate("rain", output_format="wav", sample_rate=22050)
+    assert [c.params["output_format"] for c in transport.calls] == [
+        "pcm_22050",
+        "mp3_44100_128",
+    ]
+    assert any("fell back to 'mp3_44100_128'" in n for n in clip.notes)
 
 
 def test_elevenlabs_raw_pcm_at_a_requested_rate_is_wrapped_at_that_rate():

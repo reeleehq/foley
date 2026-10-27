@@ -31,6 +31,8 @@ REDACT_FIELDS: "frozenset[str]" = frozenset(
     {
         "prompt",
         "generation_prompt",
+        "generation_prompt_used",  # a backend's rewrite quotes the prompt (#75)
+        "prompt_used",
         "negative_prompt",
         "query",
         "context_text",

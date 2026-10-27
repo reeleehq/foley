@@ -38,6 +38,7 @@ unhandled exception.
 from __future__ import annotations
 
 import functools
+import io
 from collections.abc import Mapping
 from typing import Optional
 
@@ -506,6 +507,7 @@ def _generate(
         clip.notes.append(
             f"safety: proceeded in warn mode; flagged {list(scan.trademark_hits + scan.voice_hits)}"
         )
+    _screen_prompt_used(lic, prompt, clip.notes)
 
     # One try guards everything that decodes the bytes — the repair, the
     # content-credential sidecar (which decodes to pre-compute the id) and the ingest —
@@ -604,10 +606,8 @@ def _generate(
     if credential is not None and res.status in ("pass", "warn"):
         disclosure.write_content_credential(pstore, sound_id, credential)
 
-    requested_sr = affordances.get("sample_rate")
-    actual_sr = getattr(res.record, "source_sample_rate", None)
-    if requested_sr is not None and actual_sr is not None and actual_sr != requested_sr:
-        clip.notes.append(f"sample_rate: asked {requested_sr} Hz, got {actual_sr} Hz")
+    if affordances.get("sample_rate") is not None:
+        _note_rate(int(affordances["sample_rate"]), res, audio_bytes, clip.notes)
 
     # Surface the adapter's + disclosure notes (unsupported affordances, warn-mode
     # flag, watermark-skip) in the run report.
@@ -623,6 +623,45 @@ def _generate(
         res.notes.append(_CONSENT_NOTE)
     report.record(res)
     return report
+
+
+def _screen_prompt_used(lic, prompt: str, notes: list) -> None:
+    """Flag the clip when the prompt the backend used (a rewrite) trips the safety scan.
+
+    The gate before the call screened the prompt foley sent; with ``expand_prompt``
+    the backend may have used another. The call is paid, so the clip is flagged (the
+    fail-closed ``keep()`` drops it) rather than refused.
+    """
+    from ..provenance import disclosure
+
+    used = lic.generation_prompt_used
+    if not used or used == prompt:
+        return
+    scan = disclosure.scan_prompt(used)
+    if not scan.flagged:
+        return
+    lic.potential_trademark = lic.potential_trademark or scan.potential_trademark
+    lic.contains_recognizable_voice = (
+        lic.contains_recognizable_voice or scan.contains_recognizable_voice
+    )
+    notes.append(
+        "safety: the prompt the backend used is flagged "
+        f"{list(scan.trademark_hits + scan.voice_hits)}; the clip is flagged"
+    )
+
+
+def _note_rate(requested: int, res, audio_bytes: bytes, notes: list) -> None:
+    """Note when the clip's rate is not the ``sample_rate`` asked for."""
+    actual = getattr(getattr(res, "record", None), "source_sample_rate", None)
+    if actual is None:  # a duplicate or quarantined clip has no new record: read it
+        try:
+            import soundfile as sf
+
+            actual = sf.info(io.BytesIO(audio_bytes)).samplerate
+        except Exception:  # noqa: BLE001 - an unreadable header just goes unnoted
+            return
+    if int(actual) != requested:
+        notes.append(f"sample_rate: asked {requested} Hz, got {int(actual)} Hz")
 
 
 def estimate_order(backend=None, **affordances) -> Optional[float]:
@@ -943,6 +982,7 @@ def generate(*args, **kwargs) -> IngestReport:
                     "model": lic.generator_model,
                     "version": lic.generator_version,
                     "prompt": lic.generation_prompt,
+                    "prompt_used": lic.generation_prompt_used,
                     "seed": lic.generation_seed,
                     "reproducible": lic.generation_reproducible,
                     "params": lic.generation_params,

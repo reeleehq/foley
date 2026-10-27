@@ -505,11 +505,33 @@ def test_expand_prompt_false_is_the_request_it_always_was():
     assert key(expand_prompt=True) != key()
 
 
-def test_sample_rate_on_a_fixed_rate_backend_is_dropped_with_a_note():
+@pytest.mark.parametrize(
+    "affordances",
+    [{"sample_rate": float("nan")}, {"sample_rate": 0}, {"sample_rate": True},
+     {"sample_rate": "22050"}, {"sample_rate": 22050.5}, {"expand_prompt": "no"}],
+)
+def test_a_bad_rate_or_flag_is_refused_before_any_budget(affordances):
     from foley.sources._dispatch import translate_affordances
 
-    kept, notes = translate_affordances(
-        CONFIGS["fal_stable_audio_3"], {"sample_rate": 22050}, on_unsupported="note"
-    )
-    assert "sample_rate" not in kept
-    assert any("sample_rate" in n for n in notes)
+    with pytest.raises(ValueError):
+        translate_affordances(CONFIGS["fal_stable_audio_3"], affordances)
+
+
+def test_a_rewritten_prompt_that_trips_the_safety_scan_flags_the_clip(library):
+    response = {"audio": {"url": "u"}, "seed": 5, "prompt": "the THX deep note swelling"}
+    adapter, _ = _adapter(runner=ReplayRunner(default=(_wav(), response)))
+    cand = foley.generate("a deep cinematic swell", backend="fal_stable_audio_3",
+                          adapter=adapter, library=library, expand_prompt=True,
+                          provenance_store={})
+    lic = cand.sound.license
+    assert lic.potential_trademark is True
+    assert any("the prompt the backend used is flagged" in n for n in cand.notes)
+    assert lic.generation_reproducible is False  # replaying runs the rewrite again
+
+
+def test_the_prompt_used_is_redacted_like_the_prompt():
+    from foley.obs.redact import Redactor
+
+    out = Redactor().redact_manifest({"license": {"generation_prompt": "a sigh",
+                                                   "generation_prompt_used": "a soft sigh"}})
+    assert out["license"]["generation_prompt_used"] != "a soft sigh"

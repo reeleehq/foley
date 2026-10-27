@@ -21,6 +21,11 @@ standalone redistribution of the raw SFX, which is why both rows set
 
 from __future__ import annotations
 
+#: The raw-PCM rates (Hz) of the direct API's ``pcm_<rate>`` formats (report 13 §2A).
+PCM_RATES = (8000, 16000, 22050, 24000, 32000, 44100, 48000)
+#: The ``mp3_*`` format per rate (one bitrate each).
+MP3_BY_RATE = {22050: "mp3_22050_32", 24000: "mp3_24000_48", 44100: "mp3_44100_128"}
+
 SOURCE_CONFIG = {
     "name": "elevenlabs",
     "kind": "generate",
@@ -65,17 +70,12 @@ SOURCE_CONFIG = {
                 "opus": "opus_48000_128",
                 "wav": "pcm_48000",
             },
-            # A requested sample_rate picks the enum (the documented direct-API set,
-            # report 17 §3); a rate missing here keeps to_native_map's, with a note.
+            # A requested sample_rate picks the enum (the direct API's set, report 13
+            # §2A); a rate missing here keeps to_native_map's, with a note.
+            "by": "sample_rate",
             "to_native_by_rate": {
-                "wav": {
-                    r: f"pcm_{r}" for r in (8000, 16000, 22050, 24000, 44100, 48000)
-                },
-                "mp3": {
-                    22050: "mp3_22050_32",
-                    24000: "mp3_24000_48",
-                    44100: "mp3_44100_128",
-                },
+                "wav": {r: f"pcm_{r}" for r in PCM_RATES},
+                "mp3": dict(MP3_BY_RATE),
                 "opus": {48000: "opus_48000_128"},
             },
             # Retried once with the fallback only for a plan-tier refusal of the
@@ -86,10 +86,7 @@ SOURCE_CONFIG = {
             # with a message naming the format: "Requested output format pcm_44100
             # ... is only allowed for Pro tier and above"). A 402 is payment_required
             # (out of credits), which MP3 would not fix. Live confirmation: #95.
-            "fallback_on_4xx": {
-                f"pcm_{r}": "mp3_44100_128"
-                for r in (8000, 16000, 22050, 24000, 44100, 48000)
-            },
+            "fallback_on_4xx": {f"pcm_{r}": "mp3_44100_128" for r in PCM_RATES},
             "fallback_statuses": [403],
             "fallback_detail_codes": [
                 "subscription_required",
@@ -102,11 +99,11 @@ SOURCE_CONFIG = {
             # PCM. The byte-length check still corrects a clip that disagrees.
             # The other rates are assumed stereo like pcm_48000 (not verified live).
             "pcm": {
-                "pcm_48000": {"sample_rate": 48000, "channels": 2, "verified": True},
                 **{
                     f"pcm_{r}": {"sample_rate": r, "channels": 2, "verified": False}
-                    for r in (8000, 16000, 22050, 24000, 44100)
+                    for r in PCM_RATES
                 },
+                "pcm_48000": {"sample_rate": 48000, "channels": 2, "verified": True},
             },
         },
     },

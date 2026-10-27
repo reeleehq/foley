@@ -40,6 +40,9 @@ from __future__ import annotations
 
 import copy
 
+from ..elevenlabs.config import MP3_BY_RATE as _EL_MP3_BY_RATE
+from ..elevenlabs.config import PCM_RATES as _EL_PCM_RATES
+
 #: fal's documented pricing and model pages (read 2026-10-25).
 _FAL_PRICING_SOURCE = "fal pricing API (GET /v1/models/pricing?endpoint_id=...)"
 _SEEN = "2026-10-25"
@@ -241,12 +244,12 @@ SOURCE_CONFIGS = (
                     "mp3": "mp3_44100_128",
                     "opus": "opus_48000_128",
                 },
-                # fal's enum (report 17 §3): no mp3_24000_48 and no wav_* here.
+                # fal's enum (report 17 §3): the direct API's without pcm_32000 and
+                # mp3_24000_48.
+                "by": "sample_rate",
                 "to_native_by_rate": {
-                    "wav": {
-                        r: f"pcm_{r}" for r in (8000, 16000, 22050, 24000, 44100, 48000)
-                    },
-                    "mp3": {22050: "mp3_22050_32", 44100: "mp3_44100_128"},
+                    "wav": {r: f"pcm_{r}" for r in _EL_PCM_RATES if r != 32000},
+                    "mp3": {r: f for r, f in _EL_MP3_BY_RATE.items() if r != 24000},
                     "opus": {48000: "opus_48000_128"},
                 },
             },

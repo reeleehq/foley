@@ -130,6 +130,7 @@ def translate_affordances(
     reject_renamed(affordances, vocabulary)
     # Validated here, at planning time, so a bad value never reserves budget.
     check_prompt_influence(affordances.get("prompt_influence"))
+    _check_rate_and_flags(affordances)
     duration_s = affordances.get("duration_s")
     if duration_s is not None and not math.isfinite(float(duration_s)):
         raise ValueError(
@@ -137,6 +138,24 @@ def translate_affordances(
         )
     result = _translator(config, vocabulary)(affordances, on_unsupported=on_unsupported)
     return result.kwargs, result.notes
+
+
+def _check_rate_and_flags(affordances: dict) -> None:
+    """``sample_rate`` is a positive integer (not a bool) and ``expand_prompt`` a bool."""
+    rate = affordances.get("sample_rate")
+    if rate is not None and (
+        isinstance(rate, bool)
+        or not isinstance(rate, (int, float))
+        or not math.isfinite(rate)
+        or rate <= 0
+        or rate != int(rate)
+    ):
+        raise ValueError(
+            f"sample_rate must be a positive whole number of Hz, got {rate!r}"
+        )
+    flag = affordances.get("expand_prompt")
+    if flag is not None and not isinstance(flag, bool):
+        raise ValueError(f"expand_prompt must be True or False, got {flag!r}")
 
 
 #: Part of every cache key. Bumped when the key's shape or meaning changes, so entries
@@ -251,9 +270,9 @@ def native_request(config: dict, affordances: dict) -> dict:
         native_name = spec.get("native_name", name)
         if name == "prompt_influence" and spec:
             value = native_adherence(config, value, [])
-        elif "to_native_by_rate" in spec:
+        elif "to_native_by_rate" in spec:  # the enum also fixes spec["by"] (the rate)
             value = native_output_format(
-                config, value, sample_rate=canonical.get("sample_rate")
+                config, value, sample_rate=canonical.get(spec["by"])
             )
         elif "to_native_map" in spec:
             value = spec["to_native_map"].get(

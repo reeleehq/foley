@@ -349,8 +349,12 @@ class ElevenLabsAdapter:
         """
         license_id = self.plan  # fail closed BEFORE the paid call
         notes: list = []
+        overridden = "output_format" in (provider_params or {})  # it decides the rate
         native_output_format = native_output_format_for(
-            self.config, output_format, sample_rate=sample_rate, notes=notes
+            self.config,
+            output_format,
+            sample_rate=sample_rate,
+            notes=None if overridden else notes,
         )
         self._warn_unsupported(
             notes, negative_prompt=negative_prompt, steps=steps, seed=seed, **kw

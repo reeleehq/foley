@@ -410,11 +410,14 @@ class LicenseRecord(SerializableMixin):
         ``None`` for a sound that was not generated. A backend with no seed
         (ElevenLabs, Sonilo) records none, so its clips read ``False`` rather than
         carrying a seed that would reproduce nothing (#75). A seed is necessary, not
-        sufficient: a hosted endpoint can change its model behind the same id.
+        sufficient: a hosted endpoint can change its model behind the same id. A
+        prompt the backend rewrote (``expand_prompt``) is ``False`` too: replaying it
+        runs the rewrite again.
         """
         if not self.is_ai_generated:
             return None
-        return self.generation_seed is not None
+        rewritten = self.generation_prompt_used not in (None, self.generation_prompt)
+        return self.generation_seed is not None and not rewritten
 
     # safety / disclosure
     contains_recognizable_voice: bool = False
