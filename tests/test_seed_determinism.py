@@ -69,7 +69,6 @@ def _stable_audio(*, monkeypatch, **_):
     )
 
     pipe = FakePipeline(
-        sr=SR,
         audio_fn=lambda *, generator, **_: np.stack([_noise(generator.seed)] * 2),
     )
     return StableAudioAdapter(pipeline=pipe)

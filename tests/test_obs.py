@@ -17,7 +17,6 @@ import itertools
 import json
 import subprocess
 import sys
-from types import SimpleNamespace
 
 import pytest
 
@@ -42,12 +41,6 @@ SR = 44_100
 # ---------------------------------------------------------------------------
 # fakes + fixtures
 # ---------------------------------------------------------------------------
-
-
-def _stereo_tone(freq=440.0, seconds=1.0, amp=0.4):
-    t = np.arange(int(SR * seconds), dtype=np.float32) / SR
-    mono = (amp * np.sin(2 * np.pi * freq * t)).astype(np.float32)
-    return np.stack([mono, mono])
 
 
 def _mono_tone(freq=440.0, seconds=1.0, amp=0.4):

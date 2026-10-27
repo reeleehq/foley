@@ -73,12 +73,6 @@ def _mono_tone(freq=440.0, seconds=1.0, amp=0.4):
     return (amp * np.sin(2 * np.pi * freq * t)).astype(np.float32)
 
 
-def _stereo_tone(freq=440.0, seconds=1.0, amp=0.4):
-    """Channel-FIRST ``(2, N)`` — the Stable Audio Open output layout."""
-    mono = _mono_tone(freq, seconds, amp)
-    return np.stack([mono, mono])
-
-
 def _silent(seconds=1.0):
     return np.zeros(int(SR * seconds), dtype=np.float32)
 
