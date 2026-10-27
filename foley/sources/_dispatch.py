@@ -50,9 +50,21 @@ from typing import Callable, Optional
 
 from ocracy.kit import UnsupportedParameter, make_translator
 
-from ..base import GENERATION_AFFORDANCES, QUERY_AFFORDANCES, reject_renamed
+from ..base import (
+    EDIT_AFFORDANCES,
+    GENERATION_AFFORDANCES,
+    QUERY_AFFORDANCES,
+    check_edit_args,
+    reject_renamed,
+)
+from .video import (
+    MEDIA,
+    MEDIA_INPUTS,
+    recorded_video_key,
+    remote_media_input,
+    video_key,
+)
 from .video import keyed as video_keyed
-from .video import recorded_video_key, video_key
 from .video import replayable as video_replayable
 from .base import (
     check_prompt_influence,
@@ -68,6 +80,7 @@ __all__ = [
     "UNSUPPORTED_POLICIES",
     "UnsupportedParameter",
     "translate_affordances",
+    "generation_vocabulary",
     "request_digest",
     "native_request",
     "GenerationPlan",
@@ -80,6 +93,25 @@ __all__ = [
 
 #: How a parameter the source cannot honour is handled (``None`` = the source's default).
 UNSUPPORTED_POLICIES = ("raise", "warn", "note")
+
+
+#: The vocabulary of an edit source (#162): generation's, plus the edit parameters.
+EDIT_VOCABULARY = {**GENERATION_AFFORDANCES, **EDIT_AFFORDANCES}
+
+
+def generation_vocabulary(config: dict) -> dict:
+    """The canonical vocabulary a generate source is called with.
+
+    :data:`EDIT_VOCABULARY` for a source that serves edits (``modes`` includes
+    ``'edit'``), else :data:`~foley.base.GENERATION_AFFORDANCES`: a text-to-audio or
+    video-to-audio source treats an edit parameter as any other it does not know.
+
+    >>> generation_vocabulary({"modes": ["edit"]}) is EDIT_VOCABULARY
+    True
+    >>> generation_vocabulary({}) is GENERATION_AFFORDANCES
+    True
+    """
+    return EDIT_VOCABULARY if "edit" in source_modes(config) else GENERATION_AFFORDANCES
 
 
 #: Where a ``warn`` points: the caller of :func:`foley.generate` / :func:`foley.add_from`
@@ -128,22 +160,32 @@ def translate_affordances(
         on_unsupported: ``'raise'`` | ``'warn'`` | ``'note'``; ``None`` (default):
             meaning-carrying parameters raise, others follow the source's
             ``on_unsupported_param`` (``'warn'`` = note + ``warnings.warn``).
-        vocabulary: The canonical vocabulary (default: :data:`GENERATION_AFFORDANCES`).
+        vocabulary: The canonical vocabulary (default, or
+            :data:`GENERATION_AFFORDANCES`: the source's
+            :func:`generation_vocabulary`, which adds the edit parameters for an edit
+            source). For a generation, the call's mode must be the source's
+            (:func:`_check_mode`), and an edit's parameters must fit its ``edit_op``
+            (:func:`foley.base.check_edit_args`).
 
     Returns:
         ``(kwargs for the adapter, notes)``.
 
     Raises:
         UnsupportedParameter: Per the policy.
-        ValueError: If ``on_unsupported`` is not a known policy.
+        ValueError: If ``on_unsupported`` is not a known policy, or an edit's
+            parameters do not fit its op.
         TypeError: If a renamed affordance is passed under its old name.
     """
     if on_unsupported is not None and on_unsupported not in UNSUPPORTED_POLICIES:
         raise ValueError(f"on_unsupported must be one of {UNSUPPORTED_POLICIES}")
-    vocabulary = GENERATION_AFFORDANCES if vocabulary is None else vocabulary
+    generation = vocabulary is None or vocabulary is GENERATION_AFFORDANCES
+    if generation:
+        vocabulary = generation_vocabulary(config)
     reject_renamed(affordances, vocabulary)
-    if vocabulary is GENERATION_AFFORDANCES:
+    if generation:
         _check_mode(config, affordances)
+        if "edit" in source_modes(config):
+            _check_edit(config, affordances)
     for name, value in affordances.items():
         choices = getattr(vocabulary.get(name), "choices", None)
         if choices and value is not None and value not in choices:
@@ -159,6 +201,24 @@ def translate_affordances(
         )
     result = _translator(config, vocabulary)(affordances, on_unsupported=on_unsupported)
     return result.kwargs, result.notes
+
+
+def _check_edit(config: dict, affordances: dict) -> None:
+    """:func:`foley.base.check_edit_args` for a call of an edit source: its ``edit_op``,
+    the source clip's length (when it can be read) and the backend's own maxima (a
+    ``param_map`` entry's ``max``)."""
+    audio = affordances.get("audio")
+    limits = {
+        name: spec["max"]
+        for name, spec in (config.get("param_map") or {}).items()
+        if isinstance(spec, dict) and spec.get("max") is not None
+    }
+    check_edit_args(
+        config.get("edit_op"),
+        affordances,
+        clip_s=MEDIA["audio"].seconds(audio) if audio is not None else None,
+        limits=limits,
+    )
 
 
 def _checked_values(affordances: dict) -> dict:
@@ -363,9 +423,10 @@ def _canonical_affordances(config: dict, affordances: dict) -> dict:
     cache entry. An affordance whose default is ``None`` (``prompt_influence``: the
     backend's native default) is left out when omitted.
     """
+    vocabulary = generation_vocabulary(config)
     out = {}
     for name in config.get("supported_affordances") or ():
-        aff = GENERATION_AFFORDANCES.get(name)
+        aff = vocabulary.get(name)
         if name in affordances:
             out[name] = affordances[name]
         elif aff is not None and aff.default is not None:
@@ -374,7 +435,7 @@ def _canonical_affordances(config: dict, affordances: dict) -> dict:
         out.setdefault(name, value)
 
     def canonical(name, v):
-        aff = GENERATION_AFFORDANCES.get(name)
+        aff = vocabulary.get(name)
         if aff is not None and aff.type is bool:
             return bool(v)  # loop=1 and loop=True are one request (#97 review)
         if isinstance(v, (int, float)) and not isinstance(v, bool):
@@ -442,6 +503,7 @@ def plan_generation(
     reuse_cached: bool = True,
     provider_params: Optional[dict] = None,
     variation: int = 0,
+    lineage: Optional[dict] = None,
     **affordances,
 ) -> GenerationPlan:
     """Decide a generation call: egress, translation, price, cache lookup, budget.
@@ -468,6 +530,10 @@ def plan_generation(
             is the request itself; a later one is keyed apart (in the request's salt),
             so a backend that takes no seed answers ``n`` variations with ``n`` paid
             sounds, each replayable, rather than one cached sound ``n`` times.
+        lineage: For an edit (#162), what it derives from (the JSON-safe
+            :meth:`foley.sources.edit.EditLineage.transformation`): part of the cache
+            key, so an edit's entry is never shared with another source or licence
+            context. ``None`` (default): every other request keeps its key.
         **affordances: The canonical generation affordances.
 
     Raises:
@@ -488,7 +554,7 @@ def plan_generation(
         config, affordances, on_unsupported=on_unsupported
     )
     priced = _priced(config, kept)
-    kept = _cover_the_video(config, kept, priced.get("video_duration_s"), notes)
+    kept = _cover_the_input(config, kept, priced, notes)
     plan = GenerationPlan(
         backend=backend,
         prompt=prompt,
@@ -512,6 +578,8 @@ def plan_generation(
             salt = {"adapter": salt, "account": _account_id(adapter, config)}
             if variation:  # only a later variation: every existing key is unchanged
                 salt["variation"] = variation
+            if lineage is not None:  # only an edit's key changes
+                salt["lineage"] = lineage
         except SourceConfigurationError:
             require_source_egress(backend, config)  # offline wins over a missing plan
             raise
@@ -521,11 +589,12 @@ def plan_generation(
         )
         plan.replayable = video_replayable(kept)  # whatever reuse_cached says (#185)
         if reuse_cached and not plan.replayable:
+            name = remote_media_input(kept)
             plan.notes.append(
-                "the video is a remote URL whose content foley has not seen: what it "
+                f"the {name} is a remote URL whose content foley has not seen: what it "
                 "serves may have changed, so this request is not replayed from the "
-                "cache (pass video=foley.RemoteVideo(url=..., sha256=...) to key it by "
-                "content)"
+                f"cache (pass {name}=foley.RemoteVideo(url=..., sha256=...) to key it "
+                "by content)"
             )
             reuse_cached = False
         if reuse_cached:
@@ -698,10 +767,9 @@ def _answered_key(plan: GenerationPlan, clip) -> str:
     native, model = _keyed_request(plan.config, plan.affordances)
     # Compared as the adapter records it (a URL without its token, #184), rebuilt below
     # from the full request, which is what the digest hashes. Only a URL differs.
-    video = plan.affordances.get("video")
     recorded = (
         _keyed_request(plan.config, plan.affordances, key=recorded_video_key)[0]
-        if isinstance(video, str)
+        if any(isinstance(plan.affordances.get(n), str) for n in MEDIA_INPUTS)
         else native
     )
     provider_params = dict(plan.provider_params or {})
@@ -1035,21 +1103,29 @@ def _priced(config: dict, affordances: dict) -> dict:
     }
 
 
-def _cover_the_video(
-    config: dict, kept: dict, video_s: Optional[float], notes: list
-) -> dict:
-    """``kept`` with ``duration_s`` set to the video's length (in the source's window)
-    when a video-to-audio source takes a duration and none was asked (#74).
+def _cover_the_input(config: dict, kept: dict, priced: dict, notes: list) -> dict:
+    """``kept`` with ``duration_s`` set to the input's length (in the source's window)
+    when a source that takes a duration is given a video (#74) or a source clip to
+    edit (#162) and no duration was asked.
 
     Decided here, at plan time, so the one value is keyed, priced, sent and noted.
     """
     supported = config.get("supported_affordances") or ()
-    if video_s is None or "duration_s" not in supported or kept.get("duration_s"):
+    media = next((m for m in MEDIA.values() if kept.get(m.name) is not None), None)
+    if media is None or "duration_s" not in supported or kept.get("duration_s"):
+        return kept
+    # The price already read a video's length (_priced): it is not probed twice.
+    seconds = (
+        priced["video_duration_s"]
+        if "video_duration_s" in priced
+        else media.seconds(kept[media.name])
+    )
+    if seconds is None:
         return kept
     nd = config.get("native_defaults") or {}
-    seconds = min(float(video_s), nd.get("duration_max_s") or float(video_s))
+    seconds = min(float(seconds), nd.get("duration_max_s") or float(seconds))
     seconds = max(seconds, nd.get("duration_min_s") or seconds)
-    notes.append(f"duration_s: {seconds:g} s, to cover the video")
+    notes.append(f"duration_s: {seconds:g} s, {media.covers}")
     return {**kept, "duration_s": seconds}
 
 
@@ -1063,7 +1139,8 @@ def _check_mode(config: dict, affordances: dict) -> None:
 
     Under every ``on_unsupported`` policy: a text-to-audio source given a ``video``
     would sound something that ignores the picture, and a video-to-audio source given
-    none has nothing to sound (#74).
+    none has nothing to sound (#74); likewise an edit source needs its source clip
+    (``audio``), and any other source given one would ignore it (#162).
     """
     if config.get("kind") not in (None, "generate"):
         return
@@ -1072,11 +1149,9 @@ def _check_mode(config: dict, affordances: dict) -> None:
     mode = generation_mode(affordances)
     modes = source_modes(config)
     if mode not in modes:
-        need = (
-            "needs a video= (it sounds a picture)"
-            if "v2a" in modes
-            else ("takes no video= (it is text-to-audio)")
-        )
+        own = next((m for m in MEDIA.values() if m.mode in modes), None)
+        given = next((m.name for m in MEDIA.values() if m.mode == mode), mode)
+        need = own.needed if own else f"takes no {given}= (it is text-to-audio)"
         raise UnsupportedParameter(f"{config.get('name', 'this source')} {need}")
 
 

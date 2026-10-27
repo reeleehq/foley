@@ -1,4 +1,4 @@
-"""Video inputs of video-to-audio generation (#74): what ``video=`` may be, its identity, its length.
+"""Media inputs of generation (#74, #162): what ``video=`` (and an edit's ``audio=``) may be, its identity, its length.
 
 A video-to-audio (V2A) backend takes the picture the sound must follow. foley accepts
 it as a **URL** (``http(s)://`` or a ``data:`` URI, sent as is), a
@@ -31,7 +31,14 @@ once, for every V2A backend:
   manifest): the video replaced by its recorded key, so neither its bytes nor a local
   path (nor an upload's capability URL, nor a presigned URL's token) is written down.
 
-Stdlib only (mixing is used when installed, never required).
+The source clip of an edit (``audio=``, #162) is a media input too
+(:data:`MEDIA_INPUTS`): it takes the same forms, and is keyed, recorded and replayed by
+the same functions (:func:`keyed`, :func:`replayable`). Each media input is one row of
+:data:`MEDIA` (its mode, its upload suffix sniffer, its length probe): the edit's
+upload suffix is sniffed by :func:`audio_suffix` and its length read by
+:func:`audio_seconds`.
+
+Stdlib only (mixing and soundfile are used when installed, never required).
 """
 
 from __future__ import annotations
@@ -50,6 +57,73 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Optional, Union
 
+
+@dataclasses.dataclass(frozen=True)
+class MediaInput:
+    """One media input of generation (a row of :data:`MEDIA`): the affordance that
+    carries it, the mode it puts a call in, and how foley reads it.
+
+    Attributes:
+        name: The affordance (``video``, ``audio``).
+        mode: The generation mode a call given it is in (``v2a``, ``edit``).
+        does: What a source taking it does (said when it is missing).
+        covers: How a ``duration_s`` set to its length is noted.
+        suffix_of: The name of this module's sniffer of its bytes' file suffix.
+        seconds_of: The name of this module's probe of its length. Both are looked up
+            when called, so a test can stand in for the probe.
+    """
+
+    name: str
+    mode: str
+    does: str
+    covers: str
+    suffix_of: str
+    seconds_of: str
+
+    def suffix(self, data: bytes) -> str:
+        """The file suffix its ``data`` is uploaded under (sniffed from its first bytes)."""
+        return globals()[self.suffix_of](data)
+
+    def seconds(self, value) -> Optional[float]:
+        """Its length in seconds, or ``None`` (a URL, an unreadable input)."""
+        return globals()[self.seconds_of](value)
+
+    @property
+    def needed(self) -> str:
+        """What a source taking it says when a call lacks it.
+
+        >>> MEDIA["audio"].needed
+        'needs an audio= (it edits a source clip)'
+        """
+        article = "an" if self.name[0] in "aeiou" else "a"
+        return f"needs {article} {self.name}= (it {self.does})"
+
+
+#: SSOT: the media inputs a backend is given (keyed by content, never by path), in
+#: precedence order (a video decides the mode over an audio).
+MEDIA: "dict[str, MediaInput]" = {
+    m.name: m
+    for m in (
+        MediaInput(
+            "video",
+            "v2a",
+            does="sounds a picture",
+            covers="to cover the video",
+            suffix_of="video_suffix",
+            seconds_of="video_seconds",
+        ),
+        MediaInput(
+            "audio",
+            "edit",
+            does="edits a source clip",
+            covers="to match the source clip",
+            suffix_of="audio_suffix",
+            seconds_of="audio_seconds",
+        ),
+    )
+}
+#: The affordances of :data:`MEDIA`.
+MEDIA_INPUTS = tuple(MEDIA)
 #: Schemes of a URL the backend fetches from a server (what it serves may change).
 REMOTE_SCHEMES = ("http://", "https://")
 #: URL schemes sent to a backend as is (no upload); a ``data:`` URI holds its content.
@@ -225,17 +299,21 @@ def _bare_url(url: str) -> str:
 
 
 def keyed(affordances: dict, *, key: Callable = recorded_video_key) -> dict:
-    """``affordances`` with a ``video`` replaced by its ``key`` (else unchanged).
+    """``affordances`` with each media input (:data:`MEDIA_INPUTS`) replaced by its ``key``.
 
     The default is the key as it is written down (:func:`recorded_video_key`); the
     request digest passes ``key=video_key``, the full identity, which is only hashed.
+    Unchanged when the call has no media input.
 
     >>> keyed({"video": b"abc", "duration_s": 2})["video"][:15], keyed({"seed": 1})
     ('sha256:ba7816bf', {'seed': 1})
+    >>> keyed({"audio": b"abc"})["audio"] == keyed({"video": b"abc"})["video"]
+    True
     """
-    if affordances.get("video") is None:
+    present = [n for n in MEDIA_INPUTS if affordances.get(n) is not None]
+    if not present:
         return affordances
-    return {**affordances, "video": key(affordances["video"])}
+    return {**affordances, **{n: key(affordances[n]) for n in present}}
 
 
 def fal_immutable_url(url: str) -> bool:
@@ -254,21 +332,40 @@ def replayable(
 ) -> bool:
     """Whether an identical request may be served from the cache (#173).
 
-    Not when its video is a bare remote URL whose content foley never saw, unless
-    ``is_immutable(url)`` says it never serves other bytes (default:
-    :func:`fal_immutable_url`, fal's own CDN). Decided from the value alone: no file
-    is read.
+    Not when a media input (:data:`MEDIA_INPUTS`) is a bare remote URL whose content
+    foley never saw, unless ``is_immutable(url)`` says it never serves other bytes
+    (default: :func:`fal_immutable_url`, fal's own CDN). Decided from the values
+    alone: no file is read.
 
     >>> replayable({"video": "https://x/latest.mp4"}), replayable({"video": b"abc"})
     (False, True)
     >>> replayable({"video": "https://x/a.mp4"}, is_immutable=lambda url: True)
     True
-    >>> replayable({"seed": 1})
-    True
+    >>> replayable({"seed": 1}), replayable({"audio": "https://x/take.wav"})
+    (True, False)
     """
-    video = affordances.get("video")
-    remote = isinstance(video, str) and video.startswith(REMOTE_SCHEMES)
-    return not remote or is_immutable(video)
+    return all(
+        is_immutable(value)
+        for value in (affordances.get(n) for n in MEDIA_INPUTS)
+        if isinstance(value, str) and value.startswith(REMOTE_SCHEMES)
+    )
+
+
+def remote_media_input(affordances: dict) -> Optional[str]:
+    """The name of the first media input given as a bare remote URL, or ``None``.
+
+    >>> remote_media_input({"audio": "https://x/a.wav"}), remote_media_input({"video": b"x"})
+    ('audio', None)
+    """
+    return next(
+        (
+            n
+            for n in MEDIA_INPUTS
+            if isinstance(affordances.get(n), str)
+            and affordances[n].startswith(REMOTE_SCHEMES)
+        ),
+        None,
+    )
 
 
 @functools.lru_cache(maxsize=64)
@@ -305,6 +402,52 @@ def video_suffix(data: bytes) -> str:
     if head.startswith(b"OggS"):
         return ".ogv"
     return DEFAULT_VIDEO_SUFFIX
+
+
+#: The suffix of audio bytes no signature matches.
+DEFAULT_AUDIO_SUFFIX = ".wav"
+#: Leading signatures of the audio containers an edit's source clip comes in.
+_AUDIO_MAGIC = ((b"fLaC", ".flac"), (b"OggS", ".ogg"), (b"ID3", ".mp3"))
+
+
+def audio_suffix(data: bytes) -> str:
+    r"""The file suffix of encoded audio ``data`` (flac, wav, mp3, ogg), sniffed from its first bytes.
+
+    Anything unrecognised is :data:`DEFAULT_AUDIO_SUFFIX`.
+
+    >>> audio_suffix(b"fLaC\x00"), audio_suffix(b"RIFF\x00\x00\x00\x00WAVEfmt ")
+    ('.flac', '.wav')
+    >>> audio_suffix(b"ID3\x04"), audio_suffix(b"\xff\xfb\x90"), audio_suffix(b"OggS")
+    ('.mp3', '.mp3', '.ogg')
+    >>> audio_suffix(b"?")
+    '.wav'
+    """
+    head = bytes(data[:12])
+    for magic, suffix in _AUDIO_MAGIC:
+        if head.startswith(magic):
+            return suffix
+    if len(head) > 1 and head[0] == 0xFF and head[1] & 0xE0 == 0xE0:  # MPEG frame sync
+        return ".mp3"
+    return DEFAULT_AUDIO_SUFFIX
+
+
+def audio_seconds(audio) -> Optional[float]:
+    """The length of an audio input (bytes or a local path) in seconds, or ``None``.
+
+    ``None`` for a URL (not fetched), without ``soundfile``, or when it cannot be read.
+    """
+    raw = isinstance(audio, (bytes, bytearray))
+    if not raw and is_url(audio):
+        return None
+    try:
+        import io
+
+        import soundfile as sf
+
+        info = sf.info(io.BytesIO(audio) if raw else os.fspath(audio))
+        return info.frames / info.samplerate if info.samplerate else None
+    except Exception:  # noqa: BLE001 - no soundfile, an unreadable clip: unknown length
+        return None
 
 
 @contextlib.contextmanager

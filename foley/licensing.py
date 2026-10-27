@@ -283,6 +283,19 @@ def cc_refused_terms(url: Optional[str]) -> "tuple[str, ...]":
     return _refused_cc_terms(_cc_tokens(url)) if url else ()
 
 
+def is_share_alike(license_id: Optional[str]) -> bool:
+    """Whether ``license_id`` (or a licence URL / label) is share-alike.
+
+    Read with the same tokens :func:`license_id_from_cc_url` refuses share-alike by: no
+    :data:`LICENSE_FLAGS` row is share-alike (the mapper sends every such licence to
+    ``'unknown'``), so this catches an id stamped by hand or by a source.
+
+    >>> is_share_alike("CC-BY-SA-4.0"), is_share_alike("CC-BY-4.0"), is_share_alike(None)
+    (True, False, False)
+    """
+    return "ShareAlike" in cc_refused_terms(license_id)
+
+
 def license_id_from_cc_url(url: Optional[str]) -> "tuple[str, bool]":
     """Map a Creative-Commons license URL **or label** to ``(license_id, verified)``.
 
@@ -701,6 +714,198 @@ def refusal_reason(record: LicenseRecord, intended_use: IntendedUse) -> Optional
             return f"its licence grants nothing in {where} (WORLD: worldwide use includes them)"
         return f"its licence grants nothing in {where} ({intended_use.territory})"
     return None
+
+
+#: Why the bytes of a sound whose ``cache_bytes_ok`` is off may not be edited.
+_NO_UPLOAD = (
+    "its bytes may not be kept or sent on (its source's terms, e.g. the Freesound "
+    "API's), so they are not uploaded to an edit backend"
+)
+
+
+def upload_refusal(source: LicenseRecord) -> Optional[str]:
+    """Why the bytes of a sound with rights ``source`` may not be sent to an edit backend, or ``None``.
+
+    ``cache_bytes_ok`` is the source's terms on its bytes (a Freesound API pull is
+    by-reference even under CC0): bytes foley may not keep, it does not upload either.
+
+    >>> from foley.base import LicenseRecord
+    >>> upload_refusal(LicenseRecord(source="x", cache_bytes_ok=True)) is None
+    True
+    >>> upload_refusal(LicenseRecord(source="freesound"))[:30]
+    'its bytes may not be kept or s'
+    """
+    return None if source.cache_bytes_ok else _NO_UPLOAD
+
+
+def derivative_refusal(source: LicenseRecord) -> Optional[str]:
+    """Why a sound with rights ``source`` may not be edited into a new sound, or ``None``.
+
+    The fail-closed gate of an edit (#162), applied by the generation's ``edit`` mode
+    before anything is paid for. The first unmet requirement: its rights are verified;
+    its bytes may be sent on (:func:`upload_refusal`); its licence is not share-alike
+    (the edit's own licence, the generator's, cannot carry it); its licence has a
+    :data:`LICENSE_FLAGS` row (else the edit's rights cannot be derived); it allows
+    modification; it excludes no territory (which the edit's record could not carry).
+    Every other restriction carries over to the edit (:func:`narrow_to_source`).
+
+    >>> from foley.base import LicenseRecord
+    >>> ok = apply_license_flags(LicenseRecord(source="x", license_id="CC-BY-4.0",
+    ...                                        rights_verified=True))
+    >>> derivative_refusal(ok) is None
+    True
+    >>> derivative_refusal(apply_license_flags(LicenseRecord(source="x",
+    ...                                                      license_id="research-only",
+    ...                                                      rights_verified=True)))
+    'its licence does not allow modification'
+    """
+    lid = source.license_id
+    if not source.rights_verified:
+        return "its rights are not verified"
+    if not source.cache_bytes_ok:
+        return _NO_UPLOAD
+    if is_share_alike(lid):
+        return (
+            f"its licence ({lid}) is share-alike, which the edit's licence cannot carry"
+        )
+    if lid not in LICENSE_FLAGS:
+        return f"foley has no licence row for {lid!r}, so the edit's rights cannot be derived"
+    if not source.modification_ok:
+        return "its licence does not allow modification"
+    if LICENSE_EXCLUDED_TERRITORIES.get(lid):
+        return "its licence excludes territories, which the edit's record cannot carry"
+    return None
+
+
+#: The permissions a derivative holds only when both it and its source do.
+_DERIVATIVE_SHARED_FLAGS = (
+    "commercial_ok",
+    "embed_in_derivative_ok",
+    "redistribute_standalone_ok",
+    "modification_ok",
+    "ai_training_ok",
+)
+
+#: ``ai_training_scope`` values from the least to the most restrictive (``None``: no
+#: narrowing). An unrecognised scope ranks as ``'none'`` (fail closed).
+_SCOPE_STRICTNESS = (None, "open_source_only", "nc_open_source_only", "none")
+
+
+def _stricter_scope(a: Optional[str], b: Optional[str]) -> Optional[str]:
+    """The more restrictive of two ``ai_training_scope`` values.
+
+    >>> _stricter_scope(None, "open_source_only"), _stricter_scope("none", None)
+    ('open_source_only', 'none')
+    >>> _stricter_scope("nc_open_source_only", "open_source_only")
+    'nc_open_source_only'
+    >>> _stricter_scope("open_source_only", "bogus")
+    'none'
+    """
+
+    def rank(scope):
+        if scope in _SCOPE_STRICTNESS:
+            return _SCOPE_STRICTNESS.index(scope)
+        return len(_SCOPE_STRICTNESS) - 1
+
+    winner = max((a, b), key=rank)
+    return winner if winner in _SCOPE_STRICTNESS else "none"
+
+
+def narrow_to_source(output: LicenseRecord, source: LicenseRecord) -> LicenseRecord:
+    """Narrow ``output``'s rights to what ``source`` allows, in place (never widening).
+
+    An edit is a derivative of its source: it may be used only where both the
+    generator's licence and the source's allow. Each permission of
+    :data:`_DERIVATIVE_SHARED_FLAGS` is kept only when both hold it, attribution is
+    required when either requires it, the revenue cap is the lower one, the AI-use
+    scope is the stricter one, and the source's required notice, stated AI-use
+    preference and safety flags carry over. ``cache_bytes_ok`` stays the output's (it
+    is about storing the new bytes). Routed through :func:`apply_license_flags`, so the
+    flags still come from the policy layer, never set by hand.
+
+    >>> from foley.base import LicenseRecord
+    >>> out = apply_license_flags(LicenseRecord(source="g", license_id="Stability-Community"))
+    >>> src = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0"))
+    >>> narrowed = narrow_to_source(out, src)
+    >>> narrowed.commercial_ok, narrowed.requires_attribution, narrowed.revenue_cap_usd
+    (False, True, 1000000)
+    """
+    # The source's row too: a hand-set flag never grants more than its licence id does.
+    row = derive_license_flags(source.license_id)
+    overrides = {
+        name: bool(
+            getattr(output, name) and getattr(source, name) and getattr(row, name)
+        )
+        for name in _DERIVATIVE_SHARED_FLAGS
+    }
+    caps = [
+        c for c in (output.revenue_cap_usd, source.revenue_cap_usd) if c is not None
+    ]
+    overrides.update(
+        cache_bytes_ok=output.cache_bytes_ok,
+        requires_attribution=output.requires_attribution or source.requires_attribution,
+        revenue_cap_usd=min(caps) if caps else None,
+    )
+    apply_license_flags(output, overrides=overrides)
+    output.ai_training_scope = _stricter_scope(
+        output.ai_training_scope, source.ai_training_scope
+    )
+    output.gen_ai_preference = source.gen_ai_preference or output.gen_ai_preference
+    notices = (output.notice_text_required, source.notice_text_required)
+    output.notice_text_required = (
+        "\n".join(dict.fromkeys(n for n in notices if n)) or None
+    )
+    output.contains_recognizable_voice = (
+        output.contains_recognizable_voice or source.contains_recognizable_voice
+    )
+    output.potential_trademark = (
+        output.potential_trademark or source.potential_trademark
+    )
+    return output
+
+
+def wider_rights(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
+    """What ``record`` allows that ``bound`` does not (``[]``: no wider than ``bound``).
+
+    A permission of :data:`_DERIVATIVE_SHARED_FLAGS` it holds and ``bound`` lacks, an
+    attribution or a notice ``bound`` requires and it does not, a higher (or no)
+    revenue cap, a looser AI-use scope, a voice or trademark flag ``bound`` raises
+    and it does not, another stated AI-use preference. How an edit tells that a byte-identical sound
+    already in the library is not the edit it made (see :func:`narrow_to_source`).
+
+    >>> from foley.base import LicenseRecord
+    >>> nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0"))
+    >>> by = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-4.0"))
+    >>> wider_rights(by, nc), wider_rights(nc, by)
+    (['commercial_ok', 'ai_training_ok'], [])
+    """
+    wider = [
+        n
+        for n in _DERIVATIVE_SHARED_FLAGS
+        if getattr(record, n) and not getattr(bound, n)
+    ]
+    if bound.requires_attribution and not record.requires_attribution:
+        wider.append("requires_attribution")
+    if (
+        bound.notice_text_required
+        and bound.notice_text_required != record.notice_text_required
+    ):
+        wider.append("notice_text_required")
+    if bound.revenue_cap_usd is not None and (
+        record.revenue_cap_usd is None or record.revenue_cap_usd > bound.revenue_cap_usd
+    ):
+        wider.append("revenue_cap_usd")
+    if (
+        _stricter_scope(record.ai_training_scope, bound.ai_training_scope)
+        != record.ai_training_scope
+    ):
+        wider.append("ai_training_scope")
+    for flag in ("contains_recognizable_voice", "potential_trademark"):
+        if getattr(bound, flag) and not getattr(record, flag):  # a flag keep() reads
+            wider.append(flag)
+    if bound.gen_ai_preference and bound.gen_ai_preference != record.gen_ai_preference:
+        wider.append("gen_ai_preference")
+    return wider
 
 
 def keep(record: LicenseRecord, intended_use: IntendedUse) -> bool:

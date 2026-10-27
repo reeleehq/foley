@@ -21,6 +21,7 @@ The façade (v1 — Epic #13 complete; the surface below is live — see
     foley.find("She pushed open the heavy oak door; rain hammered outside.")
     foley.search("distant thunder rumble", k=10)
     foley.generate("a single wooden door creak", backend="stable_audio")
+    foley.edit(sound_id, "extend", extend_after_s=2)  # audio-to-audio | inpaint | extend
     foley.ingest("~/my_sounds/")
 
 The design is grounded in the research reports under ``misc/docs/research/``.
@@ -69,6 +70,8 @@ from .audio import (
     trim_silence,
 )
 from .base import (
+    EDIT_AFFORDANCES,
+    EDIT_OPS,
     GENERATION_AFFORDANCES,
     MASTER_PROFILES,
     QUERY_AFFORDANCES,
@@ -198,6 +201,7 @@ from .sources.capabilities import capabilities_of, ledger, list_backends
 # The generate facade + its helpers. The generator adapter packages (and their
 # torch/requests deps) are auto-discovered lazily, so `import foley` stays dol-only.
 from .sources import (
+    EditRefusal,
     GenerationError,
     RecognizableVoiceRefusal,
     SafetyRefusal,
@@ -288,6 +292,8 @@ __all__ = [
     "Affordance",
     "QUERY_AFFORDANCES",
     "GENERATION_AFFORDANCES",
+    "EDIT_AFFORDANCES",
+    "EDIT_OPS",
     # --- base: serialization + models ----------------------------------------
     "SerializableMixin",
     "LicenseRecord",
@@ -420,9 +426,11 @@ __all__ = [
     # --- source: generation adapters (Stable Audio Open / ElevenLabs) --------
     "generate",
     "variations",
+    "edit",
     "candidate_of",
     "RemoteVideo",
     "GenerationError",
+    "EditRefusal",
     # --- provenance: generation disclosure / watermark / safety (#9b) --------
     "SafetyRefusal",
     "TrademarkRefusal",
@@ -691,6 +699,7 @@ def generate(
     intended_use=None,
     provider_params=None,
     variation: int = 0,
+    derived_from=None,
     **affordances,
 ):
     """Generate a sound effect for ``prompt`` and add it to the library (by-value).
@@ -790,11 +799,20 @@ def generate(
             (default) is the request itself; a later one is a different paid request
             in the generations cache, so it is a new sound even from a backend that
             takes no seed. :func:`variations` sets it; most callers never do.
+        derived_from: For an edit (an edit backend given ``audio=``), the source
+            clip's :class:`SoundRecord` or :class:`LicenseRecord`: **required** — an
+            edit without it is refused (:class:`EditRefusal`), as one whose rights
+            do not allow it, before anything is paid for. The clip's licence is
+            narrowed to it and records it (credits, content credential).
+            :func:`edit` passes it; ``None`` (default): a new sound.
         **affordances: Unified generation affordances (``duration_s``, ``model``,
             ``prompt_influence``, ``negative_prompt``, ``steps``, ``seed``, ``loop``,
             ``output_format``, ``sample_rate``, ``expand_prompt``, ``video`` — see
             :data:`GENERATION_AFFORDANCES`). A ``video`` given as a bare remote URL is
-            never replayed from the cache; :class:`RemoteVideo` keys it by content.
+            never replayed from the cache; :class:`RemoteVideo` keys it by content. An
+            edit backend takes ``audio`` (the source clip, with ``derived_from=`` its
+            rights) and the op's parameters (:data:`EDIT_AFFORDANCES`); for a library
+            sound, :func:`edit` does both.
 
     Returns:
         The stored :class:`Candidate` (``origin=generated``) — its ``sound`` is the
@@ -877,6 +895,7 @@ def generate(
             check_prompt=check_prompt,
             provider_params=by_backend,
             variation=variation,
+            derived_from=derived_from,
             **affordances,
         )
     results = report.results
@@ -1007,6 +1026,94 @@ def _may_fall_back(backend, adapter) -> bool:
     """Whether a :func:`generate` call may try more than one backend (an unnamed order or a list)."""
     return adapter is None and (
         isinstance(backend, (list, tuple)) or backend in (None, "", "auto")
+    )
+
+
+def edit(
+    source: str,
+    op: str,
+    prompt: str = "",
+    *,
+    backend: "str | None" = None,
+    library=None,
+    budget=None,
+    **kwargs,
+):
+    """Edit a library sound into a new one: audio-to-audio, inpaint or extend (#162).
+
+    An edit is a generation whose input includes the source clip (the ``edit`` mode),
+    so it runs through :func:`generate` (cost gate, budget, generations cache, safety
+    screen, watermark, QC, ingest by-value) with the source's bytes as ``audio=`` and
+    its record as ``derived_from=``. Before anything is paid for, the op and its
+    parameters are checked (a window inside the clip) and the source's rights are
+    gated **fail-closed** (:func:`foley.licensing.derivative_refusal`: verified,
+    sendable bytes, modifiable, not share-alike, a known licence). The new sound's
+    licence is the generator's narrowed to the source's (an edit of a non-commercial
+    sound is non-commercial); its ``transformations`` record the edit (op, parameters,
+    source id, content and licence), so :func:`credits` credits the source and its
+    licence beside the generator's, and its content credential declares the source as
+    an ingredient.
+
+    ``foley.edit(sound_id, "extend", extend_after_s=2)`` — with paid generation
+    opted in (``$FOLEY_GENERATE_PAID=1``), or a backend named — is the whole call.
+
+    Args:
+        source: The library id of the sound to edit; its bytes come from the library.
+        op: ``'audio_to_audio'`` (regenerate the whole clip; ``strength`` 0..1, how
+            far from the source, 1.0 being pure generation), ``'inpaint'`` (regenerate
+            ``inpaint_start_s``..``inpaint_end_s``, keep the rest) or ``'extend'``
+            (``extend_before_s`` and/or ``extend_after_s`` seconds of new sound). See
+            :data:`EDIT_OPS`.
+        prompt: What the result should sound like; ``''`` (default): the source's caption.
+        backend: An edit source doing ``op`` (``'fal_stable_audio_3_audio_to_audio'``,
+            ``'fal_stable_audio_3_inpaint'``, ``'fal_stable_audio_3_extend'``: fal's
+            Stable Audio 3 Small-SFX, ``foley[fal]`` + ``$FAL_KEY``). ``None``
+            (default): the op's default, read from the registry configs' ``edit_op``;
+            it is paid, so it runs only once paid generation is opted in.
+        library: The library holding ``source`` and receiving the edit (default: the
+            process-wide default library).
+        budget: A :class:`Budget` for this call (see :func:`generate`).
+        **kwargs: The op's parameters (:data:`EDIT_AFFORDANCES`), other generation
+            affordances the backend takes (``seed``, ``negative_prompt``, ``steps``,
+            ``duration_s`` for audio-to-audio: default the source's length), and any
+            other keyword of :func:`generate` (``adapter=``, ``store=``, ``level=``, …).
+
+    Returns:
+        The stored :class:`Candidate` (``origin=generated``), as :func:`generate`.
+
+    Raises:
+        ValueError: For an unknown op, a missing, foreign or out-of-range op
+            parameter, an ``audio=`` or ``derived_from=``, or a backend that does
+            another op.
+        KeyError: If ``source`` is not in the library.
+        EditRefusal: If the source's rights do not allow an edit, or its bytes may not
+            be sent on (a Freesound API pull); nothing is generated.
+        LookupError: If the source's bytes are not on this machine (a remote
+            by-reference sound: fetch it first).
+        SourceConfigurationError: For an unnamed paid backend without the opt-in.
+        GenerationError: As :func:`generate`, when the backend yields no stored sound
+            (``rights_blocked``: a byte-identical sound with wider rights is stored).
+    """
+    from .sources.edit import resolve_edit
+
+    lib = library if library is not None else default_library()
+    call = resolve_edit(
+        source,
+        op,
+        prompt,
+        library=lib,
+        backend=backend,
+        adapter=kwargs.get("adapter"),
+        affordances=kwargs,
+    )
+    return generate(
+        call.prompt,
+        backend=call.backend,
+        library=lib,
+        budget=budget,
+        derived_from=call.source,
+        audio=lib.audio(source),
+        **kwargs,
     )
 
 

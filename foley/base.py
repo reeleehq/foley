@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import math
 import typing
 from dataclasses import dataclass, field
 from enum import Enum
@@ -133,6 +134,9 @@ class Affordance:
             the old name raises a ``TypeError`` naming this one (see
             :func:`reject_renamed`). For a generation affordance, the generations
             cache still reads entries kept under the old name.
+        bounds: ``(lo, hi)`` for a number (either end ``None``: open), checked
+            before any call where the affordance's registry says so (see
+            :func:`check_edit_args`).
     """
 
     name: str
@@ -143,6 +147,7 @@ class Affordance:
     carries_meaning: bool = False
     choices: Optional[tuple] = None
     renamed_from: Optional[str] = None
+    bounds: Optional[tuple] = None
 
 
 #: Unified query-stage parameters (search / find / filter surface).
@@ -268,6 +273,195 @@ GENERATION_AFFORDANCES: dict[str, Affordance] = {
         "generate",
     ),
 }
+
+
+#: Edit-stage parameters (#162): an edit is a generation whose input includes a source
+#: clip. Only a source whose config declares ``modes=['edit']`` takes them (see
+#: :func:`foley.edit`); a text-to-audio or video-to-audio source refuses ``audio=``.
+EDIT_AFFORDANCES: dict[str, Affordance] = {
+    "audio": Affordance(
+        "audio",
+        object,
+        "The source clip to edit (a URL, a local path or bytes; keyed by content)",
+        stage="generate",
+        carries_meaning=True,
+    ),
+    "strength": Affordance(
+        "strength",
+        float,
+        "0..1 how far from the source (1.0 is pure generation); None => the backend's",
+        stage="generate",
+        carries_meaning=True,
+        bounds=(0.0, 1.0),
+    ),
+    "inpaint_start_s": Affordance(
+        "inpaint_start_s",
+        float,
+        "Start of the window to regenerate (s into the source)",
+        stage="generate",
+        carries_meaning=True,
+        bounds=(0.0, None),
+    ),
+    "inpaint_end_s": Affordance(
+        "inpaint_end_s",
+        float,
+        "End of the window to regenerate (s into the source)",
+        stage="generate",
+        carries_meaning=True,
+        bounds=(0.0, None),
+    ),
+    "extend_before_s": Affordance(
+        "extend_before_s",
+        float,
+        "Seconds of new sound before the source",
+        stage="generate",
+        carries_meaning=True,
+        bounds=(0.0, None),
+    ),
+    "extend_after_s": Affordance(
+        "extend_after_s",
+        float,
+        "Seconds of new sound after the source",
+        stage="generate",
+        carries_meaning=True,
+        bounds=(0.0, None),
+    ),
+}
+
+
+@dataclass(frozen=True)
+class EditOp:
+    """One edit operation and the :data:`EDIT_AFFORDANCES` it takes (a row of :data:`EDIT_OPS`).
+
+    Attributes:
+        name: The op name (``foley.edit(source, op)``; a source config's ``edit_op``).
+        description: What it does.
+        requires: Parameters that must all be given.
+        requires_any: Parameters of which at least one must be given and above 0.
+        accepts: Optional parameters.
+        ordered: ``(lo, hi)`` parameter pairs that must satisfy ``lo < hi``.
+        within_clip: Parameters (times into the source) that may not pass its end.
+    """
+
+    name: str
+    description: str
+    requires: tuple = ()
+    requires_any: tuple = ()
+    accepts: tuple = ()
+    ordered: tuple = ()
+    within_clip: tuple = ()
+
+    @property
+    def params(self) -> tuple:
+        """Every edit parameter this op takes (the source clip aside)."""
+        return (*self.requires, *self.requires_any, *self.accepts)
+
+
+#: SSOT: the edit operations (report 13 §3: each is offered by two or more providers).
+EDIT_OPS: dict[str, EditOp] = {
+    op.name: op
+    for op in (
+        EditOp(
+            "audio_to_audio",
+            "Regenerate the whole clip from the source (strength: how far from it)",
+            accepts=("strength",),
+        ),
+        EditOp(
+            "inpaint",
+            "Regenerate one window of the source, keeping the rest",
+            requires=("inpaint_start_s", "inpaint_end_s"),
+            ordered=(("inpaint_start_s", "inpaint_end_s"),),
+            within_clip=("inpaint_start_s", "inpaint_end_s"),
+        ),
+        EditOp(
+            "extend",
+            "Add new sound before and/or after the source",
+            requires_any=("extend_before_s", "extend_after_s"),
+        ),
+    )
+}
+
+
+def check_edit_args(
+    op: str,
+    affordances: Mapping,
+    *,
+    clip_s: Optional[float] = None,
+    limits: Optional[Mapping] = None,
+) -> None:
+    """Raise ``ValueError`` unless ``affordances`` are a valid call of the edit ``op``.
+
+    Checked before anything is paid for: the op is known, its required parameters are
+    given, it is given no other op's parameters, each number is within its
+    :attr:`Affordance.bounds` and below the backend's own maximum (``limits``: name ->
+    max), each ``ordered`` pair is increasing, and a time into the source
+    (:attr:`EditOp.within_clip`) does not pass its end (``clip_s``, when known).
+
+    >>> check_edit_args("inpaint", {"inpaint_start_s": 1.0, "inpaint_end_s": 2.5})
+    >>> check_edit_args("inpaint", {"inpaint_start_s": 1.0})
+    Traceback (most recent call last):
+    ...
+    ValueError: the inpaint edit needs inpaint_end_s=
+    >>> check_edit_args("extend", {"extend_before_s": 0})
+    Traceback (most recent call last):
+    ...
+    ValueError: the extend edit needs one of extend_before_s=, extend_after_s= above 0
+    >>> check_edit_args("inpaint", {"inpaint_start_s": 1, "inpaint_end_s": 9}, clip_s=4)
+    Traceback (most recent call last):
+    ...
+    ValueError: inpaint_end_s=9 is past the end of the 4 s source clip
+    """
+    spec = EDIT_OPS.get(op)
+    if spec is None:
+        raise ValueError(f"unknown edit op {op!r}; expected one of {sorted(EDIT_OPS)}")
+    given = {
+        k: v for k, v in affordances.items() if k in EDIT_AFFORDANCES and v is not None
+    }
+    given.pop("audio", None)
+    foreign = sorted(set(given) - set(spec.params))
+    if foreign:
+        takes = ", ".join(f"{p}=" for p in spec.params) or "no edit parameters"
+        raise ValueError(
+            f"the {op} edit does not take {', '.join(f'{p}=' for p in foreign)} "
+            f"(it takes {takes})"
+        )
+    missing = [p for p in spec.requires if p not in given]
+    if missing:
+        raise ValueError(f"the {op} edit needs {', '.join(f'{p}=' for p in missing)}")
+    limits = limits or {}
+    for name, value in given.items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"{name} must be a number, got {value!r}")
+        lo, hi = EDIT_AFFORDANCES[name].bounds or (None, None)
+        if limits.get(name) is not None:
+            hi = limits[name] if hi is None else min(hi, limits[name])
+        if (
+            not math.isfinite(value)
+            or (lo is not None and value < lo)
+            or (hi is not None and value > hi)
+        ):
+            raise ValueError(f"{name} must be within [{lo}, {hi}], got {value!r}")
+    if spec.requires_any and not any(given.get(p, 0) > 0 for p in spec.requires_any):
+        names = ", ".join(f"{p}=" for p in spec.requires_any)
+        raise ValueError(f"the {op} edit needs one of {names} above 0")
+    for lo_name, hi_name in spec.ordered:
+        if given[lo_name] >= given[hi_name]:
+            raise ValueError(
+                f"{lo_name} must be before {hi_name}, got "
+                f"{given[lo_name]!r} >= {given[hi_name]!r}"
+            )
+    if clip_s is not None:
+        for name in spec.within_clip:
+            if given.get(name, 0) > clip_s:
+                raise ValueError(
+                    f"{name}={given[name]!r} is past the end of the {clip_s:g} s "
+                    "source clip"
+                )
+
+
+#: The ``kind`` of the ``transformations`` entry an edit appends to its clip's licence
+#: (#162): what it derives from (see :class:`foley.sources.edit.EditLineage`).
+EDIT_TRANSFORMATION = "edit"
 
 
 def reject_renamed(names: Iterable[str], vocabulary: Optional[dict] = None) -> None:

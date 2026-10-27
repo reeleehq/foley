@@ -1,8 +1,11 @@
 """The fal generate adapter — one class for every fal-hosted SFX endpoint, run through ``falaw``.
 
 Each fal source (``fal_stable_audio_3``, ``fal_elevenlabs``, ``fal_sonilo``,
-``fal_mmaudio``; see :mod:`foley.sources.fal.config`) gets its own instance of
-:class:`FalAdapter`, built from its own config. The adapter:
+``fal_mmaudio``, the video-to-audio and the edit endpoints; see
+:mod:`foley.sources.fal.config`) gets its own instance of :class:`FalAdapter`, built
+from its own config. A media input (a ``video`` to sound, an edit's source ``audio``)
+is sent as a URL (a local path or bytes uploaded) and recorded by its content key. The
+adapter:
 
 1. builds the native request from the already-translated affordances with the same
    :func:`foley.sources._dispatch.native_request` that keys the generations cache, so
@@ -24,7 +27,6 @@ is an error, never a fall-through to the network.
 
 from __future__ import annotations
 
-import io
 import os
 from typing import Callable, Optional
 
@@ -136,8 +138,9 @@ class FalAdapter:
             ``ocracy.kit.using_credentials``: one binding covers every fal source),
             else ``$FAL_KEY``, else ``$FAL_API_KEY``.
         runner: The transport seam (default :func:`falaw_runner`); tests pass a fake.
-        uploader: ``(path, *, api_key) -> url``, how a local ``video=`` reaches fal
-            (default :func:`falaw_uploader`); tests pass a fake.
+        uploader: ``(path, *, api_key) -> url``, how a local ``video=`` or ``audio=``
+            (a path or bytes) reaches fal (default :func:`falaw_uploader`); tests pass
+            a fake.
         demux: ``(container bytes) -> audio bytes``, for an endpoint that answers
             with a video (``output.container == 'video'``; default
             :func:`foley.sources.video.audio_track`, which needs ffmpeg).
@@ -211,27 +214,34 @@ class FalAdapter:
         """The exact payload this adapter sends for ``prompt`` and translated ``affordances``."""
         from .._dispatch import native_request
 
+        from ..video import MEDIA
+
         reject_renamed(affordances)  # generate() builds its payload here too
         nd = self.config.get("native_defaults") or {}
         param_map = self.config["param_map"]
         affordances = dict(affordances)
-        video = affordances.pop("video", None)
-        if "video" in param_map and video is None:  # V2A: nothing to sound otherwise
-            raise ValueError(f"{self.name} sounds a picture: pass video=")
+        media = {name: affordances.pop(name, None) for name in MEDIA}
+        for name, value in media.items():
+            if name in param_map and value is None:  # nothing to sound / edit otherwise
+                raise ValueError(f"{self.name} {MEDIA[name].does}: pass {name}=")
+            if name not in param_map and value is not None:
+                raise ValueError(f"{self.name} takes no {name}=")
         args = dict(nd.get("fixed_arguments") or {})
         args.update(_integral(self.config, native_request(self.config, affordances)))
         if prompt or param_map["prompt"].get("required"):  # a V2A prompt is optional
             args[param_map["prompt"]["native_name"]] = prompt
         duration_name = (param_map.get("duration_s") or {}).get("native_name")
-        if video is not None:
-            args[param_map["video"]["native_name"]] = self._video_url(video)
-            # The dispatch set duration_s to cover the video; a direct call gets it here.
+        for name, value in media.items():
+            if value is None:
+                continue
+            args[param_map[name]["native_name"]] = self._media_url(value, kind=name)
+            # The dispatch set duration_s to cover the input; a direct call gets it here.
             if duration_name and duration_name not in args:
-                video_s = _video_seconds(video)
-                if video_s is not None:
+                input_s = MEDIA[name].seconds(value)  # a test may stand in for it
+                if input_s is not None:
                     lo, hi = nd.get("duration_min_s"), nd.get("duration_max_s")
                     args[duration_name] = max(
-                        lo or video_s, min(video_s, hi or video_s)
+                        lo or input_s, min(input_s, hi or input_s)
                     )
         default_s = nd.get("duration_default_s")
         if duration_name and duration_name not in args and default_s is not None:
@@ -259,20 +269,24 @@ class FalAdapter:
             audio_field=(self.config.get("output") or {}).get("audio_field", "audio"),
         )
 
-    def _video_url(self, video) -> str:
-        """The URL fal fetches ``video`` from: a URL as is, a path or bytes uploaded."""
-        from ..video import local_video_file, video_url
+    def _media_url(self, media, *, kind: str = "video") -> str:
+        """The URL fal fetches a media input from: a URL as is, a path or bytes uploaded
+        (bytes through a temporary file named by their sniffed format,
+        :meth:`foley.sources.video.MediaInput.suffix`)."""
+        from ..video import MEDIA, local_video_file, video_url
 
-        url = video_url(video)
+        url = video_url(media)
         if url is not None:
             return url
         key = self.api_key  # a missing key is its own, clearer refusal
+        raw = isinstance(media, (bytes, bytearray))
+        suffix = MEDIA[kind].suffix(media) if raw else None
         try:
-            with local_video_file(video) as path:
+            with local_video_file(media, suffix=suffix) as path:
                 return self._uploader(path, api_key=key)
         except Exception as exc:  # nothing was generated, so nothing was billed
             raise SourceConfigurationError(  # the type only: no path or URL in notes
-                f"{self.name}: could not upload the video to fal "
+                f"{self.name}: could not upload the {kind} to fal "
                 f"({type(exc).__name__}); nothing was generated"
             ) from exc
 
@@ -298,18 +312,21 @@ class FalAdapter:
         return audio_track
 
     def _recordable(self, args: dict, affordances: dict) -> dict:
-        """``args`` as the licence records them: the video by its key (#74), never the
-        uploaded URL (anyone holding it can fetch the picture) nor a ``data:`` URI.
+        """``args`` as the licence records them: each media input (the video, an edit's
+        source clip) by its key (#74, #162), never the uploaded URL (anyone holding it
+        can fetch the content) nor a ``data:`` URI.
 
         The key is also what the request was keyed on, so the answered request matches
         the planned one and a repeat is served from the generations cache.
         """
-        video_field = (self.config["param_map"].get("video") or {}).get("native_name")
-        if video_field not in args or affordances.get("video") is None:
-            return args
-        from ..video import recorded_video_key
+        from ..video import MEDIA_INPUTS, recorded_video_key
 
-        return {**args, video_field: recorded_video_key(affordances["video"])}
+        out = dict(args)
+        for name in MEDIA_INPUTS:
+            field = (self.config["param_map"].get(name) or {}).get("native_name")
+            if field in out and affordances.get(name) is not None:
+                out[field] = recorded_video_key(affordances[name])
+        return out
 
     def generate(
         self, prompt: str, *, provider_params: Optional[dict] = None, **affordances
@@ -432,23 +449,11 @@ def _actual_cost(config: dict, args: dict, audio: bytes) -> Optional[float]:
     return actual_call_cost(config, duration_s=args.get(name) if name else None)
 
 
-def _video_seconds(video) -> Optional[float]:
-    """The video's length (:func:`foley.sources.video.video_seconds`), via the module so
-    tests can stand in for the probe."""
-    from .. import video as video_mod
-
-    return video_mod.video_seconds(video)
-
-
 def _audio_seconds(audio: bytes) -> Optional[float]:
     """The length of encoded ``audio`` in seconds, or ``None`` when it cannot be read."""
-    try:
-        import soundfile as sf
+    from ..video import audio_seconds
 
-        info = sf.info(io.BytesIO(audio))
-        return info.frames / info.samplerate if info.samplerate else None
-    except Exception:  # noqa: BLE001 - an unreadable clip is an unknown cost
-        return None
+    return audio_seconds(audio)
 
 
 def _integral(config: dict, native: dict) -> dict:

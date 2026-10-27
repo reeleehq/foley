@@ -67,6 +67,10 @@ clip = foley.generate(
     intended_use=use,
 )
 
+# Edit a library sound (fal Stable Audio 3; paid): audio_to_audio (strength=), inpaint
+# (inpaint_start_s=, inpaint_end_s=) or extend; its licence gates the edit and carries over
+clip = foley.edit(sound_id, "extend", "the door slams shut", extend_after_s=2)
+
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
 foley.add_from(

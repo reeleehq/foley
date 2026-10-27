@@ -29,10 +29,16 @@ Design (report 07 · 10 §``provenance/``):
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Iterable, Optional, Union
 
-from ..base import Candidate, LicenseRecord, SerializableMixin, SoundRecord
+from ..base import (
+    EDIT_TRANSFORMATION,
+    Candidate,
+    LicenseRecord,
+    SerializableMixin,
+    SoundRecord,
+)
 from ..licensing import license_meta
 
 #: What the credits layer accepts: a full record, a ranked candidate, or a bare
@@ -73,6 +79,9 @@ class CreditEntry(SerializableMixin):
     disclosure_recommended: bool = False
     watermark: Optional[dict] = None  # pass-through for #9b (None in #9a)
     c2pa_manifest_ref: Optional[str] = None  # pass-through for #9b (None in #9a)
+    # What an edit (#162) derives from, one dict per source (see derived_sources):
+    # its id, content key, licence id / name / URL and its own credit line.
+    derived_from: list = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -129,7 +138,7 @@ def _resolve_author(license: LicenseRecord) -> str:
     return license.creator_name or license.rights_holder or license.source
 
 
-def _license_display(license: LicenseRecord) -> "tuple[str, Optional[str]]":
+def license_display(license: LicenseRecord) -> "tuple[str, Optional[str]]":
     """The license (name, url): the record's own when populated, else the SSOT table."""
     meta = license_meta(license.license_id)
     name = license.license_name or meta.display_name
@@ -137,11 +146,57 @@ def _license_display(license: LicenseRecord) -> "tuple[str, Optional[str]]":
     return name, url
 
 
+#: The fields of an edit's ``transformations`` entry a credit reads, and their names
+#: in :attr:`CreditEntry.derived_from`.
+_DERIVED_FIELDS = {
+    "source_id": "sound_id",
+    "source_content": "content",
+    "source_license_id": "license_id",
+    "source_license_name": "license_name",
+    "source_license_url": "license_url",
+    "source_credit": "credit",
+}
+
+
+def derived_source(transformation) -> Optional[dict]:
+    """The source an edit's ``transformations`` entry names (see :func:`derived_sources`),
+    or ``None`` for any other entry (a repair, a level).
+
+    >>> derived_source("declick") is None
+    True
+    """
+    if not (
+        isinstance(transformation, dict)
+        and transformation.get("kind") == EDIT_TRANSFORMATION
+    ):
+        return None
+    return {short: transformation.get(name) for name, short in _DERIVED_FIELDS.items()}
+
+
+def derived_sources(license: LicenseRecord) -> "list[dict]":
+    """What a clip derives from, read off its licence's ``transformations`` (#162).
+
+    One dict per edit entry (``kind == 'edit'``, see
+    :class:`foley.sources.edit.EditLineage`): the source's ``sound_id``, ``content``
+    key, ``license_id`` / ``license_name`` / ``license_url`` and its ``credit`` line,
+    so a derived clip's credit names the source's licence beside the generator's.
+
+    >>> lic = LicenseRecord(source="g", transformations=["declick", {
+    ...     "kind": "edit", "op": "extend", "source_id": "s1",
+    ...     "source_license_id": "CC-BY-NC-4.0", "source_credit": '"Door" by Bob'}])
+    >>> [(d["sound_id"], d["license_id"], d["credit"]) for d in derived_sources(lic)]
+    [('s1', 'CC-BY-NC-4.0', '"Door" by Bob')]
+    """
+    found = (derived_source(t) for t in license.transformations or ())
+    return [d for d in found if d is not None]
+
+
 def credit_entry(record: CreditInput, *, title: Optional[str] = None) -> CreditEntry:
     """Build a :class:`CreditEntry` from a record (title override optional).
 
     Every field is read straight off the :class:`~foley.base.LicenseRecord` (flags
-    never re-derived); ``modified`` reflects a non-empty ``transformations`` list.
+    never re-derived); ``modified`` reflects a non-empty ``transformations`` list, and
+    ``derived_from`` the sources an edit was made from (:func:`derived_sources`).
 
     Args:
         record: A :class:`~foley.base.SoundRecord`, :class:`~foley.base.Candidate`,
@@ -149,7 +204,7 @@ def credit_entry(record: CreditInput, *, title: Optional[str] = None) -> CreditE
         title: Explicit title override (else resolved from caption/tags/…).
     """
     sound_id, lic, caption, tags, ucs = _coerce_record(record)
-    name, url = _license_display(lic)
+    name, url = license_display(lic)
     return CreditEntry(
         sound_id=sound_id,
         title=title
@@ -170,6 +225,7 @@ def credit_entry(record: CreditInput, *, title: Optional[str] = None) -> CreditE
         disclosure_recommended=lic.disclosure_recommended,
         watermark=lic.watermark,
         c2pa_manifest_ref=lic.c2pa_manifest_ref,
+        derived_from=derived_sources(lic),
     )
 
 
@@ -204,7 +260,10 @@ def attribution_line(
 
     A source-supplied ``attribution_text`` (if non-empty) is returned **verbatim**;
     otherwise the line is synthesized from Title/Author/Source/License, with a
-    ``(modified)`` notice and an AI-disclosure segment appended as applicable.
+    ``(modified)`` notice and an AI-disclosure segment appended as applicable. A clip
+    made by editing another (#162) then credits its source: ``; derived from`` and the
+    source's own credit line (which names the source's licence, and its own source in
+    turn, for an edit of an edit).
 
     Args:
         source: A :class:`CreditEntry`, or any credit input (coerced first).
@@ -223,6 +282,10 @@ def attribution_line(
     # CC-BY legally requires indicating modifications even when a ready-made
     # attribution_text is used.
     tail = (" (modified)" if entry.modified else "") + _ai_segment(entry)
+    tail += "".join(
+        f"; derived from {d.get('credit') or d.get('sound_id') or 'an unnamed source'}"
+        for d in entry.derived_from
+    )
     if entry.attribution_text:
         return entry.attribution_text + tail
     title = entry.title or "Untitled"

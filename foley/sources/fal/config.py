@@ -1,4 +1,4 @@
-"""``SOURCE_CONFIGS`` for the fal-hosted text-to-SFX endpoints, executed through ``falaw`` (#73).
+"""``SOURCE_CONFIGS`` for the fal-hosted SFX endpoints (text-, video-to-audio and edits), executed through ``falaw`` (#73).
 
 One package, several sources: each fal endpoint is its own foley source (its own params,
 price and licence), and they all share one adapter class
@@ -15,7 +15,8 @@ live call each on 2026-10-25. Evidence and the comparison with the other models:
 
 Licences (the per-sound record is fail-closed, so each row says only what is known):
 
-* ``fal_stable_audio_3`` (and ``fal_stable_audio_3_medium``) — Stable Audio 3 weights are under the Stability AI
+* ``fal_stable_audio_3`` (and ``fal_stable_audio_3_medium``, and the three Small-SFX edit
+  endpoints) — Stable Audio 3 weights are under the Stability AI
   Community License (commercial use free under US $1M annual revenue, no use of outputs
   to train competing foundation models; Stability's licence gives the user the output;
   fal's terms only disclaim fal's own rights in it). Its text encoder (T5Gemma) also
@@ -30,6 +31,13 @@ Licences (the per-sound record is fail-closed, so each row says only what is kno
   but not specifically for calls billed through fal). Row: ``fal-partner-unverified`` — usable in a derivative,
   **not** commercially, until the terms are confirmed (foley#77). Narrowing, never widening.
 
+The edit endpoints (#162: ``fal_stable_audio_3_audio_to_audio``, ``_inpaint``, ``_extend``)
+declare ``modes=['edit']`` and their ``edit_op`` (a :data:`foley.base.EDIT_OPS` name), so
+only a call with a source clip (``audio=``, see :func:`foley.edit`) reaches them, and none
+joins a text-to-audio or video-to-audio order. Their Stable Audio 3 row is the
+generator's: the edit mode narrows each edit's rights to its source's
+(:func:`foley.sources.edit.edit_lineage`).
+
 Pricing is fal's (``unit``/``amount_usd`` as in :func:`foley.cost.estimate_call`), with the
 date it was read. ``per_second`` with no requested duration is priced at the
 ``duration_default_s`` the adapter sends in its place (or the endpoint's maximum, an upper
@@ -42,6 +50,7 @@ import copy
 
 from ..elevenlabs.config import MP3_BY_RATE as _EL_MP3_BY_RATE
 from ..elevenlabs.config import PCM_RATES as _EL_PCM_RATES
+from ..video import MEDIA_INPUTS
 
 #: ElevenLabs formats the direct API offers and fal's endpoint does not (report 17 §3).
 _FAL_EL_LACKS = frozenset({"pcm_32000", "mp3_24000_48"})
@@ -52,6 +61,8 @@ _SEEN = "2026-10-25"
 #: The video-to-audio endpoints' prices, read off their fal model pages (#74).
 _FAL_V2A_PRICING_SOURCE = "fal model page (pricing note)"
 _SEEN_V2A = "2026-10-27"
+#: The Stable Audio 3 edit endpoints' schemas and prices (#162).
+_SEEN_EDIT = "2026-10-27"
 
 #: What every fal source shares: the key, the extra, the transport, the egress class.
 _COMMON = {
@@ -638,6 +649,126 @@ _MEDIUM = SOURCE_CONFIGS[1]
 _MEDIUM["param_map"] = copy.deepcopy(_SMALL["param_map"])
 _MEDIUM["supported_affordances"] = list(_SMALL["supported_affordances"])
 
+#: What the three Small-SFX edit endpoints share with each other: the source clip, the
+#: sampler, the seed it echoes, the output format (read off their OpenAPI schemas).
+_SA3_EDIT_PARAM_MAP = {
+    "prompt": {"native_name": "prompt", "required": True},
+    "audio": {"native_name": "audio_url"},
+    # Distilled like the text-to-audio endpoint: a requested adherence is noted only.
+    "prompt_influence": {
+        "native_name": "guidance_scale",
+        "coerce": {"kind": "linear", "lo": 1.0, "hi": 25.0},
+        "native_default": 1.0,
+    },
+    "negative_prompt": {"native_name": "negative_prompt"},
+    "steps": {"native_name": "num_inference_steps"},
+    "seed": {"native_name": "seed"},
+    "expand_prompt": {"native_name": "enable_prompt_expansion"},
+    "output_format": copy.deepcopy(_SMALL["param_map"]["output_format"]),
+}
+_SA3_EDIT_AFFORDANCES = [
+    "prompt",
+    "audio",
+    "prompt_influence",
+    "negative_prompt",
+    "steps",
+    "seed",
+    "output_format",
+    "expand_prompt",
+]
+
+
+def _sa3_edit(
+    name: str,
+    op: str,
+    endpoint: str,
+    *,
+    price: float,
+    params: dict,
+    native_defaults=None,
+    unsupported=("loop",),
+) -> dict:
+    """One Stable Audio 3 Small-SFX edit source (#162): the text-to-audio row's licence,
+    the shared edit schema plus the op's own ``params`` (affordance -> native spec)."""
+    return _source(
+        name,
+        display_name=f"Stable Audio 3 Small-SFX {op.replace('_', '-')} (fal)",
+        website=f"https://fal.ai/models/{endpoint}",
+        api={"endpoint_id": endpoint},
+        modes=["edit"],
+        edit_op=op,
+        param_map={**copy.deepcopy(_SA3_EDIT_PARAM_MAP), **params},
+        supported_affordances=[*_SA3_EDIT_AFFORDANCES, *params],
+        unsupported_affordances=list(unsupported),
+        native_defaults={
+            "model_id": "stable-audio-3-small-sfx",
+            "generator_version": endpoint,
+            "output_format": "wav",
+            "distilled": True,
+            "sample_rate": 44100,
+            "fixed_arguments": {
+                "enable_prompt_expansion": False,
+                "enable_safety_checker": True,
+            },
+            "seed_field": "seed",
+            **(native_defaults or {}),
+        },
+        license={"default_license_id": "Stability-Community", "cache_bytes_ok": True},
+        commercial_ok=True,  # revenue-capped; the edit mode narrows to the source's rights
+        pricing={
+            "unit": "per_call",
+            "amount_usd": price,
+            "source": _FAL_PRICING_SOURCE,
+            "seen": _SEEN_EDIT,
+        },
+    )
+
+
+#: The edit sources (#162): named, or picked by foley.edit from their edit_op.
+EDIT_SOURCE_CONFIGS = (
+    _sa3_edit(
+        "fal_stable_audio_3_audio_to_audio",
+        "audio_to_audio",
+        "fal-ai/stable-audio-3/small/sfx/audio-to-audio",
+        price=0.024,
+        params={
+            "duration_s": {
+                "native_name": "duration"
+            },  # the source's length when unasked
+            # how far from the source: 1.0 is pure generation (fal's default 0.9)
+            "strength": {"native_name": "init_noise_level"},
+        },
+        native_defaults={
+            "duration_default_s": 10.0,  # fal's own default is 30 s
+            "duration_min_s": 1.0,
+            "duration_max_s": 120.0,
+        },
+    ),
+    _sa3_edit(
+        "fal_stable_audio_3_inpaint",
+        "inpaint",
+        "fal-ai/stable-audio-3/small/sfx/audio-inpainting",
+        price=0.0259,
+        params={
+            "inpaint_start_s": {"native_name": "mask_start_seconds"},
+            "inpaint_end_s": {"native_name": "mask_end_seconds"},
+        },
+        unsupported=("loop", "duration_s"),  # the length is the source's
+    ),
+    _sa3_edit(
+        "fal_stable_audio_3_extend",
+        "extend",
+        "fal-ai/stable-audio-3/small/sfx/audio-outpainting",
+        price=0.0271,
+        params={  # fal's schema bounds each side to 0..120 s
+            "extend_before_s": {"native_name": "extend_seconds_before", "max": 120.0},
+            "extend_after_s": {"native_name": "extend_seconds_after", "max": 120.0},
+        },
+        unsupported=("loop", "duration_s"),  # the source's length plus the extension
+    ),
+)
+SOURCE_CONFIGS = (*SOURCE_CONFIGS, *EDIT_SOURCE_CONFIGS)
+
 #: What a caller's ``provider_params`` (#61) may not do on any fal endpoint: switch on
 #: prompt expansion (it rewrites the prompt foley screened and records), switch off the
 #: safety checker, or ask for more samples (billed per sample).
@@ -653,8 +784,8 @@ for _config in SOURCE_CONFIGS:
         "reserved": sorted(
             {
                 _pm["prompt"]["native_name"],
-                # the video is keyed by its content: a provider param may not swap it
-                *([_pm["video"]["native_name"]] if "video" in _pm else []),
+                # a media input is keyed by its content: a provider param may not swap it
+                *(_pm[m]["native_name"] for m in MEDIA_INPUTS if m in _pm),
                 *_FAL_RESERVED,
                 *(_config["native_defaults"].get("fixed_arguments") or {}),
             }

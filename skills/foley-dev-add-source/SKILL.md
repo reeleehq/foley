@@ -83,6 +83,7 @@ missing-configuration case *before* it sends anything.
 - **What the provider says it charged:** when the response carries it (ElevenLabs:
   `api["credits_header"] = "character-cost"`), note it on the clip; set
   `candidate.cost_actual_usd` with `foley.cost.actual_call_cost(config, duration_s=...)`.
+- **An edit source** (audio-to-audio, inpaint, extend; #162) declares `modes=["edit"]` and an `edit_op` (a `foley.base.EDIT_OPS` name) and maps the op's `EDIT_AFFORDANCES` (`audio`, `strength`, the windows) in its `param_map`. It joins no order: `foley.edit` finds it by its `edit_op`. The generation's `edit` mode (not the façade) gates the source's rights fail-closed (`derived_from=`, required: `foley.sources.edit.edit_lineage`), keys the request by that lineage, and narrows the output's licence to the source's. The model: the three `fal_stable_audio_3_*` edit sources.
 - A generate adapter that takes extra `**affordances` passes their names through `foley.base.reject_renamed` (or `foley.sources.base.unsupported_notes`, which does), so an old spelling such as `duration=` raises instead of being dropped.
 
 ## `SOURCE_CONFIG` (the declaration)
