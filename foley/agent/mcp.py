@@ -233,11 +233,14 @@ def foley_find(
     commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
     k: int = 10,
     session: str = "default",
+    territory: Optional[str] = None,
 ) -> list:
     """Find verified, license-clean sound candidates for a narrative passage.
 
     Caches the full candidates in the session so ``foley_plan`` / ``foley_weave`` can
-    rehydrate them by id. Returns compact candidate rows.
+    rehydrate them by id. Returns compact candidate rows. ``territory``: where the
+    sound is used (an ISO country code, or ``"WORLD"`` for online publishing); a
+    licence that excludes territories is refused while it is unstated.
     """
     from .. import find
     from ..cost import BudgetExceeded, spend_scope
@@ -250,7 +253,9 @@ def foley_find(
                     max_events=max_events,
                     verify=verify,
                     k=k,
-                    intended_use=intended_use_for(commercial_ok=commercial_ok),
+                    intended_use=intended_use_for(
+                        commercial_ok=commercial_ok, territory=territory
+                    ),
                     library=_lib(),
                 )
             )
@@ -374,6 +379,7 @@ def foley_generate(
     backend: str = "auto",
     commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
     session: str = "default",
+    territory: Optional[str] = None,
 ) -> dict:
     """Generate a sound from a text prompt (local backends only when offline).
 
@@ -387,6 +393,8 @@ def foley_generate(
     stored (the repair is in the result's notes). A refused generation's dict carries
     ``cache_key``: where its paid bytes are in the generations cache
     (``foley.generations.get(cache_key)``, on the host — bytes never travel over MCP).
+    ``territory``: where the sound is used (an ISO country code, or ``"WORLD"``); a
+    backend whose licence excludes territories (HunyuanVideo-Foley) needs it stated.
     """
     from .. import GenerationError, generate
     from ..cost import BudgetExceeded, spend_scope
@@ -402,7 +410,7 @@ def foley_generate(
     )
     from ..sources.registry import source_egress
 
-    use = intended_use_for(commercial_ok=commercial_ok)
+    use = intended_use_for(commercial_ok=commercial_ok, territory=territory)
 
     # The bound server runtime may differ from the call's context (a server built with
     # runtime= but not run under offline_scope), so check it here too; undeclared
@@ -474,12 +482,12 @@ def foley_generate(
         }
     from ..licensing import keep
 
-    usable = keep(cand.sound.license, intended_use_for(commercial_ok=commercial_ok))
+    usable = keep(cand.sound.license, use)
     return {
         "ok": True,
         "sound_ids": [cand.sound.id],
         "backend": backend,
-        "license_ok": usable,  # under this call's commercial_ok intent
+        "license_ok": usable,  # under this call's intent (commercial_ok, territory)
         "license": _license_summary(cand.sound.license),
         "notes": list(cand.notes),
         "cost_estimate_usd": cand.cost_estimate_usd,
@@ -604,6 +612,7 @@ def foley_score(
     verify: str = "listen",
     max_events: int = 6,
     session: str = "default",
+    territory: Optional[str] = None,
 ) -> dict:
     """Score a narration passage → an editable sound-design timeline + a per-event rationale.
 
@@ -619,7 +628,9 @@ def foley_score(
         res = score(
             context,
             library=_lib(),
-            commercial_ok=commercial_ok,
+            intended_use=intended_use_for(
+                commercial_ok=commercial_ok, territory=territory
+            ),
             verify=verify,
             max_events=max_events,
             weave=False,

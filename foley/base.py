@@ -622,13 +622,18 @@ ISO_COUNTRY_CODES: frozenset = frozenset(
 #: Spellings that name a country by another code: the UK's common one and the EU's
 #: code for Greece.
 TERRITORY_ALIASES = {"UK": "GB", "EL": "GR"}
+#: The territory of a sound used everywhere (online publishing reaches every country):
+#: a licence that excludes any territory refuses it (#175).
+WORLDWIDE = "WORLD"
 
 
 def normalize_territory(territory: Optional[str]) -> Optional[str]:
-    """``territory`` as an ISO 3166-1 alpha-2 code, ``None`` when unstated.
+    """``territory`` as an ISO 3166-1 alpha-2 code (or :data:`WORLDWIDE`), ``None`` when unstated.
 
     >>> normalize_territory(" uk "), normalize_territory("EL"), normalize_territory("")
     ('GB', 'GR', None)
+    >>> normalize_territory("world")
+    'WORLD'
 
     Raises:
         ValueError: If it is not a country code (a name, an alpha-3 code, a region):
@@ -638,10 +643,10 @@ def normalize_territory(territory: Optional[str]) -> Optional[str]:
         return None
     code = str(territory).strip().upper()
     code = TERRITORY_ALIASES.get(code, code)
-    if code not in ISO_COUNTRY_CODES:
+    if code != WORLDWIDE and code not in ISO_COUNTRY_CODES:
         raise ValueError(
-            f"territory must be an ISO 3166-1 alpha-2 country code (e.g. 'US', 'FR'), "
-            f"got {territory!r}"
+            f"territory must be an ISO 3166-1 alpha-2 country code (e.g. 'US', 'FR') "
+            f"or {WORLDWIDE!r} (used everywhere), got {territory!r}"
         )
     return code
 
@@ -658,10 +663,10 @@ class IntendedUse(SerializableMixin):
     revenue_usd: int = 0
     allow_voice_or_trademark: bool = False
     #: Where the sound is used (ISO 3166-1 alpha-2, e.g. ``"US"``; ``"UK"`` reads as
-    #: ``"GB"``). Only a licence that excludes territories asks
+    #: ``"GB"``), or ``"WORLD"`` (:data:`WORLDWIDE`: online publishing reaches every
+    #: country). Only a licence that excludes territories asks
     #: (``foley.licensing.LICENSE_EXCLUDED_TERRITORIES``); for one, ``None`` fails
-    #: closed. Name every place the sound is distributed: online publishing reaches
-    #: them all.
+    #: closed, and so does ``"WORLD"``.
     territory: Optional[str] = None
 
     def __post_init__(self):
