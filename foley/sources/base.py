@@ -74,6 +74,7 @@ __all__ = [
     "SourceAdapter",
     "GenerateAdapter",
     "GeneratedClip",
+    "UndemuxedAnswer",
     "UniformCorpus",
     "bulk_license",
     "per_clip_license_meta",
@@ -823,6 +824,21 @@ class GeneratedClip:
     candidate: "Candidate"
     notes: list = field(default_factory=list)
     raw: Optional[dict] = None
+
+
+class UndemuxedAnswer(RuntimeError):
+    """A paid answer that came as a video whose audio track could not be taken out (#176).
+
+    MMAudio, ThinkSound and HunyuanVideo-Foley answer with the video, the sound muxed
+    in. When ffmpeg cannot demux it, the call is still billed: ``clip`` is the whole
+    answer (``audio_bytes`` the video, its licence and notes), so the generations cache
+    keeps it and a retry demuxes it without paying again. ``None`` when the error is
+    raised for a cached answer that still cannot be demuxed.
+    """
+
+    def __init__(self, message: str, *, clip: Optional[GeneratedClip] = None):
+        super().__init__(message)
+        self.clip = clip
 
 
 @runtime_checkable

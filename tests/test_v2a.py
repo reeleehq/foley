@@ -662,3 +662,47 @@ def test_a_remote_video_refuses_what_is_not_a_url_and_a_digest():
                         ("https://x/a.mp4", "abc"), ("https://x/a.mp4", "md5:" + "a" * 32)):
         with pytest.raises(ValueError, match="RemoteVideo"):
             foley.RemoteVideo(url=url, sha256=digest)
+
+
+# #176: a paid muxed answer is kept when it cannot be demuxed; a retry demuxes it
+
+
+def test_an_undemuxed_paid_answer_is_kept_and_a_retry_demuxes_it(tmp_path, monkeypatch):
+    from foley.sources._dispatch import plan_generation, run_generation
+    from foley.sources.base import UndemuxedAnswer
+    from foley.stores import make_generations_store
+
+    def broken(_):
+        raise RuntimeError("no audio stream")
+
+    cache = make_generations_store(tmp_path / "generations")
+    runner = VideoRunner()
+    adapter = FalAdapter(CONFIGS["fal_mmaudio_v2a"], api_key="k", runner=runner,
+                         uploader=Uploader(), demux=broken)
+    video = foley.RemoteVideo(url="https://x/shot.mp4", sha256="ab" * 32)
+    plan = lambda: plan_generation("fal_mmaudio_v2a", "rain", adapter=adapter,  # noqa: E731
+                                   cache=cache, video=video)
+    first = plan()
+    with pytest.raises(UndemuxedAnswer, match="billed.*kept in the generations cache"):
+        run_generation(first, adapter, cache=cache)
+    assert cache.audio[cache.requests[first.request_key]["content_key"]] == b"MUXED-VIDEO"
+
+    monkeypatch.setattr(video_mod, "audio_track", broken)  # ffmpeg still cannot
+    with pytest.raises(UndemuxedAnswer, match="reuse_cached=False"):
+        plan()  # refused at plan time: nothing is paid again
+    monkeypatch.setattr(video_mod, "audio_track", lambda b: _wav(1.0))  # now it can
+    clip = run_generation(plan(), adapter, cache=cache)
+    assert clip.audio_bytes == _wav(1.0) and len(runner.calls) == 1  # no new call
+    assert any("audio track was taken out now" in n for n in clip.notes)
+    entry = cache.requests[first.request_key]
+    assert "container" not in entry and cache.audio[entry["content_key"]] == _wav(1.0)
+    assert run_generation(plan(), adapter, cache=cache).audio_bytes == _wav(1.0)
+
+
+def test_hunyuan_is_priced_in_whole_ten_second_blocks(monkeypatch):
+    monkeypatch.setattr(video_mod, "video_seconds", lambda video: 3.0)
+    assert estimate_generation("fal_hunyuan_foley", prompt="rain", video=b"x") == pytest.approx(0.1)
+    monkeypatch.setattr(video_mod, "video_seconds", lambda video: 10.0)
+    assert estimate_generation("fal_hunyuan_foley", prompt="rain", video=b"x") == pytest.approx(0.1)
+    monkeypatch.setattr(video_mod, "video_seconds", lambda video: 10.5)
+    assert estimate_generation("fal_hunyuan_foley", prompt="rain", video=b"x") == pytest.approx(0.2)

@@ -21,6 +21,7 @@ Stdlib-only.
 
 from __future__ import annotations
 
+import math
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Optional
@@ -107,6 +108,12 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
       requested, × the ``native_defaults['duration_default_s']`` the adapter sends in
       its place, else × ``native_defaults['duration_max_s']`` (the duration is left to
       the backend: an upper bound), else ``None``.
+    * ``'per_second'`` with ``billing_increment_s`` → the seconds rounded **up** to whole
+      increments first (a provider that bills in blocks: "$0.10 per 10 s").
+
+    >>> estimate_call({"pricing": {"unit": "per_second", "amount_usd": 0.01,
+    ...     "seconds_from": "video", "billing_increment_s": 10}}, video_duration_s=3)
+    0.1
 
     Args:
         config: A ``SOURCE_CONFIG``.
@@ -129,7 +136,9 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
         video_s = affordances.get("video_duration_s")
         if pricing.get("seconds_from") == "video":  # billed by the video's length
             # An unread length (a URL) is an unknown cost: it needs approval.
-            return None if video_s is None else float(amount) * float(video_s)
+            if video_s is None:
+                return None
+            return float(amount) * _billed_seconds(video_s, pricing)
         seconds = affordances.get("duration_s")
         if seconds is None and video_s is not None:  # V2A: the sound covers the video
             seconds = video_s
@@ -143,8 +152,24 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
             # else the backend's maximum: an upper bound, never zero.
             nd = config.get("native_defaults") or {}
             seconds = nd.get("duration_default_s") or nd.get("duration_max_s")
-        return None if seconds is None else float(amount) * float(seconds)
+        return (
+            None
+            if seconds is None
+            else float(amount) * _billed_seconds(seconds, pricing)
+        )
     return None
+
+
+#: Slack when rounding seconds up to billing blocks, so 10.0000001 s stays one 10 s block.
+_BLOCK_SLACK = 1e-9
+
+
+def _billed_seconds(seconds, pricing: dict) -> float:
+    """``seconds`` rounded up to whole ``pricing['billing_increment_s']`` blocks (if any)."""
+    step = pricing.get("billing_increment_s")
+    if not step:
+        return float(seconds)
+    return math.ceil(float(seconds) / float(step) - _BLOCK_SLACK) * float(step)
 
 
 def actual_call_cost(
