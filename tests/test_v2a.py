@@ -555,38 +555,51 @@ def test_video_seconds_reads_through_the_probe_seam():
     assert video_mod.video_seconds(b"\x1a\x45\xdf\xa3webm",
                                    probe=lambda p: seen.append(p) or 7.5) == 7.5
     assert seen[0].endswith(".webm")  # the bytes went to a file named by their format
-    for unreadable in (lambda p: None, lambda p: 0.0, lambda p: 1 / 0):
+    for unreadable in (lambda p: None, lambda p: 0.0, lambda p: 1 / 0,
+                       lambda p: "n/a", lambda p: float("inf")):
         assert video_mod.video_seconds(b"x", probe=unreadable) is None
 
 
-def test_the_default_probe_falls_back_to_mixing_without_ffprobe(monkeypatch):
+def test_the_default_probe_is_ffprobe_else_mixing_never_both(monkeypatch):
     import sys
 
     calls = []
     monkeypatch.setattr(video_mod, "ffprobe_seconds", lambda p: calls.append("ff"))
     monkeypatch.setattr(video_mod, "mixing_seconds", lambda p: calls.append("mx") or 3.0)
+    monkeypatch.setattr(video_mod.shutil, "which", lambda name: "/bin/ffprobe")
+    assert video_mod.default_probe("clip.mp4") is None and calls == ["ff"]  # timed out
+    monkeypatch.setattr(video_mod.shutil, "which", lambda name: None)
     assert video_mod.default_probe("clip.mp4") == 3.0 and calls == ["ff", "mx"]
     monkeypatch.undo()
     monkeypatch.setitem(sys.modules, "mixing.video.shot_boundaries", None)
     assert video_mod.mixing_seconds("clip.mp4") is None  # mixing's video stack absent
 
 
-def test_mixings_probe_reads_a_file(tmp_path):
-    shot_boundaries = pytest.importorskip("mixing.video.shot_boundaries",
-                                          exc_type=ImportError)
-    missing = str(tmp_path / "none.mp4")
-    assert video_mod.mixing_seconds(missing) == shot_boundaries.probe_duration(missing)
+def _mixing_probe():
+    try:
+        from mixing.video.shot_boundaries import probe_duration
+    except ImportError:  # mixing's media extra is not installed (as on CI)
+        return None
+    return probe_duration
 
 
-def test_the_default_probe_reads_a_real_video(tmp_path):
+def test_both_probes_read_a_real_video(tmp_path):
+    import shutil
+    import subprocess
+
     exe = video_mod.ffmpeg_path()
     if exe is None:
         pytest.skip("no ffmpeg")
-    import subprocess
-
     out = tmp_path / "clip.webm"
-    subprocess.run([exe, "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i",
-                    "color=c=black:s=32x32:d=2", "-c:v", "libvpx", str(out)],
-                   check=True, capture_output=True)  # fmt: skip
-    seconds = video_mod.video_seconds(out.read_bytes())  # bytes: sniffed as .webm
-    assert seconds == pytest.approx(2.0, abs=0.1)
+    made = subprocess.run([exe, "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i",
+                           "color=c=black:s=32x32:d=2", "-c:v", "libvpx", str(out)],
+                          capture_output=True)  # fmt: skip
+    if made.returncode != 0:
+        pytest.skip("this ffmpeg cannot encode VP8")
+    probes = [p for p, ok in ((video_mod.ffprobe_seconds, shutil.which("ffprobe")),
+                              (video_mod.mixing_seconds, _mixing_probe())) if ok]
+    if not probes:
+        pytest.skip("neither ffprobe nor mixing's video stack")
+    for probe in probes:  # bytes: written as .webm (sniffed), then measured
+        assert video_mod.video_seconds(out.read_bytes(), probe=probe) == pytest.approx(
+            2.0, abs=0.1)

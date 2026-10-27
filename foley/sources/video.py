@@ -29,6 +29,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import hashlib
+import math
 import os
 import shutil
 import subprocess
@@ -226,20 +227,25 @@ def ffprobe_seconds(path: str, *, ffprobe: Optional[str] = None) -> Optional[flo
 def mixing_seconds(path: str) -> Optional[float]:
     """The length by mixing's ``probe_duration`` (``ffmpeg -i`` through mixing's ffmpeg
     resolver, a pip-bundled ffmpeg too), or ``None`` when mixing's video stack is not
-    installed. Unbounded: mixing's probe has no timeout yet (reeleehq/mixing#88)."""
+    installed or finds no ffmpeg. Unbounded: mixing's probe has no timeout yet
+    (reeleehq/mixing#88)."""
     try:
         from mixing.video.shot_boundaries import probe_duration
     except ImportError:  # mixing, or its media extra, is not installed
         return None
-    return probe_duration(path)
+    try:
+        return probe_duration(path)
+    except (RuntimeError, OSError):  # mixing found no ffmpeg, or could not run it
+        return None
 
 
 def default_probe(path: str) -> Optional[float]:
-    """:func:`ffprobe_seconds` (bounded by :data:`PROBE_TIMEOUT_S`), else, when there is
-    no ``ffprobe`` or it cannot read the file, :func:`mixing_seconds` (no ``ffprobe``
-    on ``PATH`` needed)."""
-    seconds = ffprobe_seconds(path)
-    return seconds if seconds is not None else mixing_seconds(path)
+    """:func:`ffprobe_seconds` (bounded by :data:`PROBE_TIMEOUT_S`) when ``ffprobe`` is on
+    ``PATH``, else :func:`mixing_seconds`. Never both: a file that stalls ffprobe would
+    stall mixing's unbounded ``ffmpeg -i`` too."""
+    if shutil.which("ffprobe"):
+        return ffprobe_seconds(path)
+    return mixing_seconds(path)
 
 
 def video_seconds(
@@ -261,7 +267,7 @@ def video_seconds(
     probe = probe or default_probe
     with local_video_file(video) as path:
         try:
-            seconds = probe(path)
+            seconds = float(probe(path) or 0)
         except Exception:  # noqa: BLE001 - no ffmpeg, an unreadable file: unknown length
             return None
-    return float(seconds) if seconds and seconds > 0 else None
+    return seconds if math.isfinite(seconds) and seconds > 0 else None
