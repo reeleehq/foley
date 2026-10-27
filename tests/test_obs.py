@@ -33,7 +33,7 @@ from foley.obs.recorder import _CURRENT_RUN  # noqa: E402
 from foley.sources.base import api_license  # noqa: E402
 from foley.sources.stable_audio.adapter import StableAudioAdapter  # noqa: E402
 
-from ._fakes import FakePipeline  # noqa: E402
+from ._fakes import FakePipeline, fake_generator  # noqa: E402
 
 SR = 44_100
 
@@ -88,7 +88,7 @@ def library(fake_embedder):
 
 
 def _sa_adapter():
-    return StableAudioAdapter(pipeline=FakePipeline())
+    return StableAudioAdapter(pipeline=FakePipeline(), make_generator=fake_generator)
 
 
 def _counters():

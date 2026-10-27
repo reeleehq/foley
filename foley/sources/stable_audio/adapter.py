@@ -24,20 +24,22 @@ Load-bearing details verified against the diffusers docs + HF model card:
 
 ``torch`` / ``diffusers`` are imported lazily inside the methods (the
 ``foley[stable-audio]`` extra), so ``import foley`` and source discovery stay
-dol-only. The local-model DI seam is ``pipeline=`` (the analog of the hosted
-adapters' ``http=``): inject a fake pipeline and no ML stack loads at all — the
-whole adapter is testable with no torch. The adapter performs NO storage/library
-access; the façade converges it on the shared ingest pipeline.
+dol-only. The local-model DI seams are ``pipeline=`` (the analog of the hosted
+adapters' ``http=``) and ``make_generator=`` (the seeded ``torch.Generator``): inject
+fakes for both and no ML stack loads at all — the whole adapter is testable with no
+torch. The adapter performs NO storage/library access; the façade converges it on
+the shared ingest pipeline.
 """
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Callable, Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
 from ..base import (
     GeneratedClip,
     SourceConfigurationError,
+    draw_seed,
     generated_license,
     merge_provider_params,
     native_adherence,
@@ -45,6 +47,16 @@ from ..base import (
     unsupported_notes,
 )
 from .config import SOURCE_CONFIG
+
+#: ``make_generator(device, seed) -> generator``: the seeded RNG the pipeline draws from.
+GeneratorFactory = Callable[[Any, int], Any]
+
+
+def torch_generator(device, seed: int):
+    """A ``torch.Generator`` on ``device`` seeded with ``seed`` (the default factory)."""
+    import torch  # lazy: foley[stable-audio]
+
+    return torch.Generator(device=device).manual_seed(int(seed))
 
 
 class StableAudioAdapter:
@@ -57,12 +69,24 @@ class StableAudioAdapter:
             a test injects a fake callable exposing ``.vae.sampling_rate`` +
             ``.device``; production omits it and the real
             ``diffusers.StableAudioPipeline`` lazy-loads on first generation).
+        make_generator: ``make_generator(device, seed)``, the seeded generator handed
+            to the pipeline (default :func:`torch_generator`); a test with a fake
+            pipeline passes a fake one, so no torch is needed.
     """
 
-    def __init__(self, config: Optional[dict] = None, *, pipeline=None):
+    def __init__(
+        self,
+        config: Optional[dict] = None,
+        *,
+        pipeline=None,
+        make_generator: Optional[GeneratorFactory] = None,
+    ):
         self.config = config if config is not None else SOURCE_CONFIG
         self.name = self.config["name"]
         self._injected_pipeline = pipeline
+        self._make_generator = (
+            make_generator if make_generator is not None else torch_generator
+        )
         self._loaded_pipeline = None
 
     # -- pipeline lifecycle -------------------------------------------------
@@ -121,7 +145,8 @@ class StableAudioAdapter:
                 ≤ 1).
             steps: Diffusion steps (native ``num_inference_steps``); default 200.
             seed: Reproducibility seed → a per-device ``torch.Generator``; recorded
-                in provenance. ``None`` → non-deterministic (no torch import).
+                in provenance. ``None`` draws one (:func:`~foley.sources.base.draw_seed`)
+                and records it, so the clip is reproducible all the same (#163).
             loop: No native param (a future WEAVE crossfade) — warn-and-drop.
             output_format: No native param (the audio-write layer) — warn-and-drop;
                 the clip is archived as FLAC by ingest regardless.
@@ -167,6 +192,7 @@ class StableAudioAdapter:
             native, provider_params, policy=self.config.get("provider_params")
         )
 
+        seed = int(seed) if seed is not None else draw_seed()
         audio_bytes, sample_rate = self.invoke_native(prompt, native=native, seed=seed)
 
         resolved = recorded_params(
@@ -179,7 +205,7 @@ class StableAudioAdapter:
             generator_model=nd["generator_version"],
             generator_version=nd["generator_version"],
             generation_prompt=prompt,
-            generation_seed=seed,  # captured even when None
+            generation_seed=seed,  # the seed sent: the caller's or the one drawn
             generation_params=resolved,
         )
         record = SoundRecord(
@@ -198,16 +224,12 @@ class StableAudioAdapter:
         The public entry below foley's translation (#61): ``native`` goes to the
         ``StableAudioPipeline`` call as is (``guidance_scale``, ``audio_end_in_s``, …).
         No licence record is built and no dispatch-layer check runs (cost, egress): a
-        caller of this method owns those. Builds a per-device ``torch.Generator`` only
-        when ``seed`` is set (so a ``seed=None`` generation never imports torch — the
-        fake-pipeline test path).
+        caller of this method owns those. It also owns the seed: unlike
+        :meth:`generate`, which draws one when none is given, ``seed=None`` here sends
+        no generator, so the pipeline falls back on its own randomness.
         """
         pipe = self._pipe()
-        generator = None
-        if seed is not None:
-            import torch  # lazy: only a seeded run needs a Generator
-
-            generator = torch.Generator(device=pipe.device).manual_seed(int(seed))
+        generator = None if seed is None else self._make_generator(pipe.device, seed)
         output = pipe(
             prompt=prompt,
             output_type=self.config["native_defaults"]["output_type"],

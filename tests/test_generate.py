@@ -58,7 +58,7 @@ from foley.sources.stable_audio.adapter import StableAudioAdapter  # noqa: E402
 
 import foley  # noqa: E402
 
-from ._fakes import FakePipeline  # noqa: E402
+from ._fakes import FakePipeline, fake_generator  # noqa: E402
 
 SR = 44_100
 
@@ -137,7 +137,9 @@ def _el_adapter(transport=None, *, api_key="test-key", plan="elevenlabs-paid-pla
 
 
 def _sa_adapter(pipeline=None):
-    return StableAudioAdapter(pipeline=pipeline or FakePipeline())
+    return StableAudioAdapter(
+        pipeline=pipeline or FakePipeline(), make_generator=fake_generator
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -484,7 +486,9 @@ def _distilled_sa_config():
 
 def test_distilled_stable_audio_gets_its_native_cfg_by_default():
     pipe = FakePipeline()
-    clip = StableAudioAdapter(_distilled_sa_config(), pipeline=pipe).generate("creak")
+    clip = StableAudioAdapter(
+        _distilled_sa_config(), pipeline=pipe, make_generator=fake_generator
+    ).generate("creak")
     assert pipe.calls[0]["guidance_scale"] == 1.0  # not 5.2
     assert pipe.calls[0]["num_inference_steps"] == 8
     assert not any("prompt_influence" in n for n in clip.notes)
@@ -492,7 +496,9 @@ def test_distilled_stable_audio_gets_its_native_cfg_by_default():
 
 def test_distilled_stable_audio_notes_an_unapplied_prompt_influence():
     pipe = FakePipeline()
-    adapter = StableAudioAdapter(_distilled_sa_config(), pipeline=pipe)
+    adapter = StableAudioAdapter(
+        _distilled_sa_config(), pipeline=pipe, make_generator=fake_generator
+    )
     clip = adapter.generate("creak", prompt_influence=0.8)
     assert pipe.calls[0]["guidance_scale"] == 1.0
     assert any("prompt_influence=0.8 not applied" in n for n in clip.notes)
@@ -592,8 +598,25 @@ def test_stable_audio_seed_builds_generator():
     assert isinstance(pipe.calls[0]["generator"], torch.Generator)
 
 
-def test_stable_audio_no_seed_never_imports_torch():
-    # a seed=None generation must not import torch (fake pipeline, no ML stack)
+def test_stable_audio_draws_and_records_a_seed_when_none_is_given(monkeypatch):
+    """Seedless, the clip is still reproducible: the seed sent is the one recorded (#163)."""
+    drawn = 123456  # a sentinel: a constant or bypassed draw_seed() would not match it
+    monkeypatch.setattr(
+        "foley.sources.stable_audio.adapter.draw_seed", lambda: drawn
+    )
+    pipe = FakePipeline()
+    lic = _sa_adapter(pipe).generate("creak").candidate.sound.license
+    sent = pipe.calls[0]["generator"]
+    assert sent.seed == drawn and lic.generation_seed == drawn
+    assert sent.device == pipe.device
+    assert lic.generation_reproducible is True
+    again = FakePipeline()
+    _sa_adapter(again).generate("creak", seed=lic.generation_seed)
+    assert again.calls[0]["generator"].seed == lic.generation_seed
+
+
+def test_stable_audio_with_injected_fakes_never_imports_torch():
+    # the make_generator= seam: a fake pipeline + generator load no ML stack at all
     code = "\n".join(
         [
             "import sys, numpy as np",
@@ -606,8 +629,9 @@ def test_stable_audio_no_seed_never_imports_torch():
             "        s.vae = SimpleNamespace(sampling_rate=44100); s.device = 'cpu'",
             "    def __call__(s, **k):",
             "        return SimpleNamespace(audios=[np.stack([mono, mono])])",
-            "StableAudioAdapter(pipeline=P()).generate('creak')",
-            "assert 'torch' not in sys.modules, 'torch imported for a seedless generation'",
+            "fake = lambda device, seed: SimpleNamespace(seed=seed)",
+            "StableAudioAdapter(pipeline=P(), make_generator=fake).generate('creak')",
+            "assert 'torch' not in sys.modules, 'torch imported with injected fakes'",
         ]
     )
     proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)

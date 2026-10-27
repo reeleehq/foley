@@ -42,7 +42,7 @@ from foley.sources.generate import (  # noqa: E402
 )
 from foley.sources.stable_audio.adapter import StableAudioAdapter  # noqa: E402
 
-from ._fakes import FakePipeline, stereo_tone  # noqa: E402
+from ._fakes import FakePipeline, fake_generator, stereo_tone  # noqa: E402
 
 SR = 44_100
 
@@ -87,7 +87,9 @@ def library(fake_embedder):
 
 
 def _sa_adapter(pipeline=None):
-    return StableAudioAdapter(pipeline=pipeline or FakePipeline())
+    return StableAudioAdapter(
+        pipeline=pipeline or FakePipeline(), make_generator=fake_generator
+    )
 
 
 def _force_no_audioseal(monkeypatch):

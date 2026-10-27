@@ -38,6 +38,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import secrets
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass, field
@@ -83,6 +84,7 @@ __all__ = [
     "license_from_clip_meta",
     "api_license",
     "generated_license",
+    "draw_seed",
     "CORPUS_REGISTRY",
     "register_corpus",
     "ring_of",
@@ -1079,6 +1081,23 @@ def api_license(
         creator_name=creator_name,
         attribution_text=attribution_text,
     )
+
+
+#: One past the largest seed foley draws: a signed 32-bit range every local backend takes.
+_SEED_LIMIT = 2**31
+
+
+def draw_seed() -> int:
+    """A random seed in ``0..2**31-1``, for a seed-capable backend asked for none.
+
+    Drawn and recorded by the adapter, so the clip stays reproducible
+    (``LicenseRecord.generation_reproducible``) rather than left to the backend's
+    own randomness (#163).
+
+    >>> 0 <= draw_seed() < 2**31
+    True
+    """
+    return secrets.randbelow(_SEED_LIMIT)
 
 
 def generated_license(

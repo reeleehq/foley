@@ -22,7 +22,6 @@ which the generation order treats as "skip this backend".
 from __future__ import annotations
 
 import os
-import random
 import subprocess
 import tempfile
 from pathlib import Path
@@ -32,6 +31,7 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ..base import (
     GeneratedClip,
     SourceConfigurationError,
+    draw_seed,
     generated_license,
     merge_provider_params,
     native_adherence,
@@ -42,8 +42,6 @@ from .config import SOURCE_CONFIG
 
 #: ``runner(cmd, *, cwd, env, timeout) -> (returncode, stderr_text)``.
 Runner = Callable[..., "tuple[int, str]"]
-
-_SEED_MAX = 2**31 - 1  # the script's own range
 
 #: What the script's traceback names when huggingface_hub, forbidden to download
 #: (HF_HUB_OFFLINE=1), finds a weight file missing from the local cache.
@@ -166,7 +164,7 @@ class StableAudio3Adapter:
             ),
             nd["duration_max_s"],
         )
-        seed = int(seed) if seed is not None else random.randint(0, _SEED_MAX)
+        seed = int(seed) if seed is not None else draw_seed()
         native = {
             "seconds": seconds,
             "steps": steps if steps is not None else nd["num_inference_steps_default"],
