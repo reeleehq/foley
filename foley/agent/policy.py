@@ -149,11 +149,29 @@ class Budget:
     def settle(
         self, reserved_usd: "Optional[float]", actual_usd: "Optional[float]"
     ) -> None:
-        """Replace a reservation with the actual cost (``None`` actual: keep the reservation)."""
-        if not _known(actual_usd) or not _known(reserved_usd):
+        """Replace a reservation with the actual cost (``None`` actual: keep the reservation).
+
+        A reservation of unknown cost (``None`` reserved, counted as an unknown call)
+        settled with a known actual becomes that actual: it is summed, and no longer
+        counted as unknown (#186: a source billed per compute second, priced after).
+        Settling a known reservation with an equal actual changes nothing.
+
+        >>> b = Budget(approve_unknown_cost=True)
+        >>> b.reserve(None, what="x"); b.settle(None, 0.0425)
+        >>> b.spent_usd, b._unknown_calls
+        (0.0425, 0)
+        >>> b.reserve(0.1, what="y"); b.settle(0.1, 0.1)
+        >>> round(b.spent_usd, 10)
+        0.1425
+        """
+        if not _known(actual_usd):
             return
         with self._lock:
-            self._spent_usd += float(actual_usd) - float(reserved_usd)
+            if _known(reserved_usd):
+                self._spent_usd += float(actual_usd) - float(reserved_usd)
+            else:
+                self._spent_usd += float(actual_usd)
+                self._unknown_calls = max(0, self._unknown_calls - 1)
 
     def authorize(self, estimate_usd: "Optional[float]", *, what: str) -> None:
         """Alias of :meth:`check` (kept for callers that only test affordability)."""

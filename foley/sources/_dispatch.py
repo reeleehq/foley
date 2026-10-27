@@ -651,7 +651,7 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
         The :class:`~foley.sources.base.GeneratedClip`, its notes prefixed with the
         plan's, and ``candidate.cost_estimate_usd`` / ``cost_actual_usd`` set.
     """
-    from ..cost import release
+    from ..cost import release, settle
     from ..runtime import EgressBlocked
     from .base import SourceConfigurationError, UndemuxedAnswer
 
@@ -678,6 +678,7 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
     except UndemuxedAnswer as exc:  # billed: keep the answer, so a retry is free
         if plan.request_key is None or exc.clip is None:
             raise
+        settle(reserved, exc.clip.candidate.cost_actual_usd)  # it was billed
         cache = cache if cache is not None else _default_cache()
         try:
             plan.kept_key = _answered_key(plan, exc.clip)
@@ -713,6 +714,8 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
         raise
     # Any other failure keeps the reservation: the request may have been sent and
     # billed (a read timeout after the server accepted it).
+    if plan.request_key is not None:  # paid: the actual cost, when known, replaces it
+        settle(reserved, clip.candidate.cost_actual_usd)
     clip.notes = [*plan.notes, *clip.notes]
     clip.candidate.cost_estimate_usd = plan.estimate_usd
     if plan.request_key is not None:
@@ -875,6 +878,10 @@ def _default_cache():
 #: from another (#185): 64 bits, so two answers never share an entry.
 _ANSWER_KEY_CHARS = 16
 
+#: How an adapter's note on what its call cost begins (#186), so a replay marks it as
+#: the first generation's: a replay costs nothing.
+COST_NOTE_PREFIX = "cost from "
+
 
 def _store_clip(cache, plan: GenerationPlan, clip, *, container=None) -> None:
     """Keep the paid bytes and the entry of the request they answer.
@@ -939,6 +946,7 @@ def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
         "tags": list(sound.tags or []),
         "notes": [n for n in clip.notes if n not in plan.notes],  # the adapter's own
         "estimate_usd": plan.estimate_usd,
+        "actual_usd": clip.candidate.cost_actual_usd,  # the first generation's (#186)
         "at": time.time(),  # so GenerationsCache.find lists newest first
     }
 
@@ -1029,6 +1037,11 @@ def _cached_clip(cache, request_key: str, notes: list, config: dict, *, demux=No
     if entry.get("fallback") and not via_fallback:
         # Generated as another request's fallback; this request is the one it answers.
         kept_notes = [f"when first generated, as a fallback: {n}" for n in kept_notes]
+    else:  # a cost note is the first generation's: this replay cost nothing (#186)
+        kept_notes = [
+            f"when first generated: {n}" if n.startswith(COST_NOTE_PREFIX) else n
+            for n in kept_notes
+        ]
     return GeneratedClip(
         audio_bytes=audio,
         candidate=Candidate(sound=record, origin=CandidateOrigin.generated),

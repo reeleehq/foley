@@ -27,7 +27,6 @@ is an error, never a fall-through to the network.
 
 from __future__ import annotations
 
-import math
 import os
 from typing import Callable, Optional
 
@@ -53,8 +52,9 @@ FAL_CREDENTIAL = "fal"
 #: The env vars falaw reads a fal key from, in order.
 FAL_KEY_ENV_VARS = ("FAL_KEY", "FAL_API_KEY")
 
-#: ``runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)``.
-Runner = Callable[..., "tuple[bytes, dict]"]
+#: ``runner(endpoint_id, arguments, *, api_key, audio_field) -> (audio_bytes, response)``,
+#: or a :class:`FalAnswer` (that two-tuple, with fal's run ``.metrics``, #186).
+Runner = Callable[..., "tuple[bytes, dict] | FalAnswer"]
 
 
 def audio_url(response: dict, field: str = "audio") -> Optional[str]:
@@ -98,6 +98,10 @@ class FalAnswer(tuple):
         answer = super().__new__(cls, (media, response))
         answer.metrics = metrics
         return answer
+
+    def __getnewargs__(self):
+        """What copy, deepcopy and pickle rebuild it from (the metrics included)."""
+        return (*self, self.metrics)
 
 
 def falaw_runner(
@@ -297,16 +301,15 @@ class FalAdapter:
 
     def _call(self, arguments: dict) -> "tuple[bytes, dict, Optional[dict]]":
         """:meth:`invoke_native` with the run metrics the runner reported: a
-        :class:`FalAnswer`'s ``.metrics``, or a third item; ``None`` when it reported
-        none (a plain ``(media, response)``)."""
+        :class:`FalAnswer`'s ``.metrics``; ``None`` for a plain ``(media, response)``."""
         answer = self._runner(
             self.config["api"]["endpoint_id"],
             arguments,
             api_key=self.api_key,
             audio_field=(self.config.get("output") or {}).get("audio_field", "audio"),
         )
-        media, response, *rest = answer
-        return media, response, (rest[0] if rest else getattr(answer, "metrics", None))
+        media, response = answer
+        return media, response, getattr(answer, "metrics", None)
 
     def _media_url(self, media, *, kind: str = "video") -> str:
         """The URL fal fetches a media input from: a URL as is, a path or bytes uploaded
@@ -491,7 +494,7 @@ def _actual_cost(
     an observed run time, not an invoice figure."""
     from ...cost import actual_call_cost
 
-    from .._dispatch import source_modes
+    from .._dispatch import COST_NOTE_PREFIX, source_modes
 
     pricing = config.get("pricing") or {}
     if pricing.get("unit") == "per_compute_second":
@@ -499,8 +502,8 @@ def _actual_cost(
         cost = actual_call_cost(config, compute_s=seconds)
         if cost is not None and notes is not None:
             notes.append(
-                f"cost from fal's reported run time ({seconds:g} s): an observed run "
-                "time, not an invoice figure"
+                f"{COST_NOTE_PREFIX}fal's reported run time ({seconds:g} s): an "
+                "observed run time, not an invoice figure"
             )
         return cost
 
@@ -511,19 +514,18 @@ def _actual_cost(
     return actual_call_cost(config, duration_s=args.get(name) if name else None)
 
 
-def _compute_seconds(metrics: Optional[dict], field: Optional[str]) -> Optional[float]:
-    """The run time ``metrics[field]`` as seconds, or ``None`` (absent, not a finite
-    number >= 0: an unknown cost is never guessed).
+def _compute_seconds(metrics: Optional[dict], field: Optional[str]):
+    """The run time fal reported, ``metrics[field]`` as is (``None`` when absent).
+
+    Not validated here: :func:`foley.cost.actual_call_cost` prices only a finite
+    number >= 0, and is ``None`` (unknown, never guessed) for anything else.
 
     >>> _compute_seconds({"inference_time": 3.5}, "inference_time")
     3.5
-    >>> _compute_seconds({"inference_time": "3"}, "inference_time") is None
+    >>> _compute_seconds(None, "inference_time") is None
     True
     """
-    value = (metrics or {}).get(field) if field else None
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    return float(value) if math.isfinite(value) and value >= 0 else None
+    return (metrics or {}).get(field) if field else None
 
 
 def _audio_seconds(audio: bytes) -> Optional[float]:

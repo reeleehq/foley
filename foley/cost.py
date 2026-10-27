@@ -174,6 +174,16 @@ def _billed_seconds(seconds, pricing: dict) -> float:
     return math.ceil(round(float(seconds) / float(step), _BLOCK_DECIMALS)) * float(step)
 
 
+def _finite_non_negative(value) -> bool:
+    """Whether ``value`` is a real number (not a bool), finite and >= 0."""
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+        and value >= 0
+    )
+
+
 def actual_call_cost(
     config: dict,
     *,
@@ -196,11 +206,17 @@ def actual_call_cost(
     >>> gpu = {"pricing": {"unit": "per_compute_second", "amount_usd": 0.001}}
     >>> actual_call_cost(gpu, compute_s=42.0), actual_call_cost(gpu) is None
     (0.042, True)
+
+    Only a finite number of seconds >= 0 is priced (a NaN, a negative, a bool or a
+    string is ``None``: an unknown cost is never guessed):
+
+    >>> [actual_call_cost(gpu, compute_s=s) for s in (float("nan"), -1.0, True, "3")]
+    [None, None, None, None]
     """
     pricing = config.get("pricing") or {}
     if pricing.get("unit") == "per_compute_second":
         amount = pricing.get("amount_usd")
-        if amount is None or compute_s is None:
+        if amount is None or not _finite_non_negative(compute_s):
             return None
         return round(float(amount) * float(compute_s), 10)
     if duration_s is None and pricing.get("unit") == "per_second":
