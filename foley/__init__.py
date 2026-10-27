@@ -852,11 +852,8 @@ def generate(
         paid_ok = paid_generation_opted_in(mode=mode)
     # Native params are one vendor's: an order that may try several backends takes
     # them per backend, and each backend gets only its own (#61).
-    may_fall_back = adapter is None and (
-        isinstance(backend, (list, tuple)) or backend in (None, "", "auto")
-    )
     by_backend = provider_params_by_backend(
-        provider_params, order, per_backend=may_fall_back
+        provider_params, order, per_backend=_may_fall_back(backend, adapter)
     )
     with spend_scope(budget):
         report, backend, skipped = generate_in_order(
@@ -913,19 +910,22 @@ def variations(
     backend=None,
     seed: "int | None" = None,
     budget=None,
+    provider_params=None,
     **kwargs,
 ) -> "list[Candidate]":
     """``n`` variations of one sound for ``prompt``: ``n`` stored, distinct candidates (#161).
 
     The first is :func:`generate` as asked (``backend=None`` walks the generation
     order); the others come from the backend that made it, so all ``n`` are one
-    generator's takes on one request. Where that backend records its seed, variation
-    ``i`` is generated with the first one's seed plus ``i`` (reproducible like any
-    seeded clip, and the same request as asking for that seed); where it records
-    none, variation ``i`` is keyed apart in the generations cache, so a backend that
-    takes no seed (ElevenLabs) makes ``n`` paid sounds, each replayable, rather than
-    replaying one ``n`` times. Each variation is one call, priced and reserved like
-    any other, under one budget for the whole set.
+    generator's takes on one request. Where that backend records its seed, take ``i``
+    is ``generate(..., seed=derived_seed(first_seed, i))``
+    (:func:`~foley.sources.base.derived_seed`: the first seed plus ``i``, wrapped into
+    the signed 32-bit seed range), so it is reproducible like any seeded clip and the
+    same request as asking for that seed; where it records none, take ``i`` is keyed
+    apart in the generations cache, so a backend that takes no seed (ElevenLabs) makes
+    ``n`` paid sounds, each replayable, rather than replaying one ``n`` times. Each
+    take is one call, priced and reserved like any other, under one budget for the
+    whole set.
 
     Args:
         prompt: The natural-language sound description.
@@ -934,6 +934,8 @@ def variations(
             the backend the first came from.
         seed: The first variation's seed (default: the backend's own, or drawn).
         budget: A :class:`Budget` for all ``n`` calls (default: as :func:`generate`).
+        provider_params: As :func:`generate`'s. Per backend for an order, the takes
+            after the first get only the entry of the backend they are pinned to.
         **kwargs: Everything else :func:`generate` takes (``library``, ``store``,
             affordances such as ``duration_s``, …).
 
@@ -943,33 +945,65 @@ def variations(
 
     Raises:
         ValueError: If ``n`` is not an integer >= 1, or ``variation`` is passed.
-        GenerationError: As :func:`generate`, for the variation that failed; the
-            ones already made are on its ``variations`` attribute (and stored).
+        GenerationError: As :func:`generate`, for the variation that failed.
+        Exception: Whatever :func:`generate` raises for a take (``BudgetExceeded``
+            when the set outruns the budget, ``SourceConfigurationError``,
+            ``EgressBlocked``, …). Whatever it is, its ``variations`` attribute holds
+            the takes already made (stored, and paid for), in order.
     """
     from .cost import spend_scope
-    from .sources.base import derived_seed
+    from .sources.base import derived_seed, require_count
 
-    if isinstance(n, bool) or not isinstance(n, int) or n < 1:
-        raise ValueError(f"n must be an integer >= 1, got {n!r}")
+    n = require_count("n", n, minimum=1)
     if "variation" in kwargs:
         raise ValueError("variations() numbers the variations itself: drop variation=")
     seeded = {} if seed is None else {"seed": seed}
     out: "list[Candidate]" = []
     with spend_scope(budget):
         try:
-            out.append(generate(prompt, backend=backend, **seeded, **kwargs))
+            out.append(
+                generate(
+                    prompt,
+                    backend=backend,
+                    provider_params=provider_params,
+                    **seeded,
+                    **kwargs,
+                )
+            )
             lic = out[0].sound.license
             first_seed = lic.generation_seed
+            pinned_params = provider_params
+            if provider_params is not None and _may_fall_back(
+                backend, kwargs.get("adapter")
+            ):
+                # Take 0 checked them as {backend: {...}}; a pinned take is one
+                # named backend, which takes its own entry flat (#61).
+                pinned_params = provider_params.get(lic.source)
             for i in range(1, n):
                 if first_seed is None:
                     more = {"variation": i}
                 else:
                     more = {"seed": derived_seed(first_seed, i)}
-                out.append(generate(prompt, backend=lic.source, **more, **kwargs))
-        except GenerationError as exc:
-            exc.variations = list(out)
+                out.append(
+                    generate(
+                        prompt,
+                        backend=lic.source,
+                        provider_params=pinned_params,
+                        **more,
+                        **kwargs,
+                    )
+                )
+        except Exception as exc:
+            exc.variations = list(out)  # the takes already made (and paid for)
             raise
     return out
+
+
+def _may_fall_back(backend, adapter) -> bool:
+    """Whether a :func:`generate` call may try more than one backend (an unnamed order or a list)."""
+    return adapter is None and (
+        isinstance(backend, (list, tuple)) or backend in (None, "", "auto")
+    )
 
 
 def _with_call_facts(candidate, result):

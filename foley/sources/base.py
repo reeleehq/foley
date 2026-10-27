@@ -36,6 +36,7 @@ so the derived permission flags stay single-sourced.
 from __future__ import annotations
 
 import hashlib
+import numbers
 import os
 import re
 import secrets
@@ -86,6 +87,7 @@ __all__ = [
     "generated_license",
     "draw_seed",
     "derived_seed",
+    "require_count",
     "CORPUS_REGISTRY",
     "register_corpus",
     "ring_of",
@@ -1104,13 +1106,37 @@ def draw_seed() -> int:
 def derived_seed(seed: int, index: int) -> int:
     """The seed of variation ``index`` of a request seeded with ``seed`` (#161).
 
-    ``seed + index``, wrapped into the signed 32-bit range every local backend takes,
-    so variation 0 is the request itself and each later one is a seed of its own.
+    ``(seed + index) % _SEED_LIMIT``: wrapped into the signed 32-bit range every local
+    backend takes, so variation 0 is the request itself and each later one is a seed
+    of its own. It is ``seed + index`` only below the limit; near it, the seed wraps
+    to 0.
 
     >>> derived_seed(7, 0), derived_seed(7, 2), derived_seed(2**31 - 1, 1)
     (7, 9, 0)
     """
-    return (int(seed) + int(index)) % 2**31
+    return (int(seed) + int(index)) % _SEED_LIMIT
+
+
+def require_count(name: str, value, *, minimum: int) -> int:
+    """``value`` as an ``int``, or ``ValueError`` unless it is an integer >= ``minimum``.
+
+    Any :class:`numbers.Integral` passes (a NumPy integer too); a ``bool`` does not,
+    nor does a float, however whole.
+
+    >>> require_count("n", 3, minimum=1)
+    3
+    >>> require_count("n", True, minimum=1)
+    Traceback (most recent call last):
+    ...
+    ValueError: n must be an integer >= 1, got True
+    """
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, numbers.Integral)
+        or value < minimum
+    ):
+        raise ValueError(f"{name} must be an integer >= {minimum}, got {value!r}")
+    return int(value)
 
 
 def generated_license(

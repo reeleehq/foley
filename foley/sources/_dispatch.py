@@ -61,6 +61,7 @@ from .base import (
     check_page_depth,
     page_size,
     provider_params_policy,
+    require_count,
 )
 
 __all__ = [
@@ -420,13 +421,14 @@ class GenerationPlan:
     estimate_usd: Optional[float] = None
     request_key: Optional[str] = None  # set for a paid call (the cache key)
     cached: object = None  # a GeneratedClip served from the cache, or None
-    salt: object = None  # the adapter's request_salt() (part of every key)
+    salt: object = None  # {adapter: request_salt(), account, variation (if > 0)}: keyed
     kept_key: Optional[str] = None  # where the response was kept (see run_generation)
     replayable: bool = True  # False: never served from the cache (a bare video URL)
     content_key: Optional[str] = None  # the kept bytes' key in cache.audio (#107)
     provider_params: dict = field(
         default_factory=dict
     )  # untranslated vendor params (#61)
+    variation: int = 0  # which take on the request this is (#161; foley.variations)
 
 
 def plan_generation(
@@ -477,10 +479,7 @@ def plan_generation(
     from ..cost import authorize, estimate_call
     from .registry import SOURCE_REGISTRY, require_source_egress
 
-    if isinstance(variation, bool) or not isinstance(variation, numbers.Integral):
-        raise ValueError(f"variation must be an integer >= 0, got {variation!r}")
-    if variation < 0:
-        raise ValueError(f"variation must be an integer >= 0, got {variation!r}")
+    variation = require_count("variation", variation, minimum=0)
     if config is None:
         config = getattr(adapter, "config", None) or SOURCE_REGISTRY.get(
             backend, {}
@@ -496,6 +495,7 @@ def plan_generation(
         config=config,
         affordances=kept,
         notes=notes,
+        variation=variation,
         estimate_usd=estimate_call(config, **{**priced, **kept}),
         # Checked against the source's policy BEFORE any price or call: a reserved
         # or priced key raises here, so the estimate below is the call's price.
@@ -511,7 +511,7 @@ def plan_generation(
             salt = salt_fn() if callable(salt_fn) else None
             salt = {"adapter": salt, "account": _account_id(adapter, config)}
             if variation:  # only a later variation: every existing key is unchanged
-                salt["variation"] = int(variation)
+                salt["variation"] = variation
         except SourceConfigurationError:
             require_source_egress(backend, config)  # offline wins over a missing plan
             raise
@@ -829,6 +829,7 @@ def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
         "prompt": plan.prompt,
         "affordances": video_keyed(plan.affordances),
         **({"provider_params": plan.provider_params} if plan.provider_params else {}),
+        **({"variation": plan.variation} if plan.variation else {}),
         "license": sound.license.to_dict(),
         "caption": sound.caption,
         "tags": list(sound.tags or []),

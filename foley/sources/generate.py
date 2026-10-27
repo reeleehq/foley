@@ -271,7 +271,14 @@ class GenerationError(RuntimeError):
             (``foley.generations.get(cache_key)``), or ``None`` when nothing was kept
             (a free backend, a refusal before synthesis, a failed cache write). A
             quarantined generation is retrievable: it was billed either way (#107).
+        variations: Raised from :func:`foley.variations`, the takes already made
+            (stored :class:`~foley.base.Candidate`\\ s, in order) before the one that
+            failed; ``None`` otherwise (#161). :func:`foley.variations` sets it on any
+            exception a take raises, not only this one.
     """
+
+    #: The takes made before the failure, when raised from :func:`foley.variations`.
+    variations: "Optional[list]" = None
 
     def __init__(
         self,
@@ -1067,7 +1074,14 @@ def generate(*args, **kwargs) -> IngestReport:
     }
     params = {
         k: _manifest_value(kwargs[k])
-        for k in ("store", "on_flagged", "watermark", "repair", "provider_params")
+        for k in (
+            "store",
+            "on_flagged",
+            "watermark",
+            "repair",
+            "provider_params",
+            "variation",
+        )
         if k in kwargs
     }
     with facade_run(
