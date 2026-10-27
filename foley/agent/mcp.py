@@ -794,11 +794,12 @@ VERBS = (
     Verb(foley_status),
 )
 
-#: The MCP tool surface, in the table's order.
+#: The MCP tool surface at import, in the table's order (kept for callers that read it;
+#: the server reads :data:`VERBS` when it is built).
 TOOLS = [v.fn for v in VERBS if v.mcp]
 
 
-def surface_snapshot(verbs=VERBS) -> dict:
+def surface_snapshot(verbs=None) -> dict:
     """``{tool name: {parameter: default}}`` of the MCP tools, plus the CLI commands.
 
     What an agent or a script binds to by name, without py2mcp: a test pins it, so a
@@ -806,6 +807,8 @@ def surface_snapshot(verbs=VERBS) -> dict:
     parameter with no default maps to ``"<required>"``.
     """
     import inspect
+
+    verbs = VERBS if verbs is None else verbs
 
     def params(fn):
         return {

@@ -267,18 +267,44 @@ def _cmd_search(args) -> int:
     return 0
 
 
+def _optional_of(hint):
+    """``Optional[X]`` -> ``X``; anything else unchanged (``list[dict]`` stays a list)."""
+    args = typing.get_args(hint)
+    if type(None) in args:
+        rest = [a for a in args if a is not type(None)]
+        if len(rest) == 1:
+            return rest[0]
+    return hint
+
+
+def _true_or_false(token: str) -> bool:
+    """A required bool on the command line: ``true`` / ``false`` (any case), nothing else."""
+    words = {"true": True, "false": False}
+    try:
+        return words[token.strip().lower()]
+    except KeyError:
+        raise argparse.ArgumentTypeError(
+            f"expected true or false, got {token!r}"
+        ) from None
+
+
 def _verb_decode(param, hint):
     """How a verb's parameter is read from the command line (``cw``'s decode seam).
 
-    A ``dict`` (a timeline) is JSON; a ``bool`` is ``--x`` / ``--no-x``, so a default of
-    ``True`` (``commercial_ok``) can be turned off; anything else as ``cw.MODERN`` reads it.
+    A ``dict`` (a timeline) is JSON, shown as ``NAME_JSON``; a ``bool`` with a default is
+    ``--x`` / ``--no-x`` (so ``commercial_ok=True`` can be turned off), a required one
+    ``true`` / ``false``; anything else as ``cw.MODERN`` reads it.
     """
+    import inspect
+
     from cw.grammar import modern_decode
 
-    bare = next((a for a in typing.get_args(hint) if a is not type(None)), hint)
+    bare = _optional_of(hint)
     if bare is dict or typing.get_origin(bare) is dict:
-        return {"type": json.loads, "metavar": "JSON"}
+        return {"type": json.loads, "metavar": f"{param.name.upper()}_JSON"}
     if bare is bool:
+        if param.default is inspect.Parameter.empty:
+            return {"type": _true_or_false, "metavar": "{true,false}"}
         return {"action": argparse.BooleanOptionalAction}
     return modern_decode(param, hint)
 
@@ -312,14 +338,34 @@ def _verb_convention():
     )
 
 
+#: Parameter names a verb may not take on the CLI: the parser's own namespace keys
+#: (``command`` its subcommand, ``func`` a written command's handler, ``_cw`` cw's).
+RESERVED_VERB_PARAMS = frozenset({"command", "func", "_cw"})
+
+
 def add_verbs(parser: argparse.ArgumentParser, verbs=None) -> argparse.ArgumentParser:
     """Add the CLI-enabled verbs of ``verbs`` (default: :data:`foley.agent.mcp.VERBS`)
-    to ``parser``'s subcommands, one command each (#62)."""
+    to ``parser``'s subcommands, one command each (#62).
+
+    Raises:
+        ValueError: If a verb's command clashes with a written one, or it takes a
+            parameter named in :data:`RESERVED_VERB_PARAMS`.
+    """
+    import inspect
+
     import cw
 
     if verbs is None:
         from .agent.mcp import VERBS as verbs
     commands = {v.command: v.fn for v in verbs if v.cli}
+    reserved = sorted(
+        f"{name}({p})"
+        for name, fn in commands.items()
+        for p in inspect.signature(fn).parameters
+        if p in RESERVED_VERB_PARAMS
+    )
+    if reserved:
+        raise ValueError(f"verb parameter name(s) reserved by the CLI: {reserved}")
     taken = {
         name
         for action in parser._actions
@@ -327,7 +373,7 @@ def add_verbs(parser: argparse.ArgumentParser, verbs=None) -> argparse.ArgumentP
         for name in action.choices
     }
     clash = sorted(taken & set(commands))
-    if clash:  # argparse 3.10 would let the later one win, silently
+    if clash:  # one message for every Python (3.10's argparse lets the later one win)
         raise ValueError(
             f"verb command(s) {clash} clash with commands written in foley.cli: set "
             "cli=False on the verb (and say why), or rename one"
