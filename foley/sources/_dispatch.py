@@ -26,6 +26,11 @@ the MCP and agent paths, which call it) and :func:`foley.add_from` go through he
    paid response is written there **before** QC or ingest. A response the provider
    served for a different request than asked (a plan-tier format fallback) is kept
    under the key of the request it actually answers, never under the one asked (#97).
+5. **Seed** — a seedless call to a source that takes a ``seed`` but echoes none
+   (:func:`draws_seed`) is sent a seed drawn here, after the cache lookup, and the
+   adapter records it (#206). So every clip of a seed-capable source is reproducible,
+   while the cache key stays the request as asked: a seedless paid request replays
+   its first answer, with the seed that answer recorded.
 
 The translator is the fleet's facade kit (``ocracy.kit.make_translator``,
 thorwhalen/ocracy#7): foley's ``supported_affordances`` become an identity
@@ -69,6 +74,7 @@ from .video import replayable as video_replayable
 from .base import (
     check_prompt_influence,
     check_provider_params,
+    draw_seed,
     SearchArgumentError,
     check_page_depth,
     page_size,
@@ -86,6 +92,7 @@ __all__ = [
     "GenerationPlan",
     "plan_generation",
     "run_generation",
+    "draws_seed",
     "plan_search",
     "estimate_generation",
     "record_generation_outcome",
@@ -660,7 +667,11 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
         extra = (
             {"provider_params": plan.provider_params} if plan.provider_params else {}
         )
-        clip = adapter.generate(plan.prompt, **plan.affordances, **extra)
+        affordances = dict(plan.affordances)
+        if affordances.get("seed") is None and draws_seed(plan.config):
+            # After the cache miss: the key is the request as asked, seed-free (#206).
+            affordances["seed"] = draw_seed()
+        clip = adapter.generate(plan.prompt, **affordances, **extra)
     except (SourceConfigurationError, EgressBlocked):
         release(reserved)  # refused before any request was sent (incl. offline weights)
         raise
@@ -732,6 +743,31 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
                 f"paid generation kept in the generations cache: {plan.kept_key}"
             )
     return clip
+
+
+def draws_seed(config: dict) -> bool:
+    """Whether :func:`run_generation` draws the seed of a seedless call to this source (#206).
+
+    True for a source that takes a ``seed`` but whose response echoes none (no
+    ``native_defaults['seed_field']``): left to the backend, its seedless clip would
+    record ``generation_seed=None`` and could not be replayed. A source whose response
+    echoes the seed it used records that one, so nothing is drawn for it.
+
+    Adapters called directly, outside this path, forward the seed they are given; the
+    two local Stable Audio adapters still draw their own (their process always takes
+    one), so through here theirs never fires.
+
+    >>> draws_seed({"supported_affordances": ["prompt", "seed"]})
+    True
+    >>> draws_seed({"supported_affordances": ["seed"],
+    ...             "native_defaults": {"seed_field": "seed"}})
+    False
+    >>> draws_seed({"supported_affordances": ["prompt"]})
+    False
+    """
+    takes_seed = "seed" in (config.get("supported_affordances") or ())
+    echoes_seed = bool((config.get("native_defaults") or {}).get("seed_field"))
+    return takes_seed and not echoes_seed
 
 
 def _extra_of(plan: GenerationPlan) -> str:

@@ -29,6 +29,21 @@ adapters' ``http=``) and ``make_generator=`` (the seeded ``torch.Generator``): i
 fakes for both and no ML stack loads at all — the whole adapter is testable with no
 torch. The adapter performs NO storage/library access; the façade converges it on
 the shared ingest pipeline.
+
+**Reproducibility across devices (#207).** The default generator is a CPU
+``torch.Generator`` (:func:`cpu_generator`), as diffusers recommends: the pipeline's
+``randn_tensor`` draws the initial latents on the generator's device and moves them to
+the pipeline's, so a seed starts from the same noise on CUDA and on CPU. Only that starting noise is
+device-independent: the denoising runs in the pipeline's device and dtype (float16 on
+CUDA, float32 on CPU), and the scheduler's per-step noise is drawn there too, so the
+bytes are identical only on the same device and dtype: both are recorded in
+``generation_params`` (``device``, ``dtype``, and the ``generator_device``). That the
+pipeline accepts a CPU generator for a CUDA pipeline is diffusers' ``randn_tensor``
+behaviour (it draws on the generator's device, then moves the tensor), not checked
+here (diffusers is not a test dependency); :func:`torch_generator` (on the
+pipeline's device) is one ``make_generator=`` away. A clip stored before #207 records
+no ``generator_device``: its generator was on the pipeline's device, so a CUDA one
+reproduces with ``make_generator=torch_generator``.
 """
 
 from __future__ import annotations
@@ -53,10 +68,18 @@ GeneratorFactory = Callable[[Any, int], Any]
 
 
 def torch_generator(device, seed: int):
-    """A ``torch.Generator`` on ``device`` seeded with ``seed`` (the default factory)."""
+    """A ``torch.Generator`` on ``device`` (the pipeline's) seeded with ``seed``."""
     import torch  # lazy: foley[stable-audio]
 
     return torch.Generator(device=device).manual_seed(int(seed))
+
+
+def cpu_generator(device, seed: int):
+    """A CPU ``torch.Generator`` seeded with ``seed``, whatever the pipeline's ``device``.
+
+    The default factory (#207): the initial noise is then the same on every device.
+    """
+    return torch_generator("cpu", seed)
 
 
 class StableAudioAdapter:
@@ -70,8 +93,9 @@ class StableAudioAdapter:
             ``.device``; production omits it and the real
             ``diffusers.StableAudioPipeline`` lazy-loads on first generation).
         make_generator: ``make_generator(device, seed)``, the seeded generator handed
-            to the pipeline (default :func:`torch_generator`); a test with a fake
-            pipeline passes a fake one, so no torch is needed.
+            to the pipeline (default :func:`cpu_generator`, for the same initial noise
+            on any device; :func:`torch_generator` puts it on the pipeline's device);
+            a test with a fake pipeline passes a fake one, so no torch is needed.
     """
 
     def __init__(
@@ -85,7 +109,7 @@ class StableAudioAdapter:
         self.name = self.config["name"]
         self._injected_pipeline = pipeline
         self._make_generator = (
-            make_generator if make_generator is not None else torch_generator
+            make_generator if make_generator is not None else cpu_generator
         )
         self._loaded_pipeline = None
 
@@ -144,9 +168,14 @@ class StableAudioAdapter:
             negative_prompt: Content to exclude (ignored by the model when guidance
                 ≤ 1).
             steps: Diffusion steps (native ``num_inference_steps``); default 200.
-            seed: Reproducibility seed → a per-device ``torch.Generator``; recorded
-                in provenance. ``None`` draws one (:func:`~foley.sources.base.draw_seed`)
-                and records it, so the clip is reproducible all the same (#163).
+            seed: Reproducibility seed → the generator ``make_generator`` builds (by
+                default a CPU ``torch.Generator``, #207); recorded in provenance, with
+                the device and dtype it ran on.
+                ``None`` draws one (:func:`~foley.sources.base.draw_seed`) and records
+                it, so the clip is reproducible all the same (#163). Through
+                :func:`foley.generate` the dispatch layer has already drawn it
+                (:func:`foley.sources._dispatch.draws_seed`, #206); this draw serves a
+                direct call.
             loop: No native param (a future WEAVE crossfade) — warn-and-drop.
             output_format: No native param (the audio-write layer) — warn-and-drop;
                 the clip is archived as FLAC by ingest regardless.
@@ -193,10 +222,12 @@ class StableAudioAdapter:
         )
 
         seed = int(seed) if seed is not None else draw_seed()
-        audio_bytes, sample_rate = self.invoke_native(prompt, native=native, seed=seed)
+        audio_bytes, sample_rate, ran_on = self._render(
+            prompt, native=native, seed=seed
+        )
 
         resolved = recorded_params(
-            dict(native, sample_rate=sample_rate, model_id=nd["model_id"]),
+            dict(native, sample_rate=sample_rate, model_id=nd["model_id"], **ran_on),
             provider_params,
         )
         lic = generated_license(
@@ -228,6 +259,16 @@ class StableAudioAdapter:
         :meth:`generate`, which draws one when none is given, ``seed=None`` here sends
         no generator, so the pipeline falls back on its own randomness.
         """
+        audio_bytes, sample_rate, _ = self._render(prompt, native=native, seed=seed)
+        return audio_bytes, sample_rate
+
+    def _render(self, prompt: str, *, native: dict, seed: Optional[int]):
+        """``(encoded bytes, sample_rate, where it ran)``: :meth:`invoke_native`'s work.
+
+        Where it ran is what a seed reproduces on (#207): the pipeline's ``device`` and
+        ``dtype`` and the generator's device, each only when known (as strings,
+        ``torch.`` dropped: ``'float16'``).
+        """
         pipe = self._pipe()
         generator = None if seed is None else self._make_generator(pipe.device, seed)
         output = pipe(
@@ -237,7 +278,15 @@ class StableAudioAdapter:
             **native,
         )
         sample_rate = int(pipe.vae.sampling_rate)  # read off the pipeline (44100)
-        return self._encode(output.audios[0], sample_rate), sample_rate
+        ran_on = {
+            "device": getattr(pipe, "device", None),
+            "dtype": getattr(pipe, "dtype", None),
+            "generator_device": getattr(generator, "device", None),
+        }
+        ran_on = {
+            k: str(v).removeprefix("torch.") for k, v in ran_on.items() if v is not None
+        }
+        return self._encode(output.audios[0], sample_rate), sample_rate, ran_on
 
     def _encode(self, audio, sample_rate: int) -> bytes:
         """Encode one waveform to container (FLAC) bytes for ingest.
