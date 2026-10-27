@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-27T20:49:30Z",
+  "built_at": "2026-10-27T20:55:12Z",
   "package": {
     "name": "foley",
     "version": "0.0.99",
@@ -23,12 +23,12 @@
   "ci": {
     "provider": "github",
     "repository": "reeleehq/foley",
-    "sha": "bcf0769b604734a1cdfcee8596ede5d5fa757c5d",
+    "sha": "7e84a1ce77a419702a8f5c7b6f5ab2e46b53a3f7",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "40576889411",
-    "run_url": "https://github.com/reeleehq/foley/actions/runs/40576889411",
+    "run_id": "40580286227",
+    "run_url": "https://github.com/reeleehq/foley/actions/runs/40580286227",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -62,16 +62,14 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.98",
-    "relation": "ahead",
+    "latest": "0.0.99",
+    "relation": "same",
     "error": null
   },
   "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 994dfc111e256f30fce33b625e92a1ad97bfa325\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": false,
-    "notes": [
-      "The documented version (0.0.99) is ahead of the latest release on PyPI (0.0.98): these docs describe unreleased code."
-    ]
+    "aligned": true,
+    "notes": []
   }
 }

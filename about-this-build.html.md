@@ -2,12 +2,10 @@
 
 # About this build
 
-This documentation was built on **2026-10-27 20:49 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/994dfc111e256f30fce33b625e92a1ad97bfa325"><code>994dfc1</code></a> on branch <code>main</code>, for **foley 0.0.99** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 20:55 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/994dfc111e256f30fce33b625e92a1ad97bfa325"><code>994dfc1</code></a> on branch <code>main</code>, for **foley 0.0.99** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.99) is ahead of the latest release on PyPI (0.0.98): these docs describe unreleased code.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
@@ -24,9 +22,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40576889411">40576889411</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40580286227">40580286227</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>bcf0769b604734a1cdfcee8596ede5d5fa757c5d</code> (in the history of the built commit) |
+| Event commit | <code>7e84a1ce77a419702a8f5c7b6f5ab2e46b53a3f7</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -51,7 +49,7 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.98/">0.0.98</a>, older than the documented version (0.0.99).
+Latest release: <a href="https://pypi.org/project/foley/0.0.99/">0.0.99</a>, the same as the documented version.
 
 ## Reproduce
 
