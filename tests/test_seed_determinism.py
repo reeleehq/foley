@@ -40,7 +40,10 @@ def _fal(name):
         return encode(_noise(arguments["seed"]), SR, fmt="WAV"), {"audio": {"url": "u"}}
 
     return lambda **_: FalAdapter(
-        SOURCE_REGISTRY[name]["config"], api_key="k", runner=fal_runner
+        SOURCE_REGISTRY[name]["config"],
+        api_key="k",
+        runner=fal_runner,
+        demux=lambda answer: answer,  # a muxed-video endpoint: the fake answers audio
     )
 
 
@@ -84,6 +87,9 @@ FAKES = {
             "fal_stable_audio_3_medium",
             "fal_mirelo",
             "fal_mirelo_v2a",
+            "fal_mmaudio_v2a",
+            "fal_thinksound",
+            "fal_hunyuan_foley",
             "fal_mmaudio",
         )
     },

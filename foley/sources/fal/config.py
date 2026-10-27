@@ -479,6 +479,156 @@ SOURCE_CONFIGS = (
             "seen": _SEEN_V2A,
         },
     ),
+    # -- non-commercial video-to-audio (#74): the licence fence. Named only (not in the
+    # V2A order); each answers a video with the sound muxed in, and foley keeps the
+    # audio track (output container 'video', foley.sources.video.audio_track).
+    _source(
+        "fal_mmaudio_v2a",
+        display_name="MMAudio v2 video-to-audio (fal; CC BY-NC weights)",
+        website="https://fal.ai/models/fal-ai/mmaudio-v2",
+        api={"endpoint_id": "fal-ai/mmaudio-v2"},
+        modes=["v2a"],
+        param_map={
+            "prompt": {"native_name": "prompt", "required": True},
+            "video": {"native_name": "video_url"},
+            "duration_s": {"native_name": "duration"},
+            "prompt_influence": {
+                "native_name": "cfg_strength",
+                "coerce": {"kind": "linear", "lo": 0.0, "hi": 20.0},
+                "native_default": 4.5,
+            },
+            "negative_prompt": {"native_name": "negative_prompt"},
+            "steps": {"native_name": "num_steps"},
+            "seed": {"native_name": "seed"},
+        },
+        supported_affordances=[
+            "prompt",
+            "video",
+            "duration_s",
+            "prompt_influence",
+            "negative_prompt",
+            "steps",
+            "seed",
+        ],
+        # mask_away_clip is not keeping the source audio: no keep_source_audio here.
+        unsupported_affordances=["loop", "output_format", "keep_source_audio"],
+        native_defaults={
+            "model_id": "mmaudio-v2",
+            "generator_version": "fal-ai/mmaudio-v2",
+            "duration_default_s": 8.0,
+            "duration_min_s": 1.0,
+            "duration_max_s": 30.0,
+        },
+        output={**_COMMON["output"], "audio_field": "video", "container": "video"},
+        license={
+            "default_license_id": "CC-BY-NC-4.0",
+            "cache_bytes_ok": True,
+            "attribution_text": (
+                "Generated with MMAudio (Cheng et al., CC BY-NC 4.0 weights) via fal.ai"
+            ),
+        },
+        commercial_ok=False,
+        pricing={
+            "unit": "per_second",
+            "amount_usd": 0.001,
+            "source": _FAL_V2A_PRICING_SOURCE,
+            "seen": _SEEN_V2A,
+        },
+    ),
+    _source(
+        "fal_thinksound",
+        display_name="ThinkSound video-to-audio (fal; research only)",
+        website="https://fal.ai/models/fal-ai/thinksound",
+        api={"endpoint_id": "fal-ai/thinksound"},
+        modes=["v2a"],
+        param_map={
+            "prompt": {"native_name": "prompt"},  # optional: drawn from the video
+            "video": {"native_name": "video_url"},
+            "prompt_influence": {
+                "native_name": "cfg_scale",
+                "coerce": {"kind": "linear", "lo": 1.0, "hi": 20.0},
+                "native_default": 5.0,
+            },
+            "steps": {"native_name": "num_inference_steps"},
+            "seed": {"native_name": "seed"},
+        },
+        supported_affordances=["prompt", "video", "prompt_influence", "steps", "seed"],
+        unsupported_affordances=[
+            "duration_s",
+            "negative_prompt",
+            "loop",
+            "output_format",
+            "keep_source_audio",
+        ],
+        native_defaults={
+            "model_id": "thinksound",
+            "generator_version": "fal-ai/thinksound",
+            "fixed_arguments": {"enable_safety_checker": True},
+        },
+        output={**_COMMON["output"], "audio_field": "video", "container": "video"},
+        license={"default_license_id": "research-only", "cache_bytes_ok": True},
+        commercial_ok=False,
+        # Billed per *compute* second: not knowable before the call, so the estimate is
+        # unknown (an unknown cost needs approval) and so is the actual.
+        pricing={
+            "unit": "per_compute_second",
+            "amount_usd": 0.001,
+            "source": _FAL_V2A_PRICING_SOURCE,
+            "seen": _SEEN_V2A,
+        },
+    ),
+    _source(
+        "fal_hunyuan_foley",
+        display_name="HunyuanVideo-Foley (fal; not valid in the EU, UK or KR)",
+        website="https://fal.ai/models/fal-ai/hunyuan-video-foley",
+        api={"endpoint_id": "fal-ai/hunyuan-video-foley"},
+        modes=["v2a"],
+        param_map={
+            "prompt": {"native_name": "text_prompt", "required": True},
+            "video": {"native_name": "video_url"},
+            "prompt_influence": {
+                "native_name": "guidance_scale",
+                "coerce": {"kind": "linear", "lo": 1.0, "hi": 10.0},
+                "native_default": 4.5,
+            },
+            "negative_prompt": {"native_name": "negative_prompt"},
+            "steps": {"native_name": "num_inference_steps"},
+            "seed": {"native_name": "seed"},
+        },
+        supported_affordances=[
+            "prompt",
+            "video",
+            "prompt_influence",
+            "negative_prompt",
+            "steps",
+            "seed",
+        ],
+        unsupported_affordances=[
+            "duration_s",
+            "loop",
+            "output_format",
+            "keep_source_audio",
+        ],
+        native_defaults={
+            "model_id": "hunyuan-video-foley",
+            "generator_version": "fal-ai/hunyuan-video-foley",
+            "fixed_arguments": {"enable_safety_checker": True},
+        },
+        output={**_COMMON["output"], "audio_field": "video", "container": "video"},
+        license={
+            "default_license_id": "Tencent-Hunyuan-Community",
+            "cache_bytes_ok": True,
+        },
+        commercial_ok=False,
+        # $0.10 per 10 s of video.
+        pricing={
+            "unit": "per_second",
+            "amount_usd": 0.01,
+            "seconds_from": "video",
+            "source": _FAL_V2A_PRICING_SOURCE,
+            "seen": _SEEN_V2A,
+        },
+    ),
 )
 
 _SMALL = SOURCE_CONFIGS[0]

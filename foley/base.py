@@ -611,6 +611,40 @@ class Candidate(SerializableMixin):
 # ---------------------------------------------------------------------------
 
 
+#: The ISO 3166-1 alpha-2 country codes (the 249 officially assigned).
+ISO_COUNTRY_CODES: frozenset = frozenset(
+    "AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN B"
+    "O BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE"
+    " DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW"
+    .split()
+)  # fmt: skip
+#: Spellings that name a country by another code: the UK's common one and the EU's
+#: code for Greece.
+TERRITORY_ALIASES = {"UK": "GB", "EL": "GR"}
+
+
+def normalize_territory(territory: Optional[str]) -> Optional[str]:
+    """``territory`` as an ISO 3166-1 alpha-2 code, ``None`` when unstated.
+
+    >>> normalize_territory(" uk "), normalize_territory("EL"), normalize_territory("")
+    ('GB', 'GR', None)
+
+    Raises:
+        ValueError: If it is not a country code (a name, an alpha-3 code, a region):
+            a licence gate cannot judge what it cannot read.
+    """
+    if territory is None or not str(territory).strip():
+        return None
+    code = str(territory).strip().upper()
+    code = TERRITORY_ALIASES.get(code, code)
+    if code not in ISO_COUNTRY_CODES:
+        raise ValueError(
+            f"territory must be an ISO 3166-1 alpha-2 country code (e.g. 'US', 'FR'), "
+            f"got {territory!r}"
+        )
+    return code
+
+
 @dataclass
 class IntendedUse(SerializableMixin):
     """What the caller intends to do with a sound; consumed by ``keep()``."""
@@ -622,6 +656,15 @@ class IntendedUse(SerializableMixin):
     can_attribute: bool = True
     revenue_usd: int = 0
     allow_voice_or_trademark: bool = False
+    #: Where the sound is used (ISO 3166-1 alpha-2, e.g. ``"US"``; ``"UK"`` reads as
+    #: ``"GB"``). Only a licence that excludes territories asks
+    #: (``foley.licensing.LICENSE_EXCLUDED_TERRITORIES``); for one, ``None`` fails
+    #: closed. Name every place the sound is distributed: online publishing reaches
+    #: them all.
+    territory: Optional[str] = None
+
+    def __post_init__(self):
+        self.territory = normalize_territory(self.territory)  # a typo raises here
 
 
 # ---------------------------------------------------------------------------

@@ -96,6 +96,8 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
 
     * ``'free'`` (local inference, a free API tier) → ``0.0``;
     * ``'per_call'`` → ``amount_usd``;
+    * ``'per_compute_second'`` (billed by the provider's run time) → ``None``: unknown
+      before the call, so it needs approval;
     * ``'per_second'`` with ``seconds_from='video'`` → ``amount_usd`` × the video's
       length (``video_duration_s``, measured by the dispatch), else ``None`` (an
       unread length is an unknown cost, which needs approval);
@@ -121,6 +123,8 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
         return None
     if unit == "per_call":
         return float(amount)
+    if unit == "per_compute_second":  # the provider's own run time: unknown beforehand
+        return None
     if unit == "per_second":
         video_s = affordances.get("video_duration_s")
         if pricing.get("seconds_from") == "video":  # billed by the video's length

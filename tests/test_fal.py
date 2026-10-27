@@ -88,7 +88,7 @@ def test_every_fal_source_has_a_licence_row_price_and_egress(name):
     lid = cfg["license"]["default_license_id"]
     assert lid in LICENSE_FLAGS and lid in LICENSE_META
     assert cfg["data_egress"] == "external"
-    assert cfg["pricing"]["unit"] in ("per_call", "per_second")
+    assert cfg["pricing"]["unit"] in ("per_call", "per_second", "per_compute_second")
     assert cfg["auth"]["env_var"] == "FAL_KEY"
     # the declared commercial guardrail agrees with the licence row
     assert LICENSE_FLAGS[lid].commercial_ok is cfg["commercial_ok"]

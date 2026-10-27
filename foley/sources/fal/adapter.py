@@ -137,6 +137,9 @@ class FalAdapter:
         runner: The transport seam (default :func:`falaw_runner`); tests pass a fake.
         uploader: ``(path, *, api_key) -> url``, how a local ``video=`` reaches fal
             (default :func:`falaw_uploader`); tests pass a fake.
+        demux: ``(container bytes) -> audio bytes``, for an endpoint that answers
+            with a video (``output.container == 'video'``; default
+            :func:`foley.sources.video.audio_track`, which needs ffmpeg).
         http: Accepted and ignored: the registry passes a resilient HTTP transport to
             external sources, but this adapter's transport is falaw (which retries and
             classifies errors itself).
@@ -149,6 +152,7 @@ class FalAdapter:
         api_key: Optional[str] = None,
         runner: Optional[Runner] = None,
         uploader: Optional[Callable[..., str]] = None,
+        demux: Optional[Callable[[bytes], bytes]] = None,
         http=None,
     ):
         self.config = config
@@ -156,6 +160,7 @@ class FalAdapter:
         self._api_key = api_key
         self._runner: Runner = runner if runner is not None else falaw_runner
         self._uploader = uploader if uploader is not None else falaw_uploader
+        self._demux = demux
 
     def _resolve_key(self) -> "tuple[Optional[str], bool]":
         """``(key, is_operators)``: the first of ``api_key=``, a key bound for this
@@ -233,7 +238,10 @@ class FalAdapter:
         return args
 
     def invoke_native(self, arguments: dict) -> "tuple[bytes, dict]":
-        """Call this source's fal endpoint with native ``arguments``; return ``(audio, response)``.
+        """Call this source's fal endpoint with native ``arguments``; return ``(media, response)``.
+
+        ``media`` is the bytes at the response's ``output.audio_field``: the audio, or
+        for an endpoint that answers with a video (``output.container``), the video.
 
         The public entry below foley's translation (#61): ``arguments`` are sent as
         is (no fixed arguments or default duration are added). No licence record is
@@ -266,6 +274,26 @@ class FalAdapter:
                 f"({type(exc).__name__}); nothing was generated"
             ) from exc
 
+    def _demuxer(self) -> Optional[Callable[[bytes], bytes]]:
+        """How to take the audio out of this endpoint's answer, or ``None`` (audio already).
+
+        Raises:
+            SourceConfigurationError: If the endpoint answers with a video and no
+                ffmpeg can open it (before any call, so nothing is paid for).
+        """
+        if (self.config.get("output") or {}).get("container") != "video":
+            return None
+        if self._demux is not None:
+            return self._demux
+        from ..video import audio_track, ffmpeg_path
+
+        if ffmpeg_path() is None:
+            raise SourceConfigurationError(
+                f"{self.name} answers with a video and foley needs ffmpeg to keep its "
+                "audio: install ffmpeg (or imageio-ffmpeg); nothing was generated"
+            )
+        return audio_track
+
     def _recordable(self, args: dict, affordances: dict) -> dict:
         """``args`` as the licence records them: the video by its key (#74), never the
         uploaded URL (anyone holding it can fetch the picture) nor a ``data:`` URI.
@@ -296,6 +324,7 @@ class FalAdapter:
         """
         notes: list = []
         nd = self.config.get("native_defaults") or {}
+        demux = self._demuxer()  # before the upload and the call: nothing spent yet
         args = merge_provider_params(
             self.native_arguments(prompt, **affordances),
             provider_params,
@@ -319,6 +348,17 @@ class FalAdapter:
             )
         endpoint = self.config["api"]["endpoint_id"]
         audio, response = self.invoke_native(args)
+        if demux is not None:
+            try:
+                audio = demux(audio)
+            except Exception as exc:  # the call is paid: say so, and where the video is
+                url = audio_url(response, self.config["output"]["audio_field"])
+                where = f"; the video is at {url} (an expiring fal URL)" if url else ""
+                raise RuntimeError(
+                    f"{self.name}: the generation was billed, but its audio could not "
+                    f"be taken out of the video ({type(exc).__name__}){where}"
+                ) from exc
+            notes.append(f"{self.name} answered with a video: its audio track was kept")
         seed_field = nd.get("seed_field")
         seed = (
             response.get(seed_field)

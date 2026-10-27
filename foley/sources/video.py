@@ -13,6 +13,9 @@ here, once, for every V2A backend:
   as an unknown cost, needing approval).
 * :func:`local_video_file`: a local file for an uploader (bytes are written to a
   temporary file).
+* :func:`audio_track`: the audio of a backend's muxed video answer (MMAudio,
+  ThinkSound and HunyuanVideo-Foley return the video with the sound in it), via
+  ``ffmpeg`` (:func:`ffmpeg_path`).
 * :func:`keyed`: affordances as they may be recorded (the cache entry, the run
   manifest): the video replaced by its key, so neither its bytes nor a local path
   (nor an upload's capability URL) is ever written down.
@@ -30,6 +33,7 @@ import shutil
 import subprocess
 import tempfile
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Optional, Union
 
 #: What ``video=`` accepts: a URL, a local path, or the encoded bytes.
@@ -38,6 +42,8 @@ VideoInput = Union[str, "os.PathLike[str]", bytes]
 URL_SCHEMES = ("http://", "https://", "data:")
 #: Bytes hashed at a time when keying a local file.
 _HASH_CHUNK = 1 << 20
+#: The most :func:`audio_track` lets ffmpeg run (s).
+AUDIO_TRACK_TIMEOUT_S = 120.0
 
 
 def is_url(video: VideoInput) -> bool:
@@ -111,6 +117,53 @@ def local_video_file(video: VideoInput) -> Iterator[str]:
             os.unlink(path)
     else:
         yield os.fspath(video)
+
+
+def ffmpeg_path() -> Optional[str]:
+    """An ``ffmpeg`` binary: mixing's resolver (a pip-bundled one too), else ``PATH``."""
+    try:
+        from mixing.util import ffmpeg_exe
+
+        return ffmpeg_exe()
+    except Exception:  # noqa: BLE001 - mixing absent, or it found none
+        return shutil.which("ffmpeg")
+
+
+def audio_track(
+    container: bytes,
+    *,
+    ffmpeg: Optional[str] = None,
+    timeout_s: float = AUDIO_TRACK_TIMEOUT_S,
+) -> bytes:
+    """The audio of a muxed video, as WAV bytes (16-bit PCM, its own rate and channels).
+
+    Written to a file, not a pipe, so ffmpeg can finish the WAV header (a piped WAV
+    carries a streaming placeholder size).
+
+    Raises:
+        RuntimeError: If no ``ffmpeg`` is found, it cannot read an audio stream, or it
+            runs past ``timeout_s``.
+    """
+    exe = ffmpeg or ffmpeg_path()
+    if exe is None:
+        raise RuntimeError("no ffmpeg found to take the audio out of the video")
+    with local_video_file(container) as path, tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "audio.wav"
+        try:
+            proc = subprocess.run(
+                [exe, "-hide_banner", "-nostdin", "-loglevel", "error", "-i", path,
+                 "-vn", "-acodec", "pcm_s16le", str(out)],
+                capture_output=True, timeout=timeout_s,
+            )  # fmt: skip
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(f"ffmpeg ran past {timeout_s:g} s") from exc
+        wav = out.read_bytes() if out.exists() else b""
+    if proc.returncode != 0 or not wav:
+        raise RuntimeError(
+            "ffmpeg could not take the audio out of the video: "
+            + proc.stderr.decode(errors="replace").strip()[-300:]
+        )
+    return wav
 
 
 def video_seconds(
