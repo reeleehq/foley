@@ -131,9 +131,11 @@ before it becomes a candidate.
     for, merged over the translated ones (#61), e.g.
     `{"filter": "ac_brightness:[50 TO 100]"}`. Per the config’s
     `provider_params` policy, a `filter` is appended to foley’s as one
-    group (the licence filter cannot be replaced or widened), `fields` are
-    appended to foley’s (the licence fields cannot be dropped), and
-    `query` is refused; the per-item licence re-check still applies.
+    group (the licence filter cannot be replaced or widened, and a
+    category clause is refused when `kind` / `ucs_category` already
+    send one), `fields` are appended to foley’s (the licence fields
+    cannot be dropped), and `query` is refused; the per-item licence
+    re-check still applies.
   * **\*\*kw** – Ignored extra affordances (`on_unsupported_param='warn'`).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]

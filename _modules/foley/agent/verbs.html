@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=7ffc8fc3"></script>
+    <script src="../../../_static/documentation_options.js?v=db840bda"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.88" />
+  <meta name="docsearch:version" content="0.0.89" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -736,7 +736,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_INTENDED_USE</span><span class="p">,</span> <span class="n">intended_use_for</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_INTENDED_USE</span><span class="p">,</span> <span class="n">intended_use_for</span><span class="p">,</span> <span class="n">refusals</span>
 
 <span class="c1"># ---------------------------------------------------------------------------</span>
 <span class="c1"># injectable shared state (a default library + session factory; overridden in tests)</span>
@@ -965,10 +965,9 @@ window.runMermaid = runMermaid;</script>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">find</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">BudgetExceeded</span><span class="p">,</span> <span class="n">spend_scope</span>
 
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">use</span> <span class="o">=</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="o">=</span><span class="n">territory</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># a territory that is not a code: a JSON row, no raise</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">_invalid</span><span class="p">(</span><span class="n">exc</span><span class="p">)]</span>
+    <span class="n">use</span><span class="p">,</span> <span class="n">invalid</span> <span class="o">=</span> <span class="n">_intent</span><span class="p">(</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">invalid</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">invalid</span><span class="p">]</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">with</span> <span class="n">spend_scope</span><span class="p">(</span><span class="n">_server_budget</span><span class="p">()):</span>
             <span class="n">cands</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
@@ -998,8 +997,18 @@ window.runMermaid = runMermaid;</script>
     <span class="n">ucs_category</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">rerank</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">session</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">,</span>
+    <span class="n">territory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Hybrid (CLAP + keyword) search of the library for a text query; returns candidate rows."""</span>
+<span class="w">    </span><span class="sd">"""Hybrid (CLAP + keyword) search of the library for a text query; returns candidate rows.</span>
+
+<span class="sd">    Only sounds whose licence serves the intent (``commercial_ok``, ``territory``; see</span>
+<span class="sd">    :func:`foley_find`) come back, each ``license_ok`` (#191).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.policy</span><span class="w"> </span><span class="kn">import</span> <span class="n">gate_candidates</span>
+
+    <span class="n">use</span><span class="p">,</span> <span class="n">invalid</span> <span class="o">=</span> <span class="n">_intent</span><span class="p">(</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">invalid</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">invalid</span><span class="p">]</span>
     <span class="n">hits</span> <span class="o">=</span> <span class="n">_lib</span><span class="p">()</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
         <span class="n">query</span><span class="p">,</span>
         <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
@@ -1007,6 +1016,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">ucs_category</span><span class="o">=</span><span class="n">ucs_category</span><span class="p">,</span>
         <span class="n">rerank</span><span class="o">=</span><span class="n">rerank</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="n">hits</span> <span class="o">=</span> <span class="n">gate_candidates</span><span class="p">(</span><span class="n">hits</span><span class="p">,</span> <span class="n">use</span><span class="p">)</span>
     <span class="n">_session</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="o">.</span><span class="n">cache_candidates</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">_candidate_row</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">]</span></div>
 
@@ -1019,17 +1029,19 @@ window.runMermaid = runMermaid;</script>
     <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
     <span class="n">commercial_ok</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_INTENDED_USE</span><span class="o">.</span><span class="n">commercial</span><span class="p">,</span>
     <span class="n">session</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">,</span>
+    <span class="n">territory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">""" "More like this" — the library neighbours of a sound (by id); returns candidate rows."""</span>
+<span class="w">    </span><span class="sd">""" "More like this" — the library neighbours of a sound (by id); returns candidate rows.</span>
+
+<span class="sd">    Gated like :func:`foley_search`: only neighbours the intent keeps (#191).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.policy</span><span class="w"> </span><span class="kn">import</span> <span class="n">gate_candidates</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.preview</span><span class="w"> </span><span class="kn">import</span> <span class="n">similar_to</span>
 
-    <span class="n">hits</span> <span class="o">=</span> <span class="n">similar_to</span><span class="p">(</span><span class="n">sound_id</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">library</span><span class="o">=</span><span class="n">_lib</span><span class="p">())</span>
-    <span class="k">if</span> <span class="n">commercial_ok</span><span class="p">:</span>
-        <span class="n">hits</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">c</span>
-            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">hits</span>
-            <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">sound</span><span class="o">.</span><span class="n">license</span><span class="o">.</span><span class="n">commercial_ok</span> <span class="ow">and</span> <span class="n">c</span><span class="o">.</span><span class="n">sound</span><span class="o">.</span><span class="n">license</span><span class="o">.</span><span class="n">rights_verified</span>
-        <span class="p">]</span>
+    <span class="n">use</span><span class="p">,</span> <span class="n">invalid</span> <span class="o">=</span> <span class="n">_intent</span><span class="p">(</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">invalid</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">invalid</span><span class="p">]</span>
+    <span class="n">hits</span> <span class="o">=</span> <span class="n">gate_candidates</span><span class="p">(</span><span class="n">similar_to</span><span class="p">(</span><span class="n">sound_id</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">library</span><span class="o">=</span><span class="n">_lib</span><span class="p">()),</span> <span class="n">use</span><span class="p">)</span>
     <span class="n">_session</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="o">.</span><span class="n">cache_candidates</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">_candidate_row</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">]</span></div>
 
@@ -1060,10 +1072,20 @@ window.runMermaid = runMermaid;</script>
     <span class="n">rejected_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">hint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">commercial_ok</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_INTENDED_USE</span><span class="o">.</span><span class="n">commercial</span><span class="p">,</span>
+    <span class="n">territory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank."""</span>
+<span class="w">    </span><span class="sd">"""Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank.</span>
+
+<span class="sd">    Gated like :func:`foley_search`: only results the intent (``commercial_ok``,</span>
+<span class="sd">    ``territory``) keeps come back, and are cached (#191).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.policy</span><span class="w"> </span><span class="kn">import</span> <span class="n">gate_candidates</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.preview</span><span class="w"> </span><span class="kn">import</span> <span class="n">refine</span>
 
+    <span class="n">use</span><span class="p">,</span> <span class="n">invalid</span> <span class="o">=</span> <span class="n">_intent</span><span class="p">(</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">invalid</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">invalid</span>
     <span class="n">sess</span> <span class="o">=</span> <span class="n">_session</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
     <span class="n">res</span> <span class="o">=</span> <span class="n">refine</span><span class="p">(</span>
         <span class="n">sess</span><span class="p">,</span>
@@ -1074,8 +1096,9 @@ window.runMermaid = runMermaid;</script>
         <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">,</span>
         <span class="n">library</span><span class="o">=</span><span class="n">_lib</span><span class="p">(),</span>
     <span class="p">)</span>
-    <span class="n">sess</span><span class="o">.</span><span class="n">cache_candidates</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">results</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"queries"</span><span class="p">:</span> <span class="n">res</span><span class="o">.</span><span class="n">queries</span><span class="p">,</span> <span class="s2">"results"</span><span class="p">:</span> <span class="p">[</span><span class="n">_candidate_row</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">res</span><span class="o">.</span><span class="n">results</span><span class="p">]}</span></div>
+    <span class="n">hits</span> <span class="o">=</span> <span class="n">gate_candidates</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">results</span><span class="p">,</span> <span class="n">use</span><span class="p">)</span>
+    <span class="n">sess</span><span class="o">.</span><span class="n">cache_candidates</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"queries"</span><span class="p">:</span> <span class="n">res</span><span class="o">.</span><span class="n">queries</span><span class="p">,</span> <span class="s2">"results"</span><span class="p">:</span> <span class="p">[</span><span class="n">_candidate_row</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">hits</span><span class="p">]}</span></div>
 
 
 
@@ -1159,10 +1182,9 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..sources.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">source_egress</span>
 
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">use</span> <span class="o">=</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="o">=</span><span class="n">territory</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># a territory that is not a code</span>
-        <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+    <span class="n">use</span><span class="p">,</span> <span class="n">invalid</span> <span class="o">=</span> <span class="n">_intent</span><span class="p">(</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">invalid</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">invalid</span>
 
     <span class="c1"># The bound server runtime may differ from the call's context (a server built with</span>
     <span class="c1"># runtime= but not run under offline_scope), so check it here too; undeclared</span>
@@ -1255,6 +1277,8 @@ window.runMermaid = runMermaid;</script>
     <span class="n">session</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">,</span>
     <span class="n">transcript</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">candidate_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">commercial_ok</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_INTENDED_USE</span><span class="o">.</span><span class="n">commercial</span><span class="p">,</span>
+    <span class="n">territory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Fold picks (or explicit candidate ids) into a JSON sound-design timeline.</span>
 
@@ -1262,13 +1286,26 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    onto its candidate's :class:`~foley.base.SoundEvent` so ``plan`` honors the agent's</span>
 <span class="sd">    placement choices — a numeric ``onset`` becomes an absolute-seconds anchor (see</span>
 <span class="sd">    :func:`foley.weave.anchor.parse_symbolic_anchor`).</span>
+
+<span class="sd">    Every pick is re-checked under this call's intent (``commercial_ok``,</span>
+<span class="sd">    ``territory``), whatever it was found under, on the library's current record (the</span>
+<span class="sd">    one :func:`foley_weave` judges; the cached one only for a sound the library no</span>
+<span class="sd">    longer has): one the intent does not keep refuses the plan, naming each such id and</span>
+<span class="sd">    why (#191).</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">plan</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Layer</span><span class="p">,</span> <span class="n">SoundEvent</span>
 
+    <span class="n">use</span><span class="p">,</span> <span class="n">invalid</span> <span class="o">=</span> <span class="n">_intent</span><span class="p">(</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">invalid</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">invalid</span>
     <span class="n">sess</span> <span class="o">=</span> <span class="n">_session</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
     <span class="n">ids</span> <span class="o">=</span> <span class="n">candidate_ids</span> <span class="k">if</span> <span class="n">candidate_ids</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sess</span><span class="o">.</span><span class="n">picked_ids</span><span class="p">()</span>
     <span class="n">cands</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">rehydrate</span><span class="p">(</span><span class="n">ids</span><span class="p">)</span>
+    <span class="n">lib</span> <span class="o">=</span> <span class="n">_lib</span><span class="p">()</span>
+    <span class="n">refused</span> <span class="o">=</span> <span class="n">refusals</span><span class="p">([</span><span class="n">_record_of</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">sound</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">c</span><span class="o">.</span><span class="n">sound</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cands</span><span class="p">],</span> <span class="n">use</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">refused</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_refused</span><span class="p">(</span><span class="n">refused</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cands</span><span class="p">:</span>
         <span class="n">sid</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s2">"sound"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="s2">"id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="n">pick</span> <span class="o">=</span> <span class="n">sess</span><span class="o">.</span><span class="n">picks</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sid</span><span class="p">)</span> <span class="k">if</span> <span class="n">sid</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
@@ -1289,30 +1326,55 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="foley_weave">
 <a class="viewcode-back" href="../../../_autosummary/foley.agent.verbs.html#foley.agent.verbs.foley_weave">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">foley_weave</span><span class="p">(</span><span class="n">narration</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timeline</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Render a timeline under the narration; returns the mix by store key + captions + credits."""</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">foley_weave</span><span class="p">(</span>
+    <span class="n">narration</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">timeline</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">session</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"default"</span><span class="p">,</span>
+    <span class="n">commercial_ok</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">DEFAULT_INTENDED_USE</span><span class="o">.</span><span class="n">commercial</span><span class="p">,</span>
+    <span class="n">territory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Render a timeline under the narration; returns the mix by store key + captions + credits.</span>
+
+<span class="sd">    Every enabled clip is re-checked under this call's intent (``commercial_ok``,</span>
+<span class="sd">    ``territory``), and so is the narration when it is a library sound (a ``str`` with a</span>
+<span class="sd">    record there; a narration that is only audio has no licence to check): one the</span>
+<span class="sd">    intent does not keep refuses the render, naming each such id and why (#191).</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">weave</span> <span class="k">as</span> <span class="n">_weave</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">tl</span> <span class="o">=</span> <span class="n">_timeline_of</span><span class="p">(</span><span class="n">timeline</span><span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># the input, not the render: a JSON row</span>
         <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+    <span class="n">use</span><span class="p">,</span> <span class="n">invalid</span> <span class="o">=</span> <span class="n">_intent</span><span class="p">(</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">invalid</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">invalid</span>
     <span class="n">lib</span> <span class="o">=</span> <span class="n">_lib</span><span class="p">()</span>
     <span class="n">missing</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
         <span class="p">{</span><span class="n">it</span><span class="o">.</span><span class="n">clip_ref</span> <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">tl</span><span class="o">.</span><span class="n">items</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">_in_library</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">it</span><span class="o">.</span><span class="n">clip_ref</span><span class="p">)}</span>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"clip_ref(s) not in the library: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
+    <span class="n">records</span> <span class="o">=</span> <span class="p">[</span><span class="n">lib</span><span class="p">[</span><span class="n">it</span><span class="o">.</span><span class="n">clip_ref</span><span class="p">]</span> <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">tl</span><span class="o">.</span><span class="n">items</span> <span class="k">if</span> <span class="n">it</span><span class="o">.</span><span class="n">enabled</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">narration</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">_in_library</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">narration</span><span class="p">):</span>
+        <span class="n">records</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lib</span><span class="p">[</span><span class="n">narration</span><span class="p">])</span>  <span class="c1"># weave uses a library ref as the narration</span>
+    <span class="n">refused</span> <span class="o">=</span> <span class="n">refusals</span><span class="p">(</span><span class="n">records</span><span class="p">,</span> <span class="n">use</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">refused</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_refused</span><span class="p">(</span><span class="n">refused</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">_weave_result_row</span><span class="p">(</span><span class="n">_weave</span><span class="p">(</span><span class="n">narration</span><span class="p">,</span> <span class="n">tl</span><span class="p">,</span> <span class="n">library</span><span class="o">=</span><span class="n">lib</span><span class="p">))</span></div>
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_in_library</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">sound_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_record_of</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">sound_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The library's record for ``sound_id``, or ``default`` when it has none."""</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">lib</span><span class="p">[</span><span class="n">sound_id</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">lib</span><span class="p">[</span><span class="n">sound_id</span><span class="p">]</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
-    <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">default</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_in_library</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">sound_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">_record_of</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">sound_id</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_timeline_of</span><span class="p">(</span><span class="n">timeline</span><span class="p">):</span>
@@ -1458,10 +1520,9 @@ window.runMermaid = runMermaid;</script>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">score</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">spend_scope</span>
 
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">use</span> <span class="o">=</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="o">=</span><span class="n">territory</span><span class="p">)</span>
-    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># a territory that is not a code</span>
-        <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+    <span class="n">use</span><span class="p">,</span> <span class="n">invalid</span> <span class="o">=</span> <span class="n">_intent</span><span class="p">(</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">invalid</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">invalid</span>
 
     <span class="k">with</span> <span class="n">spend_scope</span><span class="p">(</span><span class="n">_server_budget</span><span class="p">()):</span>
         <span class="n">res</span> <span class="o">=</span> <span class="n">score</span><span class="p">(</span>
@@ -1510,15 +1571,42 @@ window.runMermaid = runMermaid;</script>
 <span class="s2">  - Licensing is load-bearing: only `license_ok` candidates are placed. Every tool assumes</span>
 <span class="s2">    commercial publishing (commercial_ok=True); pass commercial_ok=False only for a</span>
 <span class="s2">    non-commercial project. Each row's `license` carries full TASL + every rights flag.</span>
-<span class="s2">    Some licences exclude territories (HunyuanVideo-Foley: EU, GB, KR): foley_find,</span>
-<span class="s2">    foley_score and foley_generate refuse them unless territory= names where the sound is</span>
-<span class="s2">    used (an ISO code like "US"; "WORLD" for online publishing, which they refuse).</span>
+<span class="s2">    Some licences exclude territories (HunyuanVideo-Foley: EU, GB, KR): every tool that</span>
+<span class="s2">    finds sounds, plans or renders the mix (foley_find, foley_search, foley_similar_to,</span>
+<span class="s2">    foley_refine, foley_score, foley_generate, foley_plan, foley_weave) refuses them</span>
+<span class="s2">    unless territory= names where the sound is used (an ISO code like "US"; "WORLD" for</span>
+<span class="s2">    online publishing, which they refuse). foley_plan / foley_weave re-check every</span>
+<span class="s2">    placed sound (and a library narration) under their own intent, so pass the same</span>
+<span class="s2">    commercial_ok / territory to every call.</span>
 <span class="s2">  - Loudness: the master profile ('podcast'/'streaming'/'broadcast_ebu') sets the delivery target.</span>
 
 <span class="s2">OFFLINE / SENSITIVE narration: run with the offline posture (foley_status shows it) — external</span>
 <span class="s2">sources + telemetry are disabled; generation stays on local backends.</span>
 <span class="s2">Call foley_capabilities() to see what's installed/degraded here.</span>
 <span class="s2">"""</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_intent</span><span class="p">(</span><span class="n">commercial_ok</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">territory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">"""``(use, None)`` for a tool's rights arguments, or ``(None, invalid_row)``.</span>
+
+<span class="sd">    The only refusal is a territory that is not a code (``intended_use_for``'s</span>
+<span class="sd">    ``ValueError``), answered as a JSON row: a tool never raises for an argument.</span>
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">intended_use_for</span><span class="p">(</span><span class="n">commercial_ok</span><span class="o">=</span><span class="n">commercial_ok</span><span class="p">,</span> <span class="n">territory</span><span class="o">=</span><span class="n">territory</span><span class="p">),</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_refused</span><span class="p">(</span><span class="n">refused</span><span class="p">:</span> <span class="s2">"dict[str, str]"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The JSON row of a plan or weave refused for its sounds' licences (#191)."""</span>
+    <span class="n">why</span> <span class="o">=</span> <span class="s2">"; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">sid</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">sid</span><span class="p">,</span> <span class="n">reason</span> <span class="ow">in</span> <span class="n">refused</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"ok"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"refused"</span><span class="p">,</span>
+        <span class="s2">"error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"not licensed for this use: </span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="s2">"refused"</span><span class="p">:</span> <span class="n">refused</span><span class="p">,</span>
+    <span class="p">}</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_invalid</span><span class="p">(</span><span class="n">exc</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>

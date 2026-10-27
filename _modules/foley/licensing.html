@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=7ffc8fc3"></script>
+    <script src="../../_static/documentation_options.js?v=db840bda"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.88" />
+  <meta name="docsearch:version" content="0.0.89" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1466,6 +1466,58 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        The result of ``keep(sound_record.license, intended_use)``.</span>
 <span class="sd">    """</span>
     <span class="k">return</span> <span class="n">keep</span><span class="p">(</span><span class="n">sound_record</span><span class="o">.</span><span class="n">license</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="checked_refusal_reason">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.checked_refusal_reason">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">checked_refusal_reason</span><span class="p">(</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">:</span> <span class="n">IntendedUse</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">""":func:`refusal_reason`, fail-closed: an error while checking is itself a reason.</span>
+
+<span class="sd">    The one place a rights check is allowed to fail: whatever goes wrong reading</span>
+<span class="sd">    ``record`` (a missing or malformed licence) refuses it, with the error as the</span>
+<span class="sd">    reason, so no caller can keep a sound whose licence it could not read.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        record: The sound's :class:`~foley.base.LicenseRecord` (a ``SoundRecord``'s</span>
+<span class="sd">            ``.license``; see :func:`refusals` for whole sound records).</span>
+<span class="sd">        intended_use: The caller's declared intent.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``None`` only when :func:`keep` keeps ``record``; otherwise why not.</span>
+
+<span class="sd">    &gt;&gt;&gt; lic = LicenseRecord(source="user", license_id="CC0-1.0", commercial_ok=True,</span>
+<span class="sd">    ...                     rights_verified=True)</span>
+<span class="sd">    &gt;&gt;&gt; checked_refusal_reason(lic, IntendedUse()) is None</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; checked_refusal_reason(None, IntendedUse())</span>
+<span class="sd">    "its licence could not be checked (AttributeError: 'NoneType' object has no attribute 'rights_verified')"</span>
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">refusal_reason</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># noqa: BLE001 - fail closed on ANY gate error</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"its licence could not be checked (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">)"</span></div>
+
+
+
+<div class="viewcode-block" id="refusals">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.refusals">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">refusals</span><span class="p">(</span><span class="n">sound_records</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">:</span> <span class="n">IntendedUse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"dict[str, str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``{sound id: reason}`` for each sound record :func:`keep` refuses for ``intended_use``.</span>
+
+<span class="sd">    The re-check a placed sound gets where it is used (a plan, a weave), whatever</span>
+<span class="sd">    intent it was found under (#191). Takes :class:`~foley.base.SoundRecord` s (each</span>
+<span class="sd">    judged by its ``.license`` through :func:`checked_refusal_reason`, so fail-closed:</span>
+<span class="sd">    a record without a readable licence is refused). Empty when every sound is kept.</span>
+<span class="sd">    """</span>
+    <span class="n">out</span><span class="p">:</span> <span class="s2">"dict[str, str]"</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">record</span> <span class="ow">in</span> <span class="n">sound_records</span><span class="p">:</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="n">checked_refusal_reason</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">"license"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">intended_use</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span>
+    <span class="k">return</span> <span class="n">out</span></div>
 
 
 

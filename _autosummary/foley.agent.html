@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=7ffc8fc3"></script>
+    <script src="../_static/documentation_options.js?v=db840bda"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.88" />
+  <meta name="docsearch:version" content="0.0.89" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -1097,11 +1097,11 @@ deterministic fake). A key being present never opts in to paid calls.</p></li>
 <dt class="sig sig-object py" id="foley.agent.gate_candidates">
 <span class="sig-prename descclassname"><span class="pre">foley.agent.</span></span><span class="sig-name descname"><span class="pre">gate_candidates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">candidates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intended_use</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/agent/policy.html#gate_candidates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.agent.gate_candidates" title="Link to this definition">#</a></dt>
 <dd><p>Fail-closed license gate — run BEFORE verification/ranking (invariant #3).</p>
-<p>For each candidate: apply <a class="reference internal" href="foley.licensing.html#foley.licensing.keep_sound" title="foley.licensing.keep_sound"><code class="xref py py-func docutils literal notranslate"><span class="pre">keep_sound()</span></code></a> (any exception ⇒
-<code class="docutils literal notranslate"><span class="pre">False</span></code>, fail-closed), record the result on <code class="docutils literal notranslate"><span class="pre">candidate.license_ok</span></code>, and keep
-ONLY where it is <code class="docutils literal notranslate"><span class="pre">True</span></code> — a <code class="docutils literal notranslate"><span class="pre">None</span></code> (never gated) or <code class="docutils literal notranslate"><span class="pre">False</span></code> is dropped. This is
-the single rights-rejection point; <a class="reference internal" href="foley.agent.verify.html#foley.agent.verify.verify_match" title="foley.agent.verify.verify_match"><code class="xref py py-func docutils literal notranslate"><span class="pre">verify_match()</span></code></a> asserts
-its survivors are license-clean.</p>
+<p>For each candidate: apply <a class="reference internal" href="foley.licensing.html#foley.licensing.checked_refusal_reason" title="foley.licensing.checked_refusal_reason"><code class="xref py py-func docutils literal notranslate"><span class="pre">checked_refusal_reason()</span></code></a> to its
+sound’s licence (any error ⇒ refused, fail-closed), record whether it is kept on
+<code class="docutils literal notranslate"><span class="pre">candidate.license_ok</span></code>, and keep ONLY where it is <code class="docutils literal notranslate"><span class="pre">True</span></code> — a <code class="docutils literal notranslate"><span class="pre">None</span></code> (never
+gated) or <code class="docutils literal notranslate"><span class="pre">False</span></code> is dropped. <a class="reference internal" href="foley.agent.verify.html#foley.agent.verify.verify_match" title="foley.agent.verify.verify_match"><code class="xref py py-func docutils literal notranslate"><span class="pre">verify_match()</span></code></a> asserts its
+survivors are license-clean.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">

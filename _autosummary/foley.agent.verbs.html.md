@@ -31,7 +31,7 @@ imports a surface library: `py2mcp` / `fastmcp` load inside
 | [`foley_list_picks`](#foley.agent.verbs.foley_list_picks)([session])                      | The sounds picked in this session (the 'persist picks' read side).                        |
 | [`foley_nudge`](#foley.agent.verbs.foley_nudge)(timeline, item_id, delta_s)          | Shift a timeline item's onset by `delta_s` seconds; returns the new timeline.             |
 | [`foley_pick`](#foley.agent.verbs.foley_pick)(sound_id[, session, layer, onset])    | Accept a sound into the session (persisted); `foley_plan` folds picks into a timeline.    |
-| [`foley_plan`](#foley.agent.verbs.foley_plan)([session, transcript, candidate_ids]) | Fold picks (or explicit candidate ids) into a JSON sound-design timeline.                 |
+| [`foley_plan`](#foley.agent.verbs.foley_plan)([session, transcript, ...])           | Fold picks (or explicit candidate ids) into a JSON sound-design timeline.                 |
 | [`foley_preview`](#foley.agent.verbs.foley_preview)(sound_id[, seconds, session])      | Produce a short audition of a sound; returns its store key (never audio bytes).           |
 | [`foley_refine`](#foley.agent.verbs.foley_refine)([session, query, picked_ids, ...])  | Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank.      |
 | [`foley_reject`](#foley.agent.verbs.foley_reject)(sound_id[, session, reason])        | Reject a sound (feeds `foley_refine` relevance feedback).                                 |
@@ -44,7 +44,7 @@ imports a surface library: `py2mcp` / `fastmcp` load inside
 | [`foley_swap_clip`](#foley.agent.verbs.foley_swap_clip)(timeline, item_id, sound_id)     | Swap a timeline item's clip; returns the new timeline.                                    |
 | [`foley_timeline_captions`](#foley.agent.verbs.foley_timeline_captions)(timeline[, fmt])         | Export SDH captions for a timeline (`fmt='vtt'` | `'srt'`).                               |
 | [`foley_toggle`](#foley.agent.verbs.foley_toggle)(timeline, item_id, enabled)         | Mute/unmute a timeline item; returns the new timeline.                                    |
-| [`foley_weave`](#foley.agent.verbs.foley_weave)(narration, timeline[, session])      | Render a timeline under the narration; returns the mix by store key + captions + credits. |
+| [`foley_weave`](#foley.agent.verbs.foley_weave)(narration, timeline[, session, ...]) | Render a timeline under the narration; returns the mix by store key + captions + credits. |
 | [`surface_snapshot`](#foley.agent.verbs.surface_snapshot)([verbs])                        | `{tool name: {parameter: default}}` of the MCP tools, plus the CLI commands.              |
 
 ### Classes
@@ -164,7 +164,7 @@ Accept a sound into the session (persisted); `foley_plan` folds picks into a tim
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_plan(session='default', transcript=None, candidate_ids=None)
+### foley.agent.verbs.foley_plan(session='default', transcript=None, candidate_ids=None, commercial_ok=True, territory=None)
 
 Fold picks (or explicit candidate ids) into a JSON sound-design timeline.
 
@@ -172,6 +172,12 @@ Each pick’s explicit `layer` / `onset` (set via [`foley_pick()`](#foley.agent.
 onto its candidate’s [`SoundEvent`](foley.base.html.md#foley.base.SoundEvent) so `plan` honors the agent’s
 placement choices — a numeric `onset` becomes an absolute-seconds anchor (see
 [`foley.weave.anchor.parse_symbolic_anchor()`](foley.weave.anchor.html.md#foley.weave.anchor.parse_symbolic_anchor)).
+
+Every pick is re-checked under this call’s intent (`commercial_ok`,
+`territory`), whatever it was found under, on the library’s current record (the
+one [`foley_weave()`](#foley.agent.verbs.foley_weave) judges; the cached one only for a sound the library no
+longer has): one the intent does not keep refuses the plan, naming each such id and
+why (#191).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -183,9 +189,12 @@ Produce a short audition of a sound; returns its store key (never audio bytes).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_refine(session='default', query=None, picked_ids=None, rejected_ids=None, hint=None, k=10)
+### foley.agent.verbs.foley_refine(session='default', query=None, picked_ids=None, rejected_ids=None, hint=None, k=10, commercial_ok=True, territory=None)
 
 Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank.
+
+Gated like [`foley_search()`](#foley.agent.verbs.foley_search): only results the intent (`commercial_ok`,
+`territory`) keeps come back, and are cached (#191).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -211,9 +220,12 @@ a licence that excludes territories is refused while it is unstated.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_search(query, k=10, commercial_ok=True, ucs_category=None, rerank=False, session='default')
+### foley.agent.verbs.foley_search(query, k=10, commercial_ok=True, ucs_category=None, rerank=False, session='default', territory=None)
 
 Hybrid (CLAP + keyword) search of the library for a text query; returns candidate rows.
+
+Only sounds whose licence serves the intent (`commercial_ok`, `territory`; see
+[`foley_find()`](#foley.agent.verbs.foley_find)) come back, each `license_ok` (#191).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
@@ -235,9 +247,11 @@ that field (so `peak_dbfs=-2.0` alone tightens only the true-peak ceiling).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_similar_to(sound_id, k=10, commercial_ok=True, session='default')
+### foley.agent.verbs.foley_similar_to(sound_id, k=10, commercial_ok=True, session='default', territory=None)
 
 “More like this” — the library neighbours of a sound (by id); returns candidate rows.
+
+Gated like [`foley_search()`](#foley.agent.verbs.foley_search): only neighbours the intent keeps (#191).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
@@ -270,9 +284,14 @@ Mute/unmute a timeline item; returns the new timeline.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_weave(narration, timeline, session='default')
+### foley.agent.verbs.foley_weave(narration, timeline, session='default', commercial_ok=True, territory=None)
 
 Render a timeline under the narration; returns the mix by store key + captions + credits.
+
+Every enabled clip is re-checked under this call’s intent (`commercial_ok`,
+`territory`), and so is the narration when it is a library sound (a `str` with a
+record there; a narration that is only audio has no licence to check): one the
+intent does not keep refuses the render, naming each such id and why (#191).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

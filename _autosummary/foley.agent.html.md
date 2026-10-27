@@ -439,11 +439,11 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
 
 Fail-closed license gate — run BEFORE verification/ranking (invariant #3).
 
-For each candidate: apply [`keep_sound()`](foley.licensing.html.md#foley.licensing.keep_sound) (any exception ⇒
-`False`, fail-closed), record the result on `candidate.license_ok`, and keep
-ONLY where it is `True` — a `None` (never gated) or `False` is dropped. This is
-the single rights-rejection point; [`verify_match()`](foley.agent.verify.html.md#foley.agent.verify.verify_match) asserts
-its survivors are license-clean.
+For each candidate: apply [`checked_refusal_reason()`](foley.licensing.html.md#foley.licensing.checked_refusal_reason) to its
+sound’s licence (any error ⇒ refused, fail-closed), record whether it is kept on
+`candidate.license_ok`, and keep ONLY where it is `True` — a `None` (never
+gated) or `False` is dropped. [`verify_match()`](foley.agent.verify.html.md#foley.agent.verify.verify_match) asserts its
+survivors are license-clean.
 
 * **Parameters:**
   * **candidates** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]) – The retrieved shortlist (`license_ok` typically `None`).

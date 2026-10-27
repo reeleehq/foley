@@ -34,20 +34,22 @@ item is redistributable but stored by-reference.
 
 ### Functions
 
-| [`ai_scope_from_gen_ai_preference`](#foley.licensing.ai_scope_from_gen_ai_preference)(preference)       | Map a Freesound `gen_ai_preference` to `(ai_training_ok override, scope)`.                                                 |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| [`ai_use_permitted`](#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                    |
-| [`apply_license_flags`](#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                      |
-| [`derive_license_flags`](#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                           |
-| [`intended_use_for`](#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                       |
-| [`is_cc_license_token`](#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                    |
-| [`keep`](#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                       |
-| [`keep_sound`](#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](#foley.licensing.keep) to a `SoundRecord`'s nested license.            |
-| [`license_id_from_cc_url`](#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                               |
-| [`license_meta`](#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback).   |
-| [`refusal_reason`](#foley.licensing.refusal_reason)(record, intended_use)              | Why [`keep()`](#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it. |
-| [`territory_excluded`](#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                    |
-| [`wanted_license_ids`](#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                              |
+| [`ai_scope_from_gen_ai_preference`](#foley.licensing.ai_scope_from_gen_ai_preference)(preference)       | Map a Freesound `gen_ai_preference` to `(ai_training_ok override, scope)`.                                                     |
+|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| [`ai_use_permitted`](#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                        |
+| [`apply_license_flags`](#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                          |
+| [`checked_refusal_reason`](#foley.licensing.checked_refusal_reason)(record, intended_use)      | [`refusal_reason()`](#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.    |
+| [`derive_license_flags`](#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                               |
+| [`intended_use_for`](#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                           |
+| [`is_cc_license_token`](#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                        |
+| [`keep`](#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                           |
+| [`keep_sound`](#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](#foley.licensing.keep) to a `SoundRecord`'s nested license.                |
+| [`license_id_from_cc_url`](#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                                   |
+| [`license_meta`](#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback).       |
+| [`refusal_reason`](#foley.licensing.refusal_reason)(record, intended_use)              | Why [`keep()`](#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.     |
+| [`refusals`](#foley.licensing.refusals)(sound_records, intended_use)             | `{sound id: reason}` for each sound record [`keep()`](#foley.licensing.keep) refuses for `intended_use`. |
+| [`territory_excluded`](#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                        |
+| [`wanted_license_ids`](#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                                  |
 
 ### Classes
 
@@ -187,6 +189,32 @@ Does NOT touch `rights_verified` — verification is a separate concern.
 * **Returns:**
   The same (mutated) `record`.
 
+### foley.licensing.checked_refusal_reason(record, intended_use)
+
+[`refusal_reason()`](#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.
+
+The one place a rights check is allowed to fail: whatever goes wrong reading
+`record` (a missing or malformed licence) refuses it, with the error as the
+reason, so no caller can keep a sound whose licence it could not read.
+
+* **Parameters:**
+  * **record** ([`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)) – The sound’s [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) (a `SoundRecord`’s
+    `.license`; see [`refusals()`](#foley.licensing.refusals) for whole sound records).
+  * **intended_use** ([`IntendedUse`](foley.base.html.md#foley.base.IntendedUse)) – The caller’s declared intent.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+* **Returns:**
+  `None` only when [`keep()`](#foley.licensing.keep) keeps `record`; otherwise why not.
+
+```pycon
+>>> lic = LicenseRecord(source="user", license_id="CC0-1.0", commercial_ok=True,
+...                     rights_verified=True)
+>>> checked_refusal_reason(lic, IntendedUse()) is None
+True
+>>> checked_refusal_reason(None, IntendedUse())
+"its licence could not be checked (AttributeError: 'NoneType' object has no attribute 'rights_verified')"
+```
+
 ### foley.licensing.derive_license_flags(license_id, , overrides=None)
 
 Look up the flag set for a `license_id` (fail-closed fallback), then
@@ -316,6 +344,18 @@ The one rule, read as text: the first requirement the record does not meet.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.licensing.refusals(sound_records, intended_use)
+
+`{sound id: reason}` for each sound record [`keep()`](#foley.licensing.keep) refuses for `intended_use`.
+
+The re-check a placed sound gets where it is used (a plan, a weave), whatever
+intent it was found under (#191). Takes [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord) s (each
+judged by its `.license` through [`checked_refusal_reason()`](#foley.licensing.checked_refusal_reason), so fail-closed:
+a record without a readable licence is refused). Empty when every sound is kept.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.licensing.territory_excluded(excluded, territory)
 

@@ -27,6 +27,7 @@ foley.licensing
       ai_scope_from_gen_ai_preference
       ai_use_permitted
       apply_license_flags
+      checked_refusal_reason
       derive_license_flags
       intended_use_for
       is_cc_license_token
@@ -35,6 +36,7 @@ foley.licensing
       license_id_from_cc_url
       license_meta
       refusal_reason
+      refusals
       territory_excluded
       wanted_license_ids
    

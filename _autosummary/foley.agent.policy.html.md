@@ -5,10 +5,11 @@ The SELECT policy: the fail-closed rights gate + the single generate-vs-retrieve
 Two load-bearing invariants live here as two **physically separate pure functions**, so
 neither can bypass the other:
 
-* [`gate_candidates()`](#foley.agent.policy.gate_candidates) — the ONLY rights-rejection point. Runs the fail-closed
-  [`foley.licensing.keep_sound()`](foley.licensing.html.md#foley.licensing.keep_sound) gate over the candidate set **before** any
-  > verification/ranking (invariant #3), sets `Candidate.license_ok`, and drops every
-  > non-`True` candidate.
+* [`gate_candidates()`](#foley.agent.policy.gate_candidates) — the rights gate of the SELECT loop. Runs the fail-closed
+  [`foley.licensing.checked_refusal_reason()`](foley.licensing.html.md#foley.licensing.checked_refusal_reason) rule over the candidate set **before**
+  > any verification/ranking (invariant #3), sets `Candidate.license_ok`, and drops
+  > every non-`True` candidate. The same rule re-checks placed sounds where they are
+  > used ([`foley.licensing.refusals()`](foley.licensing.html.md#foley.licensing.refusals), the MCP plan/weave verbs, #191).
 * [`decide()`](#foley.agent.policy.decide) — the ONLY generate-vs-retrieve branch. A **pure** function of an
   already-gated+verified set; it never calls `keep`/`search`/`generate` (the
   [`foley.agent.tools`](foley.agent.tools.html.md#module-foley.agent.tools) loop owns all side effects).
@@ -174,11 +175,11 @@ Policy (report 05 §4):
 
 Fail-closed license gate — run BEFORE verification/ranking (invariant #3).
 
-For each candidate: apply [`keep_sound()`](foley.licensing.html.md#foley.licensing.keep_sound) (any exception ⇒
-`False`, fail-closed), record the result on `candidate.license_ok`, and keep
-ONLY where it is `True` — a `None` (never gated) or `False` is dropped. This is
-the single rights-rejection point; [`verify_match()`](foley.agent.verify.html.md#foley.agent.verify.verify_match) asserts
-its survivors are license-clean.
+For each candidate: apply [`checked_refusal_reason()`](foley.licensing.html.md#foley.licensing.checked_refusal_reason) to its
+sound’s licence (any error ⇒ refused, fail-closed), record whether it is kept on
+`candidate.license_ok`, and keep ONLY where it is `True` — a `None` (never
+gated) or `False` is dropped. [`verify_match()`](foley.agent.verify.html.md#foley.agent.verify.verify_match) asserts its
+survivors are license-clean.
 
 * **Parameters:**
   * **candidates** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]) – The retrieved shortlist (`license_ok` typically `None`).

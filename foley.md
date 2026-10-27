@@ -1,4 +1,4 @@
-> built 2026-10-27 07:54 UTC from 988a027 (main) · foley 0.0.88. Details: build_info.json
+> built 2026-10-27 16:06 UTC from b33c32f (main) · foley 0.0.89. Details: build_info.json
 
 # index.html.md
 
@@ -723,11 +723,11 @@ deterministic defaults; every model / threshold / seam is an optional keyword.
 
 Fail-closed license gate — run BEFORE verification/ranking (invariant #3).
 
-For each candidate: apply [`keep_sound()`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound) (any exception ⇒
-`False`, fail-closed), record the result on `candidate.license_ok`, and keep
-ONLY where it is `True` — a `None` (never gated) or `False` is dropped. This is
-the single rights-rejection point; [`verify_match()`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.verify_match) asserts
-its survivors are license-clean.
+For each candidate: apply [`checked_refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason) to its
+sound’s licence (any error ⇒ refused, fail-closed), record whether it is kept on
+`candidate.license_ok`, and keep ONLY where it is `True` — a `None` (never
+gated) or `False` is dropped. [`verify_match()`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.verify_match) asserts its
+survivors are license-clean.
 
 * **Parameters:**
   * **candidates** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]) – The retrieved shortlist (`license_ok` typically `None`).
@@ -1181,10 +1181,11 @@ The SELECT policy: the fail-closed rights gate + the single generate-vs-retrieve
 Two load-bearing invariants live here as two **physically separate pure functions**, so
 neither can bypass the other:
 
-* [`gate_candidates()`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.gate_candidates) — the ONLY rights-rejection point. Runs the fail-closed
-  [`foley.licensing.keep_sound()`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound) gate over the candidate set **before** any
-  > verification/ranking (invariant #3), sets `Candidate.license_ok`, and drops every
-  > non-`True` candidate.
+* [`gate_candidates()`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.gate_candidates) — the rights gate of the SELECT loop. Runs the fail-closed
+  [`foley.licensing.checked_refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason) rule over the candidate set **before**
+  > any verification/ranking (invariant #3), sets `Candidate.license_ok`, and drops
+  > every non-`True` candidate. The same rule re-checks placed sounds where they are
+  > used ([`foley.licensing.refusals()`](_autosummary/foley.licensing.html.md#foley.licensing.refusals), the MCP plan/weave verbs, #191).
 * [`decide()`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.decide) — the ONLY generate-vs-retrieve branch. A **pure** function of an
   already-gated+verified set; it never calls `keep`/`search`/`generate` (the
   [`foley.agent.tools`](_autosummary/foley.agent.tools.html.md#module-foley.agent.tools) loop owns all side effects).
@@ -1350,11 +1351,11 @@ Policy (report 05 §4):
 
 Fail-closed license gate — run BEFORE verification/ranking (invariant #3).
 
-For each candidate: apply [`keep_sound()`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound) (any exception ⇒
-`False`, fail-closed), record the result on `candidate.license_ok`, and keep
-ONLY where it is `True` — a `None` (never gated) or `False` is dropped. This is
-the single rights-rejection point; [`verify_match()`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.verify_match) asserts
-its survivors are license-clean.
+For each candidate: apply [`checked_refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason) to its
+sound’s licence (any error ⇒ refused, fail-closed), record whether it is kept on
+`candidate.license_ok`, and keep ONLY where it is `True` — a `None` (never
+gated) or `False` is dropped. [`verify_match()`](_autosummary/foley.agent.verify.html.md#foley.agent.verify.verify_match) asserts its
+survivors are license-clean.
 
 * **Parameters:**
   * **candidates** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]) – The retrieved shortlist (`license_ok` typically `None`).
@@ -1899,7 +1900,7 @@ imports a surface library: `py2mcp` / `fastmcp` load inside
 | [`foley_list_picks`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_list_picks)([session])                      | The sounds picked in this session (the 'persist picks' read side).                        |
 | [`foley_nudge`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_nudge)(timeline, item_id, delta_s)          | Shift a timeline item's onset by `delta_s` seconds; returns the new timeline.             |
 | [`foley_pick`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_pick)(sound_id[, session, layer, onset])    | Accept a sound into the session (persisted); `foley_plan` folds picks into a timeline.    |
-| [`foley_plan`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_plan)([session, transcript, candidate_ids]) | Fold picks (or explicit candidate ids) into a JSON sound-design timeline.                 |
+| [`foley_plan`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_plan)([session, transcript, ...])           | Fold picks (or explicit candidate ids) into a JSON sound-design timeline.                 |
 | [`foley_preview`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_preview)(sound_id[, seconds, session])      | Produce a short audition of a sound; returns its store key (never audio bytes).           |
 | [`foley_refine`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_refine)([session, query, picked_ids, ...])  | Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank.      |
 | [`foley_reject`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_reject)(sound_id[, session, reason])        | Reject a sound (feeds `foley_refine` relevance feedback).                                 |
@@ -1912,7 +1913,7 @@ imports a surface library: `py2mcp` / `fastmcp` load inside
 | [`foley_swap_clip`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_swap_clip)(timeline, item_id, sound_id)     | Swap a timeline item's clip; returns the new timeline.                                    |
 | [`foley_timeline_captions`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_timeline_captions)(timeline[, fmt])         | Export SDH captions for a timeline (`fmt='vtt'` | `'srt'`).                               |
 | [`foley_toggle`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_toggle)(timeline, item_id, enabled)         | Mute/unmute a timeline item; returns the new timeline.                                    |
-| [`foley_weave`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_weave)(narration, timeline[, session])      | Render a timeline under the narration; returns the mix by store key + captions + credits. |
+| [`foley_weave`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_weave)(narration, timeline[, session, ...]) | Render a timeline under the narration; returns the mix by store key + captions + credits. |
 | [`surface_snapshot`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.surface_snapshot)([verbs])                        | `{tool name: {parameter: default}}` of the MCP tools, plus the CLI commands.              |
 
 ### Classes
@@ -2032,7 +2033,7 @@ Accept a sound into the session (persisted); `foley_plan` folds picks into a tim
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_plan(session='default', transcript=None, candidate_ids=None)
+### foley.agent.verbs.foley_plan(session='default', transcript=None, candidate_ids=None, commercial_ok=True, territory=None)
 
 Fold picks (or explicit candidate ids) into a JSON sound-design timeline.
 
@@ -2040,6 +2041,12 @@ Each pick’s explicit `layer` / `onset` (set via [`foley_pick()`](_autosummary/
 onto its candidate’s [`SoundEvent`](_autosummary/foley.base.html.md#foley.base.SoundEvent) so `plan` honors the agent’s
 placement choices — a numeric `onset` becomes an absolute-seconds anchor (see
 [`foley.weave.anchor.parse_symbolic_anchor()`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.parse_symbolic_anchor)).
+
+Every pick is re-checked under this call’s intent (`commercial_ok`,
+`territory`), whatever it was found under, on the library’s current record (the
+one [`foley_weave()`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_weave) judges; the cached one only for a sound the library no
+longer has): one the intent does not keep refuses the plan, naming each such id and
+why (#191).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -2051,9 +2058,12 @@ Produce a short audition of a sound; returns its store key (never audio bytes).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_refine(session='default', query=None, picked_ids=None, rejected_ids=None, hint=None, k=10)
+### foley.agent.verbs.foley_refine(session='default', query=None, picked_ids=None, rejected_ids=None, hint=None, k=10, commercial_ok=True, territory=None)
 
 Relevance-feedback refinement: expand the query, boost picks, drop rejects, re-rank.
+
+Gated like [`foley_search()`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_search): only results the intent (`commercial_ok`,
+`territory`) keeps come back, and are cached (#191).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -2079,9 +2089,12 @@ a licence that excludes territories is refused while it is unstated.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_search(query, k=10, commercial_ok=True, ucs_category=None, rerank=False, session='default')
+### foley.agent.verbs.foley_search(query, k=10, commercial_ok=True, ucs_category=None, rerank=False, session='default', territory=None)
 
 Hybrid (CLAP + keyword) search of the library for a text query; returns candidate rows.
+
+Only sounds whose licence serves the intent (`commercial_ok`, `territory`; see
+[`foley_find()`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_find)) come back, each `license_ok` (#191).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
@@ -2103,9 +2116,11 @@ that field (so `peak_dbfs=-2.0` alone tightens only the true-peak ceiling).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_similar_to(sound_id, k=10, commercial_ok=True, session='default')
+### foley.agent.verbs.foley_similar_to(sound_id, k=10, commercial_ok=True, session='default', territory=None)
 
 “More like this” — the library neighbours of a sound (by id); returns candidate rows.
+
+Gated like [`foley_search()`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_search): only neighbours the intent keeps (#191).
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
@@ -2138,9 +2153,14 @@ Mute/unmute a timeline item; returns the new timeline.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### foley.agent.verbs.foley_weave(narration, timeline, session='default')
+### foley.agent.verbs.foley_weave(narration, timeline, session='default', commercial_ok=True, territory=None)
 
 Render a timeline under the narration; returns the mix by store key + captions + credits.
+
+Every enabled clip is re-checked under this call’s intent (`commercial_ok`,
+`territory`), and so is the narration when it is a library sound (a `str` with a
+record there; a narration that is only audio has no licence to check): one the
+intent does not keep refuses the render, naming each such id and why (#191).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -12661,20 +12681,22 @@ item is redistributable but stored by-reference.
 
 ### Functions
 
-| [`ai_scope_from_gen_ai_preference`](_autosummary/foley.licensing.html.md#foley.licensing.ai_scope_from_gen_ai_preference)(preference)       | Map a Freesound `gen_ai_preference` to `(ai_training_ok override, scope)`.                                                 |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|
-| [`ai_use_permitted`](_autosummary/foley.licensing.html.md#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                    |
-| [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                      |
-| [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                           |
-| [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                       |
-| [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                    |
-| [`keep`](_autosummary/foley.licensing.html.md#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                       |
-| [`keep_sound`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) to a `SoundRecord`'s nested license.            |
-| [`license_id_from_cc_url`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                               |
-| [`license_meta`](_autosummary/foley.licensing.html.md#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback).   |
-| [`refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason)(record, intended_use)              | Why [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it. |
-| [`territory_excluded`](_autosummary/foley.licensing.html.md#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                    |
-| [`wanted_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                              |
+| [`ai_scope_from_gen_ai_preference`](_autosummary/foley.licensing.html.md#foley.licensing.ai_scope_from_gen_ai_preference)(preference)       | Map a Freesound `gen_ai_preference` to `(ai_training_ok override, scope)`.                                                     |
+|----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| [`ai_use_permitted`](_autosummary/foley.licensing.html.md#foley.licensing.ai_use_permitted)(record, \*, ...)                 | Whether AI use of the sound (CLAP-embedding it counts) is allowed here.                                                        |
+| [`apply_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.apply_license_flags)(record, \*[, overrides])      | Populate `record`'s eight derived flags from its `license_id` (+ overrides), in place, and return it.                          |
+| [`checked_refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason)(record, intended_use)      | [`refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.    |
+| [`derive_license_flags`](_autosummary/foley.licensing.html.md#foley.licensing.derive_license_flags)(license_id, \*[, overrides]) | Look up the flag set for a `license_id` (fail-closed fallback), then apply per-source overrides.                               |
+| [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, ...])             | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                           |
+| [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                        | Whether `token` is a search constraint a CC-reading source understands.                                                        |
+| [`keep`](_autosummary/foley.licensing.html.md#foley.licensing.keep)(record, intended_use)                        | Fail-closed candidate license gate (report 07 §8.2).                                                                           |
+| [`keep_sound`](_autosummary/foley.licensing.html.md#foley.licensing.keep_sound)(sound_record, intended_use)            | Convenience: apply [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) to a `SoundRecord`'s nested license.                |
+| [`license_id_from_cc_url`](_autosummary/foley.licensing.html.md#foley.licensing.license_id_from_cc_url)(url)                       | Map a Creative-Commons license URL **or label** to `(license_id, verified)`.                                                   |
+| [`license_meta`](_autosummary/foley.licensing.html.md#foley.licensing.license_meta)(license_id)                          | Return the display [`LicenseMeta`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseMeta) for `license_id` (fail-closed fallback).       |
+| [`refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason)(record, intended_use)              | Why [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.     |
+| [`refusals`](_autosummary/foley.licensing.html.md#foley.licensing.refusals)(sound_records, intended_use)             | `{sound id: reason}` for each sound record [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses for `intended_use`. |
+| [`territory_excluded`](_autosummary/foley.licensing.html.md#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                        |
+| [`wanted_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                                  |
 
 ### Classes
 
@@ -12814,6 +12836,32 @@ Does NOT touch `rights_verified` — verification is a separate concern.
 * **Returns:**
   The same (mutated) `record`.
 
+### foley.licensing.checked_refusal_reason(record, intended_use)
+
+[`refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.
+
+The one place a rights check is allowed to fail: whatever goes wrong reading
+`record` (a missing or malformed licence) refuses it, with the error as the
+reason, so no caller can keep a sound whose licence it could not read.
+
+* **Parameters:**
+  * **record** ([`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)) – The sound’s [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) (a `SoundRecord`’s
+    `.license`; see [`refusals()`](_autosummary/foley.licensing.html.md#foley.licensing.refusals) for whole sound records).
+  * **intended_use** ([`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse)) – The caller’s declared intent.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+* **Returns:**
+  `None` only when [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) keeps `record`; otherwise why not.
+
+```pycon
+>>> lic = LicenseRecord(source="user", license_id="CC0-1.0", commercial_ok=True,
+...                     rights_verified=True)
+>>> checked_refusal_reason(lic, IntendedUse()) is None
+True
+>>> checked_refusal_reason(None, IntendedUse())
+"its licence could not be checked (AttributeError: 'NoneType' object has no attribute 'rights_verified')"
+```
+
 ### foley.licensing.derive_license_flags(license_id, , overrides=None)
 
 Look up the flag set for a `license_id` (fail-closed fallback), then
@@ -12943,6 +12991,18 @@ The one rule, read as text: the first requirement the record does not meet.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.licensing.refusals(sound_records, intended_use)
+
+`{sound id: reason}` for each sound record [`keep()`](_autosummary/foley.licensing.html.md#foley.licensing.keep) refuses for `intended_use`.
+
+The re-check a placed sound gets where it is used (a plan, a weave), whatever
+intent it was found under (#191). Takes [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) s (each
+judged by its `.license` through [`checked_refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason), so fail-closed:
+a record without a readable licence is refused). Empty when every sound is kept.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### foley.licensing.territory_excluded(excluded, territory)
 
@@ -14242,7 +14302,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix intro', 'ta dum', 'tudum', 'ta-dum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'netflix sound', 'ta-dum', 'netflix intro', 'ta dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -15604,6 +15664,7 @@ so the derived permission flags stay single-sourced.
 | [`check_provider_params`](_autosummary/foley.sources.base.html.md#foley.sources.base.check_provider_params)([provider_params, policy])  | `provider_params` as a plain dict, checked against a source's `policy` (#61).                                                                                                                           |
 | [`require_params_mapping`](_autosummary/foley.sources.base.html.md#foley.sources.base.require_params_mapping)(provider_params)           | Raise `TypeError` unless `provider_params` is a mapping (#61).                                                                                                                                          |
 | [`merge_provider_params`](_autosummary/foley.sources.base.html.md#foley.sources.base.merge_provider_params)(native[, ...])              | `native` with the caller's vendor-native `provider_params` merged on top (#61).                                                                                                                         |
+| [`names_field`](_autosummary/foley.sources.base.html.md#foley.sources.base.names_field)(clause, field)                        | Whether a Solr-ish `clause` names `field` as a field (`field:`).                                                                                                                                        |
 | [`recorded_params`](_autosummary/foley.sources.base.html.md#foley.sources.base.recorded_params)(sent[, provider_params])          | The `generation_params` a generator records: the native params it `sent` (provider params already merged in), plus a `provider_params` entry listing what the caller supplied, when anything was (#61). |
 | [`native_adherence`](_autosummary/foley.sources.base.html.md#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                                                                             |
 | [`resolve_source_key`](_autosummary/foley.sources.base.html.md#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var(s).                                                                                                                                 |
@@ -16028,7 +16089,9 @@ than coerced: `True` would silently mean the maximum.
 (one that decides what foley screened, recorded or wrote: the prompt, an output
 path, the model) and a `priced` key (one that changes what the call costs, which
 foley estimated and reserved from its own request) are refused, before anything
-is sent or paid for.
+is sent or paid for. So is a grouped `append` value that would close its
+`(...)` group: checked here, a search refuses it before its try, as it does a
+reserved key, rather than recording it as a failed search (#181).
 
 ```pycon
 >>> check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})
@@ -16045,8 +16108,9 @@ TypeError: provider_params keys must be str (native parameter names), got int: 1
 
 * **Raises:**
   * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If `provider_params` is not a mapping, or a key is not a `str`.
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If a key is `reserved` or `priced` by the policy, or the
-        source declares no policy at all.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If a key is `reserved` or `priced` by the policy, an
+        `append`-ed value would escape its group, or the source declares no
+        policy at all.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
@@ -16165,6 +16229,30 @@ TypeError: provider_params must be a mapping of native names to values, got list
         escape its group.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.sources.base.names_field(clause, field)
+
+Whether a Solr-ish `clause` names `field` as a field (`field:`).
+
+Not inside a quoted phrase, not as part of another name (`subcategory:`,
+`ac_category:`, `foo.category:`) and not escaped (`category\:`); a prefix
+(`+`, `-`, `(`, `{!tag=t}`) or a space before the colon still counts.
+
+```pycon
+>>> names_field('-category:"Music"', "category")
+True
+>>> names_field('{!tag=t}category :Fx', "category")
+True
+>>> names_field('tag:"category:x" subcategory:y ac_category:z', "category")
+False
+>>> names_field(r'tag:\"x category:"Music"', "category")
+True
+>>> names_field(r'category\:x', "category")
+False
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ### foley.sources.base.native_adherence(config, prompt_influence, notes)
 
@@ -17133,9 +17221,11 @@ before it becomes a candidate.
     for, merged over the translated ones (#61), e.g.
     `{"filter": "ac_brightness:[50 TO 100]"}`. Per the config’s
     `provider_params` policy, a `filter` is appended to foley’s as one
-    group (the licence filter cannot be replaced or widened), `fields` are
-    appended to foley’s (the licence fields cannot be dropped), and
-    `query` is refused; the per-item licence re-check still applies.
+    group (the licence filter cannot be replaced or widened, and a
+    category clause is refused when `kind` / `ucs_category` already
+    send one), `fields` are appended to foley’s (the licence fields
+    cannot be dropped), and `query` is refused; the per-item licence
+    re-check still applies.
   * **\*\*kw** – Ignored extra affordances (`on_unsupported_param='warn'`).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
@@ -21363,7 +21453,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 07:54 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/988a027639ab6c14a3a59f2a11f4dc32b26fb7d2"><code>988a027</code></a> on branch <code>main</code>, for **foley 0.0.88** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 16:06 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/b33c32f292ab0a03a6ab722e1bfa8adf135f9117"><code>b33c32f</code></a> on branch <code>main</code>, for **foley 0.0.89** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -21372,7 +21462,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/988a027639ab6c14a3a59f2a11f4dc32b26fb7d2"><code>988a027639ab6c14a3a59f2a11f4dc32b26fb7d2</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/b33c32f292ab0a03a6ab722e1bfa8adf135f9117"><code>b33c32f292ab0a03a6ab722e1bfa8adf135f9117</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -21383,9 +21473,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40469733484">40469733484</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40523131967">40523131967</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>988a027639ab6c14a3a59f2a11f4dc32b26fb7d2</code> (in the history of the built commit) |
+| Event commit | <code>e263bffd357ed29464537a83ef53c9c171c51d4c</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -21410,13 +21500,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.88/">0.0.88</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.89/">0.0.89</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 988a027639ab6c14a3a59f2a11f4dc32b26fb7d2
+git checkout b33c32f292ab0a03a6ab722e1bfa8adf135f9117
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

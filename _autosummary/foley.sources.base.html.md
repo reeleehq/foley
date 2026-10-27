@@ -46,6 +46,7 @@ so the derived permission flags stay single-sourced.
 | [`check_provider_params`](#foley.sources.base.check_provider_params)([provider_params, policy])  | `provider_params` as a plain dict, checked against a source's `policy` (#61).                                                                                                                           |
 | [`require_params_mapping`](#foley.sources.base.require_params_mapping)(provider_params)           | Raise `TypeError` unless `provider_params` is a mapping (#61).                                                                                                                                          |
 | [`merge_provider_params`](#foley.sources.base.merge_provider_params)(native[, ...])              | `native` with the caller's vendor-native `provider_params` merged on top (#61).                                                                                                                         |
+| [`names_field`](#foley.sources.base.names_field)(clause, field)                        | Whether a Solr-ish `clause` names `field` as a field (`field:`).                                                                                                                                        |
 | [`recorded_params`](#foley.sources.base.recorded_params)(sent[, provider_params])          | The `generation_params` a generator records: the native params it `sent` (provider params already merged in), plus a `provider_params` entry listing what the caller supplied, when anything was (#61). |
 | [`native_adherence`](#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                                                                             |
 | [`resolve_source_key`](#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var(s).                                                                                                                                 |
@@ -470,7 +471,9 @@ than coerced: `True` would silently mean the maximum.
 (one that decides what foley screened, recorded or wrote: the prompt, an output
 path, the model) and a `priced` key (one that changes what the call costs, which
 foley estimated and reserved from its own request) are refused, before anything
-is sent or paid for.
+is sent or paid for. So is a grouped `append` value that would close its
+`(...)` group: checked here, a search refuses it before its try, as it does a
+reserved key, rather than recording it as a failed search (#181).
 
 ```pycon
 >>> check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})
@@ -487,8 +490,9 @@ TypeError: provider_params keys must be str (native parameter names), got int: 1
 
 * **Raises:**
   * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If `provider_params` is not a mapping, or a key is not a `str`.
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If a key is `reserved` or `priced` by the policy, or the
-        source declares no policy at all.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If a key is `reserved` or `priced` by the policy, an
+        `append`-ed value would escape its group, or the source declares no
+        policy at all.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
@@ -607,6 +611,30 @@ TypeError: provider_params must be a mapping of native names to values, got list
         escape its group.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.sources.base.names_field(clause, field)
+
+Whether a Solr-ish `clause` names `field` as a field (`field:`).
+
+Not inside a quoted phrase, not as part of another name (`subcategory:`,
+`ac_category:`, `foo.category:`) and not escaped (`category\:`); a prefix
+(`+`, `-`, `(`, `{!tag=t}`) or a space before the colon still counts.
+
+```pycon
+>>> names_field('-category:"Music"', "category")
+True
+>>> names_field('{!tag=t}category :Fx', "category")
+True
+>>> names_field('tag:"category:x" subcategory:y ac_category:z', "category")
+False
+>>> names_field(r'tag:\"x category:"Music"', "category")
+True
+>>> names_field(r'category\:x', "category")
+False
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ### foley.sources.base.native_adherence(config, prompt_influence, notes)
 

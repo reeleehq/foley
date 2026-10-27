@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=7ffc8fc3"></script>
+    <script src="../../../../_static/documentation_options.js?v=db840bda"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.88" />
+  <meta name="docsearch:version" content="0.0.89" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -754,7 +754,9 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">ai_scope_from_gen_ai_preference</span><span class="p">,</span> <span class="n">wanted_license_ids</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">api_license</span><span class="p">,</span>
+    <span class="n">check_provider_params</span><span class="p">,</span>
     <span class="n">merge_provider_params</span><span class="p">,</span>
+    <span class="n">names_field</span><span class="p">,</span>
     <span class="n">native_choice</span><span class="p">,</span>
     <span class="n">SearchArgumentError</span><span class="p">,</span>
     <span class="n">page_size</span><span class="p">,</span>
@@ -814,6 +816,35 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"two together match nothing; pass one of them"</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">by_kind</span> <span class="ow">or</span> <span class="n">by_ucs</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_provider_category</span><span class="p">(</span>
+    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">category</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">provider_params</span><span class="p">:</span> <span class="nb">dict</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Refuse a provider filter with its own category clause when foley sends one.</span>
+
+<span class="sd">    The two would be ANDed, and a sound has one top level, so a different one could</span>
+<span class="sd">    only match nothing (#181), as :func:`_category_filter` refuses for ``kind`` and</span>
+<span class="sd">    ``ucs_category``. ``provider_params`` are the checked ones</span>
+<span class="sd">    (:func:`~foley.sources.base.check_provider_params`); quoted phrases are not read</span>
+<span class="sd">    as clauses (:func:`~foley.sources.base.names_field`).</span>
+
+<span class="sd">    &gt;&gt;&gt; from foley.sources.freesound.config import SOURCE_CONFIG as cfg</span>
+<span class="sd">    &gt;&gt;&gt; _check_provider_category(cfg, "Music", {"filter": 'tag:"category:x" subcategory:y'})</span>
+<span class="sd">    &gt;&gt;&gt; _check_provider_category(cfg, None, {"filter": 'category:"Soundscapes"'})</span>
+<span class="sd">    &gt;&gt;&gt; _check_provider_category(cfg, "Music", {"filter": '-category:"Soundscapes"'})</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    foley.sources.base.SearchArgumentError: provider_params['filter'] names a category, but foley already filters on category:"Music" (from kind= or ucs_category=): pass the category in one place</span>
+<span class="sd">    """</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"ucs_category"</span><span class="p">]</span>
+    <span class="n">key</span><span class="p">,</span> <span class="n">field</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"native_name"</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s2">"field"</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">category</span> <span class="ow">and</span> <span class="n">names_field</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">provider_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">),</span> <span class="n">field</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">SearchArgumentError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"provider_params[</span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">] names a </span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2">, but foley already filters "</span>
+            <span class="sa">f</span><span class="s2">"on </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'to_native'</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">category</span><span class="o">=</span><span class="n">category</span><span class="p">)</span><span class="si">}</span><span class="s2"> (from kind= or "</span>
+            <span class="sa">f</span><span class="s2">"ucs_category=): pass the </span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2"> in one place"</span>
+        <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_preview_url</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -939,9 +970,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">                for, merged over the translated ones (#61), e.g.</span>
 <span class="sd">                ``{"filter": "ac_brightness:[50 TO 100]"}``. Per the config's</span>
 <span class="sd">                ``provider_params`` policy, a ``filter`` is appended to foley's as one</span>
-<span class="sd">                group (the licence filter cannot be replaced or widened), ``fields`` are</span>
-<span class="sd">                appended to foley's (the licence fields cannot be dropped), and</span>
-<span class="sd">                ``query`` is refused; the per-item licence re-check still applies.</span>
+<span class="sd">                group (the licence filter cannot be replaced or widened, and a</span>
+<span class="sd">                category clause is refused when ``kind`` / ``ucs_category`` already</span>
+<span class="sd">                send one), ``fields`` are appended to foley's (the licence fields</span>
+<span class="sd">                cannot be dropped), and ``query`` is refused; the per-item licence</span>
+<span class="sd">                re-check still applies.</span>
 <span class="sd">            **kw: Ignored extra affordances (``on_unsupported_param='warn'``).</span>
 
 <span class="sd">        Returns:</span>
@@ -964,7 +997,10 @@ window.runMermaid = runMermaid;</script>
         <span class="k">elif</span> <span class="n">only</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">license_map</span><span class="p">[</span><span class="s2">"to_native_attribution"</span><span class="p">])</span>
         <span class="n">pm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">]</span>
+        <span class="n">policy</span> <span class="o">=</span> <span class="n">provider_params_policy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
+        <span class="n">provider_params</span> <span class="o">=</span> <span class="n">check_provider_params</span><span class="p">(</span><span class="n">provider_params</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
         <span class="n">category</span> <span class="o">=</span> <span class="n">_category_filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">ucs_category</span><span class="p">)</span>
+        <span class="n">_check_provider_category</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">category</span><span class="p">,</span> <span class="n">provider_params</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">category</span><span class="p">:</span>
             <span class="n">filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pm</span><span class="p">[</span><span class="s2">"ucs_category"</span><span class="p">][</span><span class="s2">"to_native"</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">category</span><span class="o">=</span><span class="n">category</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">duration_range</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -982,9 +1018,7 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">similar_to</span><span class="p">:</span>
             <span class="n">native</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"similar_to"</span><span class="p">][</span><span class="s2">"native_name"</span><span class="p">]</span>
             <span class="n">params</span><span class="p">[</span><span class="n">native</span><span class="p">]</span> <span class="o">=</span> <span class="n">_raw_id</span><span class="p">(</span><span class="n">similar_to</span><span class="p">)</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="n">merge_provider_params</span><span class="p">(</span>
-            <span class="n">params</span><span class="p">,</span> <span class="n">provider_params</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">provider_params_policy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">merge_provider_params</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">provider_params</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
 
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">invoke_native</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"api"</span><span class="p">][</span><span class="s2">"search_endpoint"</span><span class="p">][</span><span class="s2">"path"</span><span class="p">],</span> <span class="o">**</span><span class="n">params</span>

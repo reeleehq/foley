@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=7ffc8fc3"></script>
+    <script src="../../../_static/documentation_options.js?v=db840bda"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.88" />
+  <meta name="docsearch:version" content="0.0.89" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -754,6 +754,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextvars</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextVar</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
@@ -777,6 +778,7 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"check_provider_params"</span><span class="p">,</span>
     <span class="s2">"require_params_mapping"</span><span class="p">,</span>
     <span class="s2">"merge_provider_params"</span><span class="p">,</span>
+    <span class="s2">"names_field"</span><span class="p">,</span>
     <span class="s2">"recorded_params"</span><span class="p">,</span>
     <span class="s2">"native_adherence"</span><span class="p">,</span>
     <span class="s2">"resolve_source_key"</span><span class="p">,</span>
@@ -968,7 +970,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    (one that decides what foley screened, recorded or wrote: the prompt, an output</span>
 <span class="sd">    path, the model) and a ``priced`` key (one that changes what the call costs, which</span>
 <span class="sd">    foley estimated and reserved from its own request) are refused, before anything</span>
-<span class="sd">    is sent or paid for.</span>
+<span class="sd">    is sent or paid for. So is a grouped ``append`` value that would close its</span>
+<span class="sd">    ``(...)`` group: checked here, a search refuses it before its try, as it does a</span>
+<span class="sd">    reserved key, rather than recording it as a failed search (#181).</span>
 
 <span class="sd">    &gt;&gt;&gt; check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})</span>
 <span class="sd">    {'steps': 8}</span>
@@ -983,8 +987,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.</span>
-<span class="sd">        ValueError: If a key is ``reserved`` or ``priced`` by the policy, or the</span>
-<span class="sd">            source declares no policy at all.</span>
+<span class="sd">        ValueError: If a key is ``reserved`` or ``priced`` by the policy, an</span>
+<span class="sd">            ``append``-ed value would escape its group, or the source declares no</span>
+<span class="sd">            policy at all.</span>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">provider_params</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">{}</span>
@@ -1021,6 +1026,10 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"estimates and reserves from its own request: use the unified "</span>
                 <span class="s2">"argument (e.g. duration_s=) or the source config instead"</span>
             <span class="p">)</span>
+    <span class="n">append</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"append"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">provider_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">append</span> <span class="ow">and</span> <span class="n">_append_spec</span><span class="p">(</span><span class="n">append</span><span class="p">[</span><span class="n">key</span><span class="p">])[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_check_grouped</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">provider_params</span><span class="p">)</span></div>
 
 
@@ -1032,27 +1041,78 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">spec</span><span class="p">[</span><span class="s2">"joiner"</span><span class="p">],</span> <span class="nb">bool</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"group"</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_unquoted</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``value`` with its double-quoted phrases blanked and its escapes neutralised.</span>
+
+<span class="sd">    A backslash escapes the next character, inside or outside quotes. A quoted phrase</span>
+<span class="sd">    becomes spaces, and an escape outside one (the backslash and its character)</span>
+<span class="sd">    becomes ``__``: still part of a name, never syntax. The length holds; an unclosed</span>
+<span class="sd">    quote or a trailing backslash is kept, for the caller to refuse.</span>
+
+<span class="sd">    &gt;&gt;&gt; _unquoted(r'tag:"a (b" x\\(y "c')</span>
+<span class="sd">    'tag:      x__y " '</span>
+<span class="sd">    """</span>
+    <span class="n">out</span><span class="p">:</span> <span class="s2">"list[str]"</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">quoted</span><span class="p">,</span> <span class="n">escaped</span><span class="p">,</span> <span class="n">opened</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">escaped</span><span class="p">:</span>
+            <span class="n">escaped</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">" "</span> <span class="k">if</span> <span class="n">quoted</span> <span class="k">else</span> <span class="s2">"_"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">:</span>
+            <span class="n">escaped</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">" "</span> <span class="k">if</span> <span class="n">quoted</span> <span class="k">else</span> <span class="s2">"_"</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s1">'"'</span><span class="p">:</span>
+            <span class="n">quoted</span><span class="p">,</span> <span class="n">opened</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">quoted</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">" "</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">" "</span> <span class="k">if</span> <span class="n">quoted</span> <span class="k">else</span> <span class="n">ch</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">quoted</span><span class="p">:</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">opened</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'"'</span>
+    <span class="k">if</span> <span class="n">escaped</span><span class="p">:</span>
+        <span class="n">out</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\\</span><span class="s2">"</span>
+    <span class="k">return</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="names_field">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.names_field">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">names_field</span><span class="p">(</span><span class="n">clause</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">field</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether a Solr-ish ``clause`` names ``field`` as a field (``field:``).</span>
+
+<span class="sd">    Not inside a quoted phrase, not as part of another name (``subcategory:``,</span>
+<span class="sd">    ``ac_category:``, ``foo.category:``) and not escaped (``category\\:``); a prefix</span>
+<span class="sd">    (``+``, ``-``, ``(``, ``{!tag=t}``) or a space before the colon still counts.</span>
+
+<span class="sd">    &gt;&gt;&gt; names_field('-category:"Music"', "category")</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; names_field('{!tag=t}category :Fx', "category")</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; names_field('tag:"category:x" subcategory:y ac_category:z', "category")</span>
+<span class="sd">    False</span>
+<span class="sd">    &gt;&gt;&gt; names_field(r'tag:\\"x category:"Music"', "category")</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; names_field(r'category\\:x', "category")</span>
+<span class="sd">    False</span>
+<span class="sd">    """</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">rf</span><span class="s2">"(?&lt;![\w.])</span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">field</span><span class="p">)</span><span class="si">}</span><span class="s2">\s*:"</span>
+    <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">_unquoted</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">clause</span><span class="p">)))</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_check_grouped</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Refuse a value that could escape the ``(...)`` group it is wrapped in.</span>
 
 <span class="sd">    Parentheses outside double quotes (a backslash escapes) must balance and never</span>
 <span class="sd">    close more than they opened, so ``x) OR (license:*`` cannot widen the clause.</span>
 <span class="sd">    """</span>
-    <span class="n">depth</span><span class="p">,</span> <span class="n">quoted</span><span class="p">,</span> <span class="n">escaped</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span>
-    <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">escaped</span><span class="p">:</span>
-            <span class="n">escaped</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">:</span>
-            <span class="n">escaped</span> <span class="o">=</span> <span class="kc">True</span>
-        <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s1">'"'</span><span class="p">:</span>
-            <span class="n">quoted</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">quoted</span>
-        <span class="k">elif</span> <span class="ow">not</span> <span class="n">quoted</span> <span class="ow">and</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">"("</span><span class="p">:</span>
+    <span class="n">bare</span><span class="p">,</span> <span class="n">depth</span> <span class="o">=</span> <span class="n">_unquoted</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">bare</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">"("</span><span class="p">:</span>
             <span class="n">depth</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="k">elif</span> <span class="ow">not</span> <span class="n">quoted</span> <span class="ow">and</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">")"</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">ch</span> <span class="o">==</span> <span class="s2">")"</span><span class="p">:</span>
             <span class="n">depth</span> <span class="o">-=</span> <span class="mi">1</span>
             <span class="k">if</span> <span class="n">depth</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">break</span>
-    <span class="k">if</span> <span class="n">depth</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">quoted</span> <span class="ow">or</span> <span class="n">escaped</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">depth</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">or</span> <span class="s1">'"'</span> <span class="ow">in</span> <span class="n">bare</span> <span class="ow">or</span> <span class="n">bare</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">"provider_params[</span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">] has unbalanced parentheses or quotes: it is "</span>
             <span class="sa">f</span><span class="s2">"appended as one group and may not close it (</span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">)"</span>
@@ -1224,8 +1284,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">continue</span>  <span class="c1"># nothing to append</span>
         <span class="n">joiner</span><span class="p">,</span> <span class="n">grouped</span> <span class="o">=</span> <span class="n">_append_spec</span><span class="p">(</span><span class="n">append</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
         <span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">grouped</span><span class="p">:</span>
-            <span class="n">_check_grouped</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">grouped</span><span class="p">:</span>  <span class="c1"># balanced: check_provider_params refused one that is not</span>
             <span class="n">value</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">)"</span>
         <span class="n">base</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
         <span class="n">out</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span> <span class="k">if</span> <span class="n">base</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}{</span><span class="n">joiner</span><span class="si">}{</span><span class="n">value</span><span class="si">}</span><span class="s2">"</span>
