@@ -839,7 +839,8 @@ def generate(
     elif backend not in (None, "", "auto"):
         order = (backend,)  # named: that backend, no fallback
     else:
-        order, paid_ok = generate_backend_order(mode=mode), paid_generation_opted_in()
+        order = generate_backend_order(mode=mode)
+        paid_ok = paid_generation_opted_in(mode=mode)
     # Native params are one vendor's: an order that may try several backends takes
     # them per backend, and each backend gets only its own (#61).
     may_fall_back = adapter is None and (

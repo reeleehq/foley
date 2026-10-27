@@ -465,7 +465,6 @@ SOURCE_CONFIGS = (
             "model_id": "sonilo-v1.1",
             "generator_version": "sonilo/v1.1/video-to-sound-effects",
             "audio_format": "wav",
-            "duration_max_s": 180.0,  # the estimate's bound when the video is unread
         },
         license={
             "default_license_id": "fal-partner-unverified",

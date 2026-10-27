@@ -13,6 +13,9 @@ here, once, for every V2A backend:
   falls back to the backend's maximum).
 * :func:`local_video_file`: a local file for an uploader (bytes are written to a
   temporary file).
+* :func:`keyed`: affordances as they may be recorded (the cache entry, the run
+  manifest): the video replaced by its key, so neither its bytes nor a local path
+  (nor an upload's capability URL) is ever written down.
 
 Stdlib only.
 """
@@ -72,6 +75,17 @@ def video_key(video: VideoInput) -> str:
     raise TypeError(
         f"video must be a URL, a local path or bytes, got {type(video).__name__}"
     )
+
+
+def keyed(affordances: dict) -> dict:
+    """``affordances`` with a ``video`` replaced by :func:`video_key` (else unchanged).
+
+    >>> keyed({"video": b"abc", "duration_s": 2})["video"][:15], keyed({"seed": 1})
+    ('sha256:ba7816bf', {'seed': 1})
+    """
+    if affordances.get("video") is None:
+        return affordances
+    return {**affordances, "video": video_key(affordances["video"])}
 
 
 @contextlib.contextmanager

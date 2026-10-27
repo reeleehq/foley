@@ -94,16 +94,23 @@ GENERATION_MODES = ("t2a", "v2a")
 GENERATE_PAID_ENV = "FOLEY_GENERATE_PAID"
 
 
-def paid_generation_opted_in() -> bool:
-    """Whether an unnamed generation may use the paid backends of its order.
+def paid_generation_opted_in(*, mode: str = "t2a") -> bool:
+    """Whether an unnamed generation of ``mode`` may use the paid backends of its order.
 
-    Yes when the operator said so: ``$FOLEY_GENERATE_PAID=1``, or an order or a backend
-    named in ``$FOLEY_GENERATE_ORDER`` / ``$FOLEY_GENERATE_BACKEND``. A provider key in
-    the environment is not consent to spend (#58): keys are set for other tools too.
+    Yes when the operator said so: ``$FOLEY_GENERATE_PAID=1`` (any mode), or an order
+    or a backend named for that mode (text-to-audio: ``$FOLEY_GENERATE_ORDER`` /
+    ``$FOLEY_GENERATE_BACKEND``; video-to-audio: ``$FOLEY_V2A_ORDER``), which opts in
+    that mode only. A provider key in the environment is not consent to spend (#58):
+    keys are set for other tools too.
     """
     import os
 
-    named = (GENERATE_BACKEND_ENV, GENERATE_ORDER_ENV, V2A_ORDER_ENV)
+    # Naming the backends of one mode's order is consent for that mode only (#74).
+    named = (
+        (V2A_ORDER_ENV,)
+        if mode == "v2a"
+        else (GENERATE_BACKEND_ENV, GENERATE_ORDER_ENV)
+    )
     if any(os.environ.get(name) for name in named):
         return True
     return os.environ.get(GENERATE_PAID_ENV, "").strip().lower() in ("1", "true", "yes")
@@ -195,7 +202,7 @@ def default_generate_backend(*, mode: str = "t2a") -> str:
     :func:`generate_backend_order` for ``mode``, paid ones only once opted in). What
     :func:`foley.estimate` prices and the rights pre-check judges for ``backend='auto'``."""
     return first_runnable_backend(
-        generate_backend_order(mode=mode), paid_ok=paid_generation_opted_in()
+        generate_backend_order(mode=mode), paid_ok=paid_generation_opted_in(mode=mode)
     )
 
 
@@ -740,8 +747,9 @@ def estimate_order(backend=None, **affordances) -> Optional[float]:
         if not order:
             raise ValueError("backend= is an empty sequence: name at least one backend")
     elif backend in (None, "", "auto"):
-        order = generate_backend_order(mode=generation_mode(affordances))
-        paid_ok = paid_generation_opted_in()
+        mode = generation_mode(affordances)
+        order = generate_backend_order(mode=mode)
+        paid_ok = paid_generation_opted_in(mode=mode)
     else:
         return estimate_generation(backend, **affordances)
     if len(order) == 1:
@@ -1014,6 +1022,7 @@ def generate(*args, **kwargs) -> IngestReport:
     """
     from ..obs.recorder import facade_run
     from ..obs.run_artifact import ingest_digest
+    from .video import keyed
 
     prompt = args[0] if args else kwargs.get("prompt")
     backend = kwargs.get("backend") or default_generate_backend(
@@ -1029,7 +1038,8 @@ def generate(*args, **kwargs) -> IngestReport:
     }
     with facade_run(
         "generate",
-        inputs={"prompt": prompt, "backend": backend, **affordances},
+        # A video is recorded by its key: never its bytes, nor a local path (#74).
+        inputs={"prompt": prompt, "backend": backend, **keyed(affordances)},
         params=params,
     ) as run:
         report = _generate(*args, **kwargs)

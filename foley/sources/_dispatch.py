@@ -130,6 +130,8 @@ def translate_affordances(
         raise ValueError(f"on_unsupported must be one of {UNSUPPORTED_POLICIES}")
     vocabulary = GENERATION_AFFORDANCES if vocabulary is None else vocabulary
     reject_renamed(affordances, vocabulary)
+    if vocabulary is GENERATION_AFFORDANCES:
+        _check_mode(config, affordances)
     for name, value in affordances.items():
         choices = getattr(vocabulary.get(name), "choices", None)
         if choices and value is not None and value not in choices:
@@ -252,11 +254,9 @@ def _keyed_request(config: dict, affordances: dict) -> "tuple[dict, Optional[str
     comparison is on the raw value: a source that maps model tokens to native ids
     would compare after that translation.
     """
-    rest = dict(affordances)
-    if rest.get("video") is not None:  # keyed by its content, never its path (#74)
-        from .video import video_key
+    from .video import keyed
 
-        rest["video"] = video_key(rest["video"])
+    rest = dict(keyed(affordances))  # a copy; the video by its content (#74)
     nd = config.get("native_defaults") or {}
     model = rest.pop("model", None)
     if model == nd.get("model_id"):
@@ -725,13 +725,20 @@ def _replayable(cache, entry) -> bool:
     )
 
 
+def _keyed_affordances(affordances: dict) -> dict:
+    """The affordances as a cache entry keeps them (a video by its key, #74)."""
+    from .video import keyed
+
+    return keyed(affordances)
+
+
 def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
     sound = clip.candidate.sound
     return {
         "content_key": key,
         "backend": plan.backend,
         "prompt": plan.prompt,
-        "affordances": plan.affordances,
+        "affordances": _keyed_affordances(plan.affordances),
         **({"provider_params": plan.provider_params} if plan.provider_params else {}),
         "license": sound.license.to_dict(),
         "caption": sound.caption,
@@ -843,14 +850,41 @@ def estimate_generation(backend: str, **affordances) -> Optional[float]:
 
 
 def _priced(config: dict, affordances: dict) -> dict:
-    """``affordances`` plus what the price depends on beyond them: the video's length
-    for a source billed per second of the video it is given (#74)."""
-    pricing = config.get("pricing") or {}
-    if pricing.get("seconds_from") != "video" or affordances.get("video") is None:
+    """``affordances`` plus what the price depends on beyond them: the length of the
+    video a video-to-audio call is given (#74; see :func:`foley.cost.estimate_call`)."""
+    if affordances.get("video") is None:
         return affordances
-    from .video import video_seconds
+    from . import video
 
-    return {**affordances, "video_duration_s": video_seconds(affordances["video"])}
+    return {
+        **affordances,
+        "video_duration_s": video.video_seconds(affordances["video"]),
+    }
+
+
+def source_modes(config: dict) -> "list[str]":
+    """The generation modes a generate source serves (``config['modes']``, else text-to-audio)."""
+    return list(config.get("modes") or ["t2a"])
+
+
+def _check_mode(config: dict, affordances: dict) -> None:
+    """Raise :class:`UnsupportedParameter` when the call's mode is not the source's.
+
+    Under every ``on_unsupported`` policy: a text-to-audio source given a ``video``
+    would sound something that ignores the picture, and a video-to-audio source given
+    none has nothing to sound (#74).
+    """
+    if config.get("kind") not in (None, "generate"):
+        return
+    mode = "v2a" if affordances.get("video") is not None else "t2a"
+    modes = source_modes(config)
+    if mode not in modes:
+        need = (
+            "needs a video= (it sounds a picture)"
+            if "v2a" in modes
+            else ("takes no video= (it is text-to-audio)")
+        )
+        raise UnsupportedParameter(f"{config.get('name', 'this source')} {need}")
 
 
 def plan_search(

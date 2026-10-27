@@ -210,13 +210,22 @@ class FalAdapter:
         param_map = self.config["param_map"]
         affordances = dict(affordances)
         video = affordances.pop("video", None)
+        if "video" in param_map and video is None:  # V2A: nothing to sound otherwise
+            raise ValueError(f"{self.name} sounds a picture: pass video=")
         args = dict(nd.get("fixed_arguments") or {})
         args.update(_integral(self.config, native_request(self.config, affordances)))
         if prompt or param_map["prompt"].get("required"):  # a V2A prompt is optional
             args[param_map["prompt"]["native_name"]] = prompt
+        duration_name = (param_map.get("duration_s") or {}).get("native_name")
         if video is not None:
             args[param_map["video"]["native_name"]] = self._video_url(video)
-        duration_name = (param_map.get("duration_s") or {}).get("native_name")
+            if duration_name and duration_name not in args:  # cover the whole video
+                video_s = _video_seconds(video)
+                if video_s is not None:
+                    lo, hi = nd.get("duration_min_s"), nd.get("duration_max_s")
+                    args[duration_name] = max(
+                        lo or video_s, min(video_s, hi or video_s)
+                    )
         default_s = nd.get("duration_default_s")
         if duration_name and duration_name not in args and default_s is not None:
             args[duration_name] = float(default_s)
@@ -246,8 +255,29 @@ class FalAdapter:
 
         if is_url(video):
             return video
-        with local_video_file(video) as path:
-            return self._uploader(path, api_key=self.api_key)
+        key = self.api_key  # a missing key is its own, clearer refusal
+        try:
+            with local_video_file(video) as path:
+                return self._uploader(path, api_key=key)
+        except Exception as exc:  # nothing was generated, so nothing was billed
+            raise SourceConfigurationError(
+                f"{self.name}: could not upload the video to fal ({exc!r}); nothing "
+                "was generated"
+            ) from exc
+
+    def _recordable(self, args: dict, affordances: dict) -> dict:
+        """``args`` as the licence records them: the video by its key (#74), never the
+        uploaded URL (anyone holding it can fetch the picture) nor a ``data:`` URI.
+
+        The key is also what the request was keyed on, so the answered request matches
+        the planned one and a repeat is served from the generations cache.
+        """
+        video_field = (self.config["param_map"].get("video") or {}).get("native_name")
+        if video_field not in args or affordances.get("video") is None:
+            return args
+        from ..video import video_key
+
+        return {**args, video_field: video_key(affordances["video"])}
 
     def generate(
         self, prompt: str, *, provider_params: Optional[dict] = None, **affordances
@@ -314,7 +344,8 @@ class FalAdapter:
             else None,
             generation_seed=_as_int(seed),
             generation_params=recorded_params(
-                {**args, "fal_endpoint": endpoint}, provider_params
+                {**self._recordable(args, affordances), "fal_endpoint": endpoint},
+                provider_params,
             ),
             source_url=self.config.get("website"),
             attribution_text=lic_cfg.get("attribution_text"),
@@ -336,11 +367,19 @@ def _actual_cost(config: dict, args: dict, audio: bytes) -> Optional[float]:
     of the audio it returned (``None`` when that cannot be read)."""
     from ...cost import actual_call_cost
 
-    if (config.get("pricing") or {}).get("seconds_from") == "video":
+    if "v2a" in (config.get("modes") or ()):  # billed for the sound it made (#74)
         seconds = _audio_seconds(audio)
         return None if seconds is None else actual_call_cost(config, duration_s=seconds)
     name = (config["param_map"].get("duration_s") or {}).get("native_name")
     return actual_call_cost(config, duration_s=args.get(name) if name else None)
+
+
+def _video_seconds(video) -> Optional[float]:
+    """The video's length (:func:`foley.sources.video.video_seconds`), via the module so
+    tests can stand in for ``ffprobe``."""
+    from .. import video as video_mod
+
+    return video_mod.video_seconds(video)
 
 
 def _audio_seconds(audio: bytes) -> Optional[float]:
