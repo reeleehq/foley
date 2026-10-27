@@ -239,7 +239,8 @@ def generation_rights_refusal(backend: str, intended_use) -> Optional[str]:
     hint = (
         "declare a non-commercial use (commercial_ok=False)"
         if intended_use.commercial and not probe.commercial_ok
-        else "change the IntendedUse as the reason says"
+        else "change the use as the reason says (territory=<the ISO country code where the "
+        "sound is used>, for a licence that excludes territories)"
     )
     return (
         f"{backend!r} generates under {license_id!r}, which this use does not allow: "

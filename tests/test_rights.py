@@ -470,3 +470,63 @@ def test_a_public_domain_label_that_adds_words_fails_closed(label, expected):
     from foley.licensing import license_id_from_cc_url
 
     assert license_id_from_cc_url(label) == expected
+
+
+# ---------------------------------------------------------------------------
+# #175: the surfaces pass a territory, and "WORLD" says worldwide
+# ---------------------------------------------------------------------------
+
+
+def test_intended_use_for_takes_a_territory_and_world():
+    from foley.licensing import intended_use_for, territory_excluded
+
+    assert intended_use_for(territory="uk").territory == "GB"
+    assert intended_use_for(commercial_ok=False, territory="World").territory == "WORLD"
+    assert intended_use_for().territory is None  # the default stays unstated
+    assert territory_excluded({"KR"}, "WORLD") and not territory_excluded(set(), "WORLD")
+    with pytest.raises(ValueError, match="contradicts intended_use.territory"):
+        intended_use_for(IntendedUse(territory="US"), territory="FR")
+    assert intended_use_for(IntendedUse(territory="US"), territory="us").territory == "US"
+    assert intended_use_for(IntendedUse(territory="US"), territory="  ").territory == "US"
+    with pytest.raises(ValueError, match="'WORLD'"):
+        intended_use_for(territory="Europe")
+
+
+def test_mcp_generate_lifts_a_territory_exclusion_only_where_it_does_not_apply():
+    from foley.agent import mcp
+
+    from foley.licensing import intended_use_for
+    from foley.sources.generate import generation_rights_refusal
+
+    def refused(territory):
+        out = mcp.foley_generate("rain", backend="fal_hunyuan_foley", commercial_ok=False,
+                                 territory=territory)
+        return out.get("status") == "refused" and "grants nothing" in out.get("error", "")
+
+    assert refused(None) and refused("KR") and refused("WORLD") and refused("fr")
+    us = intended_use_for(commercial_ok=False, territory="US")
+    assert generation_rights_refusal("fal_hunyuan_foley", us) is None  # the gate lifts
+    out = mcp.foley_generate("rain", backend="fal_hunyuan_foley", commercial_ok=False,
+                             territory="US")
+    assert out["ok"] is False and "video" in out["error"]  # past it: a V2A needs a video
+    assert mcp.foley_generate("rain", territory="Mars")["status"] == "invalid"
+
+
+def test_mcp_find_and_score_pass_the_territory(fake_embedder, monkeypatch):
+    from foley.agent import mcp
+
+    class Seen(Exception):
+        pass
+
+    def capture(*a, intended_use, **kw):
+        raise Seen(intended_use.territory)
+
+    monkeypatch.setattr(foley, "find", capture)
+    monkeypatch.setattr(foley, "score", capture)
+    mcp._configure(library=_mixed_library(fake_embedder))
+    for verb in (mcp.foley_find, mcp.foley_score):
+        with pytest.raises(Seen, match="^US$"):
+            verb(DEMO, territory="us")
+    (row,) = mcp.foley_find(DEMO, territory="Mars")  # a JSON row, never a raise
+    assert row["status"] == "invalid" and "ISO 3166-1" in row["error"]
+    assert mcp.foley_score(DEMO, territory="Mars")["status"] == "invalid"

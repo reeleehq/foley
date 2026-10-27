@@ -23,7 +23,7 @@ import re
 from dataclasses import dataclass, replace
 from typing import Optional
 
-from .base import IntendedUse, LicenseRecord, normalize_territory
+from .base import WORLDWIDE, IntendedUse, LicenseRecord, normalize_territory
 
 #: The ONE rights intent every verb and surface defaults to (#63, maintainer decision
 #: 2026-10-03): commercial publishing, attributable. NC and SA material is refused
@@ -33,16 +33,24 @@ DEFAULT_INTENDED_USE = IntendedUse(commercial=True, publish=True, can_attribute=
 
 
 def intended_use_for(
-    intended_use: Optional[IntendedUse] = None, *, commercial_ok: Optional[bool] = None
+    intended_use: Optional[IntendedUse] = None,
+    *,
+    commercial_ok: Optional[bool] = None,
+    territory: Optional[str] = None,
 ) -> IntendedUse:
     """The rights intent a verb runs under — every verb and surface resolves it here (#63).
 
     An explicit ``intended_use`` wins; else :data:`DEFAULT_INTENDED_USE`, with
     ``commercial`` overridden when ``commercial_ok`` is given (``False`` is the explicit
-    opt-in to non-commercial material). Always a fresh copy, so callers may mutate it.
+    opt-in to non-commercial material) and ``territory`` when given (an ISO 3166-1
+    alpha-2 code, or ``"WORLD"``; #175). Always a fresh copy, so callers may mutate it.
+
+    >>> intended_use_for(commercial_ok=False, territory="us").territory
+    'US'
 
     Raises:
-        ValueError: If both are given and disagree on ``commercial``.
+        ValueError: If both are given and disagree on ``commercial`` or ``territory``,
+            or the territory is not a code.
     """
     if intended_use is not None:
         if commercial_ok is not None and bool(commercial_ok) != intended_use.commercial:
@@ -50,10 +58,19 @@ def intended_use_for(
                 f"commercial_ok={commercial_ok!r} contradicts intended_use.commercial="
                 f"{intended_use.commercial!r}; pass one of them"
             )
+        stated = normalize_territory(territory)
+        if stated is not None and stated != normalize_territory(intended_use.territory):
+            raise ValueError(
+                f"territory={territory!r} contradicts intended_use.territory="
+                f"{intended_use.territory!r}; pass one of them"
+            )
         return intended_use
-    if commercial_ok is None:
-        return replace(DEFAULT_INTENDED_USE)
-    return replace(DEFAULT_INTENDED_USE, commercial=bool(commercial_ok))
+    overrides = {}
+    if commercial_ok is not None:
+        overrides["commercial"] = bool(commercial_ok)
+    if territory is not None:
+        overrides["territory"] = territory  # normalised (and checked) by IntendedUse
+    return replace(DEFAULT_INTENDED_USE, **overrides)
 
 
 @dataclass(frozen=True)
@@ -614,6 +631,8 @@ def territory_excluded(excluded, territory: Optional[str]) -> bool:
     (True, True)
     >>> territory_excluded({"KR"}, "Korea"), territory_excluded(set(), None)
     (True, False)
+    >>> territory_excluded({"KR"}, "WORLD"), territory_excluded(set(), "WORLD")
+    (True, False)
     """
     if not excluded:
         return False
@@ -621,7 +640,7 @@ def territory_excluded(excluded, territory: Optional[str]) -> bool:
         code = normalize_territory(territory)
     except ValueError:
         return True
-    if code is None:
+    if code is None or code == WORLDWIDE:  # unstated, or everywhere: it includes them
         return True
     return code in excluded or ("EU" in excluded and code in EU_MEMBER_STATES)
 
@@ -657,6 +676,8 @@ def refusal_reason(record: LicenseRecord, intended_use: IntendedUse) -> Optional
         where = ", ".join(sorted(excluded))
         if intended_use.territory is None:
             return f"its licence grants nothing in {where}: state the territory"
+        if intended_use.territory == WORLDWIDE:
+            return f"its licence grants nothing in {where} (WORLD: worldwide use includes them)"
         return f"its licence grants nothing in {where} ({intended_use.territory})"
     return None
 
