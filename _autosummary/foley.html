@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=1e158f99"></script>
+    <script src="../_static/documentation_options.js?v=d59c1f54"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.73" />
+  <meta name="docsearch:version" content="0.0.74" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -1017,7 +1017,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.Affordance">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">Affordance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'query'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">carries_meaning</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">renamed_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#Affordance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.Affordance" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">Affordance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'query'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">carries_meaning</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">choices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">renamed_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#Affordance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.Affordance" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>Descriptor for a unified parameter affordance (arioso analog).</p>
 <dl class="field-list simple">
@@ -1086,6 +1086,18 @@ that cannot honour it raises instead of dropping it (#53).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.Affordance.choices">
+<span class="sig-name descname"><span class="pre">choices</span></span><a class="headerlink" href="#foley.Affordance.choices" title="Link to this definition">#</a></dt>
+<dd><p>The values it accepts, when it is an enumeration (<code class="docutils literal notranslate"><span class="pre">sort</span></code>,
+<code class="docutils literal notranslate"><span class="pre">kind</span></code>); any other value raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> before any call.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -3217,7 +3229,10 @@ unified affordance for (#61), e.g. Freesound’s
 them) and merged over its translated params; the licence filter and the
 fail-closed gate still apply.</p></li>
 <li><p><strong>**affordances</strong> – Extra unified affordances forwarded to the adapter’s
-<code class="docutils literal notranslate"><span class="pre">search</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">duration_range</span></code>, <code class="docutils literal notranslate"><span class="pre">sort</span></code>).</p></li>
+<code class="docutils literal notranslate"><span class="pre">search</span></code> (see <a class="reference internal" href="foley.base.html#foley.base.QUERY_AFFORDANCES" title="foley.base.QUERY_AFFORDANCES"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.base.QUERY_AFFORDANCES</span></code></a>): <code class="docutils literal notranslate"><span class="pre">duration_range</span></code>,
+<code class="docutils literal notranslate"><span class="pre">sort</span></code> (<code class="docutils literal notranslate"><span class="pre">relevance</span></code> | <code class="docutils literal notranslate"><span class="pre">newest</span></code> | <code class="docutils literal notranslate"><span class="pre">popular</span></code> | <code class="docutils literal notranslate"><span class="pre">duration</span></code>),
+<code class="docutils literal notranslate"><span class="pre">page</span></code>, <code class="docutils literal notranslate"><span class="pre">kind</span></code> (<code class="docutils literal notranslate"><span class="pre">sfx</span></code> | <code class="docutils literal notranslate"><span class="pre">music</span></code>), <code class="docutils literal notranslate"><span class="pre">sources</span></code>, <code class="docutils literal notranslate"><span class="pre">include_explicit</span></code>,
+<code class="docutils literal notranslate"><span class="pre">similar_to</span></code>, <code class="docutils literal notranslate"><span class="pre">ucs_category</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -5639,6 +5654,7 @@ escalates to the injected/​default judge for that rung and returns <em>its</em
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.Affordance.default"><code class="docutils literal notranslate"><span class="pre">Affordance.default</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.Affordance.stage"><code class="docutils literal notranslate"><span class="pre">Affordance.stage</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.Affordance.carries_meaning"><code class="docutils literal notranslate"><span class="pre">Affordance.carries_meaning</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.Affordance.choices"><code class="docutils literal notranslate"><span class="pre">Affordance.choices</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.Affordance.renamed_from"><code class="docutils literal notranslate"><span class="pre">Affordance.renamed_from</span></code></a></li>
 </ul>
 </li>

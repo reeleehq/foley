@@ -101,7 +101,7 @@ It bypasses the licence filter and the per-item licence re-check that
 * **Raises:**
   [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – On a non-200 response (with Freesound’s `detail`).
 
-#### search(query, , license='cc0', k=15, duration_range=None, sort=None, similar_to=None, ucs_category=None, provider_params=None, \*\*kw)
+#### search(query, , license='cc0', k=15, duration_range=None, sort=None, page=1, kind='sfx', similar_to=None, ucs_category=None, provider_params=None, \*\*kw)
 
 Search Freesound for `query`; return license-clean candidates.
 
@@ -117,7 +117,11 @@ before it becomes a candidate.
     kept, so NC / SA / ND never come back.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max results (Freesound caps `page_size` at 150).
   * **duration_range** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – Optional `(min_s, max_s)` native duration filter.
-  * **sort** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional native sort key (default: Freesound relevance).
+  * **sort** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `relevance` (default) | `newest` | `popular` | `duration`,
+    translated to Freesound’s native key.
+  * **page** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The results page (1-based, `k` per page).
+  * **kind** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `sfx` (default, no filter) or `music` (the Broad Sound
+    Taxonomy’s “Music” top level).
   * **similar_to** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A Freesound sound id (either id form): “more like this one”.
   * **ucs_category** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A UCS CatID or category, mapped to a coarse Broad Sound
     Taxonomy `category` pre-filter (no filter if it is not recognised).

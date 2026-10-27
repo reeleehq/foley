@@ -65,7 +65,7 @@ It bypasses the licence filter and the per-item licence check that
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-#### search(query, , license=None, k=15, provider_params=None, \*\*kw)
+#### search(query, , license=None, k=15, page=1, sources=None, provider_params=None, \*\*kw)
 
 Search archive audio for `query`; return candidates (all unverified).
 
@@ -73,7 +73,9 @@ Search archive audio for `query`; return candidates (all unverified).
 items under it; `None` keeps every accepted licence. The default is `None`,
 unlike the other CC sources’ `'cc0'`, because every archive licence is an
 unverified claim anyway; `add_from` always passes its own (`'cc0'`) default.
-The query always asks for items with a `licenseurl`.
+The query always asks for items with a `licenseurl`. `page` is the results
+page (1-based, `k` per page); `sources` restricts it to these archive
+collections.
 `provider_params` are native advancedsearch params merged over the
 translated ones (#61); a `q` is ANDed onto foley’s as one group, never
 replaces it (the config’s `provider_params` policy).

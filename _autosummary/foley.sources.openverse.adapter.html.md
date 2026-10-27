@@ -69,7 +69,7 @@ It bypasses the licence filter and the per-item licence check that
 
 The sentence Openverse’s terms require an app to show prominently.
 
-#### search(query, , license='cc0', k=15, provider_params=None, \*\*kw)
+#### search(query, , license='cc0', k=15, page=1, include_explicit=False, sources=None, kind='sfx', provider_params=None, \*\*kw)
 
 Search Openverse audio for `query`; return licence-checked candidates.
 
@@ -78,6 +78,12 @@ Search Openverse audio for `query`; return licence-checked candidates.
     under it, and is pushed into the native `license` filter (CC0, CC-BY or
     PDM); `None` asks for CC0, CC-BY and public-domain-mark rows.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max rows (anonymous limit 20).
+  * **page** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The results page (1-based, `k` per page).
+  * **include_explicit** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Also return rows Openverse marks mature.
+  * **sources** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]) – Only these Openverse providers (`wikimedia_audio`, …); the
+    excluded ones (Freesound, Jamendo) stay excluded, so asking only for
+    them returns nothing.
+  * **kind** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `sfx` (default, no category filter) or `music`.
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
     (#61); the per-item licence check still applies.
 * **Return type:**

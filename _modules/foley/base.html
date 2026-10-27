@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=1e158f99"></script>
+    <script src="../../_static/documentation_options.js?v=d59c1f54"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.73" />
+  <meta name="docsearch:version" content="0.0.74" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -866,6 +866,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        carries_meaning: Dropping it would change what the caller gets (a seed they</span>
 <span class="sd">            will rely on to reproduce, content they asked to exclude), so a backend</span>
 <span class="sd">            that cannot honour it raises instead of dropping it (#53).</span>
+<span class="sd">        choices: The values it accepts, when it is an enumeration (``sort``,</span>
+<span class="sd">            ``kind``); any other value raises ``ValueError`` before any call.</span>
 <span class="sd">        renamed_from: The name it had before a release renamed it (#75): passing</span>
 <span class="sd">            the old name raises a ``TypeError`` naming this one (see</span>
 <span class="sd">            :func:`reject_renamed`). For a generation affordance, the generations</span>
@@ -878,13 +880,14 @@ window.runMermaid = runMermaid;</script>
     <span class="n">default</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">stage</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"query"</span>
     <span class="n">carries_meaning</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">choices</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">renamed_from</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 
 <span class="c1">#: Unified query-stage parameters (search / find / filter surface).</span>
 <span class="n">QUERY_AFFORDANCES</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Affordance</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">"text"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span><span class="s2">"text"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">"Natural-language query"</span><span class="p">),</span>
+    <span class="s2">"query"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span><span class="s2">"query"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">"Natural-language query"</span><span class="p">,</span> <span class="n">renamed_from</span><span class="o">=</span><span class="s2">"text"</span><span class="p">),</span>
     <span class="s2">"semantic_text"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
         <span class="s2">"semantic_text"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">"Query for CLAP semantic space"</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="s2">"query"</span>
     <span class="p">),</span>
@@ -901,7 +904,35 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"similar_to"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
         <span class="s2">"similar_to"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">"Source sound id: more like this one (a source that has it)"</span>
     <span class="p">),</span>
-    <span class="s2">"sort"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span><span class="s2">"sort"</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">"score|duration|created|downloads"</span><span class="p">,</span> <span class="s2">"score"</span><span class="p">),</span>
+    <span class="s2">"page"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"page"</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="s2">"Results page (1-based; k per page)"</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">carries_meaning</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">),</span>
+    <span class="s2">"sort"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"sort"</span><span class="p">,</span>
+        <span class="nb">str</span><span class="p">,</span>
+        <span class="s2">"Result order"</span><span class="p">,</span>
+        <span class="s2">"relevance"</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">(</span><span class="s2">"relevance"</span><span class="p">,</span> <span class="s2">"newest"</span><span class="p">,</span> <span class="s2">"popular"</span><span class="p">,</span> <span class="s2">"duration"</span><span class="p">),</span>
+    <span class="p">),</span>
+    <span class="s2">"include_explicit"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"include_explicit"</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">"Also return explicit / sensitive results"</span><span class="p">,</span> <span class="kc">False</span>
+    <span class="p">),</span>
+    <span class="s2">"sources"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"sources"</span><span class="p">,</span>
+        <span class="nb">list</span><span class="p">,</span>
+        <span class="s2">"Restrict an aggregator to these of its providers"</span><span class="p">,</span>
+        <span class="n">carries_meaning</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="c1"># Media kind. Not the taxonomy category (ucs_category), which some sources</span>
+    <span class="c1"># also call "category" (report 14 §5.1).</span>
+    <span class="s2">"kind"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span>
+        <span class="s2">"kind"</span><span class="p">,</span>
+        <span class="nb">str</span><span class="p">,</span>
+        <span class="s2">"Media kind: sfx | music"</span><span class="p">,</span>
+        <span class="s2">"sfx"</span><span class="p">,</span>
+        <span class="n">carries_meaning</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">(</span><span class="s2">"sfx"</span><span class="p">,</span> <span class="s2">"music"</span><span class="p">),</span>
+    <span class="p">),</span>
     <span class="s2">"rerank"</span><span class="p">:</span> <span class="n">Affordance</span><span class="p">(</span><span class="s2">"rerank"</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">"Apply second-stage rerank"</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
 <span class="p">}</span>
 

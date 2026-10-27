@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=1e158f99"></script>
+    <script src="../../../../_static/documentation_options.js?v=d59c1f54"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.73" />
+  <meta name="docsearch:version" content="0.0.74" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -735,7 +735,13 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">wanted_license_ids</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.._keyless</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_bytes</span><span class="p">,</span> <span class="n">get_json</span><span class="p">,</span> <span class="n">raw_id</span><span class="p">,</span> <span class="n">strip_html</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.._license_gate</span><span class="w"> </span><span class="kn">import</span> <span class="n">license_for_item</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">SourceConfigurationError</span><span class="p">,</span> <span class="n">api_license</span><span class="p">,</span> <span class="n">merge_provider_params</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SourceConfigurationError</span><span class="p">,</span>
+    <span class="n">api_license</span><span class="p">,</span>
+    <span class="n">as_names</span><span class="p">,</span>
+    <span class="n">merge_provider_params</span><span class="p">,</span>
+    <span class="n">paging_params</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..http</span><span class="w"> </span><span class="kn">import</span> <span class="n">Transport</span><span class="p">,</span> <span class="n">requests_transport</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_CONFIG</span>
 
@@ -791,6 +797,8 @@ window.runMermaid = runMermaid;</script>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">license</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
+        <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">sources</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[Candidate]"</span><span class="p">:</span>
@@ -800,7 +808,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        items under it; ``None`` keeps every accepted licence. The default is ``None``,</span>
 <span class="sd">        unlike the other CC sources' ``'cc0'``, because every archive licence is an</span>
 <span class="sd">        unverified claim anyway; ``add_from`` always passes its own (``'cc0'``) default.</span>
-<span class="sd">        The query always asks for items with a ``licenseurl``.</span>
+<span class="sd">        The query always asks for items with a ``licenseurl``. ``page`` is the results</span>
+<span class="sd">        page (1-based, ``k`` per page); ``sources`` restricts it to these archive</span>
+<span class="sd">        collections.</span>
 <span class="sd">        ``provider_params`` are native advancedsearch params merged over the</span>
 <span class="sd">        translated ones (#61); a ``q`` is ANDed onto foley's as one group, never</span>
 <span class="sd">        replaces it (the config's ``provider_params`` policy).</span>
@@ -809,12 +819,22 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">only</span> <span class="o">==</span> <span class="p">[]:</span>  <span class="c1"># a licence this source does not accept: nothing can match</span>
             <span class="k">return</span> <span class="p">[]</span>
         <span class="n">api</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"api"</span><span class="p">]</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">_lucene_escape</span><span class="p">(</span><span class="n">query</span><span class="p">)</span><span class="si">}</span><span class="s2">) AND mediatype:audio AND </span><span class="si">{</span><span class="n">api</span><span class="p">[</span><span class="s1">'licensed_clause'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="n">sources</span><span class="p">:</span>
+            <span class="n">spec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">][</span><span class="s2">"sources"</span><span class="p">]</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="n">as_names</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span>
+            <span class="n">bad</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="s2">"pattern"</span><span class="p">],</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">))]</span>
+            <span class="k">if</span> <span class="n">bad</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"not archive collection identifiers: </span><span class="si">{</span><span class="n">bad</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">quoted</span> <span class="o">=</span> <span class="s2">" OR "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'"</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s1">"'</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span><span class="p">)</span>
+            <span class="n">q</span> <span class="o">+=</span> <span class="s2">" AND "</span> <span class="o">+</span> <span class="n">spec</span><span class="p">[</span><span class="s2">"to_native"</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">collections</span><span class="o">=</span><span class="n">quoted</span><span class="p">)</span>
         <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">"q"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">_lucene_escape</span><span class="p">(</span><span class="n">query</span><span class="p">)</span><span class="si">}</span><span class="s2">) AND mediatype:audio AND </span><span class="si">{</span><span class="n">api</span><span class="p">[</span><span class="s1">'licensed_clause'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">"q"</span><span class="p">:</span> <span class="n">q</span><span class="p">,</span>
             <span class="s2">"fl[]"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">_FIELDS</span><span class="p">),</span>
             <span class="s2">"rows"</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">k</span><span class="p">),</span> <span class="n">api</span><span class="p">[</span><span class="s2">"max_rows"</span><span class="p">]),</span>
             <span class="s2">"output"</span><span class="p">:</span> <span class="s2">"json"</span><span class="p">,</span>
         <span class="p">}</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">paging_params</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"rows"</span><span class="p">]))</span>
         <span class="n">params</span> <span class="o">=</span> <span class="n">merge_provider_params</span><span class="p">(</span>
             <span class="n">params</span><span class="p">,</span> <span class="n">provider_params</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"provider_params"</span><span class="p">)</span>
         <span class="p">)</span>

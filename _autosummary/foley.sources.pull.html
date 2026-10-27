@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=1e158f99"></script>
+    <script src="../_static/documentation_options.js?v=d59c1f54"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.73" />
+  <meta name="docsearch:version" content="0.0.74" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -545,7 +545,10 @@ unified affordance for (#61), e.g. Freesound’s
 them) and merged over its translated params; the licence filter and the
 fail-closed gate still apply.</p></li>
 <li><p><strong>**affordances</strong> – Extra unified affordances forwarded to the adapter’s
-<code class="docutils literal notranslate"><span class="pre">search</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">duration_range</span></code>, <code class="docutils literal notranslate"><span class="pre">sort</span></code>).</p></li>
+<code class="docutils literal notranslate"><span class="pre">search</span></code> (see <a class="reference internal" href="foley.base.html#foley.base.QUERY_AFFORDANCES" title="foley.base.QUERY_AFFORDANCES"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.base.QUERY_AFFORDANCES</span></code></a>): <code class="docutils literal notranslate"><span class="pre">duration_range</span></code>,
+<code class="docutils literal notranslate"><span class="pre">sort</span></code> (<code class="docutils literal notranslate"><span class="pre">relevance</span></code> | <code class="docutils literal notranslate"><span class="pre">newest</span></code> | <code class="docutils literal notranslate"><span class="pre">popular</span></code> | <code class="docutils literal notranslate"><span class="pre">duration</span></code>),
+<code class="docutils literal notranslate"><span class="pre">page</span></code>, <code class="docutils literal notranslate"><span class="pre">kind</span></code> (<code class="docutils literal notranslate"><span class="pre">sfx</span></code> | <code class="docutils literal notranslate"><span class="pre">music</span></code>), <code class="docutils literal notranslate"><span class="pre">sources</span></code>, <code class="docutils literal notranslate"><span class="pre">include_explicit</span></code>,
+<code class="docutils literal notranslate"><span class="pre">similar_to</span></code>, <code class="docutils literal notranslate"><span class="pre">ucs_category</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>

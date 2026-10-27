@@ -226,7 +226,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound entered foley (retrieval channel or origin).
 
-### *class* foley.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, renamed_from=None)
+### *class* foley.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -275,6 +275,14 @@ that cannot honour it raises instead of dropping it (#53).
 
 * **Type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+#### choices
+
+The values it accepts, when it is an enumeration (`sort`,
+`kind`); any other value raises `ValueError` before any call.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]
 
 #### renamed_from
 
@@ -1863,7 +1871,10 @@ applies the by-reference storage gate from the sound’s own license.
     them) and merged over its translated params; the licence filter and the
     fail-closed gate still apply.
   * **\*\*affordances** – Extra unified affordances forwarded to the adapter’s
-    `search` (e.g. `duration_range`, `sort`).
+    `search` (see [`foley.base.QUERY_AFFORDANCES`](foley.base.html.md#foley.base.QUERY_AFFORDANCES)): `duration_range`,
+    `sort` (`relevance` | `newest` | `popular` | `duration`),
+    `page`, `kind` (`sfx` | `music`), `sources`, `include_explicit`,
+    `similar_to`, `ucs_category`.
 * **Return type:**
   [`IngestReport`](foley.index.ingest.html.md#foley.index.ingest.IngestReport)
 * **Returns:**

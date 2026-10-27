@@ -1,4 +1,4 @@
-> built 2026-10-27 03:45 UTC from 44083e9 (main) · foley 0.0.73. Details: build_info.json
+> built 2026-10-27 04:09 UTC from 497516d (main) · foley 0.0.74. Details: build_info.json
 
 # index.html.md
 
@@ -2670,7 +2670,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound entered foley (retrieval channel or origin).
 
-### *class* foley.base.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, renamed_from=None)
+### *class* foley.base.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2719,6 +2719,14 @@ that cannot honour it raises instead of dropping it (#53).
 
 * **Type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+#### choices
+
+The values it accepts, when it is an enumeration (`sort`,
+`kind`); any other value raises `ValueError` before any call.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]
 
 #### renamed_from
 
@@ -2776,7 +2784,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 Whether a candidate was retrieved from the index or freshly generated.
 
-### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, renamed_from='duration'), 'expand_prompt': Affordance(name='expand_prompt', type=<class 'bool'>, description='Let the backend rewrite the prompt (the prompt it used is recorded)', default=None, stage='generate', carries_meaning=False, renamed_from=None), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, renamed_from=None), 'sample_rate': Affordance(name='sample_rate', type=<class 'int'>, description='Requested rate (Hz); the actual rate is measured and recorded', default=None, stage='generate', carries_meaning=False, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, renamed_from=None)}*
+### foley.base.GENERATION_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'duration_s': Affordance(name='duration_s', type=<class 'float'>, description='Seconds; None => backend auto', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from='duration'), 'expand_prompt': Affordance(name='expand_prompt', type=<class 'bool'>, description='Let the backend rewrite the prompt (the prompt it used is recorded)', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'loop': Affordance(name='loop', type=<class 'bool'>, description='Seamless-loopable clip', default=False, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'model': Affordance(name='model', type=<class 'str'>, description="Pin a model / version (stored as generator_version); None => the backend's", default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'negative_prompt': Affordance(name='negative_prompt', type=<class 'str'>, description='Content to exclude', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'output_format': Affordance(name='output_format', type=<class 'str'>, description='wav|opus|mp3', default='wav', stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt': Affordance(name='prompt', type=<class 'str'>, description='Sound description', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'prompt_influence': Affordance(name='prompt_influence', type=<class 'float'>, description="0..1 unified adherence; None => the backend's native default", default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'sample_rate': Affordance(name='sample_rate', type=<class 'int'>, description='Requested rate (Hz); the actual rate is measured and recorded', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None), 'seed': Affordance(name='seed', type=<class 'int'>, description='Reproducibility (capture in provenance)', default=None, stage='generate', carries_meaning=True, choices=None, renamed_from=None), 'steps': Affordance(name='steps', type=<class 'int'>, description='Diffusion/flow steps', default=None, stage='generate', carries_meaning=False, choices=None, renamed_from=None)}*
 
 Unified generation-stage parameters (generate backends map onto these).
 
@@ -2861,7 +2869,7 @@ Every field is a no-op at its default, so a sparse item (no `processing`)
 renders untouched; the mixer departs from dry/centered/full-level only when a
 field is set.
 
-### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False, renamed_from=None), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False, renamed_from=None), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False, renamed_from=None), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False, renamed_from=None), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False, renamed_from=None), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False, renamed_from=None), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False, renamed_from=None), 'sort': Affordance(name='sort', type=<class 'str'>, description='score|duration|created|downloads', default='score', stage='query', carries_meaning=False, renamed_from=None), 'text': Affordance(name='text', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False, renamed_from=None), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False, renamed_from=None)}*
+### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'include_explicit': Affordance(name='include_explicit', type=<class 'bool'>, description='Also return explicit / sensitive results', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'kind': Affordance(name='kind', type=<class 'str'>, description='Media kind: sfx | music', default='sfx', stage='query', carries_meaning=True, choices=('sfx', 'music'), renamed_from=None), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'page': Affordance(name='page', type=<class 'int'>, description='Results page (1-based; k per page)', default=1, stage='query', carries_meaning=True, choices=None, renamed_from=None), 'query': Affordance(name='query', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False, choices=None, renamed_from='text'), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None), 'sort': Affordance(name='sort', type=<class 'str'>, description='Result order', default='relevance', stage='query', carries_meaning=False, choices=('relevance', 'newest', 'popular', 'duration'), renamed_from=None), 'sources': Affordance(name='sources', type=<class 'list'>, description='Restrict an aggregator to these of its providers', default=None, stage='query', carries_meaning=True, choices=None, renamed_from=None), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None)}*
 
 Unified query-stage parameters (search / find / filter surface).
 
@@ -5379,7 +5387,7 @@ Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](h
 
 How a sound entered foley (retrieval channel or origin).
 
-### *class* foley.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, renamed_from=None)
+### *class* foley.Affordance(name, type, description, default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -5428,6 +5436,14 @@ that cannot honour it raises instead of dropping it (#53).
 
 * **Type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+#### choices
+
+The values it accepts, when it is an enumeration (`sort`,
+`kind`); any other value raises `ValueError` before any call.
+
+* **Type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]
 
 #### renamed_from
 
@@ -7016,7 +7032,10 @@ applies the by-reference storage gate from the sound’s own license.
     them) and merged over its translated params; the licence filter and the
     fail-closed gate still apply.
   * **\*\*affordances** – Extra unified affordances forwarded to the adapter’s
-    `search` (e.g. `duration_range`, `sort`).
+    `search` (see [`foley.base.QUERY_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.QUERY_AFFORDANCES)): `duration_range`,
+    `sort` (`relevance` | `newest` | `popular` | `duration`),
+    `page`, `kind` (`sfx` | `music`), `sources`, `include_explicit`,
+    `similar_to`, `ucs_category`.
 * **Return type:**
   [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport)
 * **Returns:**
@@ -13914,7 +13933,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'netflix sound', 'ta-dum', 'netflix chime', 'ta dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'tudum', 'netflix intro', 'ta-dum', 'netflix chime', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16704,7 +16723,7 @@ It bypasses the licence filter and the per-item licence re-check that
 * **Raises:**
   [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – On a non-200 response (with Freesound’s `detail`).
 
-#### search(query, , license='cc0', k=15, duration_range=None, sort=None, similar_to=None, ucs_category=None, provider_params=None, \*\*kw)
+#### search(query, , license='cc0', k=15, duration_range=None, sort=None, page=1, kind='sfx', similar_to=None, ucs_category=None, provider_params=None, \*\*kw)
 
 Search Freesound for `query`; return license-clean candidates.
 
@@ -16720,7 +16739,11 @@ before it becomes a candidate.
     kept, so NC / SA / ND never come back.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max results (Freesound caps `page_size` at 150).
   * **duration_range** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – Optional `(min_s, max_s)` native duration filter.
-  * **sort** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional native sort key (default: Freesound relevance).
+  * **sort** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – `relevance` (default) | `newest` | `popular` | `duration`,
+    translated to Freesound’s native key.
+  * **page** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The results page (1-based, `k` per page).
+  * **kind** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `sfx` (default, no filter) or `music` (the Broad Sound
+    Taxonomy’s “Music” top level).
   * **similar_to** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A Freesound sound id (either id form): “more like this one”.
   * **ucs_category** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A UCS CatID or category, mapped to a coarse Broad Sound
     Taxonomy `category` pre-filter (no filter if it is not recognised).
@@ -17320,7 +17343,10 @@ applies the by-reference storage gate from the sound’s own license.
     them) and merged over its translated params; the licence filter and the
     fail-closed gate still apply.
   * **\*\*affordances** – Extra unified affordances forwarded to the adapter’s
-    `search` (e.g. `duration_range`, `sort`).
+    `search` (see [`foley.base.QUERY_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.QUERY_AFFORDANCES)): `duration_range`,
+    `sort` (`relevance` | `newest` | `popular` | `duration`),
+    `page`, `kind` (`sfx` | `music`), `sources`, `include_explicit`,
+    `similar_to`, `ucs_category`.
 * **Return type:**
   [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport)
 * **Returns:**
@@ -17864,7 +17890,7 @@ It bypasses the licence filter and the per-item licence check that
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-#### search(query, , license=None, k=15, provider_params=None, \*\*kw)
+#### search(query, , license=None, k=15, page=1, sources=None, provider_params=None, \*\*kw)
 
 Search archive audio for `query`; return candidates (all unverified).
 
@@ -17872,7 +17898,9 @@ Search archive audio for `query`; return candidates (all unverified).
 items under it; `None` keeps every accepted licence. The default is `None`,
 unlike the other CC sources’ `'cc0'`, because every archive licence is an
 unverified claim anyway; `add_from` always passes its own (`'cc0'`) default.
-The query always asks for items with a `licenseurl`.
+The query always asks for items with a `licenseurl`. `page` is the results
+page (1-based, `k` per page); `sources` restricts it to these archive
+collections.
 `provider_params` are native advancedsearch params merged over the
 translated ones (#61); a `q` is ANDed onto foley’s as one group, never
 replaces it (the config’s `provider_params` policy).
@@ -17993,7 +18021,7 @@ It bypasses the licence filter and the per-item licence check that
 
 The sentence Openverse’s terms require an app to show prominently.
 
-#### search(query, , license='cc0', k=15, provider_params=None, \*\*kw)
+#### search(query, , license='cc0', k=15, page=1, include_explicit=False, sources=None, kind='sfx', provider_params=None, \*\*kw)
 
 Search Openverse audio for `query`; return licence-checked candidates.
 
@@ -18002,6 +18030,12 @@ Search Openverse audio for `query`; return licence-checked candidates.
     under it, and is pushed into the native `license` filter (CC0, CC-BY or
     PDM); `None` asks for CC0, CC-BY and public-domain-mark rows.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max rows (anonymous limit 20).
+  * **page** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The results page (1-based, `k` per page).
+  * **include_explicit** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Also return rows Openverse marks mature.
+  * **sources** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]) – Only these Openverse providers (`wikimedia_audio`, …); the
+    excluded ones (Freesound, Jamendo) stay excluded, so asking only for
+    them returns nothing.
+  * **kind** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `sfx` (default, no category filter) or `music`.
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
     (#61); the per-item licence check still applies.
 * **Return type:**
@@ -18113,7 +18147,10 @@ applies the by-reference storage gate from the sound’s own license.
     them) and merged over its translated params; the licence filter and the
     fail-closed gate still apply.
   * **\*\*affordances** – Extra unified affordances forwarded to the adapter’s
-    `search` (e.g. `duration_range`, `sort`).
+    `search` (see [`foley.base.QUERY_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.QUERY_AFFORDANCES)): `duration_range`,
+    `sort` (`relevance` | `newest` | `popular` | `duration`),
+    `page`, `kind` (`sfx` | `music`), `sources`, `include_explicit`,
+    `similar_to`, `ucs_category`.
 * **Return type:**
   [`IngestReport`](_autosummary/foley.index.ingest.html.md#foley.index.ingest.IngestReport)
 * **Returns:**
@@ -18767,7 +18804,7 @@ It bypasses the licence filter and the per-item licence check that
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-#### search(query, , license='cc0', k=15, provider_params=None, \*\*kw)
+#### search(query, , license='cc0', k=15, page=1, provider_params=None, \*\*kw)
 
 Search Commons audio for `query`; return licence-checked candidates.
 
@@ -18776,6 +18813,7 @@ Search Commons audio for `query`; return licence-checked candidates.
     CC-BY ids) keeps only files under it; `None` also keeps CC-BY and the
     unverified public-domain claims.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max files requested (the API’s limit is 50).
+  * **page** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The results page (1-based, `k` per page), sent as an offset.
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
     (#61); the per-item licence check still applies.
 * **Return type:**
@@ -20554,16 +20592,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 03:45 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/44083e985865f064e6c91dd48409af78e9d48be0"><code>44083e9</code></a> on branch <code>main</code>, for **foley 0.0.73** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 04:09 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/497516da95b0bba38d2159899d10641ba11349e3"><code>497516d</code></a> on branch <code>main</code>, for **foley 0.0.74** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.74) is behind the latest release on PyPI (0.0.75): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/44083e985865f064e6c91dd48409af78e9d48be0"><code>44083e985865f064e6c91dd48409af78e9d48be0</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/497516da95b0bba38d2159899d10641ba11349e3"><code>497516da95b0bba38d2159899d10641ba11349e3</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20574,9 +20614,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40445768391">40445768391</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40447948264">40447948264</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>44083e985865f064e6c91dd48409af78e9d48be0</code> (in the history of the built commit) |
+| Event commit | <code>497516da95b0bba38d2159899d10641ba11349e3</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20601,13 +20641,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.73/">0.0.73</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.75/">0.0.75</a>, newer than the documented version (0.0.74).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 44083e985865f064e6c91dd48409af78e9d48be0
+git checkout 497516da95b0bba38d2159899d10641ba11349e3
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

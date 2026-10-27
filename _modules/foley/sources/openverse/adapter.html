@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=1e158f99"></script>
+    <script src="../../../../_static/documentation_options.js?v=d59c1f54"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.73" />
+  <meta name="docsearch:version" content="0.0.74" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -736,7 +736,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">...licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">wanted_license_ids</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.._keyless</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_bytes</span><span class="p">,</span> <span class="n">get_json</span><span class="p">,</span> <span class="n">raw_id</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.._license_gate</span><span class="w"> </span><span class="kn">import</span> <span class="n">license_for_item</span><span class="p">,</span> <span class="n">native_license_filter</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">api_license</span><span class="p">,</span> <span class="n">merge_provider_params</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">api_license</span><span class="p">,</span> <span class="n">as_names</span><span class="p">,</span> <span class="n">merge_provider_params</span><span class="p">,</span> <span class="n">paging_params</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..http</span><span class="w"> </span><span class="kn">import</span> <span class="n">Transport</span><span class="p">,</span> <span class="n">requests_transport</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_CONFIG</span>
 
@@ -790,6 +790,10 @@ window.runMermaid = runMermaid;</script>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">license</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"cc0"</span><span class="p">,</span>
         <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
+        <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">include_explicit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">sources</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"sfx"</span><span class="p">,</span>
         <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[Candidate]"</span><span class="p">:</span>
@@ -800,6 +804,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">                under it, and is pushed into the native ``license`` filter (CC0, CC-BY or</span>
 <span class="sd">                PDM); ``None`` asks for CC0, CC-BY and public-domain-mark rows.</span>
 <span class="sd">            k: Max rows (anonymous limit 20).</span>
+<span class="sd">            page: The results page (1-based, ``k`` per page).</span>
+<span class="sd">            include_explicit: Also return rows Openverse marks mature.</span>
+<span class="sd">            sources: Only these Openverse providers (``wikimedia_audio``, …); the</span>
+<span class="sd">                excluded ones (Freesound, Jamendo) stay excluded, so asking only for</span>
+<span class="sd">                them returns nothing.</span>
+<span class="sd">            kind: ``sfx`` (default, no category filter) or ``music``.</span>
 <span class="sd">            provider_params: Native search params merged over the translated ones</span>
 <span class="sd">                (#61); the per-item licence check still applies.</span>
 <span class="sd">        """</span>
@@ -814,13 +824,22 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">wanted</span><span class="p">,</span> <span class="n">api</span><span class="p">[</span><span class="s2">"license_native"</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="n">api</span><span class="p">[</span><span class="s2">"license_default"</span><span class="p">]</span>
             <span class="p">),</span>
         <span class="p">}</span>
-        <span class="n">excluded</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">s</span>
-            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">api</span><span class="p">[</span><span class="s2">"excluded_sources"</span><span class="p">]</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">s</span> <span class="o">==</span> <span class="s2">"freesound"</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_freesound</span><span class="p">)</span>
-        <span class="p">]</span>
-        <span class="k">if</span> <span class="n">excluded</span><span class="p">:</span>
+        <span class="n">excluded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_excluded</span><span class="p">()</span>
+        <span class="n">pm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">sources</span><span class="p">:</span>
+            <span class="n">wanted_sources</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">as_names</span><span class="p">(</span><span class="n">sources</span><span class="p">)]</span>
+            <span class="n">allowed</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">wanted_sources</span> <span class="k">if</span> <span class="n">s</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">excluded</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">allowed</span><span class="p">:</span>  <span class="c1"># only excluded providers asked for: nothing can match</span>
+                <span class="k">return</span> <span class="p">[]</span>
+            <span class="n">params</span><span class="p">[</span><span class="n">pm</span><span class="p">[</span><span class="s2">"sources"</span><span class="p">][</span><span class="s2">"native_name"</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">allowed</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">excluded</span><span class="p">:</span>
             <span class="n">params</span><span class="p">[</span><span class="s2">"excluded_source"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">excluded</span><span class="p">)</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">paging_params</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">page</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">"page_size"</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">include_explicit</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="n">pm</span><span class="p">[</span><span class="s2">"include_explicit"</span><span class="p">][</span><span class="s2">"native_name"</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">"true"</span>
+        <span class="n">category</span> <span class="o">=</span> <span class="n">pm</span><span class="p">[</span><span class="s2">"kind"</span><span class="p">][</span><span class="s2">"to_native"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">category</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="n">pm</span><span class="p">[</span><span class="s2">"kind"</span><span class="p">][</span><span class="s2">"native_name"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">category</span>
         <span class="n">params</span> <span class="o">=</span> <span class="n">merge_provider_params</span><span class="p">(</span>
             <span class="n">params</span><span class="p">,</span> <span class="n">provider_params</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"provider_params"</span><span class="p">)</span>
         <span class="p">)</span>
@@ -855,7 +874,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        """</span>
         <span class="n">rid</span> <span class="o">=</span> <span class="n">raw_id</span><span class="p">(</span><span class="n">_PREFIX</span><span class="p">,</span> <span class="n">source_id</span><span class="p">)</span>
         <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"api"</span><span class="p">][</span><span class="s2">"detail_endpoint"</span><span class="p">][</span><span class="s2">"path"</span><span class="p">]</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">rid</span><span class="p">)</span>
-        <span class="n">cand</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_candidate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_json</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">only</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_json</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provider</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_excluded</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">LookupError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Openverse audio </span><span class="si">{</span><span class="n">rid</span><span class="si">}</span><span class="s2"> is from </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_provider</span><span class="p">(</span><span class="n">row</span><span class="p">)</span><span class="si">!r}</span><span class="s2">, a provider "</span>
+                <span class="s2">"foley does not take from Openverse; refused."</span>
+            <span class="p">)</span>
+        <span class="n">cand</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_candidate</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">only</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">cand</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">LookupError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"Openverse audio </span><span class="si">{</span><span class="n">rid</span><span class="si">}</span><span class="s2"> has a non-accepted licence; refused (fail-closed)."</span>
@@ -878,12 +903,28 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span></div>
 
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_excluded</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The Openverse providers this adapter never returns (Freesound unless asked)."""</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">s</span>
+            <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"api"</span><span class="p">][</span><span class="s2">"excluded_sources"</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">s</span> <span class="o">==</span> <span class="s2">"freesound"</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_freesound</span><span class="p">)</span>
+        <span class="p">]</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_provider</span><span class="p">(</span><span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The row's Openverse provider, normalised (the API sends lowercase)."""</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_candidate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">only</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Candidate</span><span class="p">]:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"url"</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="n">by_reference</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"freesound"</span>
-        <span class="k">if</span> <span class="n">by_reference</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_include_freesound</span><span class="p">:</span>
+        <span class="n">provider</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provider</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+        <span class="c1"># Whatever the request (a provider param can rewrite the source filter), an</span>
+        <span class="c1"># excluded provider's row is never returned.</span>
+        <span class="k">if</span> <span class="n">provider</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_excluded</span><span class="p">():</span>
             <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">by_reference</span> <span class="o">=</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">"freesound"</span>  <span class="c1"># its terms forbid caching its bytes</span>
         <span class="n">found</span> <span class="o">=</span> <span class="n">license_for_item</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"license_url"</span><span class="p">),</span> <span class="n">only</span><span class="o">=</span><span class="n">only</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>

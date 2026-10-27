@@ -71,7 +71,7 @@ It bypasses the licence filter and the per-item licence check that
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-#### search(query, , license='cc0', k=15, provider_params=None, \*\*kw)
+#### search(query, , license='cc0', k=15, page=1, provider_params=None, \*\*kw)
 
 Search Commons audio for `query`; return licence-checked candidates.
 
@@ -80,6 +80,7 @@ Search Commons audio for `query`; return licence-checked candidates.
     CC-BY ids) keeps only files under it; `None` also keeps CC-BY and the
     unverified public-domain claims.
   * **k** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Max files requested (the API’s limit is 50).
+  * **page** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The results page (1-based, `k` per page), sent as an offset.
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native search params merged over the translated ones
     (#61); the per-item licence check still applies.
 * **Return type:**
