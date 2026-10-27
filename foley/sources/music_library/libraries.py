@@ -157,6 +157,12 @@ def register_music_library(library: MusicLibrary, *, replace: bool = False) -> N
             )
         if not derive_license_flags(library.license_id).cache_bytes_ok:
             raise MusicLibraryError(_not_keepable(library))
+        if not library.rights_verified:  # every title would be refused by acquire
+            raise MusicLibraryError(
+                f"music library {library.name!r}: foley does not verify the rights of "
+                f"{library.license_id!r} on its own (a human must check them), so "
+                "acquire would refuse every title"
+            )
     MUSIC_LIBRARIES[library.name] = library
 
 

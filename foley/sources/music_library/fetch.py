@@ -117,7 +117,9 @@ def fetch_audio(url: str, *, http: Transport, config: Optional[dict] = None) -> 
 
     Raises:
         MusicLibraryError: On a non-200 answer, a ``text/*`` page (an error page
-            served with 200), or a body over ``config['max_bytes']``.
+            served with 200), a body over ``config['max_bytes']``, or one shorter
+            than its declared ``Content-Length`` (a cut download, which a probe of
+            its header alone would still accept).
     """
     config = music_library_config(config)
     cap = config["max_bytes"]
@@ -133,6 +135,10 @@ def fetch_audio(url: str, *, http: Transport, config: Optional[dict] = None) -> 
     data = resp.content
     if len(data) > cap:
         raise MusicLibraryError(f"{url} is over {cap} bytes")
+    if declared is not None and len(data) < declared:  # a probe reads a header only
+        raise MusicLibraryError(
+            f"{url} is truncated: {len(data)} of the {declared} bytes it declares"
+        )
     return data
 
 

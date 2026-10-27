@@ -766,3 +766,23 @@ def test_importing_the_package_does_not_import_requests():
     )
     proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert proc.returncode == 0, proc.stderr
+
+
+def test_a_body_shorter_than_its_content_length_is_refused():
+    """A cut download: its header alone could still probe as audio."""
+    url = _url("A")
+    cut = Resp(content=b"aaa", headers={"Content-Type": "audio/mpeg", "Content-Length": "16000"})
+    (row,) = _via_transport(["A"], FakeTransport({url: [cut]}))
+    assert row.status == FAILED and "truncated: 3 of the 16000" in row.error
+
+
+def test_registering_a_library_whose_rights_foley_never_verifies_is_refused():
+    lib = MusicLibrary(
+        "pdm_lib",
+        "Someone",
+        license_url="https://creativecommons.org/publicdomain/mark/1.0/",
+        track_url=lambda t: f"https://pd.example/{t}.mp3",
+    )
+    with pytest.raises(MusicLibraryError, match="refuse every title"):
+        register_music_library(lib)
+    assert "pdm_lib" not in MUSIC_LIBRARIES
