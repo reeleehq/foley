@@ -58,9 +58,8 @@ def intended_use_for(
                 f"commercial_ok={commercial_ok!r} contradicts intended_use.commercial="
                 f"{intended_use.commercial!r}; pass one of them"
             )
-        if territory is not None and (
-            normalize_territory(territory) != intended_use.territory
-        ):
+        stated = normalize_territory(territory)
+        if stated is not None and stated != normalize_territory(intended_use.territory):
             raise ValueError(
                 f"territory={territory!r} contradicts intended_use.territory="
                 f"{intended_use.territory!r}; pass one of them"
@@ -677,6 +676,8 @@ def refusal_reason(record: LicenseRecord, intended_use: IntendedUse) -> Optional
         where = ", ".join(sorted(excluded))
         if intended_use.territory is None:
             return f"its licence grants nothing in {where}: state the territory"
+        if intended_use.territory == WORLDWIDE:
+            return f"its licence grants nothing in {where} (WORLD: worldwide use includes them)"
         return f"its licence grants nothing in {where} ({intended_use.territory})"
     return None
 

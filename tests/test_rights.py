@@ -487,6 +487,7 @@ def test_intended_use_for_takes_a_territory_and_world():
     with pytest.raises(ValueError, match="contradicts intended_use.territory"):
         intended_use_for(IntendedUse(territory="US"), territory="FR")
     assert intended_use_for(IntendedUse(territory="US"), territory="us").territory == "US"
+    assert intended_use_for(IntendedUse(territory="US"), territory="  ").territory == "US"
     with pytest.raises(ValueError, match="'WORLD'"):
         intended_use_for(territory="Europe")
 
@@ -494,13 +495,21 @@ def test_intended_use_for_takes_a_territory_and_world():
 def test_mcp_generate_lifts_a_territory_exclusion_only_where_it_does_not_apply():
     from foley.agent import mcp
 
+    from foley.licensing import intended_use_for
+    from foley.sources.generate import generation_rights_refusal
+
     def refused(territory):
         out = mcp.foley_generate("rain", backend="fal_hunyuan_foley", commercial_ok=False,
                                  territory=territory)
         return out.get("status") == "refused" and "grants nothing" in out.get("error", "")
 
     assert refused(None) and refused("KR") and refused("WORLD") and refused("fr")
-    assert not refused("US")  # past the rights gate (it then fails on the missing video)
+    us = intended_use_for(commercial_ok=False, territory="US")
+    assert generation_rights_refusal("fal_hunyuan_foley", us) is None  # the gate lifts
+    out = mcp.foley_generate("rain", backend="fal_hunyuan_foley", commercial_ok=False,
+                             territory="US")
+    assert out["ok"] is False and "video" in out["error"]  # past it: a V2A needs a video
+    assert mcp.foley_generate("rain", territory="Mars")["status"] == "invalid"
 
 
 def test_mcp_find_and_score_pass_the_territory(fake_embedder, monkeypatch):
@@ -518,5 +527,6 @@ def test_mcp_find_and_score_pass_the_territory(fake_embedder, monkeypatch):
     for verb in (mcp.foley_find, mcp.foley_score):
         with pytest.raises(Seen, match="^US$"):
             verb(DEMO, territory="us")
-    with pytest.raises(ValueError, match="ISO 3166-1"):
-        mcp.foley_find(DEMO, territory="Mars")
+    (row,) = mcp.foley_find(DEMO, territory="Mars")  # a JSON row, never a raise
+    assert row["status"] == "invalid" and "ISO 3166-1" in row["error"]
+    assert mcp.foley_score(DEMO, territory="Mars")["status"] == "invalid"

@@ -246,6 +246,10 @@ def foley_find(
     from ..cost import BudgetExceeded, spend_scope
 
     try:
+        use = intended_use_for(commercial_ok=commercial_ok, territory=territory)
+    except ValueError as exc:  # a territory that is not a code: a JSON row, no raise
+        return [_invalid(exc)]
+    try:
         with spend_scope(_server_budget()):
             cands = list(
                 find(
@@ -253,9 +257,7 @@ def foley_find(
                     max_events=max_events,
                     verify=verify,
                     k=k,
-                    intended_use=intended_use_for(
-                        commercial_ok=commercial_ok, territory=territory
-                    ),
+                    intended_use=use,
                     library=_lib(),
                 )
             )
@@ -410,7 +412,10 @@ def foley_generate(
     )
     from ..sources.registry import source_egress
 
-    use = intended_use_for(commercial_ok=commercial_ok, territory=territory)
+    try:
+        use = intended_use_for(commercial_ok=commercial_ok, territory=territory)
+    except ValueError as exc:  # a territory that is not a code
+        return _invalid(exc)
 
     # The bound server runtime may differ from the call's context (a server built with
     # runtime= but not run under offline_scope), so check it here too; undeclared
@@ -619,18 +624,23 @@ def foley_score(
     The one-call SELECT→plan entry for an agent: pass the narration text and get back a JSON
     timeline plus a rationale for each chosen sound. Weaving (rendering the mastered mix) is a
     **separate** step (``foley_weave``) so you can review / edit the timeline first — swap a
-    clip, nudge an onset, drop a cue — before committing to a render.
+    clip, nudge an onset, drop a cue — before committing to a render. ``territory``:
+    where the sound is used (an ISO country code, or ``"WORLD"`` for online publishing);
+    a licence that excludes territories is refused while it is unstated.
     """
     from .. import score
     from ..cost import spend_scope
+
+    try:
+        use = intended_use_for(commercial_ok=commercial_ok, territory=territory)
+    except ValueError as exc:  # a territory that is not a code
+        return _invalid(exc)
 
     with spend_scope(_server_budget()):
         res = score(
             context,
             library=_lib(),
-            intended_use=intended_use_for(
-                commercial_ok=commercial_ok, territory=territory
-            ),
+            intended_use=use,
             verify=verify,
             max_events=max_events,
             weave=False,
@@ -672,12 +682,20 @@ TASTE HEURISTICS:
   - Licensing is load-bearing: only `license_ok` candidates are placed. Every tool assumes
     commercial publishing (commercial_ok=True); pass commercial_ok=False only for a
     non-commercial project. Each row's `license` carries full TASL + every rights flag.
+    Some licences exclude territories (HunyuanVideo-Foley: EU, GB, KR): foley_find,
+    foley_score and foley_generate refuse them unless territory= names where the sound is
+    used (an ISO code like "US"; "WORLD" for online publishing, which they refuse).
   - Loudness: the master profile ('podcast'/'streaming'/'broadcast_ebu') sets the delivery target.
 
 OFFLINE / SENSITIVE narration: run with the offline posture (foley_status shows it) — external
 sources + telemetry are disabled; generation stays on local backends.
 Call foley_capabilities() to see what's installed/degraded here.
 """
+
+
+def _invalid(exc: Exception) -> dict:
+    """The JSON row of an argument the tool refuses (a tool never raises for one)."""
+    return {"ok": False, "status": "invalid", "error": str(exc)}
 
 
 def foley_guide() -> dict:
