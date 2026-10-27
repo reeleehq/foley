@@ -881,3 +881,44 @@ def test_the_order_skips_a_backend_that_cannot_pin_the_model(library, paid_sourc
         SOURCE_REGISTRY.pop("pinnable", None)
     assert unpinned.calls == 0 and pinnable.calls == 1
     assert cand is not None
+
+
+def _never_called(*args, **kwargs):
+    raise AssertionError("the backend must not be called")
+
+
+def _direct_adapters():
+    from foley.sources.elevenlabs.adapter import ElevenLabsAdapter
+    from foley.sources.fal.adapter import FalAdapter
+    from foley.sources.fal.config import SOURCE_CONFIGS as FAL_CONFIGS
+    from foley.sources.stable_audio.adapter import StableAudioAdapter
+    from foley.sources.stable_audio_3.adapter import StableAudio3Adapter
+
+    return {
+        "elevenlabs": ElevenLabsAdapter(api_key="k", http=_never_called,
+                                        plan="elevenlabs-paid-plan"),
+        "fal": FalAdapter(FAL_CONFIGS[0], api_key="k", runner=_never_called),
+        "stable_audio": StableAudioAdapter(pipeline=_never_called),
+        "stable_audio_3": StableAudio3Adapter(runner=_never_called),
+    }
+
+
+@pytest.mark.parametrize("name", ["elevenlabs", "fal", "stable_audio", "stable_audio_3"])
+def test_every_adapter_called_directly_rejects_the_old_duration(name):
+    with pytest.raises(TypeError, match="renamed duration_s"):
+        _direct_adapters()[name].generate("rain", duration=2)
+
+
+def test_pinning_the_native_default_model_keys_as_unpinned():
+    """Where generator_version differs from model_id, the default pin is still unpinned."""
+    from foley.sources._dispatch import request_digest
+
+    cfg = {**_config("versioned", {"unit": "per_call", "amount_usd": 0.01}),
+           "supported_affordances": ["prompt", "model"],
+           "native_defaults": {"model_id": "m-1", "generator_version": "vendor/m-1/v3"}}
+
+    def key(**aff):
+        return request_digest("versioned", "rain", cfg, aff, salt=None)
+
+    assert key(model="m-1") == key()
+    assert key(model="m-2") != key()

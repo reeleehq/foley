@@ -192,6 +192,7 @@ class FalAdapter:
         """The exact payload this adapter sends for ``prompt`` and translated ``affordances``."""
         from .._dispatch import native_request
 
+        reject_renamed(affordances)  # generate() builds its payload here too
         nd = self.config.get("native_defaults") or {}
         param_map = self.config["param_map"]
         args = dict(nd.get("fixed_arguments") or {})
@@ -235,7 +236,6 @@ class FalAdapter:
         Raises:
             SourceConfigurationError: If no fal key is available (before any call).
         """
-        reject_renamed(affordances)
         notes: list = []
         nd = self.config.get("native_defaults") or {}
         args = merge_provider_params(

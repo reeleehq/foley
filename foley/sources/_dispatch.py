@@ -178,7 +178,12 @@ def request_digest(
 
 
 def _keyed_request(config: dict, affordances: dict) -> "tuple[dict, Optional[str]]":
-    """``(native request, pinned model)``: a pinned model is keyed apart from the request."""
+    """``(native request, pinned model)``: a pinned model is keyed apart from the request.
+
+    A pin equal to the source's ``native_defaults['model_id']`` keys as unpinned. The
+    comparison is on the raw value: a source that maps model tokens to native ids
+    would compare after that translation.
+    """
     rest = dict(affordances)
     model = rest.pop("model", None)
     if model == (config.get("native_defaults") or {}).get("model_id"):

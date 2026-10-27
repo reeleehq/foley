@@ -83,6 +83,7 @@ missing-configuration case *before* it sends anything.
 - **What the provider says it charged:** when the response carries it (ElevenLabs:
   `api["credits_header"] = "character-cost"`), note it on the clip; set
   `candidate.cost_actual_usd` with `foley.cost.actual_call_cost(config, duration_s=...)`.
+- A generate adapter that takes extra `**affordances` passes their names through `foley.base.reject_renamed` (or `foley.sources.base.unsupported_notes`, which does), so an old spelling such as `duration=` raises instead of being dropped.
 
 ## `SOURCE_CONFIG` (the declaration)
 

@@ -23,7 +23,7 @@ import json
 import typing
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any, Iterable, Optional, Union
 
 SCHEMA_VERSION: int = 1
 
@@ -128,7 +128,8 @@ class Affordance:
             that cannot honour it raises instead of dropping it (#53).
         renamed_from: The name it had before a release renamed it (#75): passing
             the old name raises a ``TypeError`` naming this one (see
-            :func:`reject_renamed`), and kept entries are still read under it.
+            :func:`reject_renamed`). For a generation affordance, the generations
+            cache still reads entries kept under the old name.
     """
 
     name: str
@@ -208,7 +209,7 @@ GENERATION_AFFORDANCES: dict[str, Affordance] = {
 }
 
 
-def reject_renamed(names, vocabulary: Optional[dict] = None) -> None:
+def reject_renamed(names: Iterable[str], vocabulary: Optional[dict] = None) -> None:
     """Raise ``TypeError`` if any of ``names`` is an affordance's old spelling.
 
     ``vocabulary`` defaults to :data:`GENERATION_AFFORDANCES`; the old names come
@@ -218,13 +219,13 @@ def reject_renamed(names, vocabulary: Optional[dict] = None) -> None:
     >>> reject_renamed(["duration"])
     Traceback (most recent call last):
         ...
-    TypeError: duration= was renamed duration_s= (foley#75)
+    TypeError: duration= was renamed duration_s=
     """
     vocabulary = GENERATION_AFFORDANCES if vocabulary is None else vocabulary
     renamed = {a.renamed_from: a.name for a in vocabulary.values() if a.renamed_from}
     for name in names:
         if name in renamed:
-            raise TypeError(f"{name}= was renamed {renamed[name]}= (foley#75)")
+            raise TypeError(f"{name}= was renamed {renamed[name]}=")
 
 
 # ---------------------------------------------------------------------------
