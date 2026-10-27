@@ -617,7 +617,9 @@ def as_c2pa_ingredient(credential: dict, *, index: int) -> dict:
     ``relationship`` and a manifest-unique ``instance_id`` (the handle a ``c2pa.placed``
     action's ``ingredientIds`` resolves) — and carries the full per-sound credential
     whole under :data:`INGREDIENT_CREDENTIAL_KEY`, so its keys (``manifest``, ``signed``,
-    ``asset_ref`` ...) can never collide with a C2PA ingredient field.
+    ``asset_ref`` ...) can never collide with a C2PA ingredient field. The credential
+    stays in the sidecar: ``c2pa`` drops the unknown key when it embeds the manifest
+    (the sub-credentials are unsigned, self-asserted JSON, so that is the right place).
     """
     manifest = credential["manifest"]
     return {
