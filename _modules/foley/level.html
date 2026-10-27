@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=29ed05f3"></script>
+    <script src="../../_static/documentation_options.js?v=8d9581ea"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.70" />
+  <meta name="docsearch:version" content="0.0.71" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -744,8 +744,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">Audio one land at the same place in the mix and ``generate(level=...)`` stays an export</span>
 <span class="sd">tool. A clip too short for a loudness reading is levelled by its peak instead.</span>
 
-<span class="sd">Zero-dependency import: ``numpy``, ``pyloudnorm`` and ``soundfile`` load inside the</span>
-<span class="sd">functions.</span>
+<span class="sd">Zero-dependency import: ``numpy``, ``soundfile`` and the shared loudness meter</span>
+<span class="sd">(:mod:`mixing.loudness`) load inside the functions.</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -810,13 +810,10 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="require_loudness_meter">
 <a class="viewcode-back" href="../../_autosummary/foley.level.html#foley.level.require_loudness_meter">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">require_loudness_meter</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Raise ``ImportError`` (with the install line) when ``pyloudnorm`` is missing."""</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="kn">import</span><span class="w"> </span><span class="nn">pyloudnorm</span>  <span class="c1"># noqa: F401</span>
-    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-            <span class="s2">"level= measures loudness with pyloudnorm: pip install 'foley[audio]'"</span>
-        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span></div>
+<span class="w">    </span><span class="sd">"""Raise ``ImportError`` (with the install line) when the loudness meter is missing."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">loudness_component</span>
+
+    <span class="n">loudness_component</span><span class="p">()</span></div>
 
 
 
@@ -830,7 +827,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Args:</span>
 <span class="sd">        audio_bytes: Any clip ``soundfile`` decodes.</span>
 <span class="sd">        target: A layer (its class target) or a LUFS number (see :func:`resolve_target_lufs`).</span>
-<span class="sd">        meter: A :data:`foley.audio.Meter` (default ``pyloudnorm``).</span>
+<span class="sd">        meter: A :data:`foley.audio.Meter` (default :data:`foley.audio.DEFAULT_METER`).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        ``(bytes, applied, measured_lufs)``: the levelled clip re-encoded in foley's FLAC</span>
@@ -910,10 +907,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        sample_rate: Sample rate in Hz.</span>
 <span class="sd">        reference_lufs: The loudness every clip is brought to (default: foley's</span>
 <span class="sd">            reference programme loudness, :data:`foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).</span>
-<span class="sd">        meter: A :data:`foley.audio.Meter` (default ``pyloudnorm``).</span>
+<span class="sd">        meter: A :data:`foley.audio.Meter` (default :data:`foley.audio.DEFAULT_METER`).</span>
 <span class="sd">    """</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_LOUDNESS_TARGET_LUFS</span><span class="p">,</span> <span class="n">loudness_gain_db</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_LOUDNESS_TARGET_LUFS</span><span class="p">,</span> <span class="n">loudness_gain_db</span><span class="p">,</span> <span class="n">resolve_meter</span>
 
+    <span class="n">meter</span> <span class="o">=</span> <span class="n">resolve_meter</span><span class="p">(</span><span class="n">meter</span><span class="p">)</span>  <span class="c1"># a bad name raises; it is not "not measurable"</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">gain</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">loudness_gain_db</span><span class="p">(</span>
             <span class="n">clip</span><span class="p">,</span>
@@ -927,8 +925,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">meter</span><span class="o">=</span><span class="n">meter</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
-        <span class="c1"># The render must not die on one clip the meter cannot read (more than five</span>
-        <span class="c1"># channels) or on a missing optional meter: leave that clip's level alone.</span>
+        <span class="c1"># The render must not die on one clip the meter cannot read or on a missing</span>
+        <span class="c1"># optional meter: leave that clip's level alone.</span>
         <span class="k">return</span> <span class="mf">0.0</span>
     <span class="k">return</span> <span class="n">gain</span></div>
 

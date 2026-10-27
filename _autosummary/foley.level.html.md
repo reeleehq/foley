@@ -29,8 +29,8 @@ loudness, then the layer gain is applied, so a hot ElevenLabs clip and a quiet S
 Audio one land at the same place in the mix and `generate(level=...)` stays an export
 tool. A clip too short for a loudness reading is levelled by its peak instead.
 
-Zero-dependency import: `numpy`, `pyloudnorm` and `soundfile` load inside the
-functions.
+Zero-dependency import: `numpy`, `soundfile` and the shared loudness meter
+(`mixing.loudness`) load inside the functions.
 
 ### Module Attributes
 
@@ -46,7 +46,7 @@ functions.
 |--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
 | [`level_bytes`](#foley.level.level_bytes)(audio_bytes, target, \*[, meter])   | Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.                                                     |
 | [`reference_gain_db`](#foley.level.reference_gain_db)(clip, sample_rate, \*[, ...]) | The gain (dB) that brings `clip` to the reference loudness; `0.0` if it cannot.                                                      |
-| [`require_loudness_meter`](#foley.level.require_loudness_meter)()                        | Raise `ImportError` (with the install line) when `pyloudnorm` is missing.                                                            |
+| [`require_loudness_meter`](#foley.level.require_loudness_meter)()                        | Raise `ImportError` (with the install line) when the loudness meter is missing.                                                      |
 | [`resolve_target_lufs`](#foley.level.resolve_target_lufs)(spec)                       | A `level=` value as a LUFS target: a number as is, a layer via [`class_target_lufs()`](#foley.level.class_target_lufs). |
 
 ### foley.level.LevelSpec
@@ -99,7 +99,7 @@ Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.
 * **Parameters:**
   * **audio_bytes** ([`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)) – Any clip `soundfile` decodes.
   * **target** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`Layer`](foley.base.html.md#foley.base.Layer), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float), [`int`](https://docs.python.org/3/builtins/functions.html#int)]) – A layer (its class target) or a LUFS number (see [`resolve_target_lufs()`](#foley.level.resolve_target_lufs)).
-  * **meter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[ndarray, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – A [`foley.audio.Meter`](foley.audio.html.md#foley.audio.Meter) (default `pyloudnorm`).
+  * **meter** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[ndarray, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A [`foley.audio.Meter`](foley.audio.html.md#foley.audio.Meter) (default [`foley.audio.DEFAULT_METER`](foley.audio.html.md#foley.audio.DEFAULT_METER)).
 * **Returns:**
   the levelled clip re-encoded in foley’s FLAC
   archive form and a one-line account of the gain applied (for the licence’s
@@ -124,13 +124,13 @@ clip’s sample peak stays at or under `peak_ceiling_dbfs` and the boost at
   * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
   * **reference_lufs** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The loudness every clip is brought to (default: foley’s
     reference programme loudness, `foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).
-  * **meter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[ndarray, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – A [`foley.audio.Meter`](foley.audio.html.md#foley.audio.Meter) (default `pyloudnorm`).
+  * **meter** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[ndarray, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A [`foley.audio.Meter`](foley.audio.html.md#foley.audio.Meter) (default [`foley.audio.DEFAULT_METER`](foley.audio.html.md#foley.audio.DEFAULT_METER)).
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### foley.level.require_loudness_meter()
 
-Raise `ImportError` (with the install line) when `pyloudnorm` is missing.
+Raise `ImportError` (with the install line) when the loudness meter is missing.
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)

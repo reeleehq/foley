@@ -8,6 +8,7 @@ foley.weave.master
 
    .. autosummary::
    
+      lookahead_true_peak_limit
       master
    
    .. rubric:: Classes

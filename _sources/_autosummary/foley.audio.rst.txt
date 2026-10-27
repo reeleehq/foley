@@ -10,6 +10,7 @@ foley.audio
    
       AudioSource
       Meter
+      DEFAULT_METER
    
    .. rubric:: Functions
 
@@ -21,10 +22,11 @@ foley.audio
       integrated_lufs
       limit_true_peak
       load
+      loudness_component
       loudness_gain_db
       loudness_normalize
-      pyloudnorm_meter
       resample
+      resolve_meter
       save
       to_mono
       to_working

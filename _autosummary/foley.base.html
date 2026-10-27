@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=29ed05f3"></script>
+    <script src="../_static/documentation_options.js?v=8d9581ea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.70" />
+  <meta name="docsearch:version" content="0.0.71" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -555,7 +555,7 @@ fall back to field defaults.</p></li>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>(source[, source_id, ...])</p></td>
 <td><p>Per-sound rights + provenance.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.base.MasterProfile" title="foley.base.MasterProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>([target_lufs, true_peak_db, lra])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.base.MasterProfile" title="foley.base.MasterProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>([target_lufs, true_peak_db, ...])</p></td>
 <td><p>Loudness master target — the delivery spec as data, not code (report 06 §5.2).</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.base.Placement" title="foley.base.Placement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Placement</span></code></a>([anchor, ref, onset, pre_roll, ...])</p></td>
@@ -773,7 +773,7 @@ hand-set the derived flags — always route through the policy layer.</p>
 
 <dl class="py data">
 <dt class="sig sig-object py" id="foley.base.MASTER_PROFILES">
-<span class="sig-prename descclassname"><span class="pre">foley.base.</span></span><span class="sig-name descname"><span class="pre">MASTER_PROFILES</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#foley.base.MasterProfile" title="foley.base.MasterProfile"><span class="pre">MasterProfile</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'broadcast_atsc':</span> <span class="pre">MasterProfile(target_lufs=-24.0,</span> <span class="pre">true_peak_db=-2.0,</span> <span class="pre">lra=7.0),</span> <span class="pre">'broadcast_ebu':</span> <span class="pre">MasterProfile(target_lufs=-23.0,</span> <span class="pre">true_peak_db=-1.0,</span> <span class="pre">lra=7.0),</span> <span class="pre">'podcast':</span> <span class="pre">MasterProfile(target_lufs=-16.0,</span> <span class="pre">true_peak_db=-1.0,</span> <span class="pre">lra=11.0),</span> <span class="pre">'streaming':</span> <span class="pre">MasterProfile(target_lufs=-14.0,</span> <span class="pre">true_peak_db=-1.0,</span> <span class="pre">lra=11.0)}</span></span><a class="headerlink" href="#foley.base.MASTER_PROFILES" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">foley.base.</span></span><span class="sig-name descname"><span class="pre">MASTER_PROFILES</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#foley.base.MasterProfile" title="foley.base.MasterProfile"><span class="pre">MasterProfile</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'broadcast_atsc':</span> <span class="pre">MasterProfile(target_lufs=-24.0,</span> <span class="pre">true_peak_db=-2.0,</span> <span class="pre">lra=7.0,</span> <span class="pre">max_limiting_db=6.0),</span> <span class="pre">'broadcast_ebu':</span> <span class="pre">MasterProfile(target_lufs=-23.0,</span> <span class="pre">true_peak_db=-1.0,</span> <span class="pre">lra=7.0,</span> <span class="pre">max_limiting_db=6.0),</span> <span class="pre">'podcast':</span> <span class="pre">MasterProfile(target_lufs=-16.0,</span> <span class="pre">true_peak_db=-1.0,</span> <span class="pre">lra=11.0,</span> <span class="pre">max_limiting_db=6.0),</span> <span class="pre">'streaming':</span> <span class="pre">MasterProfile(target_lufs=-14.0,</span> <span class="pre">true_peak_db=-1.0,</span> <span class="pre">lra=11.0,</span> <span class="pre">max_limiting_db=6.0)}</span></span><a class="headerlink" href="#foley.base.MASTER_PROFILES" title="Link to this definition">#</a></dt>
 <dd><p>The named delivery targets (report 06 §5.2). <a class="reference internal" href="#foley.base.resolve_master" title="foley.base.resolve_master"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_master()</span></code></a> maps a
 profile name to one of these; these values are the SSOT so no LUFS literal
 hides in code.</p>
@@ -781,11 +781,21 @@ hides in code.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.base.MasterProfile">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.base.</span></span><span class="sig-name descname"><span class="pre">MasterProfile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_lufs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-16.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true_peak_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#MasterProfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.base.MasterProfile" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.base.</span></span><span class="sig-name descname"><span class="pre">MasterProfile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_lufs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-16.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true_peak_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_limiting_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#MasterProfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.base.MasterProfile" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#foley.base.SerializableMixin" title="foley.base.SerializableMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">SerializableMixin</span></code></a></p>
 <p>Loudness master target — the delivery spec as data, not code (report 06 §5.2).</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.base.MasterProfile.max_limiting_db">
+<span class="sig-name descname"><span class="pre">max_limiting_db</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6.0</span></span><a class="headerlink" href="#foley.base.MasterProfile.max_limiting_db" title="Link to this definition">#</a></dt>
+<dd><p>How far (dB) the master’s loudness stage lets the <em>sample</em> peak run over
+<code class="docutils literal notranslate"><span class="pre">true_peak_db</span></code> for the default lookahead limiter to take back (it may take
+off a little more, the inter-sample overshoot of those peaks). 0 restores a
+static, whole-program master. Transient foley (a door slam under narration)
+needs a few dB to reach the target at all (foley#91).</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -1061,7 +1071,10 @@ those are absent).</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.Layer"><code class="docutils literal notranslate"><span class="pre">Layer</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.LicenseRecord"><code class="docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.MASTER_PROFILES"><code class="docutils literal notranslate"><span class="pre">MASTER_PROFILES</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.MasterProfile"><code class="docutils literal notranslate"><span class="pre">MasterProfile</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.MasterProfile"><code class="docutils literal notranslate"><span class="pre">MasterProfile</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.MasterProfile.max_limiting_db"><code class="docutils literal notranslate"><span class="pre">MasterProfile.max_limiting_db</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.Placement"><code class="docutils literal notranslate"><span class="pre">Placement</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.Processing"><code class="docutils literal notranslate"><span class="pre">Processing</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.base.QUERY_AFFORDANCES"><code class="docutils literal notranslate"><span class="pre">QUERY_AFFORDANCES</span></code></a></li>

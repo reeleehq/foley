@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=29ed05f3"></script>
+    <script src="../_static/documentation_options.js?v=8d9581ea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.70" />
+  <meta name="docsearch:version" content="0.0.71" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -491,12 +491,12 @@
 <span id="foley-weave-master"></span><h1>foley.weave.master<a class="headerlink" href="#module-foley.weave.master" title="Link to this heading">#</a></h1>
 <p>Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).</p>
 <p>Normalises the whole program to a <a class="reference internal" href="foley.base.html#foley.base.MasterProfile" title="foley.base.MasterProfile"><code class="xref py py-class docutils literal notranslate"><span class="pre">MasterProfile</span></code></a> integrated-loudness
-target (ITU-R BS.1770-4 / EBU R128 via <code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code>) and holds an inter-sample
-<strong>true-peak</strong> ceiling. It reuses <a class="reference internal" href="foley.audio.html#foley.audio.loudness_normalize" title="foley.audio.loudness_normalize"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.audio.loudness_normalize()</span></code></a> (the same
-BS.1770 meter Tier-0 QC uses) for the LUFS stage and <a class="reference internal" href="foley.qc.html#foley.qc.true_peak_dbtp" title="foley.qc.true_peak_dbtp"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.qc.true_peak_dbtp()</span></code></a>
-(oversampled) for the ceiling — so <code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code> comes from the existing <code class="docutils literal notranslate"><span class="pre">audio</span></code>
-extra (no redundant dependency) and is imported function-locally, keeping <code class="docutils literal notranslate"><span class="pre">import</span>
-<span class="pre">foley.weave</span></code> dol-only.</p>
+target (ITU-R BS.1770-4 / EBU R128) and holds an inter-sample <strong>true-peak</strong> ceiling. It
+reuses <a class="reference internal" href="foley.audio.html#foley.audio.loudness_normalize" title="foley.audio.loudness_normalize"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.audio.loudness_normalize()</span></code></a> (the same BS.1770 meter Tier-0 QC uses) for
+the LUFS stage, the shared lookahead limiter (<code class="xref py py-func docutils literal notranslate"><span class="pre">mixing.loudness.limit_peaks()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">true_peak=True</span></code>) for the ceiling, and <a class="reference internal" href="foley.qc.html#foley.qc.true_peak_dbtp" title="foley.qc.true_peak_dbtp"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.qc.true_peak_dbtp()</span></code></a> (oversampled) to
+report it — all from the existing <code class="docutils literal notranslate"><span class="pre">audio</span></code> extra, imported function-locally, keeping
+<code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">foley.weave</span></code> dol-only.</p>
 <p>The default <code class="docutils literal notranslate"><span class="pre">engine='auto'</span></code> masters fully in-process (portable, testable).
 <code class="docutils literal notranslate"><span class="pre">engine='ffmpeg'</span></code> runs the two-pass <code class="docutils literal notranslate"><span class="pre">ffmpeg</span> <span class="pre">loudnorm</span></code> “guarantee the numbers” master
 (report 06 §5.4) — measure, then apply a linear loudnorm to the measured values — and
@@ -506,7 +506,10 @@ errors, so weaving never depends on it. <code class="docutils literal notranslat
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.master.master" title="foley.weave.master.master"><code class="xref py py-obj docutils literal notranslate"><span class="pre">master</span></code></a>(mix, sample_rate, profile, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.master.lookahead_true_peak_limit" title="foley.weave.master.lookahead_true_peak_limit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lookahead_true_peak_limit</span></code></a>(mix, sample_rate, ...)</p></td>
+<td><p>Hold <code class="docutils literal notranslate"><span class="pre">mix</span></code>'s inter-sample true peak at/below <code class="docutils literal notranslate"><span class="pre">ceiling_db</span></code> with a lookahead limiter.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.master.master" title="foley.weave.master.master"><code class="xref py py-obj docutils literal notranslate"><span class="pre">master</span></code></a>(mix, sample_rate, profile, *[, ...])</p></td>
 <td><p>Master <code class="docutils literal notranslate"><span class="pre">mix</span></code> to <code class="docutils literal notranslate"><span class="pre">profile</span></code> — LUFS-normalise then true-peak-limit (report 06 §5).</p></td>
 </tr>
 </tbody>
@@ -542,6 +545,29 @@ errors, so weaving never depends on it. <code class="docutils literal notranslat
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.master.lookahead_true_peak_limit">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.master.</span></span><span class="sig-name descname"><span class="pre">lookahead_true_peak_limit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ceiling_db</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/master.html#lookahead_true_peak_limit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.master.lookahead_true_peak_limit" title="Link to this definition">#</a></dt>
+<dd><p>Hold <code class="docutils literal notranslate"><span class="pre">mix</span></code>’s inter-sample true peak at/below <code class="docutils literal notranslate"><span class="pre">ceiling_db</span></code> with a lookahead limiter.</p>
+<p>The default <code class="xref py py-data docutils literal notranslate"><span class="pre">Limiter</span></code> (foley#91): <code class="xref py py-func docutils literal notranslate"><span class="pre">mixing.loudness.limit_peaks()</span></code> with
+<code class="docutils literal notranslate"><span class="pre">true_peak=True</span></code> turns down the peaks (the gain eases in and out over its 50 ms
+window), not the whole program. Its polyphase true-peak meter reads under foley’s
+FFT one (<a class="reference internal" href="foley.qc.html#foley.qc.true_peak_dbtp" title="foley.qc.true_peak_dbtp"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.qc.true_peak_dbtp()</span></code></a>, which the master report uses) on content
+near Nyquist, so whatever is left over that meter is then trimmed statically
+(<a class="reference internal" href="foley.audio.html#foley.audio.limit_true_peak" title="foley.audio.limit_true_peak"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.audio.limit_true_peak()</span></code></a>): the ceiling holds by the number the report
+shows, at the cost of turning the whole program down by that residual (about a
+dB on full-band noise; nothing on band-limited material). Deterministic, never
+raises the level; <code class="docutils literal notranslate"><span class="pre">mix</span></code> comes back as is (same object) when nothing is over,
+else with the same shape and dtype. A non-finite sample is limited as silence
+and put back where it was, so it neither spreads over the limiter’s window nor
+lets the overs around it through.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.weave.master.master">
 <span class="sig-prename descclassname"><span class="pre">foley.weave.master.</span></span><span class="sig-name descname"><span class="pre">master</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/master.html#master"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.master.master" title="Link to this definition">#</a></dt>
 <dd><p>Master <code class="docutils literal notranslate"><span class="pre">mix</span></code> to <code class="docutils literal notranslate"><span class="pre">profile</span></code> — LUFS-normalise then true-peak-limit (report 06 §5).</p>
@@ -555,10 +581,15 @@ errors, so weaving never depends on it. <code class="docutils literal notranslat
 uses the two-pass <code class="docutils literal notranslate"><span class="pre">ffmpeg</span> <span class="pre">loudnorm</span></code> “guarantee the numbers” master (report 06
 §5.4) and <strong>fails safe</strong> back to in-process if ffmpeg is unavailable or errors.</p></li>
 <li><p><strong>limiter</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]</span>) – The in-process true-peak stage (a <code class="xref py py-data docutils literal notranslate"><span class="pre">Limiter</span></code>, <code class="docutils literal notranslate"><span class="pre">(mix,</span> <span class="pre">sample_rate,</span>
-<span class="pre">ceiling_db)</span> <span class="pre">-&gt;</span> <span class="pre">mix</span></code>; default: a static true-peak-safe scale). The seam for a
-lookahead limiter (foley#91). In-process engine only; the true peak in the
-report is always measured here, never taken from the limiter.</p></li>
-<li><p><strong>meter</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>], <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span>) – A <a class="reference internal" href="foley.audio.html#foley.audio.Meter" title="foley.audio.Meter"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.audio.Meter</span></code></a> for the loudness stages (default <code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code>).</p></li>
+<span class="pre">ceiling_db)</span> <span class="pre">-&gt;</span> <span class="pre">mix</span></code>; default <a class="reference internal" href="#foley.weave.master.lookahead_true_peak_limit" title="foley.weave.master.lookahead_true_peak_limit"><code class="xref py py-func docutils literal notranslate"><span class="pre">lookahead_true_peak_limit()</span></code></a>). For the
+default, the loudness stage lets the sample peak run up to
+<code class="docutils literal notranslate"><span class="pre">profile.max_limiting_db</span></code> over the ceiling for it to take back down; an
+injected limiter gets a mix already held at the ceiling’s sample peak (no
+headroom is assumed of a stage foley does not know). In-process engine
+only; the true peak in the report is always measured here, never taken
+from the limiter.</p></li>
+<li><p><strong>meter</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>], <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>], <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span>]</span>) – A <a class="reference internal" href="foley.audio.html#foley.audio.Meter" title="foley.audio.Meter"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.audio.Meter</span></code></a> for the loudness stages (default
+<a class="reference internal" href="foley.audio.html#foley.audio.DEFAULT_METER" title="foley.audio.DEFAULT_METER"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.audio.DEFAULT_METER</span></code></a>).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -625,6 +656,7 @@ sit slightly below target (peak-safety wins over exact loudness).</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.master.MasterReport.to_dict"><code class="docutils literal notranslate"><span class="pre">MasterReport.to_dict()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.master.lookahead_true_peak_limit"><code class="docutils literal notranslate"><span class="pre">lookahead_true_peak_limit()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.master.master"><code class="docutils literal notranslate"><span class="pre">master()</span></code></a></li>
 </ul>
   </nav></div>

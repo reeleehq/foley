@@ -13,7 +13,7 @@ a [`WeaveResult`](#foley.weave.WeaveResult): the mastered audio, the hydrated re
 the run-artifact join.
 
 Discipline (mirrors the rest of foley): the whole package is import-time dol-only
-(numpy / pyloudnorm / whisperx / opentimelineio / audioseal / c2pa are all
+(numpy / mixing.loudness / whisperx / opentimelineio / audioseal / c2pa are all
 function-local), the aligner and per-item strategy are injectable DI seams with
 deterministic defaults, and provenance re-assertion never raises — the C2PA
 content-credential sidecar is always emitted; the AudioSeal watermark and the (deferred)
@@ -58,7 +58,7 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`ApplyStrategy`](#foley.weave.ApplyStrategy)(\*args, \*\*kwargs)                | How ONE hydrated item's clip is placed onto its layer bus (report 10 §4.2).                                                        |
 | [`FakeAligner`](#foley.weave.FakeAligner)()                                    | Deterministic, torch-free [`Aligner`](#foley.weave.Aligner) — evenly spaces the transcript's words.         |
 | [`WhisperXAligner`](#foley.weave.WhisperXAligner)(\*[, model_size, device, ...])   | The real ≈±50 ms [`Aligner`](#foley.weave.Aligner) (`foley[align]`) — faster-whisper ASR + wav2vec2 CTC.    |
-| [`MasterProfile`](#foley.weave.MasterProfile)([target_lufs, true_peak_db, lra])  | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                     |
+| [`MasterProfile`](#foley.weave.MasterProfile)([target_lufs, true_peak_db, ...])  | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                     |
 | [`MasterReport`](#foley.weave.MasterReport)(target_lufs, input_lufs, ...)       | What the master stage did — a JSON-serialisable audit row for the run-artifact.                                                    |
 
 ### *class* foley.weave.Aligner(\*args, \*\*kwargs)
@@ -125,11 +125,19 @@ clips as stored.
 
 What distinguishes this strategy’s output in [`RenderCache`](#foley.weave.RenderCache) keys.
 
-### *class* foley.weave.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0)
+### *class* foley.weave.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
 Loudness master target — the delivery spec as data, not code (report 06 §5.2).
+
+#### max_limiting_db *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 6.0*
+
+How far (dB) the master’s loudness stage lets the *sample* peak run over
+`true_peak_db` for the default lookahead limiter to take back (it may take
+off a little more, the inter-sample overshoot of those peaks). 0 restores a
+static, whole-program master. Transient foley (a door slam under narration)
+needs a few dB to reach the target at all (foley#91).
 
 ### *class* foley.weave.MasterReport(target_lufs, input_lufs, output_lufs, true_peak_dbtp, true_peak_ceiling_db, gain_db, limited, engine)
 

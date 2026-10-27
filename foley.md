@@ -1,4 +1,4 @@
-> built 2026-10-27 00:52 UTC from 42a253c (main) · foley 0.0.70. Details: build_info.json
+> built 2026-10-27 02:46 UTC from ca3f734 (main) · foley 0.0.71. Details: build_info.json
 
 # index.html.md
 
@@ -2242,10 +2242,10 @@ It commits to a small, explicit set of representations (report 09):
 Design rules honoured here:
 
 > * **Zero-dep import.** This module imports only the stdlib at top level; the
->   heavy libraries (`numpy`, `soundfile`, `soxr`, `librosa`,
->   `pyloudnorm`) are lazy-imported *inside* the functions that need them, so
->   `import foley.audio` always succeeds on a bare install and only the
->   function you call pays for (and requires) its dependency.
+>   heavy libraries (`numpy`, `soundfile`, `soxr`, `librosa`, the
+>   `mixing.loudness` meter) are lazy-imported *inside* the functions that need them, so
+>   > `import foley.audio` always succeeds on a bare install and only the
+>   > function you call pays for (and requires) its dependency.
 > * **No magic numbers.** Every default (sample rate, dtype, archive subtype,
 >   resample quality, trim/fade/loudness targets) is a named module-level
 >   constant used as a keyword-only argument default.
@@ -2258,27 +2258,29 @@ a file-like object).
 
 ### Module Attributes
 
-| [`AudioSource`](_autosummary/foley.audio.html.md#foley.audio.AudioSource)   | a filesystem path, raw encoded bytes, or an already-open binary file-like object (e.g. `io.BytesIO`).   |
-|----------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
-| [`Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter)         | `(samples, sample_rate) -> integrated LUFS` (time on axis 0).                                           |
+| [`AudioSource`](_autosummary/foley.audio.html.md#foley.audio.AudioSource)   | a filesystem path, raw encoded bytes, or an already-open binary file-like object (e.g. `io.BytesIO`).                                                                           |
+|----------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter)         | a name from `mixing.loudness.METERS` (`"numpy"`, the default; `"ffmpeg_ebur128"`; `"pyloudnorm"`) or any `(samples, sample_rate) -> integrated LUFS` callable (time on axis 0). |
+| [`DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER) | the shared component's numpy BS.1770-4 meter (foley#91), so foley needs no meter library of its own.                                                                            |
 
 ### Functions
 
-| [`encode`](_autosummary/foley.audio.html.md#foley.audio.encode)(samples, sample_rate, \*[, fmt, subtype])   | Encode `samples` fully in memory and return the container bytes.                                                        |
-|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| [`ensure_channels`](_autosummary/foley.audio.html.md#foley.audio.ensure_channels)(samples, \*, channels)             | Coerce `samples` to exactly `channels` channels.                                                                        |
-| [`fade`](_autosummary/foley.audio.html.md#foley.audio.fade)(samples, sample_rate, \*[, fade_in_s, ...])   | Apply in/out gain ramps to `samples` (a short declick by default).                                                      |
-| [`integrated_lufs`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs)(samples, sample_rate, \*[, ...])   | Integrated loudness (LUFS, BS.1770-4) of `samples`; `-inf` when too short to gate.                                      |
-| [`limit_true_peak`](_autosummary/foley.audio.html.md#foley.audio.limit_true_peak)(samples, sample_rate, \*[, ...])   | Attenuate `samples` so their inter-sample true peak sits at or below `ceiling_dbtp`.                                    |
-| [`load`](_autosummary/foley.audio.html.md#foley.audio.load)(src, \*[, target_sr, mono, dtype])            | Decode audio into a float working array.                                                                                |
-| [`loudness_gain_db`](_autosummary/foley.audio.html.md#foley.audio.loudness_gain_db)(samples, sample_rate, \*, ...)    | The one loudness-gain rule: `(gain_db, measured_lufs)` to bring a clip to a target.                                     |
-| [`loudness_normalize`](_autosummary/foley.audio.html.md#foley.audio.loudness_normalize)(samples, sample_rate, \*)       | Loudness-normalize to `target_lufs`, then keep it peak-safe.                                                            |
-| [`pyloudnorm_meter`](_autosummary/foley.audio.html.md#foley.audio.pyloudnorm_meter)(samples, sample_rate)             | The default [`Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter): `pyloudnorm` (lazy), BS.1770-4 integrated loudness. |
-| [`resample`](_autosummary/foley.audio.html.md#foley.audio.resample)(samples, sample_rate, \*[, ...])          | Resample `samples` to `target_sr` (a no-op when already there).                                                         |
-| [`save`](_autosummary/foley.audio.html.md#foley.audio.save)(samples, sample_rate, dst, \*[, fmt, ...])    | Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).                                                   |
-| [`to_mono`](_autosummary/foley.audio.html.md#foley.audio.to_mono)(samples)                                   | Down-mix to mono by averaging channels; 1-D input passes through.                                                       |
-| [`to_working`](_autosummary/foley.audio.html.md#foley.audio.to_working)(samples, sample_rate, \*[, mono, ...])  | Produce the canonical CLAP/QC working array from an arbitrary clip.                                                     |
-| [`trim_silence`](_autosummary/foley.audio.html.md#foley.audio.trim_silence)(samples, sample_rate, \*[, top_db])   | Strip leading/trailing silence, returning the clip and its kept span.                                                   |
+| [`encode`](_autosummary/foley.audio.html.md#foley.audio.encode)(samples, sample_rate, \*[, fmt, subtype])   | Encode `samples` fully in memory and return the container bytes.                                                            |
+|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| [`ensure_channels`](_autosummary/foley.audio.html.md#foley.audio.ensure_channels)(samples, \*, channels)             | Coerce `samples` to exactly `channels` channels.                                                                            |
+| [`fade`](_autosummary/foley.audio.html.md#foley.audio.fade)(samples, sample_rate, \*[, fade_in_s, ...])   | Apply in/out gain ramps to `samples` (a short declick by default).                                                          |
+| [`integrated_lufs`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs)(samples, sample_rate, \*[, ...])   | Integrated loudness (LUFS, BS.1770-4) of `samples`; `-inf` when too short to gate.                                          |
+| [`limit_true_peak`](_autosummary/foley.audio.html.md#foley.audio.limit_true_peak)(samples, sample_rate, \*[, ...])   | Attenuate `samples` so their inter-sample true peak sits at or below `ceiling_dbtp`.                                        |
+| [`load`](_autosummary/foley.audio.html.md#foley.audio.load)(src, \*[, target_sr, mono, dtype])            | Decode audio into a float working array.                                                                                    |
+| [`loudness_component`](_autosummary/foley.audio.html.md#foley.audio.loudness_component)()                               | The shared loudness component, `mixing.loudness` (foley#91).                                                                |
+| [`loudness_gain_db`](_autosummary/foley.audio.html.md#foley.audio.loudness_gain_db)(samples, sample_rate, \*, ...)    | The one loudness-gain rule: `(gain_db, measured_lufs)` to bring a clip to a target.                                         |
+| [`loudness_normalize`](_autosummary/foley.audio.html.md#foley.audio.loudness_normalize)(samples, sample_rate, \*)       | Loudness-normalize to `target_lufs`, then keep it peak-safe.                                                                |
+| [`resample`](_autosummary/foley.audio.html.md#foley.audio.resample)(samples, sample_rate, \*[, ...])          | Resample `samples` to `target_sr` (a no-op when already there).                                                             |
+| [`resolve_meter`](_autosummary/foley.audio.html.md#foley.audio.resolve_meter)([meter])                             | `meter`, or [`DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER) for `None`; an unknown name raises `ValueError`. |
+| [`save`](_autosummary/foley.audio.html.md#foley.audio.save)(samples, sample_rate, dst, \*[, fmt, ...])    | Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).                                                       |
+| [`to_mono`](_autosummary/foley.audio.html.md#foley.audio.to_mono)(samples)                                   | Down-mix to mono by averaging channels; 1-D input passes through.                                                           |
+| [`to_working`](_autosummary/foley.audio.html.md#foley.audio.to_working)(samples, sample_rate, \*[, mono, ...])  | Produce the canonical CLAP/QC working array from an arbitrary clip.                                                         |
+| [`trim_silence`](_autosummary/foley.audio.html.md#foley.audio.trim_silence)(samples, sample_rate, \*[, top_db])   | Strip leading/trailing silence, returning the clip and its kept span.                                                       |
 
 ### foley.audio.AudioSource
 
@@ -2290,14 +2292,24 @@ already-open binary file-like object (e.g. `io.BytesIO`).
 
 alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike) | [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes) | [`BinaryIO`](https://docs.python.org/3/library/typing.html#typing.BinaryIO)
 
+### foley.audio.DEFAULT_METER *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'numpy'*
+
+the shared component’s numpy
+BS.1770-4 meter (foley#91), so foley needs no meter library of its own.
+
+* **Type:**
+  The meter foley measures with when none is given
+
 ### foley.audio.Meter
 
-`(samples, sample_rate) -> integrated LUFS` (time on axis 0).
+a name from `mixing.loudness.METERS` (`"numpy"`, the
+default; `"ffmpeg_ebur128"`; `"pyloudnorm"`) or any
+`(samples, sample_rate) -> integrated LUFS` callable (time on axis 0).
 
 * **Type:**
   A loudness meter
 
-alias of `Callable`[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
+alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | `Callable`[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 ### foley.audio.encode(samples, sample_rate, , fmt='flac', subtype='PCM_24')
 
@@ -2367,11 +2379,11 @@ guard uses `math.ceil` (not `int(round)`) to mirror pyloudnorm’s float thresho
 `n < block_size*rate` at every sample rate, including rates where `0.4*sr` is
 not integral; identical to `int(round)` at all standard (÷5) rates.
 
-`meter` (default [`pyloudnorm_meter()`](_autosummary/foley.audio.html.md#foley.audio.pyloudnorm_meter)) is the seam for another BS.1770
-implementation (foley#91); the too-short guard stays here, outside the meter, so
-every meter sees the same clips.
+`meter` (default [`DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER)) picks the BS.1770 implementation (see
+[`Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter)); the too-short guard stays here, outside the meter, so every meter
+sees the same clips.
 
-Lazy dependency: `pyloudnorm` (default meter only).
+Lazy dependency: `mixing.loudness` (see [`loudness_component()`](_autosummary/foley.audio.html.md#foley.audio.loudness_component)).
 
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
@@ -2383,7 +2395,8 @@ Attenuate `samples` so their inter-sample true peak sits at or below `ceiling_db
 A **static** gain — the whole clip is turned down by one factor, never boosted —
 which is transparent and exactly what a Tier-0 range fault needs: after it, a
 flat-topped run or an over-ceiling peak is no longer at full scale. It is not a
-dynamic look-ahead limiter (a shared one is planned: foley#91), so the distortion
+dynamic look-ahead limiter (that is `mixing.loudness.limit_peaks()`, the WEAVE
+master’s default), so the distortion
 of a heavily clipped clip stays in the waveform; that is why [`foley.repair`](_autosummary/foley.repair.html.md#module-foley.repair)
 applies it only to a clip just over the clipping gate.
 
@@ -2422,6 +2435,13 @@ Decode audio into a float working array.
 
 Lazy dependencies: `soundfile` (and `soxr` when `target_sr` differs).
 
+### foley.audio.loudness_component()
+
+The shared loudness component, `mixing.loudness` (foley#91).
+
+Raises `ImportError` naming the install line when it, or the scipy its
+meter and limiter filter with, is missing.
+
 ### foley.audio.loudness_gain_db(samples, sample_rate, , target_lufs, peak_ceiling_dbfs=-1.0, short_peak_dbfs=None, max_boost_db=None, min_block_s=0.4, gate_floor_lufs=-70.0, silent_peak_dbfs=-80.0, meter=None)
 
 The one loudness-gain rule: `(gain_db, measured_lufs)` to bring a clip to a target.
@@ -2448,7 +2468,7 @@ given, the boost at that many dB. `meter` swaps the loudness measurer (see
   `(gain_db, measured_lufs)`; `measured_lufs` is `-inf` for a clip too short
   to measure, a value at or under `LUFS_GATE_FLOOR` for a near-silent one.
 
-Lazy dependencies: `pyloudnorm` (+ `numpy`).
+Lazy dependencies: `mixing.loudness` (+ `numpy`).
 
 ### foley.audio.loudness_normalize(samples, sample_rate, , target_lufs=-16.0, peak_ceiling_dbfs=-1.0, min_block_s=0.4, meter=None)
 
@@ -2459,13 +2479,11 @@ scaled to `target_lufs`, and finally attenuated so its sample peak sits at
 or below `peak_ceiling_dbfs`: the gain is [`loudness_gain_db()`](_autosummary/foley.audio.html.md#foley.audio.loudness_gain_db). Inputs are
 returned **unchanged** (flag them, don’t amplify) when silent or non-finite,
 near-silent (measured loudness at or below `LUFS_GATE_FLOOR`), or shorter than one
-BS.1770 gating block (`min_block_s`) — which `pyloudnorm` cannot measure and
-would otherwise raise `ValueError` on (routine for one-shots: clicks, blips,
-gunshots).
+BS.1770 gating block (`min_block_s`) — which a gated meter cannot measure
+(routine for one-shots: clicks, blips, gunshots).
 
 * **Parameters:**
-  * **samples** (`ndarray`) – Working array (mono or multichannel, time on axis 0 — the layout
-    pyloudnorm expects).
+  * **samples** (`ndarray`) – Working array (mono or multichannel, time on axis 0).
   * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
   * **target_lufs** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Desired integrated loudness (default = foley’s podcast
     target).
@@ -2475,7 +2493,7 @@ gunshots).
     oversampled measurement.
   * **min_block_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Minimum clip length (seconds) that can be loudness-measured;
     shorter clips are returned unchanged with `measured = -inf`.
-  * **meter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – A [`Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter) (default `pyloudnorm`).
+  * **meter** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A [`Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter) (default [`DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER)).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 * **Returns:**
@@ -2484,14 +2502,7 @@ gunshots).
   `measured_input_lufs` is at or below `LUFS_GATE_FLOOR` (`-inf` for
   the too-short case).
 
-Lazy dependencies: `pyloudnorm` (+ `numpy`).
-
-### foley.audio.pyloudnorm_meter(samples, sample_rate)
-
-The default [`Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter): `pyloudnorm` (lazy), BS.1770-4 integrated loudness.
-
-* **Return type:**
-  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+Lazy dependencies: `mixing.loudness` (+ `numpy`).
 
 ### foley.audio.resample(samples, sample_rate, , target_sr=48000, quality='HQ')
 
@@ -2509,6 +2520,17 @@ Resample `samples` to `target_sr` (a no-op when already there).
   target_sr`). dtype is preserved by soxr.
 
 Lazy dependency: `soxr`.
+
+### foley.audio.resolve_meter(meter=None)
+
+`meter`, or [`DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER) for `None`; an unknown name raises `ValueError`.
+
+Callers that read a meter error as “not measurable” resolve first, so a typo is
+never mistaken for an unreadable clip. A name is checked only when the component
+is installed (measuring reports a missing one).
+
+* **Return type:**
+  [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
 
 ### foley.audio.save(samples, sample_rate, dst, , fmt='flac', subtype='PCM_24')
 
@@ -2628,7 +2650,7 @@ Serialization contract:
 | [`IntendedUse`](_autosummary/foley.base.html.md#foley.base.IntendedUse)([commercial, publish, ...])           | What the caller intends to do with a sound; consumed by `keep()`.                        |
 | [`Layer`](_autosummary/foley.base.html.md#foley.base.Layer)(\*values)                                   | Mix layer (shared by `SoundEvent` now and `TimelineItem` later).                         |
 | [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)(source[, source_id, ...])           | Per-sound rights + provenance.                                                           |
-| [`MasterProfile`](_autosummary/foley.base.html.md#foley.base.MasterProfile)([target_lufs, true_peak_db, lra])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).           |
+| [`MasterProfile`](_autosummary/foley.base.html.md#foley.base.MasterProfile)([target_lufs, true_peak_db, ...])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).           |
 | [`Placement`](_autosummary/foley.base.html.md#foley.base.Placement)([anchor, ref, onset, pre_roll, ...])    | WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).      |
 | [`Processing`](_autosummary/foley.base.html.md#foley.base.Processing)([gain_db, pan, distance, ...])         | HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).            |
 | [`Salience`](_autosummary/foley.base.html.md#foley.base.Salience)(\*values)                                | How prominent a sound event is within a passage.                                         |
@@ -2773,17 +2795,25 @@ is rejected regardless. Populate the flags from the `license_id` via
 `foley.licensing.apply_license_flags` (source overrides win). Never
 hand-set the derived flags — always route through the policy layer.
 
-### foley.base.MASTER_PROFILES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [MasterProfile](_autosummary/foley.base.html.md#foley.base.MasterProfile)]* *= {'broadcast_atsc': MasterProfile(target_lufs=-24.0, true_peak_db=-2.0, lra=7.0), 'broadcast_ebu': MasterProfile(target_lufs=-23.0, true_peak_db=-1.0, lra=7.0), 'podcast': MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0), 'streaming': MasterProfile(target_lufs=-14.0, true_peak_db=-1.0, lra=11.0)}*
+### foley.base.MASTER_PROFILES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [MasterProfile](_autosummary/foley.base.html.md#foley.base.MasterProfile)]* *= {'broadcast_atsc': MasterProfile(target_lufs=-24.0, true_peak_db=-2.0, lra=7.0, max_limiting_db=6.0), 'broadcast_ebu': MasterProfile(target_lufs=-23.0, true_peak_db=-1.0, lra=7.0, max_limiting_db=6.0), 'podcast': MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0), 'streaming': MasterProfile(target_lufs=-14.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)}*
 
 The named delivery targets (report 06 §5.2). [`resolve_master()`](_autosummary/foley.base.html.md#foley.base.resolve_master) maps a
 profile name to one of these; these values are the SSOT so no LUFS literal
 hides in code.
 
-### *class* foley.base.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0)
+### *class* foley.base.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
 Loudness master target — the delivery spec as data, not code (report 06 §5.2).
+
+#### max_limiting_db *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 6.0*
+
+How far (dB) the master’s loudness stage lets the *sample* peak run over
+`true_peak_db` for the default lookahead limiter to take back (it may take
+off a little more, the inter-sample overshoot of those peaks). 0 restores a
+static, whole-program master. Transient foley (a door slam under narration)
+needs a few dB to reach the target at all (foley#91).
 
 ### *class* foley.base.Placement(anchor=Anchor.absolute, ref=None, onset=0.0, pre_roll=0.0, duration=None, loop=False)
 
@@ -5133,7 +5163,7 @@ every later stage stands on:
 >   (`foley.audio`) with the key functions also re-exported here.
 
 Import cost: `import foley` pulls only `dol` (a light core dependency used by
-`foley.stores`); `numpy`/`soundfile`/`soxr`/`librosa`/`pyloudnorm` are
+`foley.stores`); `numpy`/`soundfile`/`soxr`/`librosa`/`mixing.loudness` are
 lazy-imported inside the audio/QC functions that need them (install via the
 `foley[audio]` extra), so a bare install imports cleanly.
 
@@ -5256,7 +5286,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`Anchor`](_autosummary/foley.html.md#foley.Anchor)(\*values)                                  | How a WEAVE `Placement` binds its symbolic time to the narration (report 06 §2.4).                                                   |
 | [`Placement`](_autosummary/foley.html.md#foley.Placement)([anchor, ref, onset, pre_roll, ...])    | WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).                                                  |
 | [`Processing`](_autosummary/foley.html.md#foley.Processing)([gain_db, pan, distance, ...])         | HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).                                                        |
-| [`MasterProfile`](_autosummary/foley.html.md#foley.MasterProfile)([target_lufs, true_peak_db, lra])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                       |
+| [`MasterProfile`](_autosummary/foley.html.md#foley.MasterProfile)([target_lufs, true_peak_db, ...])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                       |
 | [`LicenseFlags`](_autosummary/foley.html.md#foley.LicenseFlags)([commercial_ok, ...])                | The eight derivable flags for one `license_id` (the table row type).                                                                 |
 | [`LicenseMeta`](_autosummary/foley.html.md#foley.LicenseMeta)(display_name[, url])                  | Human-facing display metadata for one `license_id` (name + canonical URL).                                                           |
 | [`GenerationsCache`](_autosummary/foley.html.md#foley.GenerationsCache)(audio, requests)                 | Where paid generations are kept, so a paid response is never lost or paid twice (#59).                                               |
@@ -6108,11 +6138,19 @@ is rejected regardless. Populate the flags from the `license_id` via
 `foley.licensing.apply_license_flags` (source overrides win). Never
 hand-set the derived flags — always route through the policy layer.
 
-### *class* foley.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0)
+### *class* foley.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
 Loudness master target — the delivery spec as data, not code (report 06 §5.2).
+
+#### max_limiting_db *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 6.0*
+
+How far (dB) the master’s loudness stage lets the *sample* peak run over
+`true_peak_db` for the default lookahead limiter to take back (it may take
+off a little more, the inter-sample overshoot of those peaks). 0 restores a
+static, whole-program master. Transient foley (a door slam under narration)
+needs a few dB to reach the target at all (foley#91).
 
 ### *class* foley.MemoryIndex(, dim=None)
 
@@ -7965,13 +8003,11 @@ scaled to `target_lufs`, and finally attenuated so its sample peak sits at
 or below `peak_ceiling_dbfs`: the gain is `loudness_gain_db()`. Inputs are
 returned **unchanged** (flag them, don’t amplify) when silent or non-finite,
 near-silent (measured loudness at or below `LUFS_GATE_FLOOR`), or shorter than one
-BS.1770 gating block (`min_block_s`) — which `pyloudnorm` cannot measure and
-would otherwise raise `ValueError` on (routine for one-shots: clicks, blips,
-gunshots).
+BS.1770 gating block (`min_block_s`) — which a gated meter cannot measure
+(routine for one-shots: clicks, blips, gunshots).
 
 * **Parameters:**
-  * **samples** (`ndarray`) – Working array (mono or multichannel, time on axis 0 — the layout
-    pyloudnorm expects).
+  * **samples** (`ndarray`) – Working array (mono or multichannel, time on axis 0).
   * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
   * **target_lufs** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Desired integrated loudness (default = foley’s podcast
     target).
@@ -7981,7 +8017,7 @@ gunshots).
     oversampled measurement.
   * **min_block_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Minimum clip length (seconds) that can be loudness-measured;
     shorter clips are returned unchanged with `measured = -inf`.
-  * **meter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – A `Meter` (default `pyloudnorm`).
+  * **meter** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A `Meter` (default `DEFAULT_METER`).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`float`](https://docs.python.org/3/builtins/functions.html#float)]
 * **Returns:**
@@ -7990,7 +8026,7 @@ gunshots).
   `measured_input_lufs` is at or below `LUFS_GATE_FLOOR` (`-inf` for
   the too-short case).
 
-Lazy dependencies: `pyloudnorm` (+ `numpy`).
+Lazy dependencies: `mixing.loudness` (+ `numpy`).
 
 ### foley.make_byte_store(rootdir=PosixPath('/home/runner/.local/share/foley/audio'))
 
@@ -8119,12 +8155,13 @@ injectable library / runtime / byte-store, and hands the resolved tool functions
 
 Integrated loudness (LUFS, ITU-R BS.1770-4) via [`foley.audio.integrated_lufs()`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs).
 
-The one meter (`pyloudnorm` by default, lazy; `meter` swaps it).
+The one meter ([`foley.audio.DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER) by default, lazy; `meter`
+swaps it).
 
-Returns `None` when `pyloudnorm` is unavailable, the clip is shorter than
-one gating block (`min_block_s`), the samples are non-finite, or the
-measured loudness is at/below the gate floor (near-silent / unstable — do
-not amplify, just flag).
+Returns `None` when the meter is unavailable or cannot read the layout, the
+clip is shorter than one gating block (`min_block_s`), the samples are
+non-finite, or the measured loudness is at/below the gate floor (near-silent /
+unstable — do not amplify, just flag).
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
@@ -12121,8 +12158,8 @@ loudness, then the layer gain is applied, so a hot ElevenLabs clip and a quiet S
 Audio one land at the same place in the mix and `generate(level=...)` stays an export
 tool. A clip too short for a loudness reading is levelled by its peak instead.
 
-Zero-dependency import: `numpy`, `pyloudnorm` and `soundfile` load inside the
-functions.
+Zero-dependency import: `numpy`, `soundfile` and the shared loudness meter
+(`mixing.loudness`) load inside the functions.
 
 ### Module Attributes
 
@@ -12138,7 +12175,7 @@ functions.
 |--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
 | [`level_bytes`](_autosummary/foley.level.html.md#foley.level.level_bytes)(audio_bytes, target, \*[, meter])   | Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.                                                     |
 | [`reference_gain_db`](_autosummary/foley.level.html.md#foley.level.reference_gain_db)(clip, sample_rate, \*[, ...]) | The gain (dB) that brings `clip` to the reference loudness; `0.0` if it cannot.                                                      |
-| [`require_loudness_meter`](_autosummary/foley.level.html.md#foley.level.require_loudness_meter)()                        | Raise `ImportError` (with the install line) when `pyloudnorm` is missing.                                                            |
+| [`require_loudness_meter`](_autosummary/foley.level.html.md#foley.level.require_loudness_meter)()                        | Raise `ImportError` (with the install line) when the loudness meter is missing.                                                      |
 | [`resolve_target_lufs`](_autosummary/foley.level.html.md#foley.level.resolve_target_lufs)(spec)                       | A `level=` value as a LUFS target: a number as is, a layer via [`class_target_lufs()`](_autosummary/foley.level.html.md#foley.level.class_target_lufs). |
 
 ### foley.level.LevelSpec
@@ -12191,7 +12228,7 @@ Scale an encoded clip to `target` loudness; return `(bytes, applied, measured)`.
 * **Parameters:**
   * **audio_bytes** ([`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)) – Any clip `soundfile` decodes.
   * **target** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`Layer`](_autosummary/foley.base.html.md#foley.base.Layer), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float), [`int`](https://docs.python.org/3/builtins/functions.html#int)]) – A layer (its class target) or a LUFS number (see [`resolve_target_lufs()`](_autosummary/foley.level.html.md#foley.level.resolve_target_lufs)).
-  * **meter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[ndarray, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – A [`foley.audio.Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter) (default `pyloudnorm`).
+  * **meter** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[ndarray, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A [`foley.audio.Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter) (default [`foley.audio.DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER)).
 * **Returns:**
   the levelled clip re-encoded in foley’s FLAC
   archive form and a one-line account of the gain applied (for the licence’s
@@ -12216,13 +12253,13 @@ clip’s sample peak stays at or under `peak_ceiling_dbfs` and the boost at
   * **sample_rate** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Sample rate in Hz.
   * **reference_lufs** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – The loudness every clip is brought to (default: foley’s
     reference programme loudness, `foley.audio.DEFAULT_LOUDNESS_TARGET_LUFS`).
-  * **meter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[ndarray, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – A [`foley.audio.Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter) (default `pyloudnorm`).
+  * **meter** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[ndarray, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A [`foley.audio.Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter) (default [`foley.audio.DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER)).
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### foley.level.require_loudness_meter()
 
-Raise `ImportError` (with the install line) when `pyloudnorm` is missing.
+Raise `ImportError` (with the install line) when the loudness meter is missing.
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -13807,7 +13844,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'netflix chime', 'ta dum', 'tudum', 'ta-dum', 'netflix sound'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix chime', 'ta dum', 'netflix intro', 'ta-dum', 'netflix sound', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel bong', 'intel inside'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -14322,8 +14359,9 @@ Zero-dependency import contract:
 : This module imports **stdlib only** at the top level. `numpy` is
   lazy-imported inside each function body (like `foley.audio`), so
   `import foley.qc` succeeds on a bare install with no scientific stack.
-  The [`measure_lufs()`](_autosummary/foley.qc.html.md#foley.qc.measure_lufs) meter (`pyloudnorm`, via [`foley.audio.integrated_lufs()`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs)) is lazy and it returns
-  `None` when it (or a measurable clip) is absent; everything else is
+  The [`measure_lufs()`](_autosummary/foley.qc.html.md#foley.qc.measure_lufs) meter (`mixing.loudness`, via
+  [`foley.audio.integrated_lufs()`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs)) is lazy and it returns `None` when it
+  (or a measurable clip) is absent; everything else is
   numpy-only.
 
 Waveform convention:
@@ -14339,7 +14377,7 @@ sound_record.qc = report.to_dict()   # becomes filterable metadata
 
 ### Module Attributes
 
-| [`LUFS_MIN_BLOCK_S`](_autosummary/foley.qc.html.md#foley.qc.LUFS_MIN_BLOCK_S)      | BS.1770 integrated-loudness gating block = 400 ms; a clip shorter than one block cannot be measured (`pyloudnorm` raises), so [`measure_lufs()`](_autosummary/foley.qc.html.md#foley.qc.measure_lufs) returns `None` for it.                          |
+| [`LUFS_MIN_BLOCK_S`](_autosummary/foley.qc.html.md#foley.qc.LUFS_MIN_BLOCK_S)      | BS.1770 integrated-loudness gating block = 400 ms; a clip shorter than one block cannot be gated, so [`measure_lufs()`](_autosummary/foley.qc.html.md#foley.qc.measure_lufs) returns `None` for it.                                                   |
 |------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`QC_STATUS_RANK`](_autosummary/foley.qc.html.md#foley.qc.QC_STATUS_RANK)        | the SSOT for "is this clip below the floor?" — [`is_below()`](_autosummary/foley.qc.html.md#foley.qc.is_below), the ingest gate's `min_status` and [`foley.repair`](_autosummary/foley.repair.html.md#module-foley.repair) all read it. |
 | [`DEFAULT_MIN_STATUS`](_autosummary/foley.qc.html.md#foley.qc.DEFAULT_MIN_STATUS)    | `warn` clips are stored (their notes travel with the record); only `fail` clips are quarantined.                                                                                                                                              |
@@ -14382,7 +14420,7 @@ The shipped default thresholds; the default for every keyword below.
 ### foley.qc.LUFS_MIN_BLOCK_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.4*
 
 BS.1770 integrated-loudness gating block = 400 ms; a clip shorter than one
-block cannot be measured (`pyloudnorm` raises), so [`measure_lufs()`](_autosummary/foley.qc.html.md#foley.qc.measure_lufs)
+block cannot be gated, so [`measure_lufs()`](_autosummary/foley.qc.html.md#foley.qc.measure_lufs)
 returns `None` for it. This is a fixed property of the algorithm, not a
 tunable QC policy threshold, hence a module constant rather than a field.
 
@@ -14520,12 +14558,13 @@ A zero (exactly silent) clip has RMS `0` -> `-inf` dBFS -> `True`.
 
 Integrated loudness (LUFS, ITU-R BS.1770-4) via [`foley.audio.integrated_lufs()`](_autosummary/foley.audio.html.md#foley.audio.integrated_lufs).
 
-The one meter (`pyloudnorm` by default, lazy; `meter` swaps it).
+The one meter ([`foley.audio.DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER) by default, lazy; `meter`
+swaps it).
 
-Returns `None` when `pyloudnorm` is unavailable, the clip is shorter than
-one gating block (`min_block_s`), the samples are non-finite, or the
-measured loudness is at/below the gate floor (near-silent / unstable — do
-not amplify, just flag).
+Returns `None` when the meter is unavailable or cannot read the layout, the
+clip is shorter than one gating block (`min_block_s`), the samples are
+non-finite, or the measured loudness is at/below the gate floor (near-silent /
+unstable — do not amplify, just flag).
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
@@ -19225,7 +19264,7 @@ a [`WeaveResult`](_autosummary/foley.weave.html.md#foley.weave.WeaveResult): the
 the run-artifact join.
 
 Discipline (mirrors the rest of foley): the whole package is import-time dol-only
-(numpy / pyloudnorm / whisperx / opentimelineio / audioseal / c2pa are all
+(numpy / mixing.loudness / whisperx / opentimelineio / audioseal / c2pa are all
 function-local), the aligner and per-item strategy are injectable DI seams with
 deterministic defaults, and provenance re-assertion never raises — the C2PA
 content-credential sidecar is always emitted; the AudioSeal watermark and the (deferred)
@@ -19270,7 +19309,7 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`ApplyStrategy`](_autosummary/foley.weave.html.md#foley.weave.ApplyStrategy)(\*args, \*\*kwargs)                | How ONE hydrated item's clip is placed onto its layer bus (report 10 §4.2).                                                        |
 | [`FakeAligner`](_autosummary/foley.weave.html.md#foley.weave.FakeAligner)()                                    | Deterministic, torch-free [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) — evenly spaces the transcript's words.         |
 | [`WhisperXAligner`](_autosummary/foley.weave.html.md#foley.weave.WhisperXAligner)(\*[, model_size, device, ...])   | The real ≈±50 ms [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) (`foley[align]`) — faster-whisper ASR + wav2vec2 CTC.    |
-| [`MasterProfile`](_autosummary/foley.weave.html.md#foley.weave.MasterProfile)([target_lufs, true_peak_db, lra])  | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                     |
+| [`MasterProfile`](_autosummary/foley.weave.html.md#foley.weave.MasterProfile)([target_lufs, true_peak_db, ...])  | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                     |
 | [`MasterReport`](_autosummary/foley.weave.html.md#foley.weave.MasterReport)(target_lufs, input_lufs, ...)       | What the master stage did — a JSON-serialisable audit row for the run-artifact.                                                    |
 
 ### *class* foley.weave.Aligner(\*args, \*\*kwargs)
@@ -19337,11 +19376,19 @@ clips as stored.
 
 What distinguishes this strategy’s output in [`RenderCache`](_autosummary/foley.weave.html.md#foley.weave.RenderCache) keys.
 
-### *class* foley.weave.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0)
+### *class* foley.weave.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
 Loudness master target — the delivery spec as data, not code (report 06 §5.2).
+
+#### max_limiting_db *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 6.0*
+
+How far (dB) the master’s loudness stage lets the *sample* peak run over
+`true_peak_db` for the default lookahead limiter to take back (it may take
+off a little more, the inter-sample overshoot of those peaks). 0 restores a
+static, whole-program master. Transient foley (a door slam under narration)
+needs a few dB to reach the target at all (foley#91).
 
 ### *class* foley.weave.MasterReport(target_lufs, input_lufs, output_lufs, true_peak_dbtp, true_peak_ceiling_db, gain_db, limited, engine)
 
@@ -19705,12 +19752,12 @@ an optional keyword.
 Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).
 
 Normalises the whole program to a [`MasterProfile`](_autosummary/foley.base.html.md#foley.base.MasterProfile) integrated-loudness
-target (ITU-R BS.1770-4 / EBU R128 via `pyloudnorm`) and holds an inter-sample
-**true-peak** ceiling. It reuses [`foley.audio.loudness_normalize()`](_autosummary/foley.audio.html.md#foley.audio.loudness_normalize) (the same
-BS.1770 meter Tier-0 QC uses) for the LUFS stage and [`foley.qc.true_peak_dbtp()`](_autosummary/foley.qc.html.md#foley.qc.true_peak_dbtp)
-(oversampled) for the ceiling — so `pyloudnorm` comes from the existing `audio`
-extra (no redundant dependency) and is imported function-locally, keeping `import
-foley.weave` dol-only.
+target (ITU-R BS.1770-4 / EBU R128) and holds an inter-sample **true-peak** ceiling. It
+reuses [`foley.audio.loudness_normalize()`](_autosummary/foley.audio.html.md#foley.audio.loudness_normalize) (the same BS.1770 meter Tier-0 QC uses) for
+the LUFS stage, the shared lookahead limiter (`mixing.loudness.limit_peaks()`,
+`true_peak=True`) for the ceiling, and [`foley.qc.true_peak_dbtp()`](_autosummary/foley.qc.html.md#foley.qc.true_peak_dbtp) (oversampled) to
+report it — all from the existing `audio` extra, imported function-locally, keeping
+`import foley.weave` dol-only.
 
 The default `engine='auto'` masters fully in-process (portable, testable).
 `engine='ffmpeg'` runs the two-pass `ffmpeg loudnorm` “guarantee the numbers” master
@@ -19721,8 +19768,9 @@ errors, so weaving never depends on it. `ffmpeg` is a WEAVE system requirement (
 
 ### Functions
 
-| [`master`](_autosummary/foley.weave.master.html.md#foley.weave.master.master)(mix, sample_rate, profile, \*[, ...])   | Master `mix` to `profile` — LUFS-normalise then true-peak-limit (report 06 §5).   |
-|-------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| [`lookahead_true_peak_limit`](_autosummary/foley.weave.master.html.md#foley.weave.master.lookahead_true_peak_limit)(mix, sample_rate, ...)   | Hold `mix`'s inter-sample true peak at/below `ceiling_db` with a lookahead limiter.   |
+|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| [`master`](_autosummary/foley.weave.master.html.md#foley.weave.master.master)(mix, sample_rate, profile, \*[, ...])       | Master `mix` to `profile` — LUFS-normalise then true-peak-limit (report 06 §5).       |
 
 ### Classes
 
@@ -19742,6 +19790,26 @@ Return the plain-dict form (for `WeaveResult.master_report` / obs).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
+### foley.weave.master.lookahead_true_peak_limit(mix, sample_rate, ceiling_db)
+
+Hold `mix`’s inter-sample true peak at/below `ceiling_db` with a lookahead limiter.
+
+The default `Limiter` (foley#91): `mixing.loudness.limit_peaks()` with
+`true_peak=True` turns down the peaks (the gain eases in and out over its 50 ms
+window), not the whole program. Its polyphase true-peak meter reads under foley’s
+FFT one ([`foley.qc.true_peak_dbtp()`](_autosummary/foley.qc.html.md#foley.qc.true_peak_dbtp), which the master report uses) on content
+near Nyquist, so whatever is left over that meter is then trimmed statically
+([`foley.audio.limit_true_peak()`](_autosummary/foley.audio.html.md#foley.audio.limit_true_peak)): the ceiling holds by the number the report
+shows, at the cost of turning the whole program down by that residual (about a
+dB on full-band noise; nothing on band-limited material). Deterministic, never
+raises the level; `mix` comes back as is (same object) when nothing is over,
+else with the same shape and dtype. A non-finite sample is limited as silence
+and put back where it was, so it neither spreads over the limiter’s window nor
+lets the overs around it through.
+
+* **Return type:**
+  `ndarray`
+
 ### foley.weave.master.master(mix, sample_rate, profile, , engine='auto', limiter=None, meter=None)
 
 Master `mix` to `profile` — LUFS-normalise then true-peak-limit (report 06 §5).
@@ -19754,10 +19822,15 @@ Master `mix` to `profile` — LUFS-normalise then true-peak-limit (report 06 §5
     uses the two-pass `ffmpeg loudnorm` “guarantee the numbers” master (report 06
     §5.4) and **fails safe** back to in-process if ffmpeg is unavailable or errors.
   * **limiter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int), [`float`](https://docs.python.org/3/builtins/functions.html#float)], `ndarray`]]) – The in-process true-peak stage (a `Limiter`, `(mix, sample_rate,
-    ceiling_db) -> mix`; default: a static true-peak-safe scale). The seam for a
-    lookahead limiter (foley#91). In-process engine only; the true peak in the
-    report is always measured here, never taken from the limiter.
-  * **meter** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – A [`foley.audio.Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter) for the loudness stages (default `pyloudnorm`).
+    ceiling_db) -> mix`; default [`lookahead_true_peak_limit()`](_autosummary/foley.weave.master.html.md#foley.weave.master.lookahead_true_peak_limit)). For the
+    default, the loudness stage lets the sample peak run up to
+    `profile.max_limiting_db` over the ceiling for it to take back down; an
+    injected limiter gets a mix already held at the ceiling’s sample peak (no
+    headroom is assumed of a stage foley does not know). In-process engine
+    only; the true peak in the report is always measured here, never taken
+    from the limiter.
+  * **meter** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], [`float`](https://docs.python.org/3/builtins/functions.html#float)], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – A [`foley.audio.Meter`](_autosummary/foley.audio.html.md#foley.audio.Meter) for the loudness stages (default
+    [`foley.audio.DEFAULT_METER`](_autosummary/foley.audio.html.md#foley.audio.DEFAULT_METER)).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[`ndarray`, [`MasterReport`](_autosummary/foley.weave.master.html.md#foley.weave.master.MasterReport)]
 * **Returns:**
@@ -20192,7 +20265,7 @@ System-dependency onboarding for WEAVE’s optional upgrade paths (accompy-style
 
 `ffmpeg` (the two-pass `loudnorm` “guarantee the numbers” master, report 06 §5.4)
 and `rubberband` (time-stretch / pitch for loop fitting) are **system** binaries,
-never pip dependencies — the default WEAVE path is pure-numpy + `pyloudnorm` and
+never pip dependencies — the default WEAVE path is pure-numpy + `mixing.loudness` and
 degrades gracefully when they are absent. This module is the SSOT for what those
 binaries are, how to detect them (`shutil.which`), and how to install them per
 platform; it mirrors accompy’s `check_requirements` progressive-disclosure
@@ -20382,16 +20455,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 00:52 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/42a253c403e78da584f9a3450f8d25275e85e2e0"><code>42a253c</code></a> on branch <code>main</code>, for **foley 0.0.70** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-27 02:46 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/ca3f7348b1aee718be251cf11ddac56a0fd16312"><code>ca3f734</code></a> on branch <code>main</code>, for **foley 0.0.71** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.71) is behind the latest release on PyPI (0.0.72): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/42a253c403e78da584f9a3450f8d25275e85e2e0"><code>42a253c403e78da584f9a3450f8d25275e85e2e0</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/ca3f7348b1aee718be251cf11ddac56a0fd16312"><code>ca3f7348b1aee718be251cf11ddac56a0fd16312</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -20402,9 +20477,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40428922927">40428922927</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40440114999">40440114999</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>42a253c403e78da584f9a3450f8d25275e85e2e0</code> (in the history of the built commit) |
+| Event commit | <code>ca3f7348b1aee718be251cf11ddac56a0fd16312</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -20429,13 +20504,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.70/">0.0.70</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.72/">0.0.72</a>, newer than the documented version (0.0.71).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 42a253c403e78da584f9a3450f8d25275e85e2e0
+git checkout ca3f7348b1aee718be251cf11ddac56a0fd16312
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

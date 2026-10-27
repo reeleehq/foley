@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=29ed05f3"></script>
+    <script src="../_static/documentation_options.js?v=8d9581ea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.70" />
+  <meta name="docsearch:version" content="0.0.71" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -497,7 +497,7 @@ a <a class="reference internal" href="#foley.weave.WeaveResult" title="foley.wea
 <a class="reference internal" href="foley.provenance.html#foley.provenance.Credits" title="foley.provenance.Credits"><code class="xref py py-class docutils literal notranslate"><span class="pre">Credits</span></code></a>, WebVTT + SRT SDH captions, the master report, and
 the run-artifact join.</p>
 <p>Discipline (mirrors the rest of foley): the whole package is import-time dol-only
-(numpy / pyloudnorm / whisperx / opentimelineio / audioseal / c2pa are all
+(numpy / mixing.loudness / whisperx / opentimelineio / audioseal / c2pa are all
 function-local), the aligner and per-item strategy are injectable DI seams with
 deterministic defaults, and provenance re-assertion never raises — the C2PA
 content-credential sidecar is always emitted; the AudioSeal watermark and the (deferred)
@@ -601,7 +601,7 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.WhisperXAligner" title="foley.weave.WhisperXAligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WhisperXAligner</span></code></a>(*[, model_size, device, ...])</p></td>
 <td><p>The real ≈±50 ms <a class="reference internal" href="#foley.weave.Aligner" title="foley.weave.Aligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code></a> (<code class="docutils literal notranslate"><span class="pre">foley[align]</span></code>) — faster-whisper ASR + wav2vec2 CTC.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.MasterProfile" title="foley.weave.MasterProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>([target_lufs, true_peak_db, lra])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.MasterProfile" title="foley.weave.MasterProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>([target_lufs, true_peak_db, ...])</p></td>
 <td><p>Loudness master target — the delivery spec as data, not code (report 06 §5.2).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.MasterReport" title="foley.weave.MasterReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MasterReport</span></code></a>(target_lufs, input_lufs, ...)</p></td>
@@ -684,11 +684,21 @@ clips as stored.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.weave.MasterProfile">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">MasterProfile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_lufs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-16.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true_peak_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#MasterProfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.MasterProfile" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.</span></span><span class="sig-name descname"><span class="pre">MasterProfile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_lufs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-16.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true_peak_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_limiting_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#MasterProfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.MasterProfile" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="foley.base.html#foley.base.SerializableMixin" title="foley.base.SerializableMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">SerializableMixin</span></code></a></p>
 <p>Loudness master target — the delivery spec as data, not code (report 06 §5.2).</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.weave.MasterProfile.max_limiting_db">
+<span class="sig-name descname"><span class="pre">max_limiting_db</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6.0</span></span><a class="headerlink" href="#foley.weave.MasterProfile.max_limiting_db" title="Link to this definition">#</a></dt>
+<dd><p>How far (dB) the master’s loudness stage lets the <em>sample</em> peak run over
+<code class="docutils literal notranslate"><span class="pre">true_peak_db</span></code> for the default lookahead limiter to take back (it may take
+off a little more, the inter-sample overshoot of those peaks). 0 restores a
+static, whole-program master. Transient foley (a door slam under narration)
+needs a few dB to reach the target at all (foley#91).</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -1244,7 +1254,10 @@ with <a class="reference internal" href="foley.provenance.html#foley.provenance.
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.FullRender.cache_key"><code class="docutils literal notranslate"><span class="pre">FullRender.cache_key</span></code></a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.MasterProfile"><code class="docutils literal notranslate"><span class="pre">MasterProfile</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.MasterProfile"><code class="docutils literal notranslate"><span class="pre">MasterProfile</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.MasterProfile.max_limiting_db"><code class="docutils literal notranslate"><span class="pre">MasterProfile.max_limiting_db</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.MasterReport"><code class="docutils literal notranslate"><span class="pre">MasterReport</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.MasterReport.to_dict"><code class="docutils literal notranslate"><span class="pre">MasterReport.to_dict()</span></code></a></li>
 </ul>

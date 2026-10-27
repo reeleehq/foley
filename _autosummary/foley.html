@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=29ed05f3"></script>
+    <script src="../_static/documentation_options.js?v=8d9581ea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.70" />
+  <meta name="docsearch:version" content="0.0.71" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -534,7 +534,7 @@ by-reference gate driven by <code class="docutils literal notranslate"><span cla
 </ul>
 </div></blockquote>
 <p>Import cost: <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">foley</span></code> pulls only <code class="docutils literal notranslate"><span class="pre">dol</span></code> (a light core dependency used by
-<code class="docutils literal notranslate"><span class="pre">foley.stores</span></code>); <code class="docutils literal notranslate"><span class="pre">numpy</span></code>/<code class="docutils literal notranslate"><span class="pre">soundfile</span></code>/<code class="docutils literal notranslate"><span class="pre">soxr</span></code>/<code class="docutils literal notranslate"><span class="pre">librosa</span></code>/<code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code> are
+<code class="docutils literal notranslate"><span class="pre">foley.stores</span></code>); <code class="docutils literal notranslate"><span class="pre">numpy</span></code>/<code class="docutils literal notranslate"><span class="pre">soundfile</span></code>/<code class="docutils literal notranslate"><span class="pre">soxr</span></code>/<code class="docutils literal notranslate"><span class="pre">librosa</span></code>/<code class="docutils literal notranslate"><span class="pre">mixing.loudness</span></code> are
 lazy-imported inside the audio/QC functions that need them (install via the
 <code class="docutils literal notranslate"><span class="pre">foley[audio]</span></code> extra), so a bare install imports cleanly.</p>
 <p class="rubric">Functions</p>
@@ -882,7 +882,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.Processing" title="foley.Processing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Processing</span></code></a>([gain_db, pan, distance, ...])</p></td>
 <td><p>HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.MasterProfile" title="foley.MasterProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>([target_lufs, true_peak_db, lra])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.MasterProfile" title="foley.MasterProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>([target_lufs, true_peak_db, ...])</p></td>
 <td><p>Loudness master target — the delivery spec as data, not code (report 06 §5.2).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.LicenseFlags" title="foley.LicenseFlags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LicenseFlags</span></code></a>([commercial_ok, ...])</p></td>
@@ -2109,11 +2109,21 @@ hand-set the derived flags — always route through the policy layer.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.MasterProfile">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">MasterProfile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_lufs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-16.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true_peak_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#MasterProfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.MasterProfile" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">MasterProfile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_lufs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-16.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true_peak_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">11.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_limiting_db</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#MasterProfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.MasterProfile" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="foley.base.html#foley.base.SerializableMixin" title="foley.base.SerializableMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">SerializableMixin</span></code></a></p>
 <p>Loudness master target — the delivery spec as data, not code (report 06 §5.2).</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.MasterProfile.max_limiting_db">
+<span class="sig-name descname"><span class="pre">max_limiting_db</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6.0</span></span><a class="headerlink" href="#foley.MasterProfile.max_limiting_db" title="Link to this definition">#</a></dt>
+<dd><p>How far (dB) the master’s loudness stage lets the <em>sample</em> peak run over
+<code class="docutils literal notranslate"><span class="pre">true_peak_db</span></code> for the default lookahead limiter to take back (it may take
+off a little more, the inter-sample overshoot of those peaks). 0 restores a
+static, whole-program master. Transient foley (a door slam under narration)
+needs a few dB to reach the target at all (foley#91).</p>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -4541,14 +4551,12 @@ scaled to <code class="docutils literal notranslate"><span class="pre">target_lu
 or below <code class="docutils literal notranslate"><span class="pre">peak_ceiling_dbfs</span></code>: the gain is <code class="xref py py-func docutils literal notranslate"><span class="pre">loudness_gain_db()</span></code>. Inputs are
 returned <strong>unchanged</strong> (flag them, don’t amplify) when silent or non-finite,
 near-silent (measured loudness at or below <code class="docutils literal notranslate"><span class="pre">LUFS_GATE_FLOOR</span></code>), or shorter than one
-BS.1770 gating block (<code class="docutils literal notranslate"><span class="pre">min_block_s</span></code>) — which <code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code> cannot measure and
-would otherwise raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> on (routine for one-shots: clicks, blips,
-gunshots).</p>
+BS.1770 gating block (<code class="docutils literal notranslate"><span class="pre">min_block_s</span></code>) — which a gated meter cannot measure
+(routine for one-shots: clicks, blips, gunshots).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>samples</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span>) – Working array (mono or multichannel, time on axis 0 — the layout
-pyloudnorm expects).</p></li>
+<li><p><strong>samples</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></span>) – Working array (mono or multichannel, time on axis 0).</p></li>
 <li><p><strong>sample_rate</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Sample rate in Hz.</p></li>
 <li><p><strong>target_lufs</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Desired integrated loudness (default = foley’s podcast
 target).</p></li>
@@ -4558,7 +4566,7 @@ true-peak (dBTP) limit — see <a class="reference internal" href="foley.qc.html
 oversampled measurement.</p></li>
 <li><p><strong>min_block_s</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Minimum clip length (seconds) that can be loudness-measured;
 shorter clips are returned unchanged with <code class="docutils literal notranslate"><span class="pre">measured</span> <span class="pre">=</span> <span class="pre">-inf</span></code>.</p></li>
-<li><p><strong>meter</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>], <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span>) – A <code class="xref py py-data docutils literal notranslate"><span class="pre">Meter</span></code> (default <code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code>).</p></li>
+<li><p><strong>meter</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>], <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>], <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span>]</span>) – A <code class="xref py py-data docutils literal notranslate"><span class="pre">Meter</span></code> (default <code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_METER</span></code>).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -4571,7 +4579,7 @@ too short to measure, <code class="docutils literal notranslate"><span class="pr
 the too-short case).</p>
 </dd>
 </dl>
-<p>Lazy dependencies: <code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code> (+ <code class="docutils literal notranslate"><span class="pre">numpy</span></code>).</p>
+<p>Lazy dependencies: <code class="xref py py-mod docutils literal notranslate"><span class="pre">mixing.loudness</span></code> (+ <code class="docutils literal notranslate"><span class="pre">numpy</span></code>).</p>
 </dd></dl>
 
 <dl class="py function">
@@ -4742,11 +4750,12 @@ its lifetime (default <a class="reference internal" href="foley.cost.html#foley.
 <dt class="sig sig-object py" id="foley.measure_lufs">
 <span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">measure_lufs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">gate_floor_lufs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-70.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_block_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.4</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">meter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/qc.html#measure_lufs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.measure_lufs" title="Link to this definition">#</a></dt>
 <dd><p>Integrated loudness (LUFS, ITU-R BS.1770-4) via <a class="reference internal" href="foley.audio.html#foley.audio.integrated_lufs" title="foley.audio.integrated_lufs"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.audio.integrated_lufs()</span></code></a>.</p>
-<p>The one meter (<code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code> by default, lazy; <code class="docutils literal notranslate"><span class="pre">meter</span></code> swaps it).</p>
-<p>Returns <code class="docutils literal notranslate"><span class="pre">None</span></code> when <code class="docutils literal notranslate"><span class="pre">pyloudnorm</span></code> is unavailable, the clip is shorter than
-one gating block (<code class="docutils literal notranslate"><span class="pre">min_block_s</span></code>), the samples are non-finite, or the
-measured loudness is at/below the gate floor (near-silent / unstable — do
-not amplify, just flag).</p>
+<p>The one meter (<a class="reference internal" href="foley.audio.html#foley.audio.DEFAULT_METER" title="foley.audio.DEFAULT_METER"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.audio.DEFAULT_METER</span></code></a> by default, lazy; <code class="docutils literal notranslate"><span class="pre">meter</span></code>
+swaps it).</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">None</span></code> when the meter is unavailable or cannot read the layout, the
+clip is shorter than one gating block (<code class="docutils literal notranslate"><span class="pre">min_block_s</span></code>), the samples are
+non-finite, or the measured loudness is at/below the gate floor (near-silent /
+unstable — do not amplify, just flag).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
@@ -5715,7 +5724,10 @@ escalates to the injected/​default judge for that rung and returns <em>its</em
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.LicenseFlags"><code class="docutils literal notranslate"><span class="pre">LicenseFlags</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.LicenseMeta"><code class="docutils literal notranslate"><span class="pre">LicenseMeta</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.LicenseRecord"><code class="docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.MasterProfile"><code class="docutils literal notranslate"><span class="pre">MasterProfile</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.MasterProfile"><code class="docutils literal notranslate"><span class="pre">MasterProfile</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.MasterProfile.max_limiting_db"><code class="docutils literal notranslate"><span class="pre">MasterProfile.max_limiting_db</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.MemoryIndex"><code class="docutils literal notranslate"><span class="pre">MemoryIndex</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.MemoryIndex.bm25"><code class="docutils literal notranslate"><span class="pre">MemoryIndex.bm25()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.MemoryIndex.commit"><code class="docutils literal notranslate"><span class="pre">MemoryIndex.commit()</span></code></a></li>

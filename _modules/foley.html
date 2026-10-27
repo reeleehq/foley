@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=29ed05f3"></script>
+    <script src="../_static/documentation_options.js?v=8d9581ea"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.70" />
+  <meta name="docsearch:version" content="0.0.71" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -761,7 +761,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">      (``foley.audio``) with the key functions also re-exported here.</span>
 
 <span class="sd">Import cost: ``import foley`` pulls only ``dol`` (a light core dependency used by</span>
-<span class="sd">``foley.stores``); ``numpy``/``soundfile``/``soxr``/``librosa``/``pyloudnorm`` are</span>
+<span class="sd">``foley.stores``); ``numpy``/``soundfile``/``soxr``/``librosa``/``mixing.loudness`` are</span>
 <span class="sd">lazy-imported inside the audio/QC functions that need them (install via the</span>
 <span class="sd">``foley[audio]`` extra), so a bare install imports cleanly.</span>
 <span class="sd">"""</span>
@@ -957,7 +957,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="c1"># --- weave: the WEAVE stage — weave() renders the finished, editable mix (#8) ----</span>
 <span class="c1"># The weave package is dol-only at import (the aligner + apply-strategy sit behind</span>
-<span class="c1"># DI-seam protocols with deterministic defaults; whisperx/pyloudnorm/opentimelineio/</span>
+<span class="c1"># DI-seam protocols with deterministic defaults; whisperx/mixing/opentimelineio/</span>
 <span class="c1"># audioseal/c2pa are imported lazily inside methods only). ``weave`` here is the</span>
 <span class="c1"># façade: the ``weave`` package is made *callable* (see foley/weave/__init__.py), so</span>
 <span class="c1"># ``foley.weave(narration, timeline)`` runs the façade while ``foley.weave.&lt;submodule&gt;``</span>

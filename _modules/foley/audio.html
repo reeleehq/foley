@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=29ed05f3"></script>
+    <script src="../../_static/documentation_options.js?v=8d9581ea"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.70" />
+  <meta name="docsearch:version" content="0.0.71" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -732,8 +732,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">Design rules honoured here:</span>
 
 <span class="sd">    * **Zero-dep import.** This module imports only the stdlib at top level; the</span>
-<span class="sd">      heavy libraries (``numpy``, ``soundfile``, ``soxr``, ``librosa``,</span>
-<span class="sd">      ``pyloudnorm``) are lazy-imported *inside* the functions that need them, so</span>
+<span class="sd">      heavy libraries (``numpy``, ``soundfile``, ``soxr``, ``librosa``, the</span>
+<span class="sd">      :mod:`mixing.loudness` meter) are lazy-imported *inside* the functions that need them, so</span>
 <span class="sd">      ``import foley.audio`` always succeeds on a bare install and only the</span>
 <span class="sd">      function you call pays for (and requires) its dependency.</span>
 <span class="sd">    * **No magic numbers.** Every default (sample rate, dtype, archive subtype,</span>
@@ -779,7 +779,7 @@ window.runMermaid = runMermaid;</script>
 <span class="n">LUFS_ATSC</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">24.0</span>  <span class="c1"># ATSC A/85 broadcast target</span>
 <span class="n">DEFAULT_LOUDNESS_TARGET_LUFS</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LUFS_PODCAST</span>
 <span class="n">TRUE_PEAK_MAX_DBTP</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>  <span class="c1"># ceiling after loudness normalization</span>
-<span class="n">LUFS_GATE_FLOOR</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">70.0</span>  <span class="c1"># pyloudnorm near-silent gate; flag, don't amplify</span>
+<span class="n">LUFS_GATE_FLOOR</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">70.0</span>  <span class="c1"># BS.1770 absolute gate; flag, don't amplify</span>
 <span class="n">LUFS_MIN_BLOCK_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span>  <span class="c1"># BS.1770 gating block; shorter clips can't be measured</span>
 <span class="n">SILENT_PEAK_DBFS</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">80.0</span>  <span class="c1"># a clip whose sample peak is under this is silent</span>
 
@@ -1102,7 +1102,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    A **static** gain — the whole clip is turned down by one factor, never boosted —</span>
 <span class="sd">    which is transparent and exactly what a Tier-0 range fault needs: after it, a</span>
 <span class="sd">    flat-topped run or an over-ceiling peak is no longer at full scale. It is not a</span>
-<span class="sd">    dynamic look-ahead limiter (a shared one is planned: foley#91), so the distortion</span>
+<span class="sd">    dynamic look-ahead limiter (that is :func:`mixing.loudness.limit_peaks`, the WEAVE</span>
+<span class="sd">    master's default), so the distortion</span>
 <span class="sd">    of a heavily clipped clip stays in the waveform; that is why :mod:`foley.repair`</span>
 <span class="sd">    applies it only to a clip just over the clipping gate.</span>
 
@@ -1131,17 +1132,54 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="c1">#: A loudness meter: ``(samples, sample_rate) -&gt; integrated LUFS`` (time on axis 0).</span>
-<span class="n">Meter</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">"ndarray"</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span>
+<span class="c1">#: A loudness meter: a name from :data:`mixing.loudness.METERS` (``"numpy"``, the</span>
+<span class="c1">#: default; ``"ffmpeg_ebur128"``; ``"pyloudnorm"``) or any</span>
+<span class="c1">#: ``(samples, sample_rate) -&gt; integrated LUFS`` callable (time on axis 0).</span>
+<span class="n">Meter</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">"ndarray"</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span>
+<span class="c1">#: The meter foley measures with when none is given: the shared component's numpy</span>
+<span class="c1">#: BS.1770-4 meter (foley#91), so foley needs no meter library of its own.</span>
+<span class="n">DEFAULT_METER</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"numpy"</span>
+<span class="n">_LOUDNESS_HINT</span> <span class="o">=</span> <span class="s2">"pip install 'foley[audio]' (it brings mixing[loudness])"</span>
 
 
-<div class="viewcode-block" id="pyloudnorm_meter">
-<a class="viewcode-back" href="../../_autosummary/foley.audio.html#foley.pyloudnorm_meter">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">pyloudnorm_meter</span><span class="p">(</span><span class="n">samples</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""The default :data:`Meter`: ``pyloudnorm`` (lazy), BS.1770-4 integrated loudness."""</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">pyloudnorm</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pyln</span>
+<div class="viewcode-block" id="loudness_component">
+<a class="viewcode-back" href="../../_autosummary/foley.audio.html#foley.loudness_component">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">loudness_component</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""The shared loudness component, :mod:`mixing.loudness` (foley#91).</span>
 
-    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">pyln</span><span class="o">.</span><span class="n">Meter</span><span class="p">(</span><span class="n">sample_rate</span><span class="p">)</span><span class="o">.</span><span class="n">integrated_loudness</span><span class="p">(</span><span class="n">samples</span><span class="p">))</span></div>
+<span class="sd">    Raises ``ImportError`` naming the install line when it, or the scipy its</span>
+<span class="sd">    meter and limiter filter with, is missing.</span>
+<span class="sd">    """</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">scipy.signal</span>  <span class="c1"># noqa: F401  (mixing.loudness imports it lazily)</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">mixing</span><span class="w"> </span><span class="kn">import</span> <span class="n">loudness</span>
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"loudness needs the shared mixing.loudness component: </span><span class="si">{</span><span class="n">_LOUDNESS_HINT</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">exc</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+    <span class="k">return</span> <span class="n">loudness</span></div>
+
+
+
+<div class="viewcode-block" id="resolve_meter">
+<a class="viewcode-back" href="../../_autosummary/foley.audio.html#foley.resolve_meter">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve_meter</span><span class="p">(</span><span class="n">meter</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Meter</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Meter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``meter``, or :data:`DEFAULT_METER` for ``None``; an unknown name raises ``ValueError``.</span>
+
+<span class="sd">    Callers that read a meter error as "not measurable" resolve first, so a typo is</span>
+<span class="sd">    never mistaken for an unreadable clip. A name is checked only when the component</span>
+<span class="sd">    is installed (measuring reports a missing one).</span>
+<span class="sd">    """</span>
+    <span class="n">meter</span> <span class="o">=</span> <span class="n">DEFAULT_METER</span> <span class="k">if</span> <span class="n">meter</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">meter</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">meter</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="n">loudness_component</span><span class="p">()</span><span class="o">.</span><span class="n">METERS</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">meter</span>
+        <span class="k">if</span> <span class="n">meter</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown meter </span><span class="si">{</span><span class="n">meter</span><span class="si">!r}</span><span class="s2">; one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">names</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">meter</span></div>
 
 
 
@@ -1161,15 +1199,16 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ``n &lt; block_size*rate`` at every sample rate, including rates where ``0.4*sr`` is</span>
 <span class="sd">    not integral; identical to ``int(round)`` at all standard (÷5) rates.</span>
 
-<span class="sd">    ``meter`` (default :func:`pyloudnorm_meter`) is the seam for another BS.1770</span>
-<span class="sd">    implementation (foley#91); the too-short guard stays here, outside the meter, so</span>
-<span class="sd">    every meter sees the same clips.</span>
+<span class="sd">    ``meter`` (default :data:`DEFAULT_METER`) picks the BS.1770 implementation (see</span>
+<span class="sd">    :data:`Meter`); the too-short guard stays here, outside the meter, so every meter</span>
+<span class="sd">    sees the same clips.</span>
 
-<span class="sd">    Lazy dependency: ``pyloudnorm`` (default meter only).</span>
+<span class="sd">    Lazy dependency: :mod:`mixing.loudness` (see :func:`loudness_component`).</span>
 <span class="sd">    """</span>
+    <span class="n">meter</span> <span class="o">=</span> <span class="n">resolve_meter</span><span class="p">(</span><span class="n">meter</span><span class="p">)</span>  <span class="c1"># before the guard: a bad name raises on any clip</span>
     <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">min_block_s</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s2">"-inf"</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">float</span><span class="p">((</span><span class="n">meter</span> <span class="ow">or</span> <span class="n">pyloudnorm_meter</span><span class="p">)(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">))</span></div>
+    <span class="k">return</span> <span class="n">loudness_component</span><span class="p">()</span><span class="o">.</span><span class="n">integrated_lufs</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">meter</span><span class="o">=</span><span class="n">meter</span><span class="p">)</span></div>
 
 
 
@@ -1210,7 +1249,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        ``(gain_db, measured_lufs)``; ``measured_lufs`` is ``-inf`` for a clip too short</span>
 <span class="sd">        to measure, a value at or under :data:`LUFS_GATE_FLOOR` for a near-silent one.</span>
 
-<span class="sd">    Lazy dependencies: ``pyloudnorm`` (+ ``numpy``).</span>
+<span class="sd">    Lazy dependencies: :mod:`mixing.loudness` (+ ``numpy``).</span>
 <span class="sd">    """</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
@@ -1257,13 +1296,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    or below ``peak_ceiling_dbfs``: the gain is :func:`loudness_gain_db`. Inputs are</span>
 <span class="sd">    returned **unchanged** (flag them, don't amplify) when silent or non-finite,</span>
 <span class="sd">    near-silent (measured loudness at or below ``LUFS_GATE_FLOOR``), or shorter than one</span>
-<span class="sd">    BS.1770 gating block (``min_block_s``) — which ``pyloudnorm`` cannot measure and</span>
-<span class="sd">    would otherwise raise ``ValueError`` on (routine for one-shots: clicks, blips,</span>
-<span class="sd">    gunshots).</span>
+<span class="sd">    BS.1770 gating block (``min_block_s``) — which a gated meter cannot measure</span>
+<span class="sd">    (routine for one-shots: clicks, blips, gunshots).</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        samples: Working array (mono or multichannel, time on axis 0 — the layout</span>
-<span class="sd">            pyloudnorm expects).</span>
+<span class="sd">        samples: Working array (mono or multichannel, time on axis 0).</span>
 <span class="sd">        sample_rate: Sample rate in Hz.</span>
 <span class="sd">        target_lufs: Desired integrated loudness (default = foley's podcast</span>
 <span class="sd">            target).</span>
@@ -1273,7 +1310,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            oversampled measurement.</span>
 <span class="sd">        min_block_s: Minimum clip length (seconds) that can be loudness-measured;</span>
 <span class="sd">            shorter clips are returned unchanged with ``measured = -inf``.</span>
-<span class="sd">        meter: A :data:`Meter` (default ``pyloudnorm``).</span>
+<span class="sd">        meter: A :data:`Meter` (default :data:`DEFAULT_METER`).</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        ``(normalized, measured_input_lufs)``. When the input is near-silent or</span>
@@ -1281,7 +1318,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        ``measured_input_lufs`` is at or below ``LUFS_GATE_FLOOR`` (``-inf`` for</span>
 <span class="sd">        the too-short case).</span>
 
-<span class="sd">    Lazy dependencies: ``pyloudnorm`` (+ ``numpy``).</span>
+<span class="sd">    Lazy dependencies: :mod:`mixing.loudness` (+ ``numpy``).</span>
 <span class="sd">    """</span>
     <span class="n">gain_db</span><span class="p">,</span> <span class="n">measured</span> <span class="o">=</span> <span class="n">loudness_gain_db</span><span class="p">(</span>
         <span class="n">samples</span><span class="p">,</span>

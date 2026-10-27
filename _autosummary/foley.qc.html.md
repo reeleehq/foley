@@ -12,8 +12,9 @@ Zero-dependency import contract:
 : This module imports **stdlib only** at the top level. `numpy` is
   lazy-imported inside each function body (like `foley.audio`), so
   `import foley.qc` succeeds on a bare install with no scientific stack.
-  The [`measure_lufs()`](#foley.qc.measure_lufs) meter (`pyloudnorm`, via [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs)) is lazy and it returns
-  `None` when it (or a measurable clip) is absent; everything else is
+  The [`measure_lufs()`](#foley.qc.measure_lufs) meter (`mixing.loudness`, via
+  [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs)) is lazy and it returns `None` when it
+  (or a measurable clip) is absent; everything else is
   numpy-only.
 
 Waveform convention:
@@ -29,7 +30,7 @@ sound_record.qc = report.to_dict()   # becomes filterable metadata
 
 ### Module Attributes
 
-| [`LUFS_MIN_BLOCK_S`](#foley.qc.LUFS_MIN_BLOCK_S)      | BS.1770 integrated-loudness gating block = 400 ms; a clip shorter than one block cannot be measured (`pyloudnorm` raises), so [`measure_lufs()`](#foley.qc.measure_lufs) returns `None` for it.                          |
+| [`LUFS_MIN_BLOCK_S`](#foley.qc.LUFS_MIN_BLOCK_S)      | BS.1770 integrated-loudness gating block = 400 ms; a clip shorter than one block cannot be gated, so [`measure_lufs()`](#foley.qc.measure_lufs) returns `None` for it.                                                   |
 |------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`QC_STATUS_RANK`](#foley.qc.QC_STATUS_RANK)        | the SSOT for "is this clip below the floor?" — [`is_below()`](#foley.qc.is_below), the ingest gate's `min_status` and [`foley.repair`](foley.repair.html.md#module-foley.repair) all read it. |
 | [`DEFAULT_MIN_STATUS`](#foley.qc.DEFAULT_MIN_STATUS)    | `warn` clips are stored (their notes travel with the record); only `fail` clips are quarantined.                                                                                                                                              |
@@ -72,7 +73,7 @@ The shipped default thresholds; the default for every keyword below.
 ### foley.qc.LUFS_MIN_BLOCK_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.4*
 
 BS.1770 integrated-loudness gating block = 400 ms; a clip shorter than one
-block cannot be measured (`pyloudnorm` raises), so [`measure_lufs()`](#foley.qc.measure_lufs)
+block cannot be gated, so [`measure_lufs()`](#foley.qc.measure_lufs)
 returns `None` for it. This is a fixed property of the algorithm, not a
 tunable QC policy threshold, hence a module constant rather than a field.
 
@@ -210,12 +211,13 @@ A zero (exactly silent) clip has RMS `0` -> `-inf` dBFS -> `True`.
 
 Integrated loudness (LUFS, ITU-R BS.1770-4) via [`foley.audio.integrated_lufs()`](foley.audio.html.md#foley.audio.integrated_lufs).
 
-The one meter (`pyloudnorm` by default, lazy; `meter` swaps it).
+The one meter ([`foley.audio.DEFAULT_METER`](foley.audio.html.md#foley.audio.DEFAULT_METER) by default, lazy; `meter`
+swaps it).
 
-Returns `None` when `pyloudnorm` is unavailable, the clip is shorter than
-one gating block (`min_block_s`), the samples are non-finite, or the
-measured loudness is at/below the gate floor (near-silent / unstable — do
-not amplify, just flag).
+Returns `None` when the meter is unavailable or cannot read the layout, the
+clip is shorter than one gating block (`min_block_s`), the samples are
+non-finite, or the measured loudness is at/below the gate floor (near-silent /
+unstable — do not amplify, just flag).
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]

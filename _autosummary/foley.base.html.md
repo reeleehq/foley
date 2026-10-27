@@ -41,7 +41,7 @@ Serialization contract:
 | [`IntendedUse`](#foley.base.IntendedUse)([commercial, publish, ...])           | What the caller intends to do with a sound; consumed by `keep()`.                        |
 | [`Layer`](#foley.base.Layer)(\*values)                                   | Mix layer (shared by `SoundEvent` now and `TimelineItem` later).                         |
 | [`LicenseRecord`](#foley.base.LicenseRecord)(source[, source_id, ...])           | Per-sound rights + provenance.                                                           |
-| [`MasterProfile`](#foley.base.MasterProfile)([target_lufs, true_peak_db, lra])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).           |
+| [`MasterProfile`](#foley.base.MasterProfile)([target_lufs, true_peak_db, ...])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).           |
 | [`Placement`](#foley.base.Placement)([anchor, ref, onset, pre_roll, ...])    | WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).      |
 | [`Processing`](#foley.base.Processing)([gain_db, pan, distance, ...])         | HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).            |
 | [`Salience`](#foley.base.Salience)(\*values)                                | How prominent a sound event is within a passage.                                         |
@@ -186,17 +186,25 @@ is rejected regardless. Populate the flags from the `license_id` via
 `foley.licensing.apply_license_flags` (source overrides win). Never
 hand-set the derived flags — always route through the policy layer.
 
-### foley.base.MASTER_PROFILES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [MasterProfile](#foley.base.MasterProfile)]* *= {'broadcast_atsc': MasterProfile(target_lufs=-24.0, true_peak_db=-2.0, lra=7.0), 'broadcast_ebu': MasterProfile(target_lufs=-23.0, true_peak_db=-1.0, lra=7.0), 'podcast': MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0), 'streaming': MasterProfile(target_lufs=-14.0, true_peak_db=-1.0, lra=11.0)}*
+### foley.base.MASTER_PROFILES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [MasterProfile](#foley.base.MasterProfile)]* *= {'broadcast_atsc': MasterProfile(target_lufs=-24.0, true_peak_db=-2.0, lra=7.0, max_limiting_db=6.0), 'broadcast_ebu': MasterProfile(target_lufs=-23.0, true_peak_db=-1.0, lra=7.0, max_limiting_db=6.0), 'podcast': MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0), 'streaming': MasterProfile(target_lufs=-14.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)}*
 
 The named delivery targets (report 06 §5.2). [`resolve_master()`](#foley.base.resolve_master) maps a
 profile name to one of these; these values are the SSOT so no LUFS literal
 hides in code.
 
-### *class* foley.base.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0)
+### *class* foley.base.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)
 
 Bases: [`SerializableMixin`](#foley.base.SerializableMixin)
 
 Loudness master target — the delivery spec as data, not code (report 06 §5.2).
+
+#### max_limiting_db *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 6.0*
+
+How far (dB) the master’s loudness stage lets the *sample* peak run over
+`true_peak_db` for the default lookahead limiter to take back (it may take
+off a little more, the inter-sample overshoot of those peaks). 0 restores a
+static, whole-program master. Transient foley (a door slam under narration)
+needs a few dB to reach the target at all (foley#91).
 
 ### *class* foley.base.Placement(anchor=Anchor.absolute, ref=None, onset=0.0, pre_roll=0.0, duration=None, loop=False)
 
