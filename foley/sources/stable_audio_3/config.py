@@ -90,5 +90,7 @@ SOURCE_CONFIG = {
         "source": "local inference",
         "seen": "2026-10-26",
     },
+    # Vendor facts a config cannot imply (foley.capabilities_of); only documented ones.
+    "capabilities": {"watermarked": False},  # local open weights: no vendor watermark
     "data_egress": "local",
 }
