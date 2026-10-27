@@ -180,24 +180,19 @@ def _placed_records(narration, timeline, library) -> dict:
     """``{id: record or None}`` for every enabled clip, plus a library-ref narration.
 
     What :func:`weave`'s rights gate judges: each clip's record as ``library`` holds it
-    now (``None`` when it has none, which the fail-closed gate refuses), and the
-    narration's when it is a ``str`` with a record there (a narration that is only
-    audio has no licence to check).
+    now (``None`` when it has none or it cannot be read, which the fail-closed gate
+    refuses; :func:`~foley.licensing.placed_record`), and the narration's when it is a
+    ``str`` with a record there (a narration that is only audio has no licence to check).
     """
-
-    def record_of(ref):
-        if library is None:
-            return None
-        try:
-            return library[ref]
-        except LookupError:
-            return None
+    from ..licensing import placed_record
 
     placed = {
-        it.clip_ref: record_of(it.clip_ref) for it in timeline.items if it.enabled
+        it.clip_ref: placed_record(library, it.clip_ref)
+        for it in timeline.items
+        if it.enabled
     }
     if isinstance(narration, str):  # a library ref: judged when it has a record
-        record = record_of(narration)
+        record = placed_record(library, narration)
         if record is not None:
             placed[narration] = record
     return placed

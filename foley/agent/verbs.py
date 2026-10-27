@@ -19,7 +19,12 @@ import threading
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-from ..licensing import DEFAULT_INTENDED_USE, intended_use_for
+from ..licensing import (
+    DEFAULT_INTENDED_USE,
+    LicenseRefusal,
+    intended_use_for,
+    placed_record,
+)
 
 # ---------------------------------------------------------------------------
 # injectable shared state (a default library + session factory; overridden in tests)
@@ -545,7 +550,6 @@ def foley_plan(
     """
     from .. import plan
     from ..base import Layer, SoundEvent
-    from ..licensing import LicenseRefusal
 
     use, invalid = _intent(commercial_ok, territory)
     if invalid:
@@ -572,7 +576,7 @@ def foley_plan(
             cands, transcript=transcript, intended_use=use, library=_lib()
         ).to_dict()
     except LicenseRefusal as exc:
-        return _refused(exc.refused)
+        return _refused(exc)
 
 
 def foley_weave(
@@ -590,7 +594,6 @@ def foley_weave(
     intent does not keep refuses the render, naming each such id and why (#191).
     """
     from .. import weave as _weave
-    from ..licensing import LicenseRefusal
 
     try:
         tl = _timeline_of(timeline)
@@ -601,27 +604,15 @@ def foley_weave(
         return invalid
     lib = _lib()
     missing = sorted(
-        {it.clip_ref for it in tl.items if not _in_library(lib, it.clip_ref)}
+        {it.clip_ref for it in tl.items if placed_record(lib, it.clip_ref) is None}
     )
     if missing:
         return _invalid(ValueError(f"clip_ref(s) not in the library: {missing}"))
     try:  # the core judges every enabled clip and a library-ref narration under ``use``
         woven = _weave(narration, tl, library=lib, intended_use=use)
     except LicenseRefusal as exc:
-        return _refused(exc.refused)
+        return _refused(exc)
     return _weave_result_row(woven)
-
-
-def _record_of(lib, sound_id: str, default=None):
-    """The library's record for ``sound_id``, or ``default`` when it has none."""
-    try:
-        return lib[sound_id]
-    except KeyError:
-        return default
-
-
-def _in_library(lib, sound_id: str) -> bool:
-    return _record_of(lib, sound_id) is not None
 
 
 def _timeline_of(timeline):
@@ -650,6 +641,8 @@ def _invalid_on_bad_input(fn):
     def tool(*args, **kwargs):
         try:
             return fn(*args, **kwargs)
+        except LicenseRefusal as exc:  # a ValueError, but a refusal, not bad input
+            return _refused(exc)
         except (KeyError, TypeError, ValueError) as exc:
             return _invalid(exc)
 
@@ -751,15 +744,18 @@ def foley_score(
     if invalid:
         return invalid
 
-    with spend_scope(_server_budget()):
-        res = score(
-            context,
-            library=_lib(),
-            intended_use=use,
-            verify=verify,
-            max_events=max_events,
-            weave=False,
-        )
+    try:  # plan re-checks every chosen sound under ``use``; a tool never raises
+        with spend_scope(_server_budget()):
+            res = score(
+                context,
+                library=_lib(),
+                intended_use=use,
+                verify=verify,
+                max_events=max_events,
+                weave=False,
+            )
+    except LicenseRefusal as exc:
+        return _refused(exc)
     return {
         "timeline": res.timeline.to_dict(),
         "events": [e.to_dict() for e in res.events],
@@ -824,14 +820,17 @@ def _intent(commercial_ok: bool, territory: Optional[str]):
         return None, _invalid(exc)
 
 
-def _refused(refused: "dict[str, str]") -> dict:
-    """The JSON row of a plan or weave refused for its sounds' licences (#191)."""
-    why = "; ".join(f"{sid}: {reason}" for sid, reason in refused.items())
+def _refused(exc: LicenseRefusal) -> dict:
+    """The JSON row of a plan, weave or score refused for its sounds' licences (#191).
+
+    Built from the core's :class:`~foley.licensing.LicenseRefusal`, so the row says
+    exactly what the exception says (one message, written once).
+    """
     return {
         "ok": False,
         "status": "refused",
-        "error": f"not licensed for this use: {why}",
-        "refused": refused,
+        "error": str(exc),
+        "refused": exc.refused,
     }
 
 

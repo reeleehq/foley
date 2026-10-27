@@ -970,6 +970,50 @@ def checked_refusal_reason(
         return f"its licence could not be checked ({type(exc).__name__}: {exc})"
 
 
+def placed_record(library, sound_id: str, *, missing=None):
+    """``library``'s record for ``sound_id`` as a rights gate reads it, never raising.
+
+    The one lookup every placed-sound gate uses (a plan's, a weave's, the MCP verbs'),
+    so they agree on what "no record" means (#208):
+
+    * ``missing`` when there is no entry: ``library`` is ``None``, or the lookup
+      raises a ``LookupError`` (the id is genuinely absent);
+    * ``None`` when the lookup fails any other way (a corrupt stored record, a broken
+      backend), or the value has no ``.license`` (a plain-mapping library of audio
+      arrays holds sounds, not records).
+
+    ``None`` is what the fail-closed gate (:func:`refusals`) refuses under an explicit
+    intent, and what the no-intent path only warns about, so a bad library can make a
+    gated call refuse but never make an ungated one raise.
+
+    >>> from foley.base import SoundRecord
+    >>> rec = SoundRecord(id="a", license=LicenseRecord(source="user"))
+    >>> placed_record({"a": rec}, "a") is rec
+    True
+    >>> placed_record({"a": rec}, "b", missing="own"), placed_record(None, "a")
+    ('own', None)
+    >>> placed_record({"a": [0.0, 0.1]}, "a") is None  # audio, not a record
+    True
+    >>> class Corrupt(dict):
+    ...     def __getitem__(self, k):
+    ...         raise ValueError("bad JSON")
+    >>> placed_record(Corrupt(), "a", missing="own") is None
+    True
+    """
+    if library is None:
+        return missing
+    try:
+        value = library[sound_id]
+        return value if hasattr(value, "license") else None
+    except LookupError:
+        return missing
+    except Exception as exc:  # noqa: BLE001 - an unreadable record is no record
+        _log.debug(
+            "no readable record for %r: %s: %s", sound_id, type(exc).__name__, exc
+        )
+        return None
+
+
 #: The reason a placed sound with no record (nothing to read a licence from) is refused.
 NO_RECORD_REASON = "it has no record in the library, so its licence cannot be checked"
 

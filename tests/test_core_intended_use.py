@@ -150,3 +150,107 @@ def test_search_and_similar_drop_what_an_explicit_intent_refuses(lib, call):
     assert "rain" not in gb and "thunder" not in gb
     with pytest.raises(ValueError):  # a contradicting shorthand is refused
         run(intended_use=US, commercial_ok=False)
+
+
+class _CorruptRecord(FakeLibrary):
+    """A library whose stored record for ``rain`` cannot be read (a corrupt dol JSON)."""
+
+    def __getitem__(self, key):
+        if key == "rain":
+            raise ValueError("Expecting value: line 1 column 1 (char 0)")
+        return super().__getitem__(key)
+
+
+def _corrupt():
+    lib = _CorruptRecord()
+    lib.recs.update(FakeLibrary().recs)
+    return lib
+
+
+def test_an_unreadable_record_warns_without_intent_and_is_refused_with_one(lib):
+    bad = _corrupt()
+    tl = foley.plan(_cands(lib, ["door", "rain"]), intended_use=US)
+    with pytest.warns(FutureWarning, match="rain: it has no record"):
+        assert foley.weave("nar", tl, library=bad).audio is not None  # main renders
+    with pytest.raises(foley.LicenseRefusal) as info:
+        foley.weave("nar", tl, library=bad, intended_use=US)
+    assert set(info.value.refused) == {"rain"}
+    with pytest.warns(FutureWarning, match="rain: it has no record"):
+        foley.plan(_cands(lib, ["door", "rain"]), library=bad)  # not its own record
+    with pytest.raises(foley.LicenseRefusal):
+        foley.plan(_cands(lib, ["rain"]), intended_use=US, library=bad)
+
+
+def test_a_plain_mapping_library_renders_without_intent_and_cannot_pass_one(lib):
+    tl = foley.plan(_cands(lib, ["door"]), intended_use=US)
+    arrays = {
+        "door": np.zeros(4800, dtype="float32"),
+        "nar": np.zeros(48000, dtype="float32"),
+    }
+    with pytest.warns(FutureWarning, match="door"):
+        assert foley.weave("nar", tl, library=arrays).audio is not None
+    with pytest.raises(foley.LicenseRefusal) as info:
+        foley.weave("nar", tl, library=arrays, intended_use=US)
+    assert set(info.value.refused) == {"door"}  # the audio narration is not judged
+    empty = foley.base.SoundDesignTimeline(items=[])
+    assert foley.weave("nar", empty, library=arrays, intended_use=US).audio is not None
+
+
+def test_score_passes_its_intent_through_to_plan_and_weave(lib, monkeypatch):
+    monkeypatch.setattr(foley, "find", lambda seg, **kw: _cands(lib, ["door", "rain"]))
+    with pytest.raises(foley.LicenseRefusal) as info:
+        foley.score("a door, then rain", library=lib, intended_use=GB)
+    assert set(info.value.refused) == {"rain"}
+
+    seen = {}
+
+    def fake_weave(audio, timeline, **kw):
+        seen.update(kw)
+        raise RuntimeError("stop")
+
+    monkeypatch.setattr(foley, "weave", fake_weave)
+    monkeypatch.setattr(foley.index, "default_library", lambda: lib)
+    with pytest.raises(RuntimeError, match="stop"):
+        foley.score("a door, then rain", audio="nar", intended_use=US)
+    assert seen["library"] is lib and seen["intended_use"] == US
+
+
+@pytest.fixture
+def wired(lib):
+    from foley.agent import verbs as mcp
+    from test_mcp import _memo_session_factory
+
+    saved = dict(mcp._STATE)
+    mcp._configure(
+        library=lib,
+        session_factory=_memo_session_factory(),
+        byte_store={},
+        runtime=foley.RuntimeConfig.default(),
+    )
+    yield mcp
+    mcp._STATE.clear()
+    mcp._STATE.update(saved)
+
+
+def test_foley_score_answers_a_refusal_with_the_refused_row(wired, monkeypatch):
+    def refuse(*args, **kwargs):
+        raise foley.LicenseRefusal({"rain": "no grant in GB"})
+
+    monkeypatch.setattr(foley, "score", refuse)
+    row = wired.foley_score("rain", territory="GB")
+    assert row == {
+        "ok": False,
+        "status": "refused",
+        "error": "not licensed for this use: rain: no grant in GB",
+        "refused": {"rain": "no grant in GB"},
+    }
+
+
+def test_a_licence_refusal_is_not_swallowed_as_invalid_input(wired):
+    # LicenseRefusal is a ValueError: a bad-input wrapper must answer it as refused.
+    @wired._invalid_on_bad_input
+    def tool():
+        raise foley.LicenseRefusal({"rain": "no grant in GB"})
+
+    row = tool()
+    assert row["status"] == "refused" and row["refused"] == {"rain": "no grant in GB"}

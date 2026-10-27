@@ -132,6 +132,7 @@ def score(
     """
     from . import find, obs, plan
     from . import weave as _weave
+    from .index import default_library
     from .licensing import intended_use_for
 
     segs = [segments] if isinstance(segments, str) else list(segments)
@@ -191,8 +192,8 @@ def score(
                 "intended_use": use,
                 **weave_kwargs,
             }
-            if library is not None:
-                wk["library"] = library
+            # weave judges every clip by its library record: the one find drew from
+            wk["library"] = library if library is not None else default_library()
             woven = _weave(audio, timeline, **wk)
             timeline = woven.timeline
     return ScoreResult(timeline=timeline, events=events, weave=woven)

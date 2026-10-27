@@ -755,10 +755,12 @@ def plan(
 
 
 def _current_record(library, record):
-    """``library``'s record for ``record.id`` when it has one, else ``record`` itself."""
-    if library is None:
-        return record
-    try:
-        return library[record.id]
-    except LookupError:
-        return record
+    """``library``'s record for ``record.id``; ``record`` itself only when the id is absent.
+
+    No ``library``, or one without the id (``LookupError``), judges the candidate's
+    own record. A lookup that fails any other way, or a value that is not a record,
+    is "no record" (``None``): refused under an explicit intent, warned about without.
+    """
+    from ..licensing import placed_record
+
+    return placed_record(library, record.id, missing=record)
