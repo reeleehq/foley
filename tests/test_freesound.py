@@ -837,3 +837,41 @@ def test_search_vocabulary_is_validated_before_any_call():
 def test_a_native_sort_called_directly_names_the_choices():
     with pytest.raises(ValueError, match="provider_params"):
         _adapter(_transport()).search("rain", sort="created_desc")
+
+
+def test_add_from_raises_an_unbalanced_provider_filter_before_searching(library):
+    """An escaping ``filter`` is the caller's error, never a failed search (#181)."""
+    transport = _transport()
+    with pytest.raises(ValueError, match="unbalanced"):
+        add_from("freesound", query="rain", adapter=_adapter(transport),
+                 library=library, provider_params={"filter": "x) OR (license:*"})
+    assert transport.calls == []
+
+
+@pytest.mark.parametrize(
+    "affordances",
+    [{"kind": "music"}, {"ucs_category": "AMBIENCE"}],
+)
+def test_a_provider_category_clause_conflicting_with_foleys_is_refused(
+    library, affordances
+):
+    """kind / ucs_category send a category, so a provider one could only AND to nothing."""
+    from foley.sources.base import SearchArgumentError
+
+    transport = _transport()
+    for clause in ('category:"Soundscapes"', 'NOT category:"Music"', "(category:Fx)"):
+        with pytest.raises(SearchArgumentError, match="in one place"):
+            add_from("freesound", query="rain", adapter=_adapter(transport),
+                     library=library, provider_params={"filter": clause},
+                     **affordances)
+    assert transport.calls == []
+
+
+def test_a_provider_category_clause_alone_or_quoted_is_sent():
+    transport = _transport()  # no kind / ucs_category: the caller's category alone
+    _adapter(transport).search("rain", provider_params={"filter": 'category:"Music"'})
+    assert transport.calls[0].params["filter"].endswith('(category:"Music")')
+    transport = _transport()  # a quoted phrase or another field is not a category clause
+    extra = 'tag:"category:x" subcategory:"Rain"'
+    _adapter(transport).search("rain", kind="music", provider_params={"filter": extra})
+    assert transport.calls[0].params["filter"].endswith(f"({extra})")

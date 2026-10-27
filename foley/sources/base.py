@@ -234,7 +234,9 @@ def check_provider_params(
     (one that decides what foley screened, recorded or wrote: the prompt, an output
     path, the model) and a ``priced`` key (one that changes what the call costs, which
     foley estimated and reserved from its own request) are refused, before anything
-    is sent or paid for.
+    is sent or paid for. So is a grouped ``append`` value that would close its
+    ``(...)`` group: checked here, a search refuses it before its try, as it does a
+    reserved key, rather than recording it as a failed search (#181).
 
     >>> check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})
     {'steps': 8}
@@ -249,8 +251,9 @@ def check_provider_params(
 
     Raises:
         TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.
-        ValueError: If a key is ``reserved`` or ``priced`` by the policy, or the
-            source declares no policy at all.
+        ValueError: If a key is ``reserved`` or ``priced`` by the policy, an
+            ``append``-ed value would escape its group, or the source declares no
+            policy at all.
     """
     if provider_params is None:
         return {}
@@ -287,6 +290,10 @@ def check_provider_params(
                 "estimates and reserves from its own request: use the unified "
                 "argument (e.g. duration_s=) or the source config instead"
             )
+    append = policy.get("append") or {}
+    for key, value in provider_params.items():
+        if key in append and _append_spec(append[key])[1] and value is not None:
+            _check_grouped(key, str(value))
     return dict(provider_params)
 
 
@@ -487,8 +494,7 @@ def merge_provider_params(
             continue  # nothing to append
         joiner, grouped = _append_spec(append[key])
         value = str(value)
-        if grouped:
-            _check_grouped(key, value)
+        if grouped:  # balanced: check_provider_params refused one that is not
             value = f"({value})"
         base = out.get(key)
         out[key] = value if base in (None, "") else f"{base}{joiner}{value}"
