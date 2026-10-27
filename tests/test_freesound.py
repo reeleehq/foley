@@ -801,3 +801,8 @@ def test_search_vocabulary_is_validated_before_any_call():
             translate_affordances(SOURCE_CONFIG, bad, vocabulary=QUERY_AFFORDANCES)
     with pytest.raises(TypeError, match="text= was renamed query="):
         translate_affordances(SOURCE_CONFIG, {"text": "rain"}, vocabulary=QUERY_AFFORDANCES)
+
+
+def test_a_native_sort_called_directly_names_the_choices():
+    with pytest.raises(ValueError, match="provider_params"):
+        _adapter(_transport()).search("rain", sort="created_desc")

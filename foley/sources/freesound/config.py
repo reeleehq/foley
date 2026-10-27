@@ -58,9 +58,9 @@ SOURCE_CONFIG = {
                 "duration": "duration_asc",
             },
         },
-        # Media kind (#75): music is the Broad Sound Taxonomy's "Music" top level; sfx
-        # (the default) sends no filter, as before.
-        "kind": {"native_name": "filter", "to_native": {"music": 'category:"Music"'}},
+        # Media kind (#75): the Broad Sound Taxonomy top level a kind is filed under,
+        # through ucs_category's filter template; sfx (the default) sends no filter.
+        "kind": {"bst_category": {"music": "Music"}},
         # "More like this" (Freesound's native ``similar_to``: a sound id).
         "similar_to": {"native_name": "similar_to"},
         # A coarse pre-filter on the Broad Sound Taxonomy's top level (#78). Only the

@@ -634,3 +634,45 @@ def test_one_source_name_is_a_list_and_a_bad_page_is_refused():
     for bad in (0, -1, 1.5, True):
         with pytest.raises(ValueError, match="page"):
             translate_affordances(OV, {"page": bad}, vocabulary=QUERY_AFFORDANCES)
+
+
+def test_commons_offset_uses_the_clamped_limit():
+    wc, http = _commons()
+    wc.search("door", k=99, page=2)  # gsrlimit is clamped to 50: page 2 starts at 50
+    assert http.calls[0]["params"]["gsroffset"] == 50
+
+
+def test_archive_refuses_a_collection_name_that_is_not_an_identifier():
+    ia, http = _ia()
+    for bad in ("foo bar", "x) OR (mediatype:movies", "", "AND x"):
+        with pytest.raises(ValueError, match="collection identifiers"):
+            ia.search("door", sources=[bad])
+    assert http.calls == []
+    ia.search("door", sources="opensource_audio")  # one name, called directly
+    assert http.calls[0]["params"]["q"].endswith(" AND collection:(opensource_audio)")
+
+
+def test_openverse_exclusion_is_case_blind_and_survives_a_provider_param():
+    ov, http = _openverse()
+    assert ov.search("door", sources=[" Jamendo ", "FREESOUND"]) == []
+    jamendo = Fake(("/audio/", Resp({"results": [_row("j", "cc0", source="jamendo")]})))
+    ov = OpenverseAdapter(http=jamendo)
+    assert ov.search("door", provider_params={"source": "jamendo"}) == []  # row dropped
+
+
+def test_openverse_sources_keeps_freesound_when_the_adapter_includes_it():
+    ov, http = _openverse(include_freesound=True)
+    ov.search("door", sources=["freesound"])
+    assert http.calls[0]["params"]["source"] == "freesound"
+    ov, http = _openverse()
+    ov.search("door", sources="wikimedia_audio")  # called directly with one name
+    assert http.calls[0]["params"]["source"] == "wikimedia_audio"
+
+
+def test_include_explicit_must_be_a_bool():
+    from foley.base import QUERY_AFFORDANCES
+    from foley.sources._dispatch import translate_affordances
+    from foley.sources.openverse.config import SOURCE_CONFIG as OV
+
+    with pytest.raises(ValueError, match="include_explicit"):
+        translate_affordances(OV, {"include_explicit": "no"}, vocabulary=QUERY_AFFORDANCES)

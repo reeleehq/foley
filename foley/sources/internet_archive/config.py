@@ -26,7 +26,11 @@ SOURCE_CONFIG = {
         "k": {"native_name": "rows"},
         "license": {"native_name": "license", "adapter_handled": True},
         "page": {"native_name": "page"},
-        "sources": {"native_name": "q", "to_native": "collection:({collections})"},
+        # Archive collections, ORed into the query; identifiers are [A-Za-z0-9._-]+.
+        "sources": {
+            "to_native": "collection:({collections})",
+            "pattern": r"[A-Za-z0-9._-]+",
+        },
     },
     "supported_affordances": ["query", "k", "license", "page", "sources"],
     "on_unsupported_param": "warn",

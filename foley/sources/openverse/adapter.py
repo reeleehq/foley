@@ -19,7 +19,7 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import wanted_license_ids
 from .._keyless import get_bytes, get_json, raw_id
 from .._license_gate import license_for_item, native_license_filter
-from ..base import api_license, merge_provider_params
+from ..base import api_license, as_names, merge_provider_params, paging_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -103,21 +103,17 @@ class OpenverseAdapter:
                 wanted, api["license_native"], default=api["license_default"]
             ),
         }
-        excluded = [
-            s
-            for s in api["excluded_sources"]
-            if not (s == "freesound" and self._include_freesound)
-        ]
+        excluded = self._excluded()
         pm = self.config["param_map"]
         if sources:
-            allowed = [s for s in sources if s not in excluded]
+            wanted_sources = [s.strip().lower() for s in as_names(sources)]
+            allowed = [s for s in wanted_sources if s not in excluded]
             if not allowed:  # only excluded providers asked for: nothing can match
                 return []
             params[pm["sources"]["native_name"]] = ",".join(allowed)
         elif excluded:
             params["excluded_source"] = ",".join(excluded)
-        if page != 1:
-            params[pm["page"]["native_name"]] = int(page)
+        params.update(paging_params(self.config, page, params["page_size"]))
         if include_explicit:
             params[pm["include_explicit"]["native_name"]] = "true"
         category = pm["kind"]["to_native"].get(kind)
@@ -170,12 +166,22 @@ class OpenverseAdapter:
             what="Openverse",
         )
 
+    def _excluded(self) -> "list[str]":
+        """The Openverse providers this adapter never returns (Freesound unless asked)."""
+        return [
+            s
+            for s in self.config["api"]["excluded_sources"]
+            if not (s == "freesound" and self._include_freesound)
+        ]
+
     def _candidate(self, row: dict, *, only: Optional[list]) -> Optional[Candidate]:
         if not row.get("id") or not row.get("url"):
             return None
-        by_reference = row.get("source") == "freesound"
-        if by_reference and not self._include_freesound:
+        # Whatever the request (a provider param can rewrite the source filter), an
+        # excluded provider's row is never returned.
+        if str(row.get("source") or "").lower() in self._excluded():
             return None
+        by_reference = row.get("source") == "freesound"
         found = license_for_item(self.config, row.get("license_url"), only=only)
         if found is None:
             return None

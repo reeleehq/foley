@@ -150,7 +150,8 @@ def _checked_values(affordances: dict) -> dict:
 
     ``sample_rate`` must be a positive whole number of Hz (any real number type,
     numpy's included, but not a bool or a string); ``expand_prompt`` a bool;
-    ``page`` a positive integer; ``sources`` one name or a list of names.
+    ``include_explicit`` a bool; ``page`` a positive integer; ``sources`` one name
+    or a list of names.
     """
     rate = affordances.get("sample_rate")
     if rate is not None:
@@ -168,17 +169,17 @@ def _checked_values(affordances: dict) -> dict:
                 f"sample_rate must be a positive whole number of Hz, got {rate!r}"
             )
         affordances = {**affordances, "sample_rate": int(rate)}
-    flag = affordances.get("expand_prompt")
-    if flag is not None and not isinstance(flag, bool):
-        raise ValueError(f"expand_prompt must be True or False, got {flag!r}")
+    for name in ("expand_prompt", "include_explicit"):  # loop=1 stays accepted (#97)
+        flag = affordances.get(name)
+        if flag is not None and not isinstance(flag, bool):
+            raise ValueError(f"{name} must be True or False, got {flag!r}")
     page = affordances.get("page")
     if page is not None and (
         isinstance(page, bool) or not isinstance(page, numbers.Integral) or page < 1
     ):
         raise ValueError(f"page must be a positive integer, got {page!r}")
-    sources = affordances.get("sources")
-    if isinstance(sources, str):  # one name, not its characters
-        affordances = {**affordances, "sources": [sources]}
+    if isinstance(affordances.get("sources"), str):  # one name, not its characters
+        affordances = {**affordances, "sources": [affordances["sources"]]}
     return affordances
 
 

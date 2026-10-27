@@ -35,7 +35,13 @@ from typing import Optional
 
 from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import ai_scope_from_gen_ai_preference, wanted_license_ids
-from ..base import api_license, merge_provider_params, resolve_source_key
+from ..base import (
+    api_license,
+    merge_provider_params,
+    native_choice,
+    paging_params,
+    resolve_source_key,
+)
 from .._license_gate import is_cc0_only, license_for_item
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
@@ -211,9 +217,12 @@ class FreesoundAdapter:
             filters.append(license_map["to_native"])
         elif only is not None:
             filters.append(license_map["to_native_attribution"])
-        kind_filter = self.config["param_map"]["kind"]["to_native"].get(kind)
-        if kind_filter:
-            filters.append(kind_filter)
+        pm = self.config["param_map"]
+        kind_category = pm["kind"]["bst_category"].get(kind)
+        if kind_category:
+            filters.append(
+                pm["ucs_category"]["to_native"].format(category=kind_category)
+            )
         if ucs_category:
             bst = _bst_category(self.config, ucs_category)
             if bst is not None:
@@ -232,9 +241,8 @@ class FreesoundAdapter:
         if filters:
             params["filter"] = " ".join(filters)
         if sort is not None:
-            params["sort"] = self.config["param_map"]["sort"]["to_native_map"][sort]
-        if page != 1:
-            params["page"] = int(page)
+            params["sort"] = native_choice(self.config, "sort", sort)
+        params.update(paging_params(self.config, page, params["page_size"]))
         if similar_to:
             native = self.config["param_map"]["similar_to"]["native_name"]
             params[native] = _raw_id(similar_to)

@@ -26,7 +26,7 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import wanted_license_ids
 from .._keyless import get_bytes, get_json, raw_id, strip_html
 from .._license_gate import license_for_item
-from ..base import api_license, merge_provider_params
+from ..base import api_license, merge_provider_params, paging_params
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -121,9 +121,7 @@ class WikimediaCommonsAdapter:
             prop="imageinfo",
             iiprop=_IMAGEINFO,
         )
-        if page != 1:
-            offset = (int(page) - 1) * params["gsrlimit"]
-            params[self.config["param_map"]["page"]["native_name"]] = offset
+        params.update(paging_params(self.config, page, params["gsrlimit"]))
         data = self.invoke_native(
             **merge_provider_params(
                 params, provider_params, policy=self.config.get("provider_params")

@@ -18,7 +18,13 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import wanted_license_ids
 from .._keyless import get_bytes, get_json, raw_id, strip_html
 from .._license_gate import license_for_item
-from ..base import SourceConfigurationError, api_license, merge_provider_params
+from ..base import (
+    SourceConfigurationError,
+    api_license,
+    as_names,
+    merge_provider_params,
+    paging_params,
+)
 from ..http import Transport, requests_transport
 from .config import SOURCE_CONFIG
 
@@ -95,16 +101,18 @@ class InternetArchiveAdapter:
         q = f"({_lucene_escape(query)}) AND mediatype:audio AND {api['licensed_clause']}"
         if sources:
             spec = self.config["param_map"]["sources"]
-            names = " OR ".join(_lucene_escape(str(s)) for s in sources)
-            q += " AND " + spec["to_native"].format(collections=names)
+            names = as_names(sources)
+            bad = [n for n in names if not re.fullmatch(spec["pattern"], str(n))]
+            if bad:
+                raise ValueError(f"not archive collection identifiers: {bad!r}")
+            q += " AND " + spec["to_native"].format(collections=" OR ".join(names))
         params = {
             "q": q,
             "fl[]": list(_FIELDS),
             "rows": min(int(k), api["max_rows"]),
             "output": "json",
         }
-        if page != 1:
-            params[self.config["param_map"]["page"]["native_name"]] = int(page)
+        params.update(paging_params(self.config, page, params["rows"]))
         params = merge_provider_params(
             params, provider_params, policy=self.config.get("provider_params")
         )
