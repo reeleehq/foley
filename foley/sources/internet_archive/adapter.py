@@ -22,6 +22,8 @@ from ..base import (
     SourceConfigurationError,
     api_license,
     as_names,
+    check_owned_fields,
+    check_provider_params,
     merge_provider_params,
     page_size,
     paging_params,
@@ -94,13 +96,19 @@ class InternetArchiveAdapter:
         collections.
         ``provider_params`` are native advancedsearch params merged over the
         translated ones (#61); a ``q`` is ANDed onto foley's as one group, never
-        replaces it (the config's ``provider_params`` policy).
+        replaces it (the config's ``provider_params`` policy), and one that names
+        ``mediatype`` (or ``collection`` when ``sources`` is given) raises
+        :class:`~foley.sources.base.SearchArgumentError`: ANDed with foley's own
+        clause on that field, it could match nothing (#203).
         """
         only = wanted_license_ids(self.config, license)
         if only == []:  # a licence this source does not accept: nothing can match
             return []
         api = self.config["api"]
-        q = f"({_lucene_escape(query)}) AND mediatype:audio AND {api['licensed_clause']}"
+        policy = provider_params_policy(self.config)
+        provider_params = check_provider_params(provider_params, policy=policy)
+        q = f"({_lucene_escape(query)}) AND {api['audio_clause']} AND {api['licensed_clause']}"
+        owned = {"mediatype": api["audio_clause"]}
         if sources:
             spec = self.config["param_map"]["sources"]
             names = as_names(sources)
@@ -108,7 +116,11 @@ class InternetArchiveAdapter:
             if bad:
                 raise ValueError(f"not archive collection identifiers: {bad!r}")
             quoted = " OR ".join(f'"{n}"' for n in names)
-            q += " AND " + spec["to_native"].format(collections=quoted)
+            owned[spec["field"]] = spec["to_native"].format(collections=quoted)
+            q += " AND " + owned[spec["field"]]
+        check_owned_fields(
+            provider_params, self.config["param_map"]["query"]["native_name"], owned
+        )
         params = {
             "q": q,
             "fl[]": list(_FIELDS),
@@ -116,9 +128,7 @@ class InternetArchiveAdapter:
             "output": "json",
         }
         params.update(paging_params(self.config, page, params["rows"]))
-        params = merge_provider_params(
-            params, provider_params, policy=provider_params_policy(self.config)
-        )
+        params = merge_provider_params(params, provider_params, policy=policy)
         docs = (
             self.invoke_native(api["search_url"], **params).get("response") or {}
         ).get("docs", [])

@@ -482,12 +482,47 @@ def test_provider_params_reach_each_keyless_search_and_keep_the_licence_checks()
 
 def test_an_or_in_the_ia_q_stays_inside_the_and_clause():
     ia, http = _ia()
-    ia.search("door", provider_params={"q": "year:2000 OR mediatype:*"})
+    ia.search("door", provider_params={"q": "year:2000 OR subject:*"})
     q = http.calls[0]["params"]["q"]
     assert q.startswith("(door) AND mediatype:audio AND ")
-    assert q.endswith(" AND (year:2000 OR mediatype:*)")  # grouped: cannot widen
+    assert q.endswith(" AND (year:2000 OR subject:*)")  # grouped: cannot widen
     with pytest.raises(ValueError, match="unbalanced"):
         ia.search("door", provider_params={"q": "x) OR (mediatype:*"})
+
+
+@pytest.mark.parametrize(
+    "q, sources, field",
+    [
+        ("mediatype:movies", None, "mediatype"),
+        ("year:2000 OR -mediatype:audio", None, "mediatype"),
+        ("collection:(x) AND year:2000", ["opensource_audio"], "collection"),
+    ],
+)
+def test_an_ia_q_naming_a_field_foley_sends_is_refused_before_any_request(q, sources, field):
+    """#203: ANDed with foley's own clause, it could silently match nothing."""
+    from foley.sources.base import SearchArgumentError
+
+    ia, http = _ia()
+    with pytest.raises(SearchArgumentError, match=rf"names a {field}, but foley already"):
+        ia.search("door", sources=sources, provider_params={"q": q})
+    assert http.calls == []
+
+
+def test_an_ia_q_may_name_collection_without_sources_or_quote_a_field():
+    ia, http = _ia()
+    ia.search("door", provider_params={"q": 'collection:x AND subject:"mediatype:x"'})
+    assert http.calls[0]["params"]["q"].endswith(' AND (collection:x AND subject:"mediatype:x")')
+
+
+def test_add_from_raises_a_clashing_ia_q_before_searching(library):
+    from foley.sources import add_from
+    from foley.sources.base import SearchArgumentError
+
+    ia, http = _ia()
+    with pytest.raises(SearchArgumentError, match="names a mediatype"):
+        add_from("internet_archive", query="door", library=library, adapter=ia,
+                 provider_params={"q": "mediatype:etree"})
+    assert http.calls == []
 
 
 def test_add_from_raises_an_unbalanced_ia_q_before_searching(library):

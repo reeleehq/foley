@@ -29,6 +29,7 @@ SOURCE_CONFIG = {
         # Archive collections, quoted and ORed into the query. An identifier starts
         # with a letter or digit, so no name reads as a Lucene operator (-x, AND).
         "sources": {
+            "field": "collection",
             "to_native": "collection:({collections})",
             "pattern": r"[A-Za-z0-9][A-Za-z0-9._-]{0,99}",
         },
@@ -40,6 +41,7 @@ SOURCE_CONFIG = {
         "metadata_url": "https://archive.org/metadata/{id}",
         "download_url": "https://archive.org/download/{id}/{name}",
         "item_url": "https://archive.org/details/{id}",
+        "audio_clause": "mediatype:audio",
         "licensed_clause": "licenseurl:(*publicdomain* OR *creativecommons*)",
         "audio_formats": [
             "mp3",
@@ -66,8 +68,9 @@ SOURCE_CONFIG = {
         ],
     },
     # What a caller's ``provider_params`` (#61) may not do: ``q`` (the query and the
-    # licensed clause) is ANDed onto as one group; the fields and output the
-    # licence check parses are foley's.
+    # licensed clause) is ANDed onto as one group, and may not name a field foley
+    # already sends a clause on (``mediatype``; ``collection`` with ``sources=``) (#203);
+    # the fields and output the licence check parses are foley's.
     "provider_params": {
         "append": {"q": " AND "},
         "reserved": ["fl[]", "output"],
