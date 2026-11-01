@@ -1,0 +1,14 @@
+# Only pyproject.toml, README.md, LICENSE and foley/ are copied into images
+# (deploy/mcp-http/Dockerfile); keep the build context small.
+.git
+**/__pycache__
+**/*.pyc
+tests
+tools
+misc
+skills
+docs
+dist
+build
+*.egg-info
+.venv

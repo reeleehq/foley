@@ -151,7 +151,9 @@ result.weave.credits  # attribution    result.timeline             # still edita
 `foley.score(...)` is the stable contract `braidio`/`nw` call. The same surface is available as
 **MCP tools** (`foley_score`, `foley_guide`, `foley_search`, `foley_preview`, `foley_weave`, …) —
 serve them over stdio (`foley-mcp`) or authenticated HTTP (`foley-mcp --http --token …`) — and as
-**CLI commands** generated from the same verb table (`foley.agent.verbs.VERBS`), JSON in and out:
+**CLI commands** generated from the same verb table (`foley.agent.verbs.VERBS`), JSON in and out.
+To stand the HTTP server up for remote agents (Docker image, compose file, TLS, token rotation), see [Deploy the MCP server](misc/docs/deploy-mcp-http.md).
+
 
 ```
 foley score "Rain on the roof, then thunder." --territory US
