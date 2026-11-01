@@ -491,27 +491,30 @@ def test_an_or_in_the_ia_q_stays_inside_the_and_clause():
 
 
 @pytest.mark.parametrize(
-    "q, sources, field",
+    "q, license",
     [
-        ("mediatype:movies", None, "mediatype"),
-        ("year:2000 OR -mediatype:audio", None, "mediatype"),
-        ("collection:(x) AND year:2000", ["opensource_audio"], "collection"),
+        ("mediatype:movies", None),
+        ("year:2000 OR -mediatype:audio", None),
+        ("mediatype:movies", "CC-BY-NC-4.0"),  # refused even when no licence can match
     ],
 )
-def test_an_ia_q_naming_a_field_foley_sends_is_refused_before_any_request(q, sources, field):
-    """#203: ANDed with foley's own clause, it could silently match nothing."""
+def test_an_ia_q_naming_mediatype_is_refused_before_any_request(q, license):
+    """#203: ANDed with foley's own ``mediatype:audio``, it could silently match nothing."""
     from foley.sources.base import SearchArgumentError
 
     ia, http = _ia()
-    with pytest.raises(SearchArgumentError, match=rf"names a {field}, but foley already"):
-        ia.search("door", sources=sources, provider_params={"q": q})
+    with pytest.raises(SearchArgumentError, match="names a mediatype, but foley already"):
+        ia.search("door", license=license, provider_params={"q": q})
     assert http.calls == []
 
 
-def test_an_ia_q_may_name_collection_without_sources_or_quote_a_field():
+def test_an_ia_q_may_narrow_collections_and_quote_a_field():
+    """An item sits in several collections, so ``collection:`` narrows ``sources=``."""
     ia, http = _ia()
-    ia.search("door", provider_params={"q": 'collection:x AND subject:"mediatype:x"'})
-    assert http.calls[0]["params"]["q"].endswith(' AND (collection:x AND subject:"mediatype:x")')
+    q = '-collection:podcasts AND subject:"mediatype:x"'
+    ia.search("door", sources=["opensource_audio"], provider_params={"q": q})
+    sent = http.calls[0]["params"]["q"]
+    assert 'collection:("opensource_audio")' in sent and sent.endswith(f" AND ({q})")
 
 
 def test_add_from_raises_a_clashing_ia_q_before_searching(library):

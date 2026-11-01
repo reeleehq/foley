@@ -110,7 +110,7 @@ def _check_provider_category(
     only match nothing (#181), as :func:`_category_filter` refuses for ``kind`` and
     ``ucs_category``. ``provider_params`` are the checked ones
     (:func:`~foley.sources.base.check_provider_params`); quoted phrases are not read
-    as clauses (:func:`~foley.sources.base.check_owned_fields`).
+    as clauses (:func:`~foley.sources.base.names_field`).
 
     >>> from foley.sources.freesound.config import SOURCE_CONFIG as cfg
     >>> _check_provider_category(cfg, "Music", {"filter": 'tag:"category:x" subcategory:y'})
