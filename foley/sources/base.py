@@ -64,6 +64,7 @@ __all__ = [
     "require_params_mapping",
     "merge_provider_params",
     "names_field",
+    "check_owned_fields",
     "recorded_params",
     "native_adherence",
     "resolve_source_key",
@@ -363,6 +364,33 @@ def names_field(clause: str, field: str) -> bool:
     """
     pattern = rf"(?<![\w.]){re.escape(field)}\s*:"
     return re.search(pattern, _unquoted(str(clause))) is not None
+
+
+def check_owned_fields(provider_params: Mapping, key: str, owned: Mapping) -> None:
+    """Refuse ``provider_params[key]`` when it names a field foley already sends.
+
+    A provider clause is ANDed with foley's own (the ``append`` policy), so a second
+    clause on the same field can only narrow it, and a different value can AND the
+    whole query to nothing, silently (#181, #203). ``owned`` maps each field foley
+    sends a clause on, in this search, to that clause as the message should show it;
+    the field is read with :func:`names_field`, so a quoted phrase does not count.
+
+    >>> check_owned_fields({"q": 'subject:"mediatype:x"'}, "q", {"mediatype": "mediatype:audio"})
+    >>> check_owned_fields({"q": "-mediatype:audio"}, "q", {"mediatype": "mediatype:audio"})
+    Traceback (most recent call last):
+    ...
+    foley.sources.base.SearchArgumentError: provider_params['q'] names a mediatype, but foley already filters on mediatype:audio: pass the mediatype in one place
+
+    Raises:
+        SearchArgumentError: If the value names a field in ``owned``.
+    """
+    value = str(provider_params.get(key) or "")
+    for field, clause in owned.items():
+        if names_field(value, field):
+            raise SearchArgumentError(
+                f"provider_params[{key!r}] names a {field}, but foley already filters "
+                f"on {clause}: pass the {field} in one place"
+            )
 
 
 def _check_grouped(key: str, value: str) -> None:

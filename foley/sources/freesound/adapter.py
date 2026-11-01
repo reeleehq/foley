@@ -37,9 +37,9 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ...licensing import ai_scope_from_gen_ai_preference, wanted_license_ids
 from ..base import (
     api_license,
+    check_owned_fields,
     check_provider_params,
     merge_provider_params,
-    names_field,
     native_choice,
     SearchArgumentError,
     page_size,
@@ -120,14 +120,15 @@ def _check_provider_category(
     ...
     foley.sources.base.SearchArgumentError: provider_params['filter'] names a category, but foley already filters on category:"Music" (from kind= or ucs_category=): pass the category in one place
     """
+    if not category:
+        return
     row = config["param_map"]["ucs_category"]
-    key, field = row["native_name"], row["field"]
-    if category and names_field(str(provider_params.get(key) or ""), field):
-        raise SearchArgumentError(
-            f"provider_params[{key!r}] names a {field}, but foley already filters "
-            f"on {row['to_native'].format(category=category)} (from kind= or "
-            f"ucs_category=): pass the {field} in one place"
-        )
+    clause = row["to_native"].format(category=category)
+    check_owned_fields(
+        provider_params,
+        row["native_name"],
+        {row["field"]: f"{clause} (from kind= or ucs_category=)"},
+    )
 
 
 def _preview_url(item: dict) -> Optional[str]:

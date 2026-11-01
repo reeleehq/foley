@@ -22,6 +22,8 @@ from ..base import (
     SourceConfigurationError,
     api_license,
     as_names,
+    check_owned_fields,
+    check_provider_params,
     merge_provider_params,
     page_size,
     paging_params,
@@ -94,13 +96,24 @@ class InternetArchiveAdapter:
         collections.
         ``provider_params`` are native advancedsearch params merged over the
         translated ones (#61); a ``q`` is ANDed onto foley's as one group, never
-        replaces it (the config's ``provider_params`` policy).
+        replaces it (the config's ``provider_params`` policy). One that names
+        ``mediatype`` raises :class:`~foley.sources.base.SearchArgumentError`, whatever
+        the licence: ANDed with foley's ``mediatype:audio`` it could match nothing
+        (#203). A ``collection:`` clause is fine, and with ``sources`` it narrows them.
         """
+        api = self.config["api"]
+        audio = api["audio_filter"]
+        policy = provider_params_policy(self.config)
+        provider_params = check_provider_params(provider_params, policy=policy)
+        check_owned_fields(
+            provider_params,
+            self.config["param_map"]["query"]["native_name"],
+            {audio["field"]: audio["clause"]},
+        )
         only = wanted_license_ids(self.config, license)
         if only == []:  # a licence this source does not accept: nothing can match
             return []
-        api = self.config["api"]
-        q = f"({_lucene_escape(query)}) AND mediatype:audio AND {api['licensed_clause']}"
+        q = f"({_lucene_escape(query)}) AND {audio['clause']} AND {api['licensed_clause']}"
         if sources:
             spec = self.config["param_map"]["sources"]
             names = as_names(sources)
@@ -116,9 +129,7 @@ class InternetArchiveAdapter:
             "output": "json",
         }
         params.update(paging_params(self.config, page, params["rows"]))
-        params = merge_provider_params(
-            params, provider_params, policy=provider_params_policy(self.config)
-        )
+        params = merge_provider_params(params, provider_params, policy=policy)
         docs = (
             self.invoke_native(api["search_url"], **params).get("response") or {}
         ).get("docs", [])
