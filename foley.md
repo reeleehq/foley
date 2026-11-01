@@ -1,4 +1,4 @@
-> built 2026-10-27 20:55 UTC from 994dfc1 (main) · foley 0.0.99. Details: build_info.json
+> built 2026-11-01 23:38 UTC from 5f371da (main) · foley 0.0.100. Details: build_info.json
 
 # index.html.md
 
@@ -15128,7 +15128,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta dum', 'netflix sound', 'ta-dum', 'netflix chime', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel jingle', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix chime', 'ta-dum', 'netflix sound', 'netflix intro', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel bong', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', 'homer doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -16516,6 +16516,7 @@ so the derived permission flags stay single-sourced.
 | [`require_params_mapping`](_autosummary/foley.sources.base.html.md#foley.sources.base.require_params_mapping)(provider_params)           | Raise `TypeError` unless `provider_params` is a mapping (#61).                                                                                                                                          |
 | [`merge_provider_params`](_autosummary/foley.sources.base.html.md#foley.sources.base.merge_provider_params)(native[, ...])              | `native` with the caller's vendor-native `provider_params` merged on top (#61).                                                                                                                         |
 | [`names_field`](_autosummary/foley.sources.base.html.md#foley.sources.base.names_field)(clause, field)                        | Whether a Solr-ish `clause` names `field` as a field (`field:`).                                                                                                                                        |
+| [`check_owned_fields`](_autosummary/foley.sources.base.html.md#foley.sources.base.check_owned_fields)(provider_params, key, owned)   | Refuse `provider_params[key]` when it names a field foley already sends.                                                                                                                                |
 | [`recorded_params`](_autosummary/foley.sources.base.html.md#foley.sources.base.recorded_params)(sent[, provider_params])          | The `generation_params` a generator records: the native params it `sent` (provider params already merged in), plus a `provider_params` entry listing what the caller supplied, when anything was (#61). |
 | [`native_adherence`](_autosummary/foley.sources.base.html.md#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                                                                             |
 | [`resolve_source_key`](_autosummary/foley.sources.base.html.md#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var(s).                                                                                                                                 |
@@ -16922,6 +16923,29 @@ signature has no `overrides` (a downloaded corpus is cacheable by-value).
   [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
   A populated `LicenseRecord` with its derived flags applied.
+
+### foley.sources.base.check_owned_fields(provider_params, key, owned)
+
+Refuse `provider_params[key]` when it names a field foley already sends.
+
+A provider clause is ANDed with foley’s own (the `append` policy), so a second
+clause on the same field can only narrow it, and a different value can AND the
+whole query to nothing, silently (#181, #203). `owned` maps each field foley
+sends a clause on, in this search, to that clause as the message should show it;
+the field is read with [`names_field()`](_autosummary/foley.sources.base.html.md#foley.sources.base.names_field), so a quoted phrase does not count.
+
+```pycon
+>>> check_owned_fields({"q": 'subject:"mediatype:x"'}, "q", {"mediatype": "mediatype:audio"})
+>>> check_owned_fields({"q": "-mediatype:audio"}, "q", {"mediatype": "mediatype:audio"})
+Traceback (most recent call last):
+...
+foley.sources.base.SearchArgumentError: provider_params['q'] names a mediatype, but foley already filters on mediatype:audio: pass the mediatype in one place
+```
+
+* **Raises:**
+  [**SearchArgumentError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SearchArgumentError) – If the value names a field in `owned`.
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### foley.sources.base.check_prompt_influence(value)
 
@@ -19618,7 +19642,10 @@ page (1-based, `k` per page); `sources` restricts it to these archive
 collections.
 `provider_params` are native advancedsearch params merged over the
 translated ones (#61); a `q` is ANDed onto foley’s as one group, never
-replaces it (the config’s `provider_params` policy).
+replaces it (the config’s `provider_params` policy). One that names
+`mediatype` raises [`SearchArgumentError`](_autosummary/foley.sources.base.html.md#foley.sources.base.SearchArgumentError), whatever
+the licence: ANDed with foley’s `mediatype:audio` it could match nothing
+(#203). A `collection:` clause is fine, and with `sources` it narrows them.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](_autosummary/foley.base.html.md#foley.base.Candidate)]
@@ -24727,7 +24754,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-10-27 20:55 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/994dfc111e256f30fce33b625e92a1ad97bfa325"><code>994dfc1</code></a> on branch <code>main</code>, for **foley 0.0.99** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-01 23:38 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/5f371da3db1cb97d079128fe643f4da9ae911f15"><code>5f371da</code></a> on branch <code>main</code>, for **foley 0.0.100** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -24736,9 +24763,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/994dfc111e256f30fce33b625e92a1ad97bfa325"><code>994dfc111e256f30fce33b625e92a1ad97bfa325</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/5f371da3db1cb97d079128fe643f4da9ae911f15"><code>5f371da3db1cb97d079128fe643f4da9ae911f15</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
-| Tags at this commit | <code>0.0.99</code>                                                                                                                                   |
+| Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
 | Remote              | <code>https://github.com/reeleehq/foley</code>                                                                                                        |
 
@@ -24747,9 +24774,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/40580286227">40580286227</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41362871645">41362871645</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>7e84a1ce77a419702a8f5c7b6f5ab2e46b53a3f7</code> (in the history of the built commit) |
+| Event commit | <code>5f371da3db1cb97d079128fe643f4da9ae911f15</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -24774,13 +24801,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.99/">0.0.99</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.100/">0.0.100</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 994dfc111e256f30fce33b625e92a1ad97bfa325
+git checkout 5f371da3db1cb97d079128fe643f4da9ae911f15
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

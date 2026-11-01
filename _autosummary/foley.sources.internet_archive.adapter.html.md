@@ -78,7 +78,10 @@ page (1-based, `k` per page); `sources` restricts it to these archive
 collections.
 `provider_params` are native advancedsearch params merged over the
 translated ones (#61); a `q` is ANDed onto foley’s as one group, never
-replaces it (the config’s `provider_params` policy).
+replaces it (the config’s `provider_params` policy). One that names
+`mediatype` raises [`SearchArgumentError`](foley.sources.base.html.md#foley.sources.base.SearchArgumentError), whatever
+the licence: ANDed with foley’s `mediatype:audio` it could match nothing
+(#203). A `collection:` clause is fine, and with `sources` it narrows them.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Candidate`](foley.base.html.md#foley.base.Candidate)]

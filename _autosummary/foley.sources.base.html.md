@@ -47,6 +47,7 @@ so the derived permission flags stay single-sourced.
 | [`require_params_mapping`](#foley.sources.base.require_params_mapping)(provider_params)           | Raise `TypeError` unless `provider_params` is a mapping (#61).                                                                                                                                          |
 | [`merge_provider_params`](#foley.sources.base.merge_provider_params)(native[, ...])              | `native` with the caller's vendor-native `provider_params` merged on top (#61).                                                                                                                         |
 | [`names_field`](#foley.sources.base.names_field)(clause, field)                        | Whether a Solr-ish `clause` names `field` as a field (`field:`).                                                                                                                                        |
+| [`check_owned_fields`](#foley.sources.base.check_owned_fields)(provider_params, key, owned)   | Refuse `provider_params[key]` when it names a field foley already sends.                                                                                                                                |
 | [`recorded_params`](#foley.sources.base.recorded_params)(sent[, provider_params])          | The `generation_params` a generator records: the native params it `sent` (provider params already merged in), plus a `provider_params` entry listing what the caller supplied, when anything was (#61). |
 | [`native_adherence`](#foley.sources.base.native_adherence)(config, prompt_influence, notes) | Map foley's unified `prompt_influence` (0..1) onto a source's native scale.                                                                                                                             |
 | [`resolve_source_key`](#foley.sources.base.resolve_source_key)(config[, api_key])             | A source's API token: `api_key`, else a bound key, else its env var(s).                                                                                                                                 |
@@ -453,6 +454,29 @@ signature has no `overrides` (a downloaded corpus is cacheable by-value).
   [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 * **Returns:**
   A populated `LicenseRecord` with its derived flags applied.
+
+### foley.sources.base.check_owned_fields(provider_params, key, owned)
+
+Refuse `provider_params[key]` when it names a field foley already sends.
+
+A provider clause is ANDed with foley’s own (the `append` policy), so a second
+clause on the same field can only narrow it, and a different value can AND the
+whole query to nothing, silently (#181, #203). `owned` maps each field foley
+sends a clause on, in this search, to that clause as the message should show it;
+the field is read with [`names_field()`](#foley.sources.base.names_field), so a quoted phrase does not count.
+
+```pycon
+>>> check_owned_fields({"q": 'subject:"mediatype:x"'}, "q", {"mediatype": "mediatype:audio"})
+>>> check_owned_fields({"q": "-mediatype:audio"}, "q", {"mediatype": "mediatype:audio"})
+Traceback (most recent call last):
+...
+foley.sources.base.SearchArgumentError: provider_params['q'] names a mediatype, but foley already filters on mediatype:audio: pass the mediatype in one place
+```
+
+* **Raises:**
+  [**SearchArgumentError**](#foley.sources.base.SearchArgumentError) – If the value names a field in `owned`.
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### foley.sources.base.check_prompt_influence(value)
 

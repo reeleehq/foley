@@ -19,6 +19,7 @@ foley.sources.base
       require_params_mapping
       merge_provider_params
       names_field
+      check_owned_fields
       recorded_params
       native_adherence
       resolve_source_key
