@@ -10,12 +10,20 @@ FROM python:3.12-slim
 # Which foley extras to install. The default serves the tools and the keyless/keyed
 # retrieve sources; add e.g. "index,clap,audio,weave" for local CLAP search and weaving.
 ARG FOLEY_EXTRAS="mcp,freesound,openverse,wikimedia-commons"
+# System packages some extras call out to, e.g. "ffmpeg rubberband-cli" for weaving
+# (`python -c "import foley; foley.check_requirements()"` lists what is missing).
+ARG APT_PACKAGES=""
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     FOLEY_DATA_DIR=/data
+
+RUN if [ -n "$APT_PACKAGES" ]; then \
+        apt-get update && apt-get install -y --no-install-recommends $APT_PACKAGES \
+        && rm -rf /var/lib/apt/lists/*; \
+    fi
 
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE ./

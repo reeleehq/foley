@@ -1,6 +1,6 @@
 # Deploy the MCP server over HTTP
 
-`foley-mcp --http` serves foley's MCP tools (`foley_score`, `foley_search`, `foley_weave`, …) over streamable HTTP, behind a bearer token. It is fail-closed: with no token it refuses to start, and a request without `Authorization: Bearer <token>` gets a `401`. This page is the reference deployment: a Docker image, a compose file, and what to put around them.
+`foley-mcp --http` serves foley's MCP tools (`foley_score`, `foley_search`, `foley_weave`, …) over streamable HTTP, behind a bearer token. It is fail-closed: with no token, or a blank or short one (under 16 characters), it refuses to start, and a request without `Authorization: Bearer <token>` gets a `401`. This page is the reference deployment: a Docker image, a compose file, and what to put around them.
 
 ## Quick start
 
@@ -36,8 +36,9 @@ An MCP client connects to `https://<your host>/mcp` with the header `Authorizati
 | Setting | Default | Change it with |
 |---|---|---|
 | foley extras | `mcp,freesound,openverse,wikimedia-commons` | `--build-arg FOLEY_EXTRAS=...` (add `index,clap,audio,weave` for local CLAP search and weaving; the CLAP model downloads on first use into the volume) |
+| system packages | none | `--build-arg APT_PACKAGES="ffmpeg rubberband-cli"`, which weaving needs; `foley.check_requirements()` inside the container lists what is missing |
 | data | `/data` (`$FOLEY_DATA_DIR`): library, sessions, runs, provenance | mount a volume there |
-| listen | `0.0.0.0:8000`, path `/mcp` | `--port`, `--path` after the image name |
+| listen | `0.0.0.0:8000`, path `/mcp` | remap the host side (`-p 127.0.0.1:9000:8000`); keep 8000 inside, which the healthcheck probes. `--path` after the image name changes the path |
 | user | `foley` (uid 10001), not root | |
 | health | an anonymous request must get a `401` | the `HEALTHCHECK` in the Dockerfile |
 
@@ -59,7 +60,7 @@ Caddy gets and renews the certificate itself. The proxy must not buffer response
 
 ## Tokens and rotation
 
-`FOLEY_MCP_TOKEN` holds the accepted tokens, separated by whitespace; `--token` adds more and may be repeated. Prefer the environment (or an env file with tight permissions) to `--token`, which shows in the process list.
+`FOLEY_MCP_TOKEN` holds the accepted tokens, separated by whitespace, so a token cannot contain whitespace (a passphrase would be split into words, and each word is refused as too short); `--token` adds more and may be repeated. Prefer the environment (or an env file with tight permissions) to `--token`, which shows in the process list.
 
 To rotate without cutting clients off:
 
@@ -68,6 +69,8 @@ To rotate without cutting clients off:
 3. Restart with `FOLEY_MCP_TOKEN="$NEW"` alone.
 
 A token is a full credential for every tool, including the paid ones (`foley_generate`, and the LLM rungs when configured). Give each client its own token so one can be revoked alone.
+
+A fixed bearer token suits clients that let you set a request header (Claude Code, the MCP SDKs, most agent frameworks). Connectors that only speak OAuth, such as claude.ai custom connectors, cannot use it.
 
 ## Spending and sensitive narration
 

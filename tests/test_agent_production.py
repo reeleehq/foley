@@ -25,6 +25,20 @@ def test_make_http_app_is_fail_closed_without_tokens():
         mcp.make_http_app(auth={"bearer_tokens": []})
 
 
+@pytest.mark.parametrize("bad", ["", "   ", "short", None])
+def test_a_blank_or_short_token_is_refused_not_dropped(bad):
+    """A header-less request reads as the empty token: accepting "" would open the server."""
+    with pytest.raises(ValueError, match="blank or shorter"):
+        mcp.make_http_app(auth={"bearer_tokens": ["a" * 32, bad]})
+
+
+def test_a_passphrase_in_the_env_is_not_split_into_weak_tokens(monkeypatch):
+    monkeypatch.setenv("FOLEY_MCP_TOKEN", "correct horse battery staple")
+    monkeypatch.setattr(mcp, "build_mcp_server", lambda **kw: pytest.fail("built"))
+    with pytest.raises(SystemExit):  # argparse error: refused before anything is built
+        mcp._cli(["--http"])
+
+
 def _run(coro):
     return asyncio.new_event_loop().run_until_complete(coro)
 
@@ -62,7 +76,7 @@ def test_bearer_asgi_gate():
 def test_make_http_app_builds_a_gated_asgi_app():
     pytest.importorskip("py2mcp")
     pytest.importorskip("fastmcp")
-    app = mcp.make_http_app(auth={"bearer_tokens": ["t1", "t2"]})
+    app = mcp.make_http_app(auth={"bearer_tokens": ["t1" * 8, "t2" * 8]})
     assert isinstance(app, mcp._BearerAuthASGI)
     assert callable(app)  # ASGI app
 
@@ -90,18 +104,20 @@ def test_cli_http_serves_with_its_session_tokens_and_offline_posture(monkeypatch
 
     monkeypatch.setattr(mcp, "build_mcp_server", fake_build)
     monkeypatch.setitem(sys.modules, "uvicorn", types.SimpleNamespace(run=fake_run))
-    monkeypatch.setenv("FOLEY_MCP_TOKEN", " old  new ")
+    old, new, cli = "o" * 16, "n" * 16, "c" * 16
+    monkeypatch.setenv("FOLEY_MCP_TOKEN", f" {old}  {new} ")
+    was_on = foley.obs.is_enabled()
     foley.obs.enable()
     try:
-        argv = ["--http", "--offline", "--session", "s1", "--token", "cli", "--port", "9"]
+        argv = ["--http", "--offline", "--session", "s1", "--token", cli, "--port", "9"]
         assert mcp._cli(argv) == 0
         assert foley.obs.is_enabled() is True  # posture restored after the server stops
     finally:
-        foley.obs.disable()
+        (foley.obs.enable if was_on else foley.obs.disable)()
     assert built["session"] == "s1" and built["runtime"].offline
     assert served["obs_on"] is False  # telemetry off while serving
     assert (served["host"], served["port"]) == ("127.0.0.1", 9)
-    assert served["app"]._tokens == {"cli", "old", "new"}
+    assert served["app"]._tokens == {cli, old, new}
 
 
 # --- local-LLM SELECT rungs (OpenAI-compatible; injected fake client) -------

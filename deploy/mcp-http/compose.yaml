@@ -8,6 +8,7 @@ services:
       dockerfile: deploy/mcp-http/Dockerfile
       args:
         FOLEY_EXTRAS: ${FOLEY_EXTRAS:-mcp,freesound,openverse,wikimedia-commons}
+        APT_PACKAGES: ${APT_PACKAGES:-}
     image: foley-mcp:local
     # Uncomment for the local-first posture (no external sources, telemetry off):
     # command: ["--offline"]

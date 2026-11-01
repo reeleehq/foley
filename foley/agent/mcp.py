@@ -221,6 +221,41 @@ class _BearerAuthASGI:
         await self._app(scope, receive, send)
 
 
+#: The shortest bearer token :func:`make_http_app` accepts. A short token is guessable,
+#: and the floor also refuses a passphrase that ``$FOLEY_MCP_TOKEN`` would split into words.
+MIN_TOKEN_CHARS = 16
+
+
+def accepted_tokens(tokens, *, min_chars: int = MIN_TOKEN_CHARS) -> frozenset:
+    """``tokens`` as the set a bearer gate accepts, or a ``ValueError`` (fail-closed).
+
+    An empty or blank token is refused, never dropped: a request with no
+    ``Authorization`` header reads as the empty token, so accepting one would open the
+    server, and a ``--token "$UNSET"`` should stop it rather than start it open.
+
+    >>> sorted(accepted_tokens(["a" * 16, "b" * 20]))
+    ['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbb']
+    >>> accepted_tokens([""])
+    Traceback (most recent call last):
+    ...
+    ValueError: a bearer token is blank or shorter than 16 characters (token #1); use e.g. `openssl rand -hex 32`
+    """
+    out = []
+    for i, token in enumerate(tokens or (), 1):
+        if not isinstance(token, str) or len(token.strip()) < max(min_chars, 1):
+            raise ValueError(
+                f"a bearer token is blank or shorter than {min_chars} characters "
+                f"(token #{i}); use e.g. `openssl rand -hex 32`"
+            )
+        out.append(token.strip())
+    if not out:
+        raise ValueError(
+            "make_http_app/serve_http requires auth={'bearer_tokens': [...]} — HTTP exposes "
+            "the tools to the network, so it is fail-closed (no anonymous access)."
+        )
+    return frozenset(out)
+
+
 def make_http_app(
     *,
     auth: dict,
@@ -231,31 +266,26 @@ def make_http_app(
     """Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.
 
     HTTP exposes the tool surface to the network, so ``auth`` is **required and
-    fail-closed**: pass ``auth={'bearer_tokens': [...]}`` (a non-empty iterable of accepted
-    tokens) — a request without a matching ``Authorization: Bearer <token>`` header gets a
-    ``401``. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,
+    fail-closed**: pass ``auth={'bearer_tokens': [...]}`` (accepted tokens, each at least
+    :data:`MIN_TOKEN_CHARS` long, see :func:`accepted_tokens`) — a request without a
+    matching ``Authorization: Bearer <token>`` header gets a ``401``. The returned app (a Starlette/ASGI callable) mounts in any ASGI host (uvicorn,
     gunicorn, a parent FastAPI). ``py2mcp`` / ``fastmcp`` are imported lazily inside
     :func:`build_mcp_server`, so ``import foley`` stays dol-only.
 
     Args:
-        auth: ``{'bearer_tokens': [...]}`` — required; empty/missing raises (fail-closed).
+        auth: ``{'bearer_tokens': [...]}`` — required; no token, or a blank or short
+            one, raises (fail-closed).
         path: The MCP HTTP mount path.
         json_response: Return a single JSON response instead of an SSE stream (simple clients).
-        **server_kwargs: Passed to :func:`build_mcp_server` (``library``, ``session``,
-            ``runtime``, ``byte_store``, ``include``, ``name``, ``max_usd``).
+        **server_kwargs: Passed to :func:`build_mcp_server`.
 
     Returns:
         An ASGI application (the bearer-gated MCP HTTP app).
 
     Raises:
-        ValueError: If ``auth`` carries no bearer tokens (no anonymous HTTP access).
+        ValueError: If ``auth`` carries no usable bearer token (no anonymous HTTP access).
     """
-    tokens = set((auth or {}).get("bearer_tokens") or [])
-    if not tokens:
-        raise ValueError(
-            "make_http_app/serve_http requires auth={'bearer_tokens': [...]} — HTTP exposes "
-            "the tools to the network, so it is fail-closed (no anonymous access)."
-        )
+    tokens = accepted_tokens((auth or {}).get("bearer_tokens"))
     server = build_mcp_server(**server_kwargs)
     app = server.http_app(path=path, transport="http", json_response=json_response)
     return _BearerAuthASGI(app, tokens)
@@ -281,8 +311,8 @@ def serve_http(
         uvicorn.run(app, host=host, port=port)
 
 
-def _cli(argv: "Optional[list[str]]" = None) -> int:  # pragma: no cover - entry point
-    """``foley-mcp`` console entry: serve foley over MCP (stdio)."""
+def _cli(argv: "Optional[list[str]]" = None) -> int:
+    """``foley-mcp`` console entry: serve foley over MCP (stdio, or HTTP with ``--http``)."""
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -306,8 +336,9 @@ def _cli(argv: "Optional[list[str]]" = None) -> int:  # pragma: no cover - entry
         "--token",
         action="append",
         default=None,
-        help="accepted bearer token (repeatable); required with --http. Also read "
-        "from $FOLEY_MCP_TOKEN (whitespace-separated, so a rotation can accept two).",
+        help="accepted bearer token (repeatable, at least 16 characters); required with "
+        "--http. Also read from $FOLEY_MCP_TOKEN (whitespace-separated, so a rotation can "
+        "accept two).",
     )
     parser.add_argument("--path", default="/mcp", help="HTTP mount path")
     args = parser.parse_args(argv)
@@ -324,6 +355,10 @@ def _cli(argv: "Optional[list[str]]" = None) -> int:  # pragma: no cover - entry
             parser.error(
                 "--http requires --token TOKEN (or $FOLEY_MCP_TOKEN) — fail-closed"
             )
+        try:
+            accepted_tokens(tokens)
+        except ValueError as err:
+            parser.error(str(err))
         serve_http(
             host=args.host,
             port=args.port,
