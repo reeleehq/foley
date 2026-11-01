@@ -67,6 +67,43 @@ def test_make_http_app_builds_a_gated_asgi_app():
     assert callable(app)  # ASGI app
 
 
+def test_cli_http_serves_with_its_session_tokens_and_offline_posture(monkeypatch):
+    """``foley-mcp --http`` reaches uvicorn (it raised TypeError on ``session``), takes
+    whitespace-separated tokens from the env, and holds ``--offline`` for its lifetime."""
+    import types
+
+    import foley
+
+    built, served = {}, {}
+
+    class _FakeServer:
+        def http_app(self, **kw):
+            built["http_app"] = kw
+            return "inner-app"
+
+    def fake_build(**kw):
+        built.update(kw)
+        return _FakeServer()
+
+    def fake_run(app, **kw):
+        served.update(app=app, obs_on=foley.obs.is_enabled(), **kw)
+
+    monkeypatch.setattr(mcp, "build_mcp_server", fake_build)
+    monkeypatch.setitem(sys.modules, "uvicorn", types.SimpleNamespace(run=fake_run))
+    monkeypatch.setenv("FOLEY_MCP_TOKEN", " old  new ")
+    foley.obs.enable()
+    try:
+        argv = ["--http", "--offline", "--session", "s1", "--token", "cli", "--port", "9"]
+        assert mcp._cli(argv) == 0
+        assert foley.obs.is_enabled() is True  # posture restored after the server stops
+    finally:
+        foley.obs.disable()
+    assert built["session"] == "s1" and built["runtime"].offline
+    assert served["obs_on"] is False  # telemetry off while serving
+    assert (served["host"], served["port"]) == ("127.0.0.1", 9)
+    assert served["app"]._tokens == {"cli", "old", "new"}
+
+
 # --- local-LLM SELECT rungs (OpenAI-compatible; injected fake client) -------
 
 

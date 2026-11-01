@@ -15,6 +15,7 @@ so ``mcp.foley_find`` and ``mcp.TOOLS`` keep working.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from typing import Optional
 
 from . import verbs as _verbs
@@ -141,22 +142,32 @@ def build_mcp_server(
     return mk_mcp_server(_resolve_tools(include=include), name=name)
 
 
-def _run_server(server, runtime) -> None:
-    """Run ``server`` under the runtime's obs posture (offline → telemetry hard-off).
+@contextmanager
+def _posture(runtime):
+    """Hold the runtime's obs posture for the ``with`` block (offline → telemetry hard-off).
 
-    Factored out of :func:`serve` so the offline-posture enforcement is unit-testable
-    without a blocking stdio loop: when ``runtime`` is a telemetry-off (offline) posture,
-    the whole serve loop runs inside :func:`foley.runtime.offline_scope`, so the
-    ``--offline`` promise of "no telemetry" is actually enforced for the server's
-    lifetime (with :func:`foley.obs.recorder.run` now honoring ``force_disabled``, this
-    silences the ``find`` / ``weave`` paths too, not only the ``facade_run`` ones).
+    When ``runtime`` is a telemetry-off (offline) posture, the block runs inside
+    :func:`foley.runtime.offline_scope`, so the ``--offline`` promise of "no telemetry"
+    is enforced for a server's whole lifetime, over stdio and HTTP alike (with
+    :func:`foley.obs.recorder.run` honoring ``force_disabled``, this silences the
+    ``find`` / ``weave`` paths too, not only the ``facade_run`` ones).
     """
     if runtime is not None and (runtime.offline or not runtime.telemetry):
         from ..runtime import offline_scope
 
         with offline_scope(runtime):
-            server.run()
+            yield
     else:
+        yield
+
+
+def _run_server(server, runtime) -> None:
+    """Run ``server`` under the runtime's obs posture (:func:`_posture`).
+
+    Factored out of :func:`serve` so the posture is unit-testable without a blocking
+    stdio loop.
+    """
+    with _posture(runtime):
         server.run()
 
 
@@ -215,11 +226,7 @@ def make_http_app(
     auth: dict,
     path: str = "/mcp",
     json_response: bool = False,
-    library=None,
-    runtime=None,
-    byte_store=None,
-    include: "Optional[list[str]]" = None,
-    name: str = "foley",
+    **server_kwargs,
 ):
     """Build a bearer-auth-gated ASGI app serving the foley MCP tools over streamable HTTP.
 
@@ -234,7 +241,8 @@ def make_http_app(
         auth: ``{'bearer_tokens': [...]}`` — required; empty/missing raises (fail-closed).
         path: The MCP HTTP mount path.
         json_response: Return a single JSON response instead of an SSE stream (simple clients).
-        library / runtime / byte_store / include / name: As :func:`build_mcp_server`.
+        **server_kwargs: Passed to :func:`build_mcp_server` (``library``, ``session``,
+            ``runtime``, ``byte_store``, ``include``, ``name``, ``max_usd``).
 
     Returns:
         An ASGI application (the bearer-gated MCP HTTP app).
@@ -248,13 +256,7 @@ def make_http_app(
             "make_http_app/serve_http requires auth={'bearer_tokens': [...]} — HTTP exposes "
             "the tools to the network, so it is fail-closed (no anonymous access)."
         )
-    server = build_mcp_server(
-        library=library,
-        runtime=runtime,
-        byte_store=byte_store,
-        include=include,
-        name=name,
-    )
+    server = build_mcp_server(**server_kwargs)
     app = server.http_app(path=path, transport="http", json_response=json_response)
     return _BearerAuthASGI(app, tokens)
 
@@ -266,14 +268,17 @@ def serve_http(
     auth: dict,
     path: str = "/mcp",
     **kwargs,
-) -> None:  # pragma: no cover - blocking I/O
+) -> None:
     """Build and serve the foley MCP tools over authenticated streamable HTTP (blocks).
 
-    Wraps :func:`make_http_app` and runs it with uvicorn. ``auth`` is required (fail-closed).
+    Wraps :func:`make_http_app` and runs it with uvicorn, under the ``runtime``
+    posture (:func:`_posture`), as :func:`serve` does. ``auth`` is required (fail-closed).
     """
     import uvicorn
 
-    uvicorn.run(make_http_app(auth=auth, path=path, **kwargs), host=host, port=port)
+    app = make_http_app(auth=auth, path=path, **kwargs)
+    with _posture(kwargs.get("runtime")):
+        uvicorn.run(app, host=host, port=port)
 
 
 def _cli(argv: "Optional[list[str]]" = None) -> int:  # pragma: no cover - entry point
@@ -301,8 +306,8 @@ def _cli(argv: "Optional[list[str]]" = None) -> int:  # pragma: no cover - entry
         "--token",
         action="append",
         default=None,
-        help="accepted bearer token (repeatable); required with --http. Falls back to "
-        "$FOLEY_MCP_TOKEN.",
+        help="accepted bearer token (repeatable); required with --http. Also read "
+        "from $FOLEY_MCP_TOKEN (whitespace-separated, so a rotation can accept two).",
     )
     parser.add_argument("--path", default="/mcp", help="HTTP mount path")
     args = parser.parse_args(argv)
@@ -314,10 +319,7 @@ def _cli(argv: "Optional[list[str]]" = None) -> int:  # pragma: no cover - entry
     if args.http:
         import os
 
-        tokens = list(args.token or [])
-        env_token = os.environ.get("FOLEY_MCP_TOKEN")
-        if env_token:
-            tokens.append(env_token)
+        tokens = list(args.token or []) + os.environ.get("FOLEY_MCP_TOKEN", "").split()
         if not tokens:
             parser.error(
                 "--http requires --token TOKEN (or $FOLEY_MCP_TOKEN) — fail-closed"
