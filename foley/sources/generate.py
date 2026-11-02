@@ -178,8 +178,11 @@ def edit_backends(op: str) -> "tuple[str, ...]":
 
 def default_edit_backend(op: str) -> str:
     """The backend an unnamed :func:`foley.edit` of ``op`` uses: the first of
-    :func:`edit_backends` with its key set, else the last
-    (:func:`first_runnable_backend`).
+    :func:`edit_backends` with its key set, else the first (registration order puts
+    the recommended one first; the others are its fallbacks, named by a refusal).
+
+    Unlike a generation order, an edit's has no free local backend to end on, so
+    without a key the default stays the recommended one, not the last fallback.
 
     Raises:
         SourceConfigurationError: When no registered source does ``op``.
@@ -187,7 +190,7 @@ def default_edit_backend(op: str) -> str:
     order = edit_backends(op)
     if not order:
         raise SourceConfigurationError(f"no registered backend does the {op} edit")
-    return first_runnable_backend(order)
+    return next((name for name in order if backend_has_key(name)), order[0])
 
 
 def generate_backend_order(*, mode: str = "t2a") -> "tuple[str, ...]":

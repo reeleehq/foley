@@ -6,6 +6,7 @@ Hermetic: the fal ``runner`` and ``uploader`` seams are fakes that record every 
 
 import itertools
 import json
+import os
 
 import pytest
 
@@ -35,8 +36,13 @@ from foley.sources.generate import (  # noqa: E402
 )
 from foley.sources.generate import generate as generate_report  # noqa: E402
 
+from .conftest import live_api_tests_enabled  # noqa: E402
+from .test_fal import ReplayRunner  # noqa: E402
+
 CONFIGS = {c["name"]: c for c in SOURCE_CONFIGS}
 SR = 44_100
+#: The fallback backends of an op (#215), after its OPS backend.
+MIRELO = {"inpaint": ("fal_mirelo_inpaint",), "extend": ("fal_mirelo_extend",)}
 #: The edit source of each op, and a valid set of the op's parameters.
 OPS = {
     "audio_to_audio": ("fal_stable_audio_3_audio_to_audio", {"strength": 0.4}),
@@ -102,15 +108,16 @@ def library(fake_embedder):
     return SoundLibrary(sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder)
 
 
-def _add(library, license_id="CC0-1.0", *, verified=True, fmt="WAV", **fields):
-    """A source sound in ``library`` under ``license_id``; returns its id."""
+def _add(library, license_id="CC0-1.0", *, verified=True, fmt="WAV", seconds=1.5,
+         **fields):
+    """A source sound (``seconds`` long) in ``library`` under ``license_id``; returns its id."""
     lic = apply_license_flags(
         LicenseRecord(source="user", license_id=license_id, rights_verified=verified)
     )
     lic.cache_bytes_ok = True  # the test's own disk: stored by value
     for name, value in fields.items():  # a source that stamped its own flags
         setattr(lic, name, value)
-    res = ingest_one(_tone(fmt=fmt), library=library, license=lic,
+    res = ingest_one(_tone(seconds, fmt=fmt), library=library, license=lic,
                      allow_ai_training_forbidden=True)
     assert res.status in ("pass", "warn"), res
     return res.id
@@ -364,8 +371,9 @@ def test_an_unknown_sound_is_a_key_error(library):
 
 
 def test_every_op_table_row_has_a_shipped_backend():
+    # the recommended backend first, then its fallbacks (#215)
     assert {op: edit_backends(op) for op in EDIT_OPS} == {
-        op: (name,) for op, (name, _) in OPS.items()
+        op: (name, *MIRELO.get(op, ())) for op, (name, _) in OPS.items()
     }
     for op, (_, params) in OPS.items():
         check_edit_args(op, params)  # the fixtures above are valid calls
@@ -1154,3 +1162,179 @@ def test_an_edit_estimate_refuses_audio_as_the_edit_does(library):
             foley.estimate("edit", op="extend", extend_after_s=1.0, **kw)
         with pytest.raises(ValueError, match="from the library"):
             foley.edit(sid, "extend", library=library, extend_after_s=1.0, **kw)
+
+
+# ---------------------------------------------------------------------------
+# Mirelo SFX 1.6 on fal: the inpaint and extend fallbacks (#215)
+# ---------------------------------------------------------------------------
+
+#: What Mirelo answers: a list of samples, no seed, the model's version.
+_MIRELO_ANSWER = {"model": "sfx-1.6", "audio": [{"url": "https://fal.media/m.wav"}]}
+_MIRELO_COMMON = {"audio_url": "https://fal.media/up/1", "text_prompt": "rain on a tin roof",
+                  "num_samples": 1, "seed": 5, "upload_audio_format": "wav"}
+
+
+def _mirelo(name, expected=None, out_seconds=4.0):
+    """A Mirelo edit adapter whose replay runner knows only the ``expected`` payload."""
+    answers = {}
+    if expected is not None:
+        endpoint = CONFIGS[name]["api"]["endpoint_id"]
+        key = ReplayRunner.key(endpoint, {**_MIRELO_COMMON, **expected})
+        answers[key] = (_tone(out_seconds, freq=next(_PITCHES)), _MIRELO_ANSWER)
+    runner = ReplayRunner(answers)
+    adapter = FalAdapter(CONFIGS[name], api_key="k", runner=runner, uploader=Uploader())
+    return adapter, runner
+
+
+def _mirelo_edit(library, name, op, sid, expected, out_seconds, **params):
+    adapter, runner = _mirelo(name, expected, out_seconds)
+    cand = foley.edit(sid, op, "rain on a tin roof", adapter=adapter, library=library,
+                      provenance_store={}, seed=5, **params)
+    return cand, runner
+
+
+def test_mirelo_inpaint_sends_one_nested_segment_and_is_priced_by_the_clip(library):
+    sid = _add(library, seconds=4.0)
+    cand, runner = _mirelo_edit(
+        library, "fal_mirelo_inpaint", "inpaint", sid,
+        {"segment": {"start_s": 1.0, "end_s": 3.0}}, 4.0,
+        inpaint_start_s=1.0, inpaint_end_s=3.0,
+    )
+    assert len(runner.calls) == 1  # a payload the replay does not know raises
+    # $0.01 per second of the sound it makes: the 4 s source, inpainted in place
+    assert cand.cost_estimate_usd == pytest.approx(0.04)
+    assert cand.cost_actual_usd == pytest.approx(0.04)
+    lic = cand.sound.license
+    assert lic.generation_seed == 5 and lic.generation_params["segment"] == {
+        "start_s": 1.0, "end_s": 3.0}
+    assert lic.vendor_trains_on_output is True
+    (edit,) = [t for t in lic.transformations if t["kind"] == "edit"]
+    assert edit["op"] == "inpaint" and edit["source_id"] == sid
+
+
+def test_mirelo_extend_appends_and_is_priced_by_the_whole_output(library):
+    sid = _add(library, seconds=4.0)
+    cand, runner = _mirelo_edit(
+        library, "fal_mirelo_extend", "extend", sid,
+        {"append_duration": 2.0, "ambience": False, "double_output": False}, 6.0,
+        extend_after_s=2.0,
+    )
+    assert len(runner.calls) == 1
+    assert cand.cost_estimate_usd == pytest.approx(0.06)  # 4 s source + 2 s added
+    assert cand.cost_actual_usd == pytest.approx(0.06)  # the 6 s it returned
+
+
+def test_mirelo_extend_maps_loop_to_its_ambience_tile(library):
+    sid = _add(library, seconds=4.0)
+    _, runner = _mirelo_edit(
+        library, "fal_mirelo_extend", "extend", sid,
+        {"append_duration": 3.0, "ambience": True, "double_output": False}, 7.0,
+        extend_after_s=3.0, loop=True,
+    )
+    assert runner.calls[0][1]["ambience"] is True
+
+
+def test_mirelo_edits_are_partner_rows_never_commercial():
+    for name in ("fal_mirelo_inpaint", "fal_mirelo_extend"):
+        cfg = CONFIGS[name]
+        assert cfg["license"] == CONFIGS["fal_mirelo"]["license"]
+        assert cfg["capabilities"] == CONFIGS["fal_mirelo"]["capabilities"]
+        assert cfg["commercial_ok"] is False and cfg["modes"] == ["edit"]
+        assert "num_samples" in cfg["provider_params"]["reserved"]
+    # the extension decides the price: a provider param cannot change it
+    assert "append_duration" in CONFIGS["fal_mirelo_extend"]["provider_params"]["priced"]
+
+
+@pytest.mark.parametrize("name, op, seconds, params, match", [
+    ("fal_mirelo_inpaint", "inpaint", 4.0, {"inpaint_start_s": 0.5, "inpaint_end_s": 2.0},
+     r"inpaint_start_s must be within \[1.0"),
+    ("fal_mirelo_inpaint", "inpaint", 10.0, {"inpaint_start_s": 1.0, "inpaint_end_s": 10.0},
+     "window is 9 s; this backend takes 8 s at most"),
+    ("fal_mirelo_inpaint", "inpaint", 4.0, {"inpaint_start_s": 1.0, "inpaint_end_s": 2.0},
+     None),  # the 1 s minimum window is a valid call
+    ("fal_mirelo_inpaint", "inpaint", 12.0, {"inpaint_start_s": 1.0, "inpaint_end_s": 3.0},
+     "source clip is 12 s; this backend takes 10 s at most"),
+    ("fal_mirelo_extend", "extend", 2.0, {"extend_after_s": 2.0},
+     "source clip is 2 s; this backend takes 3 s at least"),
+    ("fal_mirelo_extend", "extend", 58.0, {"extend_after_s": 5.0},
+     "output is 63 s; this backend takes 60 s at most"),
+    ("fal_mirelo_extend", "extend", 4.0, {"extend_after_s": 0.5},
+     r"extend_after_s must be within \[1.0"),
+])
+def test_mirelo_limits_are_refused_before_any_call(library, name, op, seconds, params,
+                                                   match):
+    sid = _add(library, seconds=seconds)
+    adapter, runner = _mirelo(name)  # knows no request: a call would raise
+    if match is None:
+        assert foley.estimate("edit", op=op, backend=name, source=sid, library=library,
+                              **params) == pytest.approx(0.01 * seconds)
+        return
+    with pytest.raises(ValueError, match=match):
+        foley.edit(sid, op, "x", adapter=adapter, library=library, **params)
+    assert runner.calls == []
+
+
+def test_mirelo_extend_refuses_an_extension_before(library):
+    adapter, runner = _mirelo("fal_mirelo_extend")
+    with pytest.raises(UnsupportedParameter, match="extend_before_s"):
+        foley.edit(_add(library, seconds=4.0), "extend", "x", adapter=adapter,
+                   library=library, extend_before_s=1.0)
+    assert runner.calls == []
+
+
+def test_mirelo_edit_estimates_follow_the_clip_or_bound_it(library):
+    sid = _add(library, seconds=4.0)
+    inpaint = {"inpaint_start_s": 1.0, "inpaint_end_s": 3.0}
+    est = foley.estimate  # by op and backend, as foley.estimate("edit", ...) (#241)
+    assert est("edit", op="inpaint", backend="fal_mirelo_inpaint", source=sid,
+               library=library, **inpaint) == pytest.approx(0.04)
+    assert est("edit", op="extend", backend="fal_mirelo_extend", source=sid,
+               library=library, extend_after_s=2.0) == pytest.approx(0.06)
+    # no source: the longest the backend takes (a 10 s clip; a 60 s output), never zero
+    assert est("edit", op="inpaint", backend="fal_mirelo_inpaint",
+               **inpaint) == pytest.approx(0.10)
+    assert est("edit", op="extend", backend="fal_mirelo_extend",
+               extend_after_s=2.0) == pytest.approx(0.60)
+
+
+def test_the_recommended_backend_stays_the_default_with_or_without_a_key(monkeypatch):
+    from foley.sources.edit import edit_backend
+    from foley.sources.generate import default_edit_backend
+
+    for key in ("FAL_KEY", "FAL_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
+    assert default_edit_backend("inpaint") == "fal_stable_audio_3_inpaint"
+    monkeypatch.setenv("FAL_KEY", "k")
+    assert default_edit_backend("extend") == "fal_stable_audio_3_extend"
+    # a backend of another op names the op's backends, the fallback among them
+    with pytest.raises(ValueError, match="fal_mirelo_extend"):
+        edit_backend("extend", "fal_mirelo_inpaint")
+
+
+def test_a_refused_edit_backend_names_the_mirelo_fallback_when_it_fits(library):
+    from foley.base import IntendedUse
+    from foley.sources.edit import EditCall, edit_use_refusal
+
+    record = library[_add(library, seconds=4.0)]
+    call = EditCall(backend="fal_stable_audio_3_extend", prompt="x", source=record,
+                    op="extend")
+    # past Stability's $1M cap, non-commercial: Mirelo's partner row fits, SA3's not
+    why = edit_use_refusal(call, IntendedUse(commercial=False, revenue_usd=5_000_000))
+    assert "Stability-Community" in why and "(fal_mirelo_extend)" in why
+    # commercial: neither fits, so no fallback is named
+    why = edit_use_refusal(call, IntendedUse(revenue_usd=5_000_000))
+    assert why is not None and "fal_mirelo_extend" not in why
+
+
+@pytest.mark.skipif(
+    not (live_api_tests_enabled() and os.environ.get("FAL_KEY")),
+    reason="live fal test: set FOLEY_LIVE_API_TESTS=1 and FAL_KEY",
+)
+def test_live_mirelo_extend_appends_to_a_clip(library):  # costs about $0.06
+    pytest.importorskip("falaw")
+    sid = _add(library, seconds=4.0)
+    cand = foley.edit(sid, "extend", "rain on a tin roof", backend="fal_mirelo_extend",
+                      library=library, provenance_store={}, extend_after_s=2.0,
+                      reuse_cached=False)
+    assert cand.sound.duration_s == pytest.approx(6.0, abs=0.5)
+    assert cand.sound.license.license_id == "fal-partner-unverified"

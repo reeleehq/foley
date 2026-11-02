@@ -347,6 +347,7 @@ class EditOp:
         accepts: Optional parameters.
         ordered: ``(lo, hi)`` parameter pairs that must satisfy ``lo < hi``.
         within_clip: Parameters (times into the source) that may not pass its end.
+        adds: Parameters whose seconds the output adds to the source's length.
     """
 
     name: str
@@ -356,11 +357,27 @@ class EditOp:
     accepts: tuple = ()
     ordered: tuple = ()
     within_clip: tuple = ()
+    adds: tuple = ()
 
     @property
     def params(self) -> tuple:
         """Every edit parameter this op takes (the source clip aside)."""
         return (*self.requires, *self.requires_any, *self.accepts)
+
+    def output_seconds(
+        self, clip_s: Optional[float], params: Mapping
+    ) -> Optional[float]:
+        """How long the op's output is for a ``clip_s`` source (``None``: unknown), when
+        no ``duration_s`` sets it: the source's length plus what :attr:`adds` adds.
+
+        >>> EDIT_OPS["extend"].output_seconds(4.0, {"extend_after_s": 2.0})
+        6.0
+        >>> EDIT_OPS["inpaint"].output_seconds(4.0, {"inpaint_start_s": 1.0})
+        4.0
+        """
+        if clip_s is None:
+            return None
+        return float(clip_s) + sum(float(params.get(p) or 0.0) for p in self.adds)
 
 
 #: SSOT: the edit operations (report 13 §3: each is offered by two or more providers).
@@ -383,6 +400,7 @@ EDIT_OPS: dict[str, EditOp] = {
             "extend",
             "Add new sound before and/or after the source",
             requires_any=("extend_before_s", "extend_after_s"),
+            adds=("extend_before_s", "extend_after_s"),
         ),
     )
 }
@@ -394,14 +412,22 @@ def check_edit_args(
     *,
     clip_s: Optional[float] = None,
     limits: Optional[Mapping] = None,
+    floors: Optional[Mapping] = None,
+    bounds: Optional[Mapping] = None,
 ) -> None:
     """Raise ``ValueError`` unless ``affordances`` are a valid call of the edit ``op``.
 
     Checked before anything is paid for: the op is known, its required parameters are
     given, it is given no other op's parameters, each number is within its
-    :attr:`Affordance.bounds` and below the backend's own maximum (``limits``: name ->
-    max), each ``ordered`` pair is increasing, and a time into the source
-    (:attr:`EditOp.within_clip`) does not pass its end (``clip_s``, when known).
+    :attr:`Affordance.bounds` and the backend's own range (``limits``: name -> max;
+    ``floors``: name -> min), each ``ordered`` pair is increasing, and a time into the
+    source (:attr:`EditOp.within_clip`) does not pass its end (``clip_s``, when known).
+
+    ``bounds`` are the backend's limits on what the parameters make (a config's
+    ``edit_limits``, each a ``(lo, hi)`` pair, either ``None``): ``clip_s`` the source
+    clip's length, ``span_s`` each ``ordered`` window's length, ``output_s`` the
+    output's length (:meth:`EditOp.output_seconds`). A length that cannot be read is
+    not checked.
 
     >>> check_edit_args("inpaint", {"inpaint_start_s": 1.0, "inpaint_end_s": 2.5})
     >>> check_edit_args("inpaint", {"inpaint_start_s": 1.0})
@@ -416,6 +442,11 @@ def check_edit_args(
     Traceback (most recent call last):
     ...
     ValueError: inpaint_end_s=9 is past the end of the 4 s source clip
+    >>> check_edit_args("extend", {"extend_after_s": 5}, clip_s=58,
+    ...                 bounds={"output_s": (None, 60)})
+    Traceback (most recent call last):
+    ...
+    ValueError: the extend edit's output is 63 s; this backend takes 60 s at most
     """
     spec = EDIT_OPS.get(op)
     if spec is None:
@@ -434,13 +465,15 @@ def check_edit_args(
     missing = [p for p in spec.requires if p not in given]
     if missing:
         raise ValueError(f"the {op} edit needs {', '.join(f'{p}=' for p in missing)}")
-    limits = limits or {}
+    limits, floors = limits or {}, floors or {}
     for name, value in given.items():
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             raise ValueError(f"{name} must be a number, got {value!r}")
         lo, hi = EDIT_AFFORDANCES[name].bounds or (None, None)
         if limits.get(name) is not None:
             hi = limits[name] if hi is None else min(hi, limits[name])
+        if floors.get(name) is not None:
+            lo = floors[name] if lo is None else max(lo, floors[name])
         if (
             not math.isfinite(value)
             or (lo is not None and value < lo)
@@ -463,6 +496,38 @@ def check_edit_args(
                     f"{name}={given[name]!r} is past the end of the {clip_s:g} s "
                     "source clip"
                 )
+    _check_edit_bounds(spec, given, clip_s, bounds or {})
+
+
+def _check_edit_bounds(
+    spec: "EditOp", given: Mapping, clip_s: Optional[float], bounds: Mapping
+) -> None:
+    """Raise ``ValueError`` for a length outside a backend's ``bounds`` (see
+    :func:`check_edit_args`)."""
+
+    def check(what: str, seconds: Optional[float], name: str) -> None:
+        lo, hi = bounds.get(name) or (None, None)
+        if seconds is None:
+            return
+        if lo is not None and seconds < lo:
+            raise ValueError(
+                f"{what} is {seconds:g} s; this backend takes {lo:g} s at least"
+            )
+        if hi is not None and seconds > hi:
+            raise ValueError(
+                f"{what} is {seconds:g} s; this backend takes {hi:g} s at most"
+            )
+
+    check(f"the {spec.name} edit's source clip", clip_s, "clip_s")
+    for lo_name, hi_name in spec.ordered:
+        check(
+            f"the {lo_name}..{hi_name} window",
+            given[hi_name] - given[lo_name],
+            "span_s",
+        )
+    check(
+        f"the {spec.name} edit's output", spec.output_seconds(clip_s, given), "output_s"
+    )
 
 
 #: The ``kind`` of the ``transformations`` entry an edit appends to its clip's licence

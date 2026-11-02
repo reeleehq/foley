@@ -57,6 +57,7 @@ from ocracy.kit import UnsupportedParameter, make_translator
 
 from ..base import (
     EDIT_AFFORDANCES,
+    EDIT_OPS,
     GENERATION_AFFORDANCES,
     QUERY_AFFORDANCES,
     check_edit_args,
@@ -218,20 +219,54 @@ def translate_affordances(
 
 def _check_edit(config: dict, affordances: dict) -> None:
     """:func:`foley.base.check_edit_args` for a call of an edit source: its ``edit_op``,
-    the source clip's length (when it can be read) and the backend's own maxima (a
-    ``param_map`` entry's ``max``)."""
+    the source clip's length (when it can be read), the backend's own range of each
+    parameter (a ``param_map`` entry's ``min`` and ``max``) and its ``edit_limits``
+    (the clip's, a window's and the output's lengths)."""
     audio = affordances.get("audio")
-    limits = {
-        name: spec["max"]
-        for name, spec in (config.get("param_map") or {}).items()
-        if isinstance(spec, dict) and spec.get("max") is not None
-    }
+    param_map = config.get("param_map") or {}
+
+    def bound(key: str) -> dict:
+        return {
+            name: spec[key]
+            for name, spec in param_map.items()
+            if isinstance(spec, dict) and spec.get(key) is not None
+        }
+
     check_edit_args(
         config.get("edit_op"),
         affordances,
         clip_s=MEDIA["audio"].seconds(audio) if audio is not None else None,
-        limits=limits,
+        limits=bound("max"),
+        floors=bound("min"),
+        bounds=config.get("edit_limits"),
     )
+
+
+def edit_output_seconds(config: dict, affordances: dict) -> Optional[float]:
+    """How long an edit source's output is, when no ``duration_s`` sets it (#215).
+
+    The op's :meth:`~foley.base.EditOp.output_seconds` of the source clip's length;
+    for a clip whose length cannot be read, of the longest clip the backend takes
+    (``edit_limits['clip_s']``), within its longest output
+    (``edit_limits['output_s']``): an upper bound. ``None`` when neither is known.
+
+    >>> cfg = {"edit_op": "extend", "edit_limits": {"clip_s": (3, 59), "output_s": (None, 60)}}
+    >>> edit_output_seconds(cfg, {"audio": b"", "extend_after_s": 2.0})
+    60.0
+    """
+    op = EDIT_OPS.get(config.get("edit_op"))
+    audio = affordances.get("audio")
+    if op is None or audio is None:
+        return None
+    limits = config.get("edit_limits") or {}
+    clip_s = MEDIA["audio"].seconds(audio)
+    if clip_s is None:
+        clip_s = (limits.get("clip_s") or (None, None))[1]
+    seconds = op.output_seconds(clip_s, affordances)
+    longest = (limits.get("output_s") or (None, None))[1]
+    if seconds is not None and longest is not None:
+        seconds = min(seconds, float(longest))
+    return seconds
 
 
 def _checked_values(affordances: dict) -> dict:
@@ -388,13 +423,19 @@ def native_request(config: dict, affordances: dict) -> dict:
     translated (an unknown token to the source's ``native_defaults`` value, as the
     adapter does); ``prompt_influence`` goes through
     :func:`~foley.sources.base.native_adherence`. Defaults are filled first (see
-    :func:`_canonical_affordances`), and a ``None`` (sent as nothing) is left out.
+    :func:`_canonical_affordances`), and a ``None`` (sent as nothing) is left out. A
+    dotted ``native_name`` puts the value in a nested field (Mirelo's inpaint window,
+    ``segment.start_s``).
 
     >>> cfg = {"param_map": {"output_format": {"native_name": "fmt",
     ...                                         "to_native_map": {"wav": "pcm"}}},
     ...        "supported_affordances": ["output_format"]}
     >>> native_request(cfg, {})
     {'fmt': 'pcm'}
+    >>> native_request({"param_map": {"inpaint_start_s": {"native_name": "seg.start_s"}},
+    ...                 "supported_affordances": ["inpaint_start_s"]},
+    ...                {"inpaint_start_s": 1})
+    {'seg': {'start_s': 1.0}}
     """
     from .base import native_adherence, native_output_format
 
@@ -421,7 +462,11 @@ def native_request(config: dict, affordances: dict) -> dict:
                 value, native_defaults.get(native_name, value)
             )
         if value is not None:
-            out[native_name] = value
+            *parents, leaf = native_name.split(".")
+            node = out
+            for parent in parents:
+                node = node.setdefault(parent, {})
+            node[leaf] = value
     if "prompt_influence" in param_map and "prompt_influence" not in affordances:
         default = native_adherence(config, None, [])
         if default is not None:
@@ -1607,8 +1652,15 @@ def _priced_call(
 
 def _priced(config: dict, affordances: dict) -> dict:
     """``affordances`` plus what the price depends on beyond them: the length of the
-    video a video-to-audio call is given (#74; see :func:`foley.cost.estimate_call`)."""
+    video a video-to-audio call is given (#74; see :func:`foley.cost.estimate_call`),
+    or the output length of an edit no ``duration_s`` sets
+    (:func:`edit_output_seconds`: a per-second edit is priced by the sound it makes)."""
     if affordances.get("video") is None:
+        supported = config.get("supported_affordances") or ()
+        if affordances.get("audio") is not None and "duration_s" not in supported:
+            seconds = edit_output_seconds(config, affordances)
+            if seconds is not None:
+                return {**affordances, "duration_s": seconds}
         return affordances
     from . import video
 

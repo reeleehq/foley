@@ -686,7 +686,8 @@ def _actual_cost(
 ) -> Optional[float]:
     """What the call just made, of ``samples`` takes (#210), costs (see
     :func:`foley.cost.actual_call_cost`): for the
-    duration sent, or for a source billed by the video's length (#74), for the length
+    duration sent, or for a source billed by the video's length (#74) or an edit no
+    duration sets (#215), for the length
     of the audio it returned (``None`` when that cannot be read), or for a source
     billed per compute second, for the run time fal reported (#186: the pricing row's
     ``compute_seconds_field`` of the run ``metrics``; ``None`` without it), noted as
@@ -706,12 +707,15 @@ def _actual_cost(
             )
         return cost
 
-    if "v2a" in source_modes(config):  # billed for the sound it made (#74)
+    name = (config["param_map"].get("duration_s") or {}).get("native_name")
+    modes = source_modes(config)
+    # Billed for the sound it made: a video's (#74), or an edit's that no duration
+    # sets (#215: an inpaint keeps the source's length, an extension adds to it).
+    if "v2a" in modes or ("edit" in modes and name is None):
         seconds = _audio_seconds(audio)
         if seconds is None:
             return None
         return actual_call_cost(config, duration_s=seconds, samples=samples)
-    name = (config["param_map"].get("duration_s") or {}).get("native_name")
     return actual_call_cost(
         config, duration_s=args.get(name) if name else None, samples=samples
     )

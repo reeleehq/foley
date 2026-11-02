@@ -103,6 +103,8 @@ FAKES = {
             "fal_stable_audio_3_audio_to_audio",
             "fal_stable_audio_3_inpaint",
             "fal_stable_audio_3_extend",
+            "fal_mirelo_inpaint",
+            "fal_mirelo_extend",
         )
     },
 }
@@ -124,7 +126,8 @@ _MODE_INPUTS = {
         "audio": "https://x/take.wav",
         **{
             "audio_to_audio": {"strength": 0.5},
-            "inpaint": {"inpaint_start_s": 0.5, "inpaint_end_s": 1.0},
+            # within every inpaint backend's window (Mirelo's starts at 1 s)
+            "inpaint": {"inpaint_start_s": 1.0, "inpaint_end_s": 2.0},
             "extend": {"extend_after_s": 1.0},
         }[config["edit_op"]],
     },
