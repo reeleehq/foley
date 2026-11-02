@@ -225,6 +225,7 @@ def render(
     *,
     sr: int = 48_000,
     transcript: Optional[str] = None,
+    language: Optional[str] = None,
     aligner: "Optional[Aligner]" = None,
     apply_strategy: "Optional[ApplyStrategy]" = None,
     cache: Optional[RenderCache] = None,
@@ -238,6 +239,9 @@ def render(
         sr: Working/render sample rate in Hz.
         transcript: Narration transcript for alignment when ``timeline.word_timeline``
             is empty (else alignment is skipped — the cached timeline is the seed).
+        language: The narration's language code (``"fr"``, …), passed to the aligner,
+            which picks its models by it. ``None`` (default) sends none: the aligner's own
+            default (English for the built-ins) applies.
         aligner: The :class:`~foley.weave.protocols.Aligner` (default: WhisperX if
             ``foley[align]`` installed, else the deterministic fake).
         apply_strategy: The per-item :class:`~foley.weave.protocols.ApplyStrategy`
@@ -257,7 +261,8 @@ def render(
     alignment = "cached" if wt else None
     if not wt and transcript:
         used = aligner if aligner is not None else _default_aligner()
-        wt = used.word_timeline(voice_mono, sr, transcript=transcript)
+        lang = {} if language is None else {"language": language}
+        wt = used.word_timeline(voice_mono, sr, transcript=transcript, **lang)
         alignment = aligner_name(used)
     tl = hydrate(timeline, wt)
 

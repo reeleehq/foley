@@ -215,3 +215,25 @@ def _has_ai_disclosure(result) -> bool:
         a.get("label") == "foley.ai_disclosure"
         for a in result.content_credential["manifest"]["assertions"]
     )
+
+
+class _RecordingAligner(FakeAligner):
+    """A fake aligner that records the language it was asked to align in."""
+
+    name = "recording"
+
+    def __init__(self):
+        self.languages = []
+
+    def word_timeline(self, audio, sample_rate, *, transcript=None, language="en"):
+        self.languages.append(language)
+        return super().word_timeline(audio, sample_rate, transcript=transcript, language=language)
+
+
+@pytest.mark.parametrize("language", [None, "fr"])
+def test_weave_passes_the_language_to_the_aligner(language):
+    """#225: weave (and score, which forwards its weave kwargs) reaches the aligner's models."""
+    aligner = _RecordingAligner()
+    kw = {} if language is None else {"language": language}
+    _weave(library=_Lib(), transcript="the door opened", aligner=aligner, **kw)
+    assert aligner.languages == [language or "en"]

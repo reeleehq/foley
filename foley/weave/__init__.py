@@ -385,6 +385,7 @@ def weave(
     master: "Union[str, MasterProfile]" = "podcast",
     library=None,
     transcript: Optional[str] = None,
+    language: Optional[str] = None,
     aligner: Optional[Aligner] = None,
     apply_strategy: Optional[ApplyStrategy] = None,
     sr: int = 48_000,
@@ -414,6 +415,9 @@ def weave(
         library: The :class:`foley.index.SoundLibrary` (or a mapping) holding the clips.
         transcript: The narration transcript, for forced alignment (skipped when the
             timeline already carries a ``word_timeline``).
+        language: The narration's language code (``"fr"``, …), passed to the aligner
+            (MFA and aeneas pick their models by it; #225). ``None`` (default): the
+            aligner's own default, English for the built-ins.
         aligner: The forced-alignment seam (default: WhisperX if installed, else fake).
         apply_strategy: The per-item placement seam (default :class:`FullRender`).
         sr: Working/render sample rate in Hz.
@@ -455,6 +459,7 @@ def weave(
             lib,
             sr=sr,
             transcript=transcript,
+            language=language,
             aligner=aligner,
             apply_strategy=apply_strategy,
             cache=cache,

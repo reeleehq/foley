@@ -125,7 +125,7 @@ def score(
             (``max_usd``) across every segment's paid calls (#57). Default: $1, or $3
             when ``llm`` (or ``$FOLEY_LLM``) is ``'anthropic'``
             (:func:`foley.cost.default_max_usd`, #88).
-        **weave_kwargs: Forwarded to :func:`foley.weave` (e.g. ``sign_cert``, ``watermark``).
+        **weave_kwargs: Forwarded to :func:`foley.weave` (e.g. ``language``, ``sign_cert``, ``watermark``).
 
     Returns:
         A :class:`ScoreResult` (``timeline`` + ``events`` rationale; ``weave`` when woven).
