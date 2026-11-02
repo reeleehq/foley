@@ -81,7 +81,9 @@ clip = foley.edit(sound_id, "extend", "the door slams shut", extend_after_s=2)
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
 # Owned packs: each pack's foley-license.toml is its licence; captions + UCS from bext/iXML
-foley.ingest_library("~/SFX/", accept_ai_restricted=True)  # consent: owned-pack forbids AI training
+foley.ingest_library(
+    "~/SFX/", accept_ai_restricted=True
+)  # consent: owned-pack forbids AI training
 foley.add_from(
     "freesound", query="ocean waves", license="cc0"
 )  # needs FREESOUND_API_KEY

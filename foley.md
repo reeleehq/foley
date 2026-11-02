@@ -1,4 +1,4 @@
-> built 2026-11-02 02:43 UTC from fb213ae (main) · foley 0.0.111. Details: build_info.json
+> built 2026-11-02 03:07 UTC from 677e05f (main) · foley 0.0.112. Details: build_info.json
 
 # index.html.md
 
@@ -85,7 +85,9 @@ clip = foley.edit(sound_id, "extend", "the door slams shut", extend_after_s=2)
 # Grow the library — ingest auto-tags and embeds every file (captioning is pluggable)
 foley.ingest("~/my_sounds/", license="user-owned")  # omit it and rights stay unknown
 # Owned packs: each pack's foley-license.toml is its licence; captions + UCS from bext/iXML
-foley.ingest_library("~/SFX/", accept_ai_restricted=True)  # consent: owned-pack forbids AI training
+foley.ingest_library(
+    "~/SFX/", accept_ai_restricted=True
+)  # consent: owned-pack forbids AI training
 foley.add_from(
     "freesound", query="ocean waves", license="cc0"
 )  # needs FREESOUND_API_KEY
@@ -9619,7 +9621,7 @@ editable [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.Soun
     (`max_usd`) across every segment’s paid calls (#57). Default: $1, or $3
     when `llm` (or `$FOLEY_LLM`) is `'anthropic'`
     ([`foley.cost.default_max_usd()`](_autosummary/foley.cost.html.md#foley.cost.default_max_usd), #88).
-  * **\*\*weave_kwargs** – Forwarded to [`foley.weave()`](_autosummary/foley.weave.html.md#module-foley.weave) (e.g. `sign_cert`, `watermark`).
+  * **\*\*weave_kwargs** – Forwarded to [`foley.weave()`](_autosummary/foley.weave.html.md#module-foley.weave) (e.g. `language`, `sign_cert`, `watermark`).
 * **Return type:**
   [`ScoreResult`](_autosummary/foley.html.md#foley.ScoreResult)
 * **Returns:**
@@ -16185,7 +16187,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta-dum', 'ta dum', 'netflix chime', 'netflix sound', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel jingle', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix chime', 'netflix intro', 'ta-dum', 'netflix sound', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel bong', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -25541,7 +25543,7 @@ sidecar-only, so weaving is never blocked by provenance.
   `content_credential` the sidecar dict (always present unless credential
   construction itself failed).
 
-### foley.weave.render(timeline, library, , sr=48000, transcript=None, aligner=None, apply_strategy=None, cache=None)
+### foley.weave.render(timeline, library, , sr=48000, transcript=None, language=None, aligner=None, apply_strategy=None, cache=None)
 
 Render `timeline` against `library` into a mastered mix (PURE, deterministic).
 
@@ -25552,6 +25554,10 @@ Render `timeline` against `library` into a mastered mix (PURE, deterministic).
   * **sr** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Working/render sample rate in Hz.
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Narration transcript for alignment when `timeline.word_timeline`
     is empty (else alignment is skipped — the cached timeline is the seed).
+  * **language** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The narration’s language code (`"fr"`, …), passed to the aligner,
+    which picks its models by it. `None` (default) sends none: the aligner’s own
+    default (English for the built-ins) applies. Unused when the timeline already
+    carries a `word_timeline`.
   * **aligner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Aligner`](_autosummary/foley.weave.protocols.html.md#foley.weave.protocols.Aligner)]) – The [`Aligner`](_autosummary/foley.weave.protocols.html.md#foley.weave.protocols.Aligner) (default: WhisperX if
     `foley[align]` installed, else the deterministic fake).
   * **apply_strategy** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`ApplyStrategy`](_autosummary/foley.weave.protocols.html.md#foley.weave.protocols.ApplyStrategy)]) – The per-item [`ApplyStrategy`](_autosummary/foley.weave.protocols.html.md#foley.weave.protocols.ApplyStrategy)
@@ -25667,7 +25673,7 @@ sudo). Surfaces the exact per-platform command so the user can opt in.
 * **Returns:**
   `{name: {'available': bool, 'purpose': str, 'install': str, 'url': str}}`.
 
-### foley.weave.weave(narration, timeline, , master='podcast', library=None, transcript=None, aligner=None, apply_strategy=None, sr=48000, cache=None, watermark=None, watermarker=None, sign_cert=None, export_captions=True, provenance_store=None, intended_use=None)
+### foley.weave.weave(narration, timeline, , master='podcast', library=None, transcript=None, language=None, aligner=None, apply_strategy=None, sr=48000, cache=None, watermark=None, watermarker=None, sign_cert=None, export_captions=True, provenance_store=None, intended_use=None)
 
 Weave the chosen sounds under `narration` into a mastered, editable mix.
 
@@ -25687,6 +25693,10 @@ an optional keyword.
   * **library** – The [`foley.index.SoundLibrary`](_autosummary/foley.index.html.md#foley.index.SoundLibrary) (or a mapping) holding the clips.
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The narration transcript, for forced alignment (skipped when the
     timeline already carries a `word_timeline`).
+  * **language** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The narration’s language code (`"fr"`, …), passed to the aligner
+    (MFA and aeneas pick their models by it; #225). `None` (default): the
+    aligner’s own default, English for the built-ins. Like `transcript`, it is
+    unused when the timeline already carries a `word_timeline` (a note says so).
   * **aligner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Aligner`](_autosummary/foley.weave.protocols.html.md#foley.weave.protocols.Aligner)]) – The forced-alignment seam (default: WhisperX if installed, else fake).
   * **apply_strategy** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`ApplyStrategy`](_autosummary/foley.weave.protocols.html.md#foley.weave.protocols.ApplyStrategy)]) – The per-item placement seam (default [`FullRender`](_autosummary/foley.weave.html.md#foley.weave.FullRender)).
   * **sr** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Working/render sample rate in Hz.
@@ -26444,7 +26454,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 02:43 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/fb213ae8e96b018bd348998cb1346f4a87e209db"><code>fb213ae</code></a> on branch <code>main</code>, for **foley 0.0.111** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 03:07 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/677e05f0034e13e9566f40059f0af110d47a109c"><code>677e05f</code></a> on branch <code>main</code>, for **foley 0.0.112** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -26453,7 +26463,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/fb213ae8e96b018bd348998cb1346f4a87e209db"><code>fb213ae8e96b018bd348998cb1346f4a87e209db</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/677e05f0034e13e9566f40059f0af110d47a109c"><code>677e05f0034e13e9566f40059f0af110d47a109c</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -26464,9 +26474,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41379034128">41379034128</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41381022131">41381022131</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>fb213ae8e96b018bd348998cb1346f4a87e209db</code> (in the history of the built commit) |
+| Event commit | <code>677e05f0034e13e9566f40059f0af110d47a109c</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -26491,13 +26501,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.111/">0.0.111</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.112/">0.0.112</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout fb213ae8e96b018bd348998cb1346f4a87e209db
+git checkout 677e05f0034e13e9566f40059f0af110d47a109c
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -375,7 +375,7 @@ sidecar-only, so weaving is never blocked by provenance.
   `content_credential` the sidecar dict (always present unless credential
   construction itself failed).
 
-### foley.weave.render(timeline, library, , sr=48000, transcript=None, aligner=None, apply_strategy=None, cache=None)
+### foley.weave.render(timeline, library, , sr=48000, transcript=None, language=None, aligner=None, apply_strategy=None, cache=None)
 
 Render `timeline` against `library` into a mastered mix (PURE, deterministic).
 
@@ -386,6 +386,10 @@ Render `timeline` against `library` into a mastered mix (PURE, deterministic).
   * **sr** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Working/render sample rate in Hz.
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Narration transcript for alignment when `timeline.word_timeline`
     is empty (else alignment is skipped — the cached timeline is the seed).
+  * **language** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The narration’s language code (`"fr"`, …), passed to the aligner,
+    which picks its models by it. `None` (default) sends none: the aligner’s own
+    default (English for the built-ins) applies. Unused when the timeline already
+    carries a `word_timeline`.
   * **aligner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Aligner`](foley.weave.protocols.html.md#foley.weave.protocols.Aligner)]) – The [`Aligner`](foley.weave.protocols.html.md#foley.weave.protocols.Aligner) (default: WhisperX if
     `foley[align]` installed, else the deterministic fake).
   * **apply_strategy** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`ApplyStrategy`](foley.weave.protocols.html.md#foley.weave.protocols.ApplyStrategy)]) – The per-item [`ApplyStrategy`](foley.weave.protocols.html.md#foley.weave.protocols.ApplyStrategy)
@@ -501,7 +505,7 @@ sudo). Surfaces the exact per-platform command so the user can opt in.
 * **Returns:**
   `{name: {'available': bool, 'purpose': str, 'install': str, 'url': str}}`.
 
-### foley.weave.weave(narration, timeline, , master='podcast', library=None, transcript=None, aligner=None, apply_strategy=None, sr=48000, cache=None, watermark=None, watermarker=None, sign_cert=None, export_captions=True, provenance_store=None, intended_use=None)
+### foley.weave.weave(narration, timeline, , master='podcast', library=None, transcript=None, language=None, aligner=None, apply_strategy=None, sr=48000, cache=None, watermark=None, watermarker=None, sign_cert=None, export_captions=True, provenance_store=None, intended_use=None)
 
 Weave the chosen sounds under `narration` into a mastered, editable mix.
 
@@ -521,6 +525,10 @@ an optional keyword.
   * **library** – The [`foley.index.SoundLibrary`](foley.index.html.md#foley.index.SoundLibrary) (or a mapping) holding the clips.
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The narration transcript, for forced alignment (skipped when the
     timeline already carries a `word_timeline`).
+  * **language** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The narration’s language code (`"fr"`, …), passed to the aligner
+    (MFA and aeneas pick their models by it; #225). `None` (default): the
+    aligner’s own default, English for the built-ins. Like `transcript`, it is
+    unused when the timeline already carries a `word_timeline` (a note says so).
   * **aligner** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Aligner`](foley.weave.protocols.html.md#foley.weave.protocols.Aligner)]) – The forced-alignment seam (default: WhisperX if installed, else fake).
   * **apply_strategy** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`ApplyStrategy`](foley.weave.protocols.html.md#foley.weave.protocols.ApplyStrategy)]) – The per-item placement seam (default [`FullRender`](#foley.weave.FullRender)).
   * **sr** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Working/render sample rate in Hz.
