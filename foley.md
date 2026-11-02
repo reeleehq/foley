@@ -1,4 +1,4 @@
-> built 2026-11-02 07:49 UTC from 2050ec9 (main) · foley 0.0.131. Details: build_info.json
+> built 2026-11-02 08:19 UTC from a4c9416 (main) · foley 0.0.132. Details: build_info.json
 
 # index.html.md
 
@@ -15947,6 +15947,7 @@ item is redistributable but stored by-reference.
 | [`cc_refused_terms`](_autosummary/foley.licensing.html.md#foley.licensing.cc_refused_terms)(url)                              | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                                                                                                                                                                             |
 | [`check_placed`](_autosummary/foley.licensing.html.md#foley.licensing.check_placed)(records, intended_use, \*, what)      | The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.                                                                                                                                                                                             |
 | [`checked_refusal_reason`](_autosummary/foley.licensing.html.md#foley.licensing.checked_refusal_reason)(record, intended_use)       | [`refusal_reason()`](_autosummary/foley.licensing.html.md#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.                                                                                                                                                    |
+| [`code_implies_at_most`](_autosummary/foley.licensing.html.md#foley.licensing.code_implies_at_most)(code, record)                 | Whether exporting `record` under the licence `code` tells a consumer no more than `record` allows (`None`, UNKNOWN, implies nothing).                                                                                                                                          |
 | [`consumer_license_class`](_autosummary/foley.licensing.html.md#foley.licensing.consumer_license_class)(license_id)                 | The [`CONSUMER_LICENSE_CLASSES`](_autosummary/foley.licensing.html.md#foley.licensing.CONSUMER_LICENSE_CLASSES) entry of `license_id`, from its flag row.                                                                                                                                                        |
 | [`consumer_license_code`](_autosummary/foley.licensing.html.md#foley.licensing.consumer_license_code)(license_id)                  | foley's `license_id` as a consumer's licence code: the SSOT consumers import.                                                                                                                                                                                                  |
 | [`derivative_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal)(source)                         | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                                                                                                                                                                |
@@ -15955,6 +15956,7 @@ item is redistributable but stored by-reference.
 | [`excluded_territories`](_autosummary/foley.licensing.html.md#foley.licensing.excluded_territories)(record)                       | Where `record`'s licence, or any licence it derives from, grants nothing.                                                                                                                                                                                                      |
 | [`export_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.export_refusal)(source)                             | Why the bytes of a sound with rights `source` may not be exported, or `None`.                                                                                                                                                                                                  |
 | [`exported_licence_wider`](_autosummary/foley.licensing.html.md#foley.licensing.exported_licence_wider)(record, bound)              | What the licence `record` is exported under allows that `bound`'s does not.                                                                                                                                                                                                    |
+| [`granted_flags`](_autosummary/foley.licensing.html.md#foley.licensing.granted_flags)(license_id)                          | What `license_id` grants anyone, as a consumer reads its code (fail closed).                                                                                                                                                                                                   |
 | [`intended_use_for`](_autosummary/foley.licensing.html.md#foley.licensing.intended_use_for)([intended_use, ...])              | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                                                                                                                                                                           |
 | [`is_cc_license_token`](_autosummary/foley.licensing.html.md#foley.licensing.is_cc_license_token)(token)                         | Whether `token` is a search constraint a CC-reading source understands.                                                                                                                                                                                                        |
 | [`is_share_alike`](_autosummary/foley.licensing.html.md#foley.licensing.is_share_alike)(license_id)                         | Whether `license_id` (or a licence URL / label) is share-alike.                                                                                                                                                                                                                |
@@ -16392,6 +16394,37 @@ True
 "its licence could not be checked (AttributeError: 'NoneType' object has no attribute 'rights_verified')"
 ```
 
+### foley.licensing.code_implies_at_most(code, record)
+
+Whether exporting `record` under the licence `code` tells a consumer no
+more than `record` allows (`None`, UNKNOWN, implies nothing).
+
+Every one must hold (`_no_wider()`: the permissions of
+`_CODE_PERMISSIONS`, attribution, the revenue cap):
+
+* the code’s row (what foley derives under it) is no wider than the record’s own
+  flags, so a narrowing the record holds is never dropped;
+* what the code grants anyone ([`granted_flags()`](_autosummary/foley.licensing.html.md#foley.licensing.granted_flags)) is no wider than what each
+  licence of the record’s chain grants, so a lineage restriction is never dropped
+  (needed for share-alike, whose flags are foley’s self-limit and show none);
+* it excludes every territory the chain excludes ([`excluded_territories()`](_autosummary/foley.licensing.html.md#foley.licensing.excluded_territories));
+* it is every share-alike licence of the chain: no other licence (another
+  version, CC BY-NC-SA for CC BY-SA) satisfies a share-alike term.
+
+AI use is not compared: a code says nothing a consumer reads about it, so the
+consumer reads it from the export’s provenance (see `_CODE_PERMISSIONS`).
+
+```pycon
+>>> sa_nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-SA-4.0",
+...     derived_from_license_ids=["CC-BY-NC-4.0"]))
+>>> [code_implies_at_most(c, sa_nc) for c in ("CC-BY-SA-4.0", "CC-BY-NC-4.0",
+...                                           "CC-BY-NC-SA-4.0", None)]
+[False, False, False, True]
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
 ### foley.licensing.consumer_license_class(license_id)
 
 The [`CONSUMER_LICENSE_CLASSES`](_autosummary/foley.licensing.html.md#foley.licensing.CONSUMER_LICENSE_CLASSES) entry of `license_id`, from its flag row.
@@ -16556,6 +16589,27 @@ it, or a less restrictive consumer class ([`CONSUMER_LICENSE_CLASSES`](_autosumm
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.licensing.granted_flags(license_id)
+
+What `license_id` grants anyone, as a consumer reads its code (fail closed).
+
+Its [`LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_FLAGS) row; for a share-alike licence foley can name, the row
+of its family without the share-alike term (CC BY-SA 4.0 grants what CC BY 4.0
+does, under the obligation to share alike): [`SHARE_ALIKE_LICENSE_FLAGS`](_autosummary/foley.licensing.html.md#foley.licensing.SHARE_ALIKE_LICENSE_FLAGS) is
+what foley grants *itself* under it, not what the licence grants. Else all False.
+
+```pycon
+>>> granted_flags("CC-BY-SA-4.0") == LICENSE_FLAGS["CC-BY-4.0"]
+True
+>>> granted_flags("CC-BY-NC-SA-3.0") == LICENSE_FLAGS["CC-BY-NC-3.0"]
+True
+>>> granted_flags(None) == UNKNOWN_LICENSE_FLAGS
+True
+```
+
+* **Return type:**
+  [`LicenseFlags`](_autosummary/foley.licensing.html.md#foley.licensing.LicenseFlags)
 
 ### foley.licensing.intended_use_for(intended_use=None, , commercial_ok=None, territory=None)
 
@@ -16824,20 +16878,27 @@ source that wins over a clip whose own licence restricts beyond its class
 `None`, since a `Rights` record has one licence field and the source’s public
 code would drop the clip’s restriction (Stability’s revenue cap).
 
+The final gate, whatever the path (an edit, a restamp, a broadcast, a plain
+record), is [`code_implies_at_most()`](_autosummary/foley.licensing.html.md#foley.licensing.code_implies_at_most): a code that would let a consumer do more
+than the record allows gives `None` (#274). No other code stands in: CC BY-NC-SA
+is not what a CC BY-SA record bounded by CC BY-NC may be released under (BY-SA
+requires adaptations under BY-SA or a compatible licence, and NC-SA is neither).
+
 ```pycon
->>> rights_license_id(LicenseRecord(source="s", license_id="CC-BY-4.0", rights_verified=True))
+>>> def rec(lid, *lineage):
+...     return apply_license_flags(LicenseRecord(source="s", license_id=lid,
+...         rights_verified=True, derived_from_license_ids=list(lineage)))
+>>> rights_license_id(rec("CC-BY-4.0"))
 'CC-BY-4.0'
->>> rights_license_id(LicenseRecord(source="g", license_id="elevenlabs-free-plan",
-...     rights_verified=True, derived_from_license_ids=["CC-BY-4.0"]))
+>>> rights_license_id(rec("elevenlabs-free-plan", "CC-BY-4.0"))
 'elevenlabs-free-plan'
->>> rights_license_id(LicenseRecord(source="g", license_id="procedural-free",
-...     rights_verified=True, derived_from_license_ids=["CC-BY-NC-4.0"]))
+>>> rights_license_id(rec("procedural-free", "CC-BY-NC-4.0"))
 'CC-BY-NC-4.0'
->>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
-...     rights_verified=True, derived_from_license_ids=["CC-BY-4.0"])) is None
+>>> rights_license_id(rec("Stability-Community", "CC-BY-4.0")) is None
 True
->>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
-...     rights_verified=True, derived_from_license_ids=["Tencent-Hunyuan-Community"])) is None
+>>> rights_license_id(rec("Stability-Community", "Tencent-Hunyuan-Community")) is None
+True
+>>> rights_license_id(rec("CC-BY-SA-4.0", "CC-BY-NC-4.0")) is None
 True
 ```
 
@@ -18319,7 +18380,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta dum', 'netflix sound', 'tudum', 'netflix chime', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'metro-goldwyn-mayer lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', '20th century fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'netflix intro', 'tudum', 'netflix chime', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -18883,7 +18944,11 @@ Two rules carry the rights:
   `stability-community`, and `None` – UNKNOWN, never unencumbered – when the
   rights are unverified (a Public Domain Mark is a claim, not a grant) or unknown.
   An edit is exported under the most restrictive licence of its lineage
-  ([`foley.licensing.rights_license_id()`](_autosummary/foley.licensing.html.md#foley.licensing.rights_license_id)), so it never reads wider than a source.
+  ([`foley.licensing.rights_license_id()`](_autosummary/foley.licensing.html.md#foley.licensing.rights_license_id)), so it never reads wider than a source,
+  and never under a code that implies more than the record’s flags allow
+  ([`foley.licensing.code_implies_at_most()`](_autosummary/foley.licensing.html.md#foley.licensing.code_implies_at_most), else `None`). AI use is not in a
+  code: a consumer reads it from the provenance (`flags`, `ai_training_scope`,
+  `gen_ai_preference`).
   A provider-terms licence names the terms’ owner as `provider`
   ([`foley.licensing.LICENSE_TERMS_PROVIDER`](_autosummary/foley.licensing.html.md#foley.licensing.LICENSE_TERMS_PROVIDER)), since a consumer reads such a
   code only on that provider’s source.
@@ -30373,7 +30438,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 07:49 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/2050ec96ab7ddc2499991920902b20349859fd3d"><code>2050ec9</code></a> on branch <code>main</code>, for **foley 0.0.131** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 08:19 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/a4c94163f5182f14ead7ff8356ed252889170bfb"><code>a4c9416</code></a> on branch <code>main</code>, for **foley 0.0.132** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -30382,7 +30447,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/2050ec96ab7ddc2499991920902b20349859fd3d"><code>2050ec96ab7ddc2499991920902b20349859fd3d</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/a4c94163f5182f14ead7ff8356ed252889170bfb"><code>a4c94163f5182f14ead7ff8356ed252889170bfb</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -30393,9 +30458,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41408432352">41408432352</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41411901293">41411901293</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>2050ec96ab7ddc2499991920902b20349859fd3d</code> (in the history of the built commit) |
+| Event commit | <code>a4c94163f5182f14ead7ff8356ed252889170bfb</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -30420,13 +30485,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.131/">0.0.131</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.132/">0.0.132</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 2050ec96ab7ddc2499991920902b20349859fd3d
+git checkout a4c94163f5182f14ead7ff8356ed252889170bfb
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

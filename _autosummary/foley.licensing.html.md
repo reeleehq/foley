@@ -60,6 +60,7 @@ item is redistributable but stored by-reference.
 | [`cc_refused_terms`](#foley.licensing.cc_refused_terms)(url)                              | The NoDerivatives / ShareAlike terms of a CC licence URL or label.                                                                                                                                                                                                             |
 | [`check_placed`](#foley.licensing.check_placed)(records, intended_use, \*, what)      | The one rights gate for placed sounds (a plan's, a weave's): raise, warn, or pass.                                                                                                                                                                                             |
 | [`checked_refusal_reason`](#foley.licensing.checked_refusal_reason)(record, intended_use)       | [`refusal_reason()`](#foley.licensing.refusal_reason), fail-closed: an error while checking is itself a reason.                                                                                                                                                    |
+| [`code_implies_at_most`](#foley.licensing.code_implies_at_most)(code, record)                 | Whether exporting `record` under the licence `code` tells a consumer no more than `record` allows (`None`, UNKNOWN, implies nothing).                                                                                                                                          |
 | [`consumer_license_class`](#foley.licensing.consumer_license_class)(license_id)                 | The [`CONSUMER_LICENSE_CLASSES`](#foley.licensing.CONSUMER_LICENSE_CLASSES) entry of `license_id`, from its flag row.                                                                                                                                                        |
 | [`consumer_license_code`](#foley.licensing.consumer_license_code)(license_id)                  | foley's `license_id` as a consumer's licence code: the SSOT consumers import.                                                                                                                                                                                                  |
 | [`derivative_refusal`](#foley.licensing.derivative_refusal)(source)                         | Why a sound with rights `source` may not be edited into a new sound, or `None`.                                                                                                                                                                                                |
@@ -68,6 +69,7 @@ item is redistributable but stored by-reference.
 | [`excluded_territories`](#foley.licensing.excluded_territories)(record)                       | Where `record`'s licence, or any licence it derives from, grants nothing.                                                                                                                                                                                                      |
 | [`export_refusal`](#foley.licensing.export_refusal)(source)                             | Why the bytes of a sound with rights `source` may not be exported, or `None`.                                                                                                                                                                                                  |
 | [`exported_licence_wider`](#foley.licensing.exported_licence_wider)(record, bound)              | What the licence `record` is exported under allows that `bound`'s does not.                                                                                                                                                                                                    |
+| [`granted_flags`](#foley.licensing.granted_flags)(license_id)                          | What `license_id` grants anyone, as a consumer reads its code (fail closed).                                                                                                                                                                                                   |
 | [`intended_use_for`](#foley.licensing.intended_use_for)([intended_use, ...])              | The rights intent a verb runs under — every verb and surface resolves it here (#63).                                                                                                                                                                                           |
 | [`is_cc_license_token`](#foley.licensing.is_cc_license_token)(token)                         | Whether `token` is a search constraint a CC-reading source understands.                                                                                                                                                                                                        |
 | [`is_share_alike`](#foley.licensing.is_share_alike)(license_id)                         | Whether `license_id` (or a licence URL / label) is share-alike.                                                                                                                                                                                                                |
@@ -505,6 +507,37 @@ True
 "its licence could not be checked (AttributeError: 'NoneType' object has no attribute 'rights_verified')"
 ```
 
+### foley.licensing.code_implies_at_most(code, record)
+
+Whether exporting `record` under the licence `code` tells a consumer no
+more than `record` allows (`None`, UNKNOWN, implies nothing).
+
+Every one must hold (`_no_wider()`: the permissions of
+`_CODE_PERMISSIONS`, attribution, the revenue cap):
+
+* the code’s row (what foley derives under it) is no wider than the record’s own
+  flags, so a narrowing the record holds is never dropped;
+* what the code grants anyone ([`granted_flags()`](#foley.licensing.granted_flags)) is no wider than what each
+  licence of the record’s chain grants, so a lineage restriction is never dropped
+  (needed for share-alike, whose flags are foley’s self-limit and show none);
+* it excludes every territory the chain excludes ([`excluded_territories()`](#foley.licensing.excluded_territories));
+* it is every share-alike licence of the chain: no other licence (another
+  version, CC BY-NC-SA for CC BY-SA) satisfies a share-alike term.
+
+AI use is not compared: a code says nothing a consumer reads about it, so the
+consumer reads it from the export’s provenance (see `_CODE_PERMISSIONS`).
+
+```pycon
+>>> sa_nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-SA-4.0",
+...     derived_from_license_ids=["CC-BY-NC-4.0"]))
+>>> [code_implies_at_most(c, sa_nc) for c in ("CC-BY-SA-4.0", "CC-BY-NC-4.0",
+...                                           "CC-BY-NC-SA-4.0", None)]
+[False, False, False, True]
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
 ### foley.licensing.consumer_license_class(license_id)
 
 The [`CONSUMER_LICENSE_CLASSES`](#foley.licensing.CONSUMER_LICENSE_CLASSES) entry of `license_id`, from its flag row.
@@ -669,6 +702,27 @@ it, or a less restrictive consumer class ([`CONSUMER_LICENSE_CLASSES`](#foley.li
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.licensing.granted_flags(license_id)
+
+What `license_id` grants anyone, as a consumer reads its code (fail closed).
+
+Its [`LICENSE_FLAGS`](#foley.licensing.LICENSE_FLAGS) row; for a share-alike licence foley can name, the row
+of its family without the share-alike term (CC BY-SA 4.0 grants what CC BY 4.0
+does, under the obligation to share alike): [`SHARE_ALIKE_LICENSE_FLAGS`](#foley.licensing.SHARE_ALIKE_LICENSE_FLAGS) is
+what foley grants *itself* under it, not what the licence grants. Else all False.
+
+```pycon
+>>> granted_flags("CC-BY-SA-4.0") == LICENSE_FLAGS["CC-BY-4.0"]
+True
+>>> granted_flags("CC-BY-NC-SA-3.0") == LICENSE_FLAGS["CC-BY-NC-3.0"]
+True
+>>> granted_flags(None) == UNKNOWN_LICENSE_FLAGS
+True
+```
+
+* **Return type:**
+  [`LicenseFlags`](#foley.licensing.LicenseFlags)
 
 ### foley.licensing.intended_use_for(intended_use=None, , commercial_ok=None, territory=None)
 
@@ -937,20 +991,27 @@ source that wins over a clip whose own licence restricts beyond its class
 `None`, since a `Rights` record has one licence field and the source’s public
 code would drop the clip’s restriction (Stability’s revenue cap).
 
+The final gate, whatever the path (an edit, a restamp, a broadcast, a plain
+record), is [`code_implies_at_most()`](#foley.licensing.code_implies_at_most): a code that would let a consumer do more
+than the record allows gives `None` (#274). No other code stands in: CC BY-NC-SA
+is not what a CC BY-SA record bounded by CC BY-NC may be released under (BY-SA
+requires adaptations under BY-SA or a compatible licence, and NC-SA is neither).
+
 ```pycon
->>> rights_license_id(LicenseRecord(source="s", license_id="CC-BY-4.0", rights_verified=True))
+>>> def rec(lid, *lineage):
+...     return apply_license_flags(LicenseRecord(source="s", license_id=lid,
+...         rights_verified=True, derived_from_license_ids=list(lineage)))
+>>> rights_license_id(rec("CC-BY-4.0"))
 'CC-BY-4.0'
->>> rights_license_id(LicenseRecord(source="g", license_id="elevenlabs-free-plan",
-...     rights_verified=True, derived_from_license_ids=["CC-BY-4.0"]))
+>>> rights_license_id(rec("elevenlabs-free-plan", "CC-BY-4.0"))
 'elevenlabs-free-plan'
->>> rights_license_id(LicenseRecord(source="g", license_id="procedural-free",
-...     rights_verified=True, derived_from_license_ids=["CC-BY-NC-4.0"]))
+>>> rights_license_id(rec("procedural-free", "CC-BY-NC-4.0"))
 'CC-BY-NC-4.0'
->>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
-...     rights_verified=True, derived_from_license_ids=["CC-BY-4.0"])) is None
+>>> rights_license_id(rec("Stability-Community", "CC-BY-4.0")) is None
 True
->>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
-...     rights_verified=True, derived_from_license_ids=["Tencent-Hunyuan-Community"])) is None
+>>> rights_license_id(rec("Stability-Community", "Tencent-Hunyuan-Community")) is None
+True
+>>> rights_license_id(rec("CC-BY-SA-4.0", "CC-BY-NC-4.0")) is None
 True
 ```
 

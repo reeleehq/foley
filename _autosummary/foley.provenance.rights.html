@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=a90549bc"></script>
+    <script src="../_static/documentation_options.js?v=9efdc3d6"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.131" />
+  <meta name="docsearch:version" content="0.0.132" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -533,7 +533,11 @@ checklist with the generation block.</p></li>
 <code class="docutils literal notranslate"><span class="pre">stability-community</span></code>, and <code class="docutils literal notranslate"><span class="pre">None</span></code> – UNKNOWN, never unencumbered – when the
 rights are unverified (a Public Domain Mark is a claim, not a grant) or unknown.
 An edit is exported under the most restrictive licence of its lineage
-(<a class="reference internal" href="foley.licensing.html#foley.licensing.rights_license_id" title="foley.licensing.rights_license_id"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.licensing.rights_license_id()</span></code></a>), so it never reads wider than a source.
+(<a class="reference internal" href="foley.licensing.html#foley.licensing.rights_license_id" title="foley.licensing.rights_license_id"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.licensing.rights_license_id()</span></code></a>), so it never reads wider than a source,
+and never under a code that implies more than the record’s flags allow
+(<a class="reference internal" href="foley.licensing.html#foley.licensing.code_implies_at_most" title="foley.licensing.code_implies_at_most"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.licensing.code_implies_at_most()</span></code></a>, else <code class="docutils literal notranslate"><span class="pre">None</span></code>). AI use is not in a
+code: a consumer reads it from the provenance (<code class="docutils literal notranslate"><span class="pre">flags</span></code>, <code class="docutils literal notranslate"><span class="pre">ai_training_scope</span></code>,
+<code class="docutils literal notranslate"><span class="pre">gen_ai_preference</span></code>).
 A provider-terms licence names the terms’ owner as <code class="docutils literal notranslate"><span class="pre">provider</span></code>
 (<a class="reference internal" href="foley.licensing.html#foley.licensing.LICENSE_TERMS_PROVIDER" title="foley.licensing.LICENSE_TERMS_PROVIDER"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.licensing.LICENSE_TERMS_PROVIDER</span></code></a>), since a consumer reads such a
 code only on that provider’s source.</p></li>

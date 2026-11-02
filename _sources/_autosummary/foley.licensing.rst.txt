@@ -49,6 +49,7 @@ foley.licensing
       cc_refused_terms
       check_placed
       checked_refusal_reason
+      code_implies_at_most
       consumer_license_class
       consumer_license_code
       derivative_refusal
@@ -57,6 +58,7 @@ foley.licensing
       excluded_territories
       export_refusal
       exported_licence_wider
+      granted_flags
       intended_use_for
       is_cc_license_token
       is_share_alike
