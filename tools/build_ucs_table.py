@@ -56,7 +56,8 @@ def read_rows(xlsx: Path) -> "list[dict]":
         if not catid:
             continue
         synonyms = [
-            unmojibake(s.strip()) for s in cells[cols["Synonyms - Comma Separated"]].split(",")
+            unmojibake(s.strip())
+            for s in cells[cols["Synonyms - Comma Separated"]].split(",")
         ]
         rows.append(
             {
@@ -86,7 +87,9 @@ def main(argv=None) -> None:
         "rows": rows,
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps(doc, ensure_ascii=False, indent=0) + "\n", encoding="utf-8")
+    args.out.write_text(
+        json.dumps(doc, ensure_ascii=False, indent=0) + "\n", encoding="utf-8"
+    )
     print(f"{len(rows)} rows -> {args.out}")
 
 
