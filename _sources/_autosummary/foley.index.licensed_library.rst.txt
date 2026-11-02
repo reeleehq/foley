@@ -1,0 +1,23 @@
+foley.index.licensed\_library
+=============================
+
+.. automodule:: foley.index.licensed_library
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      PLAN_KEYS
+      REFUSED_KEYS
+      LOST_LICENSE_ID
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      describe_owned_file
+      ingest_licensed_folder
+      licensed_file_kwargs
+      unstamp_lost
+   

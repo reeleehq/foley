@@ -58,6 +58,7 @@
       default_tagger
       default_zeroshot_tagger
       ingest
+      ingest_library
       restamp_rights
       ingest_one
       ingest_folder

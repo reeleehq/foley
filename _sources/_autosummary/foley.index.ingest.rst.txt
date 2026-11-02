@@ -9,6 +9,8 @@ foley.index.ingest
    .. autosummary::
    
       AUDIO_EXTS
+      CONSENT_NOTE
+      UNCONSENTED_LICENSE_ID
       LEGACY_SELECTORS
       FROM_LICENSE_URL
    
@@ -32,4 +34,11 @@ foley.index.ingest
    
       IngestReport
       IngestResult
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      IngestSkip
+      PlanConflict
    

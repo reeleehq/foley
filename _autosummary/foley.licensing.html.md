@@ -33,6 +33,7 @@ item is redistributable but stored by-reference.
 | [`GEN_AI_PREFERENCE_SCOPES`](#foley.licensing.GEN_AI_PREFERENCE_SCOPES)     | Freesound `gen_ai_preference` -> `(ai_training_ok override, ai_training_scope)`.                                                                                                                                                                                                     |
 | [`EU_MEMBER_STATES`](#foley.licensing.EU_MEMBER_STATES)             | The EU's member states (ISO 3166-1 alpha-2), for a licence that excludes "EU", with the EU territories that carry their own codes: France's outermost regions (Réunion, French Guiana, Guadeloupe, Martinique, Mayotte, Saint-Martin) and Finland's Åland.                           |
 | [`LICENSE_EXCLUDED_TERRITORIES`](#foley.licensing.LICENSE_EXCLUDED_TERRITORIES) | `license_id` -> the territories where it grants nothing (ISO 3166-1 alpha-2 codes, plus `"EU"` for every member state).                                                                                                                                                              |
+| [`RESTAMP_FIELDS`](#foley.licensing.RESTAMP_FIELDS)               | The fields that say a stored licence and a fresh one differ besides their rights ([`wider_rights()`](#foley.licensing.wider_rights), either way); `verified_at` does not.                                                                                              |
 | [`NO_RECORD_REASON`](#foley.licensing.NO_RECORD_REASON)             | The reason a placed sound with no record (nothing to read a licence from) is refused.                                                                                                                                                                                                |
 
 ### Functions
@@ -59,6 +60,7 @@ item is redistributable but stored by-reference.
 | [`placed_record`](#foley.licensing.placed_record)(library, sound_id, \*[, ...])       | `library`'s record for `sound_id` as a rights gate reads it, never raising.                                                    |
 | [`refusal_reason`](#foley.licensing.refusal_reason)(record, intended_use)              | Why [`keep()`](#foley.licensing.keep) refuses `record` for `intended_use`, or `None` if it keeps it.     |
 | [`refusals`](#foley.licensing.refusals)(sound_records, intended_use)             | `{sound id: reason}` for each sound record [`keep()`](#foley.licensing.keep) refuses for `intended_use`. |
+| [`restamped_license`](#foley.licensing.restamped_license)(stored, fresh, \*[, widen])     | What a stored sound's licence becomes when its source now states `fresh`.                                                      |
 | [`territory_excluded`](#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                        |
 | [`upload_refusal`](#foley.licensing.upload_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.                                   |
 | [`wanted_license_ids`](#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                                  |
@@ -180,6 +182,11 @@ refused sound ([`refusals()`](#foley.licensing.refusals)); the message names eac
 ### foley.licensing.NO_RECORD_REASON *= 'it has no record in the library, so its licence cannot be checked'*
 
 The reason a placed sound with no record (nothing to read a licence from) is refused.
+
+### foley.licensing.RESTAMP_FIELDS *= ('license_id', 'rights_verified', 'license_url', 'license_name', 'rights_holder', 'attribution_text')*
+
+The fields that say a stored licence and a fresh one differ besides their rights
+([`wider_rights()`](#foley.licensing.wider_rights), either way); `verified_at` does not.
 
 ### foley.licensing.UNASSERTABLE_LICENSE_IDS *= frozenset({'ElevenLabs-SFX', 'PDM-1.0', 'unknown'})*
 
@@ -623,6 +630,39 @@ sound is kept.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.licensing.restamped_license(stored, fresh, , widen=True)
+
+What a stored sound’s licence becomes when its source now states `fresh`.
+
+Returns `(new_record, note)`: `new_record` is `None` when the stored licence
+stays as it is, and `note` is `None` when there is nothing to say. Pure:
+neither argument is changed. The stored lineage (edits, the licences bounding it)
+is always kept ([`carry_lineage()`](#foley.licensing.carry_lineage)).
+
+* `widen=True`: `fresh` replaces the stored licence. For a source that is the
+  authority on its own clips (a corpus’s metadata, `foley.bootstrap.bootstrap()`).
+* `widen=False`: rights are never widened. `fresh` replaces an *unverified*
+  stored licence (nobody asserted it) or one it is no wider than
+  ([`wider_rights()`](#foley.licensing.wider_rights)). When `fresh` grants more than the stored licence and
+  no less, the stored one is kept with a note naming the widening to apply by
+  hand ([`foley.index.ingest.restamp_rights()`](foley.index.ingest.html.md#foley.index.ingest.restamp_rights)). When each grants something
+  the other does not, the stored licence is bounded by `fresh`
+  ([`narrow_to_source()`](#foley.licensing.narrow_to_source)): the sound may be used only where both allow.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> cc0 = apply_license_flags(LicenseRecord(source="s", license_id="CC0-1.0", rights_verified=True))
+>>> nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0", rights_verified=True))
+>>> restamped_license(cc0, nc, widen=False)[0].license_id
+'CC-BY-NC-4.0'
+>>> new, note = restamped_license(nc, cc0, widen=False)
+>>> new is None, note.startswith("not widened")
+(True, True)
+```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
 
 ### foley.licensing.territory_excluded(excluded, territory)
 

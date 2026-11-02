@@ -32,8 +32,9 @@ is guessed.
 
 ### Functions
 
-| [`find_sidecar`](#foley.index.license_sidecar.find_sidecar)(path, \*[, root])    | The nearest sidecar for `path` (a file or folder), searching up to `root`.                                                          |
+| [`as_walked`](#foley.index.license_sidecar.as_walked)(path)                   | `path` as a library tree is walked: `~` expanded, made absolute and normalised with `os.path.abspath`, symlinks NOT followed.       |
 |------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
+| [`find_sidecar`](#foley.index.license_sidecar.find_sidecar)(path, \*[, root])    | The nearest sidecar for `path` (a file or folder), searching up to `root`.                                                          |
 | [`read_sidecar`](#foley.index.license_sidecar.read_sidecar)(sidecar)             | A sidecar's fields, checked against [`SIDECAR_FIELDS`](#foley.index.license_sidecar.SIDECAR_FIELDS).                                |
 | [`sidecar_license`](#foley.index.license_sidecar.sidecar_license)(path, \*[, root]) | The [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) the nearest sidecar asserts for `path`. |
 
@@ -59,6 +60,16 @@ Sidecar file names, by precedence within one folder.
 Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
 
 A missing, unreadable or invalid licence sidecar: the file is not ingested.
+
+### foley.index.license_sidecar.as_walked(path)
+
+`path` as a library tree is walked: `~` expanded, made absolute and normalised
+with `os.path.abspath`, symlinks NOT followed. Use it for a root and the files
+under it alike, so they compare (`resolve()` would turn macOS `/var` into
+`/private/var` on one side only).
+
+* **Return type:**
+  [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
 
 ### foley.index.license_sidecar.find_sidecar(path, , root=None)
 

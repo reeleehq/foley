@@ -21,6 +21,7 @@ foley.licensing
       GEN_AI_PREFERENCE_SCOPES
       EU_MEMBER_STATES
       LICENSE_EXCLUDED_TERRITORIES
+      RESTAMP_FIELDS
       NO_RECORD_REASON
    
    .. rubric:: Functions
@@ -48,6 +49,7 @@ foley.licensing
       placed_record
       refusal_reason
       refusals
+      restamped_license
       territory_excluded
       upload_refusal
       wanted_license_ids

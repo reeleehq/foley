@@ -23,10 +23,12 @@ module costs only the stdlib.
 
 ### Module Attributes
 
-| [`AUDIO_EXTS`](#foley.index.ingest.AUDIO_EXTS)       | Audio file extensions the folder walker ingests.                                                                               |
-|-------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| [`LEGACY_SELECTORS`](#foley.index.ingest.LEGACY_SELECTORS) | Named selections for [`restamp_rights()`](#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`). |
-| [`FROM_LICENSE_URL`](#foley.index.ingest.FROM_LICENSE_URL) | re-derive each record's id from the licence URL / label its source served (kept in `license_url`).                             |
+| [`AUDIO_EXTS`](#foley.index.ingest.AUDIO_EXTS)             | Audio file extensions the folder walker ingests.                                                                                                               |
+|-------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`CONSENT_NOTE`](#foley.index.ingest.CONSENT_NOTE)           | The note on a clip stored under a licence that forbids AI training, by the caller's explicit consent (`allow_ai_training_forbidden` / `accept_ai_restricted`). |
+| [`UNCONSENTED_LICENSE_ID`](#foley.index.ingest.UNCONSENTED_LICENSE_ID) | The licence a stored, embedded clip falls back to when its new licence needs AI consent that was not given (fail-closed: unverified, so keep() refuses it).    |
+| [`LEGACY_SELECTORS`](#foley.index.ingest.LEGACY_SELECTORS)       | Named selections for [`restamp_rights()`](#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`).                                 |
+| [`FROM_LICENSE_URL`](#foley.index.ingest.FROM_LICENSE_URL)       | re-derive each record's id from the licence URL / label its source served (kept in `license_url`).                                                             |
 
 ### Functions
 
@@ -47,9 +49,20 @@ module costs only the stdlib.
 |----------------------------------------------------------------------------------------------|-----------------------------------------------------------------|
 | [`IngestResult`](#foley.index.ingest.IngestResult)(id, status[, record, qc, ...]) | The outcome of ingesting one clip.                              |
 
+### Exceptions
+
+| [`IngestSkip`](#foley.index.ingest.IngestSkip)(reason, \*[, status])   | Raised by an [`ingest_folder()`](#foley.index.ingest.ingest_folder) `file_kwargs` plan to decline one file.   |
+|-------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| [`PlanConflict`](#foley.index.ingest.PlanConflict)                       | A per-file plan and the caller set the same [`ingest_one()`](#foley.index.ingest.ingest_one) keyword.      |
+
 ### foley.index.ingest.AUDIO_EXTS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('.wav', '.flac', '.aiff', '.aif', '.ogg', '.mp3', '.opus', '.m4a')*
 
 Audio file extensions the folder walker ingests.
+
+### foley.index.ingest.CONSENT_NOTE *= 'AI-training restriction acknowledged by operator (consent recorded)'*
+
+The note on a clip stored under a licence that forbids AI training, by the
+caller’s explicit consent (`allow_ai_training_forbidden` / `accept_ai_restricted`).
 
 ### foley.index.ingest.FROM_LICENSE_URL *= 'from-url'*
 
@@ -100,6 +113,13 @@ Append one [`IngestResult`](#foley.index.ingest.IngestResult).
 
 Results refused by the fail-closed AI-training/license rights gate.
 
+#### skip(path, skip)
+
+Record a file a per-file plan declined ([`IngestSkip`](#foley.index.ingest.IngestSkip)), with its reason.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### *property* skipped *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)[[IngestResult](#foley.index.ingest.IngestResult)]*
 
 Results skipped as content-addressed duplicates.
@@ -121,7 +141,8 @@ The outcome of ingesting one clip.
 not added), `'skipped_dup'` (content already in the library),
 `'rights_blocked'` (license forbids AI training / embedding, refused before
 embed — see [`ingest_one()`](#foley.index.ingest.ingest_one)), `'skipped_license'` (dropped by a
-bootstrap commercial-use / fail-closed license filter), or `'error'`.
+bootstrap commercial-use / fail-closed license filter, or a file no licence
+sidecar covers — see [`IngestSkip`](#foley.index.ingest.IngestSkip)), or `'error'`.
 `record` is present only when the clip was ingested. `cache_key` is set by
 [`foley.generate()`](foley.html.md#foley.generate) to the key its paid bytes were kept under in the generations
 cache (`foley.generations.get(cache_key)`), whatever the outcome — a quarantined
@@ -144,9 +165,30 @@ library would have served. A plain attribute, never serialized (like
 What the provider returned besides the audio of a generation (#61; see
 [`foley.sources.base.GeneratedClip.raw`](foley.sources.base.html.md#foley.sources.base.GeneratedClip.raw)). A plain attribute, never serialized.
 
+### *exception* foley.index.ingest.IngestSkip(reason, , status='skipped_license')
+
+Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exception)
+
+Raised by an [`ingest_folder()`](#foley.index.ingest.ingest_folder) `file_kwargs` plan to decline one file.
+
+Not an error: the file is recorded with `status` (default
+`'skipped_license'`) and `reason` as its note, whatever `on_error` says,
+and the folder carries on.
+
 ### foley.index.ingest.LEGACY_SELECTORS *= {'has-license-url': <function has_license_url>, 'legacy-elevenlabs': <function is_legacy_elevenlabs>, 'legacy-user-owned': <function is_legacy_default_user_owned>}*
 
 Named selections for [`restamp_rights()`](#foley.index.ingest.restamp_rights) (`foley restamp-rights --select NAME`).
+
+### *exception* foley.index.ingest.PlanConflict
+
+Bases: [`TypeError`](https://docs.python.org/3/builtins/exceptions.html#TypeError)
+
+A per-file plan and the caller set the same [`ingest_one()`](#foley.index.ingest.ingest_one) keyword.
+
+### foley.index.ingest.UNCONSENTED_LICENSE_ID *= 'unknown'*
+
+The licence a stored, embedded clip falls back to when its new licence needs AI
+consent that was not given (fail-closed: unverified, so keep() refuses it).
 
 ### foley.index.ingest.content_id(src)
 
@@ -169,7 +211,7 @@ Whether `lic` kept the licence string its source served (re-derivable).
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
-### foley.index.ingest.ingest_folder(path, , library=None, recursive=True, exts=('.wav', '.flac', '.aiff', '.aif', '.ogg', '.mp3', '.opus', '.m4a'), on_error='collect', \*\*ingest_one_kw)
+### foley.index.ingest.ingest_folder(path, , library=None, recursive=True, exts=('.wav', '.flac', '.aiff', '.aif', '.ogg', '.mp3', '.opus', '.m4a'), on_error='collect', file_kwargs=None, \*\*ingest_one_kw)
 
 Ingest every audio file under `path` and return an [`IngestReport`](#foley.index.ingest.IngestReport).
 
@@ -182,6 +224,13 @@ Ingest every audio file under `path` and return an [`IngestReport`](#foley.index
     `'raise'` re-raises the first error. Either way an
     [`EgressBlocked`](foley.runtime.html.md#foley.runtime.EgressBlocked) (offline, the embedder’s weights not
     cached) raises at once: every file would fail the same way.
+  * **file_kwargs** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)], [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]) – Optional per-file plan, `path -> dict` of [`ingest_one()`](#foley.index.ingest.ingest_one)
+    keywords for that file (its licence, caption, tags…), beside
+    `ingest_one_kw`; a keyword in both raises [`PlanConflict`](#foley.index.ingest.PlanConflict) (the
+    run stops: every file would conflict). It may raise [`IngestSkip`](#foley.index.ingest.IngestSkip)
+    to decline the file (recorded, never raised); any other exception is a
+    per-file error.
+    [`foley.index.licensed_library.ingest_licensed_folder()`](foley.index.licensed_library.html.md#foley.index.licensed_library.ingest_licensed_folder) uses it.
   * **\*\*ingest_one_kw** – Forwarded to [`ingest_one()`](#foley.index.ingest.ingest_one) (license, taggers, QC
     flags, …).
 * **Return type:**
@@ -189,7 +238,7 @@ Ingest every audio file under `path` and return an [`IngestReport`](#foley.index
 * **Returns:**
   An [`IngestReport`](#foley.index.ingest.IngestReport) (with `.summary()` counts and per-file results).
 
-### foley.index.ingest.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, commercial=None)
+### foley.index.ingest.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None)
 
 Ingest one clip into `library` and return an [`IngestResult`](#foley.index.ingest.IngestResult).
 
@@ -239,6 +288,19 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
   * **seed_tags** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]) – Optional caller-supplied tags (e.g. a corpus’s folder-path
     taxonomy) unioned into the record’s `tags` alongside the
     supervised/zero-shot tags — so they feed the BM25 keyword index.
+  * **ucs_catid** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional CatID the file declares about itself (its iXML
+    `CATID`, [`foley.embedded_metadata`](foley.embedded_metadata.html.md#module-foley.embedded_metadata)). It sets
+    `ucs_category` (which holds the CatID) when the filename does not
+    parse and the UCS table knows it; otherwise tags/caption decide.
+  * **restamp_duplicate** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – When the clip is already stored (`skipped_dup`),
+    re-stamp the stored record from `license` without ever widening it
+    ([`foley.licensing.restamped_license()`](foley.licensing.html.md#foley.licensing.restamped_license) with `widen=False`; its
+    note lands on the result). The rights gate below holds here too: a new
+    licence that forbids AI use (the clip is already embedded) is applied
+    only with `allow_ai_training_forbidden`; without it the stored record
+    becomes `unknown` (unverified, so [`foley.keep()`](foley.html.md#foley.keep) refuses it) and
+    the result `rights_blocked`, as a fresh ingest would be. Default
+    `False`: a duplicate is left as it is.
   * **allow_ai_training_forbidden** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – The universal fail-closed rights gate. A
     sound whose license has `ai_training_ok=False` (e.g. Sonniss,
     BBC RemArc) is refused with status `'rights_blocked'` *before* it is

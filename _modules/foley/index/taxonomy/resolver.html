@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=c4e26d2d"></script>
+    <script src="../../../../_static/documentation_options.js?v=609ae934"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.110" />
+  <meta name="docsearch:version" content="0.0.111" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -720,7 +720,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">Staged precedence, highest wins (report 04 §5.3, [11 §3.1] — normalize</span>
 <span class="sd">heterogeneous labels onto UCS via mapping/synonym tables):</span>
 
-<span class="sd">    filename-parse  &gt;  keyword/synonym  &gt;  audioset-map  &gt;  none</span>
+<span class="sd">    filename-parse  &gt;  declared CatID  &gt;  keyword/synonym  &gt;  audioset-map  &gt;  none</span>
+
+<span class="sd">A *declared* CatID is one the file states about itself (the iXML ``CATID`` of a pro</span>
+<span class="sd">pack, :mod:`foley.embedded_metadata`); like a filename's, it counts only when the</span>
+<span class="sd">table knows it.</span>
 
 <span class="sd">Matching is word-boundary aware (so ``"rain"`` matches "heavy rain" but not</span>
 <span class="sd">"brainstorm"), a subcategory hit outranks a category-name hit, and multi-word</span>
@@ -741,6 +745,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="c1"># Coarse per-stage confidence bands.</span>
 <span class="n">_CONF_FILENAME</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="n">_CONF_DECLARED</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>  <span class="c1"># the file's own metadata names its CatID</span>
 <span class="n">_CONF_KEYWORD_CONFIDENT</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span>
     <span class="mf">0.8</span>  <span class="c1"># strong hit (subcategory/synonym) on a verified row</span>
 <span class="p">)</span>
@@ -851,6 +856,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">caption</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">audioset_labels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
     <span class="n">filename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">catid</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">table</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UcsTable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">audioset_map</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AudioSetUcsMap</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CatIdResolution</span><span class="p">:</span>
@@ -862,6 +868,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        audioset_labels: AudioSet MIDs or names (e.g. from PANNs).</span>
 <span class="sd">        filename: Optional UCS-style filename/path (its token-0 CatID wins if</span>
 <span class="sd">            recognized).</span>
+<span class="sd">        catid: Optional CatID the sound declares (e.g. its iXML ``CATID``); wins</span>
+<span class="sd">            over keywords when the table knows it, else it is ignored.</span>
 <span class="sd">        table: UCS table (defaults to :func:`default_ucs_table`).</span>
 <span class="sd">        audioset_map: AudioSet-&gt;UCS map (defaults to</span>
 <span class="sd">            :func:`~foley.index.taxonomy.audioset.default_audioset_ucs_map`).</span>
@@ -884,6 +892,17 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">confidence</span><span class="o">=</span><span class="n">_CONF_FILENAME</span><span class="p">,</span>
                 <span class="n">matched_terms</span><span class="o">=</span><span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">catid</span><span class="p">],</span>
             <span class="p">)</span>
+
+    <span class="n">row</span> <span class="o">=</span> <span class="n">table</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">catid</span><span class="p">)</span> <span class="k">if</span> <span class="n">catid</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">CatIdResolution</span><span class="p">(</span>
+            <span class="n">catid</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">catid</span><span class="p">,</span>
+            <span class="n">category</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">category</span><span class="p">,</span>
+            <span class="n">subcategory</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">subcategory</span><span class="p">,</span>
+            <span class="n">source</span><span class="o">=</span><span class="s2">"metadata"</span><span class="p">,</span>
+            <span class="n">confidence</span><span class="o">=</span><span class="n">_CONF_DECLARED</span><span class="p">,</span>
+            <span class="n">matched_terms</span><span class="o">=</span><span class="p">[</span><span class="n">catid</span><span class="p">],</span>
+        <span class="p">)</span>
 
     <span class="n">kw</span> <span class="o">=</span> <span class="n">_keyword_stage</span><span class="p">(</span><span class="n">tags</span><span class="p">,</span> <span class="n">caption</span><span class="p">,</span> <span class="n">table</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">kw</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>

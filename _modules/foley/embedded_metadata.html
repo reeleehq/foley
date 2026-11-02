@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=c4e26d2d"></script>
+    <script src="../../_static/documentation_options.js?v=609ae934"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.110" />
+  <meta name="docsearch:version" content="0.0.111" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -796,6 +796,23 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="unique_words">
+<a class="viewcode-back" href="../../_autosummary/foley.embedded_metadata.html#foley.embedded_metadata.unique_words">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">unique_words</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``words`` stripped, without blanks or repeats (ignoring case), first spelling kept.</span>
+
+<span class="sd">    &gt;&gt;&gt; unique_words([" door", "DOOR", None, "", "creak"])</span>
+<span class="sd">    ['door', 'creak']</span>
+<span class="sd">    """</span>
+    <span class="n">seen</span><span class="p">,</span> <span class="n">out</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span> <span class="k">if</span> <span class="n">w</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">word</span> <span class="ow">and</span> <span class="n">word</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+            <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">casefold</span><span class="p">())</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
 <div class="viewcode-block" id="split_keywords">
 <a class="viewcode-back" href="../../_autosummary/foley.embedded_metadata.html#foley.embedded_metadata.split_keywords">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">split_keywords</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
@@ -804,12 +821,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &gt;&gt;&gt; split_keywords("door, creak; Wood ,DOOR")</span>
 <span class="sd">    ['door', 'creak', 'Wood']</span>
 <span class="sd">    """</span>
-    <span class="n">seen</span><span class="p">,</span> <span class="n">out</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span> <span class="p">[]</span>
-    <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">KEYWORD_SEPARATORS</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">text</span><span class="p">)):</span>
-        <span class="k">if</span> <span class="n">word</span> <span class="ow">and</span> <span class="n">word</span><span class="o">.</span><span class="n">casefold</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
-            <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">word</span><span class="o">.</span><span class="n">casefold</span><span class="p">())</span>
-            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">word</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">out</span></div>
+    <span class="k">return</span> <span class="n">unique_words</span><span class="p">(</span><span class="n">KEYWORD_SEPARATORS</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">text</span><span class="p">))</span></div>
 
 
 

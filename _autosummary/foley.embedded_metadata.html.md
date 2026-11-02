@@ -53,6 +53,7 @@ file-format I/O that both ingest (reading) and export (writing) use, stdlib-only
 | [`read_embedded_metadata`](#foley.embedded_metadata.read_embedded_metadata)(path, \*[, ...])       | foley's view of a WAV's `bext` and iXML metadata (see the module docs), or `{}`.                                     |
 | [`read_metadata_chunks`](#foley.embedded_metadata.read_metadata_chunks)(path, \*[, ...])         | The parsed, non-empty metadata chunks of a WAV (`{"bext": ..., "ixml": ...}`).                                       |
 | [`split_keywords`](#foley.embedded_metadata.split_keywords)(text)                          | Keywords from a `KEYWORDS` string: split on , and ;, de-duplicated ignoring case.                                    |
+| [`unique_words`](#foley.embedded_metadata.unique_words)(words)                           | `words` stripped, without blanks or repeats (ignoring case), first spelling kept.                                    |
 
 ### Classes
 
@@ -225,6 +226,18 @@ Keywords from a `KEYWORDS` string: split on , and ;, de-duplicated ignoring case
 ```pycon
 >>> split_keywords("door, creak; Wood ,DOOR")
 ['door', 'creak', 'Wood']
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.embedded_metadata.unique_words(words)
+
+`words` stripped, without blanks or repeats (ignoring case), first spelling kept.
+
+```pycon
+>>> unique_words([" door", "DOOR", None, "", "creak"])
+['door', 'creak']
 ```
 
 * **Return type:**

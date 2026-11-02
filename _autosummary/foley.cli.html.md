@@ -21,6 +21,7 @@ Two kinds of command share one parser:
   foley bootstrap [--rings 0,1] [--corpora fsd50k,foleyset] [--data-dir DIR]
                   [--accept-ai-restricted] [--no-commercial-filter]
   foley ingest PATH [--license ID] [--min-status warn|pass|fail] [--no-qc]
+  foley ingest-library PATH [--root DIR] [--accept-ai-restricted] [--no-qc]
   foley search QUERY [-k N] [--commercial-ok]
   ```
 

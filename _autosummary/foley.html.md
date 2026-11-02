@@ -28,6 +28,7 @@ foley.search("distant thunder rumble", k=10)
 foley.generate("a single wooden door creak", backend="stable_audio")
 foley.edit(sound_id, "extend", extend_after_s=2)  # audio-to-audio | inpaint | extend
 foley.ingest("~/my_sounds/")
+foley.ingest_library("~/SFX/", accept_ai_restricted=True)  # owned packs + sidecars
 ```
 
 The design is grounded in the research reports under `misc/docs/research/`.
@@ -111,6 +112,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`default_tagger`](#foley.default_tagger)()                                    | The default supervised tagger (PANNs CNN14; `foley[tag]`).                                                                                                                     |
 | [`default_zeroshot_tagger`](#foley.default_zeroshot_tagger)([embedder])                 | The default zero-shot tagger (CLAP vs UCS subcategories; `foley[clap]`).                                                                                                       |
 | [`ingest`](#foley.ingest)(path, \*[, library, backend, qc, ...])       | Ingest a folder (or single file) of sounds into the default library.                                                                                                           |
+| [`ingest_library`](#foley.ingest_library)(path, \*[, library, ...])            | Ingest a folder of owned sound packs, each file under its pack's licence sidecar (#230).                                                                                       |
 | [`restamp_rights`](#foley.restamp_rights)([library, license, ids, ...])        | Re-stamp the licence of stored sounds; a dry run unless `apply=True`.                                                                                                          |
 | [`ingest_one`](#foley.ingest_one)(src, \*[, library, sound_id, ...])       | Ingest one clip into `library` and return an [`IngestResult`](#foley.IngestResult).                                                                    |
 | [`ingest_folder`](#foley.ingest_folder)(path, \*[, library, recursive, ...])  | Ingest every audio file under `path` and return an [`IngestReport`](#foley.IngestReport).                                                              |
@@ -914,6 +916,13 @@ Append one [`IngestResult`](#foley.IngestResult).
 
 Results refused by the fail-closed AI-training/license rights gate.
 
+#### skip(path, skip)
+
+Record a file a per-file plan declined (`IngestSkip`), with its reason.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 #### *property* skipped *: [list](https://docs.python.org/3/builtins/stdtypes.html#list)[[IngestResult](foley.index.ingest.html.md#foley.index.ingest.IngestResult)]*
 
 Results skipped as content-addressed duplicates.
@@ -935,7 +944,8 @@ The outcome of ingesting one clip.
 not added), `'skipped_dup'` (content already in the library),
 `'rights_blocked'` (license forbids AI training / embedding, refused before
 embed — see [`ingest_one()`](#foley.ingest_one)), `'skipped_license'` (dropped by a
-bootstrap commercial-use / fail-closed license filter), or `'error'`.
+bootstrap commercial-use / fail-closed license filter, or a file no licence
+sidecar covers — see `IngestSkip`), or `'error'`.
 `record` is present only when the clip was ingested. `cache_key` is set by
 [`foley.generate()`](#foley.generate) to the key its paid bytes were kept under in the generations
 cache (`foley.generations.get(cache_key)`), whatever the outcome — a quarantined
@@ -2886,7 +2896,7 @@ per-file options (`license`, taggers, `min_status`, …).
     [`keep()`](#foley.keep) refuses them for every use); pass `license="user-owned"`
     to assert you own them (#55).
 
-### foley.ingest_folder(path, , library=None, recursive=True, exts=('.wav', '.flac', '.aiff', '.aif', '.ogg', '.mp3', '.opus', '.m4a'), on_error='collect', \*\*ingest_one_kw)
+### foley.ingest_folder(path, , library=None, recursive=True, exts=('.wav', '.flac', '.aiff', '.aif', '.ogg', '.mp3', '.opus', '.m4a'), on_error='collect', file_kwargs=None, \*\*ingest_one_kw)
 
 Ingest every audio file under `path` and return an [`IngestReport`](#foley.IngestReport).
 
@@ -2899,6 +2909,13 @@ Ingest every audio file under `path` and return an [`IngestReport`](#foley.Inges
     `'raise'` re-raises the first error. Either way an
     [`EgressBlocked`](foley.runtime.html.md#foley.runtime.EgressBlocked) (offline, the embedder’s weights not
     cached) raises at once: every file would fail the same way.
+  * **file_kwargs** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)], [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]]) – Optional per-file plan, `path -> dict` of [`ingest_one()`](#foley.ingest_one)
+    keywords for that file (its licence, caption, tags…), beside
+    `ingest_one_kw`; a keyword in both raises `PlanConflict` (the
+    run stops: every file would conflict). It may raise `IngestSkip`
+    to decline the file (recorded, never raised); any other exception is a
+    per-file error.
+    [`foley.index.licensed_library.ingest_licensed_folder()`](foley.index.licensed_library.html.md#foley.index.licensed_library.ingest_licensed_folder) uses it.
   * **\*\*ingest_one_kw** – Forwarded to [`ingest_one()`](#foley.ingest_one) (license, taggers, QC
     flags, …).
 * **Return type:**
@@ -2906,7 +2923,28 @@ Ingest every audio file under `path` and return an [`IngestReport`](#foley.Inges
 * **Returns:**
   An [`IngestReport`](#foley.IngestReport) (with `.summary()` counts and per-file results).
 
-### foley.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, commercial=None)
+### foley.ingest_library(path, , library=None, accept_ai_restricted=False, qc=True, recursive=True, \*\*kw)
+
+Ingest a folder of owned sound packs, each file under its pack’s licence sidecar (#230).
+
+Like [`ingest()`](#foley.ingest), but the licence of each file is the `foley-license.toml` of
+its pack (a file no sidecar covers is skipped and reported, never guessed), and
+its caption, tags and UCS CatID come from its embedded BWF/iXML metadata and its
+UCS filename. See [`foley.index.licensed_library.ingest_licensed_folder()`](foley.index.licensed_library.html.md#foley.index.licensed_library.ingest_licensed_folder).
+
+* **Parameters:**
+  * **path** – The library folder (walked), or a single file of it.
+  * **library** – Target library (default: the process-wide default library).
+  * **accept_ai_restricted** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Consent to embed sounds whose licence forbids AI
+    training (`owned-pack` does), so they are searchable for human-facing
+    work; their licence still refuses training. `False` (default) leaves
+    them out (`rights_blocked`), fail-closed like [`bootstrap()`](#foley.bootstrap).
+  * **qc** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Run the Tier-0 QC gate (quarantines failing clips).
+  * **recursive** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Recurse into sub-folders.
+  * **\*\*kw** – Forwarded to `ingest_licensed_folder` (`root`, `min_status`,
+    taggers, …).
+
+### foley.ingest_one(src, , library=None, sound_id=None, source_uri=None, license=None, tagger=None, zeroshot_tagger=None, captioner=None, do_qc=True, min_status=QCStatus.warn, do_supervised=True, do_zeroshot=True, do_caption=True, thresholds=QCThresholds(clip_full_scale=0.999, clip_min_run=3, clip_reject_ratio=0.0001, clip_reject_run=10, true_peak_max_dbtp=-1.0, true_peak_oversample=None, dc_offset_fail=0.01, dc_offset_warn=0.001, silence_rms_dbfs=-60.0, snr_clean_db=20.0, snr_quiet_percentile=10.0, snr_frame_s=0.025, snr_hop_s=0.01, edge_rel_peak_dbfs=-40.0, edge_fade_s=0.01, lufs_gate_floor=-70.0, lufs_outlier_lu=6.0, duration_min_s=0.1, deliver_min_sample_rate=44100), store=True, allow_ai_training_forbidden=False, seed_tags=None, ucs_catid=None, restamp_duplicate=False, commercial=None)
 
 Ingest one clip into `library` and return an [`IngestResult`](#foley.IngestResult).
 
@@ -2956,6 +2994,19 @@ Pipeline: probe + decode-once -> content-address dedup -> QC gate -> embed
   * **seed_tags** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)]) – Optional caller-supplied tags (e.g. a corpus’s folder-path
     taxonomy) unioned into the record’s `tags` alongside the
     supervised/zero-shot tags — so they feed the BM25 keyword index.
+  * **ucs_catid** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional CatID the file declares about itself (its iXML
+    `CATID`, [`foley.embedded_metadata`](foley.embedded_metadata.html.md#module-foley.embedded_metadata)). It sets
+    `ucs_category` (which holds the CatID) when the filename does not
+    parse and the UCS table knows it; otherwise tags/caption decide.
+  * **restamp_duplicate** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – When the clip is already stored (`skipped_dup`),
+    re-stamp the stored record from `license` without ever widening it
+    ([`foley.licensing.restamped_license()`](foley.licensing.html.md#foley.licensing.restamped_license) with `widen=False`; its
+    note lands on the result). The rights gate below holds here too: a new
+    licence that forbids AI use (the clip is already embedded) is applied
+    only with `allow_ai_training_forbidden`; without it the stored record
+    becomes `unknown` (unverified, so [`foley.keep()`](#foley.keep) refuses it) and
+    the result `rights_blocked`, as a fresh ingest would be. Default
+    `False`: a duplicate is left as it is.
   * **allow_ai_training_forbidden** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – The universal fail-closed rights gate. A
     sound whose license has `ai_training_ok=False` (e.g. Sonniss,
     BBC RemArc) is refused with status `'rights_blocked'` *before* it is
@@ -3492,7 +3543,7 @@ Resample `samples` to `target_sr` (a no-op when already there).
 
 Lazy dependency: `soxr`.
 
-### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, table=None, audioset_map=None)
+### foley.resolve_catid(, tags=(), caption=None, audioset_labels=(), filename=None, catid=None, table=None, audioset_map=None)
 
 Resolve inputs to a best UCS CatID by the staged precedence.
 
@@ -3502,6 +3553,8 @@ Resolve inputs to a best UCS CatID by the staged precedence.
   * **audioset_labels** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – AudioSet MIDs or names (e.g. from PANNs).
   * **filename** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional UCS-style filename/path (its token-0 CatID wins if
     recognized).
+  * **catid** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Optional CatID the sound declares (e.g. its iXML `CATID`); wins
+    over keywords when the table knows it, else it is ignored.
   * **table** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`UcsTable`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.UcsTable)]) – UCS table (defaults to `default_ucs_table()`).
   * **audioset_map** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`AudioSetUcsMap`](foley.index.taxonomy.model.html.md#foley.index.taxonomy.model.AudioSetUcsMap)]) – AudioSet->UCS map (defaults to
     [`default_audioset_ucs_map()`](foley.index.taxonomy.audioset.html.md#foley.index.taxonomy.audioset.default_audioset_ucs_map)).

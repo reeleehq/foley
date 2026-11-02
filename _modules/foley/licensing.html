@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=c4e26d2d"></script>
+    <script src="../../_static/documentation_options.js?v=609ae934"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.110" />
+  <meta name="docsearch:version" content="0.0.111" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1804,6 +1804,75 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">bound</span><span class="o">.</span><span class="n">gen_ai_preference</span> <span class="ow">and</span> <span class="n">bound</span><span class="o">.</span><span class="n">gen_ai_preference</span> <span class="o">!=</span> <span class="n">record</span><span class="o">.</span><span class="n">gen_ai_preference</span><span class="p">:</span>
         <span class="n">wider</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"gen_ai_preference"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">wider</span></div>
+
+
+
+<span class="c1">#: The fields that say a stored licence and a fresh one differ besides their rights</span>
+<span class="c1">#: (:func:`wider_rights`, either way); ``verified_at`` does not.</span>
+<span class="n">RESTAMP_FIELDS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"license_id"</span><span class="p">,</span>
+    <span class="s2">"rights_verified"</span><span class="p">,</span>
+    <span class="s2">"license_url"</span><span class="p">,</span>
+    <span class="s2">"license_name"</span><span class="p">,</span>
+    <span class="s2">"rights_holder"</span><span class="p">,</span>
+    <span class="s2">"attribution_text"</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="restamped_license">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.restamped_license">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">restamped_license</span><span class="p">(</span>
+    <span class="n">stored</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">fresh</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">widen</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[Optional[LicenseRecord], Optional[str]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What a stored sound's licence becomes when its source now states ``fresh``.</span>
+
+<span class="sd">    Returns ``(new_record, note)``: ``new_record`` is ``None`` when the stored licence</span>
+<span class="sd">    stays as it is, and ``note`` is ``None`` when there is nothing to say. Pure:</span>
+<span class="sd">    neither argument is changed. The stored lineage (edits, the licences bounding it)</span>
+<span class="sd">    is always kept (:func:`carry_lineage`).</span>
+
+<span class="sd">    * ``widen=True``: ``fresh`` replaces the stored licence. For a source that is the</span>
+<span class="sd">      authority on its own clips (a corpus's metadata, :func:`foley.bootstrap.bootstrap`).</span>
+<span class="sd">    * ``widen=False``: rights are never widened. ``fresh`` replaces an *unverified*</span>
+<span class="sd">      stored licence (nobody asserted it) or one it is no wider than</span>
+<span class="sd">      (:func:`wider_rights`). When ``fresh`` grants more than the stored licence and</span>
+<span class="sd">      no less, the stored one is kept with a note naming the widening to apply by</span>
+<span class="sd">      hand (:func:`foley.index.ingest.restamp_rights`). When each grants something</span>
+<span class="sd">      the other does not, the stored licence is bounded by ``fresh``</span>
+<span class="sd">      (:func:`narrow_to_source`): the sound may be used only where both allow.</span>
+
+<span class="sd">    &gt;&gt;&gt; from foley.base import LicenseRecord</span>
+<span class="sd">    &gt;&gt;&gt; cc0 = apply_license_flags(LicenseRecord(source="s", license_id="CC0-1.0", rights_verified=True))</span>
+<span class="sd">    &gt;&gt;&gt; nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0", rights_verified=True))</span>
+<span class="sd">    &gt;&gt;&gt; restamped_license(cc0, nc, widen=False)[0].license_id</span>
+<span class="sd">    'CC-BY-NC-4.0'</span>
+<span class="sd">    &gt;&gt;&gt; new, note = restamped_license(nc, cc0, widen=False)</span>
+<span class="sd">    &gt;&gt;&gt; new is None, note.startswith("not widened")</span>
+<span class="sd">    (True, True)</span>
+<span class="sd">    """</span>
+    <span class="n">candidate</span> <span class="o">=</span> <span class="n">carry_lineage</span><span class="p">(</span><span class="n">replace</span><span class="p">(</span><span class="n">fresh</span><span class="p">),</span> <span class="n">stored</span><span class="p">)</span>  <span class="c1"># what fresh means for this sound</span>
+    <span class="n">wider</span><span class="p">,</span> <span class="n">narrower</span> <span class="o">=</span> <span class="n">wider_rights</span><span class="p">(</span><span class="n">candidate</span><span class="p">,</span> <span class="n">stored</span><span class="p">),</span> <span class="n">wider_rights</span><span class="p">(</span><span class="n">stored</span><span class="p">,</span> <span class="n">candidate</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">wider</span> <span class="ow">or</span> <span class="n">narrower</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span>
+        <span class="nb">getattr</span><span class="p">(</span><span class="n">stored</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">fresh</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">RESTAMP_FIELDS</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="n">was</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">(</span><span class="n">stored</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">stored</span><span class="o">.</span><span class="n">license_url</span><span class="p">)))</span>
+    <span class="n">change</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"licence </span><span class="si">{</span><span class="n">stored</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">fresh</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2"> (was from </span><span class="si">{</span><span class="n">was</span><span class="si">}</span><span class="s2">)"</span> <span class="o">+</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"; no longer allows </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">narrower</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">narrower</span> <span class="k">else</span> <span class="s2">""</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">widen</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">stored</span><span class="o">.</span><span class="n">rights_verified</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">wider</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">candidate</span><span class="p">,</span> <span class="n">change</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">narrower</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"not widened: </span><span class="si">{</span><span class="n">fresh</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2"> would also allow </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">wider</span><span class="p">)</span><span class="si">}</span><span class="s2"> over "</span>
+            <span class="sa">f</span><span class="s2">"the stored </span><span class="si">{</span><span class="n">stored</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2">; to widen it, "</span>
+            <span class="sa">f</span><span class="s2">"foley.restamp_rights(ids=[...], license=</span><span class="si">{</span><span class="n">fresh</span><span class="o">.</span><span class="n">license_id</span><span class="si">!r}</span><span class="s2">, apply=True)"</span>
+        <span class="p">)</span>
+    <span class="n">bounded</span> <span class="o">=</span> <span class="n">narrow_to_source</span><span class="p">(</span><span class="n">carry_lineage</span><span class="p">(</span><span class="n">replace</span><span class="p">(</span><span class="n">stored</span><span class="p">),</span> <span class="n">stored</span><span class="p">),</span> <span class="n">fresh</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">bounded</span><span class="p">,</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"licences conflict (</span><span class="si">{</span><span class="n">stored</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="n">fresh</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2">): kept "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">stored</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2">, bounded by </span><span class="si">{</span><span class="n">fresh</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span></div>
 
 
 

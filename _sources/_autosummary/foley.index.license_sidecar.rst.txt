@@ -16,6 +16,7 @@ foley.index.license\_sidecar
 
    .. autosummary::
    
+      as_walked
       find_sidecar
       read_sidecar
       sidecar_license

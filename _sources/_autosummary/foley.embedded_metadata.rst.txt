@@ -30,6 +30,7 @@ foley.embedded\_metadata
       read_embedded_metadata
       read_metadata_chunks
       split_keywords
+      unique_words
    
    .. rubric:: Classes
 

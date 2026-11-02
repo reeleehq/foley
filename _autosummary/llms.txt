@@ -20,6 +20,7 @@
 - [foley.index.ingest](foley.index.ingest.html.md): The ingestion pipeline — turn any audio file into a searchable SoundRecord.
 - [foley.index.library](foley.index.library.html.md): The &#96;SoundLibrary&#96; façade — one searchable, license-aware sound library.
 - [foley.index.license_sidecar](foley.index.license_sidecar.html.md): A licence stated once per folder: the sidecar for owned sound packs (#229).
+- [foley.index.licensed_library](foley.index.licensed_library.html.md): A folder of owned sound packs, each ingested under its own licence (#230).
 - [foley.index.onnx_clap](foley.index.onnx_clap.html.md): CLAP on a small host: the same checkpoint through ONNX Runtime, no torch, no transformers.
 - [foley.index.protocols](foley.index.protocols.html.md): Structural contracts for the foley index (the retrieval boundary).
 - [foley.index.search](foley.index.search.html.md): Hybrid retrieval: reciprocal rank fusion over a vector list and a keyword list.

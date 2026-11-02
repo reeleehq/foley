@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=c4e26d2d"></script>
+    <script src="../../_static/documentation_options.js?v=609ae934"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.110" />
+  <meta name="docsearch:version" content="0.0.111" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -749,12 +749,18 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">.index.ingest</span><span class="w"> </span><span class="kn">import</span> <span class="n">IngestReport</span><span class="p">,</span> <span class="n">IngestResult</span><span class="p">,</span> <span class="n">content_id</span><span class="p">,</span> <span class="n">ingest_one</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.index.ingest</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CONSENT_NOTE</span><span class="p">,</span>
+    <span class="n">IngestReport</span><span class="p">,</span>
+    <span class="n">IngestResult</span><span class="p">,</span>
+    <span class="n">content_id</span><span class="p">,</span>
+    <span class="n">ingest_one</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.licensing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">DEFAULT_INTENDED_USE</span><span class="p">,</span>
-    <span class="n">carry_lineage</span><span class="p">,</span>
     <span class="n">derive_license_flags</span><span class="p">,</span>
     <span class="n">keep</span><span class="p">,</span>
+    <span class="n">restamped_license</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">CorpusAdapter</span><span class="p">,</span> <span class="n">bulk_license</span><span class="p">,</span> <span class="n">select_corpora</span>
 
@@ -858,9 +864,7 @@ window.runMermaid = runMermaid;</script>
             <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">accept_ai_restricted</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">lic</span><span class="o">.</span><span class="n">ai_training_ok</span><span class="p">:</span>
-            <span class="n">res</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="s2">"AI-training restriction acknowledged by operator (consent recorded)"</span>
-            <span class="p">)</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">CONSENT_NOTE</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">"skipped_dup"</span><span class="p">:</span>
             <span class="n">_repair_stored</span><span class="p">(</span><span class="n">library</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">lic</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
         <span class="n">report</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
@@ -879,16 +883,11 @@ window.runMermaid = runMermaid;</script>
     <span class="n">rec</span> <span class="o">=</span> <span class="n">library</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sound_id</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">library</span><span class="o">.</span><span class="n">meta</span><span class="p">,</span> <span class="s2">"get"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">rec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span>
-    <span class="n">old</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">license</span>
-    <span class="n">changes</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">old</span><span class="o">.</span><span class="n">license_id</span><span class="p">,</span> <span class="n">old</span><span class="o">.</span><span class="n">rights_verified</span><span class="p">,</span> <span class="n">old</span><span class="o">.</span><span class="n">license_url</span><span class="p">)</span> <span class="o">!=</span> <span class="p">(</span>
-        <span class="n">lic</span><span class="o">.</span><span class="n">license_id</span><span class="p">,</span>
-        <span class="n">lic</span><span class="o">.</span><span class="n">rights_verified</span><span class="p">,</span>
-        <span class="n">lic</span><span class="o">.</span><span class="n">license_url</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="n">carry_lineage</span><span class="p">(</span><span class="n">lic</span><span class="p">,</span> <span class="n">old</span><span class="p">)</span>  <span class="c1"># keeps the edits and the licences bounding them</span>
-        <span class="n">rec</span><span class="o">.</span><span class="n">license</span> <span class="o">=</span> <span class="n">lic</span>
-        <span class="n">changes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"licence </span><span class="si">{</span><span class="n">old</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">lic</span><span class="o">.</span><span class="n">license_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="c1"># the corpus is the authority (widen=True); the stored lineage (edits) is kept</span>
+    <span class="n">new</span><span class="p">,</span> <span class="n">change</span> <span class="o">=</span> <span class="n">restamped_license</span><span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">license</span><span class="p">,</span> <span class="n">lic</span><span class="p">)</span>
+    <span class="n">changes</span> <span class="o">=</span> <span class="p">[</span><span class="n">change</span><span class="p">]</span> <span class="k">if</span> <span class="n">change</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">new</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rec</span><span class="o">.</span><span class="n">license</span> <span class="o">=</span> <span class="n">new</span>
     <span class="n">withheld</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">meta</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"withheld_caption"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">withheld</span> <span class="ow">and</span> <span class="n">rec</span><span class="o">.</span><span class="n">caption</span> <span class="o">==</span> <span class="n">withheld</span><span class="p">:</span>
         <span class="n">rec</span><span class="o">.</span><span class="n">caption</span> <span class="o">=</span> <span class="kc">None</span>

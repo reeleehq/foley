@@ -13,6 +13,7 @@ foley.index
       default_zeroshot_tagger
       ingest_one
       ingest_folder
+      ingest_licensed_folder
       sidecar_license
       read_embedded_metadata
       find_sidecar
@@ -54,6 +55,7 @@ foley.index
 
    .. autosummary::
    
+      IngestSkip
       SidecarError
    
 .. rubric:: Modules
@@ -68,6 +70,7 @@ foley.index
    ingest
    library
    license_sidecar
+   licensed_library
    onnx_clap
    protocols
    search

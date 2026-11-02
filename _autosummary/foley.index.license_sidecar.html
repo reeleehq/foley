@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=c4e26d2d"></script>
+    <script src="../_static/documentation_options.js?v=609ae934"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -53,12 +53,12 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="foley.index.onnx_clap" href="foley.index.onnx_clap.html" />
+    <link rel="next" title="foley.index.licensed_library" href="foley.index.licensed_library.html" />
     <link rel="prev" title="foley.index.library" href="foley.index.library.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.110" />
+  <meta name="docsearch:version" content="0.0.111" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -329,6 +329,7 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.index.ingest.html">foley.index.ingest</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.library.html">foley.index.library</a></li>
 <li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">foley.index.license_sidecar</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.licensed_library.html">foley.index.licensed_library</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.onnx_clap.html">foley.index.onnx_clap</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.protocols.html">foley.index.protocols</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.index.search.html">foley.index.search</a></li>
@@ -535,13 +536,16 @@ is guessed.</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.license_sidecar.find_sidecar" title="foley.index.license_sidecar.find_sidecar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_sidecar</span></code></a>(path, *[, root])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.license_sidecar.as_walked" title="foley.index.license_sidecar.as_walked"><code class="xref py py-obj docutils literal notranslate"><span class="pre">as_walked</span></code></a>(path)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">path</span></code> as a library tree is walked: <code class="docutils literal notranslate"><span class="pre">~</span></code> expanded, made absolute and normalised with <code class="docutils literal notranslate"><span class="pre">os.path.abspath</span></code>, symlinks NOT followed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.license_sidecar.find_sidecar" title="foley.index.license_sidecar.find_sidecar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_sidecar</span></code></a>(path, *[, root])</p></td>
 <td><p>The nearest sidecar for <code class="docutils literal notranslate"><span class="pre">path</span></code> (a file or folder), searching up to <code class="docutils literal notranslate"><span class="pre">root</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.license_sidecar.read_sidecar" title="foley.index.license_sidecar.read_sidecar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_sidecar</span></code></a>(sidecar)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.license_sidecar.read_sidecar" title="foley.index.license_sidecar.read_sidecar"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_sidecar</span></code></a>(sidecar)</p></td>
 <td><p>A sidecar's fields, checked against <a class="reference internal" href="#foley.index.license_sidecar.SIDECAR_FIELDS" title="foley.index.license_sidecar.SIDECAR_FIELDS"><code class="xref py py-data docutils literal notranslate"><span class="pre">SIDECAR_FIELDS</span></code></a>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.index.license_sidecar.sidecar_license" title="foley.index.license_sidecar.sidecar_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sidecar_license</span></code></a>(path, *[, root])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.index.license_sidecar.sidecar_license" title="foley.index.license_sidecar.sidecar_license"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sidecar_license</span></code></a>(path, *[, root])</p></td>
 <td><p>The <a class="reference internal" href="foley.base.html#foley.base.LicenseRecord" title="foley.base.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a> the nearest sidecar asserts for <code class="docutils literal notranslate"><span class="pre">path</span></code>.</p></td>
 </tr>
 </tbody>
@@ -579,6 +583,20 @@ is guessed.</p>
 <span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.index.license_sidecar.</span></span><span class="sig-name descname"><span class="pre">SidecarError</span></span><a class="reference internal" href="../_modules/foley/index/license_sidecar.html#SidecarError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.license_sidecar.SidecarError" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></a></p>
 <p>A missing, unreadable or invalid licence sidecar: the file is not ingested.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.index.license_sidecar.as_walked">
+<span class="sig-prename descclassname"><span class="pre">foley.index.license_sidecar.</span></span><span class="sig-name descname"><span class="pre">as_walked</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/license_sidecar.html#as_walked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.index.license_sidecar.as_walked" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">path</span></code> as a library tree is walked: <code class="docutils literal notranslate"><span class="pre">~</span></code> expanded, made absolute and normalised
+with <code class="docutils literal notranslate"><span class="pre">os.path.abspath</span></code>, symlinks NOT followed. Use it for a root and the files
+under it alike, so they compare (<code class="docutils literal notranslate"><span class="pre">resolve()</span></code> would turn macOS <code class="docutils literal notranslate"><span class="pre">/var</span></code> into
+<code class="docutils literal notranslate"><span class="pre">/private/var</span></code> on one side only).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a></span></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -655,11 +673,11 @@ licence’s own name (<code class="docutils literal notranslate"><span class="pr
       </div>
     </a>
     <a class="right-next"
-       href="foley.index.onnx_clap.html"
+       href="foley.index.licensed_library.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">foley.index.onnx_clap</p>
+        <p class="prev-next-title">foley.index.licensed_library</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -686,6 +704,7 @@ licence’s own name (<code class="docutils literal notranslate"><span class="pr
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.license_sidecar.SIDECAR_NAMES"><code class="docutils literal notranslate"><span class="pre">SIDECAR_NAMES</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.license_sidecar.SIDECAR_SOURCE"><code class="docutils literal notranslate"><span class="pre">SIDECAR_SOURCE</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.license_sidecar.SidecarError"><code class="docutils literal notranslate"><span class="pre">SidecarError</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.license_sidecar.as_walked"><code class="docutils literal notranslate"><span class="pre">as_walked()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.license_sidecar.find_sidecar"><code class="docutils literal notranslate"><span class="pre">find_sidecar()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.license_sidecar.read_sidecar"><code class="docutils literal notranslate"><span class="pre">read_sidecar()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.index.license_sidecar.sidecar_license"><code class="docutils literal notranslate"><span class="pre">sidecar_license()</span></code></a></li>
