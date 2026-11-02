@@ -23,6 +23,7 @@ The façade (v1 — Epic #13 complete; the surface below is live — see
     foley.generate("a single wooden door creak", backend="stable_audio")
     foley.edit(sound_id, "extend", extend_after_s=2)  # audio-to-audio | inpaint | extend
     foley.ingest("~/my_sounds/")
+    foley.ingest_library("~/SFX/", accept_ai_restricted=True)  # owned packs + sidecars
 
 The design is grounded in the research reports under ``misc/docs/research/``.
 
@@ -413,6 +414,7 @@ __all__ = [
     "default_tagger",
     "default_zeroshot_tagger",
     "ingest",
+    "ingest_library",
     "restamp_rights",
     "ingest_one",
     "ingest_folder",
@@ -1223,6 +1225,46 @@ def ingest(
     return ingest_folder(
         path,
         library=library if library is not None else default_library(),
+        recursive=recursive,
+        do_qc=qc,
+        **kw,
+    )
+
+
+def ingest_library(
+    path,
+    *,
+    library=None,
+    accept_ai_restricted: bool = False,
+    qc: bool = True,
+    recursive: bool = True,
+    **kw,
+):
+    """Ingest a folder of owned sound packs, each file under its pack's licence sidecar (#230).
+
+    Like :func:`ingest`, but the licence of each file is the ``foley-license.toml`` of
+    its pack (a file no sidecar covers is skipped and reported, never guessed), and
+    its caption, tags and UCS CatID come from its embedded BWF/iXML metadata and its
+    UCS filename. See :func:`foley.index.licensed_library.ingest_licensed_folder`.
+
+    Args:
+        path: The library folder (walked), or a single file of it.
+        library: Target library (default: the process-wide default library).
+        accept_ai_restricted: Consent to embed sounds whose licence forbids AI
+            training (``owned-pack`` does), so they are searchable for human-facing
+            work; their licence still refuses training. ``False`` (default) leaves
+            them out (``rights_blocked``), fail-closed like :func:`bootstrap`.
+        qc: Run the Tier-0 QC gate (quarantines failing clips).
+        recursive: Recurse into sub-folders.
+        **kw: Forwarded to ``ingest_licensed_folder`` (``root``, ``min_status``,
+            taggers, ...).
+    """
+    from .index.licensed_library import ingest_licensed_folder
+
+    return ingest_licensed_folder(
+        path,
+        library=library if library is not None else default_library(),
+        accept_ai_restricted=accept_ai_restricted,
         recursive=recursive,
         do_qc=qc,
         **kw,

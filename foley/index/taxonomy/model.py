@@ -117,7 +117,7 @@ class CatIdResolution:
     catid: Optional[str] = None
     category: Optional[str] = None
     subcategory: Optional[str] = None
-    source: Optional[str] = None  # 'filename' | 'keyword' | 'audioset' | None
+    source: Optional[str] = None  # 'filename' | 'metadata' | 'keyword' | 'audioset' | None
     confidence: float = 0.0  # coarse per-stage band, 0..1
     matched_terms: list[str] = field(default_factory=list)
 

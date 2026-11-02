@@ -43,7 +43,7 @@ from collections.abc import Mapping
 from typing import Optional
 
 from ..base import Candidate, CandidateOrigin
-from ..index.ingest import IngestReport, IngestResult, ingest_one
+from ..index.ingest import CONSENT_NOTE, IngestReport, IngestResult, ingest_one
 from ..qc import DEFAULT_MIN_STATUS
 from ._dispatch import plan_generation, record_generation_outcome, run_generation
 from ..runtime import EgressBlocked
@@ -320,7 +320,7 @@ def backend_license_refusal(
 
 #: The consent note stamped on a stored generation whose license forbids AI
 #: training (mirrors :func:`foley.bootstrap.bootstrap`'s Ring-2 acknowledgement).
-_CONSENT_NOTE = "AI-training restriction acknowledged by operator (consent recorded)"
+_CONSENT_NOTE = CONSENT_NOTE  # the SSOT is foley.index.ingest
 
 
 class GenerationError(RuntimeError):

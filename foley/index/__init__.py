@@ -33,11 +33,13 @@ from .license_sidecar import SidecarError, find_sidecar, sidecar_license
 from .ingest import (
     IngestReport,
     IngestResult,
+    IngestSkip,
     ingest_folder,
     ingest_one,
     resolve_ingest_license,
     restamp_rights,
 )
+from .licensed_library import ingest_licensed_folder
 from .library import SoundLibrary, default_library
 from .protocols import Captioner, Embedder, KeywordIndex, Tagger, VectorIndex
 from .search import (
@@ -75,6 +77,8 @@ __all__ = [
     # ingestion
     "ingest_one",
     "ingest_folder",
+    "ingest_licensed_folder",
+    "IngestSkip",
     "sidecar_license",
     "read_embedded_metadata",
     "find_sidecar",

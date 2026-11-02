@@ -32,7 +32,13 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from .index.ingest import IngestReport, IngestResult, content_id, ingest_one
+from .index.ingest import (
+    CONSENT_NOTE,
+    IngestReport,
+    IngestResult,
+    content_id,
+    ingest_one,
+)
 from .licensing import (
     DEFAULT_INTENDED_USE,
     carry_lineage,
@@ -141,9 +147,7 @@ def _ingest_corpus(
             **kw,
         )
         if accept_ai_restricted and not lic.ai_training_ok:
-            res.notes.append(
-                "AI-training restriction acknowledged by operator (consent recorded)"
-            )
+            res.notes.append(CONSENT_NOTE)
         if res.status == "skipped_dup":
             _repair_stored(library, res.id, lic, spec, res)
         report.record(res)
