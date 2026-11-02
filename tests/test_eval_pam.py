@@ -84,6 +84,8 @@ def test_options_reach_the_driver():
     assert run.spec["device"] == "mps" and run.kw["env"]["HF_HOME"] == "/hf"
     with pytest.raises(ValueError, match="at least two prompts"):
         Pam(prompts=("only one",))
+    with pytest.raises(ValueError, match="batch_size must be at least 1"):
+        Pam(batch_size=0)
 
 
 @pytest.mark.parametrize(
@@ -132,7 +134,7 @@ def _driver():
 def test_driver_windows_like_pam():
     torch = pytest.importorskip("torch")
     driver = _driver()
-    assert "pam" in driver.TASKS
+    assert set(driver.TASKS) == {"fidelity", "aesthetics", "pam"}
     windows = driver._pam_windows
     short = windows(torch.arange(3.0), 7)  # tiled to one window
     assert short.tolist() == [[0, 1, 2, 0, 1, 2, 0]]
@@ -140,6 +142,58 @@ def test_driver_windows_like_pam():
     assert exact.shape == (2, 7)
     longer = windows(torch.arange(16.0), 7)  # whole windows + the last 7 samples
     assert longer.shape == (3, 7) and longer[-1].tolist() == list(range(9, 16))
+
+
+def _fake_msclap(monkeypatch, keys):
+    """Fake ``transformers`` and ``msclap`` whose CLAP model has the parameters ``keys``;
+    returns the list of the ``AutoModel`` each wrapper saw while it was built."""
+    import types
+
+    seen = []
+    transformers = types.ModuleType("transformers")
+    transformers.AutoConfig = transformers.AutoModel = object
+    clap_module = types.ModuleType("msclap.models.clap")
+    clap_module.AutoModel = "real AutoModel"
+
+    class CLAPWrapper:
+        model_repo, model_name = "microsoft/msclap", {"2023": "CLAP_weights_2023.pth"}
+
+        def __init__(self, model_fp, version):
+            seen.append(clap_module.AutoModel)
+            self.clap = types.SimpleNamespace(state_dict=lambda: dict.fromkeys(keys))
+
+    wrapper_module = types.ModuleType("msclap.CLAPWrapper")
+    wrapper_module.CLAPWrapper = CLAPWrapper
+    modules = {
+        "transformers": transformers,
+        "msclap": types.ModuleType("msclap"),
+        "msclap.CLAPWrapper": wrapper_module,
+        "msclap.models": types.ModuleType("msclap.models"),
+        "msclap.models.clap": clap_module,
+    }
+    for name, module in modules.items():
+        monkeypatch.setitem(sys.modules, name, module)
+    return seen, clap_module
+
+
+def test_driver_refuses_a_checkpoint_that_leaves_a_gpt2_weight_unset(
+    monkeypatch, tmp_path
+):
+    torch = pytest.importorskip("torch")
+    pytest.importorskip("huggingface_hub")
+    keys = ["audio_encoder.base.w", "caption_encoder.base.wte.weight"]
+    seen, clap_module = _fake_msclap(monkeypatch, keys)
+    full, partial = tmp_path / "full.pth", tmp_path / "partial.pth"
+    torch.save({"model": {k: torch.zeros(1) for k in keys}}, full)
+    torch.save({"model": {keys[0]: torch.zeros(1)}}, partial)
+    load_clap = _driver()._load_clap
+    wrapper, checkpoint = load_clap(str(full))
+    assert checkpoint == str(full)
+    with pytest.raises(RuntimeError, match="leaves 1 parameters unset.*wte"):
+        load_clap(str(partial))
+    # GPT-2 was built from its config during each load, and msclap's AutoModel restored
+    assert all(hasattr(m, "from_pretrained") for m in seen) and len(seen) == 2
+    assert clap_module.AutoModel == "real AutoModel"
 
 
 @pytest.mark.skipif(

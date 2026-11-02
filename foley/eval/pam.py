@@ -116,6 +116,8 @@ class Pam(ExternalToolkit):
         super().__init__(**kwargs)
         if len(prompts) < 2:
             raise ValueError("PAM needs at least two prompts, the clean one first")
+        if batch_size < 1:
+            raise ValueError(f"batch_size must be at least 1, not {batch_size}")
         self.checkpoint, self.prompts = checkpoint, tuple(prompts)
         self.batch_size, self.device = batch_size, device
 

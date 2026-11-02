@@ -238,7 +238,11 @@ def _pam_windows(audio, size: int):
 
 
 def _pam(spec: dict) -> dict:
-    """PAM's score and window scores for each clip of ``spec['clips']``, in order."""
+    """PAM's score and window scores for each clip of ``spec['clips']``, in order.
+
+    ``spec`` carries every setting (``checkpoint``, ``prompts``, ``batch_size``,
+    ``device``); their defaults are :class:`foley.eval.pam.Pam`'s, not this driver's.
+    """
     import importlib.metadata
     from pathlib import Path
 
@@ -246,8 +250,8 @@ def _pam(spec: dict) -> dict:
     import torch.nn.functional as F
     from torchaudio.transforms import Resample
 
-    wrapper, checkpoint = _load_clap(spec.get("checkpoint"))
-    device = spec.get("device", "cpu")
+    wrapper, checkpoint = _load_clap(spec["checkpoint"])
+    device = spec["device"]
     clap = wrapper.clap.to(device)
     rate, seconds = int(wrapper.args.sampling_rate), int(wrapper.args.duration)
     prompts = list(spec["prompts"])
@@ -263,7 +267,7 @@ def _pam(spec: dict) -> dict:
         sim = clap.logit_scale.exp() * audio @ text.T
         return F.softmax(sim, dim=1)[:, 0].cpu().tolist()
 
-    size, rows = int(spec.get("batch_size", 1)), []
+    size, rows = int(spec["batch_size"]), []
     for path in spec["clips"]:
         wav, sr = _read_pcm16(path)
         # PAM's resampler: a 4e-6 difference in kernel moves a pure tone's score by 2e-3
