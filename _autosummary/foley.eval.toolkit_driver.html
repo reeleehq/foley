@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=3a8547cf"></script>
+    <script src="../_static/documentation_options.js?v=f10cd702"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.133" />
+  <meta name="docsearch:version" content="0.0.134" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -384,6 +384,7 @@
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fit.html">foley.eval.fit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.golden.html">foley.eval.golden</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.kadtk.html">foley.eval.kadtk</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.pam.html">foley.eval.pam</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.panel_page.html">foley.eval.panel_page</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.prompt_match.html">foley.eval.prompt_match</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.reliability.html">foley.eval.reliability</a></li>
@@ -512,10 +513,11 @@
 <p>The script <a class="reference internal" href="foley.eval.external_toolkit.html#foley.eval.external_toolkit.ExternalToolkit" title="foley.eval.external_toolkit.ExternalToolkit"><code class="xref py py-class docutils literal notranslate"><span class="pre">foley.eval.external_toolkit.ExternalToolkit</span></code></a> runs inside a toolkit’s interpreter.</p>
 <p>It is not imported by foley: foley runs it as <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-I</span> <span class="pre">toolkit_driver.py</span> <span class="pre">SPEC_JSON</span></code>
 with the interpreter of a virtualenv that has the toolkit (<code class="docutils literal notranslate"><span class="pre">fadtk</span></code>, <code class="docutils literal notranslate"><span class="pre">kadtk</span></code> or
-<code class="docutils literal notranslate"><span class="pre">audiobox_aesthetics</span></code>) installed (none can share foley’s environment). It imports
+<code class="docutils literal notranslate"><span class="pre">audiobox_aesthetics</span></code>, <code class="docutils literal notranslate"><span class="pre">msclap</span></code>) installed (none can share foley’s environment). It imports
 only the standard library and the toolkit, and only inside the functions, so foley’s
 test collection and linters can load this file without them. <code class="docutils literal notranslate"><span class="pre">spec[&quot;task&quot;]</span></code> picks
-what it computes (<a class="reference internal" href="#foley.eval.toolkit_driver.TASKS" title="foley.eval.toolkit_driver.TASKS"><code class="xref py py-data docutils literal notranslate"><span class="pre">TASKS</span></code></a>): <code class="docutils literal notranslate"><span class="pre">fidelity</span></code> (the default) or <code class="docutils literal notranslate"><span class="pre">aesthetics</span></code>.</p>
+what it computes (<a class="reference internal" href="#foley.eval.toolkit_driver.TASKS" title="foley.eval.toolkit_driver.TASKS"><code class="xref py py-data docutils literal notranslate"><span class="pre">TASKS</span></code></a>): <code class="docutils literal notranslate"><span class="pre">fidelity</span></code> (the default), <code class="docutils literal notranslate"><span class="pre">aesthetics</span></code> or
+<code class="docutils literal notranslate"><span class="pre">pam</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">fidelity</span></code> builds ONE embedding model from <code class="docutils literal notranslate"><span class="pre">spec[&quot;loader&quot;]</span></code> (a class name in
 <code class="docutils literal notranslate"><span class="pre">&lt;toolkit&gt;.model_loader</span></code>) and <code class="docutils literal notranslate"><span class="pre">spec[&quot;args&quot;]</span></code>. The toolkits’ own command lines
 (<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">fadtk</span></code>, <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">kadtk</span></code>) instantiate every model they know first,
@@ -532,6 +534,19 @@ or, when that is <code class="docutils literal notranslate"><span class="pre">No
 library’s <code class="docutils literal notranslate"><span class="pre">wave</span></code> (foley writes them as 16-bit PCM) rather than <code class="docutils literal notranslate"><span class="pre">torchaudio.load</span></code>,
 which needs <code class="docutils literal notranslate"><span class="pre">torchcodec</span></code> from torchaudio 2.9 on. It writes one <code class="docutils literal notranslate"><span class="pre">{CE,</span> <span class="pre">CU,</span> <span class="pre">PC,</span> <span class="pre">PQ}</span></code>
 row per clip, the package version and the model as JSON to <code class="docutils literal notranslate"><span class="pre">spec[&quot;out&quot;]</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">pam</span></code> scores each WAV of <code class="docutils literal notranslate"><span class="pre">spec[&quot;clips&quot;]</span></code> with PAM (Deshmukh et al., Interspeech
+2024): the softmax, over <code class="docutils literal notranslate"><span class="pre">spec[&quot;prompts&quot;]</span></code>, of MS-CLAP 2023’s audio-text
+similarities, the probability of the first prompt. It reproduces the reference
+(github.com/soham97/PAM, <code class="docutils literal notranslate"><span class="pre">PAM/PAM.py</span></code> and <code class="docutils literal notranslate"><span class="pre">dataset.py</span></code>) on the <code class="docutils literal notranslate"><span class="pre">msclap</span></code> package,
+whose 2023 model and config are the ones PAM vendors: each clip is resampled with
+torchaudio’s <code class="docutils literal notranslate"><span class="pre">Resample</span></code> to the model’s rate, tiled to one window if shorter, else cut
+into whole windows plus the last window; each window is scored and a clip’s score is
+their mean. One deviation, which does not change the numbers: msclap builds its GPT-2
+text encoder with <code class="docutils literal notranslate"><span class="pre">AutoModel.from_pretrained('gpt2')</span></code> (548 MB of weights) and then
+overwrites every one of them from the CLAP checkpoint (<code class="docutils literal notranslate"><span class="pre">caption_encoder.base.*</span></code>);
+here GPT-2 is built from its config, and the load is checked to leave no parameter
+unset. It writes one <code class="docutils literal notranslate"><span class="pre">{score,</span> <span class="pre">segments}</span></code> row per clip, the msclap version, the model
+and the prompts as JSON to <code class="docutils literal notranslate"><span class="pre">spec[&quot;out&quot;]</span></code>.</p>
 <p class="rubric">Module Attributes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
@@ -555,7 +570,7 @@ row per clip, the package version and the model as JSON to <code class="docutils
 </div>
 <dl class="py data">
 <dt class="sig sig-object py" id="foley.eval.toolkit_driver.TASKS">
-<span class="sig-prename descclassname"><span class="pre">foley.eval.toolkit_driver.</span></span><span class="sig-name descname"><span class="pre">TASKS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'aesthetics':</span> <span class="pre">&lt;function</span> <span class="pre">_aesthetics&gt;,</span> <span class="pre">'fidelity':</span> <span class="pre">&lt;function</span> <span class="pre">_fidelity&gt;}</span></span><a class="headerlink" href="#foley.eval.toolkit_driver.TASKS" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">foley.eval.toolkit_driver.</span></span><span class="sig-name descname"><span class="pre">TASKS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'aesthetics':</span> <span class="pre">&lt;function</span> <span class="pre">_aesthetics&gt;,</span> <span class="pre">'fidelity':</span> <span class="pre">&lt;function</span> <span class="pre">_fidelity&gt;,</span> <span class="pre">'pam':</span> <span class="pre">&lt;function</span> <span class="pre">_pam&gt;}</span></span><a class="headerlink" href="#foley.eval.toolkit_driver.TASKS" title="Link to this definition">#</a></dt>
 <dd><p><code class="docutils literal notranslate"><span class="pre">spec[&quot;task&quot;]</span></code> → the function of the spec computing the answer.</p>
 </dd></dl>
 

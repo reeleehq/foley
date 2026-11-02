@@ -67,6 +67,7 @@
 - [foley.eval.fit](foley.eval.fit.html.md): Tier-2 fit evaluation — “does the accepted clip actually match the intent?” (report 08 §2/§5).
 - [foley.eval.golden](foley.eval.golden.html.md): The frozen golden set + the deterministic Ring-0 retrieval harness.
 - [foley.eval.kadtk](foley.eval.kadtk.html.md): Reference KAD from &#96;kadtk&#96;, run in its own interpreter (#262).
+- [foley.eval.pam](foley.eval.pam.html.md): Per-clip, reference-free audio quality from PAM, run in an &#96;msclap&#96; interpreter (#262).
 - [foley.eval.panel_page](foley.eval.panel_page.html.md): A self-contained listening page for a human panel (#49): open it in a browser, rate, download.
 - [foley.eval.prompt_match](foley.eval.prompt_match.html.md): Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).
 - [foley.eval.reliability](foley.eval.reliability.html.md): Inter-rater reliability — Krippendorff’s α + the judge-vs-human calibration guardrail.

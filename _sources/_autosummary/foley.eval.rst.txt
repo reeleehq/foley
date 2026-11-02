@@ -57,6 +57,8 @@ foley.eval
       AudioboxAesthetics
       FadtkFidelity
       KadtkFidelity
+      Pam
+      PamScore
       FidelityResult
       Passage
       PassageTaste
@@ -81,6 +83,7 @@ foley.eval
    fit
    golden
    kadtk
+   pam
    panel_page
    prompt_match
    reliability

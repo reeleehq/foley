@@ -59,22 +59,24 @@ default). All numpy imports are function-local so `import foley` stays dol-only.
 
 ### Classes
 
-| [`RetrievalReport`](#foley.eval.RetrievalReport)([per_query, mean, ranks, k])      | Per-query + mean Tier-1 metrics over a golden set (JSON-friendly).                             |
-|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| [`GoldenItem`](#foley.eval.GoldenItem)(id, context, expected_events, ...)     | One frozen `(context → expected sounds)` judgment (report 08 §1.3).                            |
-| [`HashingBowEmbedder`](#foley.eval.HashingBowEmbedder)(\*[, dim])                     | Deterministic hashing bag-of-words text embedder (L2-normalized).                              |
-| [`FitReport`](#foley.eval.FitReport)([per_item, fit_precision, ...])         | Tier-2 fit metrics over a stratified golden sample (JSON-friendly, mirrors `RetrievalReport`). |
-| [`AlphaResult`](#foley.eval.AlphaResult)(alpha, level, n_units, n_raters, ...) | A judge-vs-human calibration record (surfaced as `FitReport.calibration`).                     |
-| [`FidelityStamp`](#foley.eval.FidelityStamp)(embedding, toolkit, version, ...)   | Mandatory provenance for a FAD/KAD score — it is meaningless without it.                       |
-| [`AestheticsScore`](#foley.eval.AestheticsScore)(axes, model, version[, toolkit])  | One clip's Audiobox Aesthetics scores, stamped with the model and toolkit version.             |
-| [`AudioboxAesthetics`](#foley.eval.AudioboxAesthetics)(\*[, checkpoint, ...])         | Per-clip Audiobox Aesthetics scores computed in a separate interpreter.                        |
-| [`FadtkFidelity`](#foley.eval.FadtkFidelity)(\*[, model, models, workers])       | Set-level FAD computed by `fadtk` in a separate interpreter.                                   |
-| [`KadtkFidelity`](#foley.eval.KadtkFidelity)(\*[, bandwidth, device, ...])       | Set-level KAD computed by `kadtk` in a separate interpreter.                                   |
-| [`FidelityResult`](#foley.eval.FidelityResult)(metric, value, stamp[, params])    | A stamped set-level fidelity score (attached to `FitReport.fidelity`).                         |
-| [`Passage`](#foley.eval.Passage)(id, segments[, audio])                    | One narration passage: its segments (what `foley.score` takes) and optional audio.             |
-| [`PassageTaste`](#foley.eval.PassageTaste)(passage_id[, restraint, ...])        | The four measurements for one passage (JSON-safe via `to_dict()`).                             |
-| [`TasteReport`](#foley.eval.TasteReport)(designer, passages[, thresholds])     | The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.         |
-| [`TasteThresholds`](#foley.eval.TasteThresholds)([sounds_per_sentence, ...])       | The eval's thresholds in one place (defaults: the module constants).                           |
+| [`RetrievalReport`](#foley.eval.RetrievalReport)([per_query, mean, ranks, k])       | Per-query + mean Tier-1 metrics over a golden set (JSON-friendly).                             |
+|-----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| [`GoldenItem`](#foley.eval.GoldenItem)(id, context, expected_events, ...)      | One frozen `(context → expected sounds)` judgment (report 08 §1.3).                            |
+| [`HashingBowEmbedder`](#foley.eval.HashingBowEmbedder)(\*[, dim])                      | Deterministic hashing bag-of-words text embedder (L2-normalized).                              |
+| [`FitReport`](#foley.eval.FitReport)([per_item, fit_precision, ...])          | Tier-2 fit metrics over a stratified golden sample (JSON-friendly, mirrors `RetrievalReport`). |
+| [`AlphaResult`](#foley.eval.AlphaResult)(alpha, level, n_units, n_raters, ...)  | A judge-vs-human calibration record (surfaced as `FitReport.calibration`).                     |
+| [`FidelityStamp`](#foley.eval.FidelityStamp)(embedding, toolkit, version, ...)    | Mandatory provenance for a FAD/KAD score — it is meaningless without it.                       |
+| [`AestheticsScore`](#foley.eval.AestheticsScore)(axes, model, version[, toolkit])   | One clip's Audiobox Aesthetics scores, stamped with the model and toolkit version.             |
+| [`AudioboxAesthetics`](#foley.eval.AudioboxAesthetics)(\*[, checkpoint, ...])          | Per-clip Audiobox Aesthetics scores computed in a separate interpreter.                        |
+| [`FadtkFidelity`](#foley.eval.FadtkFidelity)(\*[, model, models, workers])        | Set-level FAD computed by `fadtk` in a separate interpreter.                                   |
+| [`KadtkFidelity`](#foley.eval.KadtkFidelity)(\*[, bandwidth, device, ...])        | Set-level KAD computed by `kadtk` in a separate interpreter.                                   |
+| [`Pam`](#foley.eval.Pam)(\*[, checkpoint, prompts, batch_size, device]) | Per-clip PAM scores computed by `msclap` in a separate interpreter.                            |
+| [`PamScore`](#foley.eval.PamScore)(score, segments, model, version[, ...])   | One clip's PAM score, its per-window scores, and the model and toolkit version.                |
+| [`FidelityResult`](#foley.eval.FidelityResult)(metric, value, stamp[, params])     | A stamped set-level fidelity score (attached to `FitReport.fidelity`).                         |
+| [`Passage`](#foley.eval.Passage)(id, segments[, audio])                     | One narration passage: its segments (what `foley.score` takes) and optional audio.             |
+| [`PassageTaste`](#foley.eval.PassageTaste)(passage_id[, restraint, ...])         | The four measurements for one passage (JSON-safe via `to_dict()`).                             |
+| [`TasteReport`](#foley.eval.TasteReport)(designer, passages[, thresholds])      | The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.         |
+| [`TasteThresholds`](#foley.eval.TasteThresholds)([sounds_per_sentence, ...])        | The eval's thresholds in one place (defaults: the module constants).                           |
 
 ### *class* foley.eval.AestheticsScore(axes, model, version, toolkit='audiobox_aesthetics')
 
@@ -327,6 +329,54 @@ Two frames: the unbiased MMD² averages over pairs of distinct frames.
 #### options()
 
 kadtk’s bandwidth and device.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### *class* foley.eval.Pam(, checkpoint=None, prompts=('the sound is clear and clean.', 'the sound is noisy and with artifacts.'), batch_size=10, device='cpu', \*\*kwargs)
+
+Bases: [`ExternalToolkit`](foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit)
+
+Per-clip PAM scores computed by `msclap` in a separate interpreter.
+
+:param those of [`ExternalToolkit`](foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit) (`python`:
+:param :
+:param default `$FOLEY_PAM_PYTHON`; `env`:
+:param e.g. `{"HF_HOME": ...}` to choose where:
+:param the weights go; `timeout`; `runner`):
+:param plus:
+:type checkpoint: [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+:param checkpoint: A local `CLAP_weights_2023.pth` (default: downloaded once into the
+
+> interpreter’s `HF_HOME`).
+* **Parameters:**
+  * **prompts** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The prompts, the clean one first (default `PAM_PROMPTS`; others
+    give a PAM-style score, not PAM’s).
+  * **batch_size** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Windows a forward pass.
+  * **device** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – Where the model runs (`'cpu'`, `'cuda'`, `'mps'`).
+
+#### check_clip(clip, , sr, name)
+
+Refuse an empty clip, or one with a NaN or infinite sample.
+
+A short clip is scored: PAM tiles it to one 7 s window.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### isolation_reason *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'it pins numpy<2 and brings its own torch'*
+
+Why the toolkit cannot live in foley’s environment (said when no interpreter).
+
+### *class* foley.eval.PamScore(score, segments, model, version, toolkit='msclap')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One clip’s PAM score, its per-window scores, and the model and toolkit version.
+
+#### to_dict()
+
+The score, the window scores and the stamp as one JSON-safe dict.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -887,6 +937,7 @@ once its numbers are stable, which records that judge in `run`.
 | [`fit`](foley.eval.fit.html.md#module-foley.eval.fit)                             | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).                                                                                           |
 | [`golden`](foley.eval.golden.html.md#module-foley.eval.golden)                       | The frozen golden set + the deterministic Ring-0 retrieval harness.                                                                                                                      |
 | [`kadtk`](foley.eval.kadtk.html.md#module-foley.eval.kadtk)                         | Reference KAD from `kadtk`, run in its own interpreter (#262).                                                                                                                           |
+| [`pam`](foley.eval.pam.html.md#module-foley.eval.pam)                             | Per-clip, reference-free audio quality from PAM, run in an `msclap` interpreter (#262).                                                                                                  |
 | [`panel_page`](foley.eval.panel_page.html.md#module-foley.eval.panel_page)               | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.                                                                                           |
 | [`prompt_match`](foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)           | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).                                                                                                  |
 | [`reliability`](foley.eval.reliability.html.md#module-foley.eval.reliability)             | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                                                                                                   |

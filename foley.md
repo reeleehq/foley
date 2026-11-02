@@ -1,4 +1,4 @@
-> built 2026-11-02 08:45 UTC from cbe8e2a (main) · foley 0.0.133. Details: build_info.json
+> built 2026-11-02 09:06 UTC from cd06f6b (main) · foley 0.0.134. Details: build_info.json
 
 # index.html.md
 
@@ -5571,22 +5571,24 @@ default). All numpy imports are function-local so `import foley` stays dol-only.
 
 ### Classes
 
-| [`RetrievalReport`](_autosummary/foley.eval.html.md#foley.eval.RetrievalReport)([per_query, mean, ranks, k])      | Per-query + mean Tier-1 metrics over a golden set (JSON-friendly).                             |
-|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| [`GoldenItem`](_autosummary/foley.eval.html.md#foley.eval.GoldenItem)(id, context, expected_events, ...)     | One frozen `(context → expected sounds)` judgment (report 08 §1.3).                            |
-| [`HashingBowEmbedder`](_autosummary/foley.eval.html.md#foley.eval.HashingBowEmbedder)(\*[, dim])                     | Deterministic hashing bag-of-words text embedder (L2-normalized).                              |
-| [`FitReport`](_autosummary/foley.eval.html.md#foley.eval.FitReport)([per_item, fit_precision, ...])         | Tier-2 fit metrics over a stratified golden sample (JSON-friendly, mirrors `RetrievalReport`). |
-| [`AlphaResult`](_autosummary/foley.eval.html.md#foley.eval.AlphaResult)(alpha, level, n_units, n_raters, ...) | A judge-vs-human calibration record (surfaced as `FitReport.calibration`).                     |
-| [`FidelityStamp`](_autosummary/foley.eval.html.md#foley.eval.FidelityStamp)(embedding, toolkit, version, ...)   | Mandatory provenance for a FAD/KAD score — it is meaningless without it.                       |
-| [`AestheticsScore`](_autosummary/foley.eval.html.md#foley.eval.AestheticsScore)(axes, model, version[, toolkit])  | One clip's Audiobox Aesthetics scores, stamped with the model and toolkit version.             |
-| [`AudioboxAesthetics`](_autosummary/foley.eval.html.md#foley.eval.AudioboxAesthetics)(\*[, checkpoint, ...])         | Per-clip Audiobox Aesthetics scores computed in a separate interpreter.                        |
-| [`FadtkFidelity`](_autosummary/foley.eval.html.md#foley.eval.FadtkFidelity)(\*[, model, models, workers])       | Set-level FAD computed by `fadtk` in a separate interpreter.                                   |
-| [`KadtkFidelity`](_autosummary/foley.eval.html.md#foley.eval.KadtkFidelity)(\*[, bandwidth, device, ...])       | Set-level KAD computed by `kadtk` in a separate interpreter.                                   |
-| [`FidelityResult`](_autosummary/foley.eval.html.md#foley.eval.FidelityResult)(metric, value, stamp[, params])    | A stamped set-level fidelity score (attached to `FitReport.fidelity`).                         |
-| [`Passage`](_autosummary/foley.eval.html.md#foley.eval.Passage)(id, segments[, audio])                    | One narration passage: its segments (what `foley.score` takes) and optional audio.             |
-| [`PassageTaste`](_autosummary/foley.eval.html.md#foley.eval.PassageTaste)(passage_id[, restraint, ...])        | The four measurements for one passage (JSON-safe via `to_dict()`).                             |
-| [`TasteReport`](_autosummary/foley.eval.html.md#foley.eval.TasteReport)(designer, passages[, thresholds])     | The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.         |
-| [`TasteThresholds`](_autosummary/foley.eval.html.md#foley.eval.TasteThresholds)([sounds_per_sentence, ...])       | The eval's thresholds in one place (defaults: the module constants).                           |
+| [`RetrievalReport`](_autosummary/foley.eval.html.md#foley.eval.RetrievalReport)([per_query, mean, ranks, k])       | Per-query + mean Tier-1 metrics over a golden set (JSON-friendly).                             |
+|-----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| [`GoldenItem`](_autosummary/foley.eval.html.md#foley.eval.GoldenItem)(id, context, expected_events, ...)      | One frozen `(context → expected sounds)` judgment (report 08 §1.3).                            |
+| [`HashingBowEmbedder`](_autosummary/foley.eval.html.md#foley.eval.HashingBowEmbedder)(\*[, dim])                      | Deterministic hashing bag-of-words text embedder (L2-normalized).                              |
+| [`FitReport`](_autosummary/foley.eval.html.md#foley.eval.FitReport)([per_item, fit_precision, ...])          | Tier-2 fit metrics over a stratified golden sample (JSON-friendly, mirrors `RetrievalReport`). |
+| [`AlphaResult`](_autosummary/foley.eval.html.md#foley.eval.AlphaResult)(alpha, level, n_units, n_raters, ...)  | A judge-vs-human calibration record (surfaced as `FitReport.calibration`).                     |
+| [`FidelityStamp`](_autosummary/foley.eval.html.md#foley.eval.FidelityStamp)(embedding, toolkit, version, ...)    | Mandatory provenance for a FAD/KAD score — it is meaningless without it.                       |
+| [`AestheticsScore`](_autosummary/foley.eval.html.md#foley.eval.AestheticsScore)(axes, model, version[, toolkit])   | One clip's Audiobox Aesthetics scores, stamped with the model and toolkit version.             |
+| [`AudioboxAesthetics`](_autosummary/foley.eval.html.md#foley.eval.AudioboxAesthetics)(\*[, checkpoint, ...])          | Per-clip Audiobox Aesthetics scores computed in a separate interpreter.                        |
+| [`FadtkFidelity`](_autosummary/foley.eval.html.md#foley.eval.FadtkFidelity)(\*[, model, models, workers])        | Set-level FAD computed by `fadtk` in a separate interpreter.                                   |
+| [`KadtkFidelity`](_autosummary/foley.eval.html.md#foley.eval.KadtkFidelity)(\*[, bandwidth, device, ...])        | Set-level KAD computed by `kadtk` in a separate interpreter.                                   |
+| [`Pam`](_autosummary/foley.eval.html.md#foley.eval.Pam)(\*[, checkpoint, prompts, batch_size, device]) | Per-clip PAM scores computed by `msclap` in a separate interpreter.                            |
+| [`PamScore`](_autosummary/foley.eval.html.md#foley.eval.PamScore)(score, segments, model, version[, ...])   | One clip's PAM score, its per-window scores, and the model and toolkit version.                |
+| [`FidelityResult`](_autosummary/foley.eval.html.md#foley.eval.FidelityResult)(metric, value, stamp[, params])     | A stamped set-level fidelity score (attached to `FitReport.fidelity`).                         |
+| [`Passage`](_autosummary/foley.eval.html.md#foley.eval.Passage)(id, segments[, audio])                     | One narration passage: its segments (what `foley.score` takes) and optional audio.             |
+| [`PassageTaste`](_autosummary/foley.eval.html.md#foley.eval.PassageTaste)(passage_id[, restraint, ...])         | The four measurements for one passage (JSON-safe via `to_dict()`).                             |
+| [`TasteReport`](_autosummary/foley.eval.html.md#foley.eval.TasteReport)(designer, passages[, thresholds])      | The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.         |
+| [`TasteThresholds`](_autosummary/foley.eval.html.md#foley.eval.TasteThresholds)([sounds_per_sentence, ...])        | The eval's thresholds in one place (defaults: the module constants).                           |
 
 ### *class* foley.eval.AestheticsScore(axes, model, version, toolkit='audiobox_aesthetics')
 
@@ -5839,6 +5841,54 @@ Two frames: the unbiased MMD² averages over pairs of distinct frames.
 #### options()
 
 kadtk’s bandwidth and device.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### *class* foley.eval.Pam(, checkpoint=None, prompts=('the sound is clear and clean.', 'the sound is noisy and with artifacts.'), batch_size=10, device='cpu', \*\*kwargs)
+
+Bases: [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit)
+
+Per-clip PAM scores computed by `msclap` in a separate interpreter.
+
+:param those of [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit) (`python`:
+:param :
+:param default `$FOLEY_PAM_PYTHON`; `env`:
+:param e.g. `{"HF_HOME": ...}` to choose where:
+:param the weights go; `timeout`; `runner`):
+:param plus:
+:type checkpoint: [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+:param checkpoint: A local `CLAP_weights_2023.pth` (default: downloaded once into the
+
+> interpreter’s `HF_HOME`).
+* **Parameters:**
+  * **prompts** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The prompts, the clean one first (default `PAM_PROMPTS`; others
+    give a PAM-style score, not PAM’s).
+  * **batch_size** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Windows a forward pass.
+  * **device** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – Where the model runs (`'cpu'`, `'cuda'`, `'mps'`).
+
+#### check_clip(clip, , sr, name)
+
+Refuse an empty clip, or one with a NaN or infinite sample.
+
+A short clip is scored: PAM tiles it to one 7 s window.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### isolation_reason *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'it pins numpy<2 and brings its own torch'*
+
+Why the toolkit cannot live in foley’s environment (said when no interpreter).
+
+### *class* foley.eval.PamScore(score, segments, model, version, toolkit='msclap')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One clip’s PAM score, its per-window scores, and the model and toolkit version.
+
+#### to_dict()
+
+The score, the window scores and the stamp as one JSON-safe dict.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -6399,6 +6449,7 @@ once its numbers are stable, which records that judge in `run`.
 | [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit)                             | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).                                                                                           |
 | [`golden`](_autosummary/foley.eval.golden.html.md#module-foley.eval.golden)                       | The frozen golden set + the deterministic Ring-0 retrieval harness.                                                                                                                      |
 | [`kadtk`](_autosummary/foley.eval.kadtk.html.md#module-foley.eval.kadtk)                         | Reference KAD from `kadtk`, run in its own interpreter (#262).                                                                                                                           |
+| [`pam`](_autosummary/foley.eval.pam.html.md#module-foley.eval.pam)                             | Per-clip, reference-free audio quality from PAM, run in an `msclap` interpreter (#262).                                                                                                  |
 | [`panel_page`](_autosummary/foley.eval.panel_page.html.md#module-foley.eval.panel_page)               | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.                                                                                           |
 | [`prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)           | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).                                                                                                  |
 | [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)             | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                                                                                                   |
@@ -6521,6 +6572,111 @@ Two frames: the unbiased MMD² averages over pairs of distinct frames.
 #### options()
 
 kadtk’s bandwidth and device.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+
+# _autosummary/foley.eval.pam.html.md
+
+# foley.eval.pam
+
+Per-clip, reference-free audio quality from PAM, run in an `msclap` interpreter (#262).
+
+PAM (Deshmukh et al., “PAM: Prompting Audio-Language Models for Audio Quality
+Assessment”, Interspeech 2024, arXiv:2402.00282, [soham97/PAM](https://github.com/soham97/PAM)) scores one clip with no reference set: it asks
+Microsoft’s CLAP 2023 audio-language model which of two antonym prompts fits the clip
+better, and the score is the softmax probability of the first one,
+`"the sound is clear and clean."` against `"the sound is noisy and with artifacts."`
+([`PAM_PROMPTS`](_autosummary/foley.eval.pam.html.md#foley.eval.pam.PAM_PROMPTS)). So it is in `[0, 1]`, higher is cleaner. Clips are scored in
+7 s windows at 44.1 kHz (the model’s own config); a clip’s score is its windows’ mean.
+
+PAM is a research repository, not a package; its model is the one the `msclap`
+package ships (MIT, on PyPI, maintained by Microsoft). `msclap` pins `numpy<2` and
+brings its own torch, so [`Pam`](_autosummary/foley.eval.pam.html.md#foley.eval.pam.Pam) is an
+[`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit): [`foley.eval.toolkit_driver`](_autosummary/foley.eval.toolkit_driver.html.md#module-foley.eval.toolkit_driver)
+runs its `pam` task in msclap’s interpreter, as it runs fadtk, kadtk and Audiobox
+Aesthetics:
+
+```default
+pam = Pam(python="~/venvs/pam/bin/python")  # or $FOLEY_PAM_PYTHON
+tone, noise = pam([tone_wav, noise_wav], sr=48000)
+tone.score      # 0.68 (a 3 s 440 Hz sine); noise.score 0.04 (white noise)
+```
+
+It is an eval-side scorer for any set of clips; it is not wired into `generate` (as
+`generate(aesthetics=)` is) yet. It raises rather than storing anything, so no
+failure text of its own reaches a record.
+
+Licences: PAM’s and msclap’s code are MIT; the CLAP weights
+(`microsoft/msclap`, `CLAP_weights_2023.pth`, 690 MB) are tagged MS-PL on Hugging
+Face; the GPT-2 tokenizer files it fetches (3 MB) are MIT. The scores are metadata about
+a clip, so they do not change its licence.
+
+### Module Attributes
+
+| [`PAM_PROMPTS`](_autosummary/foley.eval.pam.html.md#foley.eval.pam.PAM_PROMPTS)    | PAM's antonym prompts; the score is the probability of the first.                 |
+|-----------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| [`PAM_PYTHON_ENV`](_autosummary/foley.eval.pam.html.md#foley.eval.pam.PAM_PYTHON_ENV) | The environment variable naming msclap's interpreter when `python=` is not given. |
+
+### Classes
+
+| [`Pam`](_autosummary/foley.eval.pam.html.md#foley.eval.pam.Pam)(\*[, checkpoint, prompts, batch_size, device])   | Per-clip PAM scores computed by `msclap` in a separate interpreter.             |
+|-------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| [`PamScore`](_autosummary/foley.eval.pam.html.md#foley.eval.pam.PamScore)(score, segments, model, version[, ...])     | One clip's PAM score, its per-window scores, and the model and toolkit version. |
+
+### foley.eval.pam.PAM_PROMPTS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), ...]* *= ('the sound is clear and clean.', 'the sound is noisy and with artifacts.')*
+
+PAM’s antonym prompts; the score is the probability of the first.
+
+### foley.eval.pam.PAM_PYTHON_ENV *= 'FOLEY_PAM_PYTHON'*
+
+The environment variable naming msclap’s interpreter when `python=` is not given.
+
+### *class* foley.eval.pam.Pam(, checkpoint=None, prompts=('the sound is clear and clean.', 'the sound is noisy and with artifacts.'), batch_size=10, device='cpu', \*\*kwargs)
+
+Bases: [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit)
+
+Per-clip PAM scores computed by `msclap` in a separate interpreter.
+
+:param those of [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit) (`python`:
+:param :
+:param default `$FOLEY_PAM_PYTHON`; `env`:
+:param e.g. `{"HF_HOME": ...}` to choose where:
+:param the weights go; `timeout`; `runner`):
+:param plus:
+:type checkpoint: [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+:param checkpoint: A local `CLAP_weights_2023.pth` (default: downloaded once into the
+
+> interpreter’s `HF_HOME`).
+* **Parameters:**
+  * **prompts** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The prompts, the clean one first (default [`PAM_PROMPTS`](_autosummary/foley.eval.pam.html.md#foley.eval.pam.PAM_PROMPTS); others
+    give a PAM-style score, not PAM’s).
+  * **batch_size** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Windows a forward pass.
+  * **device** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – Where the model runs (`'cpu'`, `'cuda'`, `'mps'`).
+
+#### check_clip(clip, , sr, name)
+
+Refuse an empty clip, or one with a NaN or infinite sample.
+
+A short clip is scored: PAM tiles it to one 7 s window.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### isolation_reason *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'it pins numpy<2 and brings its own torch'*
+
+Why the toolkit cannot live in foley’s environment (said when no interpreter).
+
+### *class* foley.eval.pam.PamScore(score, segments, model, version, toolkit='msclap')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One clip’s PAM score, its per-window scores, and the model and toolkit version.
+
+#### to_dict()
+
+The score, the window scores and the stamp as one JSON-safe dict.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -7472,10 +7628,11 @@ The script [`foley.eval.external_toolkit.ExternalToolkit`](_autosummary/foley.ev
 
 It is not imported by foley: foley runs it as `python -I toolkit_driver.py SPEC_JSON`
 with the interpreter of a virtualenv that has the toolkit (`fadtk`, `kadtk` or
-`audiobox_aesthetics`) installed (none can share foley’s environment). It imports
+`audiobox_aesthetics`, `msclap`) installed (none can share foley’s environment). It imports
 only the standard library and the toolkit, and only inside the functions, so foley’s
 test collection and linters can load this file without them. `spec["task"]` picks
-what it computes ([`TASKS`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.TASKS)): `fidelity` (the default) or `aesthetics`.
+what it computes ([`TASKS`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.TASKS)): `fidelity` (the default), `aesthetics` or
+`pam`.
 
 `fidelity` builds ONE embedding model from `spec["loader"]` (a class name in
 `<toolkit>.model_loader`) and `spec["args"]`. The toolkits’ own command lines
@@ -7495,6 +7652,20 @@ library’s `wave` (foley writes them as 16-bit PCM) rather than `torchaudio.loa
 which needs `torchcodec` from torchaudio 2.9 on. It writes one `{CE, CU, PC, PQ}`
 row per clip, the package version and the model as JSON to `spec["out"]`.
 
+`pam` scores each WAV of `spec["clips"]` with PAM (Deshmukh et al., Interspeech
+2024): the softmax, over `spec["prompts"]`, of MS-CLAP 2023’s audio-text
+similarities, the probability of the first prompt. It reproduces the reference
+(github.com/soham97/PAM, `PAM/PAM.py` and `dataset.py`) on the `msclap` package,
+whose 2023 model and config are the ones PAM vendors: each clip is resampled with
+torchaudio’s `Resample` to the model’s rate, tiled to one window if shorter, else cut
+into whole windows plus the last window; each window is scored and a clip’s score is
+their mean. One deviation, which does not change the numbers: msclap builds its GPT-2
+text encoder with `AutoModel.from_pretrained('gpt2')` (548 MB of weights) and then
+overwrites every one of them from the CLAP checkpoint (`caption_encoder.base.*`);
+here GPT-2 is built from its config, and the load is checked to leave no parameter
+unset. It writes one `{score, segments}` row per clip, the msclap version, the model
+and the prompts as JSON to `spec["out"]`.
+
 ### Module Attributes
 
 | [`TOOLKITS`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.TOOLKITS)   | Toolkit name → a function of the spec returning (embedding cacher, scorer).   |
@@ -7506,7 +7677,7 @@ row per clip, the package version and the model as JSON to `spec["out"]`.
 | [`main`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.main)(spec_json)   | Compute `spec['task']` (default `fidelity`) and write its JSON to `spec['out']`.   |
 |--------------------------------------------------------------------|------------------------------------------------------------------------------------|
 
-### foley.eval.toolkit_driver.TASKS *= {'aesthetics': <function \_aesthetics>, 'fidelity': <function \_fidelity>}*
+### foley.eval.toolkit_driver.TASKS *= {'aesthetics': <function \_aesthetics>, 'fidelity': <function \_fidelity>, 'pam': <function \_pam>}*
 
 `spec["task"]` → the function of the spec computing the answer.
 
@@ -18764,7 +18935,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'ta-dum', 'netflix sound', 'tudum', 'netflix intro', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'netflix sound', 'ta dum', 'ta-dum', 'netflix chime', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel inside', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -30834,18 +31005,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 08:45 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/cbe8e2a484da866f251a91667c5c388573eecbc7"><code>cbe8e2a</code></a> on branch <code>main</code>, for **foley 0.0.133** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 09:06 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/cd06f6b59d510a3649242d56982b5e0b5461bbaa"><code>cd06f6b</code></a> on branch <code>main</code>, for **foley 0.0.134** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.133) is behind the latest release on PyPI (0.0.134): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/cbe8e2a484da866f251a91667c5c388573eecbc7"><code>cbe8e2a484da866f251a91667c5c388573eecbc7</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/cd06f6b59d510a3649242d56982b5e0b5461bbaa"><code>cd06f6b59d510a3649242d56982b5e0b5461bbaa</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -30856,9 +31025,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41415081895">41415081895</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41417634384">41417634384</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>cbe8e2a484da866f251a91667c5c388573eecbc7</code> (in the history of the built commit) |
+| Event commit | <code>cd06f6b59d510a3649242d56982b5e0b5461bbaa</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -30883,13 +31052,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.134/">0.0.134</a>, newer than the documented version (0.0.133).
+Latest release: <a href="https://pypi.org/project/foley/0.0.134/">0.0.134</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout cbe8e2a484da866f251a91667c5c388573eecbc7
+git checkout cd06f6b59d510a3649242d56982b5e0b5461bbaa
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

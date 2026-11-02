@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=3a8547cf"></script>
+    <script src="../../../_static/documentation_options.js?v=f10cd702"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.133" />
+  <meta name="docsearch:version" content="0.0.134" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -719,10 +719,11 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">It is not imported by foley: foley runs it as ``python -I toolkit_driver.py SPEC_JSON``</span>
 <span class="sd">with the interpreter of a virtualenv that has the toolkit (``fadtk``, ``kadtk`` or</span>
-<span class="sd">``audiobox_aesthetics``) installed (none can share foley's environment). It imports</span>
+<span class="sd">``audiobox_aesthetics``, ``msclap``) installed (none can share foley's environment). It imports</span>
 <span class="sd">only the standard library and the toolkit, and only inside the functions, so foley's</span>
 <span class="sd">test collection and linters can load this file without them. ``spec["task"]`` picks</span>
-<span class="sd">what it computes (:data:`TASKS`): ``fidelity`` (the default) or ``aesthetics``.</span>
+<span class="sd">what it computes (:data:`TASKS`): ``fidelity`` (the default), ``aesthetics`` or</span>
+<span class="sd">``pam``.</span>
 
 <span class="sd">``fidelity`` builds ONE embedding model from ``spec["loader"]`` (a class name in</span>
 <span class="sd">``&lt;toolkit&gt;.model_loader``) and ``spec["args"]``. The toolkits' own command lines</span>
@@ -741,6 +742,20 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">library's ``wave`` (foley writes them as 16-bit PCM) rather than ``torchaudio.load``,</span>
 <span class="sd">which needs ``torchcodec`` from torchaudio 2.9 on. It writes one ``{CE, CU, PC, PQ}``</span>
 <span class="sd">row per clip, the package version and the model as JSON to ``spec["out"]``.</span>
+
+<span class="sd">``pam`` scores each WAV of ``spec["clips"]`` with PAM (Deshmukh et al., Interspeech</span>
+<span class="sd">2024): the softmax, over ``spec["prompts"]``, of MS-CLAP 2023's audio-text</span>
+<span class="sd">similarities, the probability of the first prompt. It reproduces the reference</span>
+<span class="sd">(github.com/soham97/PAM, ``PAM/PAM.py`` and ``dataset.py``) on the ``msclap`` package,</span>
+<span class="sd">whose 2023 model and config are the ones PAM vendors: each clip is resampled with</span>
+<span class="sd">torchaudio's ``Resample`` to the model's rate, tiled to one window if shorter, else cut</span>
+<span class="sd">into whole windows plus the last window; each window is scored and a clip's score is</span>
+<span class="sd">their mean. One deviation, which does not change the numbers: msclap builds its GPT-2</span>
+<span class="sd">text encoder with ``AutoModel.from_pretrained('gpt2')`` (548 MB of weights) and then</span>
+<span class="sd">overwrites every one of them from the CLAP checkpoint (``caption_encoder.base.*``);</span>
+<span class="sd">here GPT-2 is built from its config, and the load is checked to leave no parameter</span>
+<span class="sd">unset. It writes one ``{score, segments}`` row per clip, the msclap version, the model</span>
+<span class="sd">and the prompts as JSON to ``spec["out"]``.</span>
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
@@ -877,8 +892,120 @@ window.runMermaid = runMermaid;</script>
     <span class="p">}</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_config_only_auto_model</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""A stand-in for ``transformers.AutoModel`` that builds from the config, no weights."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoConfig</span><span class="p">,</span> <span class="n">AutoModel</span>
+
+    <span class="k">class</span><span class="w"> </span><span class="nc">ConfigOnly</span><span class="p">:</span>
+        <span class="nd">@staticmethod</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">from_pretrained</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">AutoModel</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">AutoConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">ConfigOnly</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load_clap</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""msclap's 2023 CLAP wrapper from ``checkpoint`` (default: the Hugging Face weights).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        RuntimeError: If the checkpoint leaves a model parameter unset (it would be the</span>
+<span class="sd">            random init of the config-only GPT-2).</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">huggingface_hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">hf_hub_download</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">msclap.CLAPWrapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLAPWrapper</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">msclap.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">clap</span> <span class="k">as</span> <span class="n">clap_module</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">checkpoint</span><span class="p">:</span>
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">hf_hub_download</span><span class="p">(</span>
+            <span class="n">CLAPWrapper</span><span class="o">.</span><span class="n">model_repo</span><span class="p">,</span> <span class="n">CLAPWrapper</span><span class="o">.</span><span class="n">model_name</span><span class="p">[</span><span class="s2">"2023"</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="n">real</span> <span class="o">=</span> <span class="n">clap_module</span><span class="o">.</span><span class="n">AutoModel</span>
+    <span class="n">clap_module</span><span class="o">.</span><span class="n">AutoModel</span> <span class="o">=</span> <span class="n">_config_only_auto_model</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">wrapper</span> <span class="o">=</span> <span class="n">CLAPWrapper</span><span class="p">(</span><span class="n">model_fp</span><span class="o">=</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">"2023"</span><span class="p">)</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">clap_module</span><span class="o">.</span><span class="n">AutoModel</span> <span class="o">=</span> <span class="n">real</span>
+    <span class="n">saved</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="s2">"cpu"</span><span class="p">,</span> <span class="n">mmap</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="s2">"model"</span><span class="p">]</span>
+    <span class="n">unset</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">wrapper</span><span class="o">.</span><span class="n">clap</span><span class="o">.</span><span class="n">state_dict</span><span class="p">())</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">saved</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">unset</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"the CLAP checkpoint leaves </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">unset</span><span class="p">)</span><span class="si">}</span><span class="s2"> parameters unset: </span><span class="si">{</span><span class="n">unset</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">wrapper</span><span class="p">,</span> <span class="n">checkpoint</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_pam_windows</span><span class="p">(</span><span class="n">audio</span><span class="p">,</span> <span class="n">size</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""PAM's ``process_audio`` (non-repro), as a ``(n_windows, size)`` tensor.</span>
+
+<span class="sd">    A clip shorter than ``size`` is tiled to it; a longer one keeps its whole windows,</span>
+<span class="sd">    plus the last ``size`` samples when a part is left over.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+
+    <span class="k">if</span> <span class="n">audio</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">size</span><span class="p">:</span>
+        <span class="n">audio</span> <span class="o">=</span> <span class="n">audio</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">size</span> <span class="o">/</span> <span class="n">audio</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))[:</span><span class="n">size</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">whole</span> <span class="o">=</span> <span class="n">audio</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">//</span> <span class="n">size</span> <span class="o">*</span> <span class="n">size</span>
+        <span class="n">rest</span> <span class="o">=</span> <span class="p">[</span><span class="n">audio</span><span class="p">[</span><span class="o">-</span><span class="n">size</span><span class="p">:]]</span> <span class="k">if</span> <span class="n">whole</span> <span class="o">&lt;</span> <span class="n">audio</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">audio</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">audio</span><span class="p">[:</span><span class="n">whole</span><span class="p">],</span> <span class="o">*</span><span class="n">rest</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">audio</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_pam</span><span class="p">(</span><span class="n">spec</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""PAM's score and window scores for each clip of ``spec['clips']``, in order.</span>
+
+<span class="sd">    ``spec`` carries every setting (``checkpoint``, ``prompts``, ``batch_size``,</span>
+<span class="sd">    ``device``); their defaults are :class:`foley.eval.pam.Pam`'s, not this driver's.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">importlib.metadata</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn.functional</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">F</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">torchaudio.transforms</span><span class="w"> </span><span class="kn">import</span> <span class="n">Resample</span>
+
+    <span class="n">wrapper</span><span class="p">,</span> <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">_load_clap</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="s2">"checkpoint"</span><span class="p">])</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="s2">"device"</span><span class="p">]</span>
+    <span class="n">clap</span> <span class="o">=</span> <span class="n">wrapper</span><span class="o">.</span><span class="n">clap</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">rate</span><span class="p">,</span> <span class="n">seconds</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">wrapper</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">sampling_rate</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">wrapper</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">duration</span><span class="p">)</span>
+    <span class="n">prompts</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="s2">"prompts"</span><span class="p">])</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">wrapper</span><span class="o">.</span><span class="n">preprocess_text</span><span class="p">(</span><span class="n">prompts</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">clap</span><span class="o">.</span><span class="n">caption_encoder</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">text</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span> <span class="o">/</span> <span class="n">text</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">score</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[float]"</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+            <span class="n">audio</span> <span class="o">=</span> <span class="n">clap</span><span class="o">.</span><span class="n">audio_encoder</span><span class="p">(</span><span class="n">chunks</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">audio</span> <span class="o">=</span> <span class="n">audio</span> <span class="o">/</span> <span class="n">audio</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdim</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">sim</span> <span class="o">=</span> <span class="n">clap</span><span class="o">.</span><span class="n">logit_scale</span><span class="o">.</span><span class="n">exp</span><span class="p">()</span> <span class="o">*</span> <span class="n">audio</span> <span class="o">@</span> <span class="n">text</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">return</span> <span class="n">F</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">sim</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="n">size</span><span class="p">,</span> <span class="n">rows</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="s2">"batch_size"</span><span class="p">]),</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">spec</span><span class="p">[</span><span class="s2">"clips"</span><span class="p">]:</span>
+        <span class="n">wav</span><span class="p">,</span> <span class="n">sr</span> <span class="o">=</span> <span class="n">_read_pcm16</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="c1"># PAM's resampler: a 4e-6 difference in kernel moves a pure tone's score by 2e-3</span>
+        <span class="n">audio</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">from_numpy</span><span class="p">(</span><span class="n">wav</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">sr</span> <span class="o">!=</span> <span class="n">rate</span><span class="p">:</span>
+            <span class="n">audio</span> <span class="o">=</span> <span class="n">Resample</span><span class="p">(</span><span class="n">sr</span><span class="p">,</span> <span class="n">rate</span><span class="p">)(</span><span class="n">audio</span><span class="p">)</span>
+        <span class="n">chunks</span> <span class="o">=</span> <span class="n">_pam_windows</span><span class="p">(</span><span class="n">audio</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rate</span> <span class="o">*</span> <span class="n">seconds</span><span class="p">)</span>
+        <span class="n">segs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">s</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunks</span><span class="p">),</span> <span class="n">size</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">score</span><span class="p">(</span><span class="n">chunks</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="n">size</span><span class="p">])</span>
+        <span class="p">]</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"score"</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">segs</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">segs</span><span class="p">),</span> <span class="s2">"segments"</span><span class="p">:</span> <span class="n">segs</span><span class="p">})</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"scores"</span><span class="p">:</span> <span class="n">rows</span><span class="p">,</span>
+        <span class="s2">"model"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">wrapper</span><span class="o">.</span><span class="n">model_repo</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">Path</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="s2">"version"</span><span class="p">:</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">version</span><span class="p">(</span><span class="s2">"msclap"</span><span class="p">),</span>
+        <span class="s2">"prompts"</span><span class="p">:</span> <span class="n">prompts</span><span class="p">,</span>
+    <span class="p">}</span>
+
+
 <span class="c1">#: ``spec["task"]`` → the function of the spec computing the answer.</span>
-<span class="n">TASKS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"fidelity"</span><span class="p">:</span> <span class="n">_fidelity</span><span class="p">,</span> <span class="s2">"aesthetics"</span><span class="p">:</span> <span class="n">_aesthetics</span><span class="p">}</span>
+<span class="n">TASKS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"fidelity"</span><span class="p">:</span> <span class="n">_fidelity</span><span class="p">,</span> <span class="s2">"aesthetics"</span><span class="p">:</span> <span class="n">_aesthetics</span><span class="p">,</span> <span class="s2">"pam"</span><span class="p">:</span> <span class="n">_pam</span><span class="p">}</span>
 
 
 <div class="viewcode-block" id="main">

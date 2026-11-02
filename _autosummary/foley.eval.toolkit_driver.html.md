@@ -4,10 +4,11 @@ The script [`foley.eval.external_toolkit.ExternalToolkit`](foley.eval.external_t
 
 It is not imported by foley: foley runs it as `python -I toolkit_driver.py SPEC_JSON`
 with the interpreter of a virtualenv that has the toolkit (`fadtk`, `kadtk` or
-`audiobox_aesthetics`) installed (none can share foley’s environment). It imports
+`audiobox_aesthetics`, `msclap`) installed (none can share foley’s environment). It imports
 only the standard library and the toolkit, and only inside the functions, so foley’s
 test collection and linters can load this file without them. `spec["task"]` picks
-what it computes ([`TASKS`](#foley.eval.toolkit_driver.TASKS)): `fidelity` (the default) or `aesthetics`.
+what it computes ([`TASKS`](#foley.eval.toolkit_driver.TASKS)): `fidelity` (the default), `aesthetics` or
+`pam`.
 
 `fidelity` builds ONE embedding model from `spec["loader"]` (a class name in
 `<toolkit>.model_loader`) and `spec["args"]`. The toolkits’ own command lines
@@ -27,6 +28,20 @@ library’s `wave` (foley writes them as 16-bit PCM) rather than `torchaudio.loa
 which needs `torchcodec` from torchaudio 2.9 on. It writes one `{CE, CU, PC, PQ}`
 row per clip, the package version and the model as JSON to `spec["out"]`.
 
+`pam` scores each WAV of `spec["clips"]` with PAM (Deshmukh et al., Interspeech
+2024): the softmax, over `spec["prompts"]`, of MS-CLAP 2023’s audio-text
+similarities, the probability of the first prompt. It reproduces the reference
+(github.com/soham97/PAM, `PAM/PAM.py` and `dataset.py`) on the `msclap` package,
+whose 2023 model and config are the ones PAM vendors: each clip is resampled with
+torchaudio’s `Resample` to the model’s rate, tiled to one window if shorter, else cut
+into whole windows plus the last window; each window is scored and a clip’s score is
+their mean. One deviation, which does not change the numbers: msclap builds its GPT-2
+text encoder with `AutoModel.from_pretrained('gpt2')` (548 MB of weights) and then
+overwrites every one of them from the CLAP checkpoint (`caption_encoder.base.*`);
+here GPT-2 is built from its config, and the load is checked to leave no parameter
+unset. It writes one `{score, segments}` row per clip, the msclap version, the model
+and the prompts as JSON to `spec["out"]`.
+
 ### Module Attributes
 
 | [`TOOLKITS`](#foley.eval.toolkit_driver.TOOLKITS)   | Toolkit name → a function of the spec returning (embedding cacher, scorer).   |
@@ -38,7 +53,7 @@ row per clip, the package version and the model as JSON to `spec["out"]`.
 | [`main`](#foley.eval.toolkit_driver.main)(spec_json)   | Compute `spec['task']` (default `fidelity`) and write its JSON to `spec['out']`.   |
 |--------------------------------------------------------------------|------------------------------------------------------------------------------------|
 
-### foley.eval.toolkit_driver.TASKS *= {'aesthetics': <function \_aesthetics>, 'fidelity': <function \_fidelity>}*
+### foley.eval.toolkit_driver.TASKS *= {'aesthetics': <function \_aesthetics>, 'fidelity': <function \_fidelity>, 'pam': <function \_pam>}*
 
 `spec["task"]` → the function of the spec computing the answer.
 
