@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-02T06:34:40Z",
+  "built_at": "2026-11-02T06:58:49Z",
   "package": {
     "name": "foley",
-    "version": "0.0.126",
+    "version": "0.0.127",
     "display_name": "foley",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "6229d46f3ebbee4d3cc9a64f87dbe8b3fd1a3be9",
-    "short_commit": "6229d46",
+    "commit": "88f0e22016bec50eb4a842682e20513fbe64b476",
+    "short_commit": "88f0e22",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/reeleehq/foley",
-    "commit_url": "https://github.com/reeleehq/foley/commit/6229d46f3ebbee4d3cc9a64f87dbe8b3fd1a3be9",
+    "commit_url": "https://github.com/reeleehq/foley/commit/88f0e22016bec50eb4a842682e20513fbe64b476",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "reeleehq/foley",
-    "sha": "6229d46f3ebbee4d3cc9a64f87dbe8b3fd1a3be9",
+    "sha": "88f0e22016bec50eb4a842682e20513fbe64b476",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "41400507140",
-    "run_url": "https://github.com/reeleehq/foley/actions/runs/41400507140",
+    "run_id": "41403033206",
+    "run_url": "https://github.com/reeleehq/foley/actions/runs/41403033206",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -60,11 +60,11 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.126",
+    "latest": "0.0.127",
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 6229d46f3ebbee4d3cc9a64f87dbe8b3fd1a3be9\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/reeleehq/foley && cd foley\ngit checkout 88f0e22016bec50eb4a842682e20513fbe64b476\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,
