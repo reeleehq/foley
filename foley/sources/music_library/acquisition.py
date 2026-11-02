@@ -32,7 +32,10 @@ so a rerun resumes. A paid library fetches nothing: its rows are ``wishlist`` ro
 
 :meth:`AcquiredTrack.row` is a flat, JSON-safe dict (a caller such as ``an`` bridges
 it into its own asset rows without foley knowing it); :func:`tracks_table` is those
-rows as CSV, and :func:`attribution_text` the blocks to paste under a video.
+rows as CSV, and :func:`attribution_text` the blocks to paste under a video. The way
+back is :func:`read_tracks_table` (the CSV's rows, as written) and
+:meth:`AcquiredTrack.from_row` (a row as the track it records, its licence rebuilt
+from the library's registry); :func:`held_rows` keeps those whose file is held.
 """
 
 from __future__ import annotations
@@ -47,6 +50,7 @@ import unicodedata
 from collections.abc import (
     Callable,
     Iterable,
+    Iterator,
     Mapping,
     MutableMapping,
     Sequence,
@@ -98,6 +102,30 @@ TRACK_COLUMNS: tuple[str, ...] = (
 )
 #: The metadata keys a titles file may set that are columns (the rest the library states).
 METADATA_COLUMNS: tuple[str, ...] = ("credited_by",)
+#: The provenance fields a downstream record makes of a row (``lacing.Rights`` and
+#: ``an``'s ``AssetSource``, which name theirs alike): a titles file's metadata may not
+#: name them either, so a ``cacheable`` or ``cost_usd`` column never reaches a record
+#: that would read it as a claim.
+PROVENANCE_FIELDS: tuple[str, ...] = (
+    "provider",
+    "id",
+    "title",
+    "url",
+    "license",
+    "license_url",
+    "attribution",
+    "source_page_url",
+    "author",
+    "author_url",
+    "cacheable",
+    "sha256",
+    "cost_usd",
+    "extra",
+)
+#: How a list is joined in one cell of the tracks table (``credited_by``).
+LIST_SEPARATOR: str = "; "
+#: The byte-order mark an editor (Excel) writes before a UTF-8 CSV's first column.
+BYTE_ORDER_MARK: str = "\ufeff"
 #: Decimal places a duration is written with.
 DURATION_DECIMALS: int = 3
 #: What a fetch or a verification may raise for ONE title (an HTTP or connection
@@ -182,10 +210,77 @@ class AcquiredTrack(SerializableMixin):
         }
         return {k: _cell(v) for k, v in out.items()}
 
+    @classmethod
+    def from_row(
+        cls,
+        row: Mapping[str, Any],
+        *,
+        libraries: Optional[Mapping[str, MusicLibrary]] = None,
+    ) -> "AcquiredTrack":
+        """The track a tracks-table ``row`` records: the inverse of :meth:`row`.
+
+        ``row`` is a :meth:`row` dict (or one read back from JSON), or a line of the
+        table (:func:`read_tracks_table`: every cell text, an empty one nothing). Its
+        ``library`` is looked up in ``libraries`` (default
+        :data:`~foley.sources.music_library.libraries.MUSIC_LIBRARIES`) and its licence
+        rebuilt from it (:func:`track_license`), never read from the row: the licence
+        columns (``license``, ``commercial_ok``, ``attribution``, ...) are what the
+        library states, and a cell someone edited cannot grant rights. A column outside
+        :data:`TRACK_COLUMNS` is metadata, as the table wrote it (a list or mapping a
+        titles file gave comes back as its cell's text).
+
+        Raises:
+            MusicLibraryError: For a row without a title, library or status, a library
+                that is not registered, a ``duration_s`` that is not a number, or a
+                column a titles file may not set (:data:`PROVENANCE_FIELDS`, a licence
+                flag, ...).
+        """
+        cell = {k: v for k, v in row.items() if v is not None and v != ""}
+        missing = [k for k in ("title", "library", "status") if k not in cell]
+        if missing:
+            raise MusicLibraryError(f"a tracks-table row needs {missing}: {dict(row)}")
+        title = cell["title"]
+        lib = music_library(cell["library"], libraries=libraries)
+        metadata = {k: v for k, v in cell.items() if k not in TRACK_COLUMNS}
+        _refuse_reserved(title, metadata, hint="drop those columns from the table")
+        page_url, sha256 = cell.get("source_page_url"), cell.get("sha256")
+        return cls(
+            title=title,
+            library=lib.name,
+            status=cell["status"],
+            license=track_license(lib, title, page_url=page_url, sha256=sha256),
+            file=cell.get("file"),
+            sha256=sha256,
+            duration_s=_seconds(cell.get("duration_s"), title=title),
+            url=cell.get("url"),
+            mirror=cell.get("mirror"),
+            page_url=page_url,
+            credited_by=_listed(cell.get("credited_by", ())),
+            metadata=metadata,
+            error=cell.get("error"),
+        )
+
+
+def _seconds(value: Any, *, title: str) -> Optional[float]:
+    """A ``duration_s`` cell as seconds (``None``: none recorded)."""
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError) as e:
+        raise MusicLibraryError(
+            f"track {title!r}: duration_s {value!r} is not a number"
+        ) from e
+
+
+def _listed(value: Any) -> Any:
+    """A list cell (``"a; b"``) as its items; anything else as it is."""
+    return value.split(LIST_SEPARATOR) if isinstance(value, str) else value
+
 
 def _cell(value: Any) -> Any:
     if isinstance(value, (list, tuple)):
-        return "; ".join(map(str, value))
+        return LIST_SEPARATOR.join(map(str, value))
     if isinstance(value, Mapping):
         return json.dumps(value, sort_keys=True)
     return value
@@ -198,9 +293,22 @@ _RESERVED: frozenset = frozenset(
         set(TRACK_COLUMNS)
         | {f.name for f in fields(AcquiredTrack)}
         | {f.name for f in fields(LicenseFlags)}
+        | set(PROVENANCE_FIELDS)
     )
     - set(METADATA_COLUMNS)
 )
+
+
+def _refuse_reserved(title: str, metadata: Mapping[str, Any], *, hint: str) -> None:
+    """Refuse ``metadata`` that sets a :data:`_RESERVED` key, naming them and ``hint``."""
+    clash = sorted(set(metadata) & _RESERVED)
+    if clash:
+        raise MusicLibraryError(
+            f"{title!r}: its metadata sets {clash}, which the library, the table or "
+            f"a downstream provenance record states; {hint}"
+        )
+
+
 #: ``kept``'s values: a file's recorded sha256, or ``{"sha256", "url", "mirror"}``
 #: (:func:`kept_sources`), whose ``url`` / ``mirror`` a kept row carries on.
 Kept = Mapping[str, Union[str, Mapping[str, Any]]]
@@ -490,12 +598,9 @@ def _titles_meta(titles: Any, lib: MusicLibrary) -> dict[str, dict[str, Any]]:
             raise MusicLibraryError(
                 f"a title must be a non-empty string, got {title!r}"
             )
-        clash = sorted(set(extra) & _RESERVED)
-        if clash:
-            raise MusicLibraryError(
-                f"{title!r}: its metadata sets {clash}, which the library or the "
-                f"table states ({lib.name}); drop them from the titles file"
-            )
+        _refuse_reserved(
+            title, extra, hint=f"drop them from the titles file ({lib.name})"
+        )
     return meta
 
 
@@ -527,7 +632,7 @@ def files_store(out: Out) -> MutableMapping[str, bytes]:
 
 def tracks_table(rows: Iterable[AcquiredTrack]) -> str:
     """The tracks table as CSV text: :data:`TRACK_COLUMNS`, then any metadata the
-    rows carry, in name order."""
+    rows carry, in name order (:func:`read_tracks_table` reads it back)."""
     dicts = [r.row() for r in rows]
     extras = sorted({k for d in dicts for k in d} - set(TRACK_COLUMNS))
     buffer = io.StringIO()
@@ -540,10 +645,23 @@ def tracks_table(rows: Iterable[AcquiredTrack]) -> str:
 Table = Union[str, Iterable[Union[AcquiredTrack, Mapping[str, Any]]]]
 
 
-def _held_rows(table: Table) -> Iterable[Mapping[str, Any]]:
-    """The acquired or kept rows (with a file and a digest) of a tracks table."""
+def read_tracks_table(text: str) -> list[dict[str, str]]:
+    r"""The rows of a tracks table (:func:`tracks_table`'s CSV text), as written; a
+    byte-order mark an editor added (Excel does) is not part of the first column.
+
+    >>> read_tracks_table("\ufefftitle,library\r\nA,incompetech\r\n")
+    [{'title': 'A', 'library': 'incompetech'}]
+    """
+    return list(csv.DictReader(io.StringIO(text.removeprefix(BYTE_ORDER_MARK))))
+
+
+def held_rows(table: Table) -> Iterator[Mapping[str, Any]]:
+    """The acquired or kept rows (with a file and a digest) of a tracks table, as
+    row dicts: ``table`` is :func:`tracks_table`'s CSV text (:func:`read_tracks_table`)
+    or the rows themselves (:class:`AcquiredTrack` or their :meth:`~AcquiredTrack.row`
+    dicts)."""
     if isinstance(table, str):
-        rows: Iterable[Mapping[str, Any]] = csv.DictReader(io.StringIO(table))
+        rows: Iterable[Mapping[str, Any]] = read_tracks_table(table)
     else:
         rows = (r.row() if isinstance(r, AcquiredTrack) else r for r in table)
     return (
@@ -556,7 +674,7 @@ def kept_digests(table: Table) -> dict[str, str]:
     may keep. ``table`` is :func:`tracks_table`'s CSV text, or the rows themselves
     (:class:`AcquiredTrack` or their :meth:`~AcquiredTrack.row` dicts, read back
     from JSON)."""
-    return {r["file"]: r["sha256"] for r in _held_rows(table)}
+    return {r["file"]: r["sha256"] for r in held_rows(table)}
 
 
 def kept_sources(table: Table) -> dict[str, dict[str, Any]]:
@@ -569,7 +687,7 @@ def kept_sources(table: Table) -> dict[str, dict[str, Any]]:
             "url": r.get("url") or None,
             "mirror": r.get("mirror") or None,
         }
-        for r in _held_rows(table)
+        for r in held_rows(table)
     }
 
 

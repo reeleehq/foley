@@ -32,10 +32,13 @@ from foley.sources.music_library import (
     MusicLibraryError,
     MusicToolMissing,
     acquire,
+    PROVENANCE_FIELDS,
     attribution_text,
+    held_rows,
     kept_digests,
     kept_sources,
     probe_verify,
+    read_tracks_table,
     register_music_library,
     titles_by_library,
     titles_from_json,
@@ -704,7 +707,10 @@ def test_a_store_refusal_names_no_local_directory(tmp_path):
     assert not list(tmp_path.rglob("evil*"))
     (row,) = _acquire(["x" * 300], Fetcher({_url("x" * 300): b"a"}), out=out)
     assert row.status == FAILED and row.error.startswith("could not save")
-    assert str(tmp_path) not in row.error and str(tmp_path).replace("\\", "\\\\") not in row.error
+    assert (
+        str(tmp_path) not in row.error
+        and str(tmp_path).replace("\\", "\\\\") not in row.error
+    )
 
 
 @pytest.mark.parametrize(
@@ -789,7 +795,10 @@ def test_importing_the_package_does_not_import_requests():
 def test_a_body_shorter_than_its_content_length_is_refused():
     """A cut download: its header alone could still probe as audio."""
     url = _url("A")
-    cut = Resp(content=b"aaa", headers={"Content-Type": "audio/mpeg", "Content-Length": "16000"})
+    cut = Resp(
+        content=b"aaa",
+        headers={"Content-Type": "audio/mpeg", "Content-Length": "16000"},
+    )
     (row,) = _via_transport(["A"], FakeTransport({url: [cut]}))
     assert row.status == FAILED and "truncated: 3 of the 16000" in row.error
 
@@ -1046,3 +1055,79 @@ def test_every_other_retrieve_source_still_searches_cc0_by_default():
     assert {"freesound", "openverse"} <= set(retrieve)
     for name, entry in retrieve.items():
         assert search_license(SOURCE_DEFAULT_LICENSE, entry["config"]) == "cc0", name
+
+
+# ---------------------------------------------------------------------------
+# Reading the tracks table back (#222)
+# ---------------------------------------------------------------------------
+
+
+def _every_status():
+    """One row of each status: acquired, kept, failed, refused, wishlist."""
+    meta = {"credited_by": ["vid1", "vid2"], "feel": "Bright"}
+    store = {"K.mp3": b"kk"}
+    kept = {"K.mp3": hashlib.sha256(b"kk").hexdigest()}
+    fetch = Fetcher({_url("A"): b"aa"})
+    rows = _acquire({"A": meta, "K": {}, "F": {}}, fetch, out=store, kept=kept)
+    nc = MusicLibrary("nc_lib", "N", license_url=_NC_URL, track_url=_rule)
+    refused = acquire(nc, ["R"], out={}, fetch=Fetcher({}), verify=_ok)
+    wish = acquire("artlist", {"W": {"feel": "Warm"}}, out={})
+    return rows + refused + wish, {"nc_lib": nc, **MUSIC_LIBRARIES}
+
+
+def test_every_status_round_trips_through_its_row_and_the_csv():
+    tracks, libraries = _every_status()
+    assert [t.status for t in tracks] == [ACQUIRED, KEPT, FAILED, REFUSED, WISHLIST]
+    for t in tracks:
+        assert AcquiredTrack.from_row(t.row(), libraries=libraries) == t
+    back = [
+        AcquiredTrack.from_row(r, libraries=libraries)
+        for r in read_tracks_table(tracks_table(tracks))
+    ]
+    assert back == tracks, "the CSV's text cells come back as the same tracks"
+
+
+def test_from_row_takes_the_licence_from_the_registry_not_the_cells():
+    (track,) = _acquire(["A"], Fetcher({_url("A"): b"aa"}))
+    forged = {**track.row(), "license": "CC0-1.0", "commercial_ok": "True",
+              "attribution": "", "license_url": "https://example.com"}  # fmt: skip
+    assert AcquiredTrack.from_row(forged).license == track.license
+
+
+@pytest.mark.parametrize(
+    "edit, match",
+    [
+        ({"library": "nope"}, "no music library"),
+        ({"status": ""}, "needs"),
+        ({"duration_s": "long"}, "not a number"),
+        ({"cacheable": "True"}, "drop those columns"),
+        ({"cache_bytes_ok": "True"}, "drop those columns"),
+    ],
+)
+def test_from_row_refuses_a_row_it_cannot_trust(edit, match):
+    (track,) = _acquire(["A"], Fetcher({_url("A"): b"aa"}))
+    with pytest.raises(MusicLibraryError, match=match):
+        AcquiredTrack.from_row({**track.row(), **edit})
+
+
+def test_a_table_saved_by_excel_still_reads_back():
+    (track,) = _acquire(["A"], Fetcher({_url("A"): b"aa"}))
+    table = "\ufeff" + tracks_table([track])
+    assert list(read_tracks_table(table)[0])[0] == "title"
+    assert kept_digests(table) == {"A.mp3": track.sha256}
+    assert kept_sources(table)["A.mp3"]["sha256"] == track.sha256
+
+
+def test_held_rows_are_the_acquired_and_kept_ones():
+    tracks, _ = _every_status()
+    for table in (tracks, tracks_table(tracks), [t.row() for t in tracks]):
+        assert [r["status"] for r in held_rows(table)] == [ACQUIRED, KEPT]
+
+
+@pytest.mark.parametrize(
+    "name", ["id", "provider", "cacheable", "cost_usd", "extra", "author_url"]
+)
+def test_a_titles_file_may_not_name_a_downstream_provenance_field(name):
+    assert name in PROVENANCE_FIELDS
+    with pytest.raises(MusicLibraryError, match="downstream provenance"):
+        _acquire({"A": {name: "x"}}, Fetcher({}))

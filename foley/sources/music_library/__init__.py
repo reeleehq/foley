@@ -26,9 +26,13 @@ collect the attribution lines the licence asks for. :func:`acquire` is that scri
   mirrors (:func:`direct`, :func:`wayback`); :func:`probe_verify` checks each file
   has an audio stream and a length, with foley's media probes.
 - **Rows are portable** (:class:`AcquiredTrack`): ``.row()`` is flat and JSON-safe,
-  :func:`tracks_table` writes them as CSV and :func:`kept_digests` (or
-  :func:`kept_sources`, with each file's URL) reads a table back, so a rerun fetches
-  only what it lacks.
+  :func:`tracks_table` writes them as CSV, :func:`read_tracks_table` reads it back
+  (an editor's byte-order mark dropped) and ``AcquiredTrack.from_row`` turns a row
+  into its track again, the licence rebuilt from the registry, never the row's
+  cells. :func:`held_rows` are those whose file is held, and :func:`kept_digests` (or
+  :func:`kept_sources`, with each file's URL) what a rerun keeps, so it fetches only
+  what it lacks. A titles file's metadata may not name a row's column, a licence
+  flag, or a downstream provenance field (:data:`PROVENANCE_FIELDS`).
 
 - **Each free library is also a live retrieve source** of its own name (#212):
   ``foley.add_from("incompetech", query="Sneaky Snitch")`` (a title, a list of
@@ -57,6 +61,7 @@ from .acquisition import (
     FAILED,
     HELD,
     KEPT,
+    PROVENANCE_FIELDS,
     REFUSED,
     TRACK_COLUMNS,
     WISHLIST,
@@ -64,8 +69,10 @@ from .acquisition import (
     acquire,
     attribution_text,
     files_store,
+    held_rows,
     kept_digests,
     kept_sources,
+    read_tracks_table,
     tracks_table,
 )
 from .config import library_source_config
@@ -101,6 +108,7 @@ __all__ = [
     "KEPT",
     "MUSIC_LIBRARIES",
     "MUSIC_LIBRARY_HTTP",
+    "PROVENANCE_FIELDS",
     "REFUSED",
     "TRACK_COLUMNS",
     "WAYBACK_RAW",
@@ -114,6 +122,7 @@ __all__ = [
     "direct",
     "fetch_audio",
     "files_store",
+    "held_rows",
     "kept_digests",
     "kept_sources",
     "library_source_config",
@@ -124,6 +133,7 @@ __all__ = [
     "polite_transport",
     "probe_available",
     "probe_verify",
+    "read_tracks_table",
     "register_music_library",
     "require_probe",
     "safe_file_name",
