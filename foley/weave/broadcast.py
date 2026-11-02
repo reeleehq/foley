@@ -33,13 +33,21 @@ The pipeline is small pure stages, each its own function:
    :data:`TREATMENTS` (band-pass -> RMS compressor -> lookahead peak limiter), or any
    ``(samples, sr) -> samples`` callable.
 
-Rights are checked first (:func:`mix_refusal`: no share-alike, no-derivatives,
-territory-limited or unmodifiable source on either side), then the bed is resolved or
-generated, and only then is any text spoken. A named generate backend's licence row
+Rights are checked first (:func:`mix_refusal`: no no-derivatives, territory-limited
+or unmodifiable source on either side, and share-alike only when both sides are under
+the identical share-alike licence, which the result is then released under), then the
+bed is resolved or generated, and only then is any text spoken. A named generate backend's licence row
 is checked before it is called; a bed from an unnamed generation order can only be
 gated on the clip it returns, so that refusal comes after the bed was paid for (never
 after the speech). The result always ends in the peak limiter, whatever the
 treatment.
+
+**Into the library.** ``store=True`` ingests the result by value through the shared
+:func:`~foley.index.ingest.ingest_one`, under its narrowed licence (the speech's
+lineage and the bed's id recorded), so :func:`foley.export_sound` and the credits work
+on it; the result's ``sound_id`` names it. Whether it may be stored is checked before
+anything is spent (:func:`store_refusal`): its bytes must be keepable, and when a
+source's licence does not allow AI use, embedding it needs ``accept_ai_restricted=True``.
 
 **The treatment is a seam.** It is an audio "look" with no foley-specific knowledge, so
 its eventual home is the fleet's audio package (``mixing``, beside
@@ -108,6 +116,10 @@ DETECTOR_FLOOR_DB: float = -120.0
 BROADCAST_OP: str = "broadcast_bed"
 #: The licence id of rights that were not given (fail-closed, never refused).
 UNKNOWN_LICENSE_ID: str = "unknown"
+#: The ``ingest_one`` keywords ``store=True`` sets itself (not ``ingest_options``).
+STORE_OWNED_INGEST_KWARGS: "frozenset[str]" = frozenset(
+    {"library", "license", "store", "allow_ai_training_forbidden", "sound_id"}
+)
 
 
 # --- treatment: the device the broadcast is heard through ---------------------------
@@ -405,40 +417,53 @@ class BroadcastRefusal(ValueError):
     """A source whose rights do not allow it into a broadcast bed (refused, fail-closed)."""
 
 
-def mix_refusal(source: LicenseRecord) -> Optional[str]:
+def mix_refusal(
+    source: LicenseRecord, *, share_alike: Optional[str] = None
+) -> Optional[str]:
     """Why a sound with rights ``source`` may not be treated and mixed in, or ``None``.
 
-    The broadcast's licence is the bed's narrowed to the speech's, so it cannot carry a
-    share-alike obligation, and the device modifies both sources. Refused: a
-    share-alike licence (on the record or in its lineage), a territory exclusion, a
-    licence with no :data:`~foley.licensing.LICENSE_FLAGS` row (an ``ND`` one among
-    them), or one that forbids modification. Unknown rights (``'unknown'``) are not
-    refused: the result fails closed instead.
+    The broadcast's licence is the bed's narrowed to the speech's, and the device
+    modifies both sources. Refused: a share-alike licence (on the record or in its
+    lineage) the broadcast cannot carry, a territory exclusion, a licence with no
+    :data:`~foley.licensing.LICENSE_FLAGS` row (an ``ND`` one among them), or one that
+    forbids modification. Unknown rights (``'unknown'``) are not refused: the result
+    fails closed instead.
+
+    The broadcast can carry a share-alike licence only when every source is under
+    that identical licence (:func:`~foley.licensing.shared_share_alike`): the mix is
+    then released under it. ``share_alike`` is that licence, and a source that carries
+    it (:func:`~foley.licensing.carries_share_alike`) is allowed: the licence grants
+    adaptation, so neither its missing flag row nor its flags refuse it.
 
     >>> from foley.licensing import apply_license_flags
     >>> ok = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-4.0"))
     >>> mix_refusal(ok) is None
     True
-    >>> mix_refusal(LicenseRecord(source="s", license_id="CC-BY-SA-4.0"))[:40]
+    >>> sa = LicenseRecord(source="s", license_id="CC-BY-SA-4.0")
+    >>> mix_refusal(sa)[:40]
     'its licence (CC-BY-SA-4.0) is share-alik'
+    >>> mix_refusal(sa, share_alike="CC-BY-SA-4.0") is None
+    True
     """
     from ..licensing import (
         LICENSE_FLAGS,
+        carries_share_alike,
         derived_license_ids,
         excluded_territories,
         is_share_alike,
     )
 
     lid = source.license_id
+    carried = share_alike is not None and carries_share_alike(source, share_alike)
     shared = [i for i in (lid, *derived_license_ids(source)) if is_share_alike(i)]
-    if shared:
+    if shared and not carried:
         return (
             f"its licence ({shared[0]}) is share-alike, which the broadcast's licence "
-            "cannot carry"
+            "can carry only when every source is under that same licence"
         )
     if excluded_territories(source):
         return "its licence excludes territories, which the broadcast cannot carry"
-    if lid == UNKNOWN_LICENSE_ID:
+    if lid == UNKNOWN_LICENSE_ID or carried:
         return None
     if lid not in LICENSE_FLAGS:
         return f"foley has no licence row for {lid!r}, so the mix's rights cannot be derived"
@@ -447,13 +472,34 @@ def mix_refusal(source: LicenseRecord) -> Optional[str]:
     return None
 
 
-def _gate(source: "SoundRecord | LicenseRecord | None", role: str) -> None:
+def _gate(
+    source: "SoundRecord | LicenseRecord | None",
+    role: str,
+    *,
+    share_alike: Optional[str] = None,
+) -> None:
     """Raise :class:`BroadcastRefusal` for a source :func:`mix_refusal` refuses."""
     if source is None:
         return
-    why = mix_refusal(_license_of(source))
+    why = mix_refusal(_license_of(source), share_alike=share_alike)
     if why:
         raise BroadcastRefusal(f"cannot use the {role} in a broadcast bed: {why}")
+
+
+def _gate_sources(
+    bed: "SoundRecord | LicenseRecord | None", speech: Optional[LicenseRecord]
+) -> Optional[str]:
+    """Gate the speech and the bed (``None``: not known yet) together.
+
+    Returns the share-alike licence both are under, which the broadcast is released
+    under (:func:`~foley.licensing.shared_share_alike`), or ``None``.
+    """
+    from ..licensing import shared_share_alike
+
+    share_alike = None if bed is None else shared_share_alike(_license_of(bed), speech)
+    _gate(speech, "speech", share_alike=share_alike)
+    _gate(bed, "bed", share_alike=share_alike)
+    return share_alike
 
 
 # --- bed -----------------------------------------------------------------------------
@@ -518,8 +564,8 @@ def _generated_bed(prompt, *, library, generate, generate_options, sample_rate):
     return load_clip_mono(lib, record.id, sr=sample_rate), record, list(cand.notes)
 
 
-def _named_backend_refusal(backend) -> Optional[str]:
-    """:func:`mix_refusal` of a named generate backend's licence row, before any call.
+def _named_backend_rights(backend) -> Optional[LicenseRecord]:
+    """A named generate backend's licence row as a record, known before any call.
 
     ``None`` when no single backend is named (an unnamed order is gated on the clip it
     returns) or its licence depends on the account (no fixed row).
@@ -536,9 +582,13 @@ def _named_backend_refusal(backend) -> Optional[str]:
     license_id = lic_cfg.get("default_license_id")
     if license_id is None:
         return None
-    return mix_refusal(
-        apply_license_flags(LicenseRecord(source=backend, license_id=license_id))
-    )
+    return apply_license_flags(LicenseRecord(source=backend, license_id=license_id))
+
+
+def _named_backend_refusal(backend) -> Optional[str]:
+    """:func:`mix_refusal` of a named generate backend's licence row, before any call."""
+    rights = _named_backend_rights(backend)
+    return None if rights is None else mix_refusal(rights)
 
 
 def _default_library():
@@ -704,12 +754,16 @@ def broadcast_license(
     watermark and content-credential reference are dropped: they described the bed's
     bytes, not the mix. ``speech=None`` narrows to unknown rights. Raises
     :class:`BroadcastRefusal` for a source :func:`mix_refusal` refuses.
+
+    When both are under the identical share-alike licence (#253), so is the result:
+    the bed's licence id is kept, and the narrowing bounds its flags by that licence's
+    row (:data:`~foley.licensing.SHARE_ALIKE_FLAGS`: credit it, keep its bytes, and
+    nothing foley could use it for in a work of its own).
     """
     from ..provenance.credits import attribution_line
     from ..sources.edit import EditLineage
 
-    _gate(bed, "bed")
-    _gate(speech, "speech")
+    _gate_sources(bed, speech)
     speech = speech if speech is not None else _unknown_rights("speech")
     out = copy.deepcopy(_license_of(bed))
     out.content_sha256 = None  # these bytes are the mix, not the bed
@@ -720,7 +774,11 @@ def broadcast_license(
         source_id=speech.source_id,
         source_license=speech,
         source_credit=attribution_line(speech, fmt="plain"),
-        params={"treatment": treatment, "role": "speech"},
+        params={
+            "treatment": treatment,
+            "role": "speech",
+            "bed_id": bed.id if isinstance(bed, SoundRecord) else None,
+        },
     ).apply(out)
     out.is_ai_generated = out.is_ai_generated or speech.is_ai_generated
     out.disclosure_recommended = (
@@ -732,6 +790,159 @@ def broadcast_license(
     out.cache_bytes_ok = out.cache_bytes_ok and speech.cache_bytes_ok
     out.rights_verified = out.rights_verified and speech.rights_verified
     return out
+
+
+# --- into the library ------------------------------------------------------------
+
+
+def _check_ingest_options(ingest_options, *, store: bool) -> None:
+    """Refuse, before anything is spent, ingest options that cannot apply."""
+    if ingest_options is None:
+        return
+    if not store:
+        raise ValueError("ingest_options= is for store=True")
+    owned = STORE_OWNED_INGEST_KWARGS & set(ingest_options)
+    if owned:
+        raise ValueError(
+            f"broadcast_bed sets {sorted(owned)} itself; pass library= / "
+            "accept_ai_restricted= to broadcast_bed instead"
+        )
+
+
+def store_refusal(
+    rights: LicenseRecord, library, *, accept_ai_restricted: bool = False
+) -> Optional[str]:
+    """Why a broadcast with ``rights`` may not go into ``library``, or ``None``.
+
+    Asked before anything is spent. The bytes are stored by value (a mix has no
+    source to point at), so both sources must allow keeping them
+    (``cache_bytes_ok``). Indexing embeds the clip, which is AI use
+    (:func:`foley.index.ingest.embedding_permitted`): when a source's licence does
+    not allow it (an AI-generated bed's, a non-commercial speech's), it needs the
+    caller's explicit consent, ``accept_ai_restricted``, as every ingest does.
+    """
+    from ..index.ingest import embedding_permitted
+
+    if not rights.cache_bytes_ok:
+        return "a source's terms do not allow its bytes to be kept (cache_bytes_ok)"
+    if not accept_ai_restricted and not embedding_permitted(rights, library):
+        return (
+            "its licence does not allow AI use, and indexing embeds it; pass "
+            "accept_ai_restricted=True to consent (embed + store only)"
+        )
+    return None
+
+
+def _check_storable(
+    rights: LicenseRecord, library, *, accept_ai_restricted: bool, what: str
+) -> None:
+    """Raise :class:`BroadcastRefusal` when :func:`store_refusal` refuses ``rights``.
+
+    The mix's licence is narrowed from each source's, so a source refused on its own
+    (``what``: the speech, the bed's backend) refuses the mix: it is asked before the
+    bed is generated.
+    """
+    why = store_refusal(rights, library, accept_ai_restricted=accept_ai_restricted)
+    if why:
+        raise BroadcastRefusal(f"cannot store the broadcast bed ({what}): {why}")
+
+
+def _twin_refusal(twin: LicenseRecord, made: LicenseRecord) -> Optional[str]:
+    """Why a byte-identical stored sound (rights ``twin``) is not this broadcast, or ``None``.
+
+    It is when it carries the same licence, credits the same people (its attribution
+    line and this broadcast's lineage entry, which names the speech's credit and the
+    bed's id) and is no wider (:func:`~foley.licensing.wider_rights`). Otherwise its
+    record would credit others or license it differently, so it is not handed back.
+    """
+    import json
+
+    from ..licensing import wider_rights
+    from ..provenance.credits import attribution_line
+
+    def canonical(value) -> str:
+        return json.dumps(value, sort_keys=True, default=str)
+
+    mine = canonical(made.transformations[-1])
+    differs = [
+        what
+        for what, same in (
+            ("licence", twin.license_id == made.license_id),
+            (
+                "credit",
+                attribution_line(twin, fmt="plain")
+                == attribution_line(made, fmt="plain"),
+            ),
+            (
+                "lineage",
+                any(canonical(t) == mine for t in twin.transformations or ()),
+            ),
+        )
+        if not same
+    ]
+    wider = wider_rights(twin, made)
+    if wider:
+        differs.append(f"wider rights ({', '.join(wider)})")
+    if not differs:
+        return None
+    return (
+        "not stored: a byte-identical sound is already stored with another "
+        f"{', '.join(differs)}, so it is not handed back as this broadcast"
+    )
+
+
+def _caption(bed_source, *, bed_prompt: Optional[str], treatment: str) -> str:
+    """The stored broadcast's caption: the device and what the bed is."""
+    bed_text = bed_prompt or getattr(bed_source, "caption", None) or "a bed"
+    return f"speech heard through {treatment} over {bed_text}"
+
+
+def _store(
+    audio: "ndarray",
+    sample_rate: int,
+    rights: LicenseRecord,
+    *,
+    library,
+    caption: str,
+    tags: "list[str]",
+    accept_ai_restricted: bool,
+    ingest_options: Optional[dict],
+) -> "tuple[Optional[str], list[str]]":
+    """Ingest the broadcast by value under ``rights``: ``(sound id or None, notes)``.
+
+    Through the shared :func:`~foley.index.ingest.ingest_one` (QC, embedding, tags,
+    storage), with ``accept_ai_restricted`` as its consent. A byte-identical sound
+    already stored is handed back only when it is this broadcast (:func:`_twin_refusal`:
+    the same licence, credits and lineage, no wider); else the id is ``None``, with a
+    note.
+    """
+    from ..audio import encode
+    from ..bootstrap import MetadataCaptioner
+    from ..index.ingest import CONSENT_NOTE, embedding_permitted, ingest_one
+
+    options = {
+        "captioner": MetadataCaptioner(caption),
+        "seed_tags": tags,
+        **(ingest_options or {}),
+    }
+    consented = accept_ai_restricted and not embedding_permitted(rights, library)
+    res = ingest_one(
+        encode(audio, sample_rate),
+        library=library,
+        license=rights,
+        store=True,
+        allow_ai_training_forbidden=accept_ai_restricted,
+        **options,
+    )
+    notes = list(res.notes)
+    if res.status in ("pass", "warn"):
+        return res.id, notes + ([CONSENT_NOTE] if consented else [])
+    if res.status == "skipped_dup":
+        why = _twin_refusal(library[res.id].license, rights)
+        return (
+            (res.id, notes) if why is None else (None, [*notes, f"{why} ({res.id!r})"])
+        )
+    return None, notes + [f"not stored ({res.status})"]
 
 
 # --- the façade ----------------------------------------------------------------------
@@ -753,7 +964,8 @@ class BroadcastBed:
             ``license``.
         treatment: The device's name (``'dry'`` for none).
         notes: What the caller should know (unmeasurable levels, missing rights, the
-            bed generation's own notes).
+            bed generation's own notes, the ingest's).
+        sound_id: The library id it was stored under (``store=True``), else ``None``.
     """
 
     audio: "ndarray"
@@ -762,6 +974,7 @@ class BroadcastBed:
     sources: tuple
     treatment: str
     notes: list = field(default_factory=list)
+    sound_id: Optional[str] = None
 
     @property
     def duration_s(self) -> float:
@@ -797,6 +1010,9 @@ def broadcast_bed(
     library=None,
     generate: Optional[Callable] = None,
     generate_options: Optional[dict] = None,
+    store: bool = False,
+    accept_ai_restricted: bool = False,
+    ingest_options: Optional[dict] = None,
     sr: Optional[int] = None,
 ) -> BroadcastBed:
     """Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
@@ -844,14 +1060,28 @@ def broadcast_bed(
         generate: The bed generator (default :func:`foley.generate`; a test seam).
         generate_options: Keyword arguments for it (``backend``, ``budget``,
             ``duration_s``, ``store``, ...; not ``library``).
+        store: Also ingest the result into ``library`` by value, under its licence
+            (both sources' lineage recorded), so :func:`foley.export_sound` and the
+            credits work on it; its id is the result's ``sound_id``. Checked before
+            anything is spent (:func:`store_refusal`): for a prompted bed, the
+            speech's rights and a named backend's licence row before generating.
+        accept_ai_restricted: Consent to embed (index) the result when a source's
+            licence does not allow AI use (an AI-generated bed's, a non-commercial
+            speech's). Without it such a ``store=True`` is refused, fail-closed. The
+            consent is to embed and store only: the stored licence still forbids
+            training.
+        ingest_options: More keywords for :func:`foley.index.ingest.ingest_one`
+            (``tagger``, ``do_supervised``, ``thresholds``, ...) with ``store=True``.
         sr: Working sample rate (default :data:`foley.audio.WORKING_SAMPLE_RATE`).
 
     Returns:
         A :class:`BroadcastBed`.
 
     Raises:
-        BroadcastRefusal: A source's rights do not allow it in (:func:`mix_refusal`).
-        ValueError: Unusable lines, treatment or bed form (before anything is spent).
+        BroadcastRefusal: A source's rights do not allow it in (:func:`mix_refusal`),
+            or ``store=True`` cannot store the result (:func:`store_refusal`).
+        ValueError: Unusable lines, treatment, bed form or ingest options (before
+            anything is spent).
         KeyError: A bed id that is neither a file nor in the library.
     """
     from ..audio import WORKING_SAMPLE_RATE
@@ -864,12 +1094,26 @@ def broadcast_bed(
     _check_bed_form(
         bed, bed_prompt, bed_license=bed_license, generate_options=generate_options
     )
-    _gate(speech_license, "speech")
+    _check_ingest_options(ingest_options, store=store)
+    if store:
+        library = library if library is not None else _default_library()
     if bed is not None:
         bed_audio, bed_source, notes = _given_bed(
             bed, bed_license=bed_license, library=library, sample_rate=sr
         )
     else:
+        _gate_sources(None, speech_license)  # before the bed is paid for
+        if store:  # what refuses a source refuses the mix: ask before paying
+            pre = [("the speech", speech_license or _unknown_rights("speech"))]
+            backend = _named_backend_rights((generate_options or {}).get("backend"))
+            pre += [("the bed's backend", backend)] if backend is not None else []
+            for what, source_rights in pre:
+                _check_storable(
+                    source_rights,
+                    library,
+                    accept_ai_restricted=accept_ai_restricted,
+                    what=what,
+                )
         bed_audio, bed_source, notes = _generated_bed(
             bed_prompt,
             library=library,
@@ -877,7 +1121,12 @@ def broadcast_bed(
             generate_options=generate_options,
             sample_rate=sr,
         )
-    _gate(bed_source, "bed")
+    name = _treatment_name(treatment)
+    rights = broadcast_license(bed_source, speech_license, treatment=name)
+    if store:
+        _check_storable(
+            rights, library, accept_ai_restricted=accept_ai_restricted, what="the mix"
+        )
     clips = _speak(lines, sr, tts)
     program, mix_notes = mix_program(
         join_lines(clips, sr, gap_s=gap_s),
@@ -896,14 +1145,27 @@ def broadcast_bed(
         notes.append(
             "speech rights not given (speech_license=): treated as unknown, fail-closed"
         )
-    name = _treatment_name(treatment)
     coloured = declick(device(program, sr), sr)
     audio = _limit(coloured, sr, ceiling_db).astype("float32", copy=False)
+    sound_id = None
+    if store:
+        sound_id, store_notes = _store(
+            audio,
+            sr,
+            rights,
+            library=library,
+            caption=_caption(bed_source, bed_prompt=bed_prompt, treatment=name),
+            tags=[BROADCAST_OP, name],
+            accept_ai_restricted=accept_ai_restricted,
+            ingest_options=ingest_options,
+        )
+        mix_notes.extend(store_notes)
     return BroadcastBed(
         audio=audio,
         sr=sr,
-        license=broadcast_license(bed_source, speech_license, treatment=name),
+        license=rights,
         sources=(bed_source, speech_license),
         treatment=name,
         notes=[*notes, *mix_notes],
+        sound_id=sound_id,
     )
