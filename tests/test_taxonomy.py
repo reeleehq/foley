@@ -263,11 +263,13 @@ def test_the_ucs_build_tool_reads_the_master_layout(tmp_path):
     """tools/build_ucs_table.py: title rows and blanks skipped, synonyms split, mojibake undone."""
     import importlib.util
 
-    openpyxl = pytest.importorskip("openpyxl")
     tool = Path(__file__).resolve().parents[1] / "tools" / "build_ucs_table.py"
     spec = importlib.util.spec_from_file_location("build_ucs_table", tool)
     build = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(build)
+    assert build.unmojibake("saut‚àö¬©") == "sauté" and build.unmojibake("café") == "café"
+
+    openpyxl = pytest.importorskip("openpyxl")  # a dev-only dependency of the tool
 
     wb = openpyxl.Workbook()
     ws = wb.active
