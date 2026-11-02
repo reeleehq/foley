@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=9efdc3d6"></script>
+    <script src="../_static/documentation_options.js?v=3a8547cf"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.132" />
+  <meta name="docsearch:version" content="0.0.133" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -374,9 +374,11 @@
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="foley.eval.html">foley.eval</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.bradley_terry.html">foley.eval.bradley_terry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.panel.html">foley.eval.panel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.aesthetics.html">foley.eval.aesthetics</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.baseline.html">foley.eval.baseline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.embedder.html">foley.eval.embedder</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.external_fidelity.html">foley.eval.external_fidelity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.external_toolkit.html">foley.eval.external_toolkit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fadtk.html">foley.eval.fadtk</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fidelity.html">foley.eval.fidelity</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fit.html">foley.eval.fit</a></li>
@@ -507,13 +509,14 @@
                   
   <section id="module-foley.eval.toolkit_driver">
 <span id="foley-eval-toolkit-driver"></span><h1>foley.eval.toolkit_driver<a class="headerlink" href="#module-foley.eval.toolkit_driver" title="Link to this heading">#</a></h1>
-<p>The script <a class="reference internal" href="foley.eval.external_fidelity.html#foley.eval.external_fidelity.ExternalFidelity" title="foley.eval.external_fidelity.ExternalFidelity"><code class="xref py py-class docutils literal notranslate"><span class="pre">foley.eval.external_fidelity.ExternalFidelity</span></code></a> runs inside a toolkit’s interpreter.</p>
+<p>The script <a class="reference internal" href="foley.eval.external_toolkit.html#foley.eval.external_toolkit.ExternalToolkit" title="foley.eval.external_toolkit.ExternalToolkit"><code class="xref py py-class docutils literal notranslate"><span class="pre">foley.eval.external_toolkit.ExternalToolkit</span></code></a> runs inside a toolkit’s interpreter.</p>
 <p>It is not imported by foley: foley runs it as <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-I</span> <span class="pre">toolkit_driver.py</span> <span class="pre">SPEC_JSON</span></code>
-with the interpreter of a virtualenv that has the toolkit (<code class="docutils literal notranslate"><span class="pre">fadtk</span></code> or <code class="docutils literal notranslate"><span class="pre">kadtk</span></code>)
-installed (both pin <code class="docutils literal notranslate"><span class="pre">numpy&lt;2</span></code> and an old torch, so neither can share foley’s
-environment). It imports only the standard library and the toolkit, and only inside
-the functions, so foley’s test collection and linters can load this file without them.</p>
-<p>It builds ONE embedding model from <code class="docutils literal notranslate"><span class="pre">spec[&quot;loader&quot;]</span></code> (a class name in
+with the interpreter of a virtualenv that has the toolkit (<code class="docutils literal notranslate"><span class="pre">fadtk</span></code>, <code class="docutils literal notranslate"><span class="pre">kadtk</span></code> or
+<code class="docutils literal notranslate"><span class="pre">audiobox_aesthetics</span></code>) installed (none can share foley’s environment). It imports
+only the standard library and the toolkit, and only inside the functions, so foley’s
+test collection and linters can load this file without them. <code class="docutils literal notranslate"><span class="pre">spec[&quot;task&quot;]</span></code> picks
+what it computes (<a class="reference internal" href="#foley.eval.toolkit_driver.TASKS" title="foley.eval.toolkit_driver.TASKS"><code class="xref py py-data docutils literal notranslate"><span class="pre">TASKS</span></code></a>): <code class="docutils literal notranslate"><span class="pre">fidelity</span></code> (the default) or <code class="docutils literal notranslate"><span class="pre">aesthetics</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fidelity</span></code> builds ONE embedding model from <code class="docutils literal notranslate"><span class="pre">spec[&quot;loader&quot;]</span></code> (a class name in
 <code class="docutils literal notranslate"><span class="pre">&lt;toolkit&gt;.model_loader</span></code>) and <code class="docutils literal notranslate"><span class="pre">spec[&quot;args&quot;]</span></code>. The toolkits’ own command lines
 (<code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">fadtk</span></code>, <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">kadtk</span></code>) instantiate every model they know first,
 and the CLAP constructors download their checkpoints (about 2.5 GB); building one
@@ -522,11 +525,21 @@ on each directory, then the toolkit’s scorer, see <a class="reference internal
 score, the toolkit’s version, the model name, the embedding-frame counts, the
 embedding dimension and the scorer’s parameters (kadtk: the bandwidth it used and its
 scale) as JSON to <code class="docutils literal notranslate"><span class="pre">spec[&quot;out&quot;]</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">aesthetics</span></code> scores each WAV of <code class="docutils literal notranslate"><span class="pre">spec[&quot;clips&quot;]</span></code> (in that order) with Meta’s
+Audiobox Aesthetics predictor (<code class="docutils literal notranslate"><span class="pre">initialize_predictor</span></code>, from <code class="docutils literal notranslate"><span class="pre">spec[&quot;checkpoint&quot;]</span></code>
+or, when that is <code class="docutils literal notranslate"><span class="pre">None</span></code>, the Hugging Face <code class="docutils literal notranslate"><span class="pre">facebook/audiobox-aesthetics</span></code> weights),
+<code class="docutils literal notranslate"><span class="pre">spec[&quot;batch_size&quot;]</span></code> clips a forward pass. The WAVs are read with the standard
+library’s <code class="docutils literal notranslate"><span class="pre">wave</span></code> (foley writes them as 16-bit PCM) rather than <code class="docutils literal notranslate"><span class="pre">torchaudio.load</span></code>,
+which needs <code class="docutils literal notranslate"><span class="pre">torchcodec</span></code> from torchaudio 2.9 on. It writes one <code class="docutils literal notranslate"><span class="pre">{CE,</span> <span class="pre">CU,</span> <span class="pre">PC,</span> <span class="pre">PQ}</span></code>
+row per clip, the package version and the model as JSON to <code class="docutils literal notranslate"><span class="pre">spec[&quot;out&quot;]</span></code>.</p>
 <p class="rubric">Module Attributes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.toolkit_driver.TOOLKITS" title="foley.eval.toolkit_driver.TOOLKITS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TOOLKITS</span></code></a></p></td>
 <td><p>Toolkit name → a function of the spec returning (embedding cacher, scorer).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.eval.toolkit_driver.TASKS" title="foley.eval.toolkit_driver.TASKS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TASKS</span></code></a></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">spec[&quot;task&quot;]</span></code> → the function of the spec computing the answer.</p></td>
 </tr>
 </tbody>
 </table>
@@ -535,11 +548,17 @@ scale) as JSON to <code class="docutils literal notranslate"><span class="pre">s
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.toolkit_driver.main" title="foley.eval.toolkit_driver.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>(spec_json)</p></td>
-<td><p>Score <code class="docutils literal notranslate"><span class="pre">spec['ref']</span></code> against <code class="docutils literal notranslate"><span class="pre">spec['gen']</span></code> with <code class="docutils literal notranslate"><span class="pre">spec['toolkit']</span></code>; write JSON to <code class="docutils literal notranslate"><span class="pre">spec['out']</span></code>.</p></td>
+<td><p>Compute <code class="docutils literal notranslate"><span class="pre">spec['task']</span></code> (default <code class="docutils literal notranslate"><span class="pre">fidelity</span></code>) and write its JSON to <code class="docutils literal notranslate"><span class="pre">spec['out']</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.eval.toolkit_driver.TASKS">
+<span class="sig-prename descclassname"><span class="pre">foley.eval.toolkit_driver.</span></span><span class="sig-name descname"><span class="pre">TASKS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'aesthetics':</span> <span class="pre">&lt;function</span> <span class="pre">_aesthetics&gt;,</span> <span class="pre">'fidelity':</span> <span class="pre">&lt;function</span> <span class="pre">_fidelity&gt;}</span></span><a class="headerlink" href="#foley.eval.toolkit_driver.TASKS" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">spec[&quot;task&quot;]</span></code> → the function of the spec computing the answer.</p>
+</dd></dl>
+
 <dl class="py data">
 <dt class="sig sig-object py" id="foley.eval.toolkit_driver.TOOLKITS">
 <span class="sig-prename descclassname"><span class="pre">foley.eval.toolkit_driver.</span></span><span class="sig-name descname"><span class="pre">TOOLKITS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'fadtk':</span> <span class="pre">&lt;function</span> <span class="pre">_fadtk&gt;,</span> <span class="pre">'kadtk':</span> <span class="pre">&lt;function</span> <span class="pre">_kadtk&gt;}</span></span><a class="headerlink" href="#foley.eval.toolkit_driver.TOOLKITS" title="Link to this definition">#</a></dt>
@@ -549,7 +568,7 @@ scale) as JSON to <code class="docutils literal notranslate"><span class="pre">s
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.eval.toolkit_driver.main">
 <span class="sig-prename descclassname"><span class="pre">foley.eval.toolkit_driver.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">spec_json</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/toolkit_driver.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.toolkit_driver.main" title="Link to this definition">#</a></dt>
-<dd><p>Score <code class="docutils literal notranslate"><span class="pre">spec['ref']</span></code> against <code class="docutils literal notranslate"><span class="pre">spec['gen']</span></code> with <code class="docutils literal notranslate"><span class="pre">spec['toolkit']</span></code>; write JSON to <code class="docutils literal notranslate"><span class="pre">spec['out']</span></code>.</p>
+<dd><p>Compute <code class="docutils literal notranslate"><span class="pre">spec['task']</span></code> (default <code class="docutils literal notranslate"><span class="pre">fidelity</span></code>) and write its JSON to <code class="docutils literal notranslate"><span class="pre">spec['out']</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
@@ -606,6 +625,7 @@ scale) as JSON to <code class="docutils literal notranslate"><span class="pre">s
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.toolkit_driver.TASKS"><code class="docutils literal notranslate"><span class="pre">TASKS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.toolkit_driver.TOOLKITS"><code class="docutils literal notranslate"><span class="pre">TOOLKITS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.eval.toolkit_driver.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
 </ul>

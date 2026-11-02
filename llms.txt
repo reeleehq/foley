@@ -59,9 +59,11 @@
 - [foley.eval](_autosummary/foley.eval.html.md): Tier-1 retrieval evaluation — metrics, a frozen golden set, and the nDCG gate.
 - [foley.eval.bradley_terry](_autosummary/foley.eval.bradley_terry.html.md): Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).
 - [foley.eval.panel](_autosummary/foley.eval.panel.html.md): Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49)...
+- [foley.eval.aesthetics](_autosummary/foley.eval.aesthetics.html.md): Per-clip generation quality from Meta’s Audiobox Aesthetics, run in its own interpreter (#262).
 - [foley.eval.baseline](_autosummary/foley.eval.baseline.html.md): The committed nDCG baseline — the PR gate’s SSOT + staleness stamps.
 - [foley.eval.embedder](_autosummary/foley.eval.embedder.html.md): A deterministic, numpy-only text embedder for the retrieval eval gate.
 - [foley.eval.external_fidelity](_autosummary/foley.eval.external_fidelity.html.md): Set-level fidelity from a reference toolkit run in its own interpreter (#48, #262).
+- [foley.eval.external_toolkit](_autosummary/foley.eval.external_toolkit.html.md): A reference toolkit run in its own interpreter: the part every adapter shares (#48, #262).
 - [foley.eval.fadtk](_autosummary/foley.eval.fadtk.html.md): Reference FAD from Microsoft’s &#96;fadtk&#96;, run in its own interpreter (#48).
 - [foley.eval.fidelity](_autosummary/foley.eval.fidelity.html.md): Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).
 - [foley.eval.fit](_autosummary/foley.eval.fit.html.md): Tier-2 fit evaluation — “does the accepted clip actually match the intent?” (report 08 §2/§5).
@@ -72,7 +74,7 @@
 - [foley.eval.reliability](_autosummary/foley.eval.reliability.html.md): Inter-rater reliability — Krippendorff’s α + the judge-vs-human calibration guardrail.
 - [foley.eval.retrieval](_autosummary/foley.eval.retrieval.html.md): Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.
 - [foley.eval.taste](_autosummary/foley.eval.taste.html.md): The “tasteful weave” eval: does a sound designer produce a &#42;restrained, clean, well-placed&#42; result?
-- [foley.eval.toolkit_driver](_autosummary/foley.eval.toolkit_driver.html.md): The script &#96;foley.eval.external_fidelity.ExternalFidelity&#96; runs inside a toolkit’s interpreter.
+- [foley.eval.toolkit_driver](_autosummary/foley.eval.toolkit_driver.html.md): The script &#96;foley.eval.external_toolkit.ExternalToolkit&#96; runs inside a toolkit’s interpreter.
 - [foley.provenance](_autosummary/foley.provenance.html.md): Provenance layer for foley — attribution/credits (and, later, disclosure).
 - [foley.provenance.credits](_autosummary/foley.provenance.credits.html.md): TASL attribution / credits generator — the provenance render layer (#9a).
 - [foley.provenance.disclosure](_autosummary/foley.provenance.disclosure.html.md): Disclosure, watermarking &amp; safety for AI-generated audio (#9b).
@@ -143,7 +145,7 @@
 - [foley.sources.wikimedia_commons.config](_autosummary/foley.sources.wikimedia_commons.config.html.md): &#96;SOURCE_CONFIG&#96; for the Wikimedia Commons retrieve source (#79 · report 14 §3.3).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-02 08:19 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-02 08:45 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

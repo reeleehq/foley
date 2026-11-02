@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=9efdc3d6"></script>
+    <script src="../../../_static/documentation_options.js?v=3a8547cf"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.132" />
+  <meta name="docsearch:version" content="0.0.133" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -732,14 +732,22 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">  ``RunManifest`` — so raw text never reaches the OTel mirror either;</span>
 <span class="sd">* **emit-time** (net): :meth:`Redactor.redact_manifest` deep-walks the serialized</span>
 <span class="sd">  manifest before the store write, catching anything stuffed past record-time.</span>
+
+<span class="sd">:func:`redact_paths` is the other half: local filesystem paths (which carry the user's</span>
+<span class="sd">name, the machine's layout and temp names) taken out of a message that will be stored</span>
+<span class="sd">or published, such as an error reason on a sound's record.</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span>
 
 <span class="c1">#: The attribute / field keys whose string values are sensitive and redacted. The</span>
 <span class="c1">#: narration/prompt/query surfaces report 12 §11 names; ``context_text`` / ``narration``</span>
@@ -764,6 +772,68 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: credits.py ethos). Inject a secret per-deployment salt for stronger</span>
 <span class="c1">#: dictionary-attack resistance (at the cost of cross-process diffability).</span>
 <span class="n">_DEFAULT_SALT</span> <span class="o">=</span> <span class="s2">"foley-obs-v1"</span>
+
+
+<span class="c1">#: What :func:`redact_paths` puts in place of a path.</span>
+<span class="n">PATH_PLACEHOLDER</span> <span class="o">=</span> <span class="s2">"&lt;path&gt;"</span>
+
+<span class="c1">#: The characters that end a path in a message (whitespace, quotes, a closing bracket,</span>
+<span class="c1">#: a comma or semicolon).</span>
+<span class="n">_PATH_END</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"\s'</span><span class="se">\"</span><span class="s2">,;)\]"</span>
+
+<span class="c1">#: An absolute path not already caught by a known prefix: a ``file:`` URL, a UNC path</span>
+<span class="c1">#: (``\\\\server\\share``), a drive path (``C:\\`` or ``C:/``), or a POSIX path (a ``/``</span>
+<span class="c1">#: not inside a word, a ``~/`` path, a URL or a relative path).</span>
+<span class="n">_ABSOLUTE_PATH</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">rf</span><span class="s2">"file:/[^</span><span class="si">{</span><span class="n">_PATH_END</span><span class="si">}</span><span class="s2">]*"</span>
+    <span class="c1"># A Windows drive or UNC path may hold spaces ("C:\\Users\\Ada Lovelace\\..."): it</span>
+    <span class="c1"># takes the rest of the line, so nothing after a space can leak (fail-closed).</span>
+    <span class="sa">r</span><span class="s2">"|</span><span class="se">\\\\</span><span class="s2">[^\n]+"</span>
+    <span class="sa">r</span><span class="s2">"|(?&lt;![A-Za-z])[A-Za-z]:[</span><span class="se">\\</span><span class="s2">/][^\n]*"</span>
+    <span class="sa">rf</span><span class="s2">"|(?&lt;![\w~.:/</span><span class="se">\\</span><span class="s2">])/[^</span><span class="si">{</span><span class="n">_PATH_END</span><span class="si">}</span><span class="s2">]+"</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="local_path_prefixes">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.redact.html#foley.obs.local_path_prefixes">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">local_path_prefixes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""This machine's home and temp directories, as given and resolved (``/var`` → ``/private/var``)."""</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">(),</span> <span class="n">Path</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">())):</span>
+        <span class="n">found</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">path</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">found</span></div>
+
+
+
+<div class="viewcode-block" id="redact_paths">
+<a class="viewcode-back" href="../../../_autosummary/foley.obs.redact.html#foley.obs.redact_paths">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">redact_paths</span><span class="p">(</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">prefixes</span><span class="p">:</span> <span class="s2">"Iterable[str]"</span> <span class="o">=</span> <span class="p">(),</span>
+    <span class="n">placeholder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">PATH_PLACEHOLDER</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``text`` with every local filesystem path replaced by ``placeholder``.</span>
+
+<span class="sd">    Known prefixes go first, longest first and verbatim, so a path with a space in it</span>
+<span class="sd">    (``C:\\Users\\Ada Lovelace\\...``) goes whole: ``prefixes`` (an interpreter, its</span>
+<span class="sd">    venv) and :func:`local_path_prefixes`, each also with ``/`` for ``\\``. Then any</span>
+<span class="sd">    other absolute path (:data:`_ABSOLUTE_PATH`), and a path's rest after a replaced</span>
+<span class="sd">    prefix, become ``placeholder`` too.</span>
+
+<span class="sd">    &gt;&gt;&gt; redact_paths("no file at /opt/x/y.wav; see ~/notes, a/b")</span>
+<span class="sd">    'no file at &lt;path&gt;; see ~/notes, a/b'</span>
+<span class="sd">    &gt;&gt;&gt; redact_paths(r"cannot open C:\\Users\\Ada Lovelace\\x.wav (exit 2)")</span>
+<span class="sd">    'cannot open &lt;path&gt;'</span>
+<span class="sd">    """</span>
+    <span class="n">known</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">(</span><span class="o">*</span><span class="n">prefixes</span><span class="p">,</span> <span class="o">*</span><span class="n">local_path_prefixes</span><span class="p">())</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">}</span>
+    <span class="n">known</span> <span class="o">|=</span> <span class="p">{</span><span class="n">p</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"/"</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">known</span><span class="p">}</span>
+    <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">known</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">placeholder</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">_ABSOLUTE_PATH</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">placeholder</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+    <span class="n">rest</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">rf</span><span class="s2">"(?:</span><span class="si">{</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">placeholder</span><span class="p">)</span><span class="si">}</span><span class="s2">[^</span><span class="si">{</span><span class="n">_PATH_END</span><span class="si">}</span><span class="s2">]*)+"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rest</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">placeholder</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span></div>
+
 
 
 <div class="viewcode-block" id="RedactionMode">

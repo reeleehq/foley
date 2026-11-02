@@ -11,8 +11,9 @@ downloads — so the gate runs on every index/embedder/prompt PR in foley’s CI
 
 Tier-2 fit-judging (#10b) — “does this clip match the intent?” — lives alongside
 in [`fit`](foley.eval.fit.html.md#module-foley.eval.fit) (the judge-based fit harness), [`reliability`](foley.eval.reliability.html.md#module-foley.eval.reliability)
-(Krippendorff’s α + judge-vs-human calibration), and [`fidelity`](foley.eval.fidelity.html.md#module-foley.eval.fidelity)
-(set-level FAD/KAD generation fidelity). Tier-2 is nightly/pre-release + cost-gated —
+(Krippendorff’s α + judge-vs-human calibration), [`fidelity`](foley.eval.fidelity.html.md#module-foley.eval.fidelity)
+(set-level FAD/KAD generation fidelity) and [`aesthetics`](foley.eval.aesthetics.html.md#module-foley.eval.aesthetics) (per-clip
+Audiobox Aesthetics scores). Tier-2 is nightly/pre-release + cost-gated —
 NOT a per-PR gate — and never touches the retrieval ranking. The tasteful-weave eval (#45),
 [`taste`](foley.eval.taste.html.md#module-foley.eval.taste), reports the restraint / licence / placement / loudness of a whole
 sound design over a passage set, with a pluggable `designer` (`foley.score` by
@@ -51,6 +52,7 @@ default). All numpy imports are function-local so `import foley` stays dol-only.
 | [`frechet_distance`](#foley.eval.frechet_distance)(x_ref, x_gen)                     | Fréchet distance between two embedding sets (the FAD formula).                                                                                           |
 | [`kernel_audio_distance`](#foley.eval.kernel_audio_distance)(x_ref, x_gen, \*[, ...])     | Kernel Audio Distance — the unbiased RBF-MMD² between two embedding sets.                                                                                |
 | [`generation_fidelity`](#foley.eval.generation_fidelity)(ref_wavs, gen_wavs, \*, ...)   | Embed two wav sets through an injected embedder and compute FAD or KAD.                                                                                  |
+| [`aesthetics_verdict`](#foley.eval.aesthetics_verdict)(audio_bytes, \*, scorer)        | Score `audio_bytes` with `scorer` and compare with its `floors`; never raises.                                                                           |
 | [`run_taste_eval`](#foley.eval.run_taste_eval)([passages, designer, ...])          | Run `designer` over `passages` and report restraint / licence / placement / loudness.                                                                    |
 | [`score_designer`](#foley.eval.score_designer)(\*[, library, intended_use, ...])   | A designer that is `foley.score` on a passage's segments (and audio, when it has some).                                                                  |
 | [`load_passages`](#foley.eval.load_passages)([path])                              | Load a passage set: a JSON list of `{id, segments, audio?}`.                                                                                             |
@@ -64,13 +66,28 @@ default). All numpy imports are function-local so `import foley` stays dol-only.
 | [`FitReport`](#foley.eval.FitReport)([per_item, fit_precision, ...])         | Tier-2 fit metrics over a stratified golden sample (JSON-friendly, mirrors `RetrievalReport`). |
 | [`AlphaResult`](#foley.eval.AlphaResult)(alpha, level, n_units, n_raters, ...) | A judge-vs-human calibration record (surfaced as `FitReport.calibration`).                     |
 | [`FidelityStamp`](#foley.eval.FidelityStamp)(embedding, toolkit, version, ...)   | Mandatory provenance for a FAD/KAD score — it is meaningless without it.                       |
-| [`FadtkFidelity`](#foley.eval.FadtkFidelity)(\*[, python, model, models, ...])   | Set-level FAD computed by `fadtk` in a separate interpreter.                                   |
+| [`AestheticsScore`](#foley.eval.AestheticsScore)(axes, model, version[, toolkit])  | One clip's Audiobox Aesthetics scores, stamped with the model and toolkit version.             |
+| [`AudioboxAesthetics`](#foley.eval.AudioboxAesthetics)(\*[, checkpoint, ...])         | Per-clip Audiobox Aesthetics scores computed in a separate interpreter.                        |
+| [`FadtkFidelity`](#foley.eval.FadtkFidelity)(\*[, model, models, workers])       | Set-level FAD computed by `fadtk` in a separate interpreter.                                   |
 | [`KadtkFidelity`](#foley.eval.KadtkFidelity)(\*[, bandwidth, device, ...])       | Set-level KAD computed by `kadtk` in a separate interpreter.                                   |
 | [`FidelityResult`](#foley.eval.FidelityResult)(metric, value, stamp[, params])    | A stamped set-level fidelity score (attached to `FitReport.fidelity`).                         |
 | [`Passage`](#foley.eval.Passage)(id, segments[, audio])                    | One narration passage: its segments (what `foley.score` takes) and optional audio.             |
 | [`PassageTaste`](#foley.eval.PassageTaste)(passage_id[, restraint, ...])        | The four measurements for one passage (JSON-safe via `to_dict()`).                             |
 | [`TasteReport`](#foley.eval.TasteReport)(designer, passages[, thresholds])     | The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.         |
 | [`TasteThresholds`](#foley.eval.TasteThresholds)([sounds_per_sentence, ...])       | The eval's thresholds in one place (defaults: the module constants).                           |
+
+### *class* foley.eval.AestheticsScore(axes, model, version, toolkit='audiobox_aesthetics')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One clip’s Audiobox Aesthetics scores, stamped with the model and toolkit version.
+
+#### to_dict()
+
+The axes and the stamp as one flat JSON-safe dict.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### *class* foley.eval.AlphaResult(alpha, level, n_units, n_raters, percent_agreement, band, promoted)
 
@@ -82,7 +99,47 @@ Codifies the promotion rule in one legible object: a model judge is `promoted` t
 unattended use only once its agreement with the human raters reaches the
 `ALPHA_RELIABLE` band.
 
-### *class* foley.eval.FadtkFidelity(\*, python=None, model=None, models=None, workers=1, env=None, timeout=None, runner=<function run>)
+### *class* foley.eval.AudioboxAesthetics(, checkpoint=None, batch_size=10, min_seconds=0.025, floors=None, timeout=300.0, \*\*kwargs)
+
+Bases: [`ExternalToolkit`](foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit)
+
+Per-clip Audiobox Aesthetics scores computed in a separate interpreter.
+
+:param those of [`ExternalToolkit`](foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit) (`python`:
+:param :
+:param `env`:
+:param `timeout`:
+:param `runner`):
+:param plus:
+:type checkpoint: [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+:param checkpoint: A local `checkpoint.pt` (default: the Hugging Face weights,
+
+> downloaded once into the toolkit’s `HF_HOME`; pass
+> `env={"HF_HOME": ...}` to choose where).
+* **Parameters:**
+  * **batch_size** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Clips a forward pass.
+  * **min_seconds** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The shortest clip scored (default `AES_MIN_SECONDS`).
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before a run is abandoned (default `AES_TIMEOUT_S`;
+    `None` waits forever).
+  * **floors** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – Axis → the lowest acceptable score, read by
+    [`aesthetics_verdict()`](#foley.eval.aesthetics_verdict) (default none: the verdict only records).
+
+#### check_clip(clip, , sr, name)
+
+Refuse a clip shorter than `min_seconds`, or with a NaN or infinite sample.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### failure_hints *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {"No module named 'requests'": "audiobox_aesthetics imports requests without declaring it. Install: uv venv ~/venvs/aes --python 3.11 && uv pip install --python ~/venvs/aes/bin/python audiobox_aesthetics requests; then AudioboxAesthetics(python='~/venvs/aes/bin/python') or set FOLEY_AES_PYTHON"}*
+
+A substring of a failed run’s output → what to do about it.
+
+#### isolation_reason *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'it brings its own torch and torchaudio, which foley does not depend on'*
+
+Why the toolkit cannot live in foley’s environment (said when no interpreter).
+
+### *class* foley.eval.FadtkFidelity(, model=None, models=None, workers=1, \*\*kwargs)
 
 Bases: [`ExternalFidelity`](foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)
 
@@ -367,6 +424,28 @@ Plain, JSON-safe dict.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.eval.aesthetics_verdict(audio_bytes, , scorer)
+
+Score `audio_bytes` with `scorer` and compare with its `floors`; never raises.
+
+* **Returns:**
+  `status` (`scored` | `ok` | `low` | `unchecked`),
+  and the four axes (`None` for a non-finite one), `model`, `toolkit` and
+  `version` when scored, plus `floors` and the axes `below` them when the
+  scorer has floors; or a short `reason` (`_reason()`: no paths, no program
+  output) when not scored: no interpreter, a clip too short, a timeout, a crash,
+  a scorer answering anything but one well-formed score.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+```pycon
+>>> import numpy as np
+>>> from foley.audio import encode
+>>> clip = encode(np.zeros(1600), 16000)
+>>> aesthetics_verdict(clip, scorer=lambda wavs, *, sr: [])["reason"]
+'ValueError: the scorer returned 0 scores for 1 clip'
+```
 
 ### foley.eval.average_precision_at_k(qrels_q, run_q, k=10, , rel_lvl=1)
 
@@ -795,20 +874,22 @@ once its numbers are stable, which records that judge in `run`.
 
 ### Modules
 
-| [`bradley_terry`](foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)         | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                                                                                                                    |
-|--------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`panel`](foley.eval.panel.html.md#module-foley.eval.panel)                         | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49).                                                                                        |
-| [`baseline`](foley.eval.baseline.html.md#module-foley.eval.baseline)                   | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                                                                                                         |
-| [`embedder`](foley.eval.embedder.html.md#module-foley.eval.embedder)                   | A deterministic, numpy-only text embedder for the retrieval eval gate.                                                                                                                       |
-| [`external_fidelity`](foley.eval.external_fidelity.html.md#module-foley.eval.external_fidelity) | Set-level fidelity from a reference toolkit run in its own interpreter (#48, #262).                                                                                                          |
-| [`fadtk`](foley.eval.fadtk.html.md#module-foley.eval.fadtk)                         | Reference FAD from Microsoft's `fadtk`, run in its own interpreter (#48).                                                                                                                    |
-| [`fidelity`](foley.eval.fidelity.html.md#module-foley.eval.fidelity)                   | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).                                                                                                  |
-| [`fit`](foley.eval.fit.html.md#module-foley.eval.fit)                             | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).                                                                                               |
-| [`golden`](foley.eval.golden.html.md#module-foley.eval.golden)                       | The frozen golden set + the deterministic Ring-0 retrieval harness.                                                                                                                          |
-| [`kadtk`](foley.eval.kadtk.html.md#module-foley.eval.kadtk)                         | Reference KAD from `kadtk`, run in its own interpreter (#262).                                                                                                                               |
-| [`panel_page`](foley.eval.panel_page.html.md#module-foley.eval.panel_page)               | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.                                                                                               |
-| [`prompt_match`](foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)           | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).                                                                                                      |
-| [`reliability`](foley.eval.reliability.html.md#module-foley.eval.reliability)             | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                                                                                                       |
-| [`retrieval`](foley.eval.retrieval.html.md#module-foley.eval.retrieval)                 | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                                                                                                                  |
-| [`taste`](foley.eval.taste.html.md#module-foley.eval.taste)                         | The "tasteful weave" eval: does a sound designer produce a *restrained, clean, well-placed* result?                                                                                          |
-| [`toolkit_driver`](foley.eval.toolkit_driver.html.md#module-foley.eval.toolkit_driver)       | The script [`foley.eval.external_fidelity.ExternalFidelity`](foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity) runs inside a toolkit's interpreter. |
+| [`bradley_terry`](foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)         | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                                                                                                                |
+|--------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`panel`](foley.eval.panel.html.md#module-foley.eval.panel)                         | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49).                                                                                    |
+| [`aesthetics`](foley.eval.aesthetics.html.md#module-foley.eval.aesthetics)               | Per-clip generation quality from Meta's Audiobox Aesthetics, run in its own interpreter (#262).                                                                                          |
+| [`baseline`](foley.eval.baseline.html.md#module-foley.eval.baseline)                   | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                                                                                                     |
+| [`embedder`](foley.eval.embedder.html.md#module-foley.eval.embedder)                   | A deterministic, numpy-only text embedder for the retrieval eval gate.                                                                                                                   |
+| [`external_fidelity`](foley.eval.external_fidelity.html.md#module-foley.eval.external_fidelity) | Set-level fidelity from a reference toolkit run in its own interpreter (#48, #262).                                                                                                      |
+| [`external_toolkit`](foley.eval.external_toolkit.html.md#module-foley.eval.external_toolkit)   | A reference toolkit run in its own interpreter: the part every adapter shares (#48, #262).                                                                                               |
+| [`fadtk`](foley.eval.fadtk.html.md#module-foley.eval.fadtk)                         | Reference FAD from Microsoft's `fadtk`, run in its own interpreter (#48).                                                                                                                |
+| [`fidelity`](foley.eval.fidelity.html.md#module-foley.eval.fidelity)                   | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).                                                                                              |
+| [`fit`](foley.eval.fit.html.md#module-foley.eval.fit)                             | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).                                                                                           |
+| [`golden`](foley.eval.golden.html.md#module-foley.eval.golden)                       | The frozen golden set + the deterministic Ring-0 retrieval harness.                                                                                                                      |
+| [`kadtk`](foley.eval.kadtk.html.md#module-foley.eval.kadtk)                         | Reference KAD from `kadtk`, run in its own interpreter (#262).                                                                                                                           |
+| [`panel_page`](foley.eval.panel_page.html.md#module-foley.eval.panel_page)               | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.                                                                                           |
+| [`prompt_match`](foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)           | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).                                                                                                  |
+| [`reliability`](foley.eval.reliability.html.md#module-foley.eval.reliability)             | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                                                                                                   |
+| [`retrieval`](foley.eval.retrieval.html.md#module-foley.eval.retrieval)                 | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                                                                                                              |
+| [`taste`](foley.eval.taste.html.md#module-foley.eval.taste)                         | The "tasteful weave" eval: does a sound designer produce a *restrained, clean, well-placed* result?                                                                                      |
+| [`toolkit_driver`](foley.eval.toolkit_driver.html.md#module-foley.eval.toolkit_driver)       | The script [`foley.eval.external_toolkit.ExternalToolkit`](foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit) runs inside a toolkit's interpreter. |

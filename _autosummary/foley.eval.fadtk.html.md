@@ -29,8 +29,8 @@ differ unless fed the same frames. Install and model choice: `misc/docs/fidelity
 
 ### Classes
 
-| [`FadtkFidelity`](#foley.eval.fadtk.FadtkFidelity)(\*[, python, model, models, ...])   | Set-level FAD computed by `fadtk` in a separate interpreter.   |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
+| [`FadtkFidelity`](#foley.eval.fadtk.FadtkFidelity)(\*[, model, models, workers])   | Set-level FAD computed by `fadtk` in a separate interpreter.   |
+|------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
 
 ### foley.eval.fadtk.FADTK_MODELS *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]* *= {'clap-2023': ('CLAPModel', ('2023',)), 'clap-laion-audio': ('CLAPLaionModel', ('audio',)), 'clap-laion-music': ('CLAPLaionModel', ('music',)), 'encodec-emb': ('EncodecEmbModel', ('24k',)), 'encodec-emb-48k': ('EncodecEmbModel', ('48k',)), 'vggish': ('VGGishModel', ())}*
 
@@ -38,7 +38,7 @@ fadtk embedding models by fadtk’s name → (loader class in `fadtk.model_loade
 its constructor args). Extend with `FadtkFidelity(models={...})`. The default,
 `encodec-emb`, downloads the smallest weights (EnCodec 24 kHz, about 90 MB).
 
-### *class* foley.eval.fadtk.FadtkFidelity(\*, python=None, model=None, models=None, workers=1, env=None, timeout=None, runner=<function run>)
+### *class* foley.eval.fadtk.FadtkFidelity(, model=None, models=None, workers=1, \*\*kwargs)
 
 Bases: [`ExternalFidelity`](foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)
 

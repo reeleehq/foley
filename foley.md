@@ -1,4 +1,4 @@
-> built 2026-11-02 08:19 UTC from a4c9416 (main) · foley 0.0.132. Details: build_info.json
+> built 2026-11-02 08:45 UTC from cbe8e2a (main) · foley 0.0.133. Details: build_info.json
 
 # index.html.md
 
@@ -4418,6 +4418,165 @@ declared end (dropped).
   [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)
 
 
+# _autosummary/foley.eval.aesthetics.html.md
+
+# foley.eval.aesthetics
+
+Per-clip generation quality from Meta’s Audiobox Aesthetics, run in its own interpreter (#262).
+
+[Audiobox Aesthetics](https://github.com/facebookresearch/audiobox-aesthetics)
+(Tjandra et al. 2025, arXiv:2502.05139) predicts four scores, each on about 1 to 10,
+for one clip of speech, music or sound: **CE** content enjoyment, **CU** content
+usefulness, **PC** production complexity, **PQ** production quality
+([`AES_AXES`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.AES_AXES)). It is a WavLM encoder with four regression heads, so it scores a
+clip on its own, with no reference set and no prompt: a per-sample signal, where FAD
+and KAD ([`foley.eval.fadtk`](_autosummary/foley.eval.fadtk.html.md#module-foley.eval.fadtk), [`foley.eval.kadtk`](_autosummary/foley.eval.kadtk.html.md#module-foley.eval.kadtk)) are set-level.
+
+The package pulls a recent torch and torchaudio foley does not depend on, so
+[`AudioboxAesthetics`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.AudioboxAesthetics) runs it through the same mechanism as fadtk and kadtk
+([`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit): temporary mono WAVs,
+[`foley.eval.toolkit_driver`](_autosummary/foley.eval.toolkit_driver.html.md#module-foley.eval.toolkit_driver) in the toolkit’s interpreter, JSON back):
+
+```default
+aes = AudioboxAesthetics(python="~/venvs/aes/bin/python")  # or $FOLEY_AES_PYTHON
+[score] = aes([wav], sr=48000)
+score.axes  # {'CE': 2.48, 'CU': 5.79, 'PC': 1.74, 'PQ': 6.03}
+```
+
+[`aesthetics_verdict()`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.aesthetics_verdict) turns a score into the JSON-safe dict `foley.generate`
+records as `qc['aesthetics']` when asked (`generate(..., aesthetics=True)`). It is
+a record, not a gate: with no `AudioboxAesthetics.floors` its status is
+`'scored'`; with floors, `'low'` flags the clip in the notes, and it is still
+stored. The model is not a fault detector: digital silence scored PQ 7.0, above a
+clean tone (6.0) and white noise (4.8), so Tier-0 QC ([`foley.qc`](_autosummary/foley.qc.html.md#module-foley.qc)) stays the gate
+for broken audio, and no floor is calibrated for SFX yet.
+
+Licences: the code is CC-BY-4.0, with parts from microsoft/unilm under MIT. Meta’s
+README states no separate licence for the weights; the Hugging Face repo that holds
+them (`facebook/audiobox-aesthetics`, about 415 MB) is tagged `cc-by-4.0`.
+
+### Module Attributes
+
+| [`AES_AXES`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.AES_AXES)       | The four axes, in the toolkit's order, → what each one rates.                          |
+|-----------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| [`AES_PYTHON_ENV`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.AES_PYTHON_ENV) | The environment variable naming the toolkit's interpreter when `python=` is not given. |
+
+### Functions
+
+| [`aesthetics_verdict`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.aesthetics_verdict)(audio_bytes, \*, scorer)   | Score `audio_bytes` with `scorer` and compare with its `floors`; never raises.                                                                                                                           |
+|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`note_for`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.note_for)(result)                              | The one-line candidate note for an [`aesthetics_verdict()`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.aesthetics_verdict) result.                                                                                         |
+| [`resolve_aesthetics`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.resolve_aesthetics)(aesthetics)                | `generate(aesthetics=)` as a scorer: `None`/`False` none, `True` the default [`AudioboxAesthetics`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.AudioboxAesthetics), a scorer (`(wavs, *, sr) -> [AestheticsScore]`) as is. |
+
+### Classes
+
+| [`AestheticsScore`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.AestheticsScore)(axes, model, version[, toolkit])   | One clip's Audiobox Aesthetics scores, stamped with the model and toolkit version.   |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| [`AudioboxAesthetics`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.AudioboxAesthetics)(\*[, checkpoint, ...])          | Per-clip Audiobox Aesthetics scores computed in a separate interpreter.              |
+
+### foley.eval.aesthetics.AES_AXES *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {'CE': 'content enjoyment', 'CU': 'content usefulness', 'PC': 'production complexity', 'PQ': 'production quality'}*
+
+The four axes, in the toolkit’s order, → what each one rates.
+
+### foley.eval.aesthetics.AES_PYTHON_ENV *= 'FOLEY_AES_PYTHON'*
+
+The environment variable naming the toolkit’s interpreter when `python=` is not given.
+
+### *class* foley.eval.aesthetics.AestheticsScore(axes, model, version, toolkit='audiobox_aesthetics')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One clip’s Audiobox Aesthetics scores, stamped with the model and toolkit version.
+
+#### to_dict()
+
+The axes and the stamp as one flat JSON-safe dict.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### *class* foley.eval.aesthetics.AudioboxAesthetics(, checkpoint=None, batch_size=10, min_seconds=0.025, floors=None, timeout=300.0, \*\*kwargs)
+
+Bases: [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit)
+
+Per-clip Audiobox Aesthetics scores computed in a separate interpreter.
+
+:param those of [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit) (`python`:
+:param :
+:param `env`:
+:param `timeout`:
+:param `runner`):
+:param plus:
+:type checkpoint: [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+:param checkpoint: A local `checkpoint.pt` (default: the Hugging Face weights,
+
+> downloaded once into the toolkit’s `HF_HOME`; pass
+> `env={"HF_HOME": ...}` to choose where).
+* **Parameters:**
+  * **batch_size** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Clips a forward pass.
+  * **min_seconds** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The shortest clip scored (default `AES_MIN_SECONDS`).
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before a run is abandoned (default `AES_TIMEOUT_S`;
+    `None` waits forever).
+  * **floors** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – Axis → the lowest acceptable score, read by
+    [`aesthetics_verdict()`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.aesthetics_verdict) (default none: the verdict only records).
+
+#### check_clip(clip, , sr, name)
+
+Refuse a clip shorter than `min_seconds`, or with a NaN or infinite sample.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### failure_hints *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {"No module named 'requests'": "audiobox_aesthetics imports requests without declaring it. Install: uv venv ~/venvs/aes --python 3.11 && uv pip install --python ~/venvs/aes/bin/python audiobox_aesthetics requests; then AudioboxAesthetics(python='~/venvs/aes/bin/python') or set FOLEY_AES_PYTHON"}*
+
+A substring of a failed run’s output → what to do about it.
+
+#### isolation_reason *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'it brings its own torch and torchaudio, which foley does not depend on'*
+
+Why the toolkit cannot live in foley’s environment (said when no interpreter).
+
+### foley.eval.aesthetics.aesthetics_verdict(audio_bytes, , scorer)
+
+Score `audio_bytes` with `scorer` and compare with its `floors`; never raises.
+
+* **Returns:**
+  `status` (`scored` | `ok` | `low` | `unchecked`),
+  and the four axes (`None` for a non-finite one), `model`, `toolkit` and
+  `version` when scored, plus `floors` and the axes `below` them when the
+  scorer has floors; or a short `reason` (`_reason()`: no paths, no program
+  output) when not scored: no interpreter, a clip too short, a timeout, a crash,
+  a scorer answering anything but one well-formed score.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+```pycon
+>>> import numpy as np
+>>> from foley.audio import encode
+>>> clip = encode(np.zeros(1600), 16000)
+>>> aesthetics_verdict(clip, scorer=lambda wavs, *, sr: [])["reason"]
+'ValueError: the scorer returned 0 scores for 1 clip'
+```
+
+### foley.eval.aesthetics.note_for(result)
+
+The one-line candidate note for an [`aesthetics_verdict()`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.aesthetics_verdict) result.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.eval.aesthetics.resolve_aesthetics(aesthetics)
+
+`generate(aesthetics=)` as a scorer: `None`/`False` none, `True` the default
+[`AudioboxAesthetics`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.AudioboxAesthetics), a scorer (`(wavs, *, sr) -> [AestheticsScore]`) as is.
+
+An external-toolkit scorer’s interpreter is resolved here, so an explicit opt-in
+without one fails before anything is paid for (as `watermark=True` does).
+
+* **Raises:**
+  * [**FileNotFoundError**](https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError) – If the scorer’s interpreter is not given or not found.
+  * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – For any other value.
+
+
 # _autosummary/foley.eval.baseline.html.md
 
 # foley.eval.baseline
@@ -4671,57 +4830,43 @@ for KAD) must do the embedding, the audio loading and the statistics, and both p
 MFA and aeneas: the two wav sets are written as mono 16-bit WAVs to a temporary
 directory, the toolkit’s interpreter runs [`foley.eval.toolkit_driver`](_autosummary/foley.eval.toolkit_driver.html.md#module-foley.eval.toolkit_driver) on them, and
 its JSON answer becomes a [`FidelityResult`](_autosummary/foley.eval.fidelity.html.md#foley.eval.fidelity.FidelityResult) stamped with
-the toolkit and its version. Nothing from either toolkit is imported here.
+the toolkit and its version. Nothing from either toolkit is imported here. The
+interpreter, the run and the failure hints are [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit)’s,
+shared with the per-clip [`AudioboxAesthetics`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.AudioboxAesthetics).
 
 A toolkit is a subclass that sets the class attributes (its name, metric, model table,
 interpreter variable, install line) and says how many embedding frames each set needs
 ([`ExternalFidelity.frames_needed()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.frames_needed)); see [`foley.eval.fadtk`](_autosummary/foley.eval.fadtk.html.md#module-foley.eval.fadtk) and
 [`foley.eval.kadtk`](_autosummary/foley.eval.kadtk.html.md#module-foley.eval.kadtk).
 
-### Module Attributes
-
-| [`DRIVER`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.DRIVER)       | The script run inside a toolkit's interpreter.   |
-|---------------------------------------------------------------|--------------------------------------------------|
-| [`MAX_CHANNELS`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.MAX_CHANNELS) | The most channels a clip may have.               |
-
-### Functions
-
-| [`as_frames_channels`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.as_frames_channels)(wav)                          | `wav` as foley's `(frames,)` / `(frames, channels)`; refuse other layouts.        |
-|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| [`write_set`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.write_set)(wavs, sr, folder, \*, prefix[, check]) | Write each waveform in `wavs` as a mono 16-bit WAV in `folder`; return the count. |
-
 ### Classes
 
-| [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)(\*[, python, model, models, ...])   | A set-level fidelity score computed by a toolkit in a separate interpreter.   |
-|-------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)(\*[, model, models, workers])   | A set-level fidelity score computed by a toolkit in a separate interpreter.   |
+|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
 
-### foley.eval.external_fidelity.DRIVER *= PosixPath('/home/runner/work/foley/foley/foley/eval/toolkit_driver.py')*
+### *class* foley.eval.external_fidelity.ExternalFidelity(, model=None, models=None, workers=1, \*\*kwargs)
 
-The script run inside a toolkit’s interpreter.
-
-### *class* foley.eval.external_fidelity.ExternalFidelity(\*, python=None, model=None, models=None, workers=1, env=None, timeout=None, runner=<function run>)
-
-Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+Bases: [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit)
 
 A set-level fidelity score computed by a toolkit in a separate interpreter.
 
 Subclasses set `toolkit`, `metric`, `default_models`,
 `default_model`, `python_env`, `install` (and optionally
-[`failure_hints`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.failure_hints)), and implement [`frames_needed()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.frames_needed); [`options()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.options) adds
+`failure_hints`), and implement [`frames_needed()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.frames_needed); [`options()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.options) adds
 toolkit-specific entries to the driver’s spec, and [`check_clip()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.check_clip) refuses a clip
 the toolkit cannot embed before anything runs.
 
 * **Parameters:**
-  * **python** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An interpreter with the toolkit installed, usually in its own venv
+  * **python** – An interpreter with the toolkit installed, usually in its own venv
     (default: `$<python_env>`; neither set raises with the install line).
   * **model** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – A key of `models` (default `default_model`).
   * **models** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]]) – Model name → (loader class in `<toolkit>.model_loader`, its args)
     (default `default_models`).
   * **workers** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The toolkit’s embedding worker processes (each loads the model).
-  * **env** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Variables added to this process’s environment for the program, e.g.
+  * **env** – Variables added to this process’s environment for the program, e.g.
     `{"TORCH_HOME": ...}` to choose where the weights are cached.
-  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
-  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+  * **timeout** – Seconds before the run is abandoned (default: none).
+  * **runner** – Runs the command (default `subprocess.run`).
 
 #### check_clip(clip, , sr, name)
 
@@ -4730,16 +4875,16 @@ Raise [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueErr
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-#### failure_hints *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {}*
-
-A substring of a failed run’s output → what to do about it.
-
 #### frames_needed(dim)
 
 The fewest embedding frames a set may have for a `dim`-dim embedding, and why.
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`int`](https://docs.python.org/3/builtins/functions.html#int), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+#### isolation_reason *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= "it pins numpy<2, so it cannot live in foley's environment"*
+
+Why the toolkit cannot live in foley’s environment (said when no interpreter).
 
 #### options()
 
@@ -4753,12 +4898,108 @@ Toolkit-specific entries for the driver’s spec (default: none).
 Below this many embedding frames in a set, warn that the score is mostly noise
 (`None`: never). The hard floor is [`frames_needed()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity.frames_needed).
 
-### foley.eval.external_fidelity.MAX_CHANNELS *= 8*
+
+# _autosummary/foley.eval.external_toolkit.html.md
+
+# foley.eval.external_toolkit
+
+A reference toolkit run in its own interpreter: the part every adapter shares (#48, #262).
+
+Several evaluation toolkits cannot share foley’s environment: `fadtk` and `kadtk`
+pin `numpy<2` and an old torch, `audiobox_aesthetics` pulls a recent torch foley
+does not need. Each runs the way [`foley.external`](_autosummary/foley.external.html.md#module-foley.external) runs MFA and aeneas: clips are
+written as mono 16-bit WAVs to a temporary directory, the toolkit’s interpreter runs
+[`foley.eval.toolkit_driver`](_autosummary/foley.eval.toolkit_driver.html.md#module-foley.eval.toolkit_driver) on a JSON spec, and the JSON it writes back is the
+answer. [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit) is that mechanism (the interpreter and its install
+hint, the failure hints, the run); what is computed over the files is the subclass’s:
+a set-level distance ([`foley.eval.external_fidelity.ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)) or a
+per-clip score ([`foley.eval.aesthetics.AudioboxAesthetics`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.AudioboxAesthetics)). Nothing from any
+toolkit is imported here.
+
+### Module Attributes
+
+| [`DRIVER`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.DRIVER)       | The script run inside a toolkit's interpreter.   |
+|---------------------------------------------------------------|--------------------------------------------------|
+| [`MAX_CHANNELS`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.MAX_CHANNELS) | The most channels a clip may have.               |
+
+### Functions
+
+| [`as_frames_channels`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.as_frames_channels)(wav)                          | `wav` as foley's `(frames,)` / `(frames, channels)`; refuse other layouts.        |
+|---------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| [`write_set`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.write_set)(wavs, sr, folder, \*, prefix[, check]) | Write each waveform in `wavs` as a mono 16-bit WAV in `folder`; return the count. |
+
+### Classes
+
+| [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit)(\*[, python, env, timeout, ...])   | A toolkit run by [`DRIVER`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.DRIVER) in a separate interpreter.   |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+
+### foley.eval.external_toolkit.DRIVER *= PosixPath('/home/runner/work/foley/foley/foley/eval/toolkit_driver.py')*
+
+The script run inside a toolkit’s interpreter.
+
+### *class* foley.eval.external_toolkit.ExternalToolkit(\*, python=None, env=None, timeout=None, runner=<function run>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A toolkit run by [`DRIVER`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.DRIVER) in a separate interpreter.
+
+Subclasses set `toolkit`, `python_env`, `install`,
+[`isolation_reason`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit.isolation_reason) (and optionally [`failure_hints`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit.failure_hints)), and call
+[`run_driver()`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit.run_driver).
+
+* **Parameters:**
+  * **python** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An interpreter with the toolkit installed, usually in its own venv
+    (default: `$<python_env>`; neither set raises with the install line).
+  * **env** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Variables added to this process’s environment for the program, e.g.
+    `{"TORCH_HOME": ...}` or `{"HF_HOME": ...}` to choose where weights go.
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
+  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+
+#### failure_hints *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {}*
+
+A substring of a failed run’s output → what to do about it.
+
+#### isolation_reason *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+Why the toolkit cannot live in foley’s environment (said when no interpreter).
+
+#### local_paths()
+
+The interpreter as given and resolved, and its venv root: paths to keep out of
+anything published ([`foley.obs.redact.redact_paths()`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.redact_paths)). Never raises.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+#### resolve_python()
+
+The toolkit’s interpreter as an executable path; raise with the install line if none.
+
+Cheap (no program runs), so a caller can fail before anything is paid for.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### run_driver(spec, , out, cwd, what, python=None)
+
+Run [`DRIVER`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.DRIVER) on `spec` (plus `toolkit` and `out`); return its JSON.
+
+`python` is the already-resolved interpreter (default: resolve it now); a
+caller resolves it first to fail before writing any file.
+
+* **Raises:**
+  * [**FileNotFoundError**](https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError) – If no interpreter is given or found.
+  * [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If the toolkit fails (its output tail, and any matching
+        [`failure_hints`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit.failure_hints), are in the message).
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.eval.external_toolkit.MAX_CHANNELS *= 8*
 
 The most channels a clip may have. A 2-D array with at most this many rows and more
-columns than that is channel-first, and is refused ([`as_frames_channels()`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.as_frames_channels)).
+columns than that is channel-first, and is refused ([`as_frames_channels()`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.as_frames_channels)).
 
-### foley.eval.external_fidelity.as_frames_channels(wav)
+### foley.eval.external_toolkit.as_frames_channels(wav)
 
 `wav` as foley’s `(frames,)` / `(frames, channels)`; refuse other layouts.
 
@@ -4767,12 +5008,13 @@ A channel-first `(2, N)` array would otherwise be read as two-sample clips.
 * **Return type:**
   `ndarray`
 
-### foley.eval.external_fidelity.write_set(wavs, sr, folder, , prefix, check=None)
+### foley.eval.external_toolkit.write_set(wavs, sr, folder, , prefix, check=None)
 
 Write each waveform in `wavs` as a mono 16-bit WAV in `folder`; return the count.
 
-`check(clip, sr=, name=)`, if given, sees each `(frames[, channels])` clip first
-and raises to refuse it.
+Files are named `<prefix><n:05d>.wav` from 1, so sorting them keeps the input
+order. `check(clip, sr=, name=)`, if given, sees each `(frames[, channels])`
+clip first and raises to refuse it.
 
 * **Return type:**
   [`int`](https://docs.python.org/3/builtins/functions.html#int)
@@ -4811,8 +5053,8 @@ differ unless fed the same frames. Install and model choice: `misc/docs/fidelity
 
 ### Classes
 
-| [`FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity)(\*[, python, model, models, ...])   | Set-level FAD computed by `fadtk` in a separate interpreter.   |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
+| [`FadtkFidelity`](_autosummary/foley.eval.fadtk.html.md#foley.eval.fadtk.FadtkFidelity)(\*[, model, models, workers])   | Set-level FAD computed by `fadtk` in a separate interpreter.   |
+|------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
 
 ### foley.eval.fadtk.FADTK_MODELS *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)]]* *= {'clap-2023': ('CLAPModel', ('2023',)), 'clap-laion-audio': ('CLAPLaionModel', ('audio',)), 'clap-laion-music': ('CLAPLaionModel', ('music',)), 'encodec-emb': ('EncodecEmbModel', ('24k',)), 'encodec-emb-48k': ('EncodecEmbModel', ('48k',)), 'vggish': ('VGGishModel', ())}*
 
@@ -4820,7 +5062,7 @@ fadtk embedding models by fadtk’s name → (loader class in `fadtk.model_loade
 its constructor args). Extend with `FadtkFidelity(models={...})`. The default,
 `encodec-emb`, downloads the smallest weights (EnCodec 24 kHz, about 90 MB).
 
-### *class* foley.eval.fadtk.FadtkFidelity(\*, python=None, model=None, models=None, workers=1, env=None, timeout=None, runner=<function run>)
+### *class* foley.eval.fadtk.FadtkFidelity(, model=None, models=None, workers=1, \*\*kwargs)
 
 Bases: [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)
 
@@ -5281,8 +5523,9 @@ downloads — so the gate runs on every index/embedder/prompt PR in foley’s CI
 
 Tier-2 fit-judging (#10b) — “does this clip match the intent?” — lives alongside
 in [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit) (the judge-based fit harness), [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)
-(Krippendorff’s α + judge-vs-human calibration), and [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)
-(set-level FAD/KAD generation fidelity). Tier-2 is nightly/pre-release + cost-gated —
+(Krippendorff’s α + judge-vs-human calibration), [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)
+(set-level FAD/KAD generation fidelity) and [`aesthetics`](_autosummary/foley.eval.aesthetics.html.md#module-foley.eval.aesthetics) (per-clip
+Audiobox Aesthetics scores). Tier-2 is nightly/pre-release + cost-gated —
 NOT a per-PR gate — and never touches the retrieval ranking. The tasteful-weave eval (#45),
 [`taste`](_autosummary/foley.eval.taste.html.md#module-foley.eval.taste), reports the restraint / licence / placement / loudness of a whole
 sound design over a passage set, with a pluggable `designer` (`foley.score` by
@@ -5321,6 +5564,7 @@ default). All numpy imports are function-local so `import foley` stays dol-only.
 | [`frechet_distance`](_autosummary/foley.eval.html.md#foley.eval.frechet_distance)(x_ref, x_gen)                     | Fréchet distance between two embedding sets (the FAD formula).                                                                                           |
 | [`kernel_audio_distance`](_autosummary/foley.eval.html.md#foley.eval.kernel_audio_distance)(x_ref, x_gen, \*[, ...])     | Kernel Audio Distance — the unbiased RBF-MMD² between two embedding sets.                                                                                |
 | [`generation_fidelity`](_autosummary/foley.eval.html.md#foley.eval.generation_fidelity)(ref_wavs, gen_wavs, \*, ...)   | Embed two wav sets through an injected embedder and compute FAD or KAD.                                                                                  |
+| [`aesthetics_verdict`](_autosummary/foley.eval.html.md#foley.eval.aesthetics_verdict)(audio_bytes, \*, scorer)        | Score `audio_bytes` with `scorer` and compare with its `floors`; never raises.                                                                           |
 | [`run_taste_eval`](_autosummary/foley.eval.html.md#foley.eval.run_taste_eval)([passages, designer, ...])          | Run `designer` over `passages` and report restraint / licence / placement / loudness.                                                                    |
 | [`score_designer`](_autosummary/foley.eval.html.md#foley.eval.score_designer)(\*[, library, intended_use, ...])   | A designer that is `foley.score` on a passage's segments (and audio, when it has some).                                                                  |
 | [`load_passages`](_autosummary/foley.eval.html.md#foley.eval.load_passages)([path])                              | Load a passage set: a JSON list of `{id, segments, audio?}`.                                                                                             |
@@ -5334,13 +5578,28 @@ default). All numpy imports are function-local so `import foley` stays dol-only.
 | [`FitReport`](_autosummary/foley.eval.html.md#foley.eval.FitReport)([per_item, fit_precision, ...])         | Tier-2 fit metrics over a stratified golden sample (JSON-friendly, mirrors `RetrievalReport`). |
 | [`AlphaResult`](_autosummary/foley.eval.html.md#foley.eval.AlphaResult)(alpha, level, n_units, n_raters, ...) | A judge-vs-human calibration record (surfaced as `FitReport.calibration`).                     |
 | [`FidelityStamp`](_autosummary/foley.eval.html.md#foley.eval.FidelityStamp)(embedding, toolkit, version, ...)   | Mandatory provenance for a FAD/KAD score — it is meaningless without it.                       |
-| [`FadtkFidelity`](_autosummary/foley.eval.html.md#foley.eval.FadtkFidelity)(\*[, python, model, models, ...])   | Set-level FAD computed by `fadtk` in a separate interpreter.                                   |
+| [`AestheticsScore`](_autosummary/foley.eval.html.md#foley.eval.AestheticsScore)(axes, model, version[, toolkit])  | One clip's Audiobox Aesthetics scores, stamped with the model and toolkit version.             |
+| [`AudioboxAesthetics`](_autosummary/foley.eval.html.md#foley.eval.AudioboxAesthetics)(\*[, checkpoint, ...])         | Per-clip Audiobox Aesthetics scores computed in a separate interpreter.                        |
+| [`FadtkFidelity`](_autosummary/foley.eval.html.md#foley.eval.FadtkFidelity)(\*[, model, models, workers])       | Set-level FAD computed by `fadtk` in a separate interpreter.                                   |
 | [`KadtkFidelity`](_autosummary/foley.eval.html.md#foley.eval.KadtkFidelity)(\*[, bandwidth, device, ...])       | Set-level KAD computed by `kadtk` in a separate interpreter.                                   |
 | [`FidelityResult`](_autosummary/foley.eval.html.md#foley.eval.FidelityResult)(metric, value, stamp[, params])    | A stamped set-level fidelity score (attached to `FitReport.fidelity`).                         |
 | [`Passage`](_autosummary/foley.eval.html.md#foley.eval.Passage)(id, segments[, audio])                    | One narration passage: its segments (what `foley.score` takes) and optional audio.             |
 | [`PassageTaste`](_autosummary/foley.eval.html.md#foley.eval.PassageTaste)(passage_id[, restraint, ...])        | The four measurements for one passage (JSON-safe via `to_dict()`).                             |
 | [`TasteReport`](_autosummary/foley.eval.html.md#foley.eval.TasteReport)(designer, passages[, thresholds])     | The tasteful-weave eval over a passage set: per passage + aggregated, plus thresholds.         |
 | [`TasteThresholds`](_autosummary/foley.eval.html.md#foley.eval.TasteThresholds)([sounds_per_sentence, ...])       | The eval's thresholds in one place (defaults: the module constants).                           |
+
+### *class* foley.eval.AestheticsScore(axes, model, version, toolkit='audiobox_aesthetics')
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One clip’s Audiobox Aesthetics scores, stamped with the model and toolkit version.
+
+#### to_dict()
+
+The axes and the stamp as one flat JSON-safe dict.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### *class* foley.eval.AlphaResult(alpha, level, n_units, n_raters, percent_agreement, band, promoted)
 
@@ -5352,7 +5611,47 @@ Codifies the promotion rule in one legible object: a model judge is `promoted` t
 unattended use only once its agreement with the human raters reaches the
 `ALPHA_RELIABLE` band.
 
-### *class* foley.eval.FadtkFidelity(\*, python=None, model=None, models=None, workers=1, env=None, timeout=None, runner=<function run>)
+### *class* foley.eval.AudioboxAesthetics(, checkpoint=None, batch_size=10, min_seconds=0.025, floors=None, timeout=300.0, \*\*kwargs)
+
+Bases: [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit)
+
+Per-clip Audiobox Aesthetics scores computed in a separate interpreter.
+
+:param those of [`ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit) (`python`:
+:param :
+:param `env`:
+:param `timeout`:
+:param `runner`):
+:param plus:
+:type checkpoint: [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+:param checkpoint: A local `checkpoint.pt` (default: the Hugging Face weights,
+
+> downloaded once into the toolkit’s `HF_HOME`; pass
+> `env={"HF_HOME": ...}` to choose where).
+* **Parameters:**
+  * **batch_size** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Clips a forward pass.
+  * **min_seconds** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The shortest clip scored (default `AES_MIN_SECONDS`).
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before a run is abandoned (default `AES_TIMEOUT_S`;
+    `None` waits forever).
+  * **floors** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – Axis → the lowest acceptable score, read by
+    [`aesthetics_verdict()`](_autosummary/foley.eval.html.md#foley.eval.aesthetics_verdict) (default none: the verdict only records).
+
+#### check_clip(clip, , sr, name)
+
+Refuse a clip shorter than `min_seconds`, or with a NaN or infinite sample.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+#### failure_hints *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {"No module named 'requests'": "audiobox_aesthetics imports requests without declaring it. Install: uv venv ~/venvs/aes --python 3.11 && uv pip install --python ~/venvs/aes/bin/python audiobox_aesthetics requests; then AudioboxAesthetics(python='~/venvs/aes/bin/python') or set FOLEY_AES_PYTHON"}*
+
+A substring of a failed run’s output → what to do about it.
+
+#### isolation_reason *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)* *= 'it brings its own torch and torchaudio, which foley does not depend on'*
+
+Why the toolkit cannot live in foley’s environment (said when no interpreter).
+
+### *class* foley.eval.FadtkFidelity(, model=None, models=None, workers=1, \*\*kwargs)
 
 Bases: [`ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity)
 
@@ -5637,6 +5936,28 @@ Plain, JSON-safe dict.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.eval.aesthetics_verdict(audio_bytes, , scorer)
+
+Score `audio_bytes` with `scorer` and compare with its `floors`; never raises.
+
+* **Returns:**
+  `status` (`scored` | `ok` | `low` | `unchecked`),
+  and the four axes (`None` for a non-finite one), `model`, `toolkit` and
+  `version` when scored, plus `floors` and the axes `below` them when the
+  scorer has floors; or a short `reason` (`_reason()`: no paths, no program
+  output) when not scored: no interpreter, a clip too short, a timeout, a crash,
+  a scorer answering anything but one well-formed score.
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+```pycon
+>>> import numpy as np
+>>> from foley.audio import encode
+>>> clip = encode(np.zeros(1600), 16000)
+>>> aesthetics_verdict(clip, scorer=lambda wavs, *, sr: [])["reason"]
+'ValueError: the scorer returned 0 scores for 1 clip'
+```
 
 ### foley.eval.average_precision_at_k(qrels_q, run_q, k=10, , rel_lvl=1)
 
@@ -6065,23 +6386,25 @@ once its numbers are stable, which records that judge in `run`.
 
 ### Modules
 
-| [`bradley_terry`](_autosummary/foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)         | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                                                                                                                    |
-|--------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`panel`](_autosummary/foley.eval.panel.html.md#module-foley.eval.panel)                         | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49).                                                                                        |
-| [`baseline`](_autosummary/foley.eval.baseline.html.md#module-foley.eval.baseline)                   | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                                                                                                         |
-| [`embedder`](_autosummary/foley.eval.embedder.html.md#module-foley.eval.embedder)                   | A deterministic, numpy-only text embedder for the retrieval eval gate.                                                                                                                       |
-| [`external_fidelity`](_autosummary/foley.eval.external_fidelity.html.md#module-foley.eval.external_fidelity) | Set-level fidelity from a reference toolkit run in its own interpreter (#48, #262).                                                                                                          |
-| [`fadtk`](_autosummary/foley.eval.fadtk.html.md#module-foley.eval.fadtk)                         | Reference FAD from Microsoft's `fadtk`, run in its own interpreter (#48).                                                                                                                    |
-| [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)                   | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).                                                                                                  |
-| [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit)                             | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).                                                                                               |
-| [`golden`](_autosummary/foley.eval.golden.html.md#module-foley.eval.golden)                       | The frozen golden set + the deterministic Ring-0 retrieval harness.                                                                                                                          |
-| [`kadtk`](_autosummary/foley.eval.kadtk.html.md#module-foley.eval.kadtk)                         | Reference KAD from `kadtk`, run in its own interpreter (#262).                                                                                                                               |
-| [`panel_page`](_autosummary/foley.eval.panel_page.html.md#module-foley.eval.panel_page)               | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.                                                                                               |
-| [`prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)           | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).                                                                                                      |
-| [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)             | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                                                                                                       |
-| [`retrieval`](_autosummary/foley.eval.retrieval.html.md#module-foley.eval.retrieval)                 | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                                                                                                                  |
-| [`taste`](_autosummary/foley.eval.taste.html.md#module-foley.eval.taste)                         | The "tasteful weave" eval: does a sound designer produce a *restrained, clean, well-placed* result?                                                                                          |
-| [`toolkit_driver`](_autosummary/foley.eval.toolkit_driver.html.md#module-foley.eval.toolkit_driver)       | The script [`foley.eval.external_fidelity.ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity) runs inside a toolkit's interpreter. |
+| [`bradley_terry`](_autosummary/foley.eval.bradley_terry.html.md#module-foley.eval.bradley_terry)         | Bradley-Terry ranking from pairwise preferences (2AFC human panels; #49).                                                                                                                |
+|--------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`panel`](_autosummary/foley.eval.panel.html.md#module-foley.eval.panel)                         | Human-panel infrastructure: blind tasks, a listening page, responses, and the calibration feed (#49).                                                                                    |
+| [`aesthetics`](_autosummary/foley.eval.aesthetics.html.md#module-foley.eval.aesthetics)               | Per-clip generation quality from Meta's Audiobox Aesthetics, run in its own interpreter (#262).                                                                                          |
+| [`baseline`](_autosummary/foley.eval.baseline.html.md#module-foley.eval.baseline)                   | The committed nDCG baseline — the PR gate's SSOT + staleness stamps.                                                                                                                     |
+| [`embedder`](_autosummary/foley.eval.embedder.html.md#module-foley.eval.embedder)                   | A deterministic, numpy-only text embedder for the retrieval eval gate.                                                                                                                   |
+| [`external_fidelity`](_autosummary/foley.eval.external_fidelity.html.md#module-foley.eval.external_fidelity) | Set-level fidelity from a reference toolkit run in its own interpreter (#48, #262).                                                                                                      |
+| [`external_toolkit`](_autosummary/foley.eval.external_toolkit.html.md#module-foley.eval.external_toolkit)   | A reference toolkit run in its own interpreter: the part every adapter shares (#48, #262).                                                                                               |
+| [`fadtk`](_autosummary/foley.eval.fadtk.html.md#module-foley.eval.fadtk)                         | Reference FAD from Microsoft's `fadtk`, run in its own interpreter (#48).                                                                                                                |
+| [`fidelity`](_autosummary/foley.eval.fidelity.html.md#module-foley.eval.fidelity)                   | Set-level generation-fidelity — Fréchet Audio Distance (FAD) + Kernel Audio Distance (KAD).                                                                                              |
+| [`fit`](_autosummary/foley.eval.fit.html.md#module-foley.eval.fit)                             | Tier-2 fit evaluation — "does the accepted clip actually match the intent?" (report 08 §2/§5).                                                                                           |
+| [`golden`](_autosummary/foley.eval.golden.html.md#module-foley.eval.golden)                       | The frozen golden set + the deterministic Ring-0 retrieval harness.                                                                                                                      |
+| [`kadtk`](_autosummary/foley.eval.kadtk.html.md#module-foley.eval.kadtk)                         | Reference KAD from `kadtk`, run in its own interpreter (#262).                                                                                                                           |
+| [`panel_page`](_autosummary/foley.eval.panel_page.html.md#module-foley.eval.panel_page)               | A self-contained listening page for a human panel (#49): open it in a browser, rate, download.                                                                                           |
+| [`prompt_match`](_autosummary/foley.eval.prompt_match.html.md#module-foley.eval.prompt_match)           | Calibrate the prompt-match threshold of a text-audio embedder on a labelled set (#111).                                                                                                  |
+| [`reliability`](_autosummary/foley.eval.reliability.html.md#module-foley.eval.reliability)             | Inter-rater reliability — Krippendorff's α + the judge-vs-human calibration guardrail.                                                                                                   |
+| [`retrieval`](_autosummary/foley.eval.retrieval.html.md#module-foley.eval.retrieval)                 | Tier-1 retrieval metrics + run assembly — pure stdlib, CI-safe, ranx-exact.                                                                                                              |
+| [`taste`](_autosummary/foley.eval.taste.html.md#module-foley.eval.taste)                         | The "tasteful weave" eval: does a sound designer produce a *restrained, clean, well-placed* result?                                                                                      |
+| [`toolkit_driver`](_autosummary/foley.eval.toolkit_driver.html.md#module-foley.eval.toolkit_driver)       | The script [`foley.eval.external_toolkit.ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit) runs inside a toolkit's interpreter. |
 
 
 # _autosummary/foley.eval.kadtk.html.md
@@ -7145,15 +7468,16 @@ production behaviour.
 
 # foley.eval.toolkit_driver
 
-The script [`foley.eval.external_fidelity.ExternalFidelity`](_autosummary/foley.eval.external_fidelity.html.md#foley.eval.external_fidelity.ExternalFidelity) runs inside a toolkit’s interpreter.
+The script [`foley.eval.external_toolkit.ExternalToolkit`](_autosummary/foley.eval.external_toolkit.html.md#foley.eval.external_toolkit.ExternalToolkit) runs inside a toolkit’s interpreter.
 
 It is not imported by foley: foley runs it as `python -I toolkit_driver.py SPEC_JSON`
-with the interpreter of a virtualenv that has the toolkit (`fadtk` or `kadtk`)
-installed (both pin `numpy<2` and an old torch, so neither can share foley’s
-environment). It imports only the standard library and the toolkit, and only inside
-the functions, so foley’s test collection and linters can load this file without them.
+with the interpreter of a virtualenv that has the toolkit (`fadtk`, `kadtk` or
+`audiobox_aesthetics`) installed (none can share foley’s environment). It imports
+only the standard library and the toolkit, and only inside the functions, so foley’s
+test collection and linters can load this file without them. `spec["task"]` picks
+what it computes ([`TASKS`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.TASKS)): `fidelity` (the default) or `aesthetics`.
 
-It builds ONE embedding model from `spec["loader"]` (a class name in
+`fidelity` builds ONE embedding model from `spec["loader"]` (a class name in
 `<toolkit>.model_loader`) and `spec["args"]`. The toolkits’ own command lines
 (`python -m fadtk`, `python -m kadtk`) instantiate every model they know first,
 and the CLAP constructors download their checkpoints (about 2.5 GB); building one
@@ -7163,15 +7487,28 @@ score, the toolkit’s version, the model name, the embedding-frame counts, the
 embedding dimension and the scorer’s parameters (kadtk: the bandwidth it used and its
 scale) as JSON to `spec["out"]`.
 
+`aesthetics` scores each WAV of `spec["clips"]` (in that order) with Meta’s
+Audiobox Aesthetics predictor (`initialize_predictor`, from `spec["checkpoint"]`
+or, when that is `None`, the Hugging Face `facebook/audiobox-aesthetics` weights),
+`spec["batch_size"]` clips a forward pass. The WAVs are read with the standard
+library’s `wave` (foley writes them as 16-bit PCM) rather than `torchaudio.load`,
+which needs `torchcodec` from torchaudio 2.9 on. It writes one `{CE, CU, PC, PQ}`
+row per clip, the package version and the model as JSON to `spec["out"]`.
+
 ### Module Attributes
 
 | [`TOOLKITS`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.TOOLKITS)   | Toolkit name → a function of the spec returning (embedding cacher, scorer).   |
 |-------------------------------------------------------------|-------------------------------------------------------------------------------|
+| [`TASKS`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.TASKS)      | `spec["task"]` → the function of the spec computing the answer.               |
 
 ### Functions
 
-| [`main`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.main)(spec_json)   | Score `spec['ref']` against `spec['gen']` with `spec['toolkit']`; write JSON to `spec['out']`.   |
-|--------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| [`main`](_autosummary/foley.eval.toolkit_driver.html.md#foley.eval.toolkit_driver.main)(spec_json)   | Compute `spec['task']` (default `fidelity`) and write its JSON to `spec['out']`.   |
+|--------------------------------------------------------------------|------------------------------------------------------------------------------------|
+
+### foley.eval.toolkit_driver.TASKS *= {'aesthetics': <function \_aesthetics>, 'fidelity': <function \_fidelity>}*
+
+`spec["task"]` → the function of the spec computing the answer.
 
 ### foley.eval.toolkit_driver.TOOLKITS *= {'fadtk': <function \_fadtk>, 'kadtk': <function \_kadtk>}*
 
@@ -7179,7 +7516,7 @@ Toolkit name → a function of the spec returning (embedding cacher, scorer).
 
 ### foley.eval.toolkit_driver.main(spec_json)
 
-Score `spec['ref']` against `spec['gen']` with `spec['toolkit']`; write JSON to `spec['out']`.
+Compute `spec['task']` (default `fidelity`) and write its JSON to `spec['out']`.
 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -10205,7 +10542,7 @@ RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
 
   FusedHit\`s, each carrying its raw component scores.
 
-### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, provider_params=None, variation=0, derived_from=None, \*\*affordances)
+### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, aesthetics=None, intended_use=None, provider_params=None, variation=0, derived_from=None, \*\*affordances)
 
 Generate a sound effect for `prompt` and add it to the library (by-value).
 
@@ -10285,6 +10622,15 @@ training uses).
     embedder (CLAP) and flag a mismatch in the notes and
     `sound.qc['prompt_match']`; `'unchecked'` (with the reason) when no
     capable embedder is available. Default `True`.
+  * **aesthetics** – Score the stored clip with Meta’s Audiobox Aesthetics (content
+    enjoyment / usefulness, production complexity / quality, about 1 to 10) and
+    record them in `sound.qc['aesthetics']` and the notes: `True` for
+    [`foley.eval.AudioboxAesthetics`](_autosummary/foley.eval.html.md#foley.eval.AudioboxAesthetics) in the interpreter
+    `$FOLEY_AES_PYTHON` names, or a configured instance (`floors=` flags a
+    low axis). Never a quarantine; `'unchecked'` (with the reason) when it
+    cannot run; an explicit opt-in without the interpreter raises before the
+    spend. Default `None`: off (it loads a 415 MB model per clip, so per take
+    of [`variations()`](_autosummary/foley.html.md#foley.variations)).
   * **intended_use** – The [`IntendedUse`](_autosummary/foley.html.md#foley.IntendedUse) the clip must serve when an order is
     walked (default: commercial): a backend whose licence cannot serve it is
     skipped before anything is paid for. A single named backend is used as
@@ -17580,21 +17926,32 @@ Stdlib-only. Applied at TWO boundaries (belt-and-suspenders, mirroring
 * **emit-time** (net): [`Redactor.redact_manifest()`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.Redactor.redact_manifest) deep-walks the serialized
   manifest before the store write, catching anything stuffed past record-time.
 
+[`redact_paths()`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.redact_paths) is the other half: local filesystem paths (which carry the user’s
+name, the machine’s layout and temp names) taken out of a message that will be stored
+or published, such as an error reason on a sound’s record.
+
 ### Module Attributes
 
-| [`REDACT_FIELDS`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.REDACT_FIELDS)   | The attribute / field keys whose string values are sensitive and redacted.   |
-|------------------------------------------------------------------|------------------------------------------------------------------------------|
+| [`REDACT_FIELDS`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.REDACT_FIELDS)    | The attribute / field keys whose string values are sensitive and redacted.                    |
+|-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| [`PATH_PLACEHOLDER`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.PATH_PLACEHOLDER) | What [`redact_paths()`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.redact_paths) puts in place of a path. |
 
 ### Functions
 
-| [`redact_text`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.redact_text)(text, \*[, mode, salt, preview_chars])   | Redact one string per `mode`.   |
-|-------------------------------------------------------------------------------------------------------|---------------------------------|
+| [`local_path_prefixes`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.local_path_prefixes)()                              | This machine's home and temp directories, as given and resolved (`/var` → `/private/var`).   |
+|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| [`redact_paths`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.redact_paths)(text, \*[, prefixes, placeholder])    | `text` with every local filesystem path replaced by `placeholder`.                           |
+| [`redact_text`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.redact_text)(text, \*[, mode, salt, preview_chars]) | Redact one string per `mode`.                                                                |
 
 ### Classes
 
 | [`RedactionMode`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.RedactionMode)(\*values)                       | How a sensitive string is rendered in telemetry (`str`-Enum → serializes cleanly).   |
 |------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
 | [`Redactor`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.Redactor)([mode, salt, preview_chars, fields]) | The SSOT applier: redacts sensitive keys in values, attribute dicts, and manifests.  |
+
+### foley.obs.redact.PATH_PLACEHOLDER *= '<path>'*
+
+What [`redact_paths()`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.redact_paths) puts in place of a path.
 
 ### foley.obs.redact.REDACT_FIELDS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'context_text', 'gen_ai.completion', 'gen_ai.prompt', 'generation_prompt', 'generation_prompt_used', 'narration', 'negative_prompt', 'onset', 'prompt', 'prompt_used', 'query'})*
 
@@ -17643,6 +18000,33 @@ sensitive value a caller stuffed past the record-time layer.
 #### redact_value(key, value)
 
 Redact `value` iff `key` is a sensitive field and `value` is a string.
+
+### foley.obs.redact.local_path_prefixes()
+
+This machine’s home and temp directories, as given and resolved (`/var` → `/private/var`).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.obs.redact.redact_paths(text, , prefixes=(), placeholder='<path>')
+
+`text` with every local filesystem path replaced by `placeholder`.
+
+Known prefixes go first, longest first and verbatim, so a path with a space in it
+(`C:\Users\Ada Lovelace\...`) goes whole: `prefixes` (an interpreter, its
+venv) and [`local_path_prefixes()`](_autosummary/foley.obs.redact.html.md#foley.obs.redact.local_path_prefixes), each also with `/` for `\`. Then any
+other absolute path (`_ABSOLUTE_PATH`), and a path’s rest after a replaced
+prefix, become `placeholder` too.
+
+```pycon
+>>> redact_paths("no file at /opt/x/y.wav; see ~/notes, a/b")
+'no file at <path>; see ~/notes, a/b'
+>>> redact_paths(r"cannot open C:\Users\Ada Lovelace\x.wav (exit 2)")
+'cannot open <path>'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.obs.redact.redact_text(text, , mode=RedactionMode.hash, salt='foley-obs-v1', preview_chars=0)
 
@@ -18380,7 +18764,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc three-note', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta dum', 'netflix intro', 'tudum', 'netflix chime', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'ta-dum', 'netflix sound', 'tudum', 'netflix intro', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -23050,7 +23434,7 @@ adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters
       over every declaration before anything is registered, so the outcome does
       not depend on the order the packages are walked in).
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, derived_from=None, takes=1, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, aesthetics=None, provider_params=None, variation=0, derived_from=None, takes=1, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -23136,6 +23520,18 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     embedder ([`foley.prompt_match.prompt_match()`](_autosummary/foley.prompt_match.html.md#foley.prompt_match.prompt_match)) and put the verdict in
     `qc['prompt_match']` and the notes: a mismatch is flagged, not
     quarantined; without a capable embedder the verdict is `'unchecked'`.
+  * **aesthetics** – Score each stored clip with Audiobox Aesthetics
+    ([`foley.eval.aesthetics.aesthetics_verdict()`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.aesthetics_verdict)) and put CE / CU / PC /
+    PQ in `qc['aesthetics']` and the notes. `True` uses
+    [`AudioboxAesthetics`](_autosummary/foley.eval.aesthetics.html.md#foley.eval.aesthetics.AudioboxAesthetics) (its interpreter from
+    `$FOLEY_AES_PYTHON`); a scorer instance (with `floors=` to flag a low
+    axis) is used as is. A record, never a quarantine: a clip below a floor is
+    stored and noted, and one that cannot be scored is `'unchecked'` with the
+    reason (`True` without an interpreter raises before anything is paid
+    for). A duplicate of a stored clip scores that clip if it has no score
+    yet. `None` (default) skips it: each scored clip, so each take of
+    [`foley.variations()`](_autosummary/foley.html.md#foley.variations), runs the model in its own process (a 415 MB
+    checkpoint loaded per take, seconds a clip).
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Vendor-native params foley has no unified affordance for
     (#61), e.g. `{"num_inference_steps": 50}`. Merged by the backend over
     its translated native params (a provider param wins), recorded in the
@@ -30438,16 +30834,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 08:19 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/a4c94163f5182f14ead7ff8356ed252889170bfb"><code>a4c9416</code></a> on branch <code>main</code>, for **foley 0.0.132** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 08:45 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/cbe8e2a484da866f251a91667c5c388573eecbc7"><code>cbe8e2a</code></a> on branch <code>main</code>, for **foley 0.0.133** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.133) is behind the latest release on PyPI (0.0.134): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/a4c94163f5182f14ead7ff8356ed252889170bfb"><code>a4c94163f5182f14ead7ff8356ed252889170bfb</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/cbe8e2a484da866f251a91667c5c388573eecbc7"><code>cbe8e2a484da866f251a91667c5c388573eecbc7</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -30458,9 +30856,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41411901293">41411901293</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41415081895">41415081895</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>a4c94163f5182f14ead7ff8356ed252889170bfb</code> (in the history of the built commit) |
+| Event commit | <code>cbe8e2a484da866f251a91667c5c388573eecbc7</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -30485,13 +30883,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.132/">0.0.132</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.134/">0.0.134</a>, newer than the documented version (0.0.133).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout a4c94163f5182f14ead7ff8356ed252889170bfb
+git checkout cbe8e2a484da866f251a91667c5c388573eecbc7
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

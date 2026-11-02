@@ -9,6 +9,7 @@ foley.eval.toolkit\_driver
    .. autosummary::
    
       TOOLKITS
+      TASKS
    
    .. rubric:: Functions
 

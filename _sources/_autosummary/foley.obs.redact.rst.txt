@@ -9,11 +9,14 @@ foley.obs.redact
    .. autosummary::
    
       REDACT_FIELDS
+      PATH_PLACEHOLDER
    
    .. rubric:: Functions
 
    .. autosummary::
    
+      local_path_prefixes
+      redact_paths
       redact_text
    
    .. rubric:: Classes

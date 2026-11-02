@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=9efdc3d6"></script>
+    <script src="../_static/documentation_options.js?v=3a8547cf"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.132" />
+  <meta name="docsearch:version" content="0.0.133" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -1481,6 +1481,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">repair</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">level</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">check_prompt</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">aesthetics</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">intended_use</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">provider_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">variation</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -1565,6 +1566,15 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            embedder (CLAP) and flag a mismatch in the notes and</span>
 <span class="sd">            ``sound.qc['prompt_match']``; ``'unchecked'`` (with the reason) when no</span>
 <span class="sd">            capable embedder is available. Default ``True``.</span>
+<span class="sd">        aesthetics: Score the stored clip with Meta's Audiobox Aesthetics (content</span>
+<span class="sd">            enjoyment / usefulness, production complexity / quality, about 1 to 10) and</span>
+<span class="sd">            record them in ``sound.qc['aesthetics']`` and the notes: ``True`` for</span>
+<span class="sd">            :class:`foley.eval.AudioboxAesthetics` in the interpreter</span>
+<span class="sd">            ``$FOLEY_AES_PYTHON`` names, or a configured instance (``floors=`` flags a</span>
+<span class="sd">            low axis). Never a quarantine; ``'unchecked'`` (with the reason) when it</span>
+<span class="sd">            cannot run; an explicit opt-in without the interpreter raises before the</span>
+<span class="sd">            spend. Default ``None``: off (it loads a 415 MB model per clip, so per take</span>
+<span class="sd">            of :func:`variations`).</span>
 <span class="sd">        intended_use: The :class:`IntendedUse` the clip must serve when an order is</span>
 <span class="sd">            walked (default: commercial): a backend whose licence cannot serve it is</span>
 <span class="sd">            skipped before anything is paid for. A single named backend is used as</span>
@@ -1645,6 +1655,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">repair</span><span class="o">=</span><span class="n">repair</span><span class="p">,</span>
         <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
         <span class="n">check_prompt</span><span class="o">=</span><span class="n">check_prompt</span><span class="p">,</span>
+        <span class="n">aesthetics</span><span class="o">=</span><span class="n">aesthetics</span><span class="p">,</span>
         <span class="n">variation</span><span class="o">=</span><span class="n">variation</span><span class="p">,</span>
         <span class="n">derived_from</span><span class="o">=</span><span class="n">derived_from</span><span class="p">,</span>
         <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>

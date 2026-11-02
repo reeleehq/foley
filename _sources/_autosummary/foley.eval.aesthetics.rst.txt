@@ -1,0 +1,28 @@
+foley.eval.aesthetics
+=====================
+
+.. automodule:: foley.eval.aesthetics
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      AES_AXES
+      AES_PYTHON_ENV
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      aesthetics_verdict
+      note_for
+      resolve_aesthetics
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AestheticsScore
+      AudioboxAesthetics
+   

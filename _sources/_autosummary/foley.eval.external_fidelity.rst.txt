@@ -4,20 +4,6 @@ foley.eval.external\_fidelity
 .. automodule:: foley.eval.external_fidelity
 
    
-   .. rubric:: Module Attributes
-
-   .. autosummary::
-   
-      DRIVER
-      MAX_CHANNELS
-   
-   .. rubric:: Functions
-
-   .. autosummary::
-   
-      as_frames_channels
-      write_set
-   
    .. rubric:: Classes
 
    .. autosummary::

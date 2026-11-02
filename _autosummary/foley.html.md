@@ -2948,7 +2948,7 @@ RRF-fuse a vector ranker’s hits with a keyword ranker’s hits.
 
   FusedHit\`s, each carrying its raw component scores.
 
-### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, intended_use=None, provider_params=None, variation=0, derived_from=None, \*\*affordances)
+### foley.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, budget=None, repair=True, level=None, check_prompt=True, aesthetics=None, intended_use=None, provider_params=None, variation=0, derived_from=None, \*\*affordances)
 
 Generate a sound effect for `prompt` and add it to the library (by-value).
 
@@ -3028,6 +3028,15 @@ training uses).
     embedder (CLAP) and flag a mismatch in the notes and
     `sound.qc['prompt_match']`; `'unchecked'` (with the reason) when no
     capable embedder is available. Default `True`.
+  * **aesthetics** – Score the stored clip with Meta’s Audiobox Aesthetics (content
+    enjoyment / usefulness, production complexity / quality, about 1 to 10) and
+    record them in `sound.qc['aesthetics']` and the notes: `True` for
+    [`foley.eval.AudioboxAesthetics`](foley.eval.html.md#foley.eval.AudioboxAesthetics) in the interpreter
+    `$FOLEY_AES_PYTHON` names, or a configured instance (`floors=` flags a
+    low axis). Never a quarantine; `'unchecked'` (with the reason) when it
+    cannot run; an explicit opt-in without the interpreter raises before the
+    spend. Default `None`: off (it loads a 415 MB model per clip, so per take
+    of [`variations()`](#foley.variations)).
   * **intended_use** – The [`IntendedUse`](#foley.IntendedUse) the clip must serve when an order is
     walked (default: commercial): a backend whose licence cannot serve it is
     skipped before anything is paid for. A single named backend is used as

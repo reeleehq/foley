@@ -38,6 +38,7 @@ foley.eval
       frechet_distance
       kernel_audio_distance
       generation_fidelity
+      aesthetics_verdict
       run_taste_eval
       score_designer
       load_passages
@@ -52,6 +53,8 @@ foley.eval
       FitReport
       AlphaResult
       FidelityStamp
+      AestheticsScore
+      AudioboxAesthetics
       FadtkFidelity
       KadtkFidelity
       FidelityResult
@@ -68,9 +71,11 @@ foley.eval
 
    bradley_terry
    panel
+   aesthetics
    baseline
    embedder
    external_fidelity
+   external_toolkit
    fadtk
    fidelity
    fit

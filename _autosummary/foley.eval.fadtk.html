@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=9efdc3d6"></script>
+    <script src="../_static/documentation_options.js?v=3a8547cf"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -54,11 +54,11 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="foley.eval.fidelity" href="foley.eval.fidelity.html" />
-    <link rel="prev" title="foley.eval.external_fidelity" href="foley.eval.external_fidelity.html" />
+    <link rel="prev" title="foley.eval.external_toolkit" href="foley.eval.external_toolkit.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.132" />
+  <meta name="docsearch:version" content="0.0.133" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -374,9 +374,11 @@
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="foley.eval.html">foley.eval</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.bradley_terry.html">foley.eval.bradley_terry</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.panel.html">foley.eval.panel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.aesthetics.html">foley.eval.aesthetics</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.baseline.html">foley.eval.baseline</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.embedder.html">foley.eval.embedder</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.external_fidelity.html">foley.eval.external_fidelity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.external_toolkit.html">foley.eval.external_toolkit</a></li>
 <li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">foley.eval.fadtk</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fidelity.html">foley.eval.fidelity</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.eval.fit.html">foley.eval.fit</a></li>
@@ -537,7 +539,7 @@ differ unless fed the same frames. Install and model choice: <code class="docuti
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.fadtk.FadtkFidelity" title="foley.eval.fadtk.FadtkFidelity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FadtkFidelity</span></code></a>(*[, python, model, models, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.eval.fadtk.FadtkFidelity" title="foley.eval.fadtk.FadtkFidelity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FadtkFidelity</span></code></a>(*[, model, models, workers])</p></td>
 <td><p>Set-level FAD computed by <code class="docutils literal notranslate"><span class="pre">fadtk</span></code> in a separate interpreter.</p></td>
 </tr>
 </tbody>
@@ -553,7 +555,7 @@ its constructor args). Extend with <code class="docutils literal notranslate"><s
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.eval.fadtk.FadtkFidelity">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.eval.fadtk.</span></span><span class="sig-name descname"><span class="pre">FadtkFidelity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">python</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/fadtk.html#FadtkFidelity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.fadtk.FadtkFidelity" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.eval.fadtk.</span></span><span class="sig-name descname"><span class="pre">FadtkFidelity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/eval/fadtk.html#FadtkFidelity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.eval.fadtk.FadtkFidelity" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="foley.eval.external_fidelity.html#foley.eval.external_fidelity.ExternalFidelity" title="foley.eval.external_fidelity.ExternalFidelity"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExternalFidelity</span></code></a></p>
 <p>Set-level FAD computed by <code class="docutils literal notranslate"><span class="pre">fadtk</span></code> in a separate interpreter.</p>
 <p>:param those of <a class="reference internal" href="foley.eval.external_fidelity.html#foley.eval.external_fidelity.ExternalFidelity" title="foley.eval.external_fidelity.ExternalFidelity"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExternalFidelity</span></code></a>; <code class="docutils literal notranslate"><span class="pre">model</span></code>:
@@ -587,12 +589,12 @@ its constructor args). Extend with <code class="docutils literal notranslate"><s
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="foley.eval.external_fidelity.html"
+       href="foley.eval.external_toolkit.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">foley.eval.external_fidelity</p>
+        <p class="prev-next-title">foley.eval.external_toolkit</p>
       </div>
     </a>
     <a class="right-next"

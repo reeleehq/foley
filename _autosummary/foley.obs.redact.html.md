@@ -18,21 +18,32 @@ Stdlib-only. Applied at TWO boundaries (belt-and-suspenders, mirroring
 * **emit-time** (net): [`Redactor.redact_manifest()`](#foley.obs.redact.Redactor.redact_manifest) deep-walks the serialized
   manifest before the store write, catching anything stuffed past record-time.
 
+[`redact_paths()`](#foley.obs.redact.redact_paths) is the other half: local filesystem paths (which carry the user’s
+name, the machine’s layout and temp names) taken out of a message that will be stored
+or published, such as an error reason on a sound’s record.
+
 ### Module Attributes
 
-| [`REDACT_FIELDS`](#foley.obs.redact.REDACT_FIELDS)   | The attribute / field keys whose string values are sensitive and redacted.   |
-|------------------------------------------------------------------|------------------------------------------------------------------------------|
+| [`REDACT_FIELDS`](#foley.obs.redact.REDACT_FIELDS)    | The attribute / field keys whose string values are sensitive and redacted.                    |
+|-------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| [`PATH_PLACEHOLDER`](#foley.obs.redact.PATH_PLACEHOLDER) | What [`redact_paths()`](#foley.obs.redact.redact_paths) puts in place of a path. |
 
 ### Functions
 
-| [`redact_text`](#foley.obs.redact.redact_text)(text, \*[, mode, salt, preview_chars])   | Redact one string per `mode`.   |
-|-------------------------------------------------------------------------------------------------------|---------------------------------|
+| [`local_path_prefixes`](#foley.obs.redact.local_path_prefixes)()                              | This machine's home and temp directories, as given and resolved (`/var` → `/private/var`).   |
+|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| [`redact_paths`](#foley.obs.redact.redact_paths)(text, \*[, prefixes, placeholder])    | `text` with every local filesystem path replaced by `placeholder`.                           |
+| [`redact_text`](#foley.obs.redact.redact_text)(text, \*[, mode, salt, preview_chars]) | Redact one string per `mode`.                                                                |
 
 ### Classes
 
 | [`RedactionMode`](#foley.obs.redact.RedactionMode)(\*values)                       | How a sensitive string is rendered in telemetry (`str`-Enum → serializes cleanly).   |
 |------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------|
 | [`Redactor`](#foley.obs.redact.Redactor)([mode, salt, preview_chars, fields]) | The SSOT applier: redacts sensitive keys in values, attribute dicts, and manifests.  |
+
+### foley.obs.redact.PATH_PLACEHOLDER *= '<path>'*
+
+What [`redact_paths()`](#foley.obs.redact.redact_paths) puts in place of a path.
 
 ### foley.obs.redact.REDACT_FIELDS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'context_text', 'gen_ai.completion', 'gen_ai.prompt', 'generation_prompt', 'generation_prompt_used', 'narration', 'negative_prompt', 'onset', 'prompt', 'prompt_used', 'query'})*
 
@@ -81,6 +92,33 @@ sensitive value a caller stuffed past the record-time layer.
 #### redact_value(key, value)
 
 Redact `value` iff `key` is a sensitive field and `value` is a string.
+
+### foley.obs.redact.local_path_prefixes()
+
+This machine’s home and temp directories, as given and resolved (`/var` → `/private/var`).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.obs.redact.redact_paths(text, , prefixes=(), placeholder='<path>')
+
+`text` with every local filesystem path replaced by `placeholder`.
+
+Known prefixes go first, longest first and verbatim, so a path with a space in it
+(`C:\Users\Ada Lovelace\...`) goes whole: `prefixes` (an interpreter, its
+venv) and [`local_path_prefixes()`](#foley.obs.redact.local_path_prefixes), each also with `/` for `\`. Then any
+other absolute path (`_ABSOLUTE_PATH`), and a path’s rest after a replaced
+prefix, become `placeholder` too.
+
+```pycon
+>>> redact_paths("no file at /opt/x/y.wav; see ~/notes, a/b")
+'no file at <path>; see ~/notes, a/b'
+>>> redact_paths(r"cannot open C:\Users\Ada Lovelace\x.wav (exit 2)")
+'cannot open <path>'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### foley.obs.redact.redact_text(text, , mode=RedactionMode.hash, salt='foley-obs-v1', preview_chars=0)
 

@@ -629,7 +629,7 @@ adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters
       over every declaration before anything is registered, so the outcome does
       not depend on the order the packages are walked in).
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, derived_from=None, takes=1, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, aesthetics=None, provider_params=None, variation=0, derived_from=None, takes=1, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -715,6 +715,18 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
     embedder ([`foley.prompt_match.prompt_match()`](foley.prompt_match.html.md#foley.prompt_match.prompt_match)) and put the verdict in
     `qc['prompt_match']` and the notes: a mismatch is flagged, not
     quarantined; without a capable embedder the verdict is `'unchecked'`.
+  * **aesthetics** – Score each stored clip with Audiobox Aesthetics
+    ([`foley.eval.aesthetics.aesthetics_verdict()`](foley.eval.aesthetics.html.md#foley.eval.aesthetics.aesthetics_verdict)) and put CE / CU / PC /
+    PQ in `qc['aesthetics']` and the notes. `True` uses
+    [`AudioboxAesthetics`](foley.eval.aesthetics.html.md#foley.eval.aesthetics.AudioboxAesthetics) (its interpreter from
+    `$FOLEY_AES_PYTHON`); a scorer instance (with `floors=` to flag a low
+    axis) is used as is. A record, never a quarantine: a clip below a floor is
+    stored and noted, and one that cannot be scored is `'unchecked'` with the
+    reason (`True` without an interpreter raises before anything is paid
+    for). A duplicate of a stored clip scores that clip if it has no score
+    yet. `None` (default) skips it: each scored clip, so each take of
+    [`foley.variations()`](foley.html.md#foley.variations), runs the model in its own process (a 415 MB
+    checkpoint loaded per take, seconds a clip).
   * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Vendor-native params foley has no unified affordance for
     (#61), e.g. `{"num_inference_steps": 50}`. Merged by the backend over
     its translated native params (a provider param wins), recorded in the
