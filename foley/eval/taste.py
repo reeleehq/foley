@@ -94,7 +94,9 @@ DEFAULT_PASSAGES_PATH = (
 #: An ellipsis (skipped), or a terminator run plus any closing quotes/brackets, followed by
 #: whitespace, the end, or the next sentence's capital / opening quote. A straight quote
 #: right after the terminator is read as closing (``"Stop!" she``), never as opening.
-_TERMINATOR = re.compile(r"(\.{2,}|…)|([.!?]+)[\"'”’)\]]*(?=\s+[A-Z“\"'‘(\[]|\s*$|[A-Z“‘(\[])")
+_TERMINATOR = re.compile(
+    r"(\.{2,}|…)|([.!?]+)[\"'”’)\]]*(?=\s+[A-Z“\"'‘(\[]|\s*$|[A-Z“‘(\[])"
+)
 _WORD_BEFORE = re.compile(r"(\w+)$")
 
 #: ``passage -> ScoreResult``: the seam this eval measures.
@@ -129,7 +131,9 @@ _PASSAGE_KEYS = frozenset({"id", "segments", "audio"})
 
 def _passages_from_dicts(raw, *, audio_root: Optional[Path] = None) -> "list[Passage]":
     """Validate ``{id, segments, audio?}`` dicts up front, naming every bad one at once."""
-    not_mappings = [i for i, d in enumerate(raw) if not isinstance(d, (Mapping, Passage))]
+    not_mappings = [
+        i for i, d in enumerate(raw) if not isinstance(d, (Mapping, Passage))
+    ]
     if not_mappings:
         raise ValueError(f"invalid passages: entries {not_mappings} are not mappings")
     bad = [
