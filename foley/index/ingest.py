@@ -25,7 +25,7 @@ from __future__ import annotations
 import functools
 import io
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Iterator, Optional
 
@@ -651,7 +651,11 @@ def _restamp_stored(
     """Re-stamp stored ``sid`` from ``fresh`` (never widening, behind the AI gate); note it."""
     rec = lib.meta[sid]
     new, note = restamped_license(rec.license, fresh, widen=False)
-    if new is not None and not _ai_ok(new, lib, commercial):
+    # Only fresh terms notes added (#77): the rights are the stored ones, so no AI gate.
+    notes_only = new is not None and replace(new, terms_notes=[]) == replace(
+        rec.license, terms_notes=[]
+    )
+    if new is not None and not notes_only and not _ai_ok(new, lib, commercial):
         if not consent:
             result.status = "rights_blocked"
             result.notes.append(
@@ -913,6 +917,8 @@ def _restamped(lic: LicenseRecord, license_id: str) -> LicenseRecord:
     if changed:
         new.license_url = None
         new.license_name = None
+        # An asserted id rests on the assertion, not on the source's basis (#77).
+        new.license_basis = new.license_basis_confidence = None
         new.attribution_text = _declared_attribution(license_id) or (
             None if lic.requires_attribution else lic.attribution_text
         )

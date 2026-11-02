@@ -21,6 +21,7 @@ from .._keyless import get_bytes, get_json, raw_id
 from .._license_gate import license_for_item, native_license_filter
 from ..base import (
     api_license,
+    source_stated_terms,
     as_names,
     merge_provider_params,
     page_size,
@@ -207,6 +208,7 @@ class OpenverseAdapter:
         license_id, verified = found
         rid = str(row["id"])
         lic = api_license(
+            terms=source_stated_terms(self.config),
             source=self.config["name"],
             source_id=rid,
             source_url=row.get("foreign_landing_url") or row.get("detail_url"),

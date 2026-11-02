@@ -69,6 +69,9 @@ Creative Commons **retired the Sampling family on 2011-09-12** (low adoption, no
 ### 3.5 Royalty-free ≠ free ≠ redistributable
 The single most common misunderstanding. RF libraries (Pixabay audio, Storyblocks, Mixkit, Sonniss GDC) grant broad commercial embed rights with **no per-use royalty and usually no attribution**, but **forbid standalone redistribution** and often **forbid AI-training/dataset compilation** (Sonniss and Pixabay explicitly). [1][20][21] foley must never treat "royalty-free" as a green light to cache-and-serve raw files or to train on them — those are exactly the standalone/AI-train flags that RF licenses withhold.
 
+### 3.6 CC BY-SA synced to picture — the film becomes an adaptation
+The CC 4.0 legal code defines **Adapted Material** so that, "where the Licensed Material is a musical work, performance, or sound recording, Adapted Material is always produced where the Licensed Material is synched in timed relation with a moving image" (Section 1(a)). [32] Laying a CC BY-SA sound under a film, a video or an animated narration therefore makes the whole audiovisual work an adaptation of that sound, and ShareAlike (Section 3(b)) then requires, once the film is shared, the adapter's licence for it to be BY-SA 4.0 or a BY-SA-compatible licence: one share-alike footstep can force the film itself under a copyleft licence. The same definition is why a NoDerivatives sound cannot be synced to picture at all (sharing Adapted Material is not licensed). This is why foley maps every share-alike and no-derivatives licence to `unknown` and refuses it (`license_id_from_cc_url`, `is_share_alike`, `derivative_refusal`): a picture use is the normal case for its output, not an edge case.
+
 ---
 
 ## 4. Attribution mechanics — auto-generating correct credit
@@ -343,5 +346,6 @@ Policy notes:
 29. [Holland & Knight — Senate Judiciary advances NO FAKES / NIL-and-voice protection (2026)](https://www.hklaw.com/en/insights/publications/2026/06/senate-judiciary-committee-advances-legislation-to-protect-name)
 30. [Global Law Experts — How brands like Intel, NBC & MGM trademarked sounds (NBC chimes 1978 first US sound mark)](https://globallawexperts.com/want-to-trademark-a-sound-heres-how-brands-like-intel-nbc-and-mgm-did-it/)
 31. [Trademarkia — Why Netflix trademarked "Tudum" (registered 2017; THX, MGM, D'oh! examples)](https://www.trademarkia.com/news/entertainment/netflix-tudum-sound-trademark)
+32. [Creative Commons — BY-SA 4.0 legal code (Section 1(a): a sound recording synched with a moving image is always Adapted Material; Section 3(b): ShareAlike)](https://creativecommons.org/licenses/by-sa/4.0/legalcode.en)
 </content>
 </invoke>

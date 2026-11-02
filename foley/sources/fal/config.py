@@ -31,6 +31,11 @@ Licences (the per-sound record is fail-closed, so each row says only what is kno
   but not specifically for calls billed through fal). Row: ``fal-partner-unverified`` — usable in a derivative,
   **not** commercially, until the terms are confirmed (foley#77). Narrowing, never widening.
 
+Each licence block also states what the row rests on (#77): ``model-licence`` (confirmed)
+for open weights, ``vendor-tos`` (unverified) for the partner rows, never fal's own
+``commercial`` label; Mirelo and ElevenLabs say the vendor reuses its output, and Sonilo
+reports its own watermark per clip (``native_defaults['watermark_field']``).
+
 The edit endpoints (#162: ``fal_stable_audio_3_audio_to_audio``, ``_inpaint``, ``_extend``)
 declare ``modes=['edit']`` and their ``edit_op`` (a :data:`foley.base.EDIT_OPS` name), so
 only a call with a source clip (``audio=``, see :func:`foley.edit`) reaches them, and none
@@ -63,6 +68,57 @@ _FAL_V2A_PRICING_SOURCE = "fal model page (pricing note)"
 _SEEN_V2A = "2026-10-27"
 #: The Stable Audio 3 edit endpoints' schemas and prices (#162).
 _SEEN_EDIT = "2026-10-27"
+
+#: What a licence row rests on (#77). A model's own licence binds its output whoever
+#: hosts it; a partner model's row is foley's reading of the vendor's terms, which are
+#: not documented to reach a fal-routed call. fal's own ``commercial`` label is never
+#: the basis (an aggregator's label is not the model's licence).
+_MODEL_LICENCE = {
+    "license_basis": "model-licence",
+    "license_basis_confidence": "confirmed",
+}
+#: A model licence whose reach is in doubt (report 13 §2B, §2D): MMAudio's CC BY-NC
+#: weights (whether fal holds a commercial licence from its authors is undocumented)
+#: and ThinkSound (HF tag Apache-2.0, README research only). foley keeps the stricter
+#: reading either way.
+_DOUBTED_MODEL_LICENCE = {**_MODEL_LICENCE, "license_basis_confidence": "unverified"}
+_PARTNER_TERMS = {
+    "default_license_id": "fal-partner-unverified",
+    "cache_bytes_ok": True,
+    "license_basis": "vendor-tos",
+    "license_basis_confidence": "unverified",
+}
+#: Mirelo's terms (report 13 §2A): a training licence on input and output (§7.4) and
+#: watermarked free-plan output (§7.5).
+_MIRELO_TERMS = {
+    **_PARTNER_TERMS,
+    "vendor_trains_on_output": True,
+    "terms_notes": [
+        "Mirelo's terms (§7.4) give Mirelo a training licence on your input and "
+        "output; only a paid direct Mirelo account can opt out, which a fal-routed "
+        "call cannot show."
+    ],
+}
+_MIRELO_WATERMARK = (
+    "Mirelo's terms (§7.5): free-plan output may carry a watermark; whether a "
+    "fal-routed call does is unverified."
+)
+#: ElevenLabs' sound-effects terms (report 07 §5.1): outputs are sublicensed to other
+#: users unless the account disables it, and here the account is fal's.
+_FAL_ELEVENLABS_TERMS = {
+    **_PARTNER_TERMS,
+    "vendor_trains_on_output": True,
+    "terms_notes": [
+        "ElevenLabs' sound-effects terms sublicense outputs to other ElevenLabs users "
+        "unless the account disables it; for a fal-routed call that account is "
+        "fal's, and its setting is unverified."
+    ],
+}
+_SONILO_WATERMARK = (
+    "Sonilo documents an inaudible provenance watermark, reported per clip in a "
+    "'watermark' response field when present (not in fal's schema as read "
+    "2026-11-02, so usually unreported)."
+)
 
 #: What every fal source shares: the key, the extra, the transport, the egress class.
 _COMMON = {
@@ -148,7 +204,11 @@ SOURCE_CONFIGS = (
             },
             "seed_field": "seed",  # the response echoes the seed it used
         },
-        license={"default_license_id": "Stability-Community", "cache_bytes_ok": True},
+        license={
+            "default_license_id": "Stability-Community",
+            "cache_bytes_ok": True,
+            **_MODEL_LICENCE,
+        },
         commercial_ok=True,  # revenue-capped; the cap flows from the licence row
         pricing={
             "unit": "per_call",
@@ -179,7 +239,11 @@ SOURCE_CONFIGS = (
             },
             "seed_field": "seed",
         },
-        license={"default_license_id": "Stability-Community", "cache_bytes_ok": True},
+        license={
+            "default_license_id": "Stability-Community",
+            "cache_bytes_ok": True,
+            **_MODEL_LICENCE,
+        },
         commercial_ok=True,
         pricing={
             "unit": "per_call",
@@ -222,10 +286,8 @@ SOURCE_CONFIGS = (
             "fixed_arguments": {"num_samples": 1},
             "seed_field": "seeds",  # a list, one per sample
         },
-        license={
-            "default_license_id": "fal-partner-unverified",
-            "cache_bytes_ok": True,
-        },
+        license=copy.deepcopy(_MIRELO_TERMS),
+        capabilities={"watermark_statement": _MIRELO_WATERMARK},
         commercial_ok=False,
         # $0.010/s per sample until 2026-12-13, then $0.015: priced at the later rate
         # so the estimate never under-quotes.
@@ -293,10 +355,7 @@ SOURCE_CONFIGS = (
             "duration_min_s": 0.5,
             "duration_max_s": 22.0,  # fal's cap (ElevenLabs' own API allows 30 s)
         },
-        license={
-            "default_license_id": "fal-partner-unverified",
-            "cache_bytes_ok": True,
-        },
+        license=copy.deepcopy(_FAL_ELEVENLABS_TERMS),
         commercial_ok=False,
         pricing={
             "unit": "per_second",
@@ -334,11 +393,11 @@ SOURCE_CONFIGS = (
             "duration_default_s": 8.0,
             "duration_min_s": 0.5,
             "duration_max_s": 180.0,
+            # The response's own watermark report (#77; report 13 §2A).
+            "watermark_field": "watermark",
         },
-        license={
-            "default_license_id": "fal-partner-unverified",
-            "cache_bytes_ok": True,
-        },
+        license=copy.deepcopy(_PARTNER_TERMS),
+        capabilities={"watermark_statement": _SONILO_WATERMARK},
         commercial_ok=False,
         pricing={
             "unit": "per_second",
@@ -383,6 +442,7 @@ SOURCE_CONFIGS = (
         license={
             "default_license_id": "CC-BY-NC-4.0",
             "cache_bytes_ok": True,
+            **_DOUBTED_MODEL_LICENCE,
             "attribution_text": (
                 "Generated with MMAudio (Cheng et al., CC BY-NC 4.0 weights) via fal.ai"
             ),
@@ -434,10 +494,8 @@ SOURCE_CONFIGS = (
             # One clip per call (billed per sample), and no separated speech track.
             "fixed_arguments": {"num_samples": 1, "return_speech": False},
         },
-        license={
-            "default_license_id": "fal-partner-unverified",
-            "cache_bytes_ok": True,
-        },
+        license=copy.deepcopy(_MIRELO_TERMS),
+        capabilities={"watermark_statement": _MIRELO_WATERMARK},
         commercial_ok=False,
         # $0.010/s per sample until 2026-12-13, then $0.015: priced at the later rate.
         pricing={
@@ -476,11 +534,10 @@ SOURCE_CONFIGS = (
             "model_id": "sonilo-v1.1",
             "generator_version": "sonilo/v1.1/video-to-sound-effects",
             "audio_format": "wav",
+            "watermark_field": "watermark",  # read when the response carries it (#77)
         },
-        license={
-            "default_license_id": "fal-partner-unverified",
-            "cache_bytes_ok": True,
-        },
+        license=copy.deepcopy(_PARTNER_TERMS),
+        capabilities={"watermark_statement": _SONILO_WATERMARK},
         commercial_ok=False,
         pricing={
             "unit": "per_second",
@@ -534,6 +591,7 @@ SOURCE_CONFIGS = (
         license={
             "default_license_id": "CC-BY-NC-4.0",
             "cache_bytes_ok": True,
+            **_DOUBTED_MODEL_LICENCE,
             "attribution_text": (
                 "Generated with MMAudio (Cheng et al., CC BY-NC 4.0 weights) via fal.ai"
             ),
@@ -577,7 +635,11 @@ SOURCE_CONFIGS = (
             "fixed_arguments": {"enable_safety_checker": True},
         },
         output={**_COMMON["output"], "audio_field": "video", "container": "video"},
-        license={"default_license_id": "research-only", "cache_bytes_ok": True},
+        license={
+            "default_license_id": "research-only",
+            "cache_bytes_ok": True,
+            **_DOUBTED_MODEL_LICENCE,
+        },
         commercial_ok=False,
         # Billed per *compute* second: not knowable before the call, so the estimate is
         # unknown (an unknown cost needs approval); the actual is priced from the run
@@ -632,6 +694,7 @@ SOURCE_CONFIGS = (
         license={
             "default_license_id": "Tencent-Hunyuan-Community",
             "cache_bytes_ok": True,
+            **_MODEL_LICENCE,
         },
         commercial_ok=False,
         # $0.10 per 10 s of video: billed in whole 10 s blocks (an assumption from the
@@ -716,7 +779,11 @@ def _sa3_edit(
             "seed_field": "seed",
             **(native_defaults or {}),
         },
-        license={"default_license_id": "Stability-Community", "cache_bytes_ok": True},
+        license={
+            "default_license_id": "Stability-Community",
+            "cache_bytes_ok": True,
+            **_MODEL_LICENCE,
+        },
         commercial_ok=True,  # revenue-capped; the edit mode narrows to the source's rights
         pricing={
             "unit": "per_call",

@@ -44,7 +44,9 @@ from ..base import (
     generated_license,
     merge_provider_params,
     recorded_params,
+    source_stated_terms,
 )
+from ...licensing import stamp_source_terms
 
 #: The credential name falaw binds a fal key under (``falaw.using_fal_credentials``).
 FAL_CREDENTIAL = "fal"
@@ -440,6 +442,7 @@ class FalAdapter:
             )
         lic_cfg = self.config["license"]
         lic = generated_license(
+            terms=source_stated_terms(self.config),
             source=self.name,
             license_id=lic_cfg["default_license_id"],
             generator_model=nd.get("model_id", endpoint),
@@ -456,6 +459,9 @@ class FalAdapter:
             source_url=self.config.get("website"),
             attribution_text=lic_cfg.get("attribution_text"),
         )
+        reported = reported_watermark(response, lic.vendor_watermark, nd)
+        if reported is not None:
+            stamp_source_terms(lic, {"vendor_watermark": reported})
         record = SoundRecord(id=f"{self.name}:pending", license=lic, caption=prompt)
         candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
         candidate.cost_actual_usd = _actual_cost(
@@ -476,6 +482,36 @@ class FalAdapter:
                 clip=clip,
             ) from undemuxed
         return clip
+
+
+def reported_watermark(
+    response, stated: Optional[dict], native_defaults: dict
+) -> Optional[dict]:
+    """The vendor's watermark as this response reports it (#77), or ``None``.
+
+    Only for an endpoint whose config names the response field
+    (``native_defaults['watermark_field']``: Sonilo's ``watermark``), and only when the
+    response carries it: an absent field is no report (fal's schema does not list it),
+    so the config's statement stands. The config's own statement (``stated``) is kept
+    beside the report.
+
+    >>> reported_watermark({"watermark": "sonilo-v1"}, None, {"watermark_field": "watermark"})
+    {'present': True, 'statement': None, 'reported_by': 'response', 'detail': 'sonilo-v1'}
+    >>> reported_watermark({}, None, {"watermark_field": "watermark"}) is None
+    True
+    >>> reported_watermark({"watermark": "x"}, None, {}) is None
+    True
+    """
+    name = native_defaults.get("watermark_field")
+    if not name or not isinstance(response, dict) or name not in response:
+        return None
+    value = response.get(name)
+    return {
+        "present": bool(value),
+        "statement": (stated or {}).get("statement"),
+        "reported_by": "response",
+        "detail": value,
+    }
 
 
 def _actual_cost(

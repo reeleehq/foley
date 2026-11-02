@@ -123,7 +123,14 @@ SOURCE_CONFIG = {
         "cache_bytes_ok": False,  # TOS: may we store the bytes? (Freesound: no)
         "ai_training_ok": True,
         "requires_attribution": False,
+        # Optional, only what the source's terms actually say (#77; never a grant):
+        # "license_basis": "model-licence" | "vendor-tos" | "aggregator-label",
+        # "license_basis_confidence": "confirmed" | "unverified",
+        # "vendor_trains_on_output": True,  # the vendor reuses (trains on / sublicenses) output
+        # "terms_notes": ["API-level obligation, one sentence"],  # e.g. Freesound ToS §3
     },
+    # The vendor's own watermark: capabilities["watermarked"] (+ "watermark_statement"),
+    # kept apart from foley's AudioSeal `watermark`.
     "commercial_ok": True,  # generate guardrail (+ revenue_cap for Stable Audio Open)
     "rate": {"per_min": 60, "per_day": 2000},
     "cost": {...},
@@ -168,6 +175,11 @@ whose own default is not the model's must always receive an explicit value.
    `foley/provenance/`, but set `is_ai_generated` + generation fields on the record.
 5. The agent's fail-closed `keep(record, IntendedUse)` gate depends on these flags being
    correct. Wrong flags = legal/TOS violation slips through.
+6. **What the terms state, not what they grant** (#77): pass
+   `terms=source_stated_terms(self.config)` to `api_license` / `generated_license`, so
+   the record carries the licence basis, vendor reuse of output, API obligations
+   (`terms_notes`) and the vendor watermark. A territory exclusion is a licence term:
+   it goes in `LICENSE_EXCLUDED_TERRITORIES` keyed by licence id, never on the record.
 
 ## Checklist for a new source
 

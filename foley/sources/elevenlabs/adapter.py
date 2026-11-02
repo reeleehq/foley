@@ -36,6 +36,7 @@ from ..base import (
     GeneratedClip,
     SourceConfigurationError,
     generated_license,
+    source_stated_terms,
     merge_provider_params,
     native_adherence,
     recorded_params,
@@ -391,6 +392,7 @@ class ElevenLabsAdapter:
             provider_params,
         )
         lic = generated_license(
+            terms=source_stated_terms(self.config),
             source=self.name,
             license_id=license_id,
             attribution_text=self.config["license"]

@@ -26,6 +26,7 @@ from ..base import (
     GeneratedClip,
     draw_seed,
     generated_license,
+    source_stated_terms,
     merge_provider_params,
     pad_to_qc_minimum,
     recorded_params,
@@ -132,6 +133,7 @@ class PyfxrAdapter:
                 "params give a different noise each time (not bit-reproducible)"
             )
         lic = generated_license(
+            terms=source_stated_terms(self.config),
             source=self.name,
             license_id=self.config["license"]["default_license_id"],
             generator_model=self.name,

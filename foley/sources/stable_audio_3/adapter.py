@@ -33,6 +33,7 @@ from ..base import (
     SourceConfigurationError,
     draw_seed,
     generated_license,
+    source_stated_terms,
     merge_provider_params,
     native_adherence,
     recorded_params,
@@ -181,6 +182,7 @@ class StableAudio3Adapter:
         audio_bytes = self.invoke_native(prompt, native)
 
         lic = generated_license(
+            terms=source_stated_terms(self.config),
             source=self.name,
             license_id=self.config["license"]["default_license_id"],
             generator_model=nd["generator_version"],
