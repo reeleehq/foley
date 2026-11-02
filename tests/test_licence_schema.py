@@ -298,3 +298,23 @@ def test_a_remade_restamp_never_drops_a_licence_bounding_the_sound():
     assert new is None and note.startswith("not widened") and "drops CC-BY-NC-4.0" in note
     narrower, _ = restamped_license(fresh, stored, widen=False, remade=True)
     assert narrower.derived_from_license_ids == ["CC-BY-NC-4.0"]  # CC-BY no longer bounds
+
+
+def test_a_licence_id_swap_the_flags_cannot_show_is_not_widened():
+    ncsa = _verified("CC-BY-NC-SA-4.0")
+    sa = _verified("CC-BY-SA-4.0")
+    for remade in (False, True):
+        new, note = restamped_license(ncsa, sa, widen=False, remade=remade)
+        assert new is None and note.startswith("not widened") and "commercial" in note
+        narrower, _ = restamped_license(sa, ncsa, widen=False, remade=remade)
+        assert narrower.license_id == "CC-BY-NC-SA-4.0"
+
+
+def test_a_restamp_never_undiscloses_ai_provenance():
+    stored = _verified("CC-BY-4.0", is_ai_generated=True, disclosure_recommended=True,
+                       generator_model="m", c2pa_manifest_ref="c2pa://x")  # fmt: skip
+    fresh = _verified("CC-BY-4.0", creator_name="Carol", attribution_text="by Carol")
+    for remade in (False, True):
+        new, _ = restamped_license(stored, fresh, widen=False, remade=remade)
+        assert new.is_ai_generated and new.disclosure_recommended
+        assert (new.generator_model, new.c2pa_manifest_ref) == ("m", "c2pa://x")

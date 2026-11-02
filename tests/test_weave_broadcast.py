@@ -834,14 +834,16 @@ def test_restamp_corrects_the_stored_twins_credits(sound_library):
     lib, by = sound_library, "CC-BY-4.0"
     first = _store(lib, bed_license=_rights(by, creator_name="Ann"),
                    speech=_rights(by, creator_name="Bob"))  # fmt: skip
-    before = _attribution(lib, first.sound_id)
+    earlier = foley.export_sound(first.sound_id, library=lib, fmt="wav")
     fixed = _store(lib, bed_license=_rights(by, creator_name="Carol"),
                    speech=_rights(by, creator_name="Dave"), restamp=True)  # fmt: skip
     assert fixed.sound_id == first.sound_id  # the same record, corrected
-    after = _attribution(lib, fixed.sound_id)
-    assert "Carol" in after and "Dave" in after
-    assert "Ann" not in after and "Bob" not in after
-    assert "Ann" in before and "Bob" in before  # an earlier export keeps its credits
+    later = foley.export_sound(fixed.sound_id, library=lib, fmt="wav")
+    assert "Carol" in later[1]["attribution"] and "Dave" in later[1]["attribution"]
+    assert "Ann" not in later[1]["attribution"] and b"Ann" not in later[0]
+    # the export made before the restamp keeps the credits it was made with
+    assert "Ann" in earlier[1]["attribution"] and "Bob" in earlier[1]["attribution"]
+    assert b"Ann" in earlier[0] and b"Carol" not in earlier[0]  # embedded in its bytes
     assert any("credit" in n and "Carol" in n for n in fixed.notes)
     stored = lib[fixed.sound_id].license
     assert not wider_rights(stored, fixed.license)
@@ -874,6 +876,32 @@ def test_restamp_never_widens_the_stored_twin(sound_library):
     stored = lib[first.sound_id].license
     assert not stored.commercial_ok and nc in stored.derived_from_license_ids
     assert any("not widened" in n for n in wider.notes)
+
+
+def test_restamp_never_widens_non_commercial_share_alike_to_share_alike(sound_library):
+    lib, ncsa, sa = sound_library, "CC-BY-NC-SA-4.0", "CC-BY-SA-4.0"
+    first = _store(lib, bed_license=_rights(ncsa), speech=_rights(ncsa),
+                   accept_ai_restricted=True)  # fmt: skip
+    wider = _store(lib, bed_license=_rights(sa), speech=_rights(sa), restamp=True,
+                   accept_ai_restricted=True)  # fmt: skip
+    assert first.sound_id and wider.sound_id is None
+    stored = lib[first.sound_id].license
+    assert stored.license_id == ncsa and stored.derived_from_license_ids == [ncsa]
+    assert foley.export_sound(first.sound_id, library=lib)[1]["license"] == "cc-by-nc-sa-4.0"
+    assert any("not widened" in n and "commercial use" in n for n in wider.notes)
+
+
+def test_restamp_keeps_the_ai_disclosure(sound_library):
+    lib, by = sound_library, "CC-BY-4.0"
+    ai_speech = _rights(by, creator_name="Bob", ai=True, disclosure_recommended=True,
+                        generator_model="tts-1")  # fmt: skip
+    first = _store(lib, bed_license=_rights(by), speech=ai_speech)
+    _store(lib, bed_license=_rights(by), speech=_rights(by, creator_name="Dave"),
+           restamp=True)  # fmt: skip
+    stored = lib[first.sound_id].license
+    assert stored.is_ai_generated and stored.disclosure_recommended
+    assert stored.generator_model == "tts-1"
+    assert foley.export_sound(first.sound_id, library=lib)[2].get("ai_disclosure")
 
 
 def test_restamp_still_needs_ai_consent(sound_library):

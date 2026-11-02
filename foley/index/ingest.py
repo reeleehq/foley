@@ -27,7 +27,7 @@ import io
 import os
 from dataclasses import dataclass, field, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Iterator, Optional
+from typing import TYPE_CHECKING, Callable, Iterator, Literal, Optional
 
 from ..audio import ARCHIVE_FORMAT, WORKING_SAMPLE_RATE, encode, load, to_working
 from ..base import AcquisitionMethod, LicenseRecord, SerializableMixin, SoundRecord
@@ -371,7 +371,7 @@ def _ingest_one(
     allow_ai_training_forbidden: bool = False,
     seed_tags: Optional[list] = None,
     ucs_catid: Optional[str] = None,
-    restamp_duplicate: "bool | str" = False,
+    restamp_duplicate: 'bool | Literal["remade"]' = False,
     commercial: Optional[bool] = None,
 ) -> IngestResult:
     """Ingest one clip into ``library`` and return an :class:`IngestResult`.
@@ -456,6 +456,11 @@ def _ingest_one(
     """
     from .library import default_library
 
+    if not (isinstance(restamp_duplicate, bool) or restamp_duplicate == RESTAMP_REMADE):
+        raise ValueError(
+            f"restamp_duplicate={restamp_duplicate!r}: expected True, False or "
+            f"{RESTAMP_REMADE!r}"
+        )
     lib = library if library is not None else default_library()
 
     # Stage 0 — probe + decode once + archive bytes + content-addressed id.
