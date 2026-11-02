@@ -141,11 +141,13 @@ def edit_lineage(
 
     Raises:
         EditRefusal: Without ``derived_from``; when its rights do not allow the edit
-            (:func:`foley.licensing.derivative_refusal`); or when the clip sent is not
-            the bytes of the ``derived_from`` record.
+            (:func:`foley.licensing.derivative_refusal`), or the backend's vendor
+            trains on its input and they do not allow that
+            (:func:`foley.licensing.vendor_training_refusal`); or when the clip sent
+            is not the bytes of the ``derived_from`` record.
         TypeError: For a ``derived_from`` that is neither record.
     """
-    from ..licensing import derivative_refusal
+    from ..licensing import derivative_refusal, vendor_training_refusal
     from ..provenance.credits import attribution_line
     from .media import recorded_media_key
 
@@ -167,7 +169,7 @@ def edit_lineage(
             f"{type(derived_from).__name__}"
         )
     source_id = record.id if record is not None else lic.source_id
-    why = derivative_refusal(lic)
+    why = derivative_refusal(lic) or vendor_training_refusal(lic, config)
     if why is not None:
         raise EditRefusal(
             f"cannot edit {source_id or 'the clip'!r}: {why}; nothing was generated",
@@ -334,7 +336,8 @@ def edit_use_refusal(call: EditCall, intended_use) -> Optional[str]:
     (:meth:`EditLineage.apply`), so the use is refused when either refuses it: an edit
     of a non-commercial sound under a commercial use is money spent on a clip nobody
     may place. Decided before anything is paid for; a backend's refusal names the
-    other backends of the op whose licence fits.
+    other backends of the op that could run this edit (:func:`_could_edit`) and whose
+    licence fits.
     """
     from ..licensing import refusal_reason
     from .generate import backend_license_refusal, edit_backends
@@ -349,7 +352,9 @@ def edit_use_refusal(call: EditCall, intended_use) -> Optional[str]:
     fits = [
         name
         for name in edit_backends(call.op)
-        if name != call.backend and backend_license_refusal(name, intended_use) is None
+        if name != call.backend
+        and backend_license_refusal(name, intended_use) is None
+        and _could_edit(_registered_config(name), call.source)
     ]
     if fits:
         advice = f"name a {call.op} edit backend whose licence fits ({', '.join(fits)}), or {hint}"
@@ -420,6 +425,22 @@ def estimate_edit(
     return estimate_generation(
         name, audio=audio, config=config, **priced_affordances(kwargs)
     )
+
+
+def _could_edit(config: dict, source: SoundRecord) -> bool:
+    """Whether the edit backend ``config`` could take ``source`` at all: its vendor
+    would not train on a clip whose rights forbid it
+    (:func:`foley.licensing.vendor_training_refusal`), and the clip's length is within
+    its ``edit_limits['clip_s']`` (when the record knows it)."""
+    from ..licensing import vendor_training_refusal
+
+    if vendor_training_refusal(source.license, config) is not None:
+        return False
+    lo, hi = (config.get("edit_limits") or {}).get("clip_s") or (None, None)
+    seconds = source.duration_s
+    if seconds is None:
+        return True
+    return (lo is None or seconds >= lo) and (hi is None or seconds <= hi)
 
 
 def _refuse_given_source(affordances: dict) -> None:

@@ -100,6 +100,9 @@ _PARTNER_TERMS = {
 _MIRELO_TERMS = {
     **_PARTNER_TERMS,
     "vendor_trains_on_output": True,
+    # ... and on input: an edit's source clip goes into it, so the edit gate refuses a
+    # source whose rights forbid AI training (foley.licensing.vendor_training_refusal).
+    "vendor_trains_on_input": True,
     "terms_notes": [
         "Mirelo's terms (§7.4) give Mirelo a training licence on your input and "
         "output; only a paid direct Mirelo account can opt out, which a fal-routed "
@@ -851,9 +854,11 @@ def _mirelo_edit(
         name,
         display_name=f"Mirelo SFX 1.6 {op.replace('_', '-')} (fal)",
         website=f"https://fal.ai/models/{endpoint}",
-        # fal deprecates both endpoints on 2026-12-15 ("Migrate to SFX 2.0"), and SFX
-        # 2.0 has no edit endpoint (its openapi 404s, read 2026-11-02).
         api={"endpoint_id": endpoint},
+        # fal deprecates both endpoints on 2026-12-15 ("Migrate to SFX 2.0"), and SFX
+        # 2.0 has no edit endpoint (its openapi 404s, read 2026-11-02): after it, no
+        # default, suggestion or estimate offers them (foley.sources.generate.edit_backends).
+        deprecated_after="2026-12-15",
         modes=["edit"],
         edit_op=op,
         param_map={**copy.deepcopy(_MIRELO_EDIT_PARAM_MAP), **params},
@@ -1000,6 +1005,13 @@ for _config in SOURCE_CONFIGS:
                 *(_pm[m]["native_name"] for m in MEDIA_INPUTS if m in _pm),
                 *_FAL_RESERVED,
                 *(_config["native_defaults"].get("fixed_arguments") or {}),
+                # a nested field (Mirelo's inpaint segment) is the edit's window, which
+                # its lineage records: a provider param may not replace it
+                *(
+                    spec["native_name"].split(".")[0]
+                    for spec in _pm.values()
+                    if "." in spec.get("native_name", "")
+                ),
             }
         ),
         "priced": [

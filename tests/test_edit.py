@@ -109,15 +109,16 @@ def library(fake_embedder):
 
 
 def _add(library, license_id="CC0-1.0", *, verified=True, fmt="WAV", seconds=1.5,
-         **fields):
-    """A source sound (``seconds`` long) in ``library`` under ``license_id``; returns its id."""
+         freq=330.0, **fields):
+    """A source sound (``seconds`` long, a ``freq`` tone) in ``library`` under
+    ``license_id``; returns its id."""
     lic = apply_license_flags(
         LicenseRecord(source="user", license_id=license_id, rights_verified=verified)
     )
     lic.cache_bytes_ok = True  # the test's own disk: stored by value
     for name, value in fields.items():  # a source that stamped its own flags
         setattr(lic, name, value)
-    res = ingest_one(_tone(seconds, fmt=fmt), library=library, license=lic,
+    res = ingest_one(_tone(seconds, freq=freq, fmt=fmt), library=library, license=lic,
                      allow_ai_training_forbidden=True)
     assert res.status in ("pass", "warn"), res
     return res.id
@@ -1338,3 +1339,70 @@ def test_live_mirelo_extend_appends_to_a_clip(library):  # costs about $0.06
                       reuse_cached=False)
     assert cand.sound.duration_s == pytest.approx(6.0, abs=0.5)
     assert cand.sound.license.license_id == "fal-partner-unverified"
+
+
+def test_a_source_that_forbids_ai_training_is_not_sent_to_mirelo(library):
+    # Mirelo's terms (§7.4) take a training licence on input: fail-closed, before the
+    # upload, for a source whose rights do not allow it (#215 review)
+    adapter, runner = _mirelo("fal_mirelo_extend")
+    uploader = adapter._uploader
+    for freq, fields in ((331.0, {"ai_training_ok": False}),
+                         (332.0, {"ai_training_scope": "open_source_only"})):
+        sid = _add(library, seconds=4.0, freq=freq, **fields)
+        with pytest.raises(EditRefusal, match="trains on what it is sent"):
+            foley.edit(sid, "extend", "x", adapter=adapter, library=library,
+                       provenance_store={}, extend_after_s=2.0)
+    assert runner.calls == [] and uploader.paths == []
+    # Stable Audio 3 states no training on input: the same source may go there
+    _, sa3_runner, _ = _edit(library, "extend", _add(library, seconds=4.0, freq=333.0,
+                                                       ai_training_ok=False))
+    assert len(sa3_runner.calls) == 1
+
+
+def test_the_fallback_suggestion_skips_a_backend_that_could_not_take_the_source(library):
+    from foley.base import IntendedUse
+    from foley.sources.edit import EditCall, edit_use_refusal
+
+    use = IntendedUse(commercial=False, revenue_usd=5_000_000)  # SA3 refused, Mirelo fits
+
+    def why(op, **kw):
+        record = library[_add(library, **kw)]
+        call = EditCall(backend=OPS[op][0], prompt="x", source=record, op=op)
+        return edit_use_refusal(call, use)
+
+    assert "(fal_mirelo_inpaint)" in why("inpaint", seconds=4.0)
+    assert "fal_mirelo_inpaint" not in why("inpaint", seconds=12.0)  # 10 s at most
+    assert "(fal_mirelo_extend)" in why("extend", seconds=4.0, freq=334.0)
+    assert "fal_mirelo_extend" not in why("extend", seconds=4.0, freq=335.0,
+                                          ai_training_ok=False)
+
+
+def test_a_retired_backend_is_offered_no_more():
+    import datetime
+
+    from foley.sources.generate import default_edit_backend
+
+    before, after = datetime.date(2026, 12, 15), datetime.date(2026, 12, 16)
+    assert edit_backends("extend", today=before)[-1] == "fal_mirelo_extend"
+    assert "fal_mirelo_extend" not in edit_backends("extend", today=after)
+    assert "fal_mirelo_inpaint" not in edit_backends("inpaint", today=after)
+    assert default_edit_backend("extend", today=after) == "fal_stable_audio_3_extend"
+    for name in MIRELO.values():
+        assert CONFIGS[name[0]]["deprecated_after"] == "2026-12-15"
+
+
+def test_a_provider_param_cannot_replace_mirelos_inpaint_window():
+    assert "segment" in CONFIGS["fal_mirelo_inpaint"]["provider_params"]["reserved"]
+
+
+def test_a_mirelo_edit_of_a_cc_by_source_carries_its_attribution(library):
+    sid = _add(library, "CC-BY-4.0", seconds=4.0, attribution_text='"Rain" by Ann')
+    cand, _ = _mirelo_edit(
+        library, "fal_mirelo_extend", "extend", sid,
+        {"append_duration": 2.0, "ambience": False, "double_output": False}, 6.0,
+        extend_after_s=2.0,
+    )
+    lic = cand.sound.license
+    assert lic.requires_attribution is True and lic.commercial_ok is False
+    (edit,) = [t for t in lic.transformations if t["kind"] == "edit"]
+    assert edit["source_license_id"] == "CC-BY-4.0" and "Ann" in edit["source_credit"]
