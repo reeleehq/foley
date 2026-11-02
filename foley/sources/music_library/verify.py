@@ -19,13 +19,13 @@ import shutil
 from collections.abc import Callable
 from typing import Optional
 
+from ..media import local_media_file
 from ..video import (
     AudioStreamCheck,
     Probe,
     default_probe,
     ffmpeg_path,
     has_audio_stream,
-    local_video_file,
 )
 from .libraries import DFLT_SUFFIX, MusicLibraryError
 
@@ -95,7 +95,7 @@ def probe_verify(
         raise MusicLibraryError("the file is empty")
     probe = probe or default_probe
     has_audio = has_audio or has_audio_stream
-    with local_video_file(bytes(data), suffix=suffix) as path:
+    with local_media_file(bytes(data), suffix=suffix) as path:
         audio = has_audio(path)
         seconds = probe(path) if audio else None
     if audio is None:

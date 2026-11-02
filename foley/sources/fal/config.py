@@ -50,7 +50,7 @@ import copy
 
 from ..elevenlabs.config import MP3_BY_RATE as _EL_MP3_BY_RATE
 from ..elevenlabs.config import PCM_RATES as _EL_PCM_RATES
-from ..video import MEDIA_INPUTS
+from ..media import MEDIA_INPUTS
 
 #: ElevenLabs formats the direct API offers and fal's endpoint does not (report 17 §3).
 _FAL_EL_LACKS = frozenset({"pcm_32000", "mp3_24000_48"})

@@ -17,7 +17,7 @@ from foley.audio import encode  # noqa: E402
 from foley.base import EDIT_OPS, LicenseRecord, check_edit_args  # noqa: E402
 from foley.index import MemoryIndex, SoundLibrary, ingest_one  # noqa: E402
 from foley.licensing import apply_license_flags  # noqa: E402
-from foley.sources import video as video_mod  # noqa: E402
+from foley.sources import media as media_mod  # noqa: E402
 from foley.sources._dispatch import (  # noqa: E402
     UnsupportedParameter,
     request_digest,
@@ -211,7 +211,7 @@ def test_the_same_bytes_from_two_paths_replay_without_a_second_call(library, tmp
     cache = foley.generations
     stored = json.dumps([cache.requests[k] for k in cache.requests])
     assert str(tmp_path) not in stored and "fal.media/up" not in stored
-    assert video_mod.video_key(data) in stored  # recorded by its key
+    assert media_mod.media_key(data) in stored  # recorded by its key
 
 
 def test_the_record_and_the_manifest_hold_the_key_never_the_bytes(library):
@@ -227,7 +227,7 @@ def test_the_record_and_the_manifest_hold_the_key_never_the_bytes(library):
     finally:
         obs.reset()
         _CURRENT_RUN.set(None)
-    key = video_mod.video_key(library.audio(sid))
+    key = media_mod.media_key(library.audio(sid))
     assert cand.sound.license.generation_params["audio_url"] == key
     (manifest,) = runs.values()
     assert manifest["inputs"]["audio"] == key
@@ -283,7 +283,7 @@ def test_an_edit_records_its_source_and_credits_it(library):
     (edit,) = [t for t in lic.transformations if isinstance(t, dict)]
     assert edit == {
         "kind": "edit", "op": "inpaint", "source_id": sid,
-        "source_content": video_mod.video_key(library.audio(sid)),
+        "source_content": media_mod.media_key(library.audio(sid)),
         "source_license_id": "CC-BY-4.0", "source_license_name": "CC BY 4.0",
         "source_license_url": "https://creativecommons.org/licenses/by/4.0/",
         "source_credit": foley.attribution_line(library[sid], fmt="plain"),
@@ -616,7 +616,7 @@ def test_the_content_credential_declares_the_source_as_an_ingredient(library):
     assert ingredient["relationship"] == "parentOf"
     source = ingredient["foley_source"]
     assert source["sound_id"] == sid and source["license_id"] == "CC-BY-NC-4.0"
-    assert source["content"] == video_mod.video_key(library.audio(sid))
+    assert source["content"] == media_mod.media_key(library.audio(sid))
     labels = {a["label"]: a["data"] for a in manifest["assertions"]}
     (edited,) = [a for a in labels["c2pa.actions"]["actions"]
                  if a["action"] == "c2pa.edited"]

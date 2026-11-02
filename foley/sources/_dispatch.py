@@ -62,15 +62,15 @@ from ..base import (
     check_edit_args,
     reject_renamed,
 )
-from .video import (
+from .media import (
     MEDIA,
     MEDIA_INPUTS,
-    recorded_video_key,
+    media_key,
+    recorded_media_key,
     remote_media_input,
-    video_key,
 )
-from .video import keyed as video_keyed
-from .video import replayable as video_replayable
+from .media import keyed as media_keyed
+from .media import replayable as media_replayable
 from .base import (
     GENERATING_KINDS,
     check_prompt_influence,
@@ -329,7 +329,7 @@ def request_digest(
 
 
 def _keyed_request(
-    config: dict, affordances: dict, *, key: Callable = video_key
+    config: dict, affordances: dict, *, key: Callable = media_key
 ) -> "tuple[dict, Optional[str]]":
     """``(native request, pinned model)``: a pinned model is keyed apart from the request.
 
@@ -338,7 +338,7 @@ def _keyed_request(
     would compare after that translation.
     """
     # A copy; the video by its full identity (#74), which is hashed, never written.
-    rest = dict(video_keyed(affordances, key=key))
+    rest = dict(media_keyed(affordances, key=key))
     nd = config.get("native_defaults") or {}
     model = rest.pop("model", None)
     if model == nd.get("model_id"):
@@ -528,7 +528,7 @@ def plan_generation(
         cache: A :class:`~foley.stores.GenerationsCache` (default: the local one).
         reuse_cached: Serve an identical paid request from the cache (default ``True``;
             never for a video given as a bare remote URL, see
-            :func:`foley.sources.video.replayable`).
+            :func:`foley.sources.media.replayable`).
         provider_params: Vendor-native params foley has no affordance for (#61). Kept
             out of the translation (the unsupported-parameter policy never sees them),
             checked against the source's ``provider_params`` policy first (a reserved
@@ -598,7 +598,7 @@ def plan_generation(
         plan.request_key = request_digest(
             backend, prompt, config, kept, salt, provider_params=plan.provider_params
         )
-        plan.replayable = video_replayable(kept)  # whatever reuse_cached says (#185)
+        plan.replayable = media_replayable(kept)  # whatever reuse_cached says (#185)
         if reuse_cached and not plan.replayable:
             name = remote_media_input(kept)
             plan.notes.append(
@@ -836,7 +836,7 @@ def _answered_key(plan: GenerationPlan, clip) -> str:
     # Compared as the adapter records it (a URL without its token, #184), rebuilt below
     # from the full request, which is what the digest hashes. Only a URL differs.
     recorded = (
-        _keyed_request(plan.config, plan.affordances, key=recorded_video_key)[0]
+        _keyed_request(plan.config, plan.affordances, key=recorded_media_key)[0]
         if any(isinstance(plan.affordances.get(n), str) for n in MEDIA_INPUTS)
         else native
     )
@@ -967,7 +967,7 @@ def _clip_entry(plan: GenerationPlan, clip, key: str) -> dict:
         "content_key": key,
         "backend": plan.backend,
         "prompt": plan.prompt,
-        "affordances": video_keyed(plan.affordances),
+        "affordances": media_keyed(plan.affordances),
         **({"provider_params": plan.provider_params} if plan.provider_params else {}),
         **({"variation": plan.variation} if plan.variation else {}),
         "license": sound.license.to_dict(),
