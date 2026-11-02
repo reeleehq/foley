@@ -21,6 +21,25 @@ OUT = Path(__file__).resolve().parents[1] / "foley/index/taxonomy/data/ucs_maste
 HEADER = ("Category", "SubCategory", "CatID", "CatShort", "Explanations")
 
 
+def unmojibake(text: str) -> str:
+    """``text`` with Mac-Roman double-encoding undone (``saut‚àö¬©`` → ``sauté``).
+
+    A few cells of the master were saved through Mac Roman more than once; undo it
+    while that round trip still changes the text and stays valid UTF-8.
+
+    >>> unmojibake("saut‚àö¬©"), unmojibake("quincea‚àö¬±era"), unmojibake("plain")
+    ('sauté', 'quinceañera', 'plain')
+    """
+    while True:
+        try:
+            fixed = text.encode("mac_roman").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            return text
+        if fixed == text:
+            return text
+        text = fixed
+
+
 def read_rows(xlsx: Path) -> "list[dict]":
     """The master's rows as ``{catid, category, subcategory, explanation, synonyms}``."""
     import openpyxl
@@ -36,13 +55,15 @@ def read_rows(xlsx: Path) -> "list[dict]":
         catid = cells[cols["CatID"]]
         if not catid:
             continue
-        synonyms = [s.strip() for s in cells[cols["Synonyms - Comma Separated"]].split(",")]
+        synonyms = [
+            unmojibake(s.strip()) for s in cells[cols["Synonyms - Comma Separated"]].split(",")
+        ]
         rows.append(
             {
                 "catid": catid,
-                "category": cells[cols["Category"]],
-                "subcategory": cells[cols["SubCategory"]],
-                "explanation": cells[cols["Explanations"]],
+                "category": unmojibake(cells[cols["Category"]]),
+                "subcategory": unmojibake(cells[cols["SubCategory"]]),
+                "explanation": unmojibake(cells[cols["Explanations"]]),
                 "synonyms": sorted({s.lower() for s in synonyms if s}),
                 "confident": True,
             }

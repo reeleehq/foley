@@ -7,6 +7,7 @@ validation, and the open/closed JSON drop merge.
 """
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -249,8 +250,37 @@ def test_the_ucs_master_ships_whole_and_is_opt_in():
     assert json.loads(UCS_MASTER_FILE.read_text("utf-8"))["version"] == "8.2.1"
     row = master.get("AIRBlow")
     assert (row.category, row.subcategory, row.confident) == ("AIR", "BLOW", True)
-    assert row.explanation and all(s == s.lower() for s in row.synonyms)
+    raw = json.loads(UCS_MASTER_FILE.read_text("utf-8"))["rows"]
+    assert all(s == s.lower() for r in raw for s in r["synonyms"])  # as shipped
+    assert row.explanation and "sauté" in master.get("FOODCook").synonyms  # repaired
     assert "WOODHndl" in master and "WOODHandl" not in master  # the 8.2.1 fix
     name = parse_ucs_name("RAINConc_Heavy on pavement_JD_NYC.wav", table=master)
     assert name is not None and name.category == "RAIN"
     assert "RAINConc" not in default_ucs_table()  # opt-in: the default is still the seed
+
+
+def test_the_ucs_build_tool_reads_the_master_layout(tmp_path):
+    """tools/build_ucs_table.py: title rows and blanks skipped, synonyms split, mojibake undone."""
+    import importlib.util
+
+    openpyxl = pytest.importorskip("openpyxl")
+    tool = Path(__file__).resolve().parents[1] / "tools" / "build_ucs_table.py"
+    spec = importlib.util.spec_from_file_location("build_ucs_table", tool)
+    build = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(build)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    for row in (
+        [None, "UCS v8.2.1 Category List"],
+        ["a note"],
+        list(build.HEADER) + ["Synonyms - Comma Separated"],
+        ["FOOD", "COOKING", "FOODCook", "FOOD", "Cooking.", "Fry, saut‚àö¬©, fry"],
+        [None, None, None],
+    ):
+        ws.append(row)
+    wb.save(tmp_path / "ucs.xlsx")
+    assert build.read_rows(tmp_path / "ucs.xlsx") == [
+        {"catid": "FOODCook", "category": "FOOD", "subcategory": "COOKING",
+         "explanation": "Cooking.", "synonyms": ["fry", "sauté"], "confident": True}
+    ]  # fmt: skip
