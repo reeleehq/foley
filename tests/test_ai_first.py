@@ -72,6 +72,69 @@ def test_score_weave_can_be_forced_off_with_audio():
     assert res.weave is None
 
 
+def _find_spy(monkeypatch):
+    """Replace ``foley.find`` (what ``score`` calls) with a recorder that finds nothing."""
+    calls = []
+
+    def spy(context, **kw):
+        calls.append(kw)
+        return []
+
+    monkeypatch.setattr(foley, "find", spy)
+    return calls
+
+
+def test_score_refuses_a_typod_weave_kwarg_before_any_find(monkeypatch):
+    calls = _find_spy(monkeypatch)
+    with pytest.raises(TypeError, match="langauge.*did you mean 'language'"):
+        foley.score("A door creak.", audio="nar", langauge="fr")
+    with pytest.raises(TypeError, match="backnd"):  # plan-only is checked too
+        foley.score("A door creak.", backnd="pyfxr")
+    assert calls == []  # nothing ran, nothing spent
+
+
+def test_score_forwards_backend_to_find(monkeypatch):
+    calls = _find_spy(monkeypatch)
+    foley.score(["A door creak.", "Rain fell."], backend="pyfxr", library=_demo_lib())
+    assert [kw["backend"] for kw in calls] == ["pyfxr", "pyfxr"]
+
+
+def test_score_allow_generate_false_never_generates(monkeypatch):
+    import subprocess
+
+    from foley.agent import tools
+    from foley.agent.policy import Budget
+
+    gens = []
+    monkeypatch.setattr(tools, "_generate_and_reverify", lambda *a, **k: gens.append(1))
+    # nothing in the library fits this
+    text = "The spaceship engine hummed and a laser fired."
+    foley.score(text, library=_demo_lib())
+    assert gens  # control: by default the fallback would generate
+
+    gens.clear()
+
+    def no_subprocess(*a, **k):
+        raise AssertionError("retrieval-only score started a subprocess")
+
+    monkeypatch.setattr(subprocess, "Popen", no_subprocess)
+    caller = Budget(max_refine_loops=0, max_usd=0.5)  # the caller's limits are kept
+    res = foley.score(text, library=_demo_lib(), allow_generate=False, budget=caller)
+    assert gens == [] and res.n_sounds == 0  # an unfitted moment stays silent
+    assert caller.allow_generate is True  # the caller's budget is not mutated
+
+
+def test_budget_without_generation_keeps_limits_and_resets_counters():
+    from foley.agent.policy import Budget
+
+    b = Budget(max_refine_loops=3, max_generations=2, max_usd=0.25)
+    b.charge(0.1)
+    off = b.without_generation()
+    assert (off.max_refine_loops, off.max_generations, off.max_usd) == (3, 2, 0.25)
+    assert off.allow_generate is False and not off.gen_ok()
+    assert off.spent_usd == 0.0 and b.allow_generate is True
+
+
 # --- the agent kit installer ------------------------------------------------
 
 
@@ -130,6 +193,19 @@ def test_foley_score_and_guide_tools_are_json_safe(mcp_wired):
     # both are registered in the stable tool surface
     names = {t.__name__ for t in mcp.TOOLS}
     assert {"foley_score", "foley_guide"} <= names
+
+
+def test_foley_score_tool_threads_allow_generate(mcp_wired, monkeypatch):
+    class Seen(Exception):
+        pass
+
+    def spy(*a, **k):
+        raise Seen(k)
+
+    monkeypatch.setattr(foley, "score", spy)
+    with pytest.raises(Seen) as got:
+        mcp.foley_score("A door creaks.", allow_generate=False)
+    assert got.value.args[0]["allow_generate"] is False
 
 
 def test_ai_first_surface_is_exported():

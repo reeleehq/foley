@@ -19,10 +19,10 @@ this keeps ``import foley`` dol-only.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
-    from .base import SoundDesignTimeline
+    from .base import MasterProfile, SoundDesignTimeline
     from .weave import WeaveResult
 
 
@@ -86,7 +86,9 @@ def score(
     commercial_ok: Optional[bool] = None,
     max_events: int = 6,
     verify: str = "listen",
-    master: str = "podcast",
+    backend: str = "auto",
+    allow_generate: bool = True,
+    master: "Union[str, MasterProfile]" = "podcast",
     weave: Optional[bool] = None,
     llm: Optional[str] = None,
     budget=None,
@@ -117,7 +119,17 @@ def score(
             ``False`` explicitly admits non-commercial material.
         max_events: The sparse density cap **per segment** (restraint).
         verify: The max verify rung — ``'clap'`` | ``'listen'`` | ``'judge'``.
-        master: The delivery :data:`~foley.base.MASTER_PROFILES` target (``'podcast'`` default).
+        backend: The generation fallback's backend, forwarded to :func:`foley.find`
+            (``'auto'`` walks the generation order).
+        allow_generate: ``False`` makes the run retrieval-only: no generation fallback
+            (so no generation spend and no local model process); an event nothing in the
+            library fits stays silent. Same name as
+            :attr:`~foley.agent.policy.Budget.allow_generate`, which it overrides.
+        master: The delivery :data:`~foley.base.MASTER_PROFILES` target (``'podcast'``
+            default) or a :class:`~foley.base.MasterProfile`. foley always masters the
+            woven mix (the true-peak limiter is what keeps the summed voice + beds +
+            spots from clipping): pass your delivery target here rather than
+            re-levelling ``result.weave.audio``.
         weave: Force weaving on/off; default auto (``True`` iff ``audio`` is given).
         llm: Which LLM the SELECT rungs use (``'fake'`` | ``'local'`` | ``'anthropic'``;
             ``None`` reads ``$FOLEY_LLM``, else the free default) — see :func:`foley.find`.
@@ -125,16 +137,24 @@ def score(
             (``max_usd``) across every segment's paid calls (#57). Default: $1, or $3
             when ``llm`` (or ``$FOLEY_LLM``) is ``'anthropic'``
             (:func:`foley.cost.default_max_usd`, #88).
-        **weave_kwargs: Forwarded to :func:`foley.weave` (e.g. ``language``, ``sign_cert``, ``watermark``).
+        **weave_kwargs: Forwarded to :func:`foley.weave` (e.g. ``language``, ``aligner``,
+            ``sign_cert``, ``watermark``). Checked against ``weave``'s signature before
+            anything runs, so a typo costs nothing.
 
     Returns:
         A :class:`ScoreResult` (``timeline`` + ``events`` rationale; ``weave`` when woven).
+
+    Raises:
+        TypeError: If a ``weave_kwargs`` key is not a :func:`foley.weave` option (raised
+            before any find, verify or generation call).
     """
     from . import find, obs, plan
     from . import weave as _weave
     from .index import default_library
     from .licensing import intended_use_for
 
+    # fail fast: a typo raises before any find/verify/generation spend
+    _check_weave_kwargs(weave_kwargs)
     segs = [segments] if isinstance(segments, str) else list(segments)
     use = intended_use_for(intended_use, commercial_ok=commercial_ok)
     full_transcript = transcript or " ".join(segs)
@@ -143,6 +163,7 @@ def score(
     find_kw = {
         "max_events": max_events,
         "verify": verify,
+        "backend": backend,
         "intended_use": use,
         "llm": llm,
     }
@@ -153,12 +174,16 @@ def score(
 
     all_candidates = []
     events: "list[ScoredEvent]" = []
+    from .agent.policy import Budget
     from .cost import active_budget, default_max_usd, spend_scope
 
+    if not allow_generate:
+        # find's loop budget turns the fallback off (its pre-flight then counts no
+        # generation); the run's spend is still capped by the scope below.
+        base = budget if budget is not None else Budget(max_usd=default_max_usd(llm))
+        find_kw["budget"] = base.without_generation()
     if budget is None and active_budget() is None:
         # One cap for the whole score run, sized to the LLM the caller chose (#88).
-        from .agent.policy import Budget
-
         budget = Budget(max_usd=default_max_usd(llm))
     with (
         obs.run("score", params={"n_segments": len(segs), "verify": str(verify)}),
@@ -197,3 +222,30 @@ def score(
             woven = _weave(audio, timeline, **wk)
             timeline = woven.timeline
     return ScoreResult(timeline=timeline, events=events, weave=woven)
+
+
+def _check_weave_kwargs(weave_kwargs: dict) -> None:
+    """Raise ``TypeError`` for a key :func:`foley.weave` would refuse, naming near misses."""
+    import inspect
+    from difflib import get_close_matches
+
+    from .weave import weave
+
+    accepted = {
+        name
+        for name, p in inspect.signature(weave).parameters.items()
+        if p.kind is p.KEYWORD_ONLY
+    }
+    unknown = sorted(set(weave_kwargs) - accepted)
+    if not unknown:
+        return
+    own = set(inspect.signature(score).parameters) - {"segments", "weave_kwargs"}
+    known = sorted(accepted | own)
+    hints = {u: get_close_matches(u, known, n=1) for u in unknown}
+    hint = "; ".join(f"{u!r}: did you mean {m[0]!r}?" for u, m in hints.items() if m)
+    raise TypeError(
+        f"score() got unexpected keyword argument(s) {unknown} (neither a score() "
+        f"nor a foley.weave option; nothing was run). "
+        + (hint + ". " if hint else "")
+        + f"Known: {known}"
+    )
