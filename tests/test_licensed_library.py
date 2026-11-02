@@ -9,6 +9,8 @@ import json
 import struct
 from xml.sax.saxutils import escape
 
+from pathlib import Path
+
 import pytest
 
 np = pytest.importorskip("numpy")
@@ -137,7 +139,7 @@ def test_two_packs_ingest_with_their_captions_categories_and_licences(packs, lib
 def test_a_folder_without_a_sidecar_is_skipped_and_reported(packs, library):
     report = ingest_licensed_folder(packs, library=library, accept_ai_restricted=True, **QUIET)
     (skipped,) = [r for r in report.results if r.status == "skipped_license"]
-    assert skipped.id.endswith("unlicensed/thunder.wav")
+    assert Path(skipped.id).parts[-2:] == ("unlicensed", "thunder.wav")  # native path
     assert "foley-license.toml" in skipped.notes[0]
     assert any("unlicensed" in n for n in report.notes)
     assert report.summary()["ingested"] == 4 and not report.errored
