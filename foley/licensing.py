@@ -981,11 +981,23 @@ def rights_license_id(record: LicenseRecord) -> Optional[str]:
     is not public (:data:`PUBLIC_LICENSE_IDS`) counts as UNKNOWN, and a source that
     wins as UNKNOWN gives ``None``. Ties go to the clip's own licence.
 
+    A code is returned only when it alone carries every restriction of the chain: a
+    source that wins over a clip whose own licence restricts beyond its class
+    (:func:`carries_own_restriction`: a revenue cap, a provider's terms) gives
+    ``None``, since a ``Rights`` record has one licence field and the source's public
+    code would drop the clip's restriction (Stability's revenue cap).
+
     >>> rights_license_id(LicenseRecord(source="s", license_id="CC-BY-4.0", rights_verified=True))
     'CC-BY-4.0'
-    >>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
+    >>> rights_license_id(LicenseRecord(source="g", license_id="elevenlabs-free-plan",
+    ...     rights_verified=True, derived_from_license_ids=["CC-BY-4.0"]))
+    'elevenlabs-free-plan'
+    >>> rights_license_id(LicenseRecord(source="g", license_id="procedural-free",
     ...     rights_verified=True, derived_from_license_ids=["CC-BY-NC-4.0"]))
     'CC-BY-NC-4.0'
+    >>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
+    ...     rights_verified=True, derived_from_license_ids=["CC-BY-4.0"])) is None
+    True
     >>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
     ...     rights_verified=True, derived_from_license_ids=["Tencent-Hunyuan-Community"])) is None
     True
@@ -1004,9 +1016,23 @@ def rights_license_id(record: LicenseRecord) -> Optional[str]:
     worst = max(sources, key=rank, default=None)
     if worst is None or rank(worst) <= rank(own, source=False):
         return own if consumer_license_code(own) else None
-    if CONSUMER_LICENSE_CLASSES[rank(worst)] == "unknown":
+    if CONSUMER_LICENSE_CLASSES[rank(worst)] == "unknown" or carries_own_restriction(
+        own
+    ):
         return None
     return worst
+
+
+def carries_own_restriction(license_id: str) -> bool:
+    """Whether ``license_id`` restricts beyond what its class says, so that no other
+    licence's code can stand in for it: a revenue cap, or a provider's own terms
+    (:data:`LICENSE_TERMS_PROVIDER`, which a consumer attaches restrictions to).
+
+    >>> carries_own_restriction("Stability-Community"), carries_own_restriction("CC-BY-4.0")
+    (True, False)
+    """
+    flags = LICENSE_FLAGS.get(license_id, UNKNOWN_LICENSE_FLAGS)
+    return flags.revenue_cap_usd is not None or license_id in LICENSE_TERMS_PROVIDER
 
 
 def derivative_refusal(source: LicenseRecord) -> Optional[str]:

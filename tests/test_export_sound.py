@@ -324,14 +324,33 @@ def test_an_edit_exports_no_wider_than_its_source(generator_license, source_lice
             assert exported.requires_attribution, (lid, code)
 
 
-def test_the_reviewed_fail_open_cases():
-    assert sound_rights(_edit("Stability-Community", "CC-BY-NC-4.0"))["license"] == (
-        "cc-by-nc-4.0"
-    )
-    rights = sound_rights(_edit("Stability-Community", "Tencent-Hunyuan-Community"))
-    assert rights["license"] is None and rights["license_url"] is None
-    same = sound_rights(_edit("Stability-Community", "Stability-Community"))
-    assert same["license"] == "stability-community"
+@pytest.mark.parametrize(
+    "generator_license,source_license,code",
+    [
+        ("Stability-Community", "CC0-1.0", "stability-community"),  # its cap is named
+        ("Stability-Community", "Stability-Community", "stability-community"),
+        # a source code would drop Stability's revenue cap: unknown (fail-closed)
+        ("Stability-Community", "CC-BY-4.0", None),
+        ("Stability-Community", "MIT", None),
+        ("Stability-Community", "CC-BY-NC-4.0", None),
+        ("Stability-Community", "Tencent-Hunyuan-Community", None),
+        ("procedural-free", "CC-BY-NC-4.0", "cc-by-nc-4.0"),
+        ("procedural-free", "CC-BY-4.0", "cc-by-4.0"),
+    ],
+)
+def test_the_reviewed_fail_open_cases(generator_license, source_license, code):
+    rights = sound_rights(_edit(generator_license, source_license))
+    assert rights["license"] == code
+    if code is None:
+        assert rights["license_url"] is None
+
+
+def test_an_edit_never_drops_a_revenue_cap():
+    for generator_license, source_license in EDITS:
+        code = sound_rights(_edit(generator_license, source_license))["license"]
+        if code is None or not LICENSE_FLAGS[generator_license].revenue_cap_usd:
+            continue
+        assert code == consumer_license_code(generator_license)
 
 
 def test_an_classifies_no_edit_wider_than_its_lineage():
