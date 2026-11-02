@@ -64,7 +64,7 @@ so the derived permission flags stay single-sourced.
 | [`api_license`](#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])    | Build an API-acquisition [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
 | [`generated_license`](#foley.sources.base.generated_license)(\*, source, license_id, ...)     | Build a generated [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.                                                          |
 | [`draw_seed`](#foley.sources.base.draw_seed)()                                        | A random seed in `0..2**31-1`, for a seed-capable backend asked for none.                                                                                                                               |
-| [`derived_seed`](#foley.sources.base.derived_seed)(seed, index)                          | The seed of variation `index` of a request seeded with `seed` (#161).                                                                                                                                   |
+| [`derived_seed`](#foley.sources.base.derived_seed)(seed, index, \*[, limit])             | The seed of variation `index` of a request seeded with `seed` (#161).                                                                                                                                   |
 | [`require_count`](#foley.sources.base.require_count)(name, value, \*, minimum)            | `value` as an `int`, or `ValueError` unless it is an integer >= `minimum`.                                                                                                                              |
 | [`register_corpus`](#foley.sources.base.register_corpus)(adapter)                           | Register `adapter` in [`CORPUS_REGISTRY`](#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                                                                      |
 | [`ring_of`](#foley.sources.base.ring_of)(name)                                      | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                                                                                    |
@@ -205,6 +205,13 @@ Optional: `demuxer() -> Optional[Callable[[bytes], bytes]]`, for a backend that
 answers with a video (#176): the strategy that takes its audio out (`None` when
 the answer is already audio). The dispatch uses it again when it replays a kept
 video answer; without one, ffmpeg ([`foley.sources.video.audio_track()`](foley.sources.video.html.md#foley.sources.video.audio_track)).
+
+Optional: `generate_takes(prompt, n, **affordances) -> list[GeneratedClip]`, for a
+backend whose config declares a batch knob (`native_defaults['batch']`, see
+`batch_limit()`; #210): `n` takes from one call, in order, each with its own
+licence (its own seed, where the backend reports or derives one). The `seed`
+affordance is the first take’s. Fewer clips than asked means the backend answered
+fewer samples.
 
 #### generate(prompt, \*\*affordances)
 
@@ -546,18 +553,20 @@ Registered adapters whose ring is in `rings` (sorted by name).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`CorpusAdapter`](#foley.sources.base.CorpusAdapter)]
 
-### foley.sources.base.derived_seed(seed, index)
+### foley.sources.base.derived_seed(seed, index, , limit=2147483648)
 
 The seed of variation `index` of a request seeded with `seed` (#161).
 
-`(seed + index) % _SEED_LIMIT`: wrapped into the signed 32-bit range every local
-backend takes, so variation 0 is the request itself and each later one is a seed
-of its own. It is `seed + index` only below the limit; near it, the seed wraps
-to 0.
+`(seed + index) % limit`: wrapped into the backend’s seed range
+(`seed_limit()`; default the signed 32-bit range every local backend takes),
+so variation 0 is the request itself and each later one is a seed of its own. It
+is `seed + index` only below the limit; near it, the seed wraps to 0.
 
 ```pycon
 >>> derived_seed(7, 0), derived_seed(7, 2), derived_seed(2**31 - 1, 1)
 (7, 9, 0)
+>>> derived_seed(2**31 - 1, 1, limit=2**63)
+2147483648
 ```
 
 * **Return type:**

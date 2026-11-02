@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=ab1379f9"></script>
+    <script src="../../_static/documentation_options.js?v=0f6bfde0"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.116" />
+  <meta name="docsearch:version" content="0.0.117" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -759,6 +759,8 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"DEFAULT_MAX_USD_BY_LLM"</span><span class="p">,</span>
     <span class="s2">"default_max_usd"</span><span class="p">,</span>
     <span class="s2">"charge"</span><span class="p">,</span>
+    <span class="s2">"for_samples"</span><span class="p">,</span>
+    <span class="s2">"split_cost"</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="c1">#: The default cumulative cap for one run (a ``find`` / ``score`` / ``generate`` call).</span>
@@ -818,8 +820,13 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="estimate_call">
 <a class="viewcode-back" href="../../_autosummary/foley.cost.html#foley.cost.estimate_call">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">estimate_call</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">estimate_call</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The USD cost of one call to the source ``config`` declares, or ``None`` if unknown.</span>
+
+<span class="sd">    ``samples``: how many takes the call asks for (a backend's batch knob, #210). A</span>
+<span class="sd">    source billed per sample (``pricing['per_sample']``: Mirelo, Sonilo) costs</span>
+<span class="sd">    ``samples`` times the one-sample price; any other bills the call (see</span>
+<span class="sd">    :func:`for_samples`).</span>
 
 <span class="sd">    ``config['pricing']`` units:</span>
 
@@ -845,8 +852,46 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Args:</span>
 <span class="sd">        config: A ``SOURCE_CONFIG``.</span>
+<span class="sd">        samples: The takes the call asks for (default ``1``).</span>
 <span class="sd">        **affordances: The canonical affordances of the call (``duration_s``, …).</span>
 <span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">for_samples</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">_one_sample_price</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">affordances</span><span class="p">),</span> <span class="n">samples</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="for_samples">
+<a class="viewcode-back" href="../../_autosummary/foley.cost.html#foley.cost.for_samples">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">for_samples</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">usd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""``usd`` (the price of one sample) for a call asking ``samples`` takes.</span>
+
+<span class="sd">    Times ``samples`` for a source billed per sample (``pricing['per_sample']``),</span>
+<span class="sd">    else unchanged: the call is billed once whatever its batch size.</span>
+
+<span class="sd">    &gt;&gt;&gt; for_samples({"pricing": {"per_sample": True}}, 0.15, 3)</span>
+<span class="sd">    0.45</span>
+<span class="sd">    &gt;&gt;&gt; for_samples({"pricing": {}}, 0.02, 3), for_samples({}, None, 3)</span>
+<span class="sd">    (0.02, None)</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">usd</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">((</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pricing"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"per_sample"</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">usd</span>
+    <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">usd</span><span class="p">)</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">samples</span><span class="p">),</span> <span class="mi">10</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="split_cost">
+<a class="viewcode-back" href="../../_autosummary/foley.cost.html#foley.cost.split_cost">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">split_cost</span><span class="p">(</span><span class="n">usd</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">takes</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Each take's share of a call's ``usd`` that made ``takes`` takes (``None``: unknown).</span>
+
+<span class="sd">    &gt;&gt;&gt; split_cost(0.45, 3), split_cost(None, 3)</span>
+<span class="sd">    (0.15, None)</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">usd</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">usd</span><span class="p">)</span> <span class="o">/</span> <span class="nb">int</span><span class="p">(</span><span class="n">takes</span><span class="p">),</span> <span class="mi">10</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_one_sample_price</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">affordances</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">""":func:`estimate_call` for one sample."""</span>
     <span class="n">pricing</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pricing"</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">pricing</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -885,8 +930,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">if</span> <span class="n">seconds</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span> <span class="o">*</span> <span class="n">_billed_seconds</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="n">pricing</span><span class="p">)</span>
         <span class="p">)</span>
-    <span class="k">return</span> <span class="kc">None</span></div>
-
+    <span class="k">return</span> <span class="kc">None</span>
 
 
 <span class="c1">#: Decimals of blocks kept before rounding up, so float noise (10.0000001 s) stays one</span>
@@ -918,8 +962,12 @@ window.runMermaid = runMermaid;</script>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">duration_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">compute_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""What a call just made costs at the declared price, for the duration actually sent.</span>
+
+<span class="sd">    ``samples``: the takes the call made (see :func:`for_samples`); not applied to a</span>
+<span class="sd">    per-compute-second price, whose reported run time is the whole call's.</span>
 
 <span class="sd">    The same pricing rule as :func:`estimate_call`, so the estimate and the actual</span>
 <span class="sd">    cannot disagree on it; ``None`` (unknown) when a per-second source was left to</span>
@@ -947,11 +995,14 @@ window.runMermaid = runMermaid;</script>
         <span class="n">amount</span> <span class="o">=</span> <span class="n">pricing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"amount_usd"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">amount</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">_finite_non_negative</span><span class="p">(</span><span class="n">compute_s</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">None</span>
+        <span class="c1"># The run time reported is the whole call's, all its samples included.</span>
         <span class="k">return</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">compute_s</span><span class="p">),</span> <span class="mi">10</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">duration_s</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pricing</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"unit"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"per_second"</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="c1"># A source billed by its video's length bills the seconds it actually produced.</span>
-    <span class="k">return</span> <span class="n">estimate_call</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">duration_s</span><span class="o">=</span><span class="n">duration_s</span><span class="p">,</span> <span class="n">video_duration_s</span><span class="o">=</span><span class="n">duration_s</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">estimate_call</span><span class="p">(</span>
+        <span class="n">config</span><span class="p">,</span> <span class="n">samples</span><span class="o">=</span><span class="n">samples</span><span class="p">,</span> <span class="n">duration_s</span><span class="o">=</span><span class="n">duration_s</span><span class="p">,</span> <span class="n">video_duration_s</span><span class="o">=</span><span class="n">duration_s</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_stack</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>

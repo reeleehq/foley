@@ -233,6 +233,13 @@ answers with a video (#176): the strategy that takes its audio out (`None` when
 the answer is already audio). The dispatch uses it again when it replays a kept
 video answer; without one, ffmpeg ([`foley.sources.video.audio_track()`](foley.sources.video.html.md#foley.sources.video.audio_track)).
 
+Optional: `generate_takes(prompt, n, **affordances) -> list[GeneratedClip]`, for a
+backend whose config declares a batch knob (`native_defaults['batch']`, see
+`batch_limit()`; #210): `n` takes from one call, in order, each with its own
+licence (its own seed, where the backend reports or derives one). The `seed`
+affordance is the first take’s. Fewer clips than asked means the backend answered
+fewer samples.
+
 #### generate(prompt, \*\*affordances)
 
 Synthesize a sound for `prompt`; return its bytes + provisional candidate.
@@ -622,7 +629,7 @@ adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters
       over every declaration before anything is registered, so the outcome does
       not depend on the order the packages are walked in).
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, derived_from=None, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, derived_from=None, takes=1, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -718,6 +725,14 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
   * **variation** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Which variation of the same request this is (#161; see
     [`foley.variations()`](foley.html.md#foley.variations)): `0` (default) is the request itself, a later
     one is a different paid request in the generations cache.
+  * **takes** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – How many takes of the request to make (#210; [`foley.variations()`](foley.html.md#foley.variations)
+    asks for several): variations `variation .. variation + takes - 1`. A
+    backend with a batch knob (`native_defaults['batch']`, an adapter with
+    `generate_takes`) makes up to its maximum in one call, priced and
+    reserved for all of them before it is sent, each take keyed apart in the
+    generations cache, QC’d and ingested on its own (one result per take, in
+    order); any other makes one (the caller asks again for the rest). Default
+    `1`.
   * **derived_from** – For an edit (#162: an edit backend given `audio=`), the source
     clip’s [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord) (what [`foley.edit()`](foley.html.md#foley.edit) passes)
     or its [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord). **Required** by the `edit`

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=ab1379f9"></script>
+    <script src="../_static/documentation_options.js?v=0f6bfde0"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.116" />
+  <meta name="docsearch:version" content="0.0.117" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -1577,7 +1577,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        variation: Which variation of the same request this is (#161): ``0``</span>
 <span class="sd">            (default) is the request itself; a later one is a different paid request</span>
 <span class="sd">            in the generations cache, so it is a new sound even from a backend that</span>
-<span class="sd">            takes no seed. :func:`variations` sets it; most callers never do.</span>
+<span class="sd">            takes no seed. With a ``seed``, variation ``i`` is the request seeded</span>
+<span class="sd">            ``seed + i`` (#210: that seed is sent, and keyed). :func:`variations`</span>
+<span class="sd">            sets it; most callers never do.</span>
 <span class="sd">        derived_from: For an edit (an edit backend given ``audio=``), the source</span>
 <span class="sd">            clip's :class:`SoundRecord` or :class:`LicenseRecord`: **required** — an</span>
 <span class="sd">            edit without it is refused (:class:`EditRefusal`), as one whose rights</span>
@@ -1619,6 +1621,56 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            :class:`~foley.runtime.ModelNotCached` for a local one whose weights are</span>
 <span class="sd">            not on this machine.</span>
 <span class="sd">    """</span>
+    <span class="n">report</span><span class="p">,</span> <span class="n">backend</span><span class="p">,</span> <span class="n">skipped</span> <span class="o">=</span> <span class="n">_generation_report</span><span class="p">(</span>
+        <span class="n">prompt</span><span class="p">,</span>
+        <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span>
+        <span class="n">adapter</span><span class="o">=</span><span class="n">adapter</span><span class="p">,</span>
+        <span class="n">budget</span><span class="o">=</span><span class="n">budget</span><span class="p">,</span>
+        <span class="n">intended_use</span><span class="o">=</span><span class="n">intended_use</span><span class="p">,</span>
+        <span class="n">provider_params</span><span class="o">=</span><span class="n">provider_params</span><span class="p">,</span>
+        <span class="n">library</span><span class="o">=</span><span class="n">library</span><span class="p">,</span>
+        <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">,</span>
+        <span class="n">watermark</span><span class="o">=</span><span class="n">watermark</span><span class="p">,</span>
+        <span class="n">on_flagged</span><span class="o">=</span><span class="n">on_flagged</span><span class="p">,</span>
+        <span class="n">watermarker</span><span class="o">=</span><span class="n">watermarker</span><span class="p">,</span>
+        <span class="n">provenance_store</span><span class="o">=</span><span class="n">provenance_store</span><span class="p">,</span>
+        <span class="n">on_unsupported</span><span class="o">=</span><span class="n">on_unsupported</span><span class="p">,</span>
+        <span class="n">reuse_cached</span><span class="o">=</span><span class="n">reuse_cached</span><span class="p">,</span>
+        <span class="n">repair</span><span class="o">=</span><span class="n">repair</span><span class="p">,</span>
+        <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
+        <span class="n">check_prompt</span><span class="o">=</span><span class="n">check_prompt</span><span class="p">,</span>
+        <span class="n">variation</span><span class="o">=</span><span class="n">variation</span><span class="p">,</span>
+        <span class="n">derived_from</span><span class="o">=</span><span class="n">derived_from</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">res</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationError</span>
+
+        <span class="k">raise</span> <span class="n">GenerationError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"generation via </span><span class="si">{</span><span class="n">backend</span><span class="si">!r}</span><span class="s2"> produced no result"</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_result_candidate</span><span class="p">(</span>
+        <span class="n">res</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span> <span class="n">skipped</span><span class="o">=</span><span class="n">skipped</span><span class="p">,</span> <span class="n">library</span><span class="o">=</span><span class="n">library</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_generation_report</span><span class="p">(</span>
+    <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">backend</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">adapter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">budget</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">intended_use</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">provider_params</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">""":func:`generate`'s run, up to its report: ``(report, backend, skipped)``.</span>
+
+<span class="sd">    ``kwargs`` are :func:`generate`'s other keywords and affordances, and ``takes``</span>
+<span class="sd">    (#210, from :func:`variations`): a report then holds one result per take made.</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">spend_scope</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.generate</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">default_generate_backend</span><span class="p">,</span>
@@ -1629,7 +1681,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">provider_params_by_backend</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">mode</span> <span class="o">=</span> <span class="n">generation_mode</span><span class="p">(</span><span class="n">affordances</span><span class="p">)</span>  <span class="c1"># a video= walks the video-to-audio order</span>
+    <span class="n">mode</span> <span class="o">=</span> <span class="n">generation_mode</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># a video= walks the video-to-audio order</span>
     <span class="n">paid_ok</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># a named backend or order is the caller asking for it</span>
     <span class="k">if</span> <span class="n">adapter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># an injected adapter is one backend, named by its config</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
@@ -1660,31 +1712,21 @@ window.runMermaid = runMermaid;</script>
             <span class="n">order</span><span class="p">,</span>
             <span class="n">paid_ok</span><span class="o">=</span><span class="n">paid_ok</span><span class="p">,</span>
             <span class="n">intended_use</span><span class="o">=</span><span class="n">intended_use</span><span class="p">,</span>
-            <span class="n">library</span><span class="o">=</span><span class="n">library</span><span class="p">,</span>
-            <span class="n">store</span><span class="o">=</span><span class="n">store</span><span class="p">,</span>
             <span class="n">adapter</span><span class="o">=</span><span class="n">adapter</span><span class="p">,</span>
-            <span class="n">watermark</span><span class="o">=</span><span class="n">watermark</span><span class="p">,</span>
-            <span class="n">on_flagged</span><span class="o">=</span><span class="n">on_flagged</span><span class="p">,</span>
-            <span class="n">watermarker</span><span class="o">=</span><span class="n">watermarker</span><span class="p">,</span>
-            <span class="n">provenance_store</span><span class="o">=</span><span class="n">provenance_store</span><span class="p">,</span>
-            <span class="n">on_unsupported</span><span class="o">=</span><span class="n">on_unsupported</span><span class="p">,</span>
-            <span class="n">reuse_cached</span><span class="o">=</span><span class="n">reuse_cached</span><span class="p">,</span>
-            <span class="n">repair</span><span class="o">=</span><span class="n">repair</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span>
-            <span class="n">check_prompt</span><span class="o">=</span><span class="n">check_prompt</span><span class="p">,</span>
             <span class="n">provider_params</span><span class="o">=</span><span class="n">by_backend</span><span class="p">,</span>
-            <span class="n">variation</span><span class="o">=</span><span class="n">variation</span><span class="p">,</span>
-            <span class="n">derived_from</span><span class="o">=</span><span class="n">derived_from</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">affordances</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span>
-    <span class="k">if</span> <span class="n">results</span> <span class="ow">and</span> <span class="n">skipped</span><span class="p">:</span>
-        <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notes</span><span class="p">[:</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"generation order: skipped </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">skipped</span><span class="p">]</span>
-    <span class="n">res</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">results</span> <span class="k">else</span> <span class="kc">None</span>
-    <span class="k">if</span> <span class="n">res</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">GenerationError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"generation via </span><span class="si">{</span><span class="n">backend</span><span class="si">!r}</span><span class="s2"> produced no result"</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="kc">None</span>
-        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span> <span class="ow">and</span> <span class="n">skipped</span><span class="p">:</span>
+        <span class="n">report</span><span class="o">.</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">notes</span><span class="p">[:</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">"generation order: skipped </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">skipped</span>
+        <span class="p">]</span>
+    <span class="k">return</span> <span class="n">report</span><span class="p">,</span> <span class="n">backend</span><span class="p">,</span> <span class="n">skipped</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_result_candidate</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">report</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">skipped</span><span class="p">,</span> <span class="n">library</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Candidate"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The stored :class:`Candidate` of one generation result, or :class:`GenerationError`."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationError</span><span class="p">,</span> <span class="n">candidate_of</span>
+
     <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"pass"</span><span class="p">,</span> <span class="s2">"warn"</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">_with_call_facts</span><span class="p">(</span><span class="n">candidate_of</span><span class="p">(</span><span class="n">res</span><span class="p">),</span> <span class="n">res</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">"skipped_dup"</span><span class="p">:</span>
@@ -1700,8 +1742,43 @@ window.runMermaid = runMermaid;</script>
         <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span>
         <span class="n">status</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
         <span class="n">cache_key</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">cache_key</span><span class="p">,</span>
-    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">report.exception</span></div>
+    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">report.exception</span>
 
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_generated_takes</span><span class="p">(</span><span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[Candidate]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Up to ``n`` takes of one request from one :func:`generate` run (#210): ``n`` from a</span>
+<span class="sd">    backend whose batch knob makes them in one call, else one.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        GenerationError: For the first take that yielded no stored sound, its</span>
+<span class="sd">            ``variations`` the run's takes that were stored (after it too: they were</span>
+<span class="sd">            made by the same paid call).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenerationError</span>
+
+    <span class="n">report</span><span class="p">,</span> <span class="n">backend</span><span class="p">,</span> <span class="n">skipped</span> <span class="o">=</span> <span class="n">_generation_report</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">takes</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">GenerationError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"generation via </span><span class="si">{</span><span class="n">backend</span><span class="si">!r}</span><span class="s2"> produced no result"</span><span class="p">,</span> <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+    <span class="n">made</span><span class="p">,</span> <span class="n">failed</span> <span class="o">=</span> <span class="p">[],</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">report</span><span class="o">.</span><span class="n">results</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">made</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">_result_candidate</span><span class="p">(</span>
+                    <span class="n">res</span><span class="p">,</span>
+                    <span class="n">report</span><span class="o">=</span><span class="n">report</span><span class="p">,</span>
+                    <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span>
+                    <span class="n">skipped</span><span class="o">=</span><span class="n">skipped</span><span class="p">,</span>
+                    <span class="n">library</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"library"</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">GenerationError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">failed</span> <span class="o">=</span> <span class="n">failed</span> <span class="ow">or</span> <span class="n">exc</span>
+    <span class="k">if</span> <span class="n">failed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">failed</span><span class="o">.</span><span class="n">variations</span> <span class="o">=</span> <span class="n">made</span>
+        <span class="k">raise</span> <span class="n">failed</span>
+    <span class="k">return</span> <span class="n">made</span>
 
 
 <div class="viewcode-block" id="variations">
@@ -1720,15 +1797,28 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    The first is :func:`generate` as asked (``backend=None`` walks the generation</span>
 <span class="sd">    order); the others come from the backend that made it, so all ``n`` are one</span>
-<span class="sd">    generator's takes on one request. Where that backend records its seed, take ``i``</span>
+<span class="sd">    generator's takes on one request.</span>
+
+<span class="sd">    A backend with a batch knob (#210: Mirelo's ``num_samples``, up to 4; Stable Audio</span>
+<span class="sd">    Open's ``num_waveforms_per_prompt``) makes the takes in as few calls as its maximum</span>
+<span class="sd">    allows, each call priced and reserved for all its takes before it is sent (a</span>
+<span class="sd">    backend billed per sample costs ``k`` times one sample). Each take is still its own</span>
+<span class="sd">    sound: keyed ``(request, i)`` in the generations cache (so a re-run replays every</span>
+<span class="sd">    take), with its own provenance (its own seed where the backend reports or derives</span>
+<span class="sd">    one per sample; a note where it does not), QC'd and stored on its own. Take ``i``</span>
+<span class="sd">    of a seeded request is ``generate(seed=seed + i)``: the same cache entry, however</span>
+<span class="sd">    it was made. A budget that affords only part of a batch gets those takes, then</span>
+<span class="sd">    refuses the next as one call per take would.</span>
+
+<span class="sd">    Any other backend makes one call per take. Where it records its seed, take ``i``</span>
 <span class="sd">    is ``generate(..., seed=derived_seed(first_seed, i))``</span>
 <span class="sd">    (:func:`~foley.sources.base.derived_seed`: the first seed plus ``i``, wrapped into</span>
-<span class="sd">    the signed 32-bit seed range), so it is reproducible like any seeded clip and the</span>
-<span class="sd">    same request as asking for that seed; where it records none, take ``i`` is keyed</span>
-<span class="sd">    apart in the generations cache, so a backend that takes no seed (ElevenLabs) makes</span>
-<span class="sd">    ``n`` paid sounds, each replayable, rather than replaying one ``n`` times. Each</span>
-<span class="sd">    take is one call, priced and reserved like any other, under one budget for the</span>
-<span class="sd">    whole set.</span>
+<span class="sd">    the backend's seed range, :func:`~foley.sources.base.seed_limit`), so it is</span>
+<span class="sd">    reproducible like any seeded clip and the same request as asking for that seed;</span>
+<span class="sd">    where it records none, take ``i`` is keyed apart in the generations cache, so a</span>
+<span class="sd">    backend that takes no seed (ElevenLabs) makes ``n`` paid sounds, each replayable,</span>
+<span class="sd">    rather than replaying one ``n`` times. Every call is priced and reserved like any</span>
+<span class="sd">    other, under one budget for the whole set.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        prompt: The natural-language sound description.</span>
@@ -1749,14 +1839,15 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If ``n`` is not an integer &gt;= 1, or ``variation`` is passed.</span>
-<span class="sd">        GenerationError: As :func:`generate`, for the variation that failed.</span>
+<span class="sd">        GenerationError: As :func:`generate`, for the variation that failed (in a</span>
+<span class="sd">            batch, the first take QC or ingest refused: its other takes are stored).</span>
 <span class="sd">        Exception: Whatever :func:`generate` raises for a take (``BudgetExceeded``</span>
 <span class="sd">            when the set outruns the budget, ``SourceConfigurationError``,</span>
 <span class="sd">            ``EgressBlocked``, …). Whatever it is, its ``variations`` attribute holds</span>
 <span class="sd">            the takes already made (stored, and paid for), in order.</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.cost</span><span class="w"> </span><span class="kn">import</span> <span class="n">spend_scope</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">derived_seed</span><span class="p">,</span> <span class="n">require_count</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">derived_seed</span><span class="p">,</span> <span class="n">require_count</span><span class="p">,</span> <span class="n">seed_limit</span>
 
     <span class="n">n</span> <span class="o">=</span> <span class="n">require_count</span><span class="p">(</span><span class="s2">"n"</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
     <span class="k">if</span> <span class="s2">"variation"</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
@@ -1765,9 +1856,10 @@ window.runMermaid = runMermaid;</script>
     <span class="n">out</span><span class="p">:</span> <span class="s2">"list[Candidate]"</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">with</span> <span class="n">spend_scope</span><span class="p">(</span><span class="n">budget</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="n">generate</span><span class="p">(</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                <span class="n">_generated_takes</span><span class="p">(</span>
                     <span class="n">prompt</span><span class="p">,</span>
+                    <span class="n">n</span><span class="p">,</span>
                     <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span>
                     <span class="n">provider_params</span><span class="o">=</span><span class="n">provider_params</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">seeded</span><span class="p">,</span>
@@ -1783,14 +1875,20 @@ window.runMermaid = runMermaid;</script>
                 <span class="c1"># Take 0 checked them as {backend: {...}}; a pinned take is one</span>
                 <span class="c1"># named backend, which takes its own entry flat (#61).</span>
                 <span class="n">pinned_params</span> <span class="o">=</span> <span class="n">provider_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">first_seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">batched</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">_batches</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"adapter"</span><span class="p">))</span>
+            <span class="n">limit</span> <span class="o">=</span> <span class="n">seed_limit</span><span class="p">(</span><span class="n">_source_config</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"adapter"</span><span class="p">)))</span>
+            <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
+                <span class="n">i</span><span class="p">,</span> <span class="n">takes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">batched</span><span class="p">:</span>  <span class="c1"># the next takes in one call, keyed (request, index)</span>
+                    <span class="n">more</span><span class="p">,</span> <span class="n">takes</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"variation"</span><span class="p">:</span> <span class="n">i</span><span class="p">,</span> <span class="o">**</span><span class="n">seeded</span><span class="p">},</span> <span class="n">n</span> <span class="o">-</span> <span class="n">i</span>
+                <span class="k">elif</span> <span class="n">first_seed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">more</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"variation"</span><span class="p">:</span> <span class="n">i</span><span class="p">}</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">more</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"seed"</span><span class="p">:</span> <span class="n">derived_seed</span><span class="p">(</span><span class="n">first_seed</span><span class="p">,</span> <span class="n">i</span><span class="p">)}</span>
-                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                    <span class="n">generate</span><span class="p">(</span>
+                    <span class="n">more</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"seed"</span><span class="p">:</span> <span class="n">derived_seed</span><span class="p">(</span><span class="n">first_seed</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)}</span>
+                <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                    <span class="n">_generated_takes</span><span class="p">(</span>
                         <span class="n">prompt</span><span class="p">,</span>
+                        <span class="n">takes</span><span class="p">,</span>
                         <span class="n">backend</span><span class="o">=</span><span class="n">lic</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
                         <span class="n">provider_params</span><span class="o">=</span><span class="n">pinned_params</span><span class="p">,</span>
                         <span class="o">**</span><span class="n">more</span><span class="p">,</span>
@@ -1798,11 +1896,29 @@ window.runMermaid = runMermaid;</script>
                     <span class="p">)</span>
                 <span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">made</span> <span class="o">=</span> <span class="p">[</span><span class="o">*</span><span class="n">out</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="s2">"variations"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])]</span>
             <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">AttributeError</span><span class="p">):</span>  <span class="c1"># never hide the real error</span>
-                <span class="n">exc</span><span class="o">.</span><span class="n">variations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>  <span class="c1"># the takes already made (and paid for)</span>
+                <span class="n">exc</span><span class="o">.</span><span class="n">variations</span> <span class="o">=</span> <span class="n">made</span>  <span class="c1"># the takes already made (and paid for)</span>
             <span class="k">raise</span>
     <span class="k">return</span> <span class="n">out</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_source_config</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">adapter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The config of ``backend`` (an injected adapter's own, else the registry's)."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
+
+    <span class="k">if</span> <span class="n">adapter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="s2">"config"</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">adapter</span><span class="o">.</span><span class="n">config</span>
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">SOURCE_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"config"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_batches</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">adapter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether ``backend`` makes several takes in one call (a batch knob, #210)."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.sources.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_limit</span>
+
+    <span class="k">return</span> <span class="n">batch_limit</span><span class="p">(</span><span class="n">_source_config</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">adapter</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">1</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_may_fall_back</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">adapter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>

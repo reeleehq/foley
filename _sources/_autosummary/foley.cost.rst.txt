@@ -26,6 +26,8 @@ foley.cost
       release
       default_max_usd
       charge
+      for_samples
+      split_cost
    
    .. rubric:: Exceptions
 

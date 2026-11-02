@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=ab1379f9"></script>
+    <script src="../_static/documentation_options.js?v=0f6bfde0"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.116" />
+  <meta name="docsearch:version" content="0.0.117" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -538,7 +538,7 @@ is unknown unless the budget approves unknown costs.</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.cost.estimate_call" title="foley.cost.estimate_call"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_call</span></code></a>(config, **affordances)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.cost.estimate_call" title="foley.cost.estimate_call"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_call</span></code></a>(config, *[, samples])</p></td>
 <td><p>The USD cost of one call to the source <code class="docutils literal notranslate"><span class="pre">config</span></code> declares, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if unknown.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.cost.spend_scope" title="foley.cost.spend_scope"><code class="xref py py-obj docutils literal notranslate"><span class="pre">spend_scope</span></code></a>([budget])</p></td>
@@ -567,6 +567,12 @@ is unknown unless the budget approves unknown costs.</p>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.cost.charge" title="foley.cost.charge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">charge</span></code></a>(usd)</p></td>
 <td><p>Record <code class="docutils literal notranslate"><span class="pre">usd</span></code> against every budget in force (a no-op outside any run).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.cost.for_samples" title="foley.cost.for_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">for_samples</span></code></a>(config, usd, samples)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">usd</span></code> (the price of one sample) for a call asking <code class="docutils literal notranslate"><span class="pre">samples</span></code> takes.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.cost.split_cost" title="foley.cost.split_cost"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_cost</span></code></a>(usd, takes)</p></td>
+<td><p>Each take's share of a call's <code class="docutils literal notranslate"><span class="pre">usd</span></code> that made <code class="docutils literal notranslate"><span class="pre">takes</span></code> takes (<code class="docutils literal notranslate"><span class="pre">None</span></code>: unknown).</p></td>
 </tr>
 </tbody>
 </table>
@@ -693,8 +699,12 @@ free default never resolves to a paid one); see <a class="reference internal" hr
 
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.cost.estimate_call">
-<span class="sig-prename descclassname"><span class="pre">foley.cost.</span></span><span class="sig-name descname"><span class="pre">estimate_call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">affordances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/cost.html#estimate_call"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.cost.estimate_call" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">foley.cost.</span></span><span class="sig-name descname"><span class="pre">estimate_call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">affordances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/cost.html#estimate_call"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.cost.estimate_call" title="Link to this definition">#</a></dt>
 <dd><p>The USD cost of one call to the source <code class="docutils literal notranslate"><span class="pre">config</span></code> declares, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if unknown.</p>
+<p><code class="docutils literal notranslate"><span class="pre">samples</span></code>: how many takes the call asks for (a backend’s batch knob, #210). A
+source billed per sample (<code class="docutils literal notranslate"><span class="pre">pricing['per_sample']</span></code>: Mirelo, Sonilo) costs
+<code class="docutils literal notranslate"><span class="pre">samples</span></code> times the one-sample price; any other bills the call (see
+<a class="reference internal" href="#foley.cost.for_samples" title="foley.cost.for_samples"><code class="xref py py-func docutils literal notranslate"><span class="pre">for_samples()</span></code></a>).</p>
 <p><code class="docutils literal notranslate"><span class="pre">config['pricing']</span></code> units:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">'free'</span></code> (local inference, a free API tier) → <code class="docutils literal notranslate"><span class="pre">0.0</span></code>;</p></li>
@@ -722,11 +732,31 @@ increments first (a provider that bills in blocks: “$0.10 per 10 s”).</p></l
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>config</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span>) – A <code class="docutils literal notranslate"><span class="pre">SOURCE_CONFIG</span></code>.</p></li>
+<li><p><strong>samples</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – The takes the call asks for (default <code class="docutils literal notranslate"><span class="pre">1</span></code>).</p></li>
 <li><p><strong>**affordances</strong> – The canonical affordances of the call (<code class="docutils literal notranslate"><span class="pre">duration_s</span></code>, …).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.cost.for_samples">
+<span class="sig-prename descclassname"><span class="pre">foley.cost.</span></span><span class="sig-name descname"><span class="pre">for_samples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/cost.html#for_samples"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.cost.for_samples" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">usd</span></code> (the price of one sample) for a call asking <code class="docutils literal notranslate"><span class="pre">samples</span></code> takes.</p>
+<p>Times <code class="docutils literal notranslate"><span class="pre">samples</span></code> for a source billed per sample (<code class="docutils literal notranslate"><span class="pre">pricing['per_sample']</span></code>),
+else unchanged: the call is billed once whatever its batch size.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">for_samples</span><span class="p">({</span><span class="s2">"pricing"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"per_sample"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}},</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="go">0.45</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">for_samples</span><span class="p">({</span><span class="s2">"pricing"</span><span class="p">:</span> <span class="p">{}},</span> <span class="mf">0.02</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">for_samples</span><span class="p">({},</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="go">(0.02, None)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -775,6 +805,21 @@ one, a fresh default <a class="reference internal" href="foley.agent.policy.html
 <dl class="field-list simple">
 <dt class="field-odd">Yields<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The innermost budget in force.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.cost.split_cost">
+<span class="sig-prename descclassname"><span class="pre">foley.cost.</span></span><span class="sig-name descname"><span class="pre">split_cost</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">usd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">takes</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/cost.html#split_cost"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.cost.split_cost" title="Link to this definition">#</a></dt>
+<dd><p>Each take’s share of a call’s <code class="docutils literal notranslate"><span class="pre">usd</span></code> that made <code class="docutils literal notranslate"><span class="pre">takes</span></code> takes (<code class="docutils literal notranslate"><span class="pre">None</span></code>: unknown).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">split_cost</span><span class="p">(</span><span class="mf">0.45</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">split_cost</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="go">(0.15, None)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -839,10 +884,12 @@ one, a fresh default <a class="reference internal" href="foley.agent.policy.html
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.check"><code class="docutils literal notranslate"><span class="pre">check()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.default_max_usd"><code class="docutils literal notranslate"><span class="pre">default_max_usd()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.estimate_call"><code class="docutils literal notranslate"><span class="pre">estimate_call()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.for_samples"><code class="docutils literal notranslate"><span class="pre">for_samples()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.release"><code class="docutils literal notranslate"><span class="pre">release()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.scoped_iter"><code class="docutils literal notranslate"><span class="pre">scoped_iter()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.settle"><code class="docutils literal notranslate"><span class="pre">settle()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.spend_scope"><code class="docutils literal notranslate"><span class="pre">spend_scope()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.cost.split_cost"><code class="docutils literal notranslate"><span class="pre">split_cost()</span></code></a></li>
 </ul>
   </nav></div>
 

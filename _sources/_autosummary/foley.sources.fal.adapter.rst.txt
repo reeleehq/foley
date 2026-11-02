@@ -18,6 +18,7 @@ foley.sources.fal.adapter
    .. autosummary::
    
       audio_url
+      audio_urls
       falaw_runner
       falaw_uploader
       reported_watermark

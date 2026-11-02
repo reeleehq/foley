@@ -30,17 +30,19 @@ Stdlib-only.
 
 ### Functions
 
-| [`estimate_call`](#foley.cost.estimate_call)(config, \*\*affordances)   | The USD cost of one call to the source `config` declares, or `None` if unknown.                                                |
-|-------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| [`spend_scope`](#foley.cost.spend_scope)([budget])                    | Put `budget` in force for the block; every enclosing budget stays in force too.                                                |
-| [`scoped_iter`](#foley.cost.scoped_iter)(iterator_factory[, budget])  | Iterate `iterator_factory()` with `budget` in force only while it runs.                                                        |
-| [`active_budget`](#foley.cost.active_budget)()                          | The innermost [`Budget`](foley.agent.policy.html.md#foley.agent.policy.Budget) of the current run, or `None`. |
-| [`check`](#foley.cost.check)(estimate_usd, \*, what)            | Raise unless every budget in force can afford `estimate_usd` (reserves nothing).                                               |
-| [`authorize`](#foley.cost.authorize)(estimate_usd, \*, what)        | Admit a paid call: every budget in force must afford it, and each reserves it.                                                 |
-| [`settle`](#foley.cost.settle)(reserved_usd, actual_usd)         | Replace each budget's reservation with the actual cost (`None`: keep it).                                                      |
-| [`release`](#foley.cost.release)(reserved_usd)                    | Undo a reservation for a call that was never sent.                                                                             |
-| [`default_max_usd`](#foley.cost.default_max_usd)([llm])                   | The cap of a run given no budget: higher when the caller chose a paid LLM.                                                     |
-| [`charge`](#foley.cost.charge)(usd)                              | Record `usd` against every budget in force (a no-op outside any run).                                                          |
+| [`estimate_call`](#foley.cost.estimate_call)(config, \*[, samples])    | The USD cost of one call to the source `config` declares, or `None` if unknown.                                                |
+|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| [`spend_scope`](#foley.cost.spend_scope)([budget])                   | Put `budget` in force for the block; every enclosing budget stays in force too.                                                |
+| [`scoped_iter`](#foley.cost.scoped_iter)(iterator_factory[, budget]) | Iterate `iterator_factory()` with `budget` in force only while it runs.                                                        |
+| [`active_budget`](#foley.cost.active_budget)()                         | The innermost [`Budget`](foley.agent.policy.html.md#foley.agent.policy.Budget) of the current run, or `None`. |
+| [`check`](#foley.cost.check)(estimate_usd, \*, what)           | Raise unless every budget in force can afford `estimate_usd` (reserves nothing).                                               |
+| [`authorize`](#foley.cost.authorize)(estimate_usd, \*, what)       | Admit a paid call: every budget in force must afford it, and each reserves it.                                                 |
+| [`settle`](#foley.cost.settle)(reserved_usd, actual_usd)        | Replace each budget's reservation with the actual cost (`None`: keep it).                                                      |
+| [`release`](#foley.cost.release)(reserved_usd)                   | Undo a reservation for a call that was never sent.                                                                             |
+| [`default_max_usd`](#foley.cost.default_max_usd)([llm])                  | The cap of a run given no budget: higher when the caller chose a paid LLM.                                                     |
+| [`charge`](#foley.cost.charge)(usd)                             | Record `usd` against every budget in force (a no-op outside any run).                                                          |
+| [`for_samples`](#foley.cost.for_samples)(config, usd, samples)       | `usd` (the price of one sample) for a call asking `samples` takes.                                                             |
+| [`split_cost`](#foley.cost.split_cost)(usd, takes)                  | Each take's share of a call's `usd` that made `takes` takes (`None`: unknown).                                                 |
 
 ### Exceptions
 
@@ -131,9 +133,14 @@ free default never resolves to a paid one); see [`DEFAULT_MAX_USD_BY_LLM`](#fole
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
-### foley.cost.estimate_call(config, \*\*affordances)
+### foley.cost.estimate_call(config, , samples=1, \*\*affordances)
 
 The USD cost of one call to the source `config` declares, or `None` if unknown.
+
+`samples`: how many takes the call asks for (a backend’s batch knob, #210). A
+source billed per sample (`pricing['per_sample']`: Mirelo, Sonilo) costs
+`samples` times the one-sample price; any other bills the call (see
+[`for_samples()`](#foley.cost.for_samples)).
 
 `config['pricing']` units:
 
@@ -161,7 +168,25 @@ The USD cost of one call to the source `config` declares, or `None` if unknown.
 
 * **Parameters:**
   * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG`.
+  * **samples** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The takes the call asks for (default `1`).
   * **\*\*affordances** – The canonical affordances of the call (`duration_s`, …).
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### foley.cost.for_samples(config, usd, samples)
+
+`usd` (the price of one sample) for a call asking `samples` takes.
+
+Times `samples` for a source billed per sample (`pricing['per_sample']`),
+else unchanged: the call is billed once whatever its batch size.
+
+```pycon
+>>> for_samples({"pricing": {"per_sample": True}}, 0.15, 3)
+0.45
+>>> for_samples({"pricing": {}}, 0.02, 3), for_samples({}, None, 3)
+(0.02, None)
+```
+
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
@@ -200,3 +225,15 @@ one, a fresh default [`Budget`](foley.agent.policy.html.md#foley.agent.policy.Bu
 
 * **Yields:**
   The innermost budget in force.
+
+### foley.cost.split_cost(usd, takes)
+
+Each take’s share of a call’s `usd` that made `takes` takes (`None`: unknown).
+
+```pycon
+>>> split_cost(0.45, 3), split_cost(None, 3)
+(0.15, None)
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]

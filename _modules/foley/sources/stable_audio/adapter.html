@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=ab1379f9"></script>
+    <script src="../../../../_static/documentation_options.js?v=0f6bfde0"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.116" />
+  <meta name="docsearch:version" content="0.0.117" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -771,12 +771,14 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">GeneratedClip</span><span class="p">,</span>
     <span class="n">SourceConfigurationError</span><span class="p">,</span>
+    <span class="n">derived_seed</span><span class="p">,</span>
     <span class="n">draw_seed</span><span class="p">,</span>
     <span class="n">generated_license</span><span class="p">,</span>
     <span class="n">source_stated_terms</span><span class="p">,</span>
     <span class="n">merge_provider_params</span><span class="p">,</span>
     <span class="n">native_adherence</span><span class="p">,</span>
     <span class="n">recorded_params</span><span class="p">,</span>
+    <span class="n">seed_limit</span><span class="p">,</span>
     <span class="n">unsupported_notes</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_CONFIG</span>
@@ -869,20 +871,7 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="StableAudioAdapter.generate">
 <a class="viewcode-back" href="../../../../_autosummary/foley.sources.stable_audio.adapter.html#foley.sources.stable_audio.adapter.StableAudioAdapter.generate">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="o">*</span><span class="p">,</span>
-        <span class="n">duration_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">prompt_influence</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">negative_prompt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">output_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"wav"</span><span class="p">,</span>
-        <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GeneratedClip</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GeneratedClip</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Generate a sound for ``prompt``; return its bytes + provisional candidate.</span>
 
 <span class="sd">        Args:</span>
@@ -917,6 +906,47 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            ``license_id='Stability-Community'``, ``is_ai_generated=True``,</span>
 <span class="sd">            ``generation_seed`` captured).</span>
 <span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="StableAudioAdapter.generate_takes">
+<a class="viewcode-back" href="../../../../_autosummary/foley.sources.stable_audio.adapter.html#foley.sources.stable_audio.adapter.StableAudioAdapter.generate_takes">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_takes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[GeneratedClip]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``n`` takes of ``prompt`` from one pipeline call (#210), through the batch</span>
+<span class="sd">        knob ``num_waveforms_per_prompt``: take ``i`` is drawn from its own generator,</span>
+<span class="sd">        seeded ``seed + i`` (:func:`~foley.sources.base.derived_seed`), and records</span>
+<span class="sd">        that seed. Takes the keywords of :meth:`generate`.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If ``n`` exceeds the config's batch maximum.</span>
+<span class="sd">        """</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_limit</span><span class="p">,</span> <span class="n">require_count</span>
+
+        <span class="n">n</span> <span class="o">=</span> <span class="n">require_count</span><span class="p">(</span><span class="s2">"n"</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">minimum</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="n">batch_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> renders at most </span><span class="si">{</span><span class="n">batch_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">)</span><span class="si">}</span><span class="s2"> take(s) per "</span>
+                <span class="sa">f</span><span class="s2">"call, not </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">takes</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">duration_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">prompt_influence</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">negative_prompt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">steps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">output_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"wav"</span><span class="p">,</span>
+        <span class="n">provider_params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kw</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[GeneratedClip]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The ``takes`` clips of one pipeline call (see :meth:`generate`)."""</span>
         <span class="n">nd</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">]</span>
         <span class="n">notes</span> <span class="o">=</span> <span class="n">unsupported_notes</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">,</span> <span class="n">output_format</span><span class="o">=</span><span class="n">output_format</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span>
@@ -943,39 +973,55 @@ window.runMermaid = runMermaid;</script>
             <span class="p">),</span>
             <span class="s2">"guidance_scale"</span><span class="p">:</span> <span class="n">guidance_scale</span><span class="p">,</span>
             <span class="s2">"negative_prompt"</span><span class="p">:</span> <span class="n">negative_prompt</span><span class="p">,</span>
-            <span class="s2">"num_waveforms_per_prompt"</span><span class="p">:</span> <span class="n">nd</span><span class="p">[</span><span class="s2">"num_waveforms_per_prompt"</span><span class="p">],</span>
+            <span class="s2">"num_waveforms_per_prompt"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="n">takes</span> <span class="k">if</span> <span class="n">takes</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">nd</span><span class="p">[</span><span class="s2">"num_waveforms_per_prompt"</span><span class="p">]</span>
+            <span class="p">),</span>
         <span class="p">}</span>
         <span class="n">native</span> <span class="o">=</span> <span class="n">merge_provider_params</span><span class="p">(</span>
             <span class="n">native</span><span class="p">,</span> <span class="n">provider_params</span><span class="p">,</span> <span class="n">policy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"provider_params"</span><span class="p">)</span>
         <span class="p">)</span>
 
         <span class="n">seed</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span> <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">draw_seed</span><span class="p">()</span>
-        <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">ran_on</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render</span><span class="p">(</span>
-            <span class="n">prompt</span><span class="p">,</span> <span class="n">native</span><span class="o">=</span><span class="n">native</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span>
-        <span class="p">)</span>
+        <span class="n">seeds</span> <span class="o">=</span> <span class="n">_take_seeds</span><span class="p">(</span><span class="n">seed</span><span class="p">,</span> <span class="n">takes</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">seed_limit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">))</span>
+        <span class="n">audios</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">ran_on</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">native</span><span class="o">=</span><span class="n">native</span><span class="p">,</span> <span class="n">seeds</span><span class="o">=</span><span class="n">seeds</span><span class="p">)</span>
 
         <span class="n">resolved</span> <span class="o">=</span> <span class="n">recorded_params</span><span class="p">(</span>
             <span class="nb">dict</span><span class="p">(</span><span class="n">native</span><span class="p">,</span> <span class="n">sample_rate</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">,</span> <span class="n">model_id</span><span class="o">=</span><span class="n">nd</span><span class="p">[</span><span class="s2">"model_id"</span><span class="p">],</span> <span class="o">**</span><span class="n">ran_on</span><span class="p">),</span>
             <span class="n">provider_params</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="n">lic</span> <span class="o">=</span> <span class="n">generated_license</span><span class="p">(</span>
-            <span class="n">terms</span><span class="o">=</span><span class="n">source_stated_terms</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">),</span>
-            <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="n">license_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"license"</span><span class="p">][</span><span class="s2">"default_license_id"</span><span class="p">],</span>
-            <span class="n">generator_model</span><span class="o">=</span><span class="n">nd</span><span class="p">[</span><span class="s2">"generator_version"</span><span class="p">],</span>
-            <span class="n">generator_version</span><span class="o">=</span><span class="n">nd</span><span class="p">[</span><span class="s2">"generator_version"</span><span class="p">],</span>
-            <span class="n">generation_prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
-            <span class="n">generation_seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span>  <span class="c1"># the seed sent: the caller's or the one drawn</span>
-            <span class="n">generation_params</span><span class="o">=</span><span class="n">resolved</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">record</span> <span class="o">=</span> <span class="n">SoundRecord</span><span class="p">(</span>
-            <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">:pending"</span><span class="p">,</span>  <span class="c1"># discarded placeholder (façade ingests sound_id=None)</span>
-            <span class="n">license</span><span class="o">=</span><span class="n">lic</span><span class="p">,</span>
-            <span class="n">caption</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">candidate</span> <span class="o">=</span> <span class="n">Candidate</span><span class="p">(</span><span class="n">sound</span><span class="o">=</span><span class="n">record</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="n">CandidateOrigin</span><span class="o">.</span><span class="n">generated</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">GeneratedClip</span><span class="p">(</span><span class="n">audio_bytes</span><span class="o">=</span><span class="n">audio_bytes</span><span class="p">,</span> <span class="n">candidate</span><span class="o">=</span><span class="n">candidate</span><span class="p">,</span> <span class="n">notes</span><span class="o">=</span><span class="n">notes</span><span class="p">)</span></div>
-
+        <span class="n">clips</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">audio_bytes</span><span class="p">,</span> <span class="n">take_seed</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">audios</span><span class="p">,</span> <span class="n">seeds</span><span class="p">)):</span>
+            <span class="n">lic</span> <span class="o">=</span> <span class="n">generated_license</span><span class="p">(</span>
+                <span class="n">terms</span><span class="o">=</span><span class="n">source_stated_terms</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">),</span>
+                <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">license_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"license"</span><span class="p">][</span><span class="s2">"default_license_id"</span><span class="p">],</span>
+                <span class="n">generator_model</span><span class="o">=</span><span class="n">nd</span><span class="p">[</span><span class="s2">"generator_version"</span><span class="p">],</span>
+                <span class="n">generator_version</span><span class="o">=</span><span class="n">nd</span><span class="p">[</span><span class="s2">"generator_version"</span><span class="p">],</span>
+                <span class="n">generation_prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
+                <span class="n">generation_seed</span><span class="o">=</span><span class="n">take_seed</span><span class="p">,</span>  <span class="c1"># the seed this take's generator was given</span>
+                <span class="n">generation_params</span><span class="o">=</span><span class="p">(</span>
+                    <span class="p">{</span><span class="o">**</span><span class="n">resolved</span><span class="p">,</span> <span class="s2">"sample_index"</span><span class="p">:</span> <span class="n">i</span><span class="p">}</span> <span class="k">if</span> <span class="n">takes</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">resolved</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">record</span> <span class="o">=</span> <span class="n">SoundRecord</span><span class="p">(</span>
+                <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">:pending"</span><span class="p">,</span>  <span class="c1"># discarded placeholder (façade ingests sound_id=None)</span>
+                <span class="n">license</span><span class="o">=</span><span class="n">lic</span><span class="p">,</span>
+                <span class="n">caption</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">candidate</span> <span class="o">=</span> <span class="n">Candidate</span><span class="p">(</span><span class="n">sound</span><span class="o">=</span><span class="n">record</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="n">CandidateOrigin</span><span class="o">.</span><span class="n">generated</span><span class="p">)</span>
+            <span class="n">take_notes</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">[</span><span class="sa">f</span><span class="s2">"take </span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">takes</span><span class="si">}</span><span class="s2"> from one pipeline call (#210)"</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">takes</span> <span class="o">&gt;</span> <span class="mi">1</span>
+                <span class="k">else</span> <span class="p">[]</span>
+            <span class="p">)</span>
+            <span class="n">clips</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">GeneratedClip</span><span class="p">(</span>
+                    <span class="n">audio_bytes</span><span class="o">=</span><span class="n">audio_bytes</span><span class="p">,</span>
+                    <span class="n">candidate</span><span class="o">=</span><span class="n">candidate</span><span class="p">,</span>
+                    <span class="n">notes</span><span class="o">=</span><span class="p">[</span><span class="o">*</span><span class="n">notes</span><span class="p">,</span> <span class="o">*</span><span class="n">take_notes</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">clips</span>
 
     <span class="c1"># -- helpers ------------------------------------------------------------</span>
 
@@ -991,19 +1037,25 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        :meth:`generate`, which draws one when none is given, ``seed=None`` here sends</span>
 <span class="sd">        no generator, so the pipeline falls back on its own randomness.</span>
 <span class="sd">        """</span>
-        <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">native</span><span class="o">=</span><span class="n">native</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">audio_bytes</span><span class="p">,</span> <span class="n">sample_rate</span></div>
+        <span class="n">audios</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_render</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">native</span><span class="o">=</span><span class="n">native</span><span class="p">,</span> <span class="n">seeds</span><span class="o">=</span><span class="p">[</span><span class="n">seed</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">audios</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sample_rate</span></div>
 
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">native</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
-<span class="w">        </span><span class="sd">"""``(encoded bytes, sample_rate, where it ran)``: :meth:`invoke_native`'s work.</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">native</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">seeds</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""``(encoded bytes per take, sample_rate, where it ran)``: :meth:`invoke_native`'s</span>
+<span class="sd">        work, for one take per seed (one generator per take when there are several,</span>
+<span class="sd">        #210; ``[None]``: no generator).</span>
 
 <span class="sd">        Where it ran is what a seed reproduces on (#207): the pipeline's ``device`` and</span>
 <span class="sd">        ``dtype`` and the generator's device, each only when known (as strings,</span>
 <span class="sd">        ``torch.`` dropped: ``'float16'``).</span>
 <span class="sd">        """</span>
         <span class="n">pipe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pipe</span><span class="p">()</span>
-        <span class="n">generator</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_generator</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span>
+        <span class="n">generators</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="kc">None</span> <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_generator</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">seed</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">seed</span> <span class="ow">in</span> <span class="n">seeds</span>
+        <span class="p">]</span>
+        <span class="n">generator</span> <span class="o">=</span> <span class="n">generators</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">generators</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">generators</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">output</span> <span class="o">=</span> <span class="n">pipe</span><span class="p">(</span>
             <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span><span class="p">,</span>
             <span class="n">output_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">"native_defaults"</span><span class="p">][</span><span class="s2">"output_type"</span><span class="p">],</span>
@@ -1014,12 +1066,13 @@ window.runMermaid = runMermaid;</script>
         <span class="n">ran_on</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"device"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="s2">"device"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
             <span class="s2">"dtype"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="s2">"dtype"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
-            <span class="s2">"generator_device"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">generator</span><span class="p">,</span> <span class="s2">"device"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="s2">"generator_device"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">generators</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"device"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span>
         <span class="p">}</span>
         <span class="n">ran_on</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">k</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"torch."</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ran_on</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">}</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encode</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">audios</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sample_rate</span><span class="p">),</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">ran_on</span>
+        <span class="n">audios</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_encode</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">audios</span><span class="p">)[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">seeds</span><span class="p">)]]</span>
+        <span class="k">return</span> <span class="n">audios</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">ran_on</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">audio</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Encode one waveform to container (FLAC) bytes for ingest.</span>
@@ -1036,6 +1089,15 @@ window.runMermaid = runMermaid;</script>
             <span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">T</span>
         <span class="k">return</span> <span class="n">encode</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">)</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_take_seeds</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">takes</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[int]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The seed of each take of a call seeded ``seed``: ``seed + i``, in the range.</span>
+
+<span class="sd">    &gt;&gt;&gt; _take_seeds(7, 3, limit=2**31)</span>
+<span class="sd">    [7, 8, 9]</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">derived_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">takes</span><span class="p">)]</span>
 
 
 <span class="c1">#: Registry convention (arioso): the loader imports ``adapter.Adapter``.</span>

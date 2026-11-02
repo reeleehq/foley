@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=ab1379f9"></script>
+    <script src="../_static/documentation_options.js?v=0f6bfde0"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.116" />
+  <meta name="docsearch:version" content="0.0.117" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -554,13 +554,16 @@ is an error, never a fall-through to the network.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.fal.adapter.audio_url" title="foley.sources.fal.adapter.audio_url"><code class="xref py py-obj docutils literal notranslate"><span class="pre">audio_url</span></code></a>(response[, field])</p></td>
 <td><p>The URL of the audio in a fal response: <code class="docutils literal notranslate"><span class="pre">{field:</span> <span class="pre">{url}}</span></code> or <code class="docutils literal notranslate"><span class="pre">{field:</span> <span class="pre">[{url},</span> <span class="pre">...]}</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.fal.adapter.falaw_runner" title="foley.sources.fal.adapter.falaw_runner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">falaw_runner</span></code></a>(endpoint_id, arguments, *, api_key)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.fal.adapter.audio_urls" title="foley.sources.fal.adapter.audio_urls"><code class="xref py py-obj docutils literal notranslate"><span class="pre">audio_urls</span></code></a>(response[, field])</p></td>
+<td><p>Every audio URL in a fal response, in order: one per sample for an endpoint that answers a list (Mirelo's <code class="docutils literal notranslate"><span class="pre">audio</span></code>, #210).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.fal.adapter.falaw_runner" title="foley.sources.fal.adapter.falaw_runner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">falaw_runner</span></code></a>(endpoint_id, arguments, *, api_key)</p></td>
 <td><p>Call a fal endpoint through falaw and return <code class="docutils literal notranslate"><span class="pre">(audio</span> <span class="pre">bytes,</span> <span class="pre">raw</span> <span class="pre">response)</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.fal.adapter.falaw_uploader" title="foley.sources.fal.adapter.falaw_uploader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">falaw_uploader</span></code></a>(path, *, api_key)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.fal.adapter.falaw_uploader" title="foley.sources.fal.adapter.falaw_uploader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">falaw_uploader</span></code></a>(path, *, api_key)</p></td>
 <td><p>A fal-fetchable URL for the local file at <code class="docutils literal notranslate"><span class="pre">path</span></code> (<code class="docutils literal notranslate"><span class="pre">falaw.upload</span></code>: content-addressed, so an unchanged file is not uploaded twice).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.fal.adapter.reported_watermark" title="foley.sources.fal.adapter.reported_watermark"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reported_watermark</span></code></a>(response, stated, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.fal.adapter.reported_watermark" title="foley.sources.fal.adapter.reported_watermark"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reported_watermark</span></code></a>(response, stated, ...)</p></td>
 <td><p>The vendor's watermark as this response reports it (#77), or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
 </tr>
 </tbody>
@@ -679,6 +682,28 @@ the endpoint’s response (its audio is a URL, not the bytes).</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="foley.sources.fal.adapter.FalAdapter.generate_takes">
+<span class="sig-name descname"><span class="pre">generate_takes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">affordances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/fal/adapter.html#FalAdapter.generate_takes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.fal.adapter.FalAdapter.generate_takes" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">n</span></code> takes of <code class="docutils literal notranslate"><span class="pre">prompt</span></code> from one call, through the endpoint’s batch knob
+(<code class="docutils literal notranslate"><span class="pre">native_defaults['batch']</span></code>: Mirelo’s <code class="docutils literal notranslate"><span class="pre">num_samples</span></code>, #210).</p>
+<p>As <a class="reference internal" href="#foley.sources.fal.adapter.FalAdapter.generate" title="foley.sources.fal.adapter.FalAdapter.generate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">generate()</span></code></a>, but the request asks for <code class="docutils literal notranslate"><span class="pre">n</span></code> samples, and each answered
+sample is its own clip: its own seed when the endpoint reports one per sample
+(<code class="docutils literal notranslate"><span class="pre">seed_field</span></code> a list), else none and a note; each carries its share of the
+call’s actual cost. The <code class="docutils literal notranslate"><span class="pre">seed</span></code> sent is the first sample’s.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">n</span></code> exceeds the endpoint’s batch maximum (before any call).</p></li>
+<li><p><a class="reference internal" href="foley.sources.base.html#foley.sources.base.SourceConfigurationError" title="foley.sources.base.SourceConfigurationError"><strong>SourceConfigurationError</strong></a> – If no fal key is available (before any call).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="foley.sources.base.html#foley.sources.base.GeneratedClip" title="foley.sources.base.GeneratedClip"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeneratedClip</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="foley.sources.fal.adapter.FalAdapter.invoke_native">
 <span class="sig-name descname"><span class="pre">invoke_native</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/fal/adapter.html#FalAdapter.invoke_native"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.fal.adapter.FalAdapter.invoke_native" title="Link to this definition">#</a></dt>
 <dd><p>Call this source’s fal endpoint with native <code class="docutils literal notranslate"><span class="pre">arguments</span></code>; return <code class="docutils literal notranslate"><span class="pre">(media,</span> <span class="pre">response)</span></code>.</p>
@@ -764,9 +789,30 @@ or a <a class="reference internal" href="#foley.sources.fal.adapter.FalAnswer" t
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.fal.adapter.audio_urls">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.fal.adapter.</span></span><span class="sig-name descname"><span class="pre">audio_urls</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">response</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'audio'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/fal/adapter.html#audio_urls"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.fal.adapter.audio_urls" title="Link to this definition">#</a></dt>
+<dd><p>Every audio URL in a fal response, in order: one per sample for an endpoint that
+answers a list (Mirelo’s <code class="docutils literal notranslate"><span class="pre">audio</span></code>, #210).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">audio_urls</span><span class="p">({</span><span class="s2">"audio"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"url"</span><span class="p">:</span> <span class="s2">"u1"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"url"</span><span class="p">:</span> <span class="s2">"u2"</span><span class="p">}]})</span>
+<span class="go">['u1', 'u2']</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">audio_urls</span><span class="p">({</span><span class="s2">"audio"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"url"</span><span class="p">:</span> <span class="s2">"u"</span><span class="p">}}),</span> <span class="n">audio_urls</span><span class="p">({})</span>
+<span class="go">(['u'], [])</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.fal.adapter.falaw_runner">
-<span class="sig-prename descclassname"><span class="pre">foley.sources.fal.adapter.</span></span><span class="sig-name descname"><span class="pre">falaw_runner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">endpoint_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">audio_field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'audio'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/fal/adapter.html#falaw_runner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.fal.adapter.falaw_runner" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">foley.sources.fal.adapter.</span></span><span class="sig-name descname"><span class="pre">falaw_runner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">endpoint_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arguments</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">audio_field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'audio'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_audio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/fal/adapter.html#falaw_runner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.fal.adapter.falaw_runner" title="Link to this definition">#</a></dt>
 <dd><p>Call a fal endpoint through falaw and return <code class="docutils literal notranslate"><span class="pre">(audio</span> <span class="pre">bytes,</span> <span class="pre">raw</span> <span class="pre">response)</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">all_audio=True</span></code> (a batch call, #210) answers <code class="docutils literal notranslate"><span class="pre">(list</span> <span class="pre">of</span> <span class="pre">audio</span> <span class="pre">bytes,</span> <span class="pre">raw</span>
+<span class="pre">response)</span></code>: every sample the response lists, in order. A runner that serves a
+batch takes this keyword; one that never does need not.</p>
 <p>A <a class="reference internal" href="#foley.sources.fal.adapter.FalAnswer" title="foley.sources.fal.adapter.FalAnswer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FalAnswer</span></code></a>: its <code class="docutils literal notranslate"><span class="pre">.metrics</span></code> are fal’s <code class="docutils literal notranslate"><span class="pre">Completed.metrics</span></code>
 (<code class="docutils literal notranslate"><span class="pre">inference_time</span></code>: the seconds the runner spent), which falaw carries on its
 <code class="docutils literal notranslate"><span class="pre">done</span></code> event (falaw#125); <code class="docutils literal notranslate"><span class="pre">None</span></code> when fal reported none (or an older falaw
@@ -882,6 +928,7 @@ beside the report.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.api_key"><code class="docutils literal notranslate"><span class="pre">FalAdapter.api_key</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.demuxer"><code class="docutils literal notranslate"><span class="pre">FalAdapter.demuxer()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.generate"><code class="docutils literal notranslate"><span class="pre">FalAdapter.generate()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.generate_takes"><code class="docutils literal notranslate"><span class="pre">FalAdapter.generate_takes()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.invoke_native"><code class="docutils literal notranslate"><span class="pre">FalAdapter.invoke_native()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.native_arguments"><code class="docutils literal notranslate"><span class="pre">FalAdapter.native_arguments()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAdapter.request_salt"><code class="docutils literal notranslate"><span class="pre">FalAdapter.request_salt()</span></code></a></li>
@@ -890,6 +937,7 @@ beside the report.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.FalAnswer"><code class="docutils literal notranslate"><span class="pre">FalAnswer</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.Runner"><code class="docutils literal notranslate"><span class="pre">Runner</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.audio_url"><code class="docutils literal notranslate"><span class="pre">audio_url()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.audio_urls"><code class="docutils literal notranslate"><span class="pre">audio_urls()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.falaw_runner"><code class="docutils literal notranslate"><span class="pre">falaw_runner()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.falaw_uploader"><code class="docutils literal notranslate"><span class="pre">falaw_uploader()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.fal.adapter.reported_watermark"><code class="docutils literal notranslate"><span class="pre">reported_watermark()</span></code></a></li>

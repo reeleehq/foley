@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=ab1379f9"></script>
+    <script src="../_static/documentation_options.js?v=0f6bfde0"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.116" />
+  <meta name="docsearch:version" content="0.0.117" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -4481,7 +4481,9 @@ prompt, an output path) or prices (<code class="docutils literal notranslate"><s
 <li><p><strong>variation</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Which variation of the same request this is (#161): <code class="docutils literal notranslate"><span class="pre">0</span></code>
 (default) is the request itself; a later one is a different paid request
 in the generations cache, so it is a new sound even from a backend that
-takes no seed. <a class="reference internal" href="#foley.variations" title="foley.variations"><code class="xref py py-func docutils literal notranslate"><span class="pre">variations()</span></code></a> sets it; most callers never do.</p></li>
+takes no seed. With a <code class="docutils literal notranslate"><span class="pre">seed</span></code>, variation <code class="docutils literal notranslate"><span class="pre">i</span></code> is the request seeded
+<code class="docutils literal notranslate"><span class="pre">seed</span> <span class="pre">+</span> <span class="pre">i</span></code> (#210: that seed is sent, and keyed). <a class="reference internal" href="#foley.variations" title="foley.variations"><code class="xref py py-func docutils literal notranslate"><span class="pre">variations()</span></code></a>
+sets it; most callers never do.</p></li>
 <li><p><strong>derived_from</strong> – For an edit (an edit backend given <code class="docutils literal notranslate"><span class="pre">audio=</span></code>), the source
 clip’s <a class="reference internal" href="#foley.SoundRecord" title="foley.SoundRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundRecord</span></code></a> or <a class="reference internal" href="#foley.LicenseRecord" title="foley.LicenseRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">LicenseRecord</span></code></a>: <strong>required</strong> — an
 edit without it is refused (<a class="reference internal" href="#foley.EditRefusal" title="foley.EditRefusal"><code class="xref py py-class docutils literal notranslate"><span class="pre">EditRefusal</span></code></a>), as one whose rights
@@ -5905,15 +5907,26 @@ block the operator’s key and plan apply again.</p>
 <dd><p><code class="docutils literal notranslate"><span class="pre">n</span></code> variations of one sound for <code class="docutils literal notranslate"><span class="pre">prompt</span></code>: <code class="docutils literal notranslate"><span class="pre">n</span></code> stored, distinct candidates (#161).</p>
 <p>The first is <a class="reference internal" href="#foley.generate" title="foley.generate"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate()</span></code></a> as asked (<code class="docutils literal notranslate"><span class="pre">backend=None</span></code> walks the generation
 order); the others come from the backend that made it, so all <code class="docutils literal notranslate"><span class="pre">n</span></code> are one
-generator’s takes on one request. Where that backend records its seed, take <code class="docutils literal notranslate"><span class="pre">i</span></code>
+generator’s takes on one request.</p>
+<p>A backend with a batch knob (#210: Mirelo’s <code class="docutils literal notranslate"><span class="pre">num_samples</span></code>, up to 4; Stable Audio
+Open’s <code class="docutils literal notranslate"><span class="pre">num_waveforms_per_prompt</span></code>) makes the takes in as few calls as its maximum
+allows, each call priced and reserved for all its takes before it is sent (a
+backend billed per sample costs <code class="docutils literal notranslate"><span class="pre">k</span></code> times one sample). Each take is still its own
+sound: keyed <code class="docutils literal notranslate"><span class="pre">(request,</span> <span class="pre">i)</span></code> in the generations cache (so a re-run replays every
+take), with its own provenance (its own seed where the backend reports or derives
+one per sample; a note where it does not), QC’d and stored on its own. Take <code class="docutils literal notranslate"><span class="pre">i</span></code>
+of a seeded request is <code class="docutils literal notranslate"><span class="pre">generate(seed=seed</span> <span class="pre">+</span> <span class="pre">i)</span></code>: the same cache entry, however
+it was made. A budget that affords only part of a batch gets those takes, then
+refuses the next as one call per take would.</p>
+<p>Any other backend makes one call per take. Where it records its seed, take <code class="docutils literal notranslate"><span class="pre">i</span></code>
 is <code class="docutils literal notranslate"><span class="pre">generate(...,</span> <span class="pre">seed=derived_seed(first_seed,</span> <span class="pre">i))</span></code>
 (<a class="reference internal" href="foley.sources.base.html#foley.sources.base.derived_seed" title="foley.sources.base.derived_seed"><code class="xref py py-func docutils literal notranslate"><span class="pre">derived_seed()</span></code></a>: the first seed plus <code class="docutils literal notranslate"><span class="pre">i</span></code>, wrapped into
-the signed 32-bit seed range), so it is reproducible like any seeded clip and the
-same request as asking for that seed; where it records none, take <code class="docutils literal notranslate"><span class="pre">i</span></code> is keyed
-apart in the generations cache, so a backend that takes no seed (ElevenLabs) makes
-<code class="docutils literal notranslate"><span class="pre">n</span></code> paid sounds, each replayable, rather than replaying one <code class="docutils literal notranslate"><span class="pre">n</span></code> times. Each
-take is one call, priced and reserved like any other, under one budget for the
-whole set.</p>
+the backend’s seed range, <code class="xref py py-func docutils literal notranslate"><span class="pre">seed_limit()</span></code>), so it is
+reproducible like any seeded clip and the same request as asking for that seed;
+where it records none, take <code class="docutils literal notranslate"><span class="pre">i</span></code> is keyed apart in the generations cache, so a
+backend that takes no seed (ElevenLabs) makes <code class="docutils literal notranslate"><span class="pre">n</span></code> paid sounds, each replayable,
+rather than replaying one <code class="docutils literal notranslate"><span class="pre">n</span></code> times. Every call is priced and reserved like any
+other, under one budget for the whole set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -5940,7 +5953,8 @@ the library’s existing sound, as with <a class="reference internal" href="#fol
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">n</span></code> is not an integer &gt;= 1, or <code class="docutils literal notranslate"><span class="pre">variation</span></code> is passed.</p></li>
-<li><p><a class="reference internal" href="#foley.GenerationError" title="foley.GenerationError"><strong>GenerationError</strong></a> – As <a class="reference internal" href="#foley.generate" title="foley.generate"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate()</span></code></a>, for the variation that failed.</p></li>
+<li><p><a class="reference internal" href="#foley.GenerationError" title="foley.GenerationError"><strong>GenerationError</strong></a> – As <a class="reference internal" href="#foley.generate" title="foley.generate"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate()</span></code></a>, for the variation that failed (in a
+    batch, the first take QC or ingest refused: its other takes are stored).</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#Exception" title="(in Python v3.15)"><strong>Exception</strong></a> – Whatever <a class="reference internal" href="#foley.generate" title="foley.generate"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate()</span></code></a> raises for a take (<code class="docutils literal notranslate"><span class="pre">BudgetExceeded</span></code>
     when the set outruns the budget, <code class="docutils literal notranslate"><span class="pre">SourceConfigurationError</span></code>,
     <code class="docutils literal notranslate"><span class="pre">EgressBlocked</span></code>, …). Whatever it is, its <code class="docutils literal notranslate"><span class="pre">variations</span></code> attribute holds

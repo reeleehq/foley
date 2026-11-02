@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=ab1379f9"></script>
+    <script src="../../../_static/documentation_options.js?v=0f6bfde0"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.116" />
+  <meta name="docsearch:version" content="0.0.117" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1858,6 +1858,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    answers with a video (#176): the strategy that takes its audio out (``None`` when</span>
 <span class="sd">    the answer is already audio). The dispatch uses it again when it replays a kept</span>
 <span class="sd">    video answer; without one, ffmpeg (:func:`foley.sources.video.audio_track`).</span>
+
+<span class="sd">    Optional: ``generate_takes(prompt, n, **affordances) -&gt; list[GeneratedClip]``, for a</span>
+<span class="sd">    backend whose config declares a batch knob (``native_defaults['batch']``, see</span>
+<span class="sd">    :func:`batch_limit`; #210): ``n`` takes from one call, in order, each with its own</span>
+<span class="sd">    licence (its own seed, where the backend reports or derives one). The ``seed``</span>
+<span class="sd">    affordance is the first take's. Fewer clips than asked means the backend answered</span>
+<span class="sd">    fewer samples.</span>
 <span class="sd">    """</span>
 
     <span class="c1">#: Registry / façade key — ``'stable_audio'`` | ``'elevenlabs'`` | …</span>
@@ -2086,21 +2093,49 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">seed_limit</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One past the largest seed the backend ``config`` takes (#210).</span>
+
+<span class="sd">    Its ``native_defaults['seed_limit']`` (Mirelo: ``2**63``, a signed 64-bit seed),</span>
+<span class="sd">    else the signed 32-bit range every local backend takes.</span>
+
+<span class="sd">    &gt;&gt;&gt; seed_limit({"native_defaults": {"seed_limit": 2**63}}) == 2**63, seed_limit()</span>
+<span class="sd">    (True, 2147483648)</span>
+<span class="sd">    """</span>
+    <span class="n">nd</span> <span class="o">=</span> <span class="p">(</span><span class="n">config</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_defaults"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">nd</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"seed_limit"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_SEED_LIMIT</span><span class="p">)</span>
+
+
 <div class="viewcode-block" id="derived_seed">
 <a class="viewcode-back" href="../../../_autosummary/foley.sources.base.html#foley.derived_seed">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">derived_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">derived_seed</span><span class="p">(</span><span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">_SEED_LIMIT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The seed of variation ``index`` of a request seeded with ``seed`` (#161).</span>
 
-<span class="sd">    ``(seed + index) % _SEED_LIMIT``: wrapped into the signed 32-bit range every local</span>
-<span class="sd">    backend takes, so variation 0 is the request itself and each later one is a seed</span>
-<span class="sd">    of its own. It is ``seed + index`` only below the limit; near it, the seed wraps</span>
-<span class="sd">    to 0.</span>
+<span class="sd">    ``(seed + index) % limit``: wrapped into the backend's seed range</span>
+<span class="sd">    (:func:`seed_limit`; default the signed 32-bit range every local backend takes),</span>
+<span class="sd">    so variation 0 is the request itself and each later one is a seed of its own. It</span>
+<span class="sd">    is ``seed + index`` only below the limit; near it, the seed wraps to 0.</span>
 
 <span class="sd">    &gt;&gt;&gt; derived_seed(7, 0), derived_seed(7, 2), derived_seed(2**31 - 1, 1)</span>
 <span class="sd">    (7, 9, 0)</span>
+<span class="sd">    &gt;&gt;&gt; derived_seed(2**31 - 1, 1, limit=2**63)</span>
+<span class="sd">    2147483648</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">index</span><span class="p">))</span> <span class="o">%</span> <span class="n">_SEED_LIMIT</span></div>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span><span class="n">index</span><span class="p">))</span> <span class="o">%</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit</span><span class="p">)</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">batch_limit</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""How many takes one call to the backend ``config`` can make (#210): its batch</span>
+<span class="sd">    knob's ``native_defaults['batch']['max']``, else ``1`` (no knob: one call per take).</span>
+
+<span class="sd">    &gt;&gt;&gt; batch_limit({"native_defaults": {"batch": {"native_name": "num_samples", "max": 4}}})</span>
+<span class="sd">    4</span>
+<span class="sd">    &gt;&gt;&gt; batch_limit({})</span>
+<span class="sd">    1</span>
+<span class="sd">    """</span>
+    <span class="n">batch</span> <span class="o">=</span> <span class="p">((</span><span class="n">config</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_defaults"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"batch"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">batch</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"max"</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">))</span>
 
 
 <div class="viewcode-block" id="require_count">

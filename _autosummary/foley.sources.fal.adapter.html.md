@@ -38,6 +38,7 @@ is an error, never a fall-through to the network.
 
 | [`audio_url`](#foley.sources.fal.adapter.audio_url)(response[, field])                      | The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...]}`.                                              |
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| [`audio_urls`](#foley.sources.fal.adapter.audio_urls)(response[, field])                     | Every audio URL in a fal response, in order: one per sample for an endpoint that answers a list (Mirelo's `audio`, #210).         |
 | [`falaw_runner`](#foley.sources.fal.adapter.falaw_runner)(endpoint_id, arguments, \*, api_key) | Call a fal endpoint through falaw and return `(audio bytes, raw response)`.                                                       |
 | [`falaw_uploader`](#foley.sources.fal.adapter.falaw_uploader)(path, \*, api_key)                 | A fal-fetchable URL for the local file at `path` (`falaw.upload`: content-addressed, so an unchanged file is not uploaded twice). |
 | [`reported_watermark`](#foley.sources.fal.adapter.reported_watermark)(response, stated, ...)         | The vendor's watermark as this response reports it (#77), or `None`.                                                              |
@@ -122,6 +123,22 @@ the endpoint’s response (its audio is a URL, not the bytes).
 * **Return type:**
   [`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip)
 
+#### generate_takes(prompt, n, , provider_params=None, \*\*affordances)
+
+`n` takes of `prompt` from one call, through the endpoint’s batch knob
+(`native_defaults['batch']`: Mirelo’s `num_samples`, #210).
+
+As [`generate()`](#foley.sources.fal.adapter.FalAdapter.generate), but the request asks for `n` samples, and each answered
+sample is its own clip: its own seed when the endpoint reports one per sample
+(`seed_field` a list), else none and a note; each carries its share of the
+call’s actual cost. The `seed` sent is the first sample’s.
+
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `n` exceeds the endpoint’s batch maximum (before any call).
+  * [**SourceConfigurationError**](foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If no fal key is available (before any call).
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip)]
+
 #### invoke_native(arguments)
 
 Call this source’s fal endpoint with native `arguments`; return `(media, response)`.
@@ -189,9 +206,28 @@ The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### foley.sources.fal.adapter.falaw_runner(endpoint_id, arguments, , api_key, audio_field='audio')
+### foley.sources.fal.adapter.audio_urls(response, field='audio')
+
+Every audio URL in a fal response, in order: one per sample for an endpoint that
+answers a list (Mirelo’s `audio`, #210).
+
+```pycon
+>>> audio_urls({"audio": [{"url": "u1"}, {"url": "u2"}]})
+['u1', 'u2']
+>>> audio_urls({"audio": {"url": "u"}}), audio_urls({})
+(['u'], [])
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.fal.adapter.falaw_runner(endpoint_id, arguments, , api_key, audio_field='audio', all_audio=False)
 
 Call a fal endpoint through falaw and return `(audio bytes, raw response)`.
+
+`all_audio=True` (a batch call, #210) answers `(list of audio bytes, raw
+response)`: every sample the response lists, in order. A runner that serves a
+batch takes this keyword; one that never does need not.
 
 A [`FalAnswer`](#foley.sources.fal.adapter.FalAnswer): its `.metrics` are fal’s `Completed.metrics`
 (`inference_time`: the seconds the runner spent), which falaw carries on its

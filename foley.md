@@ -1,4 +1,4 @@
-> built 2026-11-02 04:14 UTC from c5d61c9 (main) · foley 0.0.116. Details: build_info.json
+> built 2026-11-02 04:42 UTC from 946846f (main) · foley 0.0.117. Details: build_info.json
 
 # index.html.md
 
@@ -3667,17 +3667,19 @@ Stdlib-only.
 
 ### Functions
 
-| [`estimate_call`](_autosummary/foley.cost.html.md#foley.cost.estimate_call)(config, \*\*affordances)   | The USD cost of one call to the source `config` declares, or `None` if unknown.                                                |
-|-------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| [`spend_scope`](_autosummary/foley.cost.html.md#foley.cost.spend_scope)([budget])                    | Put `budget` in force for the block; every enclosing budget stays in force too.                                                |
-| [`scoped_iter`](_autosummary/foley.cost.html.md#foley.cost.scoped_iter)(iterator_factory[, budget])  | Iterate `iterator_factory()` with `budget` in force only while it runs.                                                        |
-| [`active_budget`](_autosummary/foley.cost.html.md#foley.cost.active_budget)()                          | The innermost [`Budget`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget) of the current run, or `None`. |
-| [`check`](_autosummary/foley.cost.html.md#foley.cost.check)(estimate_usd, \*, what)            | Raise unless every budget in force can afford `estimate_usd` (reserves nothing).                                               |
-| [`authorize`](_autosummary/foley.cost.html.md#foley.cost.authorize)(estimate_usd, \*, what)        | Admit a paid call: every budget in force must afford it, and each reserves it.                                                 |
-| [`settle`](_autosummary/foley.cost.html.md#foley.cost.settle)(reserved_usd, actual_usd)         | Replace each budget's reservation with the actual cost (`None`: keep it).                                                      |
-| [`release`](_autosummary/foley.cost.html.md#foley.cost.release)(reserved_usd)                    | Undo a reservation for a call that was never sent.                                                                             |
-| [`default_max_usd`](_autosummary/foley.cost.html.md#foley.cost.default_max_usd)([llm])                   | The cap of a run given no budget: higher when the caller chose a paid LLM.                                                     |
-| [`charge`](_autosummary/foley.cost.html.md#foley.cost.charge)(usd)                              | Record `usd` against every budget in force (a no-op outside any run).                                                          |
+| [`estimate_call`](_autosummary/foley.cost.html.md#foley.cost.estimate_call)(config, \*[, samples])    | The USD cost of one call to the source `config` declares, or `None` if unknown.                                                |
+|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
+| [`spend_scope`](_autosummary/foley.cost.html.md#foley.cost.spend_scope)([budget])                   | Put `budget` in force for the block; every enclosing budget stays in force too.                                                |
+| [`scoped_iter`](_autosummary/foley.cost.html.md#foley.cost.scoped_iter)(iterator_factory[, budget]) | Iterate `iterator_factory()` with `budget` in force only while it runs.                                                        |
+| [`active_budget`](_autosummary/foley.cost.html.md#foley.cost.active_budget)()                         | The innermost [`Budget`](_autosummary/foley.agent.policy.html.md#foley.agent.policy.Budget) of the current run, or `None`. |
+| [`check`](_autosummary/foley.cost.html.md#foley.cost.check)(estimate_usd, \*, what)           | Raise unless every budget in force can afford `estimate_usd` (reserves nothing).                                               |
+| [`authorize`](_autosummary/foley.cost.html.md#foley.cost.authorize)(estimate_usd, \*, what)       | Admit a paid call: every budget in force must afford it, and each reserves it.                                                 |
+| [`settle`](_autosummary/foley.cost.html.md#foley.cost.settle)(reserved_usd, actual_usd)        | Replace each budget's reservation with the actual cost (`None`: keep it).                                                      |
+| [`release`](_autosummary/foley.cost.html.md#foley.cost.release)(reserved_usd)                   | Undo a reservation for a call that was never sent.                                                                             |
+| [`default_max_usd`](_autosummary/foley.cost.html.md#foley.cost.default_max_usd)([llm])                  | The cap of a run given no budget: higher when the caller chose a paid LLM.                                                     |
+| [`charge`](_autosummary/foley.cost.html.md#foley.cost.charge)(usd)                             | Record `usd` against every budget in force (a no-op outside any run).                                                          |
+| [`for_samples`](_autosummary/foley.cost.html.md#foley.cost.for_samples)(config, usd, samples)       | `usd` (the price of one sample) for a call asking `samples` takes.                                                             |
+| [`split_cost`](_autosummary/foley.cost.html.md#foley.cost.split_cost)(usd, takes)                  | Each take's share of a call's `usd` that made `takes` takes (`None`: unknown).                                                 |
 
 ### Exceptions
 
@@ -3768,9 +3770,14 @@ free default never resolves to a paid one); see [`DEFAULT_MAX_USD_BY_LLM`](_auto
 * **Return type:**
   [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
-### foley.cost.estimate_call(config, \*\*affordances)
+### foley.cost.estimate_call(config, , samples=1, \*\*affordances)
 
 The USD cost of one call to the source `config` declares, or `None` if unknown.
+
+`samples`: how many takes the call asks for (a backend’s batch knob, #210). A
+source billed per sample (`pricing['per_sample']`: Mirelo, Sonilo) costs
+`samples` times the one-sample price; any other bills the call (see
+[`for_samples()`](_autosummary/foley.cost.html.md#foley.cost.for_samples)).
 
 `config['pricing']` units:
 
@@ -3798,7 +3805,25 @@ The USD cost of one call to the source `config` declares, or `None` if unknown.
 
 * **Parameters:**
   * **config** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – A `SOURCE_CONFIG`.
+  * **samples** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – The takes the call asks for (default `1`).
   * **\*\*affordances** – The canonical affordances of the call (`duration_s`, …).
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
+### foley.cost.for_samples(config, usd, samples)
+
+`usd` (the price of one sample) for a call asking `samples` takes.
+
+Times `samples` for a source billed per sample (`pricing['per_sample']`),
+else unchanged: the call is billed once whatever its batch size.
+
+```pycon
+>>> for_samples({"pricing": {"per_sample": True}}, 0.15, 3)
+0.45
+>>> for_samples({"pricing": {}}, 0.02, 3), for_samples({}, None, 3)
+(0.02, None)
+```
+
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
@@ -3837,6 +3862,18 @@ one, a fresh default [`Budget`](_autosummary/foley.agent.policy.html.md#foley.ag
 
 * **Yields:**
   The innermost budget in force.
+
+### foley.cost.split_cost(usd, takes)
+
+Each take’s share of a call’s `usd` that made `takes` takes (`None`: unknown).
+
+```pycon
+>>> split_cost(0.45, 3), split_cost(None, 3)
+(0.15, None)
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 
 # _autosummary/foley.embedded_metadata.html.md
@@ -8976,7 +9013,9 @@ training uses).
   * **variation** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Which variation of the same request this is (#161): `0`
     (default) is the request itself; a later one is a different paid request
     in the generations cache, so it is a new sound even from a backend that
-    takes no seed. [`variations()`](_autosummary/foley.html.md#foley.variations) sets it; most callers never do.
+    takes no seed. With a `seed`, variation `i` is the request seeded
+    `seed + i` (#210: that seed is sent, and keyed). [`variations()`](_autosummary/foley.html.md#foley.variations)
+    sets it; most callers never do.
   * **derived_from** – For an edit (an edit backend given `audio=`), the source
     clip’s [`SoundRecord`](_autosummary/foley.html.md#foley.SoundRecord) or [`LicenseRecord`](_autosummary/foley.html.md#foley.LicenseRecord): **required** — an
     edit without it is refused ([`EditRefusal`](_autosummary/foley.html.md#foley.EditRefusal)), as one whose rights
@@ -10096,15 +10135,28 @@ block the operator’s key and plan apply again.
 
 The first is [`generate()`](_autosummary/foley.html.md#foley.generate) as asked (`backend=None` walks the generation
 order); the others come from the backend that made it, so all `n` are one
-generator’s takes on one request. Where that backend records its seed, take `i`
+generator’s takes on one request.
+
+A backend with a batch knob (#210: Mirelo’s `num_samples`, up to 4; Stable Audio
+Open’s `num_waveforms_per_prompt`) makes the takes in as few calls as its maximum
+allows, each call priced and reserved for all its takes before it is sent (a
+backend billed per sample costs `k` times one sample). Each take is still its own
+sound: keyed `(request, i)` in the generations cache (so a re-run replays every
+take), with its own provenance (its own seed where the backend reports or derives
+one per sample; a note where it does not), QC’d and stored on its own. Take `i`
+of a seeded request is `generate(seed=seed + i)`: the same cache entry, however
+it was made. A budget that affords only part of a batch gets those takes, then
+refuses the next as one call per take would.
+
+Any other backend makes one call per take. Where it records its seed, take `i`
 is `generate(..., seed=derived_seed(first_seed, i))`
 ([`derived_seed()`](_autosummary/foley.sources.base.html.md#foley.sources.base.derived_seed): the first seed plus `i`, wrapped into
-the signed 32-bit seed range), so it is reproducible like any seeded clip and the
-same request as asking for that seed; where it records none, take `i` is keyed
-apart in the generations cache, so a backend that takes no seed (ElevenLabs) makes
-`n` paid sounds, each replayable, rather than replaying one `n` times. Each
-take is one call, priced and reserved like any other, under one budget for the
-whole set.
+the backend’s seed range, `seed_limit()`), so it is
+reproducible like any seeded clip and the same request as asking for that seed;
+where it records none, take `i` is keyed apart in the generations cache, so a
+backend that takes no seed (ElevenLabs) makes `n` paid sounds, each replayable,
+rather than replaying one `n` times. Every call is priced and reserved like any
+other, under one budget for the whole set.
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description.
@@ -10125,7 +10177,8 @@ whole set.
   the library’s existing sound, as with [`generate()`](_autosummary/foley.html.md#foley.generate)).
 * **Raises:**
   * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `n` is not an integer >= 1, or `variation` is passed.
-  * [**GenerationError**](_autosummary/foley.html.md#foley.GenerationError) – As [`generate()`](_autosummary/foley.html.md#foley.generate), for the variation that failed.
+  * [**GenerationError**](_autosummary/foley.html.md#foley.GenerationError) – As [`generate()`](_autosummary/foley.html.md#foley.generate), for the variation that failed (in a
+        batch, the first take QC or ingest refused: its other takes are stored).
   * [**Exception**](https://docs.python.org/3/builtins/exceptions.html#Exception) – Whatever [`generate()`](_autosummary/foley.html.md#foley.generate) raises for a take (`BudgetExceeded`
         when the set outruns the budget, `SourceConfigurationError`,
         `EgressBlocked`, …). Whatever it is, its `variations` attribute holds
@@ -16776,7 +16829,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'ta dum', 'ta-dum', 'netflix sound', 'tudum', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel bong', 'intel chime', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'netflix sound', 'tudum', 'ta dum', 'netflix intro', 'netflix chime'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel inside', 'intel jingle', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -18582,7 +18635,7 @@ so the derived permission flags stay single-sourced.
 | [`api_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.api_license)(\*, source, license_id, ...[, ...])    | Build an API-acquisition [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived.                                                                        |
 | [`generated_license`](_autosummary/foley.sources.base.html.md#foley.sources.base.generated_license)(\*, source, license_id, ...)     | Build a generated [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord), flags derived + provenance stamped.                                                          |
 | [`draw_seed`](_autosummary/foley.sources.base.html.md#foley.sources.base.draw_seed)()                                        | A random seed in `0..2**31-1`, for a seed-capable backend asked for none.                                                                                                                               |
-| [`derived_seed`](_autosummary/foley.sources.base.html.md#foley.sources.base.derived_seed)(seed, index)                          | The seed of variation `index` of a request seeded with `seed` (#161).                                                                                                                                   |
+| [`derived_seed`](_autosummary/foley.sources.base.html.md#foley.sources.base.derived_seed)(seed, index, \*[, limit])             | The seed of variation `index` of a request seeded with `seed` (#161).                                                                                                                                   |
 | [`require_count`](_autosummary/foley.sources.base.html.md#foley.sources.base.require_count)(name, value, \*, minimum)            | `value` as an `int`, or `ValueError` unless it is an integer >= `minimum`.                                                                                                                              |
 | [`register_corpus`](_autosummary/foley.sources.base.html.md#foley.sources.base.register_corpus)(adapter)                           | Register `adapter` in [`CORPUS_REGISTRY`](_autosummary/foley.sources.base.html.md#foley.sources.base.CORPUS_REGISTRY) (idempotent) and return it.                                                                                      |
 | [`ring_of`](_autosummary/foley.sources.base.html.md#foley.sources.base.ring_of)(name)                                      | Return the ring of the registered corpus `name` (raises `KeyError`).                                                                                                                                    |
@@ -18723,6 +18776,13 @@ Optional: `demuxer() -> Optional[Callable[[bytes], bytes]]`, for a backend that
 answers with a video (#176): the strategy that takes its audio out (`None` when
 the answer is already audio). The dispatch uses it again when it replays a kept
 video answer; without one, ffmpeg ([`foley.sources.video.audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)).
+
+Optional: `generate_takes(prompt, n, **affordances) -> list[GeneratedClip]`, for a
+backend whose config declares a batch knob (`native_defaults['batch']`, see
+`batch_limit()`; #210): `n` takes from one call, in order, each with its own
+licence (its own seed, where the backend reports or derives one). The `seed`
+affordance is the first take’s. Fewer clips than asked means the backend answered
+fewer samples.
 
 #### generate(prompt, \*\*affordances)
 
@@ -19064,18 +19124,20 @@ Registered adapters whose ring is in `rings` (sorted by name).
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`CorpusAdapter`](_autosummary/foley.sources.base.html.md#foley.sources.base.CorpusAdapter)]
 
-### foley.sources.base.derived_seed(seed, index)
+### foley.sources.base.derived_seed(seed, index, , limit=2147483648)
 
 The seed of variation `index` of a request seeded with `seed` (#161).
 
-`(seed + index) % _SEED_LIMIT`: wrapped into the signed 32-bit range every local
-backend takes, so variation 0 is the request itself and each later one is a seed
-of its own. It is `seed + index` only below the limit; near it, the seed wraps
-to 0.
+`(seed + index) % limit`: wrapped into the backend’s seed range
+(`seed_limit()`; default the signed 32-bit range every local backend takes),
+so variation 0 is the request itself and each later one is a seed of its own. It
+is `seed + index` only below the limit; near it, the seed wraps to 0.
 
 ```pycon
 >>> derived_seed(7, 0), derived_seed(7, 2), derived_seed(2**31 - 1, 1)
 (7, 9, 0)
+>>> derived_seed(2**31 - 1, 1, limit=2**63)
+2147483648
 ```
 
 * **Return type:**
@@ -20158,6 +20220,7 @@ is an error, never a fall-through to the network.
 
 | [`audio_url`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.audio_url)(response[, field])                      | The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...]}`.                                              |
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| [`audio_urls`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.audio_urls)(response[, field])                     | Every audio URL in a fal response, in order: one per sample for an endpoint that answers a list (Mirelo's `audio`, #210).         |
 | [`falaw_runner`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_runner)(endpoint_id, arguments, \*, api_key) | Call a fal endpoint through falaw and return `(audio bytes, raw response)`.                                                       |
 | [`falaw_uploader`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.falaw_uploader)(path, \*, api_key)                 | A fal-fetchable URL for the local file at `path` (`falaw.upload`: content-addressed, so an unchanged file is not uploaded twice). |
 | [`reported_watermark`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.reported_watermark)(response, stated, ...)         | The vendor's watermark as this response reports it (#77), or `None`.                                                              |
@@ -20242,6 +20305,22 @@ the endpoint’s response (its audio is a URL, not the bytes).
 * **Return type:**
   [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip)
 
+#### generate_takes(prompt, n, , provider_params=None, \*\*affordances)
+
+`n` takes of `prompt` from one call, through the endpoint’s batch knob
+(`native_defaults['batch']`: Mirelo’s `num_samples`, #210).
+
+As [`generate()`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAdapter.generate), but the request asks for `n` samples, and each answered
+sample is its own clip: its own seed when the endpoint reports one per sample
+(`seed_field` a list), else none and a note; each carries its share of the
+call’s actual cost. The `seed` sent is the first sample’s.
+
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `n` exceeds the endpoint’s batch maximum (before any call).
+  * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – If no fal key is available (before any call).
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip)]
+
 #### invoke_native(arguments)
 
 Call this source’s fal endpoint with native `arguments`; return `(media, response)`.
@@ -20309,9 +20388,28 @@ The URL of the audio in a fal response: `{field: {url}}` or `{field: [{url}, ...
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
-### foley.sources.fal.adapter.falaw_runner(endpoint_id, arguments, , api_key, audio_field='audio')
+### foley.sources.fal.adapter.audio_urls(response, field='audio')
+
+Every audio URL in a fal response, in order: one per sample for an endpoint that
+answers a list (Mirelo’s `audio`, #210).
+
+```pycon
+>>> audio_urls({"audio": [{"url": "u1"}, {"url": "u2"}]})
+['u1', 'u2']
+>>> audio_urls({"audio": {"url": "u"}}), audio_urls({})
+(['u'], [])
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.fal.adapter.falaw_runner(endpoint_id, arguments, , api_key, audio_field='audio', all_audio=False)
 
 Call a fal endpoint through falaw and return `(audio bytes, raw response)`.
+
+`all_audio=True` (a batch call, #210) answers `(list of audio bytes, raw
+response)`: every sample the response lists, in order. A runner that serves a
+batch takes this keyword; one that never does need not.
 
 A [`FalAnswer`](_autosummary/foley.sources.fal.adapter.html.md#foley.sources.fal.adapter.FalAnswer): its `.metrics` are fal’s `Completed.metrics`
 (`inference_time`: the seconds the runner spent), which falaw carries on its
@@ -20990,6 +21088,13 @@ answers with a video (#176): the strategy that takes its audio out (`None` when
 the answer is already audio). The dispatch uses it again when it replays a kept
 video answer; without one, ffmpeg ([`foley.sources.video.audio_track()`](_autosummary/foley.sources.video.html.md#foley.sources.video.audio_track)).
 
+Optional: `generate_takes(prompt, n, **affordances) -> list[GeneratedClip]`, for a
+backend whose config declares a batch knob (`native_defaults['batch']`, see
+`batch_limit()`; #210): `n` takes from one call, in order, each with its own
+licence (its own seed, where the backend reports or derives one). The `seed`
+affordance is the first take’s. Fewer clips than asked means the backend answered
+fewer samples.
+
 #### generate(prompt, \*\*affordances)
 
 Synthesize a sound for `prompt`; return its bytes + provisional candidate.
@@ -21379,7 +21484,7 @@ adapter class, see `_declared_configs()`). Flat modules (bulk-corpus adapters
       over every declaration before anything is registered, so the outcome does
       not depend on the order the packages are walked in).
 
-### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, derived_from=None, \*\*affordances)
+### foley.sources.generate(prompt, , backend=None, library=None, store=True, adapter=None, watermark=None, on_flagged='refuse', watermarker=None, provenance_store=None, on_unsupported=None, reuse_cached=True, generations_cache=None, repair=True, level=None, check_prompt=True, provider_params=None, variation=0, derived_from=None, takes=1, \*\*affordances)
 
 Generate a sound via `backend` and ingest it (by-value) into `library`.
 
@@ -21475,6 +21580,14 @@ Disclosure/safety (#9b), all optional and degrading gracefully:
   * **variation** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Which variation of the same request this is (#161; see
     [`foley.variations()`](_autosummary/foley.html.md#foley.variations)): `0` (default) is the request itself, a later
     one is a different paid request in the generations cache.
+  * **takes** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – How many takes of the request to make (#210; [`foley.variations()`](_autosummary/foley.html.md#foley.variations)
+    asks for several): variations `variation .. variation + takes - 1`. A
+    backend with a batch knob (`native_defaults['batch']`, an adapter with
+    `generate_takes`) makes up to its maximum in one call, priced and
+    reserved for all of them before it is sent, each take keyed apart in the
+    generations cache, QC’d and ingested on its own (one result per take, in
+    order); any other makes one (the caller asks again for the rest). Default
+    `1`.
   * **derived_from** – For an edit (#162: an edit backend given `audio=`), the source
     clip’s [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) (what [`foley.edit()`](_autosummary/foley.html.md#foley.edit) passes)
     or its [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord). **Required** by the `edit`
@@ -25022,22 +25135,22 @@ Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](_autosummary
     on any device; [`torch_generator()`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.torch_generator) puts it on the pipeline’s device);
     a test with a fake pipeline passes a fake one, so no torch is needed.
 
-#### generate(prompt, , duration_s=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
+#### generate(prompt, \*\*affordances)
 
 Generate a sound for `prompt`; return its bytes + provisional candidate.
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description (required).
-  * **duration_s** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the model’s ~47.55 s max). `None` uses a
+  * **duration_s** – Seconds (clamped to the model’s ~47.55 s max). `None` uses a
     sane 10 s default (NOT the 47.55 s maximum).
-  * **prompt_influence** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – `0..1` unified adherence, mapped linearly onto the
+  * **prompt_influence** – `0..1` unified adherence, mapped linearly onto the
     native `guidance_scale` (1..15). `None` (default) sends the
     model’s own default (7.0 for Stable Audio Open 1.0); a distilled
     checkpoint ignores it with a note.
-  * **negative_prompt** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Content to exclude (ignored by the model when guidance
+  * **negative_prompt** – Content to exclude (ignored by the model when guidance
     ≤ 1).
-  * **steps** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Diffusion steps (native `num_inference_steps`); default 200.
-  * **seed** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Reproducibility seed → the generator `make_generator` builds (by
+  * **steps** – Diffusion steps (native `num_inference_steps`); default 200.
+  * **seed** – Reproducibility seed → the generator `make_generator` builds (by
     default a CPU `torch.Generator`, #207); recorded in provenance, with
     the device and dtype it ran on.
     `None` draws one ([`draw_seed()`](_autosummary/foley.sources.base.html.md#foley.sources.base.draw_seed)) and records
@@ -25045,10 +25158,10 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
     [`foley.generate()`](_autosummary/foley.html.md#foley.generate) the dispatch layer has already drawn it
     (`foley.sources._dispatch.draws_seed()`, #206); this draw serves a
     direct call.
-  * **loop** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – No native param (a future WEAVE crossfade) — warn-and-drop.
-  * **output_format** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – No native param (the audio-write layer) — warn-and-drop;
+  * **loop** – No native param (a future WEAVE crossfade) — warn-and-drop.
+  * **output_format** – No native param (the audio-write layer) — warn-and-drop;
     the clip is archived as FLAC by ingest regardless.
-  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native `StableAudioPipeline` kwargs merged over the
+  * **provider_params** – Native `StableAudioPipeline` kwargs merged over the
     translated ones (#61; e.g. `{"num_inference_steps": 50}`), recorded
     in `generation_params`.
   * **\*\*kw** – Extra/unknown affordances (warn-and-dropped).
@@ -25058,6 +25171,18 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
   A [`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip) (`origin=generated`,
   `license_id='Stability-Community'`, `is_ai_generated=True`,
   `generation_seed` captured).
+
+#### generate_takes(prompt, n, \*\*affordances)
+
+`n` takes of `prompt` from one pipeline call (#210), through the batch
+knob `num_waveforms_per_prompt`: take `i` is drawn from its own generator,
+seeded `seed + i` ([`derived_seed()`](_autosummary/foley.sources.base.html.md#foley.sources.base.derived_seed)), and records
+that seed. Takes the keywords of [`generate()`](_autosummary/foley.sources.stable_audio.adapter.html.md#foley.sources.stable_audio.adapter.StableAudioAdapter.generate).
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `n` exceeds the config’s batch maximum.
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`GeneratedClip`](_autosummary/foley.sources.base.html.md#foley.sources.base.GeneratedClip)]
 
 #### invoke_native(prompt, , native, seed=None)
 
@@ -27644,16 +27769,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 04:14 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/c5d61c9837b9222103ad5f4622989571add06c6a"><code>c5d61c9</code></a> on branch <code>main</code>, for **foley 0.0.116** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 04:42 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/946846fb51ffa7de77596f9b79d0c654333a140d"><code>946846f</code></a> on branch <code>main</code>, for **foley 0.0.117** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.117) is behind the latest release on PyPI (0.0.118): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/c5d61c9837b9222103ad5f4622989571add06c6a"><code>c5d61c9837b9222103ad5f4622989571add06c6a</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/946846fb51ffa7de77596f9b79d0c654333a140d"><code>946846fb51ffa7de77596f9b79d0c654333a140d</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -27664,9 +27791,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41387088012">41387088012</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41389678525">41389678525</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>c5d61c9837b9222103ad5f4622989571add06c6a</code> (in the history of the built commit) |
+| Event commit | <code>946846fb51ffa7de77596f9b79d0c654333a140d</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -27691,13 +27818,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.116/">0.0.116</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.118/">0.0.118</a>, newer than the documented version (0.0.117).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout c5d61c9837b9222103ad5f4622989571add06c6a
+git checkout 946846fb51ffa7de77596f9b79d0c654333a140d
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

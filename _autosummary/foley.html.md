@@ -2847,7 +2847,9 @@ training uses).
   * **variation** ([`int`](https://docs.python.org/3/builtins/functions.html#int)) – Which variation of the same request this is (#161): `0`
     (default) is the request itself; a later one is a different paid request
     in the generations cache, so it is a new sound even from a backend that
-    takes no seed. [`variations()`](#foley.variations) sets it; most callers never do.
+    takes no seed. With a `seed`, variation `i` is the request seeded
+    `seed + i` (#210: that seed is sent, and keyed). [`variations()`](#foley.variations)
+    sets it; most callers never do.
   * **derived_from** – For an edit (an edit backend given `audio=`), the source
     clip’s [`SoundRecord`](#foley.SoundRecord) or [`LicenseRecord`](#foley.LicenseRecord): **required** — an
     edit without it is refused ([`EditRefusal`](#foley.EditRefusal)), as one whose rights
@@ -3967,15 +3969,28 @@ block the operator’s key and plan apply again.
 
 The first is [`generate()`](#foley.generate) as asked (`backend=None` walks the generation
 order); the others come from the backend that made it, so all `n` are one
-generator’s takes on one request. Where that backend records its seed, take `i`
+generator’s takes on one request.
+
+A backend with a batch knob (#210: Mirelo’s `num_samples`, up to 4; Stable Audio
+Open’s `num_waveforms_per_prompt`) makes the takes in as few calls as its maximum
+allows, each call priced and reserved for all its takes before it is sent (a
+backend billed per sample costs `k` times one sample). Each take is still its own
+sound: keyed `(request, i)` in the generations cache (so a re-run replays every
+take), with its own provenance (its own seed where the backend reports or derives
+one per sample; a note where it does not), QC’d and stored on its own. Take `i`
+of a seeded request is `generate(seed=seed + i)`: the same cache entry, however
+it was made. A budget that affords only part of a batch gets those takes, then
+refuses the next as one call per take would.
+
+Any other backend makes one call per take. Where it records its seed, take `i`
 is `generate(..., seed=derived_seed(first_seed, i))`
 ([`derived_seed()`](foley.sources.base.html.md#foley.sources.base.derived_seed): the first seed plus `i`, wrapped into
-the signed 32-bit seed range), so it is reproducible like any seeded clip and the
-same request as asking for that seed; where it records none, take `i` is keyed
-apart in the generations cache, so a backend that takes no seed (ElevenLabs) makes
-`n` paid sounds, each replayable, rather than replaying one `n` times. Each
-take is one call, priced and reserved like any other, under one budget for the
-whole set.
+the backend’s seed range, `seed_limit()`), so it is
+reproducible like any seeded clip and the same request as asking for that seed;
+where it records none, take `i` is keyed apart in the generations cache, so a
+backend that takes no seed (ElevenLabs) makes `n` paid sounds, each replayable,
+rather than replaying one `n` times. Every call is priced and reserved like any
+other, under one budget for the whole set.
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description.
@@ -3996,7 +4011,8 @@ whole set.
   the library’s existing sound, as with [`generate()`](#foley.generate)).
 * **Raises:**
   * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `n` is not an integer >= 1, or `variation` is passed.
-  * [**GenerationError**](#foley.GenerationError) – As [`generate()`](#foley.generate), for the variation that failed.
+  * [**GenerationError**](#foley.GenerationError) – As [`generate()`](#foley.generate), for the variation that failed (in a
+        batch, the first take QC or ingest refused: its other takes are stored).
   * [**Exception**](https://docs.python.org/3/builtins/exceptions.html#Exception) – Whatever [`generate()`](#foley.generate) raises for a take (`BudgetExceeded`
         when the set outruns the budget, `SourceConfigurationError`,
         `EgressBlocked`, …). Whatever it is, its `variations` attribute holds

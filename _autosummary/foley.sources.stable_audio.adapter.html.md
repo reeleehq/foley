@@ -96,22 +96,22 @@ Local Stable Audio Open 1.0 generate adapter (a [`GenerateAdapter`](foley.source
     on any device; [`torch_generator()`](#foley.sources.stable_audio.adapter.torch_generator) puts it on the pipeline’s device);
     a test with a fake pipeline passes a fake one, so no torch is needed.
 
-#### generate(prompt, , duration_s=None, prompt_influence=None, negative_prompt=None, steps=None, seed=None, loop=False, output_format='wav', provider_params=None, \*\*kw)
+#### generate(prompt, \*\*affordances)
 
 Generate a sound for `prompt`; return its bytes + provisional candidate.
 
 * **Parameters:**
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The natural-language sound description (required).
-  * **duration_s** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds (clamped to the model’s ~47.55 s max). `None` uses a
+  * **duration_s** – Seconds (clamped to the model’s ~47.55 s max). `None` uses a
     sane 10 s default (NOT the 47.55 s maximum).
-  * **prompt_influence** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – `0..1` unified adherence, mapped linearly onto the
+  * **prompt_influence** – `0..1` unified adherence, mapped linearly onto the
     native `guidance_scale` (1..15). `None` (default) sends the
     model’s own default (7.0 for Stable Audio Open 1.0); a distilled
     checkpoint ignores it with a note.
-  * **negative_prompt** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Content to exclude (ignored by the model when guidance
+  * **negative_prompt** – Content to exclude (ignored by the model when guidance
     ≤ 1).
-  * **steps** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Diffusion steps (native `num_inference_steps`); default 200.
-  * **seed** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Reproducibility seed → the generator `make_generator` builds (by
+  * **steps** – Diffusion steps (native `num_inference_steps`); default 200.
+  * **seed** – Reproducibility seed → the generator `make_generator` builds (by
     default a CPU `torch.Generator`, #207); recorded in provenance, with
     the device and dtype it ran on.
     `None` draws one ([`draw_seed()`](foley.sources.base.html.md#foley.sources.base.draw_seed)) and records
@@ -119,10 +119,10 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
     [`foley.generate()`](foley.html.md#foley.generate) the dispatch layer has already drawn it
     (`foley.sources._dispatch.draws_seed()`, #206); this draw serves a
     direct call.
-  * **loop** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – No native param (a future WEAVE crossfade) — warn-and-drop.
-  * **output_format** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – No native param (the audio-write layer) — warn-and-drop;
+  * **loop** – No native param (a future WEAVE crossfade) — warn-and-drop.
+  * **output_format** – No native param (the audio-write layer) — warn-and-drop;
     the clip is archived as FLAC by ingest regardless.
-  * **provider_params** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Native `StableAudioPipeline` kwargs merged over the
+  * **provider_params** – Native `StableAudioPipeline` kwargs merged over the
     translated ones (#61; e.g. `{"num_inference_steps": 50}`), recorded
     in `generation_params`.
   * **\*\*kw** – Extra/unknown affordances (warn-and-dropped).
@@ -132,6 +132,18 @@ Generate a sound for `prompt`; return its bytes + provisional candidate.
   A [`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip) (`origin=generated`,
   `license_id='Stability-Community'`, `is_ai_generated=True`,
   `generation_seed` captured).
+
+#### generate_takes(prompt, n, \*\*affordances)
+
+`n` takes of `prompt` from one pipeline call (#210), through the batch
+knob `num_waveforms_per_prompt`: take `i` is drawn from its own generator,
+seeded `seed + i` ([`derived_seed()`](foley.sources.base.html.md#foley.sources.base.derived_seed)), and records
+that seed. Takes the keywords of [`generate()`](#foley.sources.stable_audio.adapter.StableAudioAdapter.generate).
+
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `n` exceeds the config’s batch maximum.
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`GeneratedClip`](foley.sources.base.html.md#foley.sources.base.GeneratedClip)]
 
 #### invoke_native(prompt, , native, seed=None)
 
