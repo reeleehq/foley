@@ -1,0 +1,40 @@
+foley.embedded\_metadata
+========================
+
+.. automodule:: foley.embedded_metadata
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      RIFF_FORMS
+      MAX_METADATA_CHUNK_BYTES
+      BEXT_FIELDS
+      KEYWORD_SEPARATORS
+      BEXT
+      IXML
+      FIELDS
+      CHUNK_PARSERS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      chunks_from_fields
+      fields_from_chunks
+      iter_riff_chunks
+      join_keywords
+      parse_bext
+      parse_ixml_user
+      read_embedded_metadata
+      read_metadata_chunks
+      split_keywords
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Field
+      Location
+   

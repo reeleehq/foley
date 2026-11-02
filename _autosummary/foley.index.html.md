@@ -22,6 +22,7 @@ only the stdlib; install the capability you use via the matching extra
 | [`ingest_one`](#foley.index.ingest_one)(src, \*[, library, sound_id, ...])      | Ingest one clip into `library` and return an [`IngestResult`](#foley.index.IngestResult).                         |
 | [`ingest_folder`](#foley.index.ingest_folder)(path, \*[, library, recursive, ...]) | Ingest every audio file under `path` and return an [`IngestReport`](#foley.index.IngestReport).                   |
 | [`sidecar_license`](#foley.index.sidecar_license)(path, \*[, root])                  | The [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord) the nearest sidecar asserts for `path`. |
+| [`read_embedded_metadata`](#foley.index.read_embedded_metadata)(path, \*[, ...])            | foley's view of a WAV's `bext` and iXML metadata (see the module docs), or `{}`.                                                    |
 | [`find_sidecar`](#foley.index.find_sidecar)(path, \*[, root])                     | The nearest sidecar for `path` (a file or folder), searching up to `root`.                                                          |
 | [`resolve_ingest_license`](#foley.index.resolve_ingest_license)(license, \*[, source_url])  | The rights record for a local ingest: fail-closed unless rights are asserted (#55).                                                 |
 | [`restamp_rights`](#foley.index.restamp_rights)([library, license, ids, ...])       | Re-stamp the licence of stored sounds; a dry run unless `apply=True`.                                                               |
@@ -1074,6 +1075,18 @@ its CatID token is unknown (so a wrong subcategory is never emitted).
     `default_ucs_table()`).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.index.read_embedded_metadata(path, \*, max_chunk_bytes=4194304, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='bext', key='description'), Location(chunk='ixml', key='FXNAME')), decode=<class 'str'>, encode=<class 'str'>), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>)))
+
+foley’s view of a WAV’s `bext` and iXML metadata (see the module docs), or `{}`.
+
+```pycon
+>>> read_embedded_metadata(__file__)  # not a WAV
+{}
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### foley.index.reciprocal_rank_fusion(ranked_id_lists, , k=60)
 

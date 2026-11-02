@@ -1,4 +1,4 @@
-> built 2026-11-02 01:31 UTC from 45b9337 (main) · foley 0.0.107. Details: build_info.json
+> built 2026-11-02 01:57 UTC from 3d5f9ee (main) · foley 0.0.108. Details: build_info.json
 
 # index.html.md
 
@@ -3736,6 +3736,241 @@ one, a fresh default [`Budget`](_autosummary/foley.agent.policy.html.md#foley.ag
 
 * **Yields:**
   The innermost budget in force.
+
+
+# _autosummary/foley.embedded_metadata.html.md
+
+# foley.embedded_metadata
+
+What a pro sound file says about itself: Broadcast-WAV `bext` and iXML (#228).
+
+Commercial packs (BOOM, Pro Sound Effects, Sonniss GDC) describe each file inside it:
+the EBU Broadcast-WAV `bext` chunk (`Description`, `Originator`, the origination
+date) and an `iXML` chunk whose `<USER>` block carries the Soundminer / UCS fields
+(`CATEGORY`, `SUBCATEGORY`, `CATID`, `FXNAME`, `DESCRIPTION`, `KEYWORDS`,
+`LIBRARY`, `MANUFACTURER`, …). [`read_embedded_metadata()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.read_embedded_metadata) reads both with the
+standard library and returns foley’s view of them:
+
+```default
+{"caption": ..., "tags": [...], "ucs_catid": ..., "fx_name": ..., "library": ...,
+ "manufacturer": ..., "raw": {"bext": {...}, "ixml": {...}}}
+```
+
+Only the fields the file has are present. A file that is not a RIFF / RF64 / BW64 WAVE,
+or has neither chunk, gives `{}`; a missing file raises [`FileNotFoundError`](https://docs.python.org/3/builtins/exceptions.html#FileNotFoundError).
+
+[`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) is the one table between the chunks and foley’s names, both ways: each
+[`Field`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field) has a canonical `write` location (where an exporter puts the value,
+and where a reader looks first) and ordered `read_also` fallbacks, plus the
+`decode` / `encode` pair between the stored text and foley’s value.
+[`fields_from_chunks()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.fields_from_chunks) and [`chunks_from_fields()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.chunks_from_fields) are its two directions, so
+the writer of #231 reuses the table rather than inverting it. The names are foley’s
+(`caption`, `tags`, `ucs_*` as on [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) /
+[`SoundEvent`](_autosummary/foley.base.html.md#foley.base.SoundEvent), `fx_name` as on the UCS filename parse).
+
+This module sits beside [`foley.audio`](_autosummary/foley.audio.html.md#module-foley.audio) rather than in [`foley.index`](_autosummary/foley.index.html.md#module-foley.index): it is
+file-format I/O that both ingest (reading) and export (writing) use, stdlib-only.
+
+### Module Attributes
+
+| [`RIFF_FORMS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.RIFF_FORMS)               | classic RIFF, EBU RF64 (Tech 3306), ITU-R BS.2088 BW64.                                                                   |
+|---------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| [`MAX_METADATA_CHUNK_BYTES`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.MAX_METADATA_CHUNK_BYTES) | A bext or iXML chunk bigger than this is skipped (real ones are a few kB).                                                |
+| [`BEXT_FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.BEXT_FIELDS)              | The fixed-width text fields at the start of a `bext` chunk (EBU Tech 3285).                                               |
+| [`KEYWORD_SEPARATORS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.KEYWORD_SEPARATORS)       | How keywords are separated in the wild, and how foley writes them.                                                        |
+| [`BEXT`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.BEXT)                     | The names [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) locations use for the two chunks (also the `raw` keys). |
+| [`IXML`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.IXML)                     | The names [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) locations use for the two chunks (also the `raw` keys). |
+| [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS)                   | foley field <-> chunk locations (see [`Field`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field)).                             |
+| [`CHUNK_PARSERS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.CHUNK_PARSERS)            | Chunk id -> (its name in `raw` and [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS), its parser).                  |
+
+### Functions
+
+| [`chunks_from_fields`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.chunks_from_fields)(meta, \*[, fields, ...])   | Where a writer puts each of foley's fields: `{chunk: {key: text}}`, canonical only.                                  |
+|------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| [`fields_from_chunks`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.fields_from_chunks)(raw, \*[, fields, ...])    | foley's fields from parsed chunks (`{"bext": {...}, "ixml": {...}}`), non-empty only.                                |
+| [`iter_riff_chunks`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.iter_riff_chunks)(f, \*[, forms])              | `(chunk_id, offset, size)` for each top-level chunk of a RIFF / RF64 / BW64 WAVE.                                    |
+| [`join_keywords`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.join_keywords)(tags)                           | The `KEYWORDS` string for `tags` (the inverse of [`split_keywords()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.split_keywords)). |
+| [`parse_bext`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.parse_bext)(payload)                           | The text fields of a `bext` chunk (NUL-padded; UTF-8 or Latin-1), non-empty only.                                    |
+| [`parse_ixml_user`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.parse_ixml_user)(payload)                      | The `<USER>` fields of an iXML chunk (upper-cased tag -> text), or `{}`.                                             |
+| [`read_embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.read_embedded_metadata)(path, \*[, ...])       | foley's view of a WAV's `bext` and iXML metadata (see the module docs), or `{}`.                                     |
+| [`read_metadata_chunks`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.read_metadata_chunks)(path, \*[, ...])         | The parsed, non-empty metadata chunks of a WAV (`{"bext": ..., "ixml": ...}`).                                       |
+| [`split_keywords`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.split_keywords)(text)                          | Keywords from a `KEYWORDS` string: split on , and ;, de-duplicated ignoring case.                                    |
+
+### Classes
+
+| [`Field`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field)(name, write[, read_also, decode, encode])   | One foley field and where it lives in a WAV's metadata chunks.      |
+|----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| [`Location`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Location)(chunk, key)                              | A place a value lives: a `bext` field name or an iXML `<USER>` tag. |
+
+### foley.embedded_metadata.BEXT *= 'bext'*
+
+The names [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) locations use for the two chunks (also the `raw` keys).
+
+### foley.embedded_metadata.BEXT_FIELDS *= (('description', 256), ('originator', 32), ('originator_reference', 32), ('origination_date', 10), ('origination_time', 8))*
+
+The fixed-width text fields at the start of a `bext` chunk (EBU Tech 3285).
+
+### foley.embedded_metadata.CHUNK_PARSERS *= {b'bext': ('bext', <function parse_bext>), b'iXML': ('ixml', <function parse_ixml_user>)}*
+
+Chunk id -> (its name in `raw` and [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS), its parser).
+
+### foley.embedded_metadata.FIELDS *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Field](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field), ...]* *= (Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='bext', key='description'), Location(chunk='ixml', key='FXNAME')), decode=<class 'str'>, encode=<class 'str'>), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'),), decode=<class 'str'>, encode=<class 'str'>), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>))*
+
+foley field <-> chunk locations (see [`Field`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Field)).
+
+### *class* foley.embedded_metadata.Field(name, write, read_also=(), decode=<class 'str'>, encode=<class 'str'>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One foley field and where it lives in a WAV’s metadata chunks.
+
+`write` is the canonical location: a writer puts the value there and a reader
+looks there first. `read_also` are read-only fallbacks, tried in order.
+`decode` turns the stored text into foley’s value; `encode` turns it back.
+
+#### decode
+
+alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### encode
+
+alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### *property* read_from *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Location](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.Location), ...]*
+
+Every location a reader tries, canonical first.
+
+### foley.embedded_metadata.IXML *= 'ixml'*
+
+The names [`FIELDS`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.FIELDS) locations use for the two chunks (also the `raw` keys).
+
+### foley.embedded_metadata.KEYWORD_SEPARATORS *= re.compile('[,;]')*
+
+How keywords are separated in the wild, and how foley writes them.
+
+### *class* foley.embedded_metadata.Location(chunk, key)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A place a value lives: a `bext` field name or an iXML `<USER>` tag.
+
+### foley.embedded_metadata.MAX_METADATA_CHUNK_BYTES *= 4194304*
+
+A bext or iXML chunk bigger than this is skipped (real ones are a few kB).
+
+### foley.embedded_metadata.RIFF_FORMS *= (b'RIFF', b'RF64', b'BW64')*
+
+classic RIFF, EBU RF64 (Tech 3306), ITU-R BS.2088 BW64.
+
+* **Type:**
+  The RIFF form types read
+
+### foley.embedded_metadata.chunks_from_fields(meta, \*, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='bext', key='description'), Location(chunk='ixml', key='FXNAME')), decode=<class 'str'>, encode=<class 'str'>), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>)))
+
+Where a writer puts each of foley’s fields: `{chunk: {key: text}}`, canonical only.
+
+```pycon
+>>> chunks_from_fields({"caption": "Rain", "tags": ["a", "b"], "other": 1})
+{'ixml': {'DESCRIPTION': 'Rain', 'KEYWORDS': 'a, b'}}
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.embedded_metadata.fields_from_chunks(raw, \*, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='bext', key='description'), Location(chunk='ixml', key='FXNAME')), decode=<class 'str'>, encode=<class 'str'>), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>)))
+
+foley’s fields from parsed chunks (`{"bext": {...}, "ixml": {...}}`), non-empty only.
+
+```pycon
+>>> fields_from_chunks({"bext": {"description": "Rain"}, "ixml": {"KEYWORDS": "a;b"}})
+{'caption': 'Rain', 'tags': ['a', 'b']}
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.embedded_metadata.iter_riff_chunks(f, , forms=(b'RIFF', b'RF64', b'BW64'))
+
+`(chunk_id, offset, size)` for each top-level chunk of a RIFF / RF64 / BW64 WAVE.
+
+Walks the chunk headers with seeks, never reading the audio, so a large file costs
+a few small reads. Stops quietly at a truncated chunk. For RF64 / BW64, a `data`
+chunk sized `0xFFFFFFFF` takes its real size from `ds64`’s `dataSize`.
+
+```pycon
+>>> import io
+>>> body = b"WAVE" + b"abcd" + struct.pack("<I", 1) + b"x\0"
+>>> wav = io.BytesIO(b"RIFF" + struct.pack("<I", len(body)) + body)
+>>> list(iter_riff_chunks(wav))
+[(b'abcd', 20, 1)]
+```
+
+* **Return type:**
+  [`Iterator`](https://docs.python.org/3/library/typing.html#typing.Iterator)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`int`](https://docs.python.org/3/builtins/functions.html#int), [`int`](https://docs.python.org/3/builtins/functions.html#int)]]
+
+### foley.embedded_metadata.join_keywords(tags)
+
+The `KEYWORDS` string for `tags` (the inverse of [`split_keywords()`](_autosummary/foley.embedded_metadata.html.md#foley.embedded_metadata.split_keywords)).
+
+```pycon
+>>> join_keywords(["door", " creak "])
+'door, creak'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### foley.embedded_metadata.parse_bext(payload)
+
+The text fields of a `bext` chunk (NUL-padded; UTF-8 or Latin-1), non-empty only.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.embedded_metadata.parse_ixml_user(payload)
+
+The `<USER>` fields of an iXML chunk (upper-cased tag -> text), or `{}`.
+
+The bytes go to the XML parser as they are, so the document’s own encoding
+declaration (UTF-8, Latin-1, UTF-16, …) is honoured.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.embedded_metadata.read_embedded_metadata(path, \*, max_chunk_bytes=4194304, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='bext', key='description'), Location(chunk='ixml', key='FXNAME')), decode=<class 'str'>, encode=<class 'str'>), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>)))
+
+foley’s view of a WAV’s `bext` and iXML metadata (see the module docs), or `{}`.
+
+```pycon
+>>> read_embedded_metadata(__file__)  # not a WAV
+{}
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.embedded_metadata.read_metadata_chunks(path, \*, max_chunk_bytes=4194304, parsers={b'bext': ('bext', <function parse_bext>), b'iXML': ('ixml', <function parse_ixml_user>)})
+
+The parsed, non-empty metadata chunks of a WAV (`{"bext": ..., "ixml": ...}`).
+
+Chunks larger than `max_chunk_bytes` are skipped unread. A file that is not a
+WAV gives `{}`; one that cannot be opened (missing, a directory, no permission)
+raises the `OSError`, so a wrong path is not mistaken for a file without metadata.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.embedded_metadata.split_keywords(text)
+
+Keywords from a `KEYWORDS` string: split on , and ;, de-duplicated ignoring case.
+
+```pycon
+>>> split_keywords("door, creak; Wood ,DOOR")
+['door', 'creak', 'Wood']
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 
 # _autosummary/foley.eval.baseline.html.md
@@ -9598,27 +9833,28 @@ escalates to the injected/​default judge for that rung and returns *its* verdi
 
 ### Modules
 
-| [`repair`](_autosummary/foley.repair.html.md#module-foley.repair)             | Repair instead of quarantine: the fixes a Tier-0 QC report suggests, applied and re-checked (#107).                                                  |
-|-----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`audio`](_autosummary/foley.audio.html.md#module-foley.audio)               | Audio I/O and DSP primitives for foley.                                                                                                              |
-| [`index`](_autosummary/foley.index.html.md#module-foley.index)               | foley INDEX stage — make every sound findable by keyword *and* meaning.                                                                              |
-| [`obs`](_autosummary/foley.obs.html.md#module-foley.obs)                   | Observability & the reproducible run-artifact for foley (#11).                                                                                       |
-| [`agent`](_autosummary/foley.agent.html.md#module-foley.agent)               | The SELECT stage — the search-agent that finds the right sound for a context (#7).                                                                   |
-| [`weave`](_autosummary/foley.weave.html.md#module-foley.weave)               | WEAVE — the compositor façade: narration + timeline → a finished, editable mix.                                                                      |
-| [`eval`](_autosummary/foley.eval.html.md#module-foley.eval)                 | Tier-1 retrieval evaluation — metrics, a frozen golden set, and the nDCG gate.                                                                       |
-| [`provenance`](_autosummary/foley.provenance.html.md#module-foley.provenance)     | Provenance layer for foley — attribution/credits (and, later, disclosure).                                                                           |
-| [`agent_kit`](_autosummary/foley.agent_kit.html.md#module-foley.agent_kit)       | Install foley's shipped agent kit — the consumer skill + Claude slash command + subagent.                                                            |
-| [`base`](_autosummary/foley.base.html.md#module-foley.base)                 | Canonical data models for foley — the single source of truth (SSOT) types.                                                                           |
-| [`cli`](_autosummary/foley.cli.html.md#module-foley.cli)                   | The `foley` command-line interface (`argparse`, the verbs generated by `cw`).                                                                        |
-| [`cost`](_autosummary/foley.cost.html.md#module-foley.cost)                 | Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).                                                                  |
-| [`level`](_autosummary/foley.level.html.md#module-foley.level)               | Level a clip to a stated loudness target for its class, so relative levels are sane.                                                                 |
-| [`licensing`](_autosummary/foley.licensing.html.md#module-foley.licensing)       | License policy for foley: the license_id -> flag-set SSOT, flag derivation (with per-source overrides), and the fail-closed candidate `keep()` gate. |
-| [`prompt_match`](_autosummary/foley.prompt_match.html.md#module-foley.prompt_match) | Does a generated clip sound like what was asked for? A text-audio check, or an honest "unchecked".                                                   |
-| [`qc`](_autosummary/foley.qc.html.md#module-foley.qc)                     | Tier-0 deterministic audio QC for foley (research report 08 §3).                                                                                     |
-| [`requirements`](_autosummary/foley.requirements.html.md#module-foley.requirements) | Onboarding — check what foley needs, tell the user how to get it (accompy-style, #12).                                                               |
-| [`runtime`](_autosummary/foley.runtime.html.md#module-foley.runtime)           | Runtime posture — local-first / offline mode as one verifiable contract (#12, report 12).                                                            |
-| [`sources`](_autosummary/foley.sources.html.md#module-foley.sources)           | Bulk-corpus source adapters for foley's SOURCE stage.                                                                                                |
-| [`stores`](_autosummary/foley.stores.html.md#module-foley.stores)             | dol-backed storage for foley: content-addressed bytes + a metadata store.                                                                            |
+| [`repair`](_autosummary/foley.repair.html.md#module-foley.repair)                       | Repair instead of quarantine: the fixes a Tier-0 QC report suggests, applied and re-checked (#107).                                                  |
+|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`audio`](_autosummary/foley.audio.html.md#module-foley.audio)                         | Audio I/O and DSP primitives for foley.                                                                                                              |
+| [`index`](_autosummary/foley.index.html.md#module-foley.index)                         | foley INDEX stage — make every sound findable by keyword *and* meaning.                                                                              |
+| [`obs`](_autosummary/foley.obs.html.md#module-foley.obs)                             | Observability & the reproducible run-artifact for foley (#11).                                                                                       |
+| [`agent`](_autosummary/foley.agent.html.md#module-foley.agent)                         | The SELECT stage — the search-agent that finds the right sound for a context (#7).                                                                   |
+| [`weave`](_autosummary/foley.weave.html.md#module-foley.weave)                         | WEAVE — the compositor façade: narration + timeline → a finished, editable mix.                                                                      |
+| [`eval`](_autosummary/foley.eval.html.md#module-foley.eval)                           | Tier-1 retrieval evaluation — metrics, a frozen golden set, and the nDCG gate.                                                                       |
+| [`provenance`](_autosummary/foley.provenance.html.md#module-foley.provenance)               | Provenance layer for foley — attribution/credits (and, later, disclosure).                                                                           |
+| [`agent_kit`](_autosummary/foley.agent_kit.html.md#module-foley.agent_kit)                 | Install foley's shipped agent kit — the consumer skill + Claude slash command + subagent.                                                            |
+| [`base`](_autosummary/foley.base.html.md#module-foley.base)                           | Canonical data models for foley — the single source of truth (SSOT) types.                                                                           |
+| [`cli`](_autosummary/foley.cli.html.md#module-foley.cli)                             | The `foley` command-line interface (`argparse`, the verbs generated by `cw`).                                                                        |
+| [`cost`](_autosummary/foley.cost.html.md#module-foley.cost)                           | Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).                                                                  |
+| [`embedded_metadata`](_autosummary/foley.embedded_metadata.html.md#module-foley.embedded_metadata) | What a pro sound file says about itself: Broadcast-WAV `bext` and iXML (#228).                                                                       |
+| [`level`](_autosummary/foley.level.html.md#module-foley.level)                         | Level a clip to a stated loudness target for its class, so relative levels are sane.                                                                 |
+| [`licensing`](_autosummary/foley.licensing.html.md#module-foley.licensing)                 | License policy for foley: the license_id -> flag-set SSOT, flag derivation (with per-source overrides), and the fail-closed candidate `keep()` gate. |
+| [`prompt_match`](_autosummary/foley.prompt_match.html.md#module-foley.prompt_match)           | Does a generated clip sound like what was asked for? A text-audio check, or an honest "unchecked".                                                   |
+| [`qc`](_autosummary/foley.qc.html.md#module-foley.qc)                               | Tier-0 deterministic audio QC for foley (research report 08 §3).                                                                                     |
+| [`requirements`](_autosummary/foley.requirements.html.md#module-foley.requirements)           | Onboarding — check what foley needs, tell the user how to get it (accompy-style, #12).                                                               |
+| [`runtime`](_autosummary/foley.runtime.html.md#module-foley.runtime)                     | Runtime posture — local-first / offline mode as one verifiable contract (#12, report 12).                                                            |
+| [`sources`](_autosummary/foley.sources.html.md#module-foley.sources)                     | Bulk-corpus source adapters for foley's SOURCE stage.                                                                                                |
+| [`stores`](_autosummary/foley.stores.html.md#module-foley.stores)                       | dol-backed storage for foley: content-addressed bytes + a metadata store.                                                                            |
 
 
 # _autosummary/foley.index.embedders.html.md
@@ -9780,6 +10016,7 @@ only the stdlib; install the capability you use via the matching extra
 | [`ingest_one`](_autosummary/foley.index.html.md#foley.index.ingest_one)(src, \*[, library, sound_id, ...])      | Ingest one clip into `library` and return an [`IngestResult`](_autosummary/foley.index.html.md#foley.index.IngestResult).                         |
 | [`ingest_folder`](_autosummary/foley.index.html.md#foley.index.ingest_folder)(path, \*[, library, recursive, ...]) | Ingest every audio file under `path` and return an [`IngestReport`](_autosummary/foley.index.html.md#foley.index.IngestReport).                   |
 | [`sidecar_license`](_autosummary/foley.index.html.md#foley.index.sidecar_license)(path, \*[, root])                  | The [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord) the nearest sidecar asserts for `path`. |
+| [`read_embedded_metadata`](_autosummary/foley.index.html.md#foley.index.read_embedded_metadata)(path, \*[, ...])            | foley's view of a WAV's `bext` and iXML metadata (see the module docs), or `{}`.                                                    |
 | [`find_sidecar`](_autosummary/foley.index.html.md#foley.index.find_sidecar)(path, \*[, root])                     | The nearest sidecar for `path` (a file or folder), searching up to `root`.                                                          |
 | [`resolve_ingest_license`](_autosummary/foley.index.html.md#foley.index.resolve_ingest_license)(license, \*[, source_url])  | The rights record for a local ingest: fail-closed unless rights are asserted (#55).                                                 |
 | [`restamp_rights`](_autosummary/foley.index.html.md#foley.index.restamp_rights)([library, license, ids, ...])       | Re-stamp the licence of stored sounds; a dry run unless `apply=True`.                                                               |
@@ -10832,6 +11069,18 @@ its CatID token is unknown (so a wrong subcategory is never emitted).
     `default_ucs_table()`).
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+### foley.index.read_embedded_metadata(path, \*, max_chunk_bytes=4194304, fields=(Field(name='caption', write=Location(chunk='ixml', key='DESCRIPTION'), read_also=(Location(chunk='bext', key='description'), Location(chunk='ixml', key='FXNAME')), decode=<class 'str'>, encode=<class 'str'>), Field(name='tags', write=Location(chunk='ixml', key='KEYWORDS'), read_also=(), decode=<function split_keywords>, encode=<function join_keywords>), Field(name='fx_name', write=Location(chunk='ixml', key='FXNAME'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_catid', write=Location(chunk='ixml', key='CATID'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_category', write=Location(chunk='ixml', key='CATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='ucs_subcategory', write=Location(chunk='ixml', key='SUBCATEGORY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='library', write=Location(chunk='ixml', key='LIBRARY'), read_also=(), decode=<class 'str'>, encode=<class 'str'>), Field(name='manufacturer', write=Location(chunk='ixml', key='MANUFACTURER'), read_also=(Location(chunk='bext', key='originator'), ), decode=<class 'str'>, encode=<class 'str'>), Field(name='designer', write=Location(chunk='ixml', key='DESIGNER'), read_also=(), decode=<class 'str'>, encode=<class 'str'>)))
+
+foley’s view of a WAV’s `bext` and iXML metadata (see the module docs), or `{}`.
+
+```pycon
+>>> read_embedded_metadata(__file__)  # not a WAV
+{}
+```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### foley.index.reciprocal_rank_fusion(ranked_id_lists, , k=60)
 
@@ -15499,7 +15748,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix chime', 'netflix intro', 'netflix sound', 'ta-dum', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm lion', 'mgm roar'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel inside', 'intel chime', 'intel jingle', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix chime', 'tudum', 'netflix intro', 'ta-dum', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel inside', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -25605,16 +25854,18 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 01:31 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/45b933700e1c3969a7b5e60fca283ac0810cacda"><code>45b9337</code></a> on branch <code>main</code>, for **foley 0.0.107** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 01:57 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/3d5f9ee8cd7da97a43936b491d432db72f950255"><code>3d5f9ee</code></a> on branch <code>main</code>, for **foley 0.0.108** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.108) is behind the latest release on PyPI (0.0.109): `pip install foley` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/45b933700e1c3969a7b5e60fca283ac0810cacda"><code>45b933700e1c3969a7b5e60fca283ac0810cacda</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/3d5f9ee8cd7da97a43936b491d432db72f950255"><code>3d5f9ee8cd7da97a43936b491d432db72f950255</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -25625,9 +25876,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41372716595">41372716595</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41374746742">41374746742</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>5a65fe9237441d0c1bdf6c3abe0be2a216e6770a</code> (in the history of the built commit) |
+| Event commit | <code>3d5f9ee8cd7da97a43936b491d432db72f950255</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -25652,13 +25903,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.107/">0.0.107</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.109/">0.0.109</a>, newer than the documented version (0.0.108).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 45b933700e1c3969a7b5e60fca283ac0810cacda
+git checkout 3d5f9ee8cd7da97a43936b491d432db72f950255
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

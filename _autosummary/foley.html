@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=6ba42da4"></script>
+    <script src="../_static/documentation_options.js?v=83be8e66"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.107" />
+  <meta name="docsearch:version" content="0.0.108" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -393,6 +393,7 @@
 <li class="toctree-l2"><a class="reference internal" href="foley.base.html">foley.base</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cli.html">foley.cli</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.cost.html">foley.cost</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.embedded_metadata.html">foley.embedded_metadata</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.level.html">foley.level</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.licensing.html">foley.licensing</a></li>
 <li class="toctree-l2"><a class="reference internal" href="foley.prompt_match.html">foley.prompt_match</a></li>
@@ -5925,28 +5926,31 @@ escalates to the injected/​default judge for that rung and returns <em>its</em
 <tr class="row-even"><td><p><a class="reference internal" href="foley.cost.html#module-foley.cost" title="foley.cost"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cost</span></code></a></p></td>
 <td><p>Cost: what a call will cost before it is made, and a cumulative cap on a run (#57).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="foley.level.html#module-foley.level" title="foley.level"><code class="xref py py-obj docutils literal notranslate"><span class="pre">level</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.embedded_metadata.html#module-foley.embedded_metadata" title="foley.embedded_metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">embedded_metadata</span></code></a></p></td>
+<td><p>What a pro sound file says about itself: Broadcast-WAV <code class="docutils literal notranslate"><span class="pre">bext</span></code> and iXML (#228).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.level.html#module-foley.level" title="foley.level"><code class="xref py py-obj docutils literal notranslate"><span class="pre">level</span></code></a></p></td>
 <td><p>Level a clip to a stated loudness target for its class, so relative levels are sane.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="foley.licensing.html#module-foley.licensing" title="foley.licensing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">licensing</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.licensing.html#module-foley.licensing" title="foley.licensing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">licensing</span></code></a></p></td>
 <td><p>License policy for foley: the license_id -&gt; flag-set SSOT, flag derivation (with per-source overrides), and the fail-closed candidate <code class="docutils literal notranslate"><span class="pre">keep()</span></code> gate.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="foley.prompt_match.html#module-foley.prompt_match" title="foley.prompt_match"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prompt_match</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.prompt_match.html#module-foley.prompt_match" title="foley.prompt_match"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prompt_match</span></code></a></p></td>
 <td><p>Does a generated clip sound like what was asked for? A text-audio check, or an honest &quot;unchecked&quot;.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="foley.qc.html#module-foley.qc" title="foley.qc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">qc</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.qc.html#module-foley.qc" title="foley.qc"><code class="xref py py-obj docutils literal notranslate"><span class="pre">qc</span></code></a></p></td>
 <td><p>Tier-0 deterministic audio QC for foley (research report 08 §3).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="foley.requirements.html#module-foley.requirements" title="foley.requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requirements</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.requirements.html#module-foley.requirements" title="foley.requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requirements</span></code></a></p></td>
 <td><p>Onboarding — check what foley needs, tell the user how to get it (accompy-style, #12).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="foley.runtime.html#module-foley.runtime" title="foley.runtime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">runtime</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.runtime.html#module-foley.runtime" title="foley.runtime"><code class="xref py py-obj docutils literal notranslate"><span class="pre">runtime</span></code></a></p></td>
 <td><p>Runtime posture — local-first / offline mode as one verifiable contract (#12, report 12).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="foley.sources.html#module-foley.sources" title="foley.sources"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sources</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="foley.sources.html#module-foley.sources" title="foley.sources"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sources</span></code></a></p></td>
 <td><p>Bulk-corpus source adapters for foley's SOURCE stage.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="foley.stores.html#module-foley.stores" title="foley.stores"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stores</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="foley.stores.html#module-foley.stores" title="foley.stores"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stores</span></code></a></p></td>
 <td><p>dol-backed storage for foley: content-addressed bytes + a metadata store.</p></td>
 </tr>
 </tbody>

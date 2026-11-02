@@ -193,6 +193,7 @@
    base
    cli
    cost
+   embedded_metadata
    level
    licensing
    prompt_match
