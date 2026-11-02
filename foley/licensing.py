@@ -841,11 +841,17 @@ def refusal_reason(record: LicenseRecord, intended_use: IntendedUse) -> Optional
     return None
 
 
-#: Why the bytes of a sound whose ``cache_bytes_ok`` is off may not be edited.
-_NO_UPLOAD = (
+#: Why the bytes of a sound whose ``cache_bytes_ok`` is off may not be kept or sent on,
+#: completed by what that means for the caller (see :func:`upload_refusal`).
+_NOT_CACHEABLE = (
     "its bytes may not be kept or sent on (its source's terms, e.g. the Freesound "
-    "API's), so they are not uploaded to an edit backend"
+    "API's)"
 )
+
+
+def _cacheable_refusal(source: LicenseRecord, consequence: str) -> Optional[str]:
+    """``None`` when ``source``'s bytes may be kept, else why not, then ``consequence``."""
+    return None if source.cache_bytes_ok else f"{_NOT_CACHEABLE}{consequence}"
 
 
 def upload_refusal(source: LicenseRecord) -> Optional[str]:
@@ -860,14 +866,7 @@ def upload_refusal(source: LicenseRecord) -> Optional[str]:
     >>> upload_refusal(LicenseRecord(source="freesound"))[:30]
     'its bytes may not be kept or s'
     """
-    return None if source.cache_bytes_ok else _NO_UPLOAD
-
-
-#: Why the bytes of a sound whose ``cache_bytes_ok`` is off may not be exported (#66).
-_NO_EXPORT = (
-    "its bytes may not be kept or sent on (its source's terms, e.g. the Freesound "
-    "API's): it is stored by reference, so the consumer must fetch it from its source"
-)
+    return _cacheable_refusal(source, ", so they are not uploaded to an edit backend")
 
 
 def export_refusal(source: LicenseRecord) -> Optional[str]:
@@ -880,11 +879,18 @@ def export_refusal(source: LicenseRecord) -> Optional[str]:
     >>> from foley.base import LicenseRecord
     >>> export_refusal(LicenseRecord(source="x", cache_bytes_ok=True)) is None
     True
-    >>> export_refusal(LicenseRecord(source="freesound"))[:30]
-    'its bytes may not be kept or s'
+    >>> export_refusal(LicenseRecord(source="freesound"))[-24:]
+    'fetch it from its source'
     """
-    return None if source.cache_bytes_ok else _NO_EXPORT
+    return _cacheable_refusal(
+        source,
+        ": it is stored by reference, so the consumer must fetch it from its source",
+    )
 
+
+# ---------------------------------------------------------------------------
+# Consumer licence codes — the SSOT a consumer of foley's rights imports (#66)
+# ---------------------------------------------------------------------------
 
 #: Whose terms a provider-terms ``license_id`` is, under the provider names a consumer
 #: classifies them by (``an``'s ``PROVIDER_TERMS``: a code counts only on a source
@@ -897,6 +903,110 @@ LICENSE_TERMS_PROVIDER: "dict[str, str]" = {
     "elevenlabs-free-plan": "elevenlabs",
     "ElevenLabs-SFX": "elevenlabs",
 }
+
+#: foley licence ids whose consumer code is not the id in lowercase. ``None`` is
+#: UNKNOWN (``lacing.Rights.license is None``), never unencumbered. Consumers (``an``'s
+#: music library and its foley fetcher) import :func:`consumer_license_code` rather
+#: than keep a copy of this table.
+CONSUMER_LICENSE_CODES: "dict[str, Optional[str]]" = {"unknown": None}
+
+#: Licences whose code means the same to any consumer, whoever the provider: the
+#: public ones (CC, MIT). A provider-terms or private code (``stability-community``,
+#: ``user-owned``, ``owned-pack``) is classifiable only on its own provider's record,
+#: so in an edit's lineage, where that provider is gone, it reads as UNKNOWN.
+PUBLIC_LICENSE_IDS: frozenset = frozenset(
+    {"CC0-1.0", "MIT"}
+    | {
+        f"{prefix}-{v}"
+        for prefix, _seg, _label, _f in _CC_VERSIONED
+        for v in CC_VERSIONS
+    }
+)
+
+#: A licence's class for a consumer, from the least to the most restrictive (the
+#: classes ``an``'s ``license_class`` gives).
+CONSUMER_LICENSE_CLASSES: "tuple[str, ...]" = (
+    "free",
+    "attribution",
+    "noncommercial",
+    "unknown",
+)
+
+
+def consumer_license_code(license_id: Optional[str]) -> Optional[str]:
+    """foley's ``license_id`` as a consumer's licence code: the SSOT consumers import.
+
+    :data:`CONSUMER_LICENSE_CODES` first, else the id in lowercase (an SPDX-style
+    code such as ``cc-by-4.0``, or a provider's own code such as
+    ``stability-community``, read with :data:`LICENSE_TERMS_PROVIDER`).
+
+    >>> consumer_license_code("CC0-1.0"), consumer_license_code("unknown")
+    ('cc0-1.0', None)
+    >>> consumer_license_code(None) is None
+    True
+    """
+    if not license_id or not license_id.strip():
+        return None
+    if license_id in CONSUMER_LICENSE_CODES:
+        return CONSUMER_LICENSE_CODES[license_id]
+    return license_id.lower()
+
+
+def consumer_license_class(license_id: str) -> str:
+    """The :data:`CONSUMER_LICENSE_CLASSES` entry of ``license_id``, from its flag row.
+
+    >>> [consumer_license_class(i) for i in ("CC0-1.0", "CC-BY-4.0", "CC-BY-NC-4.0")]
+    ['free', 'attribution', 'noncommercial']
+    >>> consumer_license_class("Tencent-Hunyuan-Community"), consumer_license_class("x")
+    ('unknown', 'unknown')
+    """
+    flags = LICENSE_FLAGS.get(license_id)
+    if flags is None or consumer_license_code(license_id) is None:
+        return "unknown"
+    if flags.commercial_ok:
+        return "attribution" if flags.requires_attribution else "free"
+    if flags.requires_attribution and flags.embed_in_derivative_ok:
+        return "noncommercial"
+    return "unknown"
+
+
+def rights_license_id(record: LicenseRecord) -> Optional[str]:
+    """The licence id a consumer should read ``record`` under, or ``None`` (UNKNOWN).
+
+    ``None`` when the rights are unverified (a Public Domain Mark is a claim, not a
+    grant). For a clip derived from others (an edit, :func:`derived_license_ids`), the
+    most restrictive of its own licence and every source's: an edit keeps its
+    generator's ``license_id`` and narrows only its flags, so exporting that id alone
+    would read a Stable Audio edit of a CC BY-NC sound as free. A source licence that
+    is not public (:data:`PUBLIC_LICENSE_IDS`) counts as UNKNOWN, and a source that
+    wins as UNKNOWN gives ``None``. Ties go to the clip's own licence.
+
+    >>> rights_license_id(LicenseRecord(source="s", license_id="CC-BY-4.0", rights_verified=True))
+    'CC-BY-4.0'
+    >>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
+    ...     rights_verified=True, derived_from_license_ids=["CC-BY-NC-4.0"]))
+    'CC-BY-NC-4.0'
+    >>> rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",
+    ...     rights_verified=True, derived_from_license_ids=["Tencent-Hunyuan-Community"])) is None
+    True
+    """
+    if not record.rights_verified:
+        return None
+    own = record.license_id
+
+    def rank(license_id: str, *, source: bool = True) -> int:
+        public = not source or license_id in PUBLIC_LICENSE_IDS
+        cls = consumer_license_class(license_id) if public else "unknown"
+        return CONSUMER_LICENSE_CLASSES.index(cls)
+
+    # A source under the clip's own licence is read under it, provider and all.
+    sources = [i for i in derived_license_ids(record) if i != own]
+    worst = max(sources, key=rank, default=None)
+    if worst is None or rank(worst) <= rank(own, source=False):
+        return own if consumer_license_code(own) else None
+    if CONSUMER_LICENSE_CLASSES[rank(worst)] == "unknown":
+        return None
+    return worst
 
 
 def derivative_refusal(source: LicenseRecord) -> Optional[str]:
@@ -924,7 +1034,7 @@ def derivative_refusal(source: LicenseRecord) -> Optional[str]:
     if not source.rights_verified:
         return "its rights are not verified"
     if not source.cache_bytes_ok:
-        return _NO_UPLOAD
+        return upload_refusal(source)
     if is_share_alike(lid):
         return (
             f"its licence ({lid}) is share-alike, which the edit's licence cannot carry"

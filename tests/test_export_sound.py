@@ -18,7 +18,15 @@ import foley  # noqa: E402
 from foley.audio import encode  # noqa: E402
 from foley.base import AcquisitionMethod, LicenseRecord, SoundRecord  # noqa: E402
 from foley.index import MemoryIndex, SoundLibrary  # noqa: E402
-from foley.licensing import LicenseRefusal, apply_license_flags  # noqa: E402
+from foley.licensing import (  # noqa: E402
+    LICENSE_FLAGS,
+    LICENSE_TERMS_PROVIDER,
+    LicenseRefusal,
+    apply_license_flags,
+    consumer_license_code,
+    narrow_to_source,
+)
+from foley.provenance import sound_rights  # noqa: E402
 from foley.sources.base import generated_license  # noqa: E402
 from foley.stores import content_key  # noqa: E402
 
@@ -226,3 +234,162 @@ def test_an_classifies_the_three_licences(library):
     stable = source("sa-7")
     assert assets.license_class(stable) == "free"
     assert "1,000,000" in assets.license_restriction(stable)
+
+
+# ---------------------------------------------------------------------------
+# hash check, sample format
+# ---------------------------------------------------------------------------
+
+
+def test_a_record_with_no_content_hash_is_refused(library, tmp_path):
+    path = tmp_path / "mine.flac"
+    path.write_bytes(_flac(700))
+    lic = apply_license_flags(
+        LicenseRecord(source="user", license_id="user-owned", rights_verified=True)
+    )
+    library.meta["mine"] = SoundRecord(id="mine", license=lic, uri=str(path))
+    with pytest.raises(ValueError, match="names no content hash"):
+        foley.export_sound("mine", library=library)
+
+
+@pytest.mark.parametrize("fmt", ["wav", "flac"])
+def test_a_float_source_exports_as_pcm_24_and_says_it_is_lossy(library, fmt):
+    t = np.linspace(0.0, 0.25, SR // 4, endpoint=False)
+    floats = encode((0.3 * np.sin(2 * np.pi * 440 * t)), SR, fmt="wav", subtype="FLOAT")
+    library.add(SoundRecord(id="float", license=_freesound_cc0().license), data=floats)
+    _data, _rights, prov = foley.export_sound("float", fmt, library=library)
+    assert (prov["archived_subtype"], prov["subtype"]) == ("FLOAT", "PCM_24")
+    assert prov["lossless"] is False
+
+
+def test_a_pcm_export_is_lossless(library):
+    _data, _rights, prov = foley.export_sound("fsd-222", library=library)
+    assert prov["lossless"] is True and prov["archived_subtype"] == "PCM_24"
+
+
+def test_provenance_carries_notice_territories_and_safety_flags(library):
+    lic = apply_license_flags(
+        LicenseRecord(
+            source="hunyuan",
+            license_id="Tencent-Hunyuan-Community",
+            rights_verified=True,
+            notice_text_required="made with Tencent Hunyuan",
+            gen_ai_preference="no_ai",
+            potential_trademark=True,
+        )
+    )
+    library.add(SoundRecord(id="hy", license=lic), data=_flac(800))
+    _data, _rights, prov = foley.export_sound("hy", library=library)
+    assert prov["notice_text_required"] == "made with Tencent Hunyuan"
+    assert prov["excluded_territories"] == ["EU", "GB", "GG", "GI", "IM", "JE", "KR"]
+    assert prov["gen_ai_preference"] == "no_ai"
+    assert prov["potential_trademark"] is True
+    assert prov["contains_recognizable_voice"] is False
+
+
+# ---------------------------------------------------------------------------
+# an edit never exports wider than its lineage (#66 review)
+# ---------------------------------------------------------------------------
+
+#: The licences generators make clips under (the edit backends' and procedural).
+GENERATOR_LICENSES = ("Stability-Community", "elevenlabs-paid-plan", "procedural-free")
+#: Each consumer class's strictness (``an``'s ``private`` reads as strict as unknown).
+AN_RANK = {"free": 0, "attribution": 1, "noncommercial": 2, "unknown": 3, "private": 3}
+
+
+def _edit(generator_license: str, source_license: str) -> SoundRecord:
+    out = apply_license_flags(
+        LicenseRecord(source="g", license_id=generator_license, rights_verified=True)
+    )
+    src = apply_license_flags(
+        LicenseRecord(source="s", license_id=source_license, rights_verified=True)
+    )
+    return SoundRecord(id="edit", license=narrow_to_source(out, src))
+
+
+EDITS = [(g, s) for g in GENERATOR_LICENSES for s in sorted(LICENSE_FLAGS)]
+
+
+@pytest.mark.parametrize("generator_license,source_license", EDITS)
+def test_an_edit_exports_no_wider_than_its_source(generator_license, source_license):
+    code = sound_rights(_edit(generator_license, source_license))["license"]
+    if code is None:
+        return
+    by_code = {consumer_license_code(i): i for i in LICENSE_FLAGS}
+    exported = LICENSE_FLAGS[by_code[code]]
+    for lid in (generator_license, source_license):
+        if not LICENSE_FLAGS[lid].commercial_ok:
+            assert not exported.commercial_ok, (lid, code)
+        if LICENSE_FLAGS[lid].requires_attribution:
+            assert exported.requires_attribution, (lid, code)
+
+
+def test_the_reviewed_fail_open_cases():
+    assert sound_rights(_edit("Stability-Community", "CC-BY-NC-4.0"))["license"] == (
+        "cc-by-nc-4.0"
+    )
+    rights = sound_rights(_edit("Stability-Community", "Tencent-Hunyuan-Community"))
+    assert rights["license"] is None and rights["license_url"] is None
+    same = sound_rights(_edit("Stability-Community", "Stability-Community"))
+    assert same["license"] == "stability-community"
+
+
+def test_an_classifies_no_edit_wider_than_its_lineage():
+    assets = pytest.importorskip("an.ir.assets")
+
+    def an_rank(provider, code):
+        source = assets.AssetSource(provider=provider, license=code)
+        return AN_RANK[assets.license_class(source)]
+
+    for generator_license, source_license in EDITS:
+        rights = sound_rights(_edit(generator_license, source_license))
+        exported = an_rank(rights["provider"], rights["license"])
+        # the source as an reads it alone; the generator's own licence only when an
+        # knows it (an UNKNOWN ``procedural-free`` is an's gap, not a restriction)
+        lineage = [(source_license, "s")]
+        if (
+            an_rank(rights_provider_of(generator_license), generator_license.lower())
+            < 3
+        ):
+            lineage.append((generator_license, "g"))
+        for lid, source in lineage:
+            alone = an_rank(
+                LICENSE_TERMS_PROVIDER.get(lid, source), consumer_license_code(lid)
+            )
+            assert exported >= alone, (generator_license, source_license, rights)
+
+
+def rights_provider_of(license_id):
+    return LICENSE_TERMS_PROVIDER.get(license_id, "g")
+
+
+# ---------------------------------------------------------------------------
+# every licence foley knows gives a Rights-shaped dict
+# ---------------------------------------------------------------------------
+
+
+def _rights_for(license_id: str) -> dict:
+    lic = apply_license_flags(
+        LicenseRecord(source="s", license_id=license_id, rights_verified=True)
+    )
+    return sound_rights(SoundRecord(id="x", license=lic))
+
+
+@pytest.mark.parametrize("license_id", sorted(LICENSE_FLAGS))
+def test_every_licence_gives_a_rights_shaped_dict(license_id):
+    rights = _rights_for(license_id)
+    assert set(rights) == RIGHTS_FIELDS
+    assert isinstance(rights["provider"], str) and rights["provider"]
+    assert isinstance(rights["cacheable"], bool)
+    assert all(
+        v is None or (isinstance(v, str) and v.strip())
+        for k, v in rights.items()
+        if k != "cacheable"
+    )
+
+
+def test_every_licence_validates_as_lacing_rights():
+    lacing = pytest.importorskip("lacing")
+    for license_id in LICENSE_FLAGS:
+        rights = _rights_for(license_id)
+        assert lacing.Rights(**rights).model_dump() == rights, license_id

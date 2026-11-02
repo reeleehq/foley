@@ -183,6 +183,49 @@ def container_of(data: bytes) -> "tuple[str, str]":
     return info.format.lower(), info.subtype
 
 
+#: The PCM subtypes, with their bit depths (what :func:`is_lossless_conversion` reads).
+PCM_BITS: "dict[str, int]" = {
+    "PCM_S8": 8,
+    "PCM_U8": 8,
+    "PCM_16": 16,
+    "PCM_24": 24,
+    "PCM_32": 32,
+}
+
+#: What a non-PCM source (``FLOAT`` / ``DOUBLE``) is exported as: consumers of an export
+#: (``an``) take PCM only, and 24 bits is the archive's own depth.
+EXPORT_PCM_SUBTYPE: str = ARCHIVE_SUBTYPE
+
+
+def is_lossless_conversion(src_subtype: str, dst_subtype: str) -> bool:
+    """Whether re-encoding ``src_subtype`` samples as ``dst_subtype`` keeps them exactly.
+
+    >>> is_lossless_conversion("PCM_16", "PCM_24"), is_lossless_conversion("FLOAT", "PCM_24")
+    (True, False)
+    """
+    if src_subtype == dst_subtype:
+        return True
+    src, dst = PCM_BITS.get(src_subtype), PCM_BITS.get(dst_subtype)
+    return src is not None and dst is not None and dst >= src
+
+
+def export_subtype(fmt: str, src_subtype: str) -> str:
+    """The PCM subtype an export as ``fmt`` uses for ``src_subtype`` samples.
+
+    The source's own when it is PCM and ``fmt`` holds it, else
+    :data:`EXPORT_PCM_SUBTYPE` when ``fmt`` holds that, else ``fmt``'s default.
+
+    Lazy dependency: ``soundfile``.
+    """
+    import soundfile as sf
+
+    target = fmt.upper()
+    for subtype in (src_subtype, EXPORT_PCM_SUBTYPE):
+        if subtype in PCM_BITS and sf.check_format(target, subtype):
+            return subtype
+    return sf.default_subtype(target)
+
+
 def transcode(
     data: bytes,
     *,
@@ -190,27 +233,19 @@ def transcode(
     subtype: Optional[str] = None,
     dtype: str = TRANSCODE_DTYPE,
 ) -> bytes:
-    """Re-encode ``data`` as ``fmt``, keeping its sample format where ``fmt`` allows.
+    """Re-encode ``data`` as ``fmt`` with ``subtype`` (default: :func:`export_subtype`).
 
-    ``data`` already in ``fmt`` (with ``subtype``, when one is given) comes back
-    unchanged, byte for byte. Otherwise it is decoded at ``dtype`` and encoded with
-    ``subtype``, else the source's own subtype when ``fmt`` supports it (a FLAC
-    ``PCM_24`` archive gives a ``PCM_24`` WAV, sample-exact), else ``fmt``'s default.
+    ``data`` already in ``fmt`` and that subtype comes back unchanged, byte for byte.
+    Otherwise it is decoded at ``dtype`` and encoded: a FLAC ``PCM_24`` archive gives a
+    sample-exact ``PCM_24`` WAV; a ``FLOAT`` source gives ``PCM_24`` (quantised: see
+    :func:`is_lossless_conversion`).
 
     Lazy dependency: ``soundfile``.
     """
-    import soundfile as sf
-
     src_fmt, src_subtype = container_of(data)
-    if src_fmt == fmt.lower() and subtype in (None, src_subtype):
+    subtype = subtype or export_subtype(fmt, src_subtype)
+    if src_fmt == fmt.lower() and subtype == src_subtype:
         return data
-    if subtype is None:
-        target = fmt.upper()
-        subtype = (
-            src_subtype
-            if sf.check_format(target, src_subtype)
-            else sf.default_subtype(target)
-        )
     samples, sample_rate = load(data, dtype=dtype)
     return encode(samples, sample_rate, fmt=fmt, subtype=subtype)
 
