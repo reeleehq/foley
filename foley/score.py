@@ -19,7 +19,7 @@ this keeps ``import foley`` dol-only.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from .base import MasterProfile, SoundDesignTimeline
@@ -81,6 +81,7 @@ def score(
     *,
     audio=None,
     transcript: Optional[str] = None,
+    segment_starts: "Optional[Sequence[float]]" = None,
     library=None,
     intended_use=None,
     commercial_ok: Optional[bool] = None,
@@ -111,6 +112,13 @@ def score(
         audio: The narration voice audio (path / bytes / ndarray / a library ref). When
             given, the result is woven into a mastered mix (set ``weave=False`` to skip).
         transcript: The full narration transcript for alignment (default: the segments joined).
+        segment_starts: Each segment's start in ``audio``, in seconds (one per segment,
+            non-decreasing), e.g. when the narration is one file per beat, concatenated.
+            Word timings are then aligned per segment over its own span (the last runs to
+            the audio's end), through a :class:`~foley.weave.SegmentedAligner` wrapping
+            ``aligner=`` (default: WhisperX if installed, else the fake). Without it, the
+            aligner aligns the whole file. Only used when weaving (a warning says so
+            otherwise).
         library: The :class:`foley.index.SoundLibrary` (default: the process-wide default).
         intended_use: The rights intent (default:
             :data:`foley.licensing.DEFAULT_INTENDED_USE` — commercial publishing, the
@@ -150,7 +158,10 @@ def score(
     Raises:
         TypeError: If a ``weave_kwargs`` key is not a :func:`foley.weave` option (raised
             before any find, verify or generation call).
-        ValueError: If ``master`` is an unknown profile name (raised just as early).
+        ValueError: If ``master`` is an unknown profile name, or ``segment_starts`` does
+            not fit the segments, the transcript or (for a path, bytes or an array) the
+            audio's duration, all raised just as early. For a library ref or a file-like
+            ``audio``, a start past its end is only caught once ``weave`` decodes it.
     """
     from . import find, obs, plan
     from . import weave as _weave
@@ -165,6 +176,27 @@ def score(
     use = intended_use_for(intended_use, commercial_ok=commercial_ok)
     full_transcript = transcript or " ".join(segs)
     do_weave = (audio is not None) if weave is None else bool(weave)
+    if segment_starts is not None:
+        from .weave import SegmentedAligner
+
+        seg_aligner = SegmentedAligner(
+            segment_starts, segs, base=weave_kwargs.get("aligner")
+        )
+        seg_aligner.split(full_transcript)  # fail fast on a transcript that won't split
+        if not do_weave:
+            import warnings
+
+            warnings.warn(
+                "segment_starts is unused: nothing is woven (pass audio=, and not "
+                "weave=False, for word timings)",
+                stacklevel=2,
+            )
+        else:
+            sr = _weave_option(weave_kwargs, "sr")
+            duration = _narration_duration(audio, library=library, sr=sr)
+            if duration is not None:  # a start past the audio's end, before SELECT
+                seg_aligner.spans(duration, sample_rate=sr)
+        weave_kwargs = {**weave_kwargs, "aligner": seg_aligner}
 
     find_kw = {
         "max_events": max_events,
@@ -236,6 +268,38 @@ def score(
             woven = _weave(audio, timeline, **wk)
             timeline = woven.timeline
     return ScoreResult(timeline=timeline, events=events, weave=woven)
+
+
+def _weave_option(weave_kwargs: dict, name: str):
+    """The value :func:`foley.weave` will use for ``name``: the caller's, else its default."""
+    import inspect
+
+    from .weave import weave
+
+    if name in weave_kwargs:
+        return weave_kwargs[name]
+    return inspect.signature(weave).parameters[name].default
+
+
+def _narration_duration(audio, *, library, sr: int) -> Optional[float]:
+    """The narration's duration in seconds when it is cheap to know before SELECT, else ``None``.
+
+    An array is in weave's working layout at ``sr``; a path or bytes is read from its
+    header. A library ref (or a file-like object) is left to ``weave``.
+    """
+    import os
+
+    from .audio import duration_s
+
+    if hasattr(audio, "shape"):
+        return int(audio.shape[0]) / sr
+    if isinstance(audio, (bytes, bytearray)):
+        return duration_s(audio)
+    if isinstance(audio, (str, os.PathLike)):
+        is_ref = isinstance(audio, str) and library is not None and audio in library
+        if not is_ref and os.path.isfile(audio):
+            return duration_s(audio)
+    return None
 
 
 def _check_weave_kwargs(weave_kwargs: dict) -> None:

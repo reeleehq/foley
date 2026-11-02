@@ -33,7 +33,7 @@ from ..base import (
 )
 
 # Public WEAVE surface (all import-time dol-only) ----------------------------
-from .align import FakeAligner, WhisperXAligner, _default_aligner
+from .align import FakeAligner, SegmentedAligner, WhisperXAligner, _default_aligner
 from .broadcast import (
     TREATMENTS,
     BroadcastBed,
@@ -627,6 +627,7 @@ __all__ = [
     "ApplyStrategy",
     "FakeAligner",
     "WhisperXAligner",
+    "SegmentedAligner",
     "MFAAligner",
     "AeneasAligner",
     "MasterProfile",
