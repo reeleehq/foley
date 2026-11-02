@@ -77,7 +77,9 @@ def _resolve_program(program: str, *, what: str, install: str) -> str:
     """``program`` as an executable path, or a :class:`FileNotFoundError` saying how to get it."""
     found = shutil.which(os.path.expanduser(program))
     if found is None:
-        raise FileNotFoundError(f"{what}: {program!r} is not on PATH. Install: {install}")
+        raise FileNotFoundError(
+            f"{what}: {program!r} is not on PATH. Install: {install}"
+        )
     return found
 
 
@@ -110,11 +112,17 @@ def run_cli_aligner(
         subprocess.TimeoutExpired: If it runs past ``timeout``.
     """
     with tempfile.TemporaryDirectory(prefix="foley-align-") as tmp:
-        wav, txt, out = (Path(tmp) / n for n in ("narration.wav", "narration.txt", "out"))
+        wav, txt, out = (
+            Path(tmp) / n for n in ("narration.wav", "narration.txt", "out")
+        )
         save(to_mono(audio), sample_rate, wav, fmt="WAV", subtype="PCM_16")
         txt.write_text(text(words) + "\n", encoding="utf-8")
         proc = runner(
-            command(wav, txt, out), capture_output=True, text=True, env=env, timeout=timeout
+            command(wav, txt, out),
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=timeout,
         )
         if proc.returncode != 0 or not out.exists():
             tail = (proc.stderr or proc.stdout or "").strip()[-ERROR_TAIL_CHARS:]
@@ -161,12 +169,16 @@ def onto_transcript(
     wc, wo = chars(words, wild=False)
     tc, to = chars([t["word"] for t in timed], wild=True)
     hits: "dict[int, set[int]]" = {}
-    for tag, i1, i2, j1, j2 in SequenceMatcher(None, wc, tc, autojunk=False).get_opcodes():
+    for tag, i1, i2, j1, j2 in SequenceMatcher(
+        None, wc, tc, autojunk=False
+    ).get_opcodes():
         if tag == "equal":
             pairs = zip(wo[i1:i2], to[j1:j2])
         elif tag == "replace" and set(tc[j1:j2]) == {UNK}:
             ws, ts = list(dict.fromkeys(wo[i1:i2])), list(dict.fromkeys(to[j1:j2]))
-            pairs = zip(ws, ts) if len(ws) == len(ts) else ((w, t) for w in ws for t in ts)
+            pairs = (
+                zip(ws, ts) if len(ws) == len(ts) else ((w, t) for w in ws for t in ts)
+            )
         else:
             continue
         for w, t in pairs:
@@ -343,10 +355,20 @@ class AeneasAligner:
                 f"languages={{{language!r}: '<ISO 639-3 code>'}}"
             )
         task = f"task_language={self.languages[language]}|is_text_type=plain|os_task_file_format=json"
-        python = _resolve_program(self.python, what="AeneasAligner", install=AENEAS_INSTALL)
+        python = _resolve_program(
+            self.python, what="AeneasAligner", install=AENEAS_INSTALL
+        )
 
         def command(wav: Path, txt: Path, out: Path) -> "list[str]":
-            return [python, "-m", "aeneas.tools.execute_task", str(wav), str(txt), task, str(out)]
+            return [
+                python,
+                "-m",
+                "aeneas.tools.execute_task",
+                str(wav),
+                str(txt),
+                task,
+                str(out),
+            ]
 
         return run_cli_aligner(
             audio, sample_rate, words, command=command, parse=parse_aeneas_json,

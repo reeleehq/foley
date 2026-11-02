@@ -18,7 +18,12 @@ import foley
 from foley.weave import MFAAligner, AeneasAligner
 
 result = foley.score(text, audio="narration.wav", aligner=MFAAligner())
-woven = foley.weave("narration.wav", timeline, transcript=text, aligner=AeneasAligner(python="~/venvs/aeneas/bin/python"))
+woven = foley.weave(
+    "narration.wav",
+    timeline,
+    transcript=text,
+    aligner=AeneasAligner(python="~/venvs/aeneas/bin/python"),
+)
 ```
 
 The run manifest records which aligner timed the words (`mfa`, `aeneas`, `whisperx`, `fake`). With no transcript every aligner returns no timings and speech-anchored sounds fall back to their absolute onsets.
