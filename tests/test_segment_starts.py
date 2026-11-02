@@ -127,6 +127,49 @@ def test_starts_must_fit_the_audio():
         tie.word_timeline(_audio(), SR, transcript=" ".join(SEGMENTS))
 
 
+def test_an_empty_last_segment_may_start_past_the_end():
+    rec = _SliceRecorder()
+    wt = SegmentedAligner([0.0, 3.0, 9.0], ["a", "b", ""], base=rec).word_timeline(
+        _audio(5.0), SR, transcript="a b"
+    )
+    assert [c[:2] for c in rec.calls] == [(3_000, "a"), (2_000, "b")]  # b ends at 5 s
+    assert [w["start"] for w in wt] == [0.0, 3.0]
+
+
+def test_whisperx_loads_its_models_once_across_segments(monkeypatch):
+    import types
+
+    from foley.weave import WhisperXAligner
+
+    loads = {"asr": 0, "align": 0}
+
+    class _Model:
+        def transcribe(self, audio, batch_size):
+            return {"segments": [{"text": "w"}]}
+
+    def load_model(size, device, language=None):
+        loads["asr"] += 1
+        return _Model()
+
+    def load_align_model(language_code, device):
+        loads["align"] += 1
+        return object(), {}
+
+    def align(segments, model, meta, audio, device):
+        return {"segments": [{"words": [{"word": "w", "start": 0.0, "end": 0.1}]}]}
+
+    fake = types.SimpleNamespace(
+        load_model=load_model, load_align_model=load_align_model, align=align
+    )
+    monkeypatch.setitem(sys.modules, "whisperx", fake)
+    seg = SegmentedAligner([0.0, 1.0, 2.0], ["a", "b", "c"], base=WhisperXAligner())
+    wt = seg.word_timeline(_audio(3.0), SR, transcript="a b c")
+    assert [w["start"] for w in wt] == [0.0, 1.0, 2.0]
+    assert loads == {"asr": 1, "align": 1}
+    seg.word_timeline(_audio(3.0), SR, transcript="a b c", language="fr")
+    assert loads == {"asr": 2, "align": 2}  # a new language loads its own models
+
+
 def test_a_transcript_that_does_not_split_is_refused():
     with pytest.raises(ValueError, match="5 word.*segments have 7"):
         SegmentedAligner(STARTS, SEGMENTS).split("one two three four five")
@@ -162,6 +205,32 @@ def test_score_refuses_bad_segment_starts_before_any_find(monkeypatch, _obs_to_m
             SEGMENTS, audio="nar", segment_starts=STARTS, transcript="two words"
         )
     assert calls == []
+
+
+def test_score_refuses_a_start_past_the_audio_end_before_any_find(
+    monkeypatch, tmp_path, _obs_to_memory
+):
+    from foley.audio import encode
+
+    calls = _find_spy(monkeypatch)
+    wav = encode(np.zeros(2 * SR, dtype="float32"), SR, fmt="wav", subtype="PCM_16")
+    path = tmp_path / "nar.wav"
+    path.write_bytes(wav)
+    array = np.zeros(2 * 48_000, dtype="float32")  # weave's working rate
+    for audio in (array, wav, str(path), path):
+        with pytest.raises(ValueError, match="segment 1 starts at 5.0s.*past the end"):
+            foley.score(SEGMENTS, audio=audio, segment_starts=[0.0, 5.0])
+    assert calls == []
+
+
+def test_score_warns_that_segment_starts_is_unused_without_weaving(
+    monkeypatch, _obs_to_memory
+):
+    _find_spy(monkeypatch)
+    with pytest.warns(UserWarning, match="segment_starts is unused"):
+        foley.score(SEGMENTS, segment_starts=STARTS)
+    with pytest.warns(UserWarning, match="segment_starts is unused"):
+        foley.score(SEGMENTS, audio="nar", weave=False, segment_starts=STARTS)
 
 
 def test_score_weaves_with_segment_starts_wrapping_the_given_aligner(_obs_to_memory):

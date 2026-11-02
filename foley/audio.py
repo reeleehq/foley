@@ -117,6 +117,21 @@ def load(
     return samples, sample_rate
 
 
+def duration_s(src: AudioSource) -> float:
+    """``src``'s duration in seconds, read from its header (nothing is decoded).
+
+    ``src`` is a path or raw encoded ``bytes`` (a file-like object would be left
+    moved, so decode it with :func:`load` instead).
+
+    Lazy dependency: ``soundfile``.
+    """
+    import soundfile as sf
+
+    if isinstance(src, (bytes, bytearray)):
+        src = io.BytesIO(bytes(src))
+    return float(sf.info(src).duration)
+
+
 def save(
     samples: "ndarray",
     sample_rate: int,
