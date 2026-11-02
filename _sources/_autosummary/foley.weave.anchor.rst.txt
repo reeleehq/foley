@@ -16,7 +16,9 @@ foley.weave.anchor
 
    .. autosummary::
    
+      match_word
       nearest_word
       parse_symbolic_anchor
       resolve_anchor
+      resolve_placement
    

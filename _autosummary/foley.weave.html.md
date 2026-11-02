@@ -31,7 +31,9 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`render`](#foley.weave.render)(timeline, library, \*[, sr, ...])         | Render `timeline` against `library` into a mastered mix (PURE, deterministic).                                               |
 | [`hydrate`](#foley.weave.hydrate)(timeline[, word_timeline])               | Resolve every item's anchor + fill processing/id, returning a NEW timeline.                                                  |
 | [`parse_symbolic_anchor`](#foley.weave.parse_symbolic_anchor)(onset, \*[, layer, loop])  | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`.                                             |
-| [`resolve_anchor`](#foley.weave.resolve_anchor)(placement, word_timeline, \*)     | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.                                                     |
+| [`resolve_anchor`](#foley.weave.resolve_anchor)(placement, word_timeline, \*)     | Resolve a `Placement` to `(onset_seconds, duration_seconds_or_None)`.                                                        |
+| [`resolve_placement`](#foley.weave.resolve_placement)(placement, word_timeline, \*)  | Resolve a `Placement` against the `word_timeline` — a NEW placement.                                                         |
+| [`match_word`](#foley.weave.match_word)(ref, word_timeline)                   | Return the `word_timeline` entry best matching `ref` and how it matched (#263).                                              |
 | [`swap_clip`](#foley.weave.swap_clip)(timeline, item_id, new_clip_ref)       | Swap an item's clip (keeping its placement/processing) — a NEW timeline.                                                     |
 | [`nudge`](#foley.weave.nudge)(timeline, item_id, delta_s)                | Shift an item's resolved onset by `delta_s` seconds — a NEW timeline.                                                        |
 | [`set_gain`](#foley.weave.set_gain)(timeline, item_id, gain_db)             | Set an item's processing gain (dB, voice-relative) — a NEW timeline.                                                         |
@@ -527,7 +529,8 @@ Resolve every item’s anchor + fill processing/id, returning a NEW timeline.
 Idempotent: an item that already carries a [`Placement`](foley.base.html.md#foley.base.Placement) keeps
 its symbolic anchor (a hand edit is never clobbered) but is re-resolved against
 `word_timeline` so a re-recorded/re-aligned narration re-flows the SFX
-(report 06 §6.1). `processing` falls back to the sparse `gain` and `id` to a
+(report 06 §6.1); each placement records how its anchor matched
+(`match_kind`, #263). `processing` falls back to the sparse `gain` and `id` to a
 stable content hash. The resolved `word_timeline` is cached on the returned
 timeline (the reproducible seed).
 
@@ -538,6 +541,28 @@ timeline (the reproducible seed).
   [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeline)
 * **Returns:**
   A hydrated copy with resolved placements, filled processing, stable ids.
+
+### foley.weave.match_word(ref, word_timeline)
+
+Return the `word_timeline` entry best matching `ref` and how it matched (#263).
+
+The one word resolver every anchor goes through, cheapest and surest first (earliest
+occurrence wins at each step): the phrase’s first token **exactly**; else a word
+sharing its **stem** (`_is_stem_match()`); else the closest word by lexical
+(`difflib`) ratio over any token, among words at least
+`FUZZY_MIN_LENGTH_SHARE` of its length (**fuzzy**, which can be a false match).
+`(None, MatchKind.fallback)` when nothing is close or `ref` is empty.
+
+```pycon
+>>> wt = [{"word": "The"}, {"word": "doors"}, {"word": "slammed."}]
+>>> [(w["word"], k.value) for w, k in (match_word(c, wt) for c in ("door", "slam"))]
+[('doors', 'stem'), ('slammed.', 'stem')]
+>>> match_word("zzzzz", wt)
+(None, <MatchKind.fallback: 'fallback'>)
+```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)], [`MatchKind`](foley.base.html.md#foley.base.MatchKind)]
 
 ### foley.weave.nudge(timeline, item_id, delta_s)
 
@@ -620,23 +645,35 @@ Render `timeline` against `library` into a mastered mix (PURE, deterministic).
 
 ### foley.weave.resolve_anchor(placement, word_timeline, , snap_pauses=False)
 
-Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.
+Resolve a `Placement` to `(onset_seconds, duration_seconds_or_None)`.
+
+The tuple view of [`resolve_placement()`](#foley.weave.resolve_placement) (which also says how it matched).
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
+### foley.weave.resolve_placement(placement, word_timeline, , snap_pauses=False)
+
+Resolve a `Placement` against the `word_timeline` — a NEW placement.
 
 Dispatches on `placement.anchor` (report 06 §2.4): `absolute` uses the
 stored offset; `word` fires on the trigger word; `sentence` spans its
 sentence (filling `duration` when unset — beds loop to fill it); `scene` /
 `paragraph` land on the boundary. `pre_roll` is then subtracted (clamped at
 0), and — when `snap_pauses` — the onset snaps to the nearest inter-word gap.
+`match_kind` records how the anchor matched ([`MatchKind`](foley.base.html.md#foley.base.MatchKind)): a
+cue with no word timings, or that matched no word, is a `fallback` at its stored
+onset (word) or the whole narration (span); a cue-less span is `absolute`.
 
 * **Parameters:**
   * **placement** ([`Placement`](foley.base.html.md#foley.base.Placement)) – The symbolic placement to resolve.
   * **word_timeline** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The forced-aligned `[{'word','start','end'}, ...]`.
   * **snap_pauses** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `True`, snap the resolved onset to the nearest pause.
 * **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+  [`Placement`](foley.base.html.md#foley.base.Placement)
 * **Returns:**
-  `(onset_seconds, duration_seconds_or_None)`. `duration` is filled only
-  for a span anchor whose `placement.duration` was unset.
+  A copy with `onset` (seconds), `duration` (filled only for a span anchor
+  whose `duration` was unset) and `match_kind` resolved.
 
 ### foley.weave.set_gain(timeline, item_id, gain_db)
 

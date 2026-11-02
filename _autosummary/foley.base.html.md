@@ -20,8 +20,9 @@ Serialization contract:
 
 ### Module Attributes
 
-| [`QUERY_AFFORDANCES`](#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).                                                                                                                                                                   |
+| [`SUSPECT_MATCH_KINDS`](#foley.base.SUSPECT_MATCH_KINDS)    | The match kinds whose sound may not sit on its cue word, and why — the SSOT the weave notes and the taste eval both flag (#263).                                                                                                   |
 |-------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`QUERY_AFFORDANCES`](#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).                                                                                                                                                                   |
 | [`GENERATION_AFFORDANCES`](#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these).                                                                                                                                                            |
 | [`EDIT_AFFORDANCES`](#foley.base.EDIT_AFFORDANCES)       | an edit is a generation whose input includes a source clip.                                                                                                                                                                        |
 | [`EDIT_OPS`](#foley.base.EDIT_OPS)               | each is offered by two or more providers).                                                                                                                                                                                         |
@@ -52,6 +53,7 @@ Serialization contract:
 | [`Layer`](#foley.base.Layer)(\*values)                                   | Mix layer (shared by `SoundEvent` now and `TimelineItem` later).                                                                                                            |
 | [`LicenseRecord`](#foley.base.LicenseRecord)(source[, source_id, ...])           | Per-sound rights + provenance.                                                                                                                                              |
 | [`MasterProfile`](#foley.base.MasterProfile)([target_lufs, true_peak_db, ...])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                                                              |
+| [`MatchKind`](#foley.base.MatchKind)(\*values)                               | HOW a [`Placement`](#foley.base.Placement)'s anchor was resolved against the narration (#263).                                                        |
 | [`Placement`](#foley.base.Placement)([anchor, ref, onset, pre_roll, ...])    | WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).                                                                                         |
 | [`Processing`](#foley.base.Processing)([gain_db, pan, distance, ...])         | HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).                                                                                               |
 | [`Salience`](#foley.base.Salience)(\*values)                                | How prominent a sound event is within a passage.                                                                                                                            |
@@ -375,7 +377,20 @@ off a little more, the inter-sample overshoot of those peaks). 0 restores a
 static, whole-program master. Transient foley (a door slam under narration)
 needs a few dB to reach the target at all (foley#91).
 
-### *class* foley.base.Placement(anchor=Anchor.absolute, ref=None, onset=0.0, pre_roll=0.0, duration=None, loop=False)
+### *class* foley.base.MatchKind(\*values)
+
+Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
+
+HOW a [`Placement`](#foley.base.Placement)’s anchor was resolved against the narration (#263).
+
+`exact` — the cue word was spoken as written; `stem` — a word sharing its stem
+(an inflection, or the spoken part of a compound cue); `fuzzy` — only a lexically
+similar word (it may be a false match: `thunder` lands on “under”); `fallback` —
+nothing matched (or there were no word timings), so the stored onset or the whole
+narration was used; `absolute` — the placement names no word to match (an
+absolute offset, or a bed with no cue spanning the narration).
+
+### *class* foley.base.Placement(anchor=Anchor.absolute, ref=None, onset=0.0, pre_roll=0.0, duration=None, loop=False, match_kind=None)
 
 Bases: [`SerializableMixin`](#foley.base.SerializableMixin)
 
@@ -384,7 +399,8 @@ WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 �
 Filled by WEAVE’s aligner+anchor pass. `onset` is the resolved start in
 seconds (distinct from the sparse `TimelineItem.onset` symbolic string);
 `pre_roll` shifts the clip earlier so its salient transient — not its file
-start — lands on the anchor (report 06 §2.4).
+start — lands on the anchor (report 06 §2.4). `match_kind` records how the
+anchor resolved ([`MatchKind`](#foley.base.MatchKind)), so a fuzzy or fallback placement is visible.
 
 ### *class* foley.base.Processing(gain_db=0.0, pan=0.0, distance=0.0, reverb_send=0.0, fade_in=0.008, fade_out=0.012, duck_bed=False)
 
@@ -399,6 +415,11 @@ field is set.
 ### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'include_explicit': Affordance(name='include_explicit', type=<class 'bool'>, description='Also return explicit / sensitive results', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'kind': Affordance(name='kind', type=<class 'str'>, description='Media kind: sfx | music', default='sfx', stage='query', carries_meaning=True, choices=('sfx', 'music'), renamed_from=None, bounds=None), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'page': Affordance(name='page', type=<class 'int'>, description='Results page (1-based; k per page)', default=1, stage='query', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'query': Affordance(name='query', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False, choices=None, renamed_from='text', bounds=None), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'sort': Affordance(name='sort', type=<class 'str'>, description='Result order', default='relevance', stage='query', carries_meaning=False, choices=('relevance', 'newest', 'popular', 'duration'), renamed_from=None, bounds=None), 'sources': Affordance(name='sources', type=<class 'list'>, description='Restrict an aggregator to these of its providers', default=None, stage='query', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None)}*
 
 Unified query-stage parameters (search / find / filter surface).
+
+### foley.base.SUSPECT_MATCH_KINDS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[MatchKind](#foley.base.MatchKind), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {MatchKind.fallback: 'no spoken word (placed at a fallback onset)', MatchKind.fuzzy: 'only a similar word (it may be the wrong one)'}*
+
+The match kinds whose sound may not sit on its cue word, and why — the SSOT the weave
+notes and the taste eval both flag (#263).
 
 ### *class* foley.base.Salience(\*values)
 

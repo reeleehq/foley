@@ -1,4 +1,4 @@
-> built 2026-11-02 06:11 UTC from 1d92b1a (main) · foley 0.0.124. Details: build_info.json
+> built 2026-11-02 06:30 UTC from 2104787 (main) · foley 0.0.125. Details: build_info.json
 
 # index.html.md
 
@@ -3077,8 +3077,9 @@ Serialization contract:
 
 ### Module Attributes
 
-| [`QUERY_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).                                                                                                                                                                   |
+| [`SUSPECT_MATCH_KINDS`](_autosummary/foley.base.html.md#foley.base.SUSPECT_MATCH_KINDS)    | The match kinds whose sound may not sit on its cue word, and why — the SSOT the weave notes and the taste eval both flag (#263).                                                                                                   |
 |-------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`QUERY_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.QUERY_AFFORDANCES)      | Unified query-stage parameters (search / find / filter surface).                                                                                                                                                                   |
 | [`GENERATION_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.GENERATION_AFFORDANCES) | Unified generation-stage parameters (generate backends map onto these).                                                                                                                                                            |
 | [`EDIT_AFFORDANCES`](_autosummary/foley.base.html.md#foley.base.EDIT_AFFORDANCES)       | an edit is a generation whose input includes a source clip.                                                                                                                                                                        |
 | [`EDIT_OPS`](_autosummary/foley.base.html.md#foley.base.EDIT_OPS)               | each is offered by two or more providers).                                                                                                                                                                                         |
@@ -3109,6 +3110,7 @@ Serialization contract:
 | [`Layer`](_autosummary/foley.base.html.md#foley.base.Layer)(\*values)                                   | Mix layer (shared by `SoundEvent` now and `TimelineItem` later).                                                                                                            |
 | [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)(source[, source_id, ...])           | Per-sound rights + provenance.                                                                                                                                              |
 | [`MasterProfile`](_autosummary/foley.base.html.md#foley.base.MasterProfile)([target_lufs, true_peak_db, ...])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                                                              |
+| [`MatchKind`](_autosummary/foley.base.html.md#foley.base.MatchKind)(\*values)                               | HOW a [`Placement`](_autosummary/foley.base.html.md#foley.base.Placement)'s anchor was resolved against the narration (#263).                                                        |
 | [`Placement`](_autosummary/foley.base.html.md#foley.base.Placement)([anchor, ref, onset, pre_roll, ...])    | WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).                                                                                         |
 | [`Processing`](_autosummary/foley.base.html.md#foley.base.Processing)([gain_db, pan, distance, ...])         | HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).                                                                                               |
 | [`Salience`](_autosummary/foley.base.html.md#foley.base.Salience)(\*values)                                | How prominent a sound event is within a passage.                                                                                                                            |
@@ -3432,7 +3434,20 @@ off a little more, the inter-sample overshoot of those peaks). 0 restores a
 static, whole-program master. Transient foley (a door slam under narration)
 needs a few dB to reach the target at all (foley#91).
 
-### *class* foley.base.Placement(anchor=Anchor.absolute, ref=None, onset=0.0, pre_roll=0.0, duration=None, loop=False)
+### *class* foley.base.MatchKind(\*values)
+
+Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
+
+HOW a [`Placement`](_autosummary/foley.base.html.md#foley.base.Placement)’s anchor was resolved against the narration (#263).
+
+`exact` — the cue word was spoken as written; `stem` — a word sharing its stem
+(an inflection, or the spoken part of a compound cue); `fuzzy` — only a lexically
+similar word (it may be a false match: `thunder` lands on “under”); `fallback` —
+nothing matched (or there were no word timings), so the stored onset or the whole
+narration was used; `absolute` — the placement names no word to match (an
+absolute offset, or a bed with no cue spanning the narration).
+
+### *class* foley.base.Placement(anchor=Anchor.absolute, ref=None, onset=0.0, pre_roll=0.0, duration=None, loop=False, match_kind=None)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -3441,7 +3456,8 @@ WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 �
 Filled by WEAVE’s aligner+anchor pass. `onset` is the resolved start in
 seconds (distinct from the sparse `TimelineItem.onset` symbolic string);
 `pre_roll` shifts the clip earlier so its salient transient — not its file
-start — lands on the anchor (report 06 §2.4).
+start — lands on the anchor (report 06 §2.4). `match_kind` records how the
+anchor resolved ([`MatchKind`](_autosummary/foley.base.html.md#foley.base.MatchKind)), so a fuzzy or fallback placement is visible.
 
 ### *class* foley.base.Processing(gain_db=0.0, pan=0.0, distance=0.0, reverb_send=0.0, fade_in=0.008, fade_out=0.012, duck_bed=False)
 
@@ -3456,6 +3472,11 @@ field is set.
 ### foley.base.QUERY_AFFORDANCES *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Affordance](_autosummary/foley.base.html.md#foley.base.Affordance)]* *= {'audioset_label': Affordance(name='audioset_label', type=<class 'str'>, description='AudioSet ontology facet (rolls up children)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'commercial_ok': Affordance(name='commercial_ok', type=<class 'bool'>, description='License filter shorthand', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'duration_range': Affordance(name='duration_range', type=<class 'tuple'>, description='(min_s, max_s)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'filters': Affordance(name='filters', type=<class 'dict'>, description='Metadata predicates (SQL-style)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'include_explicit': Affordance(name='include_explicit', type=<class 'bool'>, description='Also return explicit / sensitive results', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'k': Affordance(name='k', type=<class 'int'>, description='Number of results', default=10, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'kind': Affordance(name='kind', type=<class 'str'>, description='Media kind: sfx | music', default='sfx', stage='query', carries_meaning=True, choices=('sfx', 'music'), renamed_from=None, bounds=None), 'license': Affordance(name='license', type=<class 'str'>, description='Explicit license id constraint', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'min_snr': Affordance(name='min_snr', type=<class 'float'>, description='QC filter: min SNR dB', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'page': Affordance(name='page', type=<class 'int'>, description='Results page (1-based; k per page)', default=1, stage='query', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'query': Affordance(name='query', type=<class 'str'>, description='Natural-language query', default=None, stage='query', carries_meaning=False, choices=None, renamed_from='text', bounds=None), 'rerank': Affordance(name='rerank', type=<class 'bool'>, description='Apply second-stage rerank', default=False, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'semantic_text': Affordance(name='semantic_text', type=<class 'str'>, description='Query for CLAP semantic space', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'similar_to': Affordance(name='similar_to', type=<class 'str'>, description='Source sound id: more like this one (a source that has it)', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None), 'sort': Affordance(name='sort', type=<class 'str'>, description='Result order', default='relevance', stage='query', carries_meaning=False, choices=('relevance', 'newest', 'popular', 'duration'), renamed_from=None, bounds=None), 'sources': Affordance(name='sources', type=<class 'list'>, description='Restrict an aggregator to these of its providers', default=None, stage='query', carries_meaning=True, choices=None, renamed_from=None, bounds=None), 'ucs_category': Affordance(name='ucs_category', type=<class 'str'>, description='UCS CatID facet', default=None, stage='query', carries_meaning=False, choices=None, renamed_from=None, bounds=None)}*
 
 Unified query-stage parameters (search / find / filter surface).
+
+### foley.base.SUSPECT_MATCH_KINDS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[MatchKind](_autosummary/foley.base.html.md#foley.base.MatchKind), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {MatchKind.fallback: 'no spoken word (placed at a fallback onset)', MatchKind.fuzzy: 'only a similar word (it may be the wrong one)'}*
+
+The match kinds whose sound may not sit on its cue word, and why — the SSOT the weave
+notes and the taste eval both flag (#263).
 
 ### *class* foley.base.Salience(\*values)
 
@@ -6580,9 +6601,11 @@ passage and aggregated, the four things #45 asks of a tasteful design (report, n
   The trigger is read from SELECT’s *symbolic* anchor (`"on 'door'"`), which edits never
   erase, and resolved against the timeline’s word anchors (`word_timeline`).
   **What it can and cannot catch:** it resolves the cue with the same resolver
-  ([`nearest_word()`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.nearest_word)) and the same word timings the weave used, so an
+  ([`resolve_placement()`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.resolve_placement)) and the same word timings the weave used, so an
   *unedited* cue passes by construction and inherits that resolver’s false matches (#257).
-  What it catches is everything else: a nudged or absolute-pinned sound, a cue word that is
+  So each row also says how its cue matched (`match`: `exact` / `stem` / `fuzzy` /
+  `fallback` / `absolute`, #263) and the summary counts them: a `fuzzy` cue may sit on
+  the wrong word, a `fallback` one on none. What it catches is everything else: a nudged or absolute-pinned sound, a cue word that is
   never spoken, a spot effect with no cue. Word timings from the fake aligner (evenly spaced
   estimates, the default without `foley[align]`) are flagged `aligned=False`;
 * **loudness**: the woven mix’s integrated LUFS, re-measured, vs the master target, within
@@ -6651,7 +6674,7 @@ Share of placed sounds the licence gate must keep. Anything under it is a defect
 
 How far (LU) the woven mix may sit from the master target (EBU R128’s ±1 LU).
 
-### foley.eval.taste.PLACEMENT_CAVEAT *= 'catches nudged/pinned sounds and unspoken or missing cues; an unedited cue passes by construction (same resolver and word timings as the weave)'*
+### foley.eval.taste.PLACEMENT_CAVEAT *= 'catches nudged/pinned sounds and unspoken or missing cues; an unedited cue passes by construction (same resolver and word timings as the weave), so fuzzy and fallback cue matches are counted separately'*
 
 What the placement metric can see (echoed in the report so a reader does not over-read it).
 
@@ -7120,6 +7143,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`TimelineItem`](_autosummary/foley.html.md#foley.TimelineItem)(clip_ref[, onset, gain, layer, ...]) | One placed sound on the sound-design timeline — sparse seed + resolved render fields.                                                |
 | [`SoundDesignTimeline`](_autosummary/foley.html.md#foley.SoundDesignTimeline)([items, ...])                 | The editable, re-renderable sound-design plan — the SELECT→WEAVE bridge and render SSOT.                                             |
 | [`Anchor`](_autosummary/foley.html.md#foley.Anchor)(\*values)                                  | How a WEAVE `Placement` binds its symbolic time to the narration (report 06 §2.4).                                                   |
+| [`MatchKind`](_autosummary/foley.html.md#foley.MatchKind)(\*values)                               | HOW a [`Placement`](_autosummary/foley.html.md#foley.Placement)'s anchor was resolved against the narration (#263).                 |
 | [`Placement`](_autosummary/foley.html.md#foley.Placement)([anchor, ref, onset, pre_roll, ...])    | WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).                                                  |
 | [`Processing`](_autosummary/foley.html.md#foley.Processing)([gain_db, pan, distance, ...])         | HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).                                                        |
 | [`MasterProfile`](_autosummary/foley.html.md#foley.MasterProfile)([target_lufs, true_peak_db, ...])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                       |
@@ -8204,6 +8228,19 @@ off a little more, the inter-sample overshoot of those peaks). 0 restores a
 static, whole-program master. Transient foley (a door slam under narration)
 needs a few dB to reach the target at all (foley#91).
 
+### *class* foley.MatchKind(\*values)
+
+Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
+
+HOW a [`Placement`](_autosummary/foley.html.md#foley.Placement)’s anchor was resolved against the narration (#263).
+
+`exact` — the cue word was spoken as written; `stem` — a word sharing its stem
+(an inflection, or the spoken part of a compound cue); `fuzzy` — only a lexically
+similar word (it may be a false match: `thunder` lands on “under”); `fallback` —
+nothing matched (or there were no word timings), so the stored onset or the whole
+narration was used; `absolute` — the placement names no word to match (an
+absolute offset, or a bed with no cue spanning the narration).
+
 ### *class* foley.MemoryIndex(, dim=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -8278,7 +8315,7 @@ Return the top-`k` `(AudioSet label, score)` tags, best first.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
 
-### *class* foley.Placement(anchor=Anchor.absolute, ref=None, onset=0.0, pre_roll=0.0, duration=None, loop=False)
+### *class* foley.Placement(anchor=Anchor.absolute, ref=None, onset=0.0, pre_roll=0.0, duration=None, loop=False, match_kind=None)
 
 Bases: [`SerializableMixin`](_autosummary/foley.base.html.md#foley.base.SerializableMixin)
 
@@ -8287,7 +8324,8 @@ WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 �
 Filled by WEAVE’s aligner+anchor pass. `onset` is the resolved start in
 seconds (distinct from the sparse `TimelineItem.onset` symbolic string);
 `pre_roll` shifts the clip earlier so its salient transient — not its file
-start — lands on the anchor (report 06 §2.4).
+start — lands on the anchor (report 06 §2.4). `match_kind` records how the
+anchor resolved ([`MatchKind`](_autosummary/foley.html.md#foley.MatchKind)), so a fuzzy or fallback placement is visible.
 
 ### *class* foley.Processing(gain_db=0.0, pan=0.0, distance=0.0, reverb_send=0.0, fade_in=0.008, fade_out=0.012, duck_bed=False)
 
@@ -17799,7 +17837,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta dum', 'netflix chime', 'ta-dum', 'netflix sound', 'tudum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'metro-goldwyn-mayer lion', 'mgm roar', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel chime', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer simpson doh', 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'tudum', 'ta dum', 'netflix intro', 'netflix chime', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -27184,7 +27222,9 @@ concrete trigger time (seconds) against a forced-aligned `word_timeline`
 
 These are pure `(anchor, word_timeline) -> seconds` functions with no I/O and no
 heavy dependency, so they are independently unit-testable and keep `import
-foley.weave` dol-only. `foley.weave.anchor.parse_symbolic_anchor` is the single
+foley.weave` dol-only. Every word lookup goes through one resolver,
+[`match_word()`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.match_word), which also says HOW it matched (`exact` / `stem` / `fuzzy` /
+`fallback`); [`resolve_placement()`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.resolve_placement) records that on the resolved placement. `foley.weave.anchor.parse_symbolic_anchor` is the single
 SSOT bridge from SELECT’s sparse `TimelineItem.onset` string to a
 [`Placement`](_autosummary/foley.base.html.md#foley.base.Placement).
 
@@ -27197,10 +27237,12 @@ SSOT bridge from SELECT’s sparse `TimelineItem.onset` string to a
 
 ### Functions
 
-| [`nearest_word`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.nearest_word)(ref, word_timeline)                | Return the `word_timeline` entry best matching `ref` (earliest wins).            |
-|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| [`parse_symbolic_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.parse_symbolic_anchor)(onset, \*[, layer, loop]) | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`. |
-| [`resolve_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.resolve_anchor)(placement, word_timeline, \*)    | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.         |
+| [`match_word`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.match_word)(ref, word_timeline)                  | Return the `word_timeline` entry best matching `ref` and how it matched (#263).                                               |
+|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| [`nearest_word`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.nearest_word)(ref, word_timeline)                | The `word_timeline` entry best matching `ref` (see [`match_word()`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.match_word)), or `None`. |
+| [`parse_symbolic_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.parse_symbolic_anchor)(onset, \*[, layer, loop]) | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`.                                              |
+| [`resolve_anchor`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.resolve_anchor)(placement, word_timeline, \*)    | Resolve a `Placement` to `(onset_seconds, duration_seconds_or_None)`.                                                         |
+| [`resolve_placement`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.resolve_placement)(placement, word_timeline, \*) | Resolve a `Placement` against the `word_timeline` — a NEW placement.                                                          |
 
 ### foley.weave.anchor.FUZZY_MIN_RATIO *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.6*
 
@@ -27211,20 +27253,39 @@ share of the cue’s length: `the` scores 0.6 against `thunder` but is not it (#
 
 A stem match needs at least this many letters; a cue shorter than the spoken word
 must also hold this share of it (`slam` → `slammed`), so `a` never claims `apple`.
+A spoken word that is a compound cue’s tail must leave a head this long too
+(`foot|steps`), so `th|under` is not a compound of `thunder` (#263).
 
 ### foley.weave.anchor.SEGMENT_GAP_S *: [float](https://docs.python.org/3/builtins/functions.html#float)* *= 0.35*
 
 Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses
 `> ~350 ms` as a lightweight sentence segmenter over the aligned transcript).
 
+### foley.weave.anchor.match_word(ref, word_timeline)
+
+Return the `word_timeline` entry best matching `ref` and how it matched (#263).
+
+The one word resolver every anchor goes through, cheapest and surest first (earliest
+occurrence wins at each step): the phrase’s first token **exactly**; else a word
+sharing its **stem** (`_is_stem_match()`); else the closest word by lexical
+(`difflib`) ratio over any token, among words at least
+`FUZZY_MIN_LENGTH_SHARE` of its length (**fuzzy**, which can be a false match).
+`(None, MatchKind.fallback)` when nothing is close or `ref` is empty.
+
+```pycon
+>>> wt = [{"word": "The"}, {"word": "doors"}, {"word": "slammed."}]
+>>> [(w["word"], k.value) for w, k in (match_word(c, wt) for c in ("door", "slam"))]
+[('doors', 'stem'), ('slammed.', 'stem')]
+>>> match_word("zzzzz", wt)
+(None, <MatchKind.fallback: 'fallback'>)
+```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)], [`MatchKind`](_autosummary/foley.base.html.md#foley.base.MatchKind)]
+
 ### foley.weave.anchor.nearest_word(ref, word_timeline)
 
-Return the `word_timeline` entry best matching `ref` (earliest wins).
-
-Matches the phrase’s first token exactly if present, else a word sharing its stem
-(`_is_stem_match()`), else the closest word by lexical (`difflib`) ratio over
-any token among words at least `FUZZY_MIN_LENGTH_SHARE` of its length;
-`None` when nothing is close or `ref` is empty.
+The `word_timeline` entry best matching `ref` (see [`match_word()`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.match_word)), or `None`.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
@@ -27252,23 +27313,35 @@ told never to emit one) is read as an absolute offset in seconds.
 
 ### foley.weave.anchor.resolve_anchor(placement, word_timeline, , snap_pauses=False)
 
-Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.
+Resolve a `Placement` to `(onset_seconds, duration_seconds_or_None)`.
+
+The tuple view of [`resolve_placement()`](_autosummary/foley.weave.anchor.html.md#foley.weave.anchor.resolve_placement) (which also says how it matched).
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
+### foley.weave.anchor.resolve_placement(placement, word_timeline, , snap_pauses=False)
+
+Resolve a `Placement` against the `word_timeline` — a NEW placement.
 
 Dispatches on `placement.anchor` (report 06 §2.4): `absolute` uses the
 stored offset; `word` fires on the trigger word; `sentence` spans its
 sentence (filling `duration` when unset — beds loop to fill it); `scene` /
 `paragraph` land on the boundary. `pre_roll` is then subtracted (clamped at
 0), and — when `snap_pauses` — the onset snaps to the nearest inter-word gap.
+`match_kind` records how the anchor matched ([`MatchKind`](_autosummary/foley.base.html.md#foley.base.MatchKind)): a
+cue with no word timings, or that matched no word, is a `fallback` at its stored
+onset (word) or the whole narration (span); a cue-less span is `absolute`.
 
 * **Parameters:**
   * **placement** ([`Placement`](_autosummary/foley.base.html.md#foley.base.Placement)) – The symbolic placement to resolve.
   * **word_timeline** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The forced-aligned `[{'word','start','end'}, ...]`.
   * **snap_pauses** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `True`, snap the resolved onset to the nearest pause.
 * **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+  [`Placement`](_autosummary/foley.base.html.md#foley.base.Placement)
 * **Returns:**
-  `(onset_seconds, duration_seconds_or_None)`. `duration` is filled only
-  for a span anchor whose `placement.duration` was unset.
+  A copy with `onset` (seconds), `duration` (filled only for a span anchor
+  whose `duration` was unset) and `match_kind` resolved.
 
 
 # _autosummary/foley.weave.broadcast.html.md
@@ -28048,7 +28121,9 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`render`](_autosummary/foley.weave.html.md#foley.weave.render)(timeline, library, \*[, sr, ...])         | Render `timeline` against `library` into a mastered mix (PURE, deterministic).                                               |
 | [`hydrate`](_autosummary/foley.weave.html.md#foley.weave.hydrate)(timeline[, word_timeline])               | Resolve every item's anchor + fill processing/id, returning a NEW timeline.                                                  |
 | [`parse_symbolic_anchor`](_autosummary/foley.weave.html.md#foley.weave.parse_symbolic_anchor)(onset, \*[, layer, loop])  | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`.                                             |
-| [`resolve_anchor`](_autosummary/foley.weave.html.md#foley.weave.resolve_anchor)(placement, word_timeline, \*)     | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.                                                     |
+| [`resolve_anchor`](_autosummary/foley.weave.html.md#foley.weave.resolve_anchor)(placement, word_timeline, \*)     | Resolve a `Placement` to `(onset_seconds, duration_seconds_or_None)`.                                                        |
+| [`resolve_placement`](_autosummary/foley.weave.html.md#foley.weave.resolve_placement)(placement, word_timeline, \*)  | Resolve a `Placement` against the `word_timeline` — a NEW placement.                                                         |
+| [`match_word`](_autosummary/foley.weave.html.md#foley.weave.match_word)(ref, word_timeline)                   | Return the `word_timeline` entry best matching `ref` and how it matched (#263).                                              |
 | [`swap_clip`](_autosummary/foley.weave.html.md#foley.weave.swap_clip)(timeline, item_id, new_clip_ref)       | Swap an item's clip (keeping its placement/processing) — a NEW timeline.                                                     |
 | [`nudge`](_autosummary/foley.weave.html.md#foley.weave.nudge)(timeline, item_id, delta_s)                | Shift an item's resolved onset by `delta_s` seconds — a NEW timeline.                                                        |
 | [`set_gain`](_autosummary/foley.weave.html.md#foley.weave.set_gain)(timeline, item_id, gain_db)             | Set an item's processing gain (dB, voice-relative) — a NEW timeline.                                                         |
@@ -28544,7 +28619,8 @@ Resolve every item’s anchor + fill processing/id, returning a NEW timeline.
 Idempotent: an item that already carries a [`Placement`](_autosummary/foley.base.html.md#foley.base.Placement) keeps
 its symbolic anchor (a hand edit is never clobbered) but is re-resolved against
 `word_timeline` so a re-recorded/re-aligned narration re-flows the SFX
-(report 06 §6.1). `processing` falls back to the sparse `gain` and `id` to a
+(report 06 §6.1); each placement records how its anchor matched
+(`match_kind`, #263). `processing` falls back to the sparse `gain` and `id` to a
 stable content hash. The resolved `word_timeline` is cached on the returned
 timeline (the reproducible seed).
 
@@ -28555,6 +28631,28 @@ timeline (the reproducible seed).
   [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.SoundDesignTimeline)
 * **Returns:**
   A hydrated copy with resolved placements, filled processing, stable ids.
+
+### foley.weave.match_word(ref, word_timeline)
+
+Return the `word_timeline` entry best matching `ref` and how it matched (#263).
+
+The one word resolver every anchor goes through, cheapest and surest first (earliest
+occurrence wins at each step): the phrase’s first token **exactly**; else a word
+sharing its **stem** (`_is_stem_match()`); else the closest word by lexical
+(`difflib`) ratio over any token, among words at least
+`FUZZY_MIN_LENGTH_SHARE` of its length (**fuzzy**, which can be a false match).
+`(None, MatchKind.fallback)` when nothing is close or `ref` is empty.
+
+```pycon
+>>> wt = [{"word": "The"}, {"word": "doors"}, {"word": "slammed."}]
+>>> [(w["word"], k.value) for w, k in (match_word(c, wt) for c in ("door", "slam"))]
+[('doors', 'stem'), ('slammed.', 'stem')]
+>>> match_word("zzzzz", wt)
+(None, <MatchKind.fallback: 'fallback'>)
+```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)], [`MatchKind`](_autosummary/foley.base.html.md#foley.base.MatchKind)]
 
 ### foley.weave.nudge(timeline, item_id, delta_s)
 
@@ -28637,23 +28735,35 @@ Render `timeline` against `library` into a mastered mix (PURE, deterministic).
 
 ### foley.weave.resolve_anchor(placement, word_timeline, , snap_pauses=False)
 
-Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.
+Resolve a `Placement` to `(onset_seconds, duration_seconds_or_None)`.
+
+The tuple view of [`resolve_placement()`](_autosummary/foley.weave.html.md#foley.weave.resolve_placement) (which also says how it matched).
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
+### foley.weave.resolve_placement(placement, word_timeline, , snap_pauses=False)
+
+Resolve a `Placement` against the `word_timeline` — a NEW placement.
 
 Dispatches on `placement.anchor` (report 06 §2.4): `absolute` uses the
 stored offset; `word` fires on the trigger word; `sentence` spans its
 sentence (filling `duration` when unset — beds loop to fill it); `scene` /
 `paragraph` land on the boundary. `pre_roll` is then subtracted (clamped at
 0), and — when `snap_pauses` — the onset snaps to the nearest inter-word gap.
+`match_kind` records how the anchor matched ([`MatchKind`](_autosummary/foley.base.html.md#foley.base.MatchKind)): a
+cue with no word timings, or that matched no word, is a `fallback` at its stored
+onset (word) or the whole narration (span); a cue-less span is `absolute`.
 
 * **Parameters:**
   * **placement** ([`Placement`](_autosummary/foley.base.html.md#foley.base.Placement)) – The symbolic placement to resolve.
   * **word_timeline** ([`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – The forced-aligned `[{'word','start','end'}, ...]`.
   * **snap_pauses** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – If `True`, snap the resolved onset to the nearest pause.
 * **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+  [`Placement`](_autosummary/foley.base.html.md#foley.base.Placement)
 * **Returns:**
-  `(onset_seconds, duration_seconds_or_None)`. `duration` is filled only
-  for a span anchor whose `placement.duration` was unset.
+  A copy with `onset` (seconds), `duration` (filled only for a span anchor
+  whose `duration` was unset) and `match_kind` resolved.
 
 ### foley.weave.set_gain(timeline, item_id, gain_db)
 
@@ -29474,7 +29584,8 @@ Resolve every item’s anchor + fill processing/id, returning a NEW timeline.
 Idempotent: an item that already carries a [`Placement`](_autosummary/foley.base.html.md#foley.base.Placement) keeps
 its symbolic anchor (a hand edit is never clobbered) but is re-resolved against
 `word_timeline` so a re-recorded/re-aligned narration re-flows the SFX
-(report 06 §6.1). `processing` falls back to the sparse `gain` and `id` to a
+(report 06 §6.1); each placement records how its anchor matched
+(`match_kind`, #263). `processing` falls back to the sparse `gain` and `id` to a
 stable content hash. The resolved `word_timeline` is cached on the returned
 timeline (the reproducible seed).
 
@@ -29551,7 +29662,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 06:11 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/1d92b1a25bb585d0a09f161cc8c16801fad61167"><code>1d92b1a</code></a> on branch <code>main</code>, for **foley 0.0.124** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 06:30 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/21047875834698af64595dc1112b35119161a609"><code>2104787</code></a> on branch <code>main</code>, for **foley 0.0.125** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -29560,7 +29671,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/1d92b1a25bb585d0a09f161cc8c16801fad61167"><code>1d92b1a25bb585d0a09f161cc8c16801fad61167</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/21047875834698af64595dc1112b35119161a609"><code>21047875834698af64595dc1112b35119161a609</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -29571,9 +29682,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41397969745">41397969745</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41400054244">41400054244</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>1d92b1a25bb585d0a09f161cc8c16801fad61167</code> (in the history of the built commit) |
+| Event commit | <code>21047875834698af64595dc1112b35119161a609</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -29598,13 +29709,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.124/">0.0.124</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.125/">0.0.125</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 1d92b1a25bb585d0a09f161cc8c16801fad61167
+git checkout 21047875834698af64595dc1112b35119161a609
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

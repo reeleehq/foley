@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=95c30746"></script>
+    <script src="../_static/documentation_options.js?v=31bb835f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.124" />
+  <meta name="docsearch:version" content="0.0.125" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -519,7 +519,9 @@ concrete trigger time (seconds) against a forced-aligned <code class="docutils l
 </ul>
 <p>These are pure <code class="docutils literal notranslate"><span class="pre">(anchor,</span> <span class="pre">word_timeline)</span> <span class="pre">-&gt;</span> <span class="pre">seconds</span></code> functions with no I/O and no
 heavy dependency, so they are independently unit-testable and keep <code class="docutils literal notranslate"><span class="pre">import</span>
-<span class="pre">foley.weave</span></code> dol-only. <code class="docutils literal notranslate"><span class="pre">foley.weave.anchor.parse_symbolic_anchor</span></code> is the single
+<span class="pre">foley.weave</span></code> dol-only. Every word lookup goes through one resolver,
+<a class="reference internal" href="#foley.weave.anchor.match_word" title="foley.weave.anchor.match_word"><code class="xref py py-func docutils literal notranslate"><span class="pre">match_word()</span></code></a>, which also says HOW it matched (<code class="docutils literal notranslate"><span class="pre">exact</span></code> / <code class="docutils literal notranslate"><span class="pre">stem</span></code> / <code class="docutils literal notranslate"><span class="pre">fuzzy</span></code> /
+<code class="docutils literal notranslate"><span class="pre">fallback</span></code>); <a class="reference internal" href="#foley.weave.anchor.resolve_placement" title="foley.weave.anchor.resolve_placement"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_placement()</span></code></a> records that on the resolved placement. <code class="docutils literal notranslate"><span class="pre">foley.weave.anchor.parse_symbolic_anchor</span></code> is the single
 SSOT bridge from SELECT’s sparse <code class="docutils literal notranslate"><span class="pre">TimelineItem.onset</span></code> string to a
 <a class="reference internal" href="foley.base.html#foley.base.Placement" title="foley.base.Placement"><code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code></a>.</p>
 <p class="rubric">Module Attributes</p>
@@ -540,14 +542,20 @@ SSOT bridge from SELECT’s sparse <code class="docutils literal notranslate"><s
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.anchor.nearest_word" title="foley.weave.anchor.nearest_word"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nearest_word</span></code></a>(ref, word_timeline)</p></td>
-<td><p>Return the <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> entry best matching <code class="docutils literal notranslate"><span class="pre">ref</span></code> (earliest wins).</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.anchor.match_word" title="foley.weave.anchor.match_word"><code class="xref py py-obj docutils literal notranslate"><span class="pre">match_word</span></code></a>(ref, word_timeline)</p></td>
+<td><p>Return the <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> entry best matching <code class="docutils literal notranslate"><span class="pre">ref</span></code> and how it matched (#263).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.anchor.parse_symbolic_anchor" title="foley.weave.anchor.parse_symbolic_anchor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_symbolic_anchor</span></code></a>(onset, *[, layer, loop])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.anchor.nearest_word" title="foley.weave.anchor.nearest_word"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nearest_word</span></code></a>(ref, word_timeline)</p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> entry best matching <code class="docutils literal notranslate"><span class="pre">ref</span></code> (see <a class="reference internal" href="#foley.weave.anchor.match_word" title="foley.weave.anchor.match_word"><code class="xref py py-func docutils literal notranslate"><span class="pre">match_word()</span></code></a>), or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.anchor.parse_symbolic_anchor" title="foley.weave.anchor.parse_symbolic_anchor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_symbolic_anchor</span></code></a>(onset, *[, layer, loop])</p></td>
 <td><p>Parse SELECT's sparse symbolic <code class="docutils literal notranslate"><span class="pre">onset</span></code> string into a resolved-later <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.anchor.resolve_anchor" title="foley.weave.anchor.resolve_anchor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_anchor</span></code></a>(placement, word_timeline, *)</p></td>
-<td><p>Resolve a <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code> to a concrete <code class="docutils literal notranslate"><span class="pre">(onset_seconds,</span> <span class="pre">duration_seconds)</span></code>.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.anchor.resolve_anchor" title="foley.weave.anchor.resolve_anchor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_anchor</span></code></a>(placement, word_timeline, *)</p></td>
+<td><p>Resolve a <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code> to <code class="docutils literal notranslate"><span class="pre">(onset_seconds,</span> <span class="pre">duration_seconds_or_None)</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.anchor.resolve_placement" title="foley.weave.anchor.resolve_placement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_placement</span></code></a>(placement, word_timeline, *)</p></td>
+<td><p>Resolve a <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code> against the <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> — a NEW placement.</p></td>
 </tr>
 </tbody>
 </table>
@@ -563,7 +571,9 @@ share of the cue’s length: <code class="docutils literal notranslate"><span cl
 <dt class="sig sig-object py" id="foley.weave.anchor.PREFIX_MIN_CHARS">
 <span class="sig-prename descclassname"><span class="pre">foley.weave.anchor.</span></span><span class="sig-name descname"><span class="pre">PREFIX_MIN_CHARS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></span><a class="headerlink" href="#foley.weave.anchor.PREFIX_MIN_CHARS" title="Link to this definition">#</a></dt>
 <dd><p>A stem match needs at least this many letters; a cue shorter than the spoken word
-must also hold this share of it (<code class="docutils literal notranslate"><span class="pre">slam</span></code> → <code class="docutils literal notranslate"><span class="pre">slammed</span></code>), so <code class="docutils literal notranslate"><span class="pre">a</span></code> never claims <code class="docutils literal notranslate"><span class="pre">apple</span></code>.</p>
+must also hold this share of it (<code class="docutils literal notranslate"><span class="pre">slam</span></code> → <code class="docutils literal notranslate"><span class="pre">slammed</span></code>), so <code class="docutils literal notranslate"><span class="pre">a</span></code> never claims <code class="docutils literal notranslate"><span class="pre">apple</span></code>.
+A spoken word that is a compound cue’s tail must leave a head this long too
+(<code class="docutils literal notranslate"><span class="pre">foot|steps</span></code>), so <code class="docutils literal notranslate"><span class="pre">th|under</span></code> is not a compound of <code class="docutils literal notranslate"><span class="pre">thunder</span></code> (#263).</p>
 </dd></dl>
 
 <dl class="py data">
@@ -574,13 +584,33 @@ must also hold this share of it (<code class="docutils literal notranslate"><spa
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.anchor.match_word">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.anchor.</span></span><span class="sig-name descname"><span class="pre">match_word</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">word_timeline</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/anchor.html#match_word"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.anchor.match_word" title="Link to this definition">#</a></dt>
+<dd><p>Return the <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> entry best matching <code class="docutils literal notranslate"><span class="pre">ref</span></code> and how it matched (#263).</p>
+<p>The one word resolver every anchor goes through, cheapest and surest first (earliest
+occurrence wins at each step): the phrase’s first token <strong>exactly</strong>; else a word
+sharing its <strong>stem</strong> (<code class="xref py py-func docutils literal notranslate"><span class="pre">_is_stem_match()</span></code>); else the closest word by lexical
+(<code class="docutils literal notranslate"><span class="pre">difflib</span></code>) ratio over any token, among words at least
+<code class="xref py py-data docutils literal notranslate"><span class="pre">FUZZY_MIN_LENGTH_SHARE</span></code> of its length (<strong>fuzzy</strong>, which can be a false match).
+<code class="docutils literal notranslate"><span class="pre">(None,</span> <span class="pre">MatchKind.fallback)</span></code> when nothing is close or <code class="docutils literal notranslate"><span class="pre">ref</span></code> is empty.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">wt</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">"word"</span><span class="p">:</span> <span class="s2">"The"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"word"</span><span class="p">:</span> <span class="s2">"doors"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"word"</span><span class="p">:</span> <span class="s2">"slammed."</span><span class="p">}]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[(</span><span class="n">w</span><span class="p">[</span><span class="s2">"word"</span><span class="p">],</span> <span class="n">k</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="n">match_word</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">wt</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"door"</span><span class="p">,</span> <span class="s2">"slam"</span><span class="p">))]</span>
+<span class="go">[('doors', 'stem'), ('slammed.', 'stem')]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">match_word</span><span class="p">(</span><span class="s2">"zzzzz"</span><span class="p">,</span> <span class="n">wt</span><span class="p">)</span>
+<span class="go">(None, &lt;MatchKind.fallback: 'fallback'&gt;)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>], <a class="reference internal" href="foley.base.html#foley.base.MatchKind" title="foley.base.MatchKind"><code class="xref py py-class docutils literal notranslate"><span class="pre">MatchKind</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.weave.anchor.nearest_word">
 <span class="sig-prename descclassname"><span class="pre">foley.weave.anchor.</span></span><span class="sig-name descname"><span class="pre">nearest_word</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">word_timeline</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/anchor.html#nearest_word"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.anchor.nearest_word" title="Link to this definition">#</a></dt>
-<dd><p>Return the <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> entry best matching <code class="docutils literal notranslate"><span class="pre">ref</span></code> (earliest wins).</p>
-<p>Matches the phrase’s first token exactly if present, else a word sharing its stem
-(<code class="xref py py-func docutils literal notranslate"><span class="pre">_is_stem_match()</span></code>), else the closest word by lexical (<code class="docutils literal notranslate"><span class="pre">difflib</span></code>) ratio over
-any token among words at least <code class="xref py py-data docutils literal notranslate"><span class="pre">FUZZY_MIN_LENGTH_SHARE</span></code> of its length;
-<code class="docutils literal notranslate"><span class="pre">None</span></code> when nothing is close or <code class="docutils literal notranslate"><span class="pre">ref</span></code> is empty.</p>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> entry best matching <code class="docutils literal notranslate"><span class="pre">ref</span></code> (see <a class="reference internal" href="#foley.weave.anchor.match_word" title="foley.weave.anchor.match_word"><code class="xref py py-func docutils literal notranslate"><span class="pre">match_word()</span></code></a>), or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
@@ -619,12 +649,27 @@ told never to emit one) is read as an absolute offset in seconds.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.weave.anchor.resolve_anchor">
 <span class="sig-prename descclassname"><span class="pre">foley.weave.anchor.</span></span><span class="sig-name descname"><span class="pre">resolve_anchor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">placement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">word_timeline</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">snap_pauses</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/anchor.html#resolve_anchor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.anchor.resolve_anchor" title="Link to this definition">#</a></dt>
-<dd><p>Resolve a <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code> to a concrete <code class="docutils literal notranslate"><span class="pre">(onset_seconds,</span> <span class="pre">duration_seconds)</span></code>.</p>
+<dd><p>Resolve a <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code> to <code class="docutils literal notranslate"><span class="pre">(onset_seconds,</span> <span class="pre">duration_seconds_or_None)</span></code>.</p>
+<p>The tuple view of <a class="reference internal" href="#foley.weave.anchor.resolve_placement" title="foley.weave.anchor.resolve_placement"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_placement()</span></code></a> (which also says how it matched).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.anchor.resolve_placement">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.anchor.</span></span><span class="sig-name descname"><span class="pre">resolve_placement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">placement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">word_timeline</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">snap_pauses</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/anchor.html#resolve_placement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.anchor.resolve_placement" title="Link to this definition">#</a></dt>
+<dd><p>Resolve a <code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code> against the <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> — a NEW placement.</p>
 <p>Dispatches on <code class="docutils literal notranslate"><span class="pre">placement.anchor</span></code> (report 06 §2.4): <code class="docutils literal notranslate"><span class="pre">absolute</span></code> uses the
 stored offset; <code class="docutils literal notranslate"><span class="pre">word</span></code> fires on the trigger word; <code class="docutils literal notranslate"><span class="pre">sentence</span></code> spans its
 sentence (filling <code class="docutils literal notranslate"><span class="pre">duration</span></code> when unset — beds loop to fill it); <code class="docutils literal notranslate"><span class="pre">scene</span></code> /
 <code class="docutils literal notranslate"><span class="pre">paragraph</span></code> land on the boundary. <code class="docutils literal notranslate"><span class="pre">pre_roll</span></code> is then subtracted (clamped at
-0), and — when <code class="docutils literal notranslate"><span class="pre">snap_pauses</span></code> — the onset snaps to the nearest inter-word gap.</p>
+0), and — when <code class="docutils literal notranslate"><span class="pre">snap_pauses</span></code> — the onset snaps to the nearest inter-word gap.
+<code class="docutils literal notranslate"><span class="pre">match_kind</span></code> records how the anchor matched (<a class="reference internal" href="foley.base.html#foley.base.MatchKind" title="foley.base.MatchKind"><code class="xref py py-class docutils literal notranslate"><span class="pre">MatchKind</span></code></a>): a
+cue with no word timings, or that matched no word, is a <code class="docutils literal notranslate"><span class="pre">fallback</span></code> at its stored
+onset (word) or the whole narration (span); a cue-less span is <code class="docutils literal notranslate"><span class="pre">absolute</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -634,11 +679,11 @@ sentence (filling <code class="docutils literal notranslate"><span class="pre">d
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span></p>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.Placement" title="foley.base.Placement"><code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code></a></span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">(onset_seconds,</span> <span class="pre">duration_seconds_or_None)</span></code>. <code class="docutils literal notranslate"><span class="pre">duration</span></code> is filled only
-for a span anchor whose <code class="docutils literal notranslate"><span class="pre">placement.duration</span></code> was unset.</p>
+<dd class="field-odd"><p>A copy with <code class="docutils literal notranslate"><span class="pre">onset</span></code> (seconds), <code class="docutils literal notranslate"><span class="pre">duration</span></code> (filled only for a span anchor
+whose <code class="docutils literal notranslate"><span class="pre">duration</span></code> was unset) and <code class="docutils literal notranslate"><span class="pre">match_kind</span></code> resolved.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -695,9 +740,11 @@ for a span anchor whose <code class="docutils literal notranslate"><span class="
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.FUZZY_MIN_RATIO"><code class="docutils literal notranslate"><span class="pre">FUZZY_MIN_RATIO</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.PREFIX_MIN_CHARS"><code class="docutils literal notranslate"><span class="pre">PREFIX_MIN_CHARS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.SEGMENT_GAP_S"><code class="docutils literal notranslate"><span class="pre">SEGMENT_GAP_S</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.match_word"><code class="docutils literal notranslate"><span class="pre">match_word()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.nearest_word"><code class="docutils literal notranslate"><span class="pre">nearest_word()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.parse_symbolic_anchor"><code class="docutils literal notranslate"><span class="pre">parse_symbolic_anchor()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.resolve_anchor"><code class="docutils literal notranslate"><span class="pre">resolve_anchor()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.anchor.resolve_placement"><code class="docutils literal notranslate"><span class="pre">resolve_placement()</span></code></a></li>
 </ul>
   </nav></div>
 

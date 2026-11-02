@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=95c30746"></script>
+    <script src="../../_static/documentation_options.js?v=31bb835f"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.124" />
+  <meta name="docsearch:version" content="0.0.125" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -829,6 +829,35 @@ window.runMermaid = runMermaid;</script>
     <span class="n">scene</span> <span class="o">=</span> <span class="s2">"scene"</span>
     <span class="n">paragraph</span> <span class="o">=</span> <span class="s2">"paragraph"</span></div>
 
+
+
+<div class="viewcode-block" id="MatchKind">
+<a class="viewcode-back" href="../../_autosummary/foley.base.html#foley.MatchKind">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MatchKind</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""HOW a :class:`Placement`'s anchor was resolved against the narration (#263).</span>
+
+<span class="sd">    ``exact`` — the cue word was spoken as written; ``stem`` — a word sharing its stem</span>
+<span class="sd">    (an inflection, or the spoken part of a compound cue); ``fuzzy`` — only a lexically</span>
+<span class="sd">    similar word (it may be a false match: ``thunder`` lands on "under"); ``fallback`` —</span>
+<span class="sd">    nothing matched (or there were no word timings), so the stored onset or the whole</span>
+<span class="sd">    narration was used; ``absolute`` — the placement names no word to match (an</span>
+<span class="sd">    absolute offset, or a bed with no cue spanning the narration).</span>
+<span class="sd">    """</span>
+
+    <span class="n">exact</span> <span class="o">=</span> <span class="s2">"exact"</span>
+    <span class="n">stem</span> <span class="o">=</span> <span class="s2">"stem"</span>
+    <span class="n">fuzzy</span> <span class="o">=</span> <span class="s2">"fuzzy"</span>
+    <span class="n">fallback</span> <span class="o">=</span> <span class="s2">"fallback"</span>
+    <span class="n">absolute</span> <span class="o">=</span> <span class="s2">"absolute"</span></div>
+
+
+
+<span class="c1">#: The match kinds whose sound may not sit on its cue word, and why — the SSOT the weave</span>
+<span class="c1">#: notes and the taste eval both flag (#263).</span>
+<span class="n">SUSPECT_MATCH_KINDS</span><span class="p">:</span> <span class="s2">"dict[MatchKind, str]"</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">MatchKind</span><span class="o">.</span><span class="n">fuzzy</span><span class="p">:</span> <span class="s2">"only a similar word (it may be the wrong one)"</span><span class="p">,</span>
+    <span class="n">MatchKind</span><span class="o">.</span><span class="n">fallback</span><span class="p">:</span> <span class="s2">"no spoken word (placed at a fallback onset)"</span><span class="p">,</span>
+<span class="p">}</span>
 
 
 <div class="viewcode-block" id="VerifyLevel">
@@ -1796,7 +1825,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Filled by WEAVE's aligner+anchor pass. ``onset`` is the resolved start in</span>
 <span class="sd">    seconds (distinct from the sparse :attr:`TimelineItem.onset` symbolic string);</span>
 <span class="sd">    ``pre_roll`` shifts the clip earlier so its salient transient — not its file</span>
-<span class="sd">    start — lands on the anchor (report 06 §2.4).</span>
+<span class="sd">    start — lands on the anchor (report 06 §2.4). ``match_kind`` records how the</span>
+<span class="sd">    anchor resolved (:class:`MatchKind`), so a fuzzy or fallback placement is visible.</span>
 <span class="sd">    """</span>
 
     <span class="n">anchor</span><span class="p">:</span> <span class="n">Anchor</span> <span class="o">=</span> <span class="n">Anchor</span><span class="o">.</span><span class="n">absolute</span>
@@ -1806,7 +1836,8 @@ window.runMermaid = runMermaid;</script>
     <span class="n">onset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># RESOLVED start (seconds), filled by the aligner+anchor pass</span>
     <span class="n">pre_roll</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># lead so the clip's transient lands on the anchor</span>
     <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># None = full clip length</span>
-    <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># seamless-loop to fill ``duration`` (beds)</span></div>
+    <span class="n">loop</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># seamless-loop to fill ``duration`` (beds)</span>
+    <span class="n">match_kind</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">MatchKind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># how ``onset`` was resolved; None = unresolved</span></div>
 
 
 

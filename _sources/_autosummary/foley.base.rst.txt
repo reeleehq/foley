@@ -8,6 +8,7 @@ foley.base
 
    .. autosummary::
    
+      SUSPECT_MATCH_KINDS
       QUERY_AFFORDANCES
       GENERATION_AFFORDANCES
       EDIT_AFFORDANCES
@@ -41,6 +42,7 @@ foley.base
       Layer
       LicenseRecord
       MasterProfile
+      MatchKind
       Placement
       Processing
       Salience

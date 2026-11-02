@@ -183,6 +183,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`TimelineItem`](#foley.TimelineItem)(clip_ref[, onset, gain, layer, ...]) | One placed sound on the sound-design timeline — sparse seed + resolved render fields.                                                |
 | [`SoundDesignTimeline`](#foley.SoundDesignTimeline)([items, ...])                 | The editable, re-renderable sound-design plan — the SELECT→WEAVE bridge and render SSOT.                                             |
 | [`Anchor`](#foley.Anchor)(\*values)                                  | How a WEAVE `Placement` binds its symbolic time to the narration (report 06 §2.4).                                                   |
+| [`MatchKind`](#foley.MatchKind)(\*values)                               | HOW a [`Placement`](#foley.Placement)'s anchor was resolved against the narration (#263).                 |
 | [`Placement`](#foley.Placement)([anchor, ref, onset, pre_roll, ...])    | WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).                                                  |
 | [`Processing`](#foley.Processing)([gain_db, pan, distance, ...])         | HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).                                                        |
 | [`MasterProfile`](#foley.MasterProfile)([target_lufs, true_peak_db, ...])   | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                       |
@@ -1267,6 +1268,19 @@ off a little more, the inter-sample overshoot of those peaks). 0 restores a
 static, whole-program master. Transient foley (a door slam under narration)
 needs a few dB to reach the target at all (foley#91).
 
+### *class* foley.MatchKind(\*values)
+
+Bases: [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Enum`](https://docs.python.org/3/library/enum.html#enum.Enum)
+
+HOW a [`Placement`](#foley.Placement)’s anchor was resolved against the narration (#263).
+
+`exact` — the cue word was spoken as written; `stem` — a word sharing its stem
+(an inflection, or the spoken part of a compound cue); `fuzzy` — only a lexically
+similar word (it may be a false match: `thunder` lands on “under”); `fallback` —
+nothing matched (or there were no word timings), so the stored onset or the whole
+narration was used; `absolute` — the placement names no word to match (an
+absolute offset, or a bed with no cue spanning the narration).
+
 ### *class* foley.MemoryIndex(, dim=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -1341,7 +1355,7 @@ Return the top-`k` `(AudioSet label, score)` tags, best first.
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
 
-### *class* foley.Placement(anchor=Anchor.absolute, ref=None, onset=0.0, pre_roll=0.0, duration=None, loop=False)
+### *class* foley.Placement(anchor=Anchor.absolute, ref=None, onset=0.0, pre_roll=0.0, duration=None, loop=False, match_kind=None)
 
 Bases: [`SerializableMixin`](foley.base.html.md#foley.base.SerializableMixin)
 
@@ -1350,7 +1364,8 @@ WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 �
 Filled by WEAVE’s aligner+anchor pass. `onset` is the resolved start in
 seconds (distinct from the sparse `TimelineItem.onset` symbolic string);
 `pre_roll` shifts the clip earlier so its salient transient — not its file
-start — lands on the anchor (report 06 §2.4).
+start — lands on the anchor (report 06 §2.4). `match_kind` records how the
+anchor resolved ([`MatchKind`](#foley.MatchKind)), so a fuzzy or fallback placement is visible.
 
 ### *class* foley.Processing(gain_db=0.0, pan=0.0, distance=0.0, reverb_send=0.0, fade_in=0.008, fade_out=0.012, duck_bed=False)
 

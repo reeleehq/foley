@@ -19,6 +19,8 @@ foley.weave
       hydrate
       parse_symbolic_anchor
       resolve_anchor
+      resolve_placement
+      match_word
       swap_clip
       nudge
       set_gain

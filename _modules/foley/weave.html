@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=95c30746"></script>
+    <script src="../../_static/documentation_options.js?v=31bb835f"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.124" />
+  <meta name="docsearch:version" content="0.0.125" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -741,7 +741,13 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">replace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Anchor</span><span class="p">,</span> <span class="n">MasterProfile</span><span class="p">,</span> <span class="n">SoundDesignTimeline</span><span class="p">,</span> <span class="n">resolve_master</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Anchor</span><span class="p">,</span>
+    <span class="n">MasterProfile</span><span class="p">,</span>
+    <span class="n">SUSPECT_MATCH_KINDS</span><span class="p">,</span>
+    <span class="n">SoundDesignTimeline</span><span class="p">,</span>
+    <span class="n">resolve_master</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1"># Public WEAVE surface (all import-time dol-only) ----------------------------</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.align</span><span class="w"> </span><span class="kn">import</span> <span class="n">FakeAligner</span><span class="p">,</span> <span class="n">WhisperXAligner</span><span class="p">,</span> <span class="n">_default_aligner</span>
@@ -753,7 +759,12 @@ window.runMermaid = runMermaid;</script>
     <span class="n">broadcast_bed</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.cli_aligners</span><span class="w"> </span><span class="kn">import</span> <span class="n">AeneasAligner</span><span class="p">,</span> <span class="n">MFAAligner</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.anchor</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_symbolic_anchor</span><span class="p">,</span> <span class="n">resolve_anchor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.anchor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">match_word</span><span class="p">,</span>
+    <span class="n">parse_symbolic_anchor</span><span class="p">,</span>
+    <span class="n">resolve_anchor</span><span class="p">,</span>
+    <span class="n">resolve_placement</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.master</span><span class="w"> </span><span class="kn">import</span> <span class="n">MasterReport</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.protocols</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aligner</span><span class="p">,</span> <span class="n">ApplyStrategy</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.render</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -1201,7 +1212,10 @@ window.runMermaid = runMermaid;</script>
             <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">rendered</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">timeline</span>
-        <span class="n">notes</span> <span class="o">=</span> <span class="n">_alignment_notes</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">alignment</span><span class="p">,</span> <span class="n">rendered</span><span class="p">)</span>
+        <span class="n">notes</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="o">*</span><span class="n">_alignment_notes</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">alignment</span><span class="p">,</span> <span class="n">rendered</span><span class="p">),</span>
+            <span class="o">*</span><span class="n">_anchor_notes</span><span class="p">(</span><span class="n">rendered</span><span class="p">),</span>
+        <span class="p">]</span>
         <span class="k">if</span> <span class="n">language</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">alignment</span> <span class="o">==</span> <span class="s2">"cached"</span><span class="p">:</span>
             <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"language=</span><span class="si">{</span><span class="n">language</span><span class="si">!r}</span><span class="s2"> was not used: the timeline already carried word "</span>
@@ -1279,10 +1293,39 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">alignment</span> <span class="o">==</span> <span class="s2">"whisperx"</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[</span>
             <span class="s2">"aligner=whisperx: word timings come from WhisperX's own transcription "</span>
-            <span class="s2">"of the narration, not from the given transcript; a word the recogniser "</span>
-            <span class="s2">"heard differently lands at a fallback onset."</span>
+            <span class="s2">"of the narration, not from the given transcript (a cue the recogniser "</span>
+            <span class="s2">"heard differently is named in an anchor match note)."</span>
         <span class="p">]</span>
     <span class="k">return</span> <span class="p">[]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_anchor_notes</span><span class="p">(</span><span class="n">timeline</span><span class="p">:</span> <span class="n">SoundDesignTimeline</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Which enabled items' cues matched only a similar word, or none (#263).</span>
+
+<span class="sd">    Without word timings every speech-anchored item falls back, which</span>
+<span class="sd">    :func:`_alignment_notes` already says, so this notes nothing then.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">timeline</span><span class="o">.</span><span class="n">word_timeline</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_hits</span><span class="p">(</span><span class="n">kind</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">it</span><span class="o">.</span><span class="n">clip_ref</span><span class="si">}</span><span class="s2"> (cue </span><span class="si">{</span><span class="n">it</span><span class="o">.</span><span class="n">onset</span><span class="si">!r}</span><span class="s2">, at </span><span class="si">{</span><span class="n">it</span><span class="o">.</span><span class="n">placement</span><span class="o">.</span><span class="n">onset</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s)"</span>
+            <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="n">timeline</span><span class="o">.</span><span class="n">items</span>
+            <span class="k">if</span> <span class="n">it</span><span class="o">.</span><span class="n">enabled</span>
+            <span class="ow">and</span> <span class="n">it</span><span class="o">.</span><span class="n">placement</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">it</span><span class="o">.</span><span class="n">placement</span><span class="o">.</span><span class="n">match_kind</span> <span class="ow">is</span> <span class="n">kind</span>
+        <span class="p">]</span>
+
+    <span class="n">notes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">what</span> <span class="ow">in</span> <span class="n">SUSPECT_MATCH_KINDS</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">hits</span> <span class="o">=</span> <span class="n">_hits</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">hits</span><span class="p">:</span>
+            <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"anchor match=</span><span class="si">{</span><span class="n">kind</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span><span class="si">}</span><span class="s2"> item(s) matched </span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">: "</span>
+                <span class="o">+</span> <span class="s2">"; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hits</span><span class="p">)</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">notes</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_emit_weave_steps</span><span class="p">(</span><span class="n">run</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">RenderResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1317,6 +1360,8 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"hydrate"</span><span class="p">,</span>
     <span class="s2">"parse_symbolic_anchor"</span><span class="p">,</span>
     <span class="s2">"resolve_anchor"</span><span class="p">,</span>
+    <span class="s2">"resolve_placement"</span><span class="p">,</span>
+    <span class="s2">"match_word"</span><span class="p">,</span>
     <span class="s2">"swap_clip"</span><span class="p">,</span>
     <span class="s2">"nudge"</span><span class="p">,</span>
     <span class="s2">"set_gain"</span><span class="p">,</span>

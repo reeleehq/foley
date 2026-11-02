@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=95c30746"></script>
+    <script src="../_static/documentation_options.js?v=31bb835f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.124" />
+  <meta name="docsearch:version" content="0.0.125" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -911,121 +911,124 @@ lazy-imported inside the audio/QC functions that need them (install via the
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.Anchor" title="foley.Anchor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Anchor</span></code></a>(*values)</p></td>
 <td><p>How a WEAVE <code class="docutils literal notranslate"><span class="pre">Placement</span></code> binds its symbolic time to the narration (report 06 §2.4).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.Placement" title="foley.Placement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Placement</span></code></a>([anchor, ref, onset, pre_roll, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.MatchKind" title="foley.MatchKind"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MatchKind</span></code></a>(*values)</p></td>
+<td><p>HOW a <a class="reference internal" href="#foley.Placement" title="foley.Placement"><code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code></a>'s anchor was resolved against the narration (#263).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Placement" title="foley.Placement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Placement</span></code></a>([anchor, ref, onset, pre_roll, ...])</p></td>
 <td><p>WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Processing" title="foley.Processing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Processing</span></code></a>([gain_db, pan, distance, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.Processing" title="foley.Processing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Processing</span></code></a>([gain_db, pan, distance, ...])</p></td>
 <td><p>HOW a clip sounds — all optional with identity defaults (report 06 §3, §6.3).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.MasterProfile" title="foley.MasterProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>([target_lufs, true_peak_db, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.MasterProfile" title="foley.MasterProfile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MasterProfile</span></code></a>([target_lufs, true_peak_db, ...])</p></td>
 <td><p>Loudness master target — the delivery spec as data, not code (report 06 §5.2).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.LicenseFlags" title="foley.LicenseFlags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LicenseFlags</span></code></a>([commercial_ok, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.LicenseFlags" title="foley.LicenseFlags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LicenseFlags</span></code></a>([commercial_ok, ...])</p></td>
 <td><p>The eight derivable flags for one <code class="docutils literal notranslate"><span class="pre">license_id</span></code> (the table row type).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.LicenseMeta" title="foley.LicenseMeta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LicenseMeta</span></code></a>(display_name[, url])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.LicenseMeta" title="foley.LicenseMeta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LicenseMeta</span></code></a>(display_name[, url])</p></td>
 <td><p>Human-facing display metadata for one <code class="docutils literal notranslate"><span class="pre">license_id</span></code> (name + canonical URL).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.GenerationsCache" title="foley.GenerationsCache"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GenerationsCache</span></code></a>(audio, requests)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.GenerationsCache" title="foley.GenerationsCache"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GenerationsCache</span></code></a>(audio, requests)</p></td>
 <td><p>Where paid generations are kept, so a paid response is never lost or paid twice (#59).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.QCStatus" title="foley.QCStatus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QCStatus</span></code></a>(*values)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.QCStatus" title="foley.QCStatus"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QCStatus</span></code></a>(*values)</p></td>
 <td><p>Overall verdict for a clip (subclasses <code class="docutils literal notranslate"><span class="pre">str</span></code> so it is JSON-safe).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.QCThresholds" title="foley.QCThresholds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QCThresholds</span></code></a>([clip_full_scale, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.QCThresholds" title="foley.QCThresholds"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QCThresholds</span></code></a>([clip_full_scale, ...])</p></td>
 <td><p>All Tier-0 QC defaults (report 08 §3 table), each an explicit field.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.QCReport" title="foley.QCReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QCReport</span></code></a>(duration_s, sample_rate, channels, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.QCReport" title="foley.QCReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QCReport</span></code></a>(duration_s, sample_rate, channels, ...)</p></td>
 <td><p>Per-clip Tier-0 QC result.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.SoundLibrary" title="foley.SoundLibrary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SoundLibrary</span></code></a>(*[, sounds, meta, vindex, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.SoundLibrary" title="foley.SoundLibrary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SoundLibrary</span></code></a>(*[, sounds, meta, vindex, ...])</p></td>
 <td><p>A searchable, license-aware library of sounds (the foley INDEX façade).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.Embedder" title="foley.Embedder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Embedder</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Embedder" title="foley.Embedder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Embedder</span></code></a>(*args, **kwargs)</p></td>
 <td><p>A joint text&lt;-&gt;audio embedding space (CLAP by default).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.ClapEmbedder" title="foley.ClapEmbedder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClapEmbedder</span></code></a>([model_id, device, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.ClapEmbedder" title="foley.ClapEmbedder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClapEmbedder</span></code></a>([model_id, device, ...])</p></td>
 <td><p>LAION-CLAP text&lt;-&gt;audio embedder (the default retrieval engine).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.VectorIndex" title="foley.VectorIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VectorIndex</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.VectorIndex" title="foley.VectorIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">VectorIndex</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Approximate-nearest-neighbour store over embedding vectors.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.KeywordIndex" title="foley.KeywordIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">KeywordIndex</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.KeywordIndex" title="foley.KeywordIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">KeywordIndex</span></code></a>(*args, **kwargs)</p></td>
 <td><p>BM25 / full-text index over each sound's tags + caption.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.MemoryIndex" title="foley.MemoryIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MemoryIndex</span></code></a>(*[, dim])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.MemoryIndex" title="foley.MemoryIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MemoryIndex</span></code></a>(*[, dim])</p></td>
 <td><p>In-memory vector + keyword index (numpy cosine + compact BM25).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.LanceIndex" title="foley.LanceIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LanceIndex</span></code></a>(*, uri, dim[, table_name])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.LanceIndex" title="foley.LanceIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LanceIndex</span></code></a>(*, uri, dim[, table_name])</p></td>
 <td><p>LanceDB-backed index: one table with a vector column + a native FTS index.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.SqliteVecIndex" title="foley.SqliteVecIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SqliteVecIndex</span></code></a>(*, path, dim)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.SqliteVecIndex" title="foley.SqliteVecIndex"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SqliteVecIndex</span></code></a>(*, path, dim)</p></td>
 <td><p>Single-file index: sqlite-vec <code class="docutils literal notranslate"><span class="pre">vec0</span></code> KNN + stdlib FTS5 keyword search.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.FusedHit" title="foley.FusedHit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FusedHit</span></code></a>(id[, rrf_score, clap_score, bm25_score])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.FusedHit" title="foley.FusedHit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FusedHit</span></code></a>(id[, rrf_score, clap_score, bm25_score])</p></td>
 <td><p>One fused retrieval hit: an id plus the scores that produced it.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.CatIdResolution" title="foley.CatIdResolution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CatIdResolution</span></code></a>([catid, category, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.CatIdResolution" title="foley.CatIdResolution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CatIdResolution</span></code></a>([catid, category, ...])</p></td>
 <td><p>The result of resolving free tags/caption/labels to a UCS CatID.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Tagger" title="foley.Tagger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tagger</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.Tagger" title="foley.Tagger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Tagger</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Map a clip to <code class="docutils literal notranslate"><span class="pre">(label,</span> <span class="pre">score)</span></code> pairs against a label vocabulary.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.Captioner" title="foley.Captioner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Captioner</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Captioner" title="foley.Captioner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Captioner</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Produce one natural-language sentence describing a clip (report 03).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.ClapZeroShotTagger" title="foley.ClapZeroShotTagger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClapZeroShotTagger</span></code></a>(*[, embedder, labels, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.ClapZeroShotTagger" title="foley.ClapZeroShotTagger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ClapZeroShotTagger</span></code></a>(*[, embedder, labels, ...])</p></td>
 <td><p>Zero-shot tagger: score a clip against a label set via CLAP cosine.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.PannsTagger" title="foley.PannsTagger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PannsTagger</span></code></a>(*[, device, threshold])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.PannsTagger" title="foley.PannsTagger"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PannsTagger</span></code></a>(*[, device, threshold])</p></td>
 <td><p>PANNs CNN14 supervised tagger over the 527 AudioSet classes (<code class="docutils literal notranslate"><span class="pre">foley[tag]</span></code>).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.IngestResult" title="foley.IngestResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IngestResult</span></code></a>(id, status[, record, qc, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.IngestResult" title="foley.IngestResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IngestResult</span></code></a>(id, status[, record, qc, ...])</p></td>
 <td><p>The outcome of ingesting one clip.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.IngestReport" title="foley.IngestReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IngestReport</span></code></a>(root[, results, notes])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.IngestReport" title="foley.IngestReport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">IngestReport</span></code></a>(root[, results, notes])</p></td>
 <td><p>The rolled-up outcome of a folder ingest (JSON-serializable).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.RemoteVideo" title="foley.RemoteVideo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a>(*, url, sha256)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.RemoteVideo" title="foley.RemoteVideo"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RemoteVideo</span></code></a>(*, url, sha256)</p></td>
 <td><p>A remote video <code class="docutils literal notranslate"><span class="pre">url</span></code> with the SHA-256 of its bytes: keyed, and replayed, by content.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.RunManifest" title="foley.RunManifest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunManifest</span></code></a>(run_id, op[, created_at, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.RunManifest" title="foley.RunManifest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RunManifest</span></code></a>(run_id, op[, created_at, ...])</p></td>
 <td><p>The reproducible run-artifact for one foley operation (trace ⊕ plan ⊕ provenance).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.SpanRecord" title="foley.SpanRecord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpanRecord</span></code></a>(name, span_id[, parent_id, kind, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.SpanRecord" title="foley.SpanRecord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SpanRecord</span></code></a>(name, span_id[, parent_id, kind, ...])</p></td>
 <td><p>One node of the run's span tree (the trace half of the artifact).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.Judge" title="foley.Judge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Judge</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Judge" title="foley.Judge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Judge</span></code></a>(*args, **kwargs)</p></td>
 <td><p>One rung of the verify ladder: does this candidate match this event? (report 10 §4.2).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Budget" title="foley.Budget"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Budget</span></code></a>([max_refine_loops, max_generations, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.Budget" title="foley.Budget"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Budget</span></code></a>([max_refine_loops, max_generations, ...])</p></td>
 <td><p>Bounded-cost accounting: per-event loop counts, and a cumulative dollar cap (#57).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.Decision" title="foley.Decision"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Decision</span></code></a>(action[, candidate, reason])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Decision" title="foley.Decision"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Decision</span></code></a>(action[, candidate, reason])</p></td>
 <td><p>The tiny result of <a class="reference internal" href="#foley.decide" title="foley.decide"><code class="xref py py-func docutils literal notranslate"><span class="pre">decide()</span></code></a>; <code class="docutils literal notranslate"><span class="pre">reason</span></code> feeds the refine hint + the audit Step.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.WeaveResult" title="foley.WeaveResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WeaveResult</span></code></a>(audio, sr, timeline, credits, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.WeaveResult" title="foley.WeaveResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WeaveResult</span></code></a>(audio, sr, timeline, credits, ...)</p></td>
 <td><p>The output of <a class="reference internal" href="foley.weave.html#module-foley.weave" title="foley.weave"><code class="xref py py-func docutils literal notranslate"><span class="pre">weave()</span></code></a> — the v1 Definition-of-Done deliverable.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.BroadcastBed" title="foley.BroadcastBed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BroadcastBed</span></code></a>(audio, sr, license, sources, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.BroadcastBed" title="foley.BroadcastBed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BroadcastBed</span></code></a>(audio, sr, license, sources, ...)</p></td>
 <td><p>A rendered broadcast bed: the audio and the rights of everything in it.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.ScoreResult" title="foley.ScoreResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScoreResult</span></code></a>(timeline, events[, weave])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.ScoreResult" title="foley.ScoreResult"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScoreResult</span></code></a>(timeline, events[, weave])</p></td>
 <td><p>The output of <a class="reference internal" href="#foley.score" title="foley.score"><code class="xref py py-func docutils literal notranslate"><span class="pre">score()</span></code></a> — the editable plan + per-event rationale (+ mix when woven).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.ScoredEvent" title="foley.ScoredEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScoredEvent</span></code></a>(segment, query, sound_id, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.ScoredEvent" title="foley.ScoredEvent"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScoredEvent</span></code></a>(segment, query, sound_id, ...)</p></td>
 <td><p>One chosen sound placed for a narration event (a JSON-friendly rationale row).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.SessionStore" title="foley.SessionStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SessionStore</span></code></a>([session_id, candidates, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.SessionStore" title="foley.SessionStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SessionStore</span></code></a>([session_id, candidates, ...])</p></td>
 <td><p>Three namespaced stores for one audition session (candidates / picks / rejects).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.RuntimeConfig" title="foley.RuntimeConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RuntimeConfig</span></code></a>([offline, data_egress_allow, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.RuntimeConfig" title="foley.RuntimeConfig"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RuntimeConfig</span></code></a>([offline, data_egress_allow, ...])</p></td>
 <td><p>A frozen runtime posture — the local-first / offline contract as data.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.Credits" title="foley.Credits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Credits</span></code></a>([entries, title, schema_version])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.Credits" title="foley.Credits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Credits</span></code></a>([entries, title, schema_version])</p></td>
 <td><p>A deduplicated, ordered collection of <a class="reference internal" href="#foley.CreditEntry" title="foley.CreditEntry"><code class="xref py py-class docutils literal notranslate"><span class="pre">CreditEntry</span></code></a> for one run.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.CreditEntry" title="foley.CreditEntry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CreditEntry</span></code></a>(sound_id[, title, author, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.CreditEntry" title="foley.CreditEntry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CreditEntry</span></code></a>(sound_id[, title, author, ...])</p></td>
 <td><p>One rendered TASL credit for a single sound (a flat, serializable row).</p></td>
 </tr>
 </tbody>
@@ -2457,6 +2460,19 @@ needs a few dB to reach the target at all (foley#91).</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="foley.MatchKind">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">MatchKind</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#MatchKind"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.MatchKind" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></a></p>
+<p>HOW a <a class="reference internal" href="#foley.Placement" title="foley.Placement"><code class="xref py py-class docutils literal notranslate"><span class="pre">Placement</span></code></a>’s anchor was resolved against the narration (#263).</p>
+<p><code class="docutils literal notranslate"><span class="pre">exact</span></code> — the cue word was spoken as written; <code class="docutils literal notranslate"><span class="pre">stem</span></code> — a word sharing its stem
+(an inflection, or the spoken part of a compound cue); <code class="docutils literal notranslate"><span class="pre">fuzzy</span></code> — only a lexically
+similar word (it may be a false match: <code class="docutils literal notranslate"><span class="pre">thunder</span></code> lands on “under”); <code class="docutils literal notranslate"><span class="pre">fallback</span></code> —
+nothing matched (or there were no word timings), so the stored onset or the whole
+narration was used; <code class="docutils literal notranslate"><span class="pre">absolute</span></code> — the placement names no word to match (an
+absolute offset, or a bed with no cue spanning the narration).</p>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="foley.MemoryIndex">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">MemoryIndex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/index/indexes.html#MemoryIndex"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.MemoryIndex" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
@@ -2563,13 +2579,14 @@ in the corpus size, which is fine for the in-memory tier’s scale.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.Placement">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">Placement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anchor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Anchor.absolute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">onset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre_roll</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#Placement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.Placement" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">Placement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">anchor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Anchor.absolute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">onset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre_roll</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">match_kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/base.html#Placement"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.Placement" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="foley.base.html#foley.base.SerializableMixin" title="foley.base.SerializableMixin"><code class="xref py py-class docutils literal notranslate"><span class="pre">SerializableMixin</span></code></a></p>
 <p>WHERE/WHEN a clip sits — a symbolic anchor plus its resolved time (report 06 §6.3).</p>
 <p>Filled by WEAVE’s aligner+anchor pass. <code class="docutils literal notranslate"><span class="pre">onset</span></code> is the resolved start in
 seconds (distinct from the sparse <code class="xref py py-attr docutils literal notranslate"><span class="pre">TimelineItem.onset</span></code> symbolic string);
 <code class="docutils literal notranslate"><span class="pre">pre_roll</span></code> shifts the clip earlier so its salient transient — not its file
-start — lands on the anchor (report 06 §2.4).</p>
+start — lands on the anchor (report 06 §2.4). <code class="docutils literal notranslate"><span class="pre">match_kind</span></code> records how the
+anchor resolved (<a class="reference internal" href="#foley.MatchKind" title="foley.MatchKind"><code class="xref py py-class docutils literal notranslate"><span class="pre">MatchKind</span></code></a>), so a fuzzy or fallback placement is visible.</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
@@ -6554,6 +6571,7 @@ escalates to the injected/​default judge for that rung and returns <em>its</em
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.MasterProfile.max_limiting_db"><code class="docutils literal notranslate"><span class="pre">MasterProfile.max_limiting_db</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.MatchKind"><code class="docutils literal notranslate"><span class="pre">MatchKind</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.MemoryIndex"><code class="docutils literal notranslate"><span class="pre">MemoryIndex</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.MemoryIndex.bm25"><code class="docutils literal notranslate"><span class="pre">MemoryIndex.bm25()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.MemoryIndex.commit"><code class="docutils literal notranslate"><span class="pre">MemoryIndex.commit()</span></code></a></li>

@@ -45,7 +45,8 @@ Resolve every item’s anchor + fill processing/id, returning a NEW timeline.
 Idempotent: an item that already carries a [`Placement`](foley.base.html.md#foley.base.Placement) keeps
 its symbolic anchor (a hand edit is never clobbered) but is re-resolved against
 `word_timeline` so a re-recorded/re-aligned narration re-flows the SFX
-(report 06 §6.1). `processing` falls back to the sparse `gain` and `id` to a
+(report 06 §6.1); each placement records how its anchor matched
+(`match_kind`, #263). `processing` falls back to the sparse `gain` and `id` to a
 stable content hash. The resolved `word_timeline` is cached on the returned
 timeline (the reproducible seed).
 

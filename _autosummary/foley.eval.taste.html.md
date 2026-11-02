@@ -15,9 +15,11 @@ passage and aggregated, the four things #45 asks of a tasteful design (report, n
   The trigger is read from SELECT’s *symbolic* anchor (`"on 'door'"`), which edits never
   erase, and resolved against the timeline’s word anchors (`word_timeline`).
   **What it can and cannot catch:** it resolves the cue with the same resolver
-  ([`nearest_word()`](foley.weave.anchor.html.md#foley.weave.anchor.nearest_word)) and the same word timings the weave used, so an
+  ([`resolve_placement()`](foley.weave.anchor.html.md#foley.weave.anchor.resolve_placement)) and the same word timings the weave used, so an
   *unedited* cue passes by construction and inherits that resolver’s false matches (#257).
-  What it catches is everything else: a nudged or absolute-pinned sound, a cue word that is
+  So each row also says how its cue matched (`match`: `exact` / `stem` / `fuzzy` /
+  `fallback` / `absolute`, #263) and the summary counts them: a `fuzzy` cue may sit on
+  the wrong word, a `fallback` one on none. What it catches is everything else: a nudged or absolute-pinned sound, a cue word that is
   never spoken, a spot effect with no cue. Word timings from the fake aligner (evenly spaced
   estimates, the default without `foley[align]`) are flagged `aligned=False`;
 * **loudness**: the woven mix’s integrated LUFS, re-measured, vs the master target, within
@@ -86,7 +88,7 @@ Share of placed sounds the licence gate must keep. Anything under it is a defect
 
 How far (LU) the woven mix may sit from the master target (EBU R128’s ±1 LU).
 
-### foley.eval.taste.PLACEMENT_CAVEAT *= 'catches nudged/pinned sounds and unspoken or missing cues; an unedited cue passes by construction (same resolver and word timings as the weave)'*
+### foley.eval.taste.PLACEMENT_CAVEAT *= 'catches nudged/pinned sounds and unspoken or missing cues; an unedited cue passes by construction (same resolver and word timings as the weave), so fuzzy and fallback cue matches are counted separately'*
 
 What the placement metric can see (echoed in the report so a reader does not over-read it).
 
