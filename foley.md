@@ -1,4 +1,4 @@
-> built 2026-11-02 00:02 UTC from bac3ca4 (main) · foley 0.0.101. Details: build_info.json
+> built 2026-11-02 00:26 UTC from 8117475 (main) · foley 0.0.102. Details: build_info.json
 
 # index.html.md
 
@@ -99,12 +99,12 @@ result = foley.weave("narration.wav", timeline, intended_use=use)  # ...naming e
 
 ## How it works — four stages
 
-| Stage      | What it does                                                                                                                                                                                                                                                                                   | Built on                                                                                                                           |
-|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
-| **Source** | your own files · Freesound (CC0, or CC-BY when you can credit) · keyless: Openverse, Wikimedia Commons, Internet Archive (opt-in; licences unverified) · generate (Stable Audio 3 local on CPU; Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking                                                                                 |
-| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                                                                                                                                                                                                                      | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                |
-| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                                                                                                                                                                                                                         | CLAP retrieval + LLM decomposition + a verification ladder                                                                         |
-| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits                                                                                                                                                                                                | word timing (WhisperX transcription with `foley[align]`; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
+| Stage      | What it does                                                                                                                                                                                                                                                                                   | Built on                                                                                                                                                                     |
+|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Source** | your own files · Freesound (CC0, or CC-BY when you can credit) · keyless: Openverse, Wikimedia Commons, Internet Archive (opt-in; licences unverified) · generate (Stable Audio 3 local on CPU; Stable Audio Open local; ElevenLabs; fal: Stable Audio 3, Mirelo, Sonilo, ElevenLabs, MMAudio) | config-driven adapters, per-sound license tracking                                                                                                                           |
+| **Index**  | probe → tag → caption → embed every sound; hybrid keyword+semantic search                                                                                                                                                                                                                      | PANNs · CLAP · LanceDB (local→cloud via `dol`); captions come from metadata until a learned captioner is plugged in                                                          |
+| **Select** | decompose a narrative context → search → verify → generate-or-retrieve                                                                                                                                                                                                                         | CLAP retrieval + LLM decomposition + a verification ladder                                                                                                                   |
+| **Weave**  | align to the voice, duck, place, master → mastered mix + editable timeline + captions + credits                                                                                                                                                                                                | word timing (WhisperX transcription with `foley[align]`, or [MFA / aeneas]() aligning your script; otherwise evenly spaced script words; `notes` says which) · LUFS/EBU-R128 |
 
 The selection tools publish as an **MCP server** (via `py2mcp`) so the same capabilities
 drive the agent, a CLI, and external hosts.
@@ -15164,7 +15164,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc three-note', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix chime', 'ta dum', 'tudum', 'ta-dum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel inside', 'intel bong', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'ta-dum', 'netflix intro', 'ta dum', 'netflix sound', 'netflix chime', 'tudum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'fox fanfare', 'century fox intro', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel bong', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', "d'oh", 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -23407,6 +23407,9 @@ word-level timestamps (report 06 §2). foley ships two implementations behind th
   (`whisperx` + `torch`), lazy-imported inside its method so `import
   foley.weave` stays dol-only.
 
+Montreal Forced Aligner and aeneas run as external programs
+([`foley.weave.cli_aligners`](_autosummary/foley.weave.cli_aligners.html.md#module-foley.weave.cli_aligners)); inject one with `aligner=`.
+
 `_default_aligner` auto-upgrades to WhisperX when `foley[align]` is installed,
 else falls back to the fake — the progressive-disclosure rule.
 
@@ -23418,8 +23421,8 @@ else falls back to the fake — the progressive-disclosure rule.
 
 ### Functions
 
-| [`aligner_name`](_autosummary/foley.weave.align.html.md#foley.weave.align.aligner_name)(aligner)   | `fake` / `whisperx` for the built-ins, else the class name (run manifest).   |
-|--------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| [`aligner_name`](_autosummary/foley.weave.align.html.md#foley.weave.align.aligner_name)(aligner)   | The aligner's `name` (`fake`, `whisperx`, `mfa`, …), else its class name (run manifest).   |
+|--------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
 
 ### Classes
 
@@ -23478,7 +23481,7 @@ Force-align `audio` to its transcript, returning word-level timestamps.
 
 ### foley.weave.align.aligner_name(aligner)
 
-`fake` / `whisperx` for the built-ins, else the class name (run manifest).
+The aligner’s `name` (`fake`, `whisperx`, `mfa`, …), else its class name (run manifest).
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
@@ -23565,6 +23568,220 @@ sentence (filling `duration` when unset — beds loop to fill it); `scene` /
   for a span anchor whose `placement.duration` was unset.
 
 
+# _autosummary/foley.weave.cli_aligners.html.md
+
+# foley.weave.cli_aligners
+
+Forced aligners run as external programs: Montreal Forced Aligner and aeneas (#43).
+
+Both sit behind the [`Aligner`](_autosummary/foley.weave.protocols.html.md#foley.weave.protocols.Aligner) seam next to
+[`WhisperXAligner`](_autosummary/foley.weave.align.html.md#foley.weave.align.WhisperXAligner), but neither is a pip extra: MFA installs
+with conda, aeneas needs espeak and ffmpeg and (being AGPL) is best kept out of
+foley’s own process. So each runs as a subprocess. The narration is written to a
+temporary WAV, the transcript to a text file, the program aligns them, and its output
+file is parsed into foley’s `word_timeline`. Nothing is imported, so `import
+foley.weave` stays dol-only.
+
+Unlike WhisperX, both align the **given** transcript (no speech recognition), so a
+word is timed even when a recogniser would have misheard it; with no transcript they
+return an empty timeline, as [`FakeAligner`](_autosummary/foley.weave.align.html.md#foley.weave.align.FakeAligner) does.
+
+Inject one where an aligner is taken:
+
+```default
+foley.weave("narration.wav", timeline, transcript=text, aligner=MFAAligner())
+foley.score(text, audio="narration.wav", aligner=AeneasAligner(python="~/venvs/aeneas/bin/python"))
+```
+
+Installation and the trade-offs between the aligners: `misc/docs/aligners.md`.
+
+### Module Attributes
+
+| [`Runner`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.Runner)           | Runs a command (`subprocess.run`'s signature); injected in tests.                                                                                           |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`MFA_MODELS`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.MFA_MODELS)       | MFA's (dictionary, acoustic model) per foley language code; names as in `mfa model download`.                                                               |
+| [`AENEAS_LANGUAGES`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.AENEAS_LANGUAGES) | aeneas task languages (ISO 639-3) per foley language code.                                                                                                  |
+| [`UNKNOWN_TOKENS`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.UNKNOWN_TOKENS)   | The tokens an aligner writes for a word it could not spell (MFA's out-of-vocabulary marker); each stands for whichever transcript word(s) sit at its place. |
+| [`ERROR_TAIL_CHARS`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.ERROR_TAIL_CHARS) | How much of a failed program's output an error quotes (its tail, in characters).                                                                            |
+| [`MFA_INSTALL`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.MFA_INSTALL)      | Install hints, printed when the program is missing.                                                                                                         |
+
+### Functions
+
+| [`onto_transcript`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.onto_transcript)(words, timed, \*[, unknown])    | `timed` (an aligner's tokens) mapped back onto the transcript `words`.         |
+|--------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
+| [`parse_aeneas_json`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.parse_aeneas_json)(text)                         | aeneas's JSON sync map (one fragment per word) → `word_timeline`.              |
+| [`parse_mfa_json`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.parse_mfa_json)(text)                            | MFA's `--output_format json` → `word_timeline` (silences dropped).             |
+| [`run_cli_aligner`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.run_cli_aligner)(audio, sample_rate, words, ...) | Align `words` to `audio` with an external program; return its `word_timeline`. |
+| [`with_program_dir_on_path`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.with_program_dir_on_path)(program)               | This process's environment with `program`'s directory first on `PATH`.         |
+
+### Classes
+
+| [`AeneasAligner`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.AeneasAligner)(\*[, python, languages, ...])    | aeneas (TTS + DTW) behind the `Aligner` seam, one fragment per word.   |
+|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------|
+| [`MFAAligner`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.MFAAligner)(\*[, mfa, models, extra_args, ...]) | Montreal Forced Aligner (`mfa align_one`) behind the `Aligner` seam.   |
+
+### foley.weave.cli_aligners.AENEAS_LANGUAGES *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= {'de': 'deu', 'en': 'eng', 'es': 'spa', 'fr': 'fra', 'it': 'ita', 'nl': 'nld', 'pt': 'por'}*
+
+aeneas task languages (ISO 639-3) per foley language code.
+
+### *class* foley.weave.cli_aligners.AeneasAligner(\*, python='/opt/hostedtoolcache/Python/3.12.15/x64/bin/python', languages=None, timeout=None, runner=<function run>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+aeneas (TTS + DTW) behind the `Aligner` seam, one fragment per word.
+
+Light and language-broad (anything espeak speaks), coarser than MFA at word
+level, and AGPL-licensed: foley runs it as a separate program and never imports
+it. aeneas pins old dependencies, so it often lives in its own virtualenv;
+point `python` at that interpreter.
+
+* **Parameters:**
+  * **python** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A Python interpreter with `aeneas` installed (default: this one).
+  * **languages** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – foley language code → aeneas task language (default
+    [`AENEAS_LANGUAGES`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.AENEAS_LANGUAGES)).
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
+  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+
+#### word_timeline(audio, sample_rate, , transcript=None, language='en')
+
+Align `transcript` to `audio`; `[]` when there is no transcript.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.weave.cli_aligners.ERROR_TAIL_CHARS *= 800*
+
+How much of a failed program’s output an error quotes (its tail, in characters).
+
+### *class* foley.weave.cli_aligners.MFAAligner(\*, mfa='mfa', models=None, extra_args=(), timeout=None, runner=<function run>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Montreal Forced Aligner (`mfa align_one`) behind the `Aligner` seam.
+
+Kaldi-based, MIT-licensed, and among the most accurate open aligners on read
+speech. It needs a pronunciation dictionary and an acoustic model per language,
+downloaded once (`mfa model download ...`). MFA normalises the text (case,
+punctuation, clitics) and writes `<unk>` for a word missing from its dictionary
+(numbers too); the timeline still holds the transcript’s own words
+([`onto_transcript()`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.onto_transcript)), an unknown one timed by its `<unk>`.
+
+* **Parameters:**
+  * **mfa** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The `mfa` executable: a name on `PATH`, or a path into a conda env
+    (no need to activate it; its `bin` is put on the program’s `PATH`).
+  * **models** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – `{language: (dictionary, acoustic_model)}`, names or paths as
+    `mfa align_one` takes them (default [`MFA_MODELS`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.MFA_MODELS)).
+  * **extra_args** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – More `mfa align_one` options (`("--beam", "100")`).
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
+  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+
+#### word_timeline(audio, sample_rate, , transcript=None, language='en')
+
+Align `transcript` to `audio`; `[]` when there is no transcript.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.weave.cli_aligners.MFA_INSTALL *= 'conda create -n mfa -c conda-forge montreal-forced-aligner, then mfa model download acoustic english_mfa && mfa model download dictionary english_mfa'*
+
+Install hints, printed when the program is missing.
+
+### foley.weave.cli_aligners.MFA_MODELS *: [Mapping](https://docs.python.org/3/library/typing.html#typing.Mapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [str](https://docs.python.org/3/builtins/stdtypes.html#str)]]* *= {'en': ('english_mfa', 'english_mfa')}*
+
+MFA’s (dictionary, acoustic model) per foley language code; names as in
+`mfa model download`. Extend with `MFAAligner(models={...})`.
+
+### foley.weave.cli_aligners.Runner
+
+Runs a command (`subprocess.run`’s signature); injected in tests.
+
+alias of `Callable`[[…], [`subprocess.CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]
+
+### foley.weave.cli_aligners.UNKNOWN_TOKENS *: [frozenset](https://docs.python.org/3/builtins/stdtypes.html#frozenset)[[str](https://docs.python.org/3/builtins/stdtypes.html#str)]* *= frozenset({'<oov>', '<unk>', 'spn'})*
+
+The tokens an aligner writes for a word it could not spell (MFA’s out-of-vocabulary
+marker); each stands for whichever transcript word(s) sit at its place.
+
+### foley.weave.cli_aligners.onto_transcript(words, timed, , unknown=frozenset({'<oov>', '<unk>', 'spn'}))
+
+`timed` (an aligner’s tokens) mapped back onto the transcript `words`.
+
+Aligners rewrite what they are given: MFA lowercases, drops punctuation, splits
+clitics (`smith 's`) and writes `<unk>` for a word it cannot spell. Anchors
+match the transcript’s words, so each given word takes the start of the first and
+the end of the last token its letters align with (a character-level diff of the
+normalised texts), and an unknown token stands for the word(s) at its place. A
+word no token covers (pure punctuation) is left out, as an unaligned word is.
+
+```pycon
+>>> toks = [_timed("mr", 0, 1), _timed("smith", 1, 2), _timed("'s", 2, 2.5),
+...         _timed("<unk>", 3, 4), _timed("cats", 4, 5)]
+>>> [(w["word"], w["start"], w["end"]) for w in onto_transcript(
+...     "Mr. Smith's 42 cats!".split(), toks)]
+[('Mr.', 0.0, 1.0), ("Smith's", 1.0, 2.5), ('42', 3.0, 4.0), ('cats!', 4.0, 5.0)]
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.weave.cli_aligners.parse_aeneas_json(text)
+
+aeneas’s JSON sync map (one fragment per word) → `word_timeline`.
+
+```pycon
+>>> parse_aeneas_json('{"fragments": [{"begin": "0.000", "end": "0.400", '
+...                   '"lines": ["the"]}, {"begin": "0.400", "end": "0.400", "lines": []}]}')
+[{'word': 'the', 'start': 0.0, 'end': 0.4}]
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.weave.cli_aligners.parse_mfa_json(text)
+
+MFA’s `--output_format json` → `word_timeline` (silences dropped).
+
+```pycon
+>>> parse_mfa_json('{"tiers": {"words": {"type": "interval", "entries": '
+...                '[[0.1, 0.4, "the"], [0.4, 0.5, ""], [0.5, 0.9, "door"]]}}}')
+[{'word': 'the', 'start': 0.1, 'end': 0.4}, {'word': 'door', 'start': 0.5, 'end': 0.9}]
+```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.weave.cli_aligners.run_cli_aligner(audio, sample_rate, words, \*, command, parse, text=<built-in method join of str object>, runner=<function run>, env=None, timeout=None, what='forced aligner')
+
+Align `words` to `audio` with an external program; return its `word_timeline`.
+
+Writes `audio` (mono, 16-bit WAV) and `text(words)` to a temporary directory,
+runs `command(wav, txt, out)`, parses the file it wrote at `out` and maps the
+program’s tokens back onto `words` ([`onto_transcript()`](_autosummary/foley.weave.cli_aligners.html.md#foley.weave.cli_aligners.onto_transcript)), so the timeline
+holds the words as given, whatever the program normalised. The strategy pieces
+(`command`, `parse`, `text`) are what an aligner supplies; this function owns
+the files and the error reporting. `env` is the program’s environment (default:
+this process’s); `timeout` (seconds) bounds the run.
+
+* **Raises:**
+  * [**RuntimeError**](https://docs.python.org/3/builtins/exceptions.html#RuntimeError) – If the program exits non-zero or writes no output (its stderr
+        tail is in the message).
+  * [**TimeoutExpired**](https://docs.python.org/3/library/subprocess.html#subprocess.TimeoutExpired) – If it runs past `timeout`.
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.weave.cli_aligners.with_program_dir_on_path(program)
+
+This process’s environment with `program`’s directory first on `PATH`.
+
+A conda-installed program (MFA) calls helper binaries (`fstcompile`) from its
+own `bin`, which is on `PATH` only while that env is activated; this makes a
+path to the executable (or a symlink to it) enough. POSIX layout: on Windows a
+conda env keeps its helpers in `Library\bin`, so activate the env there.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+
 # _autosummary/foley.weave.html.md
 
 # foley.weave
@@ -23627,8 +23844,35 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`ApplyStrategy`](_autosummary/foley.weave.html.md#foley.weave.ApplyStrategy)(\*args, \*\*kwargs)                | How ONE hydrated item's clip is placed onto its layer bus (report 10 §4.2).                                                        |
 | [`FakeAligner`](_autosummary/foley.weave.html.md#foley.weave.FakeAligner)()                                    | Deterministic, torch-free [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) — evenly spaces the transcript's words.         |
 | [`WhisperXAligner`](_autosummary/foley.weave.html.md#foley.weave.WhisperXAligner)(\*[, model_size, device, ...])   | The real ≈±50 ms [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) (`foley[align]`) — faster-whisper ASR + wav2vec2 CTC.    |
+| [`MFAAligner`](_autosummary/foley.weave.html.md#foley.weave.MFAAligner)(\*[, mfa, models, extra_args, ...])   | Montreal Forced Aligner (`mfa align_one`) behind the [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) seam.                |
+| [`AeneasAligner`](_autosummary/foley.weave.html.md#foley.weave.AeneasAligner)(\*[, python, languages, ...])      | aeneas (TTS + DTW) behind the [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) seam, one fragment per word.                |
 | [`MasterProfile`](_autosummary/foley.weave.html.md#foley.weave.MasterProfile)([target_lufs, true_peak_db, ...])  | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                     |
 | [`MasterReport`](_autosummary/foley.weave.html.md#foley.weave.MasterReport)(target_lufs, input_lufs, ...)       | What the master stage did — a JSON-serialisable audit row for the run-artifact.                                                    |
+
+### *class* foley.weave.AeneasAligner(\*, python='/opt/hostedtoolcache/Python/3.12.15/x64/bin/python', languages=None, timeout=None, runner=<function run>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+aeneas (TTS + DTW) behind the [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) seam, one fragment per word.
+
+Light and language-broad (anything espeak speaks), coarser than MFA at word
+level, and AGPL-licensed: foley runs it as a separate program and never imports
+it. aeneas pins old dependencies, so it often lives in its own virtualenv;
+point `python` at that interpreter.
+
+* **Parameters:**
+  * **python** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A Python interpreter with `aeneas` installed (default: this one).
+  * **languages** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – foley language code → aeneas task language (default
+    `AENEAS_LANGUAGES`).
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
+  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+
+#### word_timeline(audio, sample_rate, , transcript=None, language='en')
+
+Align `transcript` to `audio`; `[]` when there is no transcript.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 ### *class* foley.weave.Aligner(\*args, \*\*kwargs)
 
@@ -23693,6 +23937,35 @@ clips as stored.
 #### *property* cache_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
 What distinguishes this strategy’s output in [`RenderCache`](_autosummary/foley.weave.html.md#foley.weave.RenderCache) keys.
+
+### *class* foley.weave.MFAAligner(\*, mfa='mfa', models=None, extra_args=(), timeout=None, runner=<function run>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Montreal Forced Aligner (`mfa align_one`) behind the [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) seam.
+
+Kaldi-based, MIT-licensed, and among the most accurate open aligners on read
+speech. It needs a pronunciation dictionary and an acoustic model per language,
+downloaded once (`mfa model download ...`). MFA normalises the text (case,
+punctuation, clitics) and writes `<unk>` for a word missing from its dictionary
+(numbers too); the timeline still holds the transcript’s own words
+(`onto_transcript()`), an unknown one timed by its `<unk>`.
+
+* **Parameters:**
+  * **mfa** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The `mfa` executable: a name on `PATH`, or a path into a conda env
+    (no need to activate it; its `bin` is put on the program’s `PATH`).
+  * **models** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – `{language: (dictionary, acoustic_model)}`, names or paths as
+    `mfa align_one` takes them (default `MFA_MODELS`).
+  * **extra_args** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – More `mfa align_one` options (`("--beam", "100")`).
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
+  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+
+#### word_timeline(audio, sample_rate, , transcript=None, language='en')
+
+Align `transcript` to `audio`; `[]` when there is no transcript.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 ### *class* foley.weave.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)
 
@@ -24065,6 +24338,7 @@ an optional keyword.
 | [`align`](_autosummary/foley.weave.align.html.md#module-foley.weave.align)               | Forced-alignment adapters — the `Aligner` seam's fake default + WhisperX real impl.          |
 |-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
 | [`anchor`](_autosummary/foley.weave.anchor.html.md#module-foley.weave.anchor)             | Symbolic-anchor → sample-onset heuristics — the SELECT→WEAVE timing bridge (report 06 §2.4). |
+| [`cli_aligners`](_autosummary/foley.weave.cli_aligners.html.md#module-foley.weave.cli_aligners) | Forced aligners run as external programs: Montreal Forced Aligner and aeneas (#43).          |
 | [`master`](_autosummary/foley.weave.master.html.md#module-foley.weave.master)             | Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).            |
 | [`mix`](_autosummary/foley.weave.mix.html.md#module-foley.weave.mix)                   | Pure-numpy mixing DSP — making a clip sit under the voice (report 06 §3).                    |
 | [`protocols`](_autosummary/foley.weave.protocols.html.md#module-foley.weave.protocols)       | The structural DI seams of the WEAVE stage — `Aligner` / `ApplyStrategy`.                    |
@@ -24790,7 +25064,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 00:02 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/bac3ca4a966b050173d60991669b4c4cc2af6c07"><code>bac3ca4</code></a> on branch <code>main</code>, for **foley 0.0.101** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 00:26 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/811747595420dada4d9418fd12e06de01fa9ecf6"><code>8117475</code></a> on branch <code>main</code>, for **foley 0.0.102** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -24799,7 +25073,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/bac3ca4a966b050173d60991669b4c4cc2af6c07"><code>bac3ca4a966b050173d60991669b4c4cc2af6c07</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/811747595420dada4d9418fd12e06de01fa9ecf6"><code>811747595420dada4d9418fd12e06de01fa9ecf6</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -24810,9 +25084,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41364757099">41364757099</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41366885804">41366885804</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>bac3ca4a966b050173d60991669b4c4cc2af6c07</code> (in the history of the built commit) |
+| Event commit | <code>811747595420dada4d9418fd12e06de01fa9ecf6</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -24837,13 +25111,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.101/">0.0.101</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.102/">0.0.102</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout bac3ca4a966b050173d60991669b4c4cc2af6c07
+git checkout 811747595420dada4d9418fd12e06de01fa9ecf6
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

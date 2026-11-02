@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="alternate" type="text/markdown" href="foley.weave.cli_aligners.html.md">
+<link rel="describedby" href="../llms.txt" type="text/markdown">
+<link rel="alternate" type="text/markdown" href="foley.weave.cli_aligners.html.md">
+<link rel="describedby" href="llms.txt">
+    <title>foley.weave.cli_aligners &#8212; foley</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=e39d37f2" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../_static/documentation_options.js?v=33adb31a"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/foley.weave.cli_aligners';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="foley.weave.master" href="foley.weave.master.html" />
+    <link rel="prev" title="foley.weave.anchor" href="foley.weave.anchor.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.102" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">foley</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="foley.html">foley</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="foley.repair.html">foley.repair</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.audio.html">foley.audio</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.index.html">foley.index</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.taxonomy.html">foley.index.taxonomy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.embedders.html">foley.index.embedders</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.indexes.html">foley.index.indexes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.ingest.html">foley.index.ingest</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.library.html">foley.index.library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.onnx_clap.html">foley.index.onnx_clap</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.protocols.html">foley.index.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.search.html">foley.index.search</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.index.taggers.html">foley.index.taggers</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.obs.html">foley.obs</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.recorder.html">foley.obs.recorder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.redact.html">foley.obs.redact</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.run_artifact.html">foley.obs.run_artifact</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.obs.trace.html">foley.obs.trace</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.agent.html">foley.agent</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.decompose.html">foley.agent.decompose</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.llm.html">foley.agent.llm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.local_llm.html">foley.agent.local_llm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.mcp.html">foley.agent.mcp</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.policy.html">foley.agent.policy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.preview.html">foley.agent.preview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.protocols.html">foley.agent.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.refine.html">foley.agent.refine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.session.html">foley.agent.session</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.tools.html">foley.agent.tools</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.verbs.html">foley.agent.verbs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.agent.verify.html">foley.agent.verify</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="foley.weave.html">foley.weave</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.align.html">foley.weave.align</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.anchor.html">foley.weave.anchor</a></li>
+<li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">foley.weave.cli_aligners</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.master.html">foley.weave.master</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.mix.html">foley.weave.mix</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.protocols.html">foley.weave.protocols</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.reaction.html">foley.weave.reaction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.requirements.html">foley.weave.requirements</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.timeline.html">foley.weave.timeline</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.eval.html">foley.eval</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.bradley_terry.html">foley.eval.bradley_terry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.panel.html">foley.eval.panel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.baseline.html">foley.eval.baseline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.embedder.html">foley.eval.embedder</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.fidelity.html">foley.eval.fidelity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.fit.html">foley.eval.fit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.golden.html">foley.eval.golden</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.panel_page.html">foley.eval.panel_page</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.prompt_match.html">foley.eval.prompt_match</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.reliability.html">foley.eval.reliability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.eval.retrieval.html">foley.eval.retrieval</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.provenance.html">foley.provenance</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.provenance.credits.html">foley.provenance.credits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.provenance.disclosure.html">foley.provenance.disclosure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.provenance.signing.html">foley.provenance.signing</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.agent_kit.html">foley.agent_kit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.base.html">foley.base</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.cli.html">foley.cli</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.cost.html">foley.cost</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.level.html">foley.level</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.licensing.html">foley.licensing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.prompt_match.html">foley.prompt_match</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.qc.html">foley.qc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.requirements.html">foley.requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.runtime.html">foley.runtime</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="foley.sources.html">foley.sources</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.base.html">foley.sources.base</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.bbc_remarc.html">foley.sources.bbc_remarc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.capabilities.html">foley.sources.capabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.clotho.html">foley.sources.clotho</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.edit.html">foley.sources.edit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.elevenlabs.html">foley.sources.elevenlabs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.fal.html">foley.sources.fal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.foleyset.html">foley.sources.foleyset</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.freesound.html">foley.sources.freesound</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.fsd50k.html">foley.sources.fsd50k</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.http.html">foley.sources.http</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.internet_archive.html">foley.sources.internet_archive</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.music_library.html">foley.sources.music_library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.openverse.html">foley.sources.openverse</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.pull.html">foley.sources.pull</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.registry.html">foley.sources.registry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.resilience.html">foley.sources.resilience</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.sonniss.html">foley.sources.sonniss</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.stable_audio.html">foley.sources.stable_audio</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.stable_audio_3.html">foley.sources.stable_audio_3</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.video.html">foley.sources.video</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.sources.wikimedia_commons.html">foley.sources.wikimedia_commons</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="foley.stores.html">foley.stores</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="foley.html" class="nav-link">foley</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="foley.weave.html" class="nav-link">foley.weave</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">foley.weave.cli_aligners</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-foley.weave.cli_aligners">
+<span id="foley-weave-cli-aligners"></span><h1>foley.weave.cli_aligners<a class="headerlink" href="#module-foley.weave.cli_aligners" title="Link to this heading">#</a></h1>
+<p>Forced aligners run as external programs: Montreal Forced Aligner and aeneas (#43).</p>
+<p>Both sit behind the <a class="reference internal" href="foley.weave.protocols.html#foley.weave.protocols.Aligner" title="foley.weave.protocols.Aligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code></a> seam next to
+<a class="reference internal" href="foley.weave.align.html#foley.weave.align.WhisperXAligner" title="foley.weave.align.WhisperXAligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">WhisperXAligner</span></code></a>, but neither is a pip extra: MFA installs
+with conda, aeneas needs espeak and ffmpeg and (being AGPL) is best kept out of
+foley’s own process. So each runs as a subprocess. The narration is written to a
+temporary WAV, the transcript to a text file, the program aligns them, and its output
+file is parsed into foley’s <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code>. Nothing is imported, so <code class="docutils literal notranslate"><span class="pre">import</span>
+<span class="pre">foley.weave</span></code> stays dol-only.</p>
+<p>Unlike WhisperX, both align the <strong>given</strong> transcript (no speech recognition), so a
+word is timed even when a recogniser would have misheard it; with no transcript they
+return an empty timeline, as <a class="reference internal" href="foley.weave.align.html#foley.weave.align.FakeAligner" title="foley.weave.align.FakeAligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">FakeAligner</span></code></a> does.</p>
+<p>Inject one where an aligner is taken:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">foley</span><span class="o">.</span><span class="n">weave</span><span class="p">(</span><span class="s2">"narration.wav"</span><span class="p">,</span> <span class="n">timeline</span><span class="p">,</span> <span class="n">transcript</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">aligner</span><span class="o">=</span><span class="n">MFAAligner</span><span class="p">())</span>
+<span class="n">foley</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">audio</span><span class="o">=</span><span class="s2">"narration.wav"</span><span class="p">,</span> <span class="n">aligner</span><span class="o">=</span><span class="n">AeneasAligner</span><span class="p">(</span><span class="n">python</span><span class="o">=</span><span class="s2">"~/venvs/aeneas/bin/python"</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Installation and the trade-offs between the aligners: <code class="docutils literal notranslate"><span class="pre">misc/docs/aligners.md</span></code>.</p>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.Runner" title="foley.weave.cli_aligners.Runner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Runner</span></code></a></p></td>
+<td><p>Runs a command (<code class="docutils literal notranslate"><span class="pre">subprocess.run</span></code>'s signature); injected in tests.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.MFA_MODELS" title="foley.weave.cli_aligners.MFA_MODELS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MFA_MODELS</span></code></a></p></td>
+<td><p>MFA's (dictionary, acoustic model) per foley language code; names as in <code class="docutils literal notranslate"><span class="pre">mfa</span> <span class="pre">model</span> <span class="pre">download</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.AENEAS_LANGUAGES" title="foley.weave.cli_aligners.AENEAS_LANGUAGES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AENEAS_LANGUAGES</span></code></a></p></td>
+<td><p>aeneas task languages (ISO 639-3) per foley language code.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.UNKNOWN_TOKENS" title="foley.weave.cli_aligners.UNKNOWN_TOKENS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UNKNOWN_TOKENS</span></code></a></p></td>
+<td><p>The tokens an aligner writes for a word it could not spell (MFA's out-of-vocabulary marker); each stands for whichever transcript word(s) sit at its place.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.ERROR_TAIL_CHARS" title="foley.weave.cli_aligners.ERROR_TAIL_CHARS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ERROR_TAIL_CHARS</span></code></a></p></td>
+<td><p>How much of a failed program's output an error quotes (its tail, in characters).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.MFA_INSTALL" title="foley.weave.cli_aligners.MFA_INSTALL"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MFA_INSTALL</span></code></a></p></td>
+<td><p>Install hints, printed when the program is missing.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.onto_transcript" title="foley.weave.cli_aligners.onto_transcript"><code class="xref py py-obj docutils literal notranslate"><span class="pre">onto_transcript</span></code></a>(words, timed, *[, unknown])</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">timed</span></code> (an aligner's tokens) mapped back onto the transcript <code class="docutils literal notranslate"><span class="pre">words</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.parse_aeneas_json" title="foley.weave.cli_aligners.parse_aeneas_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_aeneas_json</span></code></a>(text)</p></td>
+<td><p>aeneas's JSON sync map (one fragment per word) → <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.parse_mfa_json" title="foley.weave.cli_aligners.parse_mfa_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_mfa_json</span></code></a>(text)</p></td>
+<td><p>MFA's <code class="docutils literal notranslate"><span class="pre">--output_format</span> <span class="pre">json</span></code> → <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> (silences dropped).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.run_cli_aligner" title="foley.weave.cli_aligners.run_cli_aligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">run_cli_aligner</span></code></a>(audio, sample_rate, words, ...)</p></td>
+<td><p>Align <code class="docutils literal notranslate"><span class="pre">words</span></code> to <code class="docutils literal notranslate"><span class="pre">audio</span></code> with an external program; return its <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.with_program_dir_on_path" title="foley.weave.cli_aligners.with_program_dir_on_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_program_dir_on_path</span></code></a>(program)</p></td>
+<td><p>This process's environment with <code class="docutils literal notranslate"><span class="pre">program</span></code>'s directory first on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.AeneasAligner" title="foley.weave.cli_aligners.AeneasAligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AeneasAligner</span></code></a>(*[, python, languages, ...])</p></td>
+<td><p>aeneas (TTS + DTW) behind the <code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code> seam, one fragment per word.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.cli_aligners.MFAAligner" title="foley.weave.cli_aligners.MFAAligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MFAAligner</span></code></a>(*[, mfa, models, extra_args, ...])</p></td>
+<td><p>Montreal Forced Aligner (<code class="docutils literal notranslate"><span class="pre">mfa</span> <span class="pre">align_one</span></code>) behind the <code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code> seam.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.AENEAS_LANGUAGES">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">AENEAS_LANGUAGES</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'de':</span> <span class="pre">'deu',</span> <span class="pre">'en':</span> <span class="pre">'eng',</span> <span class="pre">'es':</span> <span class="pre">'spa',</span> <span class="pre">'fr':</span> <span class="pre">'fra',</span> <span class="pre">'it':</span> <span class="pre">'ita',</span> <span class="pre">'nl':</span> <span class="pre">'nld',</span> <span class="pre">'pt':</span> <span class="pre">'por'}</span></span><a class="headerlink" href="#foley.weave.cli_aligners.AENEAS_LANGUAGES" title="Link to this definition">#</a></dt>
+<dd><p>aeneas task languages (ISO 639-3) per foley language code.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.AeneasAligner">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">AeneasAligner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">python</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/opt/hostedtoolcache/Python/3.12.15/x64/bin/python'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">languages</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/cli_aligners.html#AeneasAligner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.cli_aligners.AeneasAligner" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>aeneas (TTS + DTW) behind the <code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code> seam, one fragment per word.</p>
+<p>Light and language-broad (anything espeak speaks), coarser than MFA at word
+level, and AGPL-licensed: foley runs it as a separate program and never imports
+it. aeneas pins old dependencies, so it often lives in its own virtualenv;
+point <code class="docutils literal notranslate"><span class="pre">python</span></code> at that interpreter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>python</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – A Python interpreter with <code class="docutils literal notranslate"><span class="pre">aeneas</span></code> installed (default: this one).</p></li>
+<li><p><strong>languages</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span>) – foley language code → aeneas task language (default
+<a class="reference internal" href="#foley.weave.cli_aligners.AENEAS_LANGUAGES" title="foley.weave.cli_aligners.AENEAS_LANGUAGES"><code class="xref py py-data docutils literal notranslate"><span class="pre">AENEAS_LANGUAGES</span></code></a>).</p></li>
+<li><p><strong>timeout</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span>) – Seconds before the run is abandoned (default: none).</p></li>
+<li><p><strong>runner</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">CompletedProcess</span></code></a>]</span>) – Runs the command (default <code class="docutils literal notranslate"><span class="pre">subprocess.run</span></code>).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.AeneasAligner.word_timeline">
+<span class="sig-name descname"><span class="pre">word_timeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">transcript</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">language</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'en'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/cli_aligners.html#AeneasAligner.word_timeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.cli_aligners.AeneasAligner.word_timeline" title="Link to this definition">#</a></dt>
+<dd><p>Align <code class="docutils literal notranslate"><span class="pre">transcript</span></code> to <code class="docutils literal notranslate"><span class="pre">audio</span></code>; <code class="docutils literal notranslate"><span class="pre">[]</span></code> when there is no transcript.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.ERROR_TAIL_CHARS">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">ERROR_TAIL_CHARS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">800</span></span><a class="headerlink" href="#foley.weave.cli_aligners.ERROR_TAIL_CHARS" title="Link to this definition">#</a></dt>
+<dd><p>How much of a failed program’s output an error quotes (its tail, in characters).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.MFAAligner">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">MFAAligner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mfa</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mfa'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_args</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/cli_aligners.html#MFAAligner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.cli_aligners.MFAAligner" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Montreal Forced Aligner (<code class="docutils literal notranslate"><span class="pre">mfa</span> <span class="pre">align_one</span></code>) behind the <code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code> seam.</p>
+<p>Kaldi-based, MIT-licensed, and among the most accurate open aligners on read
+speech. It needs a pronunciation dictionary and an acoustic model per language,
+downloaded once (<code class="docutils literal notranslate"><span class="pre">mfa</span> <span class="pre">model</span> <span class="pre">download</span> <span class="pre">...</span></code>). MFA normalises the text (case,
+punctuation, clitics) and writes <code class="docutils literal notranslate"><span class="pre">&lt;unk&gt;</span></code> for a word missing from its dictionary
+(numbers too); the timeline still holds the transcript’s own words
+(<a class="reference internal" href="#foley.weave.cli_aligners.onto_transcript" title="foley.weave.cli_aligners.onto_transcript"><code class="xref py py-func docutils literal notranslate"><span class="pre">onto_transcript()</span></code></a>), an unknown one timed by its <code class="docutils literal notranslate"><span class="pre">&lt;unk&gt;</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mfa</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – The <code class="docutils literal notranslate"><span class="pre">mfa</span></code> executable: a name on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>, or a path into a conda env
+(no need to activate it; its <code class="docutils literal notranslate"><span class="pre">bin</span></code> is put on the program’s <code class="docutils literal notranslate"><span class="pre">PATH</span></code>).</p></li>
+<li><p><strong>models</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]]</span>) – <code class="docutils literal notranslate"><span class="pre">{language:</span> <span class="pre">(dictionary,</span> <span class="pre">acoustic_model)}</span></code>, names or paths as
+<code class="docutils literal notranslate"><span class="pre">mfa</span> <span class="pre">align_one</span></code> takes them (default <a class="reference internal" href="#foley.weave.cli_aligners.MFA_MODELS" title="foley.weave.cli_aligners.MFA_MODELS"><code class="xref py py-data docutils literal notranslate"><span class="pre">MFA_MODELS</span></code></a>).</p></li>
+<li><p><strong>extra_args</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – More <code class="docutils literal notranslate"><span class="pre">mfa</span> <span class="pre">align_one</span></code> options (<code class="docutils literal notranslate"><span class="pre">(&quot;--beam&quot;,</span> <span class="pre">&quot;100&quot;)</span></code>).</p></li>
+<li><p><strong>timeout</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span>) – Seconds before the run is abandoned (default: none).</p></li>
+<li><p><strong>runner</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">CompletedProcess</span></code></a>]</span>) – Runs the command (default <code class="docutils literal notranslate"><span class="pre">subprocess.run</span></code>).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.MFAAligner.word_timeline">
+<span class="sig-name descname"><span class="pre">word_timeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">transcript</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">language</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'en'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/cli_aligners.html#MFAAligner.word_timeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.cli_aligners.MFAAligner.word_timeline" title="Link to this definition">#</a></dt>
+<dd><p>Align <code class="docutils literal notranslate"><span class="pre">transcript</span></code> to <code class="docutils literal notranslate"><span class="pre">audio</span></code>; <code class="docutils literal notranslate"><span class="pre">[]</span></code> when there is no transcript.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.MFA_INSTALL">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">MFA_INSTALL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'conda</span> <span class="pre">create</span> <span class="pre">-n</span> <span class="pre">mfa</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">montreal-forced-aligner,</span> <span class="pre">then</span> <span class="pre">mfa</span> <span class="pre">model</span> <span class="pre">download</span> <span class="pre">acoustic</span> <span class="pre">english_mfa</span> <span class="pre">&amp;&amp;</span> <span class="pre">mfa</span> <span class="pre">model</span> <span class="pre">download</span> <span class="pre">dictionary</span> <span class="pre">english_mfa'</span></span><a class="headerlink" href="#foley.weave.cli_aligners.MFA_INSTALL" title="Link to this definition">#</a></dt>
+<dd><p>Install hints, printed when the program is missing.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.MFA_MODELS">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">MFA_MODELS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Mapping" title="(in Python v3.15)"><span class="pre">Mapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'en':</span> <span class="pre">('english_mfa',</span> <span class="pre">'english_mfa')}</span></span><a class="headerlink" href="#foley.weave.cli_aligners.MFA_MODELS" title="Link to this definition">#</a></dt>
+<dd><p>MFA’s (dictionary, acoustic model) per foley language code; names as in
+<code class="docutils literal notranslate"><span class="pre">mfa</span> <span class="pre">model</span> <span class="pre">download</span></code>. Extend with <code class="docutils literal notranslate"><span class="pre">MFAAligner(models={...})</span></code>.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.Runner">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">Runner</span></span><a class="headerlink" href="#foley.weave.cli_aligners.Runner" title="Link to this definition">#</a></dt>
+<dd><p>Runs a command (<code class="docutils literal notranslate"><span class="pre">subprocess.run</span></code>’s signature); injected in tests.</p>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code>[[…], <a class="reference external" href="https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">subprocess.CompletedProcess</span></code></a>]</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.UNKNOWN_TOKENS">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">UNKNOWN_TOKENS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#frozenset" title="(in Python v3.15)"><span class="pre">frozenset</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">frozenset({'&lt;oov&gt;',</span> <span class="pre">'&lt;unk&gt;',</span> <span class="pre">'spn'})</span></span><a class="headerlink" href="#foley.weave.cli_aligners.UNKNOWN_TOKENS" title="Link to this definition">#</a></dt>
+<dd><p>The tokens an aligner writes for a word it could not spell (MFA’s out-of-vocabulary
+marker); each stands for whichever transcript word(s) sit at its place.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.onto_transcript">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">onto_transcript</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">words</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timed</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">unknown</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">frozenset({'&lt;oov&gt;',</span> <span class="pre">'&lt;unk&gt;',</span> <span class="pre">'spn'})</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/cli_aligners.html#onto_transcript"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.cli_aligners.onto_transcript" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">timed</span></code> (an aligner’s tokens) mapped back onto the transcript <code class="docutils literal notranslate"><span class="pre">words</span></code>.</p>
+<p>Aligners rewrite what they are given: MFA lowercases, drops punctuation, splits
+clitics (<code class="docutils literal notranslate"><span class="pre">smith</span> <span class="pre">'s</span></code>) and writes <code class="docutils literal notranslate"><span class="pre">&lt;unk&gt;</span></code> for a word it cannot spell. Anchors
+match the transcript’s words, so each given word takes the start of the first and
+the end of the last token its letters align with (a character-level diff of the
+normalised texts), and an unknown token stands for the word(s) at its place. A
+word no token covers (pure punctuation) is left out, as an unaligned word is.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">toks</span> <span class="o">=</span> <span class="p">[</span><span class="n">_timed</span><span class="p">(</span><span class="s2">"mr"</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">_timed</span><span class="p">(</span><span class="s2">"smith"</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">_timed</span><span class="p">(</span><span class="s2">"'s"</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="n">_timed</span><span class="p">(</span><span class="s2">"&lt;unk&gt;"</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="n">_timed</span><span class="p">(</span><span class="s2">"cats"</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">)]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[(</span><span class="n">w</span><span class="p">[</span><span class="s2">"word"</span><span class="p">],</span> <span class="n">w</span><span class="p">[</span><span class="s2">"start"</span><span class="p">],</span> <span class="n">w</span><span class="p">[</span><span class="s2">"end"</span><span class="p">])</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">onto_transcript</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s2">"Mr. Smith's 42 cats!"</span><span class="o">.</span><span class="n">split</span><span class="p">(),</span> <span class="n">toks</span><span class="p">)]</span>
+<span class="go">[('Mr.', 0.0, 1.0), ("Smith's", 1.0, 2.5), ('42', 3.0, 4.0), ('cats!', 4.0, 5.0)]</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.parse_aeneas_json">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">parse_aeneas_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/cli_aligners.html#parse_aeneas_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.cli_aligners.parse_aeneas_json" title="Link to this definition">#</a></dt>
+<dd><p>aeneas’s JSON sync map (one fragment per word) → <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">parse_aeneas_json</span><span class="p">(</span><span class="s1">'{"fragments": [{"begin": "0.000", "end": "0.400", '</span>
+<span class="gp">... </span>                  <span class="s1">'"lines": ["the"]}, {"begin": "0.400", "end": "0.400", "lines": []}]}'</span><span class="p">)</span>
+<span class="go">[{'word': 'the', 'start': 0.0, 'end': 0.4}]</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.parse_mfa_json">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">parse_mfa_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/cli_aligners.html#parse_mfa_json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.cli_aligners.parse_mfa_json" title="Link to this definition">#</a></dt>
+<dd><p>MFA’s <code class="docutils literal notranslate"><span class="pre">--output_format</span> <span class="pre">json</span></code> → <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> (silences dropped).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">parse_mfa_json</span><span class="p">(</span><span class="s1">'{"tiers": {"words": {"type": "interval", "entries": '</span>
+<span class="gp">... </span>               <span class="s1">'[[0.1, 0.4, "the"], [0.4, 0.5, ""], [0.5, 0.9, "door"]]}}}'</span><span class="p">)</span>
+<span class="go">[{'word': 'the', 'start': 0.1, 'end': 0.4}, {'word': 'door', 'start': 0.5, 'end': 0.9}]</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.run_cli_aligner">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">run_cli_aligner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">words</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">command</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parse</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">method</span> <span class="pre">join</span> <span class="pre">of</span> <span class="pre">str</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">runner</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">env</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">what</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'forced</span> <span class="pre">aligner'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/cli_aligners.html#run_cli_aligner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.cli_aligners.run_cli_aligner" title="Link to this definition">#</a></dt>
+<dd><p>Align <code class="docutils literal notranslate"><span class="pre">words</span></code> to <code class="docutils literal notranslate"><span class="pre">audio</span></code> with an external program; return its <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code>.</p>
+<p>Writes <code class="docutils literal notranslate"><span class="pre">audio</span></code> (mono, 16-bit WAV) and <code class="docutils literal notranslate"><span class="pre">text(words)</span></code> to a temporary directory,
+runs <code class="docutils literal notranslate"><span class="pre">command(wav,</span> <span class="pre">txt,</span> <span class="pre">out)</span></code>, parses the file it wrote at <code class="docutils literal notranslate"><span class="pre">out</span></code> and maps the
+program’s tokens back onto <code class="docutils literal notranslate"><span class="pre">words</span></code> (<a class="reference internal" href="#foley.weave.cli_aligners.onto_transcript" title="foley.weave.cli_aligners.onto_transcript"><code class="xref py py-func docutils literal notranslate"><span class="pre">onto_transcript()</span></code></a>), so the timeline
+holds the words as given, whatever the program normalised. The strategy pieces
+(<code class="docutils literal notranslate"><span class="pre">command</span></code>, <code class="docutils literal notranslate"><span class="pre">parse</span></code>, <code class="docutils literal notranslate"><span class="pre">text</span></code>) are what an aligner supplies; this function owns
+the files and the error reporting. <code class="docutils literal notranslate"><span class="pre">env</span></code> is the program’s environment (default:
+this process’s); <code class="docutils literal notranslate"><span class="pre">timeout</span></code> (seconds) bounds the run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#RuntimeError" title="(in Python v3.15)"><strong>RuntimeError</strong></a> – If the program exits non-zero or writes no output (its stderr
+    tail is in the message).</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/subprocess.html#subprocess.TimeoutExpired" title="(in Python v3.15)"><strong>TimeoutExpired</strong></a> – If it runs past <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.weave.cli_aligners.with_program_dir_on_path">
+<span class="sig-prename descclassname"><span class="pre">foley.weave.cli_aligners.</span></span><span class="sig-name descname"><span class="pre">with_program_dir_on_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">program</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/cli_aligners.html#with_program_dir_on_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.cli_aligners.with_program_dir_on_path" title="Link to this definition">#</a></dt>
+<dd><p>This process’s environment with <code class="docutils literal notranslate"><span class="pre">program</span></code>’s directory first on <code class="docutils literal notranslate"><span class="pre">PATH</span></code>.</p>
+<p>A conda-installed program (MFA) calls helper binaries (<code class="docutils literal notranslate"><span class="pre">fstcompile</span></code>) from its
+own <code class="docutils literal notranslate"><span class="pre">bin</span></code>, which is on <code class="docutils literal notranslate"><span class="pre">PATH</span></code> only while that env is activated; this makes a
+path to the executable (or a symlink to it) enough. POSIX layout: on Windows a
+conda env keeps its helpers in <code class="docutils literal notranslate"><span class="pre">Library\bin</span></code>, so activate the env there.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="foley.weave.anchor.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">foley.weave.anchor</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="foley.weave.master.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">foley.weave.master</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.AENEAS_LANGUAGES"><code class="docutils literal notranslate"><span class="pre">AENEAS_LANGUAGES</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.AeneasAligner"><code class="docutils literal notranslate"><span class="pre">AeneasAligner</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.AeneasAligner.word_timeline"><code class="docutils literal notranslate"><span class="pre">AeneasAligner.word_timeline()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.ERROR_TAIL_CHARS"><code class="docutils literal notranslate"><span class="pre">ERROR_TAIL_CHARS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.MFAAligner"><code class="docutils literal notranslate"><span class="pre">MFAAligner</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.MFAAligner.word_timeline"><code class="docutils literal notranslate"><span class="pre">MFAAligner.word_timeline()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.MFA_INSTALL"><code class="docutils literal notranslate"><span class="pre">MFA_INSTALL</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.MFA_MODELS"><code class="docutils literal notranslate"><span class="pre">MFA_MODELS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.Runner"><code class="docutils literal notranslate"><span class="pre">Runner</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.UNKNOWN_TOKENS"><code class="docutils literal notranslate"><span class="pre">UNKNOWN_TOKENS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.onto_transcript"><code class="docutils literal notranslate"><span class="pre">onto_transcript()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.parse_aeneas_json"><code class="docutils literal notranslate"><span class="pre">parse_aeneas_json()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.parse_mfa_json"><code class="docutils literal notranslate"><span class="pre">parse_mfa_json()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.run_cli_aligner"><code class="docutils literal notranslate"><span class="pre">run_cli_aligner()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.cli_aligners.with_program_dir_on_path"><code class="docutils literal notranslate"><span class="pre">with_program_dir_on_path()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/_autosummary/foley.weave.cli_aligners.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

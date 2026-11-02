@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=04553970"></script>
+    <script src="../_static/documentation_options.js?v=33adb31a"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.101" />
+  <meta name="docsearch:version" content="0.0.102" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -359,6 +359,7 @@
 <li class="toctree-l2 current active has-children"><a class="reference internal" href="foley.weave.html">foley.weave</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l3 current active"><a aria-current="page" class="current reference internal" href="#">foley.weave.align</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.weave.anchor.html">foley.weave.anchor</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.weave.cli_aligners.html">foley.weave.cli_aligners</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.weave.master.html">foley.weave.master</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.weave.mix.html">foley.weave.mix</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.weave.protocols.html">foley.weave.protocols</a></li>
@@ -507,6 +508,8 @@ fully reproducible — so hermetic CI (and any bare install) gets a usable
 (<code class="docutils literal notranslate"><span class="pre">whisperx</span></code> + <code class="docutils literal notranslate"><span class="pre">torch</span></code>), lazy-imported inside its method so <code class="docutils literal notranslate"><span class="pre">import</span>
 <span class="pre">foley.weave</span></code> stays dol-only.</p></li>
 </ul>
+<p>Montreal Forced Aligner and aeneas run as external programs
+(<a class="reference internal" href="foley.weave.cli_aligners.html#module-foley.weave.cli_aligners" title="foley.weave.cli_aligners"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.weave.cli_aligners</span></code></a>); inject one with <code class="docutils literal notranslate"><span class="pre">aligner=</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">_default_aligner</span></code> auto-upgrades to WhisperX when <code class="docutils literal notranslate"><span class="pre">foley[align]</span></code> is installed,
 else falls back to the fake — the progressive-disclosure rule.</p>
 <p class="rubric">Module Attributes</p>
@@ -525,7 +528,7 @@ else falls back to the fake — the progressive-disclosure rule.</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.align.aligner_name" title="foley.weave.align.aligner_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aligner_name</span></code></a>(aligner)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">fake</span></code> / <code class="docutils literal notranslate"><span class="pre">whisperx</span></code> for the built-ins, else the class name (run manifest).</p></td>
+<td><p>The aligner's <code class="docutils literal notranslate"><span class="pre">name</span></code> (<code class="docutils literal notranslate"><span class="pre">fake</span></code>, <code class="docutils literal notranslate"><span class="pre">whisperx</span></code>, <code class="docutils literal notranslate"><span class="pre">mfa</span></code>, …), else its class name (run manifest).</p></td>
 </tr>
 </tbody>
 </table>
@@ -610,7 +613,7 @@ stays dol-only. Transcribes (if no transcript) then force-aligns at 16 kHz mono.
 <dl class="py function">
 <dt class="sig sig-object py" id="foley.weave.align.aligner_name">
 <span class="sig-prename descclassname"><span class="pre">foley.weave.align.</span></span><span class="sig-name descname"><span class="pre">aligner_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aligner</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/align.html#aligner_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.align.aligner_name" title="Link to this definition">#</a></dt>
-<dd><p><code class="docutils literal notranslate"><span class="pre">fake</span></code> / <code class="docutils literal notranslate"><span class="pre">whisperx</span></code> for the built-ins, else the class name (run manifest).</p>
+<dd><p>The aligner’s <code class="docutils literal notranslate"><span class="pre">name</span></code> (<code class="docutils literal notranslate"><span class="pre">fake</span></code>, <code class="docutils literal notranslate"><span class="pre">whisperx</span></code>, <code class="docutils literal notranslate"><span class="pre">mfa</span></code>, …), else its class name (run manifest).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>

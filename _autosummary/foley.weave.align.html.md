@@ -15,6 +15,9 @@ word-level timestamps (report 06 §2). foley ships two implementations behind th
   (`whisperx` + `torch`), lazy-imported inside its method so `import
   foley.weave` stays dol-only.
 
+Montreal Forced Aligner and aeneas run as external programs
+([`foley.weave.cli_aligners`](foley.weave.cli_aligners.html.md#module-foley.weave.cli_aligners)); inject one with `aligner=`.
+
 `_default_aligner` auto-upgrades to WhisperX when `foley[align]` is installed,
 else falls back to the fake — the progressive-disclosure rule.
 
@@ -26,8 +29,8 @@ else falls back to the fake — the progressive-disclosure rule.
 
 ### Functions
 
-| [`aligner_name`](#foley.weave.align.aligner_name)(aligner)   | `fake` / `whisperx` for the built-ins, else the class name (run manifest).   |
-|--------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| [`aligner_name`](#foley.weave.align.aligner_name)(aligner)   | The aligner's `name` (`fake`, `whisperx`, `mfa`, …), else its class name (run manifest).   |
+|--------------------------------------------------------------------------|--------------------------------------------------------------------------------------------|
 
 ### Classes
 
@@ -86,7 +89,7 @@ Force-align `audio` to its transcript, returning word-level timestamps.
 
 ### foley.weave.align.aligner_name(aligner)
 
-`fake` / `whisperx` for the built-ins, else the class name (run manifest).
+The aligner’s `name` (`fake`, `whisperx`, `mfa`, …), else its class name (run manifest).
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)

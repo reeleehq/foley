@@ -44,6 +44,7 @@
 - [foley.weave](foley.weave.html.md): WEAVE — the compositor façade: narration + timeline → a finished, editable mix.
 - [foley.weave.align](foley.weave.align.html.md): Forced-alignment adapters — the &#96;Aligner&#96; seam’s fake default + WhisperX real impl.
 - [foley.weave.anchor](foley.weave.anchor.html.md): Symbolic-anchor → sample-onset heuristics — the SELECT→WEAVE timing bridge (report 06 §2.4).
+- [foley.weave.cli_aligners](foley.weave.cli_aligners.html.md): Forced aligners run as external programs: Montreal Forced Aligner and aeneas (#43).
 - [foley.weave.master](foley.weave.master.html.md): Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).
 - [foley.weave.mix](foley.weave.mix.html.md): Pure-numpy mixing DSP — making a clip sit under the voice (report 06 §3).
 - [foley.weave.protocols](foley.weave.protocols.html.md): The structural DI seams of the WEAVE stage — &#96;Aligner&#96; / &#96;ApplyStrategy&#96;.

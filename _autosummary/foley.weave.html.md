@@ -58,8 +58,35 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`ApplyStrategy`](#foley.weave.ApplyStrategy)(\*args, \*\*kwargs)                | How ONE hydrated item's clip is placed onto its layer bus (report 10 §4.2).                                                        |
 | [`FakeAligner`](#foley.weave.FakeAligner)()                                    | Deterministic, torch-free [`Aligner`](#foley.weave.Aligner) — evenly spaces the transcript's words.         |
 | [`WhisperXAligner`](#foley.weave.WhisperXAligner)(\*[, model_size, device, ...])   | The real ≈±50 ms [`Aligner`](#foley.weave.Aligner) (`foley[align]`) — faster-whisper ASR + wav2vec2 CTC.    |
+| [`MFAAligner`](#foley.weave.MFAAligner)(\*[, mfa, models, extra_args, ...])   | Montreal Forced Aligner (`mfa align_one`) behind the [`Aligner`](#foley.weave.Aligner) seam.                |
+| [`AeneasAligner`](#foley.weave.AeneasAligner)(\*[, python, languages, ...])      | aeneas (TTS + DTW) behind the [`Aligner`](#foley.weave.Aligner) seam, one fragment per word.                |
 | [`MasterProfile`](#foley.weave.MasterProfile)([target_lufs, true_peak_db, ...])  | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                     |
 | [`MasterReport`](#foley.weave.MasterReport)(target_lufs, input_lufs, ...)       | What the master stage did — a JSON-serialisable audit row for the run-artifact.                                                    |
+
+### *class* foley.weave.AeneasAligner(\*, python='/opt/hostedtoolcache/Python/3.12.15/x64/bin/python', languages=None, timeout=None, runner=<function run>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+aeneas (TTS + DTW) behind the [`Aligner`](#foley.weave.Aligner) seam, one fragment per word.
+
+Light and language-broad (anything espeak speaks), coarser than MFA at word
+level, and AGPL-licensed: foley runs it as a separate program and never imports
+it. aeneas pins old dependencies, so it often lives in its own virtualenv;
+point `python` at that interpreter.
+
+* **Parameters:**
+  * **python** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – A Python interpreter with `aeneas` installed (default: this one).
+  * **languages** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – foley language code → aeneas task language (default
+    `AENEAS_LANGUAGES`).
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
+  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+
+#### word_timeline(audio, sample_rate, , transcript=None, language='en')
+
+Align `transcript` to `audio`; `[]` when there is no transcript.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 ### *class* foley.weave.Aligner(\*args, \*\*kwargs)
 
@@ -124,6 +151,35 @@ clips as stored.
 #### *property* cache_key *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
 
 What distinguishes this strategy’s output in [`RenderCache`](#foley.weave.RenderCache) keys.
+
+### *class* foley.weave.MFAAligner(\*, mfa='mfa', models=None, extra_args=(), timeout=None, runner=<function run>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Montreal Forced Aligner (`mfa align_one`) behind the [`Aligner`](#foley.weave.Aligner) seam.
+
+Kaldi-based, MIT-licensed, and among the most accurate open aligners on read
+speech. It needs a pronunciation dictionary and an acoustic model per language,
+downloaded once (`mfa model download ...`). MFA normalises the text (case,
+punctuation, clitics) and writes `<unk>` for a word missing from its dictionary
+(numbers too); the timeline still holds the transcript’s own words
+(`onto_transcript()`), an unknown one timed by its `<unk>`.
+
+* **Parameters:**
+  * **mfa** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The `mfa` executable: a name on `PATH`, or a path into a conda env
+    (no need to activate it; its `bin` is put on the program’s `PATH`).
+  * **models** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Mapping`](https://docs.python.org/3/library/typing.html#typing.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]]) – `{language: (dictionary, acoustic_model)}`, names or paths as
+    `mfa align_one` takes them (default `MFA_MODELS`).
+  * **extra_args** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – More `mfa align_one` options (`("--beam", "100")`).
+  * **timeout** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Seconds before the run is abandoned (default: none).
+  * **runner** ([`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`CompletedProcess`](https://docs.python.org/3/library/subprocess.html#subprocess.CompletedProcess)]) – Runs the command (default `subprocess.run`).
+
+#### word_timeline(audio, sample_rate, , transcript=None, language='en')
+
+Align `transcript` to `audio`; `[]` when there is no transcript.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 
 ### *class* foley.weave.MasterProfile(target_lufs=-16.0, true_peak_db=-1.0, lra=11.0, max_limiting_db=6.0)
 
@@ -496,6 +552,7 @@ an optional keyword.
 | [`align`](foley.weave.align.html.md#module-foley.weave.align)               | Forced-alignment adapters — the `Aligner` seam's fake default + WhisperX real impl.          |
 |-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
 | [`anchor`](foley.weave.anchor.html.md#module-foley.weave.anchor)             | Symbolic-anchor → sample-onset heuristics — the SELECT→WEAVE timing bridge (report 06 §2.4). |
+| [`cli_aligners`](foley.weave.cli_aligners.html.md#module-foley.weave.cli_aligners) | Forced aligners run as external programs: Montreal Forced Aligner and aeneas (#43).          |
 | [`master`](foley.weave.master.html.md#module-foley.weave.master)             | Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).            |
 | [`mix`](foley.weave.mix.html.md#module-foley.weave.mix)                   | Pure-numpy mixing DSP — making a clip sit under the voice (report 06 §3).                    |
 | [`protocols`](foley.weave.protocols.html.md#module-foley.weave.protocols)       | The structural DI seams of the WEAVE stage — `Aligner` / `ApplyStrategy`.                    |

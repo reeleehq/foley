@@ -46,6 +46,7 @@
 - [foley.weave](_autosummary/foley.weave.html.md): WEAVE — the compositor façade: narration + timeline → a finished, editable mix.
 - [foley.weave.align](_autosummary/foley.weave.align.html.md): Forced-alignment adapters — the &#96;Aligner&#96; seam’s fake default + WhisperX real impl.
 - [foley.weave.anchor](_autosummary/foley.weave.anchor.html.md): Symbolic-anchor → sample-onset heuristics — the SELECT→WEAVE timing bridge (report 06 §2.4).
+- [foley.weave.cli_aligners](_autosummary/foley.weave.cli_aligners.html.md): Forced aligners run as external programs: Montreal Forced Aligner and aeneas (#43).
 - [foley.weave.master](_autosummary/foley.weave.master.html.md): Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).
 - [foley.weave.mix](_autosummary/foley.weave.mix.html.md): Pure-numpy mixing DSP — making a clip sit under the voice (report 06 §3).
 - [foley.weave.protocols](_autosummary/foley.weave.protocols.html.md): The structural DI seams of the WEAVE stage — &#96;Aligner&#96; / &#96;ApplyStrategy&#96;.
@@ -127,7 +128,7 @@
 - [foley.sources.wikimedia_commons.config](_autosummary/foley.sources.wikimedia_commons.config.html.md): &#96;SOURCE_CONFIG&#96; for the Wikimedia Commons retrieve source (#79 · report 14 §3.3).
 - [foley.stores](_autosummary/foley.stores.html.md): dol-backed storage for foley: content-addressed bytes + a metadata store.
 - [For AI agents](ai-agents.html.md): &#96;foley&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-02 00:02 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-11-02 00:26 UTC&#42;&#42; from commit &lt;a href="https://github.com/ree...
 
 ## Optional
 

@@ -46,6 +46,8 @@ foley.weave
       ApplyStrategy
       FakeAligner
       WhisperXAligner
+      MFAAligner
+      AeneasAligner
       MasterProfile
       MasterReport
    
@@ -57,6 +59,7 @@ foley.weave
 
    align
    anchor
+   cli_aligners
    master
    mix
    protocols
