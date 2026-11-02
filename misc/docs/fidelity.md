@@ -24,8 +24,8 @@ from foley.eval import FadtkFidelity
 
 fad = FadtkFidelity(python="~/venvs/fadtk/bin/python")  # or set FOLEY_FADTK_PYTHON
 result = fad(reference_wavs, generated_wavs, sr=48000)
-result.value   # the FAD
-result.stamp   # FidelityStamp(embedding='encodec-emb', toolkit='fadtk', version='1.1.0', n_ref=600, n_gen=600)
+result.value  # the FAD
+result.stamp  # FidelityStamp(embedding='encodec-emb', toolkit='fadtk', version='1.1.0', n_ref=600, n_gen=600)
 ```
 
 With neither `python=` nor `$FOLEY_FADTK_PYTHON` it raises with the install line above (foley's own interpreter cannot hold fadtk). Clips are `(frames,)` or `(frames, channels)` arrays, mixed to mono; a channel-first `(2, N)` array is refused rather than read as two-sample clips. `n_ref` / `n_gen` in the stamp are the embedding frames FAD was computed over, not the clip counts. Each set needs more frames than the embedding has dimensions (128 for `encodec-emb`, which makes 75 frames per second), or the covariance is singular and the number meaningless, so a set that short raises `ValueError`.
