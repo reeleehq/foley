@@ -63,6 +63,7 @@ class ExternalFidelity(ExternalToolkit):
     #: Below this many embedding frames in a set, warn that the score is mostly noise
     #: (``None``: never). The hard floor is :meth:`frames_needed`.
     warn_frames: Optional[int] = None
+    isolation_reason = "it pins numpy<2, so it cannot live in foley's environment"
     metric: str  # FidelityResult.metric: 'fad' | 'kad'
     default_models: "Mapping[str, tuple[str, tuple]]"
     default_model: str
@@ -112,7 +113,7 @@ class ExternalFidelity(ExternalToolkit):
         Warns:
             UserWarning: If a set has fewer than :attr:`warn_frames` frames.
         """
-        python = self._resolve_python()  # before any file is written
+        python = self.resolve_python()  # before any file is written
         loader, args = self.models[self.model]
         name = self.metric.upper()
         with tempfile.TemporaryDirectory(prefix=f"foley-{self.toolkit}-") as tmp:

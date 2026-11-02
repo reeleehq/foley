@@ -565,8 +565,11 @@ def _generate(
             ``$FOLEY_AES_PYTHON``); a scorer instance (with ``floors=`` to flag a low
             axis) is used as is. A record, never a quarantine: a clip below a floor is
             stored and noted, and one that cannot be scored is ``'unchecked'`` with the
-            reason. ``None`` (default) skips it: each scored clip runs the model in its
-            own process (a 415 MB checkpoint, seconds a clip).
+            reason (``True`` without an interpreter raises before anything is paid
+            for). A duplicate of a stored clip scores that clip if it has no score
+            yet. ``None`` (default) skips it: each scored clip, so each take of
+            :func:`foley.variations`, runs the model in its own process (a 415 MB
+            checkpoint loaded per take, seconds a clip).
         provider_params: Vendor-native params foley has no unified affordance for
             (#61), e.g. ``{"num_inference_steps": 50}``. Merged by the backend over
             its translated native params (a provider param wins), recorded in the
@@ -924,6 +927,13 @@ def _ingest_clip(
         if why is not None:  # never hand back a record wider than the edit's
             res.status = "rights_blocked"
             res.notes.append(why)
+    # Write the content-credential sidecar (before any post-QC scoring, which may be
+    # slow or fail, so a stored clip never lacks it) ONLY for a freshly stored clip — a
+    # quarantined (QC-failed), duplicate, or errored generation was never added to the
+    # library, so it gets no orphan credential (its already-stored twin keeps one).
+    if credential is not None and res.status in ("pass", "warn"):
+        disclosure.write_content_credential(pstore, sound_id, credential)
+
     if res.status in ("pass", "warn"):
         if check_prompt and prompt:  # a picture-led (V2A) call may give no prompt
             post_qc["prompt_match"] = _prompt_verdict(
@@ -935,12 +945,8 @@ def _ingest_clip(
             )
         if post_qc:
             _stamp_qc(res, post_qc, clip.notes, library=lib, stored=store)
-
-    # Write the content-credential sidecar ONLY for a freshly stored clip — a
-    # quarantined (QC-failed), duplicate, or errored generation was never added to the
-    # library, so it gets no orphan credential (its already-stored twin keeps one).
-    if credential is not None and res.status in ("pass", "warn"):
-        disclosure.write_content_credential(pstore, sound_id, credential)
+    elif res.status == "skipped_dup" and aesthetics is not None:
+        _score_duplicate(res, audio_bytes, aesthetics, clip.notes, library=lib)
 
     if plan.affordances.get("sample_rate") is not None:  # kept: the backend takes it
         _note_rate(
@@ -1535,7 +1541,7 @@ def _prompt_verdict(prompt, audio_bytes, library, notes: list) -> dict:
 def _resolve_aesthetics(aesthetics):
     """``aesthetics=`` as a scorer or ``None`` (:func:`foley.eval.aesthetics.resolve_aesthetics`)."""
     if aesthetics is None or aesthetics is False:
-        return None  # the common case imports nothing
+        return None
     from ..eval.aesthetics import resolve_aesthetics
 
     return resolve_aesthetics(aesthetics)
@@ -1550,6 +1556,32 @@ def _aesthetics_verdict(audio_bytes, scorer, notes: list) -> dict:
     if note:
         notes.append(note)
     return verdict
+
+
+def _score_duplicate(res, audio_bytes, scorer, notes: list, *, library) -> None:
+    """Score a duplicate's stored twin if it has no aesthetics score yet (none, or
+    ``unchecked``), else say why not.
+
+    The twin has the same content id, so it is the same audio: scoring these bytes
+    scores it.
+    """
+    from ..eval.aesthetics import DUPLICATE_NOTE, UNCHECKED
+
+    try:
+        rec = library[res.id]
+    except Exception:  # noqa: BLE001 - no stored twin to read: nothing to stamp
+        rec = None
+    known = ((rec.qc or {}) if rec is not None else {}).get("aesthetics") or {}
+    if rec is None or known.get("status", UNCHECKED) != UNCHECKED:
+        notes.append(DUPLICATE_NOTE)
+        return
+    verdict = _aesthetics_verdict(audio_bytes, scorer, notes)
+    res.qc = {**(res.qc or {}), "aesthetics": verdict}
+    rec.qc = {**(rec.qc or {}), "aesthetics": verdict}
+    try:
+        library.update_record(rec)
+    except Exception as exc:  # noqa: BLE001 - the verdict is still on the result
+        notes.append(f"qc facts not saved on the stored record ({exc!r})")
 
 
 def _stamp_qc(res, facts: dict, notes: list, *, library, stored: bool) -> None:

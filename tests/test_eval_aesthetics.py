@@ -23,6 +23,8 @@ from foley.eval import AestheticsScore, AudioboxAesthetics, aesthetics_verdict  
 from foley.eval.aesthetics import (  # noqa: E402
     AES_AXES,
     AES_MIN_SECONDS,
+    AES_TIMEOUT_S,
+    DUPLICATE_NOTE,
     note_for,
     resolve_aesthetics,
 )
@@ -152,13 +154,57 @@ def test_verdict_records_flags_or_says_why_not():
     assert note_for(low).startswith("aesthetics: LOW (PQ < 9;")
     missing = aesthetics_verdict(clip, scorer=AudioboxAesthetics(python="/nope/python"))
     assert missing["status"] == "unchecked" and "not on PATH" in missing["reason"]
+    assert "/nope" not in missing["reason"]  # no local path on a publishable record
     assert note_for(missing).startswith("aesthetics: unchecked (FileNotFoundError")
     assert aesthetics_verdict(b"not audio", scorer=_scorer())["status"] == "unchecked"
 
 
-def test_resolve_aesthetics():
+def test_a_malformed_score_is_unchecked_and_nan_is_none():
+    clip = encode(_tone(), SR)
+
+    def partial(wavs, *, sr):
+        return [AestheticsScore(axes={"PQ": 5.0}, model="m", version="v")]
+
+    partial.floors = {"CE": 3}
+    bad = aesthetics_verdict(clip, scorer=partial)
+    assert bad == {"status": "unchecked", "reason": "ValueError: the score has no ['CE', 'CU', 'PC'] axes"}
+    assert aesthetics_verdict(clip, scorer=lambda w, *, sr: [{"CE": 1}])["status"] == "unchecked"
+    assert aesthetics_verdict(clip, scorer=lambda w, *, sr: [])["status"] == "unchecked"
+
+    def nan(wavs, *, sr):
+        return [AestheticsScore(axes={a: float("nan") for a in AES_AXES}, model="m", version="v")]
+
+    nan.floors = {"PQ": 1.0}
+    v = aesthetics_verdict(clip, scorer=nan)
+    assert (v["PQ"], v["status"], v["below"]) == (None, "low", ["PQ"])
+    json.dumps(v, allow_nan=False)  # strict JSON
+    assert "PQ n/a" in note_for(v)
+
+
+def test_a_failed_or_hung_run_gives_a_short_scrubbed_reason():
+    clip = encode(_tone(), SR)
+
+    def hang(cmd, **kw):
+        raise subprocess.TimeoutExpired(cmd, kw["timeout"])
+
+    hung = aesthetics_verdict(clip, scorer=AudioboxAesthetics(python=sys.executable, runner=hang))
+    assert hung == {"status": "unchecked", "reason": f"TimeoutExpired: no answer within {AES_TIMEOUT_S:g} s"}
+    crash = _Runner(returncode=1, stderr='Traceback\n  File "/private/tmp/x/driver.py", line 3\nBoom')
+    failed = aesthetics_verdict(clip, scorer=AudioboxAesthetics(python=sys.executable, runner=crash))
+    reason = failed["reason"]
+    assert reason.startswith("RuntimeError: AudioboxAesthetics (audiobox_aesthetics) failed (exit 1")
+    assert reason.endswith(" ... Boom")  # the program's own last word
+    assert "/private" not in reason and sys.executable not in reason and "\n" not in reason
+
+
+def test_resolve_aesthetics(monkeypatch):
     assert resolve_aesthetics(None) is None and resolve_aesthetics(False) is None
-    assert isinstance(resolve_aesthetics(True), AudioboxAesthetics)
+    monkeypatch.delenv("FOLEY_AES_PYTHON", raising=False)
+    with pytest.raises(FileNotFoundError, match="FOLEY_AES_PYTHON"):
+        resolve_aesthetics(True)  # an explicit opt-in fails before anything is paid
+    monkeypatch.setenv("FOLEY_AES_PYTHON", sys.executable)
+    resolved = resolve_aesthetics(True)
+    assert isinstance(resolved, AudioboxAesthetics) and resolved.timeout == AES_TIMEOUT_S
     scorer = _scorer()
     assert resolve_aesthetics(scorer) is scorer
     with pytest.raises(TypeError, match="aesthetics= takes"):
@@ -184,6 +230,70 @@ def test_generate_records_aesthetics_on_the_stored_clip(library):
     assert verdict["status"] == "low" and verdict["PQ"] == 8.0
     assert library[cand.sound.id].qc["aesthetics"] == verdict  # on the stored record
     assert len(library) == 1  # flagged, never quarantined
+
+
+def _adapter():
+    return StableAudioAdapter(pipeline=FakePipeline(), make_generator=fake_generator)
+
+
+def _raises(wavs, *, sr):
+    raise RuntimeError("model exploded")
+
+
+def _hangs(cmd, **kw):
+    raise subprocess.TimeoutExpired(cmd, kw["timeout"])
+
+
+@pytest.mark.parametrize(
+    "scorer",
+    [
+        _raises,
+        lambda wavs, *, sr: [AestheticsScore(axes={"PQ": 5.0}, model="m", version="v")],
+        AudioboxAesthetics(python=sys.executable, runner=_hangs),
+    ],
+    ids=["raising", "malformed", "hanging"],
+)
+def test_a_failing_scorer_never_breaks_a_paid_generate(library, scorer):
+    import foley
+
+    pstore = {}
+    cand = foley.generate("creak", backend="stable_audio", library=library,
+                          adapter=_adapter(), aesthetics=scorer, provenance_store=pstore)  # fmt: skip
+    assert cand.sound.qc["aesthetics"]["status"] == "unchecked"
+    assert len(library) == 1 and list(pstore)  # stored, with its content credential
+
+
+def test_aesthetics_true_without_an_interpreter_fails_before_the_spend(library, monkeypatch):
+    import foley
+
+    monkeypatch.delenv("FOLEY_AES_PYTHON", raising=False)
+    pipeline = FakePipeline()
+    adapter = StableAudioAdapter(pipeline=pipeline, make_generator=fake_generator)
+    with pytest.raises(FileNotFoundError, match="FOLEY_AES_PYTHON"):
+        foley.generate("creak", backend="stable_audio", library=library, adapter=adapter,
+                       aesthetics=True)  # fmt: skip
+    assert len(library) == 0
+
+
+def test_a_duplicate_scores_its_unscored_twin_once(library):
+    import foley
+
+    calls = []
+
+    def counting(wavs, *, sr):
+        calls.append(1)
+        return [AestheticsScore(axes=_row(5.0), model="m", version="v")]
+
+    first = foley.generate("creak", backend="stable_audio", library=library,
+                           adapter=_adapter(), seed=7)  # fmt: skip
+    assert "aesthetics" not in (first.sound.qc or {})
+    again = foley.generate("creak", backend="stable_audio", library=library,
+                           adapter=_adapter(), seed=7, aesthetics=counting)  # fmt: skip
+    assert again.sound.id == first.sound.id and calls == [1]
+    assert library[first.sound.id].qc["aesthetics"]["status"] == "scored"
+    report = foley.sources.generate("creak", backend="stable_audio", library=library,
+                                    adapter=_adapter(), seed=7, aesthetics=counting)  # fmt: skip
+    assert calls == [1] and DUPLICATE_NOTE in report.results[0].notes
 
 
 def test_generate_without_aesthetics_records_nothing(library):

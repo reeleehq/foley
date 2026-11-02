@@ -33,6 +33,8 @@ them (``facebook/audiobox-aesthetics``, about 415 MB) is tagged ``cc-by-4.0``.
 from __future__ import annotations
 
 import tempfile
+import math
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, Mapping, Optional
@@ -85,6 +87,17 @@ AES_MIN_SECONDS = AES_RECEPTIVE_FIELD_SAMPLES / AES_MODEL_SAMPLE_RATE
 #: Clips per forward pass (the toolkit's own ``main_predict`` default).
 AES_BATCH_SIZE = 10
 
+#: Seconds before a run is abandoned (``AudioboxAesthetics(timeout=)``): room for the
+#: first run's 415 MB download and model load; a scored clip otherwise takes seconds.
+AES_TIMEOUT_S = 300.0
+
+#: The longest ``reason`` an ``unchecked`` verdict records (it is stored on the record).
+AES_REASON_MAX_CHARS = 200
+
+#: An absolute path in an error message (POSIX or a Windows drive); a ``~/`` path, a
+#: URL and a relative path are left alone. Scrubbed from a stored ``reason``.
+_ABSOLUTE_PATH = re.compile(r"(?<![\w~.:/\\])(?:/|[A-Za-z]:\\)[^\s'\",)\]]+")
+
 #: :func:`aesthetics_verdict` statuses: scored with no floors, at or above every floor,
 #: below one, or not scored (with the reason).
 SCORED, OK, LOW, UNCHECKED = "scored", "ok", "low", "unchecked"
@@ -127,6 +140,8 @@ class AudioboxAesthetics(ExternalToolkit):
             ``env={"HF_HOME": ...}`` to choose where).
         batch_size: Clips a forward pass.
         min_seconds: The shortest clip scored (default :data:`AES_MIN_SECONDS`).
+        timeout: Seconds before a run is abandoned (default :data:`AES_TIMEOUT_S`;
+            ``None`` waits forever).
         floors: Axis → the lowest acceptable score, read by
             :func:`aesthetics_verdict` (default none: the verdict only records).
     """
@@ -151,9 +166,10 @@ class AudioboxAesthetics(ExternalToolkit):
         batch_size: int = AES_BATCH_SIZE,
         min_seconds: float = AES_MIN_SECONDS,
         floors: "Optional[Mapping[str, float]]" = None,
+        timeout: Optional[float] = AES_TIMEOUT_S,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(timeout=timeout, **kwargs)
         self.checkpoint, self.batch_size = checkpoint, batch_size
         self.min_seconds, self.floors = min_seconds, _check_floors(floors)
 
@@ -182,7 +198,7 @@ class AudioboxAesthetics(ExternalToolkit):
             ValueError: If there is no clip, or a clip has another layout, is shorter
                 than :attr:`min_seconds` or is not finite.
         """
-        python = self._resolve_python()  # before any file is written
+        python = self.resolve_python()  # before any file is written
         with tempfile.TemporaryDirectory(prefix=f"foley-{self.toolkit}-") as tmp:
             clips, out = Path(tmp) / "clips", Path(tmp) / "out.json"
             n = write_set(wavs, sr, clips, prefix="clip", check=self.check_clip)
@@ -217,45 +233,104 @@ class AudioboxAesthetics(ExternalToolkit):
 
 def resolve_aesthetics(aesthetics):
     """``generate(aesthetics=)`` as a scorer: ``None``/``False`` none, ``True`` the default
-    :class:`AudioboxAesthetics`, a scorer (``(wavs, *, sr) -> [AestheticsScore]``) as is."""
+    :class:`AudioboxAesthetics`, a scorer (``(wavs, *, sr) -> [AestheticsScore]``) as is.
+
+    An external-toolkit scorer's interpreter is resolved here, so an explicit opt-in
+    without one fails before anything is paid for (as ``watermark=True`` does).
+
+    Raises:
+        FileNotFoundError: If the scorer's interpreter is not given or not found.
+        TypeError: For any other value.
+    """
     if aesthetics is None or aesthetics is False:
         return None
-    if aesthetics is True:
-        return AudioboxAesthetics()
-    if not callable(aesthetics):
+    scorer = AudioboxAesthetics() if aesthetics is True else aesthetics
+    if not callable(scorer):
         raise TypeError(
             f"aesthetics= takes True, False, None or a scorer, not {type(aesthetics).__name__}"
         )
-    return aesthetics
+    if isinstance(scorer, ExternalToolkit):
+        scorer.resolve_python()
+    return scorer
+
+
+def _reason(exc: BaseException) -> str:
+    """``exc`` as a short, publishable reason: its type, first and last line, no absolute path.
+
+    A failed run's message carries the program's output tail and local paths, and the
+    reason is stored on the record, so only its first line (what failed) and last line
+    (the program's error, or foley's hint about it) are kept, scrubbed and cut.
+    """
+    import subprocess
+
+    if isinstance(exc, subprocess.TimeoutExpired):  # its message quotes the command
+        return f"TimeoutExpired: no answer within {exc.timeout:g} s"
+    lines = [line.strip() for line in str(exc).strip().splitlines() if line.strip()]
+    said = " ... ".join(dict.fromkeys(lines[:1] + lines[-1:]))  # one if they are equal
+    text = _ABSOLUTE_PATH.sub("<path>", f"{type(exc).__name__}: {said}")
+    return text[:AES_REASON_MAX_CHARS]
+
+
+def _finite_or_none(value) -> Optional[float]:
+    value = float(value)
+    return value if math.isfinite(value) else None
+
+
+def _scored(score, floors: dict) -> dict:
+    """The verdict of one score (raises on a malformed one: missing axes, not a score)."""
+    missing = [a for a in AES_AXES if a not in score.axes]
+    if missing:
+        raise ValueError(f"the score has no {missing} axes")
+    axes = {a: _finite_or_none(score.axes[a]) for a in AES_AXES}  # NaN → None
+    below = [a for a, f in floors.items() if axes[a] is None or axes[a] < f]
+    result = {
+        "status": (LOW if below else OK) if floors else SCORED,
+        **axes,
+        "model": str(score.model),
+        "toolkit": str(score.toolkit),
+        "version": str(score.version),
+    }
+    if floors:
+        result["floors"] = floors
+    if below:
+        result["below"] = below
+    return result
 
 
 def aesthetics_verdict(audio_bytes: bytes, *, scorer) -> dict:
     """Score ``audio_bytes`` with ``scorer`` and compare with its ``floors``; never raises.
 
     Returns:
-        A JSON-safe dict: ``status`` (``scored`` | ``ok`` | ``low`` | ``unchecked``),
-        and the four axes, ``model``, ``toolkit`` and ``version`` when scored, plus
-        ``floors`` and the axes ``below`` them when the scorer has floors; or
-        ``reason`` when not scored (no interpreter, a clip too short, a toolkit crash).
+        A strict-JSON dict: ``status`` (``scored`` | ``ok`` | ``low`` | ``unchecked``),
+        and the four axes (``None`` for a non-finite one), ``model``, ``toolkit`` and
+        ``version`` when scored, plus ``floors`` and the axes ``below`` them when the
+        scorer has floors; or a short ``reason`` (:func:`_reason`: no paths, no program
+        output) when not scored: no interpreter, a clip too short, a timeout, a crash,
+        a scorer answering anything but one well-formed score.
 
-    >>> aesthetics_verdict(b"", scorer=lambda wavs, *, sr: [])["status"]
-    'unchecked'
+    >>> import numpy as np
+    >>> from foley.audio import encode
+    >>> clip = encode(np.zeros(1600), 16000)
+    >>> aesthetics_verdict(clip, scorer=lambda wavs, *, sr: [])["reason"]
+    'ValueError: the scorer returned 0 scores for 1 clip'
     """
     from ..audio import load
 
     try:
         floors = _check_floors(getattr(scorer, "floors", None))
         wav, sr = load(audio_bytes)
-        [score] = scorer([wav], sr=sr)
+        scores = list(scorer([wav], sr=sr))
+        if len(scores) != 1:
+            raise ValueError(f"the scorer returned {len(scores)} scores for 1 clip")
+        return _scored(scores[0], floors)
     except Exception as exc:  # noqa: BLE001 - a score that cannot be had is "unchecked"
-        return {"status": UNCHECKED, "reason": f"{type(exc).__name__}: {exc}"}
-    below = [a for a, f in floors.items() if not score.axes[a] >= f]  # NaN is below
-    result = {"status": (LOW if below else OK) if floors else SCORED, **score.to_dict()}
-    if floors:
-        result["floors"] = floors
-    if below:
-        result["below"] = below
-    return result
+        return {"status": UNCHECKED, "reason": _reason(exc)}
+
+
+#: The note of a duplicate generation whose stored twin already has a verdict.
+DUPLICATE_NOTE = (
+    "aesthetics: unchecked (duplicate of a stored clip; its recorded verdict stands)"
+)
 
 
 def note_for(result: dict) -> Optional[str]:
@@ -265,7 +340,11 @@ def note_for(result: dict) -> Optional[str]:
         return f"aesthetics: unchecked ({result.get('reason')})"
     if status not in (SCORED, OK, LOW):
         return None
-    axes = " ".join(f"{a} {result[a]:.2f}" for a in AES_AXES)
+
+    def show(value) -> str:
+        return "n/a" if value is None else f"{value:.2f}"
+
+    axes = " ".join(f"{a} {show(result.get(a))}" for a in AES_AXES)
     if status == LOW:
         low = ", ".join(f"{a} < {result['floors'][a]:g}" for a in result["below"])
         return f"aesthetics: LOW ({low}; {axes}); listen before using it"

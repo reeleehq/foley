@@ -841,7 +841,9 @@ def generate(
             :class:`foley.eval.AudioboxAesthetics` in the interpreter
             ``$FOLEY_AES_PYTHON`` names, or a configured instance (``floors=`` flags a
             low axis). Never a quarantine; ``'unchecked'`` (with the reason) when it
-            cannot run. Default ``None``: off (it loads a 415 MB model per clip).
+            cannot run; an explicit opt-in without the interpreter raises before the
+            spend. Default ``None``: off (it loads a 415 MB model per clip, so per take
+            of :func:`variations`).
         intended_use: The :class:`IntendedUse` the clip must serve when an order is
             walked (default: commercial): a backend whose licence cannot serve it is
             skipped before anything is paid for. A single named backend is used as

@@ -83,8 +83,9 @@ def write_set(
 class ExternalToolkit:
     """A toolkit run by :data:`DRIVER` in a separate interpreter.
 
-    Subclasses set :attr:`toolkit`, :attr:`python_env`, :attr:`install` (and optionally
-    :attr:`isolation_reason` and :attr:`failure_hints`), and call :meth:`run_driver`.
+    Subclasses set :attr:`toolkit`, :attr:`python_env`, :attr:`install`,
+    :attr:`isolation_reason` (and optionally :attr:`failure_hints`), and call
+    :meth:`run_driver`.
 
     Args:
         python: An interpreter with the toolkit installed, usually in its own venv
@@ -99,7 +100,7 @@ class ExternalToolkit:
     python_env: str  # the environment variable naming the toolkit's interpreter
     install: str  # the install line quoted when the interpreter is missing
     #: Why the toolkit cannot live in foley's environment (said when no interpreter).
-    isolation_reason: str = "it pins numpy<2, so it cannot live in foley's environment"
+    isolation_reason: str
     #: A substring of a failed run's output → what to do about it.
     failure_hints: "Mapping[str, str]" = {}
 
@@ -113,7 +114,11 @@ class ExternalToolkit:
     ):
         self.python, self.env, self.timeout, self.runner = python, env, timeout, runner
 
-    def _resolve_python(self) -> str:
+    def resolve_python(self) -> str:
+        """The toolkit's interpreter as an executable path; raise with the install line if none.
+
+        Cheap (no program runs), so a caller can fail before anything is paid for.
+        """
         python = self.python or os.environ.get(self.python_env)
         if not python:
             raise FileNotFoundError(
@@ -152,7 +157,7 @@ class ExternalToolkit:
             RuntimeError: If the toolkit fails (its output tail, and any matching
                 :attr:`failure_hints`, are in the message).
         """
-        python = python or self._resolve_python()
+        python = python or self.resolve_python()
         spec = {"toolkit": self.toolkit, "out": str(out), **spec}
         try:
             output = run_program(
