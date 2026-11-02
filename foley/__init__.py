@@ -1235,9 +1235,11 @@ def edit(
         prompt: What the result should sound like; ``''`` (default): the source's caption.
         backend: An edit source doing ``op`` (``'fal_stable_audio_3_audio_to_audio'``,
             ``'fal_stable_audio_3_inpaint'``, ``'fal_stable_audio_3_extend'``: fal's
-            Stable Audio 3 Small-SFX, ``foley[fal]`` + ``$FAL_KEY``). ``None``
-            (default): the op's default, read from the registry configs' ``edit_op``;
-            it is paid, so it runs only once paid generation is opted in.
+            Stable Audio 3 Small-SFX, ``foley[fal]`` + ``$FAL_KEY``; the inpaint and
+            extend fallbacks ``'fal_mirelo_inpaint'``, ``'fal_mirelo_extend'``: Mirelo
+            SFX 1.6, non-commercial). ``None`` (default): the op's default, read from
+            the registry configs' ``edit_op``; it is paid, so it runs only once paid
+            generation is opted in.
         library: The library holding ``source`` and receiving the edit (default: the
             process-wide default library).
         budget: A :class:`Budget` for this call (see :func:`generate`).

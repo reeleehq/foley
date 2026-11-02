@@ -25,7 +25,8 @@ Licences (the per-sound record is fail-closed, so each row says only what is kno
 * ``fal_mmaudio`` — MMAudio weights are CC BY-NC 4.0, whatever fal's ``commercial`` label
   says. Row: ``CC-BY-NC-4.0`` with the MMAudio credit, so :func:`foley.keep` refuses it for
   commercial use and credits render the attribution.
-* ``fal_elevenlabs``, ``fal_sonilo``, ``fal_mirelo`` — partner models resold by fal. Whether the vendor's
+* ``fal_elevenlabs``, ``fal_sonilo``, ``fal_mirelo`` (and its edit endpoints
+  ``fal_mirelo_inpaint``, ``fal_mirelo_extend``) — partner models resold by fal. Whether the vendor's
   plan rules (ElevenLabs and Sonilo free tiers are non-commercial) apply to a fal-routed
   call is not documented (Sonilo's own page now allows commercial use of API output,
   but not specifically for calls billed through fal). Row: ``fal-partner-unverified`` — usable in a derivative,
@@ -41,7 +42,12 @@ declare ``modes=['edit']`` and their ``edit_op`` (a :data:`foley.base.EDIT_OPS` 
 only a call with a source clip (``audio=``, see :func:`foley.edit`) reaches them, and none
 joins a text-to-audio or video-to-audio order. Their Stable Audio 3 row is the
 generator's: the edit mode narrows each edit's rights to its source's
-(:func:`foley.sources.edit.edit_lineage`).
+(:func:`foley.sources.edit.edit_lineage`). Mirelo SFX 1.6's inpaint and extend
+endpoints (#215: ``fal_mirelo_inpaint``, ``fal_mirelo_extend``) are those ops'
+fallbacks, registered after them so an unnamed edit keeps Stable Audio 3; their
+schema limits (the clip's, a window's and the output's lengths) are their
+``edit_limits``, and they are priced per second of the sound they make. fal
+deprecates both on 2026-12-15, with no SFX 2.0 edit endpoint to move to (yet).
 
 Pricing is fal's (``unit``/``amount_usd`` as in :func:`foley.cost.estimate_call`), with the
 date it was read. ``per_second`` with no requested duration is priced at the
@@ -53,6 +59,7 @@ from __future__ import annotations
 
 import copy
 
+from ...base import EDIT_OPS
 from ..elevenlabs.config import MP3_BY_RATE as _EL_MP3_BY_RATE
 from ..elevenlabs.config import PCM_RATES as _EL_PCM_RATES
 from ..media import MEDIA_INPUTS
@@ -93,6 +100,9 @@ _PARTNER_TERMS = {
 _MIRELO_TERMS = {
     **_PARTNER_TERMS,
     "vendor_trains_on_output": True,
+    # ... and on input: an edit's source clip goes into it, so the edit gate refuses a
+    # source whose rights forbid AI training (foley.licensing.vendor_training_refusal).
+    "vendor_trains_on_input": True,
     "terms_notes": [
         "Mirelo's terms (§7.4) give Mirelo a training licence on your input and "
         "output; only a paid direct Mirelo account can opt out, which a fal-routed "
@@ -812,7 +822,79 @@ def _sa3_edit(
     )
 
 
-#: The edit sources (#162): named, or picked by foley.edit from their edit_op.
+#: The Mirelo SFX 1.6 edit endpoints' schemas and prices (#215).
+_SEEN_MIRELO_EDIT = "2026-11-02"
+#: Mirelo's edit endpoints have no ``seed`` echo and answer a list of samples; one
+#: sample per call (``num_samples`` defaults to 2, likely billed per sample).
+_MIRELO_EDIT_PARAM_MAP = {
+    "prompt": {"native_name": "text_prompt"},  # optional: the source clip leads
+    "audio": {"native_name": "audio_url"},  # http(s) or a data URI of up to 8 MB
+    "seed": {"native_name": "seed"},
+    "output_format": copy.deepcopy(  # fal_mirelo's (no aac)
+        next(c for c in SOURCE_CONFIGS if c["name"] == "fal_mirelo")["param_map"][
+            "output_format"
+        ]
+    ),
+}
+
+
+def _mirelo_edit(
+    name: str,
+    op: str,
+    endpoint: str,
+    *,
+    params: dict,
+    edit_limits: dict,
+    unsupported: tuple,
+    fixed_arguments=None,
+) -> dict:
+    """One Mirelo SFX 1.6 edit source (#215): Mirelo's partner row and watermark
+    statement (as ``fal_mirelo``), the shared schema plus the op's own ``params``."""
+    return _source(
+        name,
+        display_name=f"Mirelo SFX 1.6 {op.replace('_', '-')} (fal)",
+        website=f"https://fal.ai/models/{endpoint}",
+        api={"endpoint_id": endpoint},
+        # fal deprecates both endpoints on 2026-12-15 ("Migrate to SFX 2.0"), and SFX
+        # 2.0 has no edit endpoint (its openapi 404s, read 2026-11-02): after it, no
+        # default, suggestion or estimate offers them (foley.sources.generate.edit_backends).
+        deprecated_after="2026-12-15",
+        modes=["edit"],
+        edit_op=op,
+        param_map={**copy.deepcopy(_MIRELO_EDIT_PARAM_MAP), **params},
+        supported_affordances=[*_MIRELO_EDIT_PARAM_MAP, *params],
+        unsupported_affordances=list(unsupported),
+        # The schema's own limits, checked before anything is paid for
+        # (foley.base.check_edit_args): the clip's, a window's and the output's lengths.
+        edit_limits=edit_limits,
+        native_defaults={
+            "model_id": "mirelo-sfx-1.6",
+            "generator_version": endpoint,
+            "upload_audio_format": "wav",
+            "fixed_arguments": {"num_samples": 1, **(fixed_arguments or {})},
+            # The schema takes up to 2**64 - 1; the int64 range of fal_mirelo is kept.
+            "seed_limit": 2**63,
+        },
+        license=copy.deepcopy(_MIRELO_TERMS),
+        capabilities={"watermark_statement": _MIRELO_WATERMARK},
+        commercial_ok=False,
+        # $0.01 per second (fal's billing unit "seconds"). Which seconds (the output's,
+        # or only the regenerated or added part) and whether per sample is not stated:
+        # priced by the output's length per sample, an upper bound (unverified by a
+        # live call; it can only over-quote a budget).
+        pricing={
+            "unit": "per_second",
+            "per_sample": True,
+            "amount_usd": 0.01,
+            "source": _FAL_PRICING_SOURCE,
+            "seen": _SEEN_MIRELO_EDIT,
+        },
+    )
+
+
+#: The edit sources (#162): named, or picked by foley.edit from their edit_op (the
+#: first registered with its key set: the Stable Audio 3 ones, so Mirelo's are the
+#: inpaint and extend fallbacks, #215).
 EDIT_SOURCE_CONFIGS = (
     _sa3_edit(
         "fal_stable_audio_3_audio_to_audio",
@@ -854,6 +936,53 @@ EDIT_SOURCE_CONFIGS = (
         },
         unsupported=("loop", "duration_s"),  # the source's length plus the extension
     ),
+    _mirelo_edit(
+        "fal_mirelo_inpaint",
+        "inpaint",
+        "mirelo-ai/sfx1.6/inpaint-audio",
+        params={  # one nested "segment": {start_s, end_s} (AudioSegmentSpec)
+            "inpaint_start_s": {
+                "native_name": "segment.start_s",
+                "min": 1.0,
+                "max": 9.0,
+            },
+            "inpaint_end_s": {"native_name": "segment.end_s", "min": 2.0, "max": 10.0},
+        },
+        # a source of 10 s at most; a window of 1 to 8 s (1 s <= start < end <= 10 s)
+        edit_limits={"clip_s": (None, 10.0), "span_s": (1.0, 8.0)},
+        unsupported=(
+            "duration_s",  # the length is the source's
+            "prompt_influence",
+            "negative_prompt",
+            "steps",
+            "loop",
+        ),
+    ),
+    _mirelo_edit(
+        "fal_mirelo_extend",
+        "extend",
+        "mirelo-ai/sfx1.6/extend-audio",
+        params={
+            "extend_after_s": {
+                "native_name": "append_duration",
+                "min": 1.0,
+                "max": 57.0,
+            },
+            # extend, then stitch the end back to the start: a seamless loop tile
+            "loop": {"native_name": "ambience"},
+        },
+        # a source of 3 to 59 s; the output (source + extension) of 60 s at most
+        edit_limits={"clip_s": (3.0, 59.0), "output_s": (None, 60.0)},
+        unsupported=(
+            "extend_before_s",  # it only appends
+            "duration_s",  # the source's length plus the extension
+            "prompt_influence",
+            "negative_prompt",
+            "steps",
+        ),
+        # a looped tile doubled in length would bill twice the seconds foley priced
+        fixed_arguments={"double_output": False},
+    ),
 )
 SOURCE_CONFIGS = (*SOURCE_CONFIGS, *EDIT_SOURCE_CONFIGS)
 
@@ -876,9 +1005,24 @@ for _config in SOURCE_CONFIGS:
                 *(_pm[m]["native_name"] for m in MEDIA_INPUTS if m in _pm),
                 *_FAL_RESERVED,
                 *(_config["native_defaults"].get("fixed_arguments") or {}),
+                # a nested field (Mirelo's inpaint segment) is the edit's window, which
+                # its lineage records: a provider param may not replace it
+                *(
+                    spec["native_name"].split(".")[0]
+                    for spec in _pm.values()
+                    if "." in spec.get("native_name", "")
+                ),
             }
         ),
-        "priced": [(_pm.get("duration_s") or {}).get("native_name") or "duration"],
+        "priced": [
+            (_pm.get("duration_s") or {}).get("native_name") or "duration",
+            # what an edit adds to the output's length, which a per-second edit bills
+            *(
+                _pm[p]["native_name"]
+                for p in getattr(EDIT_OPS.get(_config.get("edit_op")), "adds", ())
+                if p in _pm and _config["pricing"]["unit"] == "per_second"
+            ),
+        ],
     }
 
 #: The fal source names, in the order above (the first is the recommended one).

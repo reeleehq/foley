@@ -153,19 +153,35 @@ def generation_mode(affordances: Mapping) -> str:
     )
 
 
-def edit_backends(op: str) -> "tuple[str, ...]":
+def edit_backends(op: str, *, today=None) -> "tuple[str, ...]":
     """The registered edit sources that do ``op``, in registration order (their configs'
-    ``modes`` and ``edit_op``: data, so a new edit source is found by itself).
+    ``modes`` and ``edit_op``: data, so a new edit source is found by itself), less
+    those past their ``deprecated_after`` date (an ISO date: the provider retires the
+    endpoint after it), so no default, suggestion or estimate offers one. A retired
+    backend can still be named.
+
+    Args:
+        op: The edit op.
+        today: The date to judge deprecation by (a :class:`datetime.date`; default:
+            today's).
 
     Raises:
         ValueError: For an op not in :data:`foley.base.EDIT_OPS`.
     """
+    import datetime
+
     from ..base import EDIT_OPS
     from ._dispatch import source_modes
     from .registry import SOURCE_REGISTRY, discover_sources
 
     if op not in EDIT_OPS:
         raise ValueError(f"unknown edit op {op!r}; expected one of {sorted(EDIT_OPS)}")
+    today = today or datetime.date.today()
+
+    def live(config: dict) -> bool:
+        after = config.get("deprecated_after")
+        return after is None or today <= datetime.date.fromisoformat(after)
+
     discover_sources()
     return tuple(
         name
@@ -173,21 +189,26 @@ def edit_backends(op: str) -> "tuple[str, ...]":
         if entry["config"].get("kind") in GENERATING_KINDS
         and "edit" in source_modes(entry["config"])
         and entry["config"].get("edit_op") == op
+        and live(entry["config"])
     )
 
 
-def default_edit_backend(op: str) -> str:
+def default_edit_backend(op: str, *, today=None) -> str:
     """The backend an unnamed :func:`foley.edit` of ``op`` uses: the first of
-    :func:`edit_backends` with its key set, else the last
-    (:func:`first_runnable_backend`).
+    :func:`edit_backends` with its key set, else the first (registration order puts
+    the recommended one first; the others are its fallbacks, named by a refusal).
+
+    Unlike a generation order, an edit's has no free local backend to end on, so
+    without a key the default stays the recommended one, not the last fallback.
+    ``today``: as :func:`edit_backends` (a retired backend is never the default).
 
     Raises:
         SourceConfigurationError: When no registered source does ``op``.
     """
-    order = edit_backends(op)
+    order = edit_backends(op, today=today)
     if not order:
         raise SourceConfigurationError(f"no registered backend does the {op} edit")
-    return first_runnable_backend(order)
+    return next((name for name in order if backend_has_key(name)), order[0])
 
 
 def generate_backend_order(*, mode: str = "t2a") -> "tuple[str, ...]":

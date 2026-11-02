@@ -6,6 +6,7 @@ fall-through to fal), so a change to the native payload fails loudly here instea
 spending money. The one live test needs ``FOLEY_LIVE_API_TESTS=1`` **and** ``$FAL_KEY``.
 """
 
+import json
 import os
 
 import pytest
@@ -45,9 +46,15 @@ class ReplayRunner:
         self.default = default
         self.calls = []
 
+    @staticmethod
+    def key(endpoint_id, arguments):
+        """What an answer is recorded under: the endpoint and the arguments as canonical
+        JSON (a nested field, Mirelo's inpaint ``segment``, keys too)."""
+        return endpoint_id, json.dumps(arguments, sort_keys=True, default=str)
+
     def __call__(self, endpoint_id, arguments, *, api_key, audio_field="audio"):
         self.calls.append((endpoint_id, dict(arguments), api_key, audio_field))
-        key = (endpoint_id, tuple(sorted(arguments.items())))
+        key = self.key(endpoint_id, arguments)
         if key in self.answers:
             return self.answers[key]
         if self.default is not None:

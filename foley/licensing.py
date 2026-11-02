@@ -988,6 +988,37 @@ def upload_refusal(source: LicenseRecord) -> Optional[str]:
     return _cacheable_refusal(source, ", so they are not uploaded to an edit backend")
 
 
+def vendor_training_refusal(
+    source: LicenseRecord, backend_config: Mapping
+) -> Optional[str]:
+    """Why a sound with rights ``source`` may not be sent to the backend
+    ``backend_config`` declares, because its vendor trains on what it is sent, or ``None``.
+
+    A backend whose licence block says ``vendor_trains_on_input`` (Mirelo's terms
+    §7.4: a training licence on input as well as output) takes the source clip into a
+    proprietary, commercial training set. Fail-closed: the source's rights must allow
+    that use (:func:`ai_use_permitted`, closed-source and commercial); an
+    ``ai_training_ok`` that is off or a narrowed scope refuses it, before any upload.
+
+    >>> from foley.base import LicenseRecord
+    >>> trains = {"license": {"vendor_trains_on_input": True}}
+    >>> vendor_training_refusal(LicenseRecord(source="x"), trains)[:26]
+    "its backend's vendor train"
+    >>> vendor_training_refusal(LicenseRecord(source="x", ai_training_ok=True), trains) is None
+    True
+    >>> vendor_training_refusal(LicenseRecord(source="x"), {"license": {}}) is None
+    True
+    """
+    if not (backend_config.get("license") or {}).get("vendor_trains_on_input"):
+        return None
+    if ai_use_permitted(source, open_source_model=False, commercial=True):
+        return None
+    return (
+        "its backend's vendor trains on what it is sent, and its licence does not "
+        "allow AI training by a closed-source, commercial model, so it is not uploaded"
+    )
+
+
 def export_refusal(source: LicenseRecord) -> Optional[str]:
     """Why the bytes of a sound with rights ``source`` may not be exported, or ``None``.
 
