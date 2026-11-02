@@ -19,8 +19,11 @@ from foley.weave.broadcast import (  # noqa: E402
     apply_treatment,
     bed_gain_db,
     broadcast_license,
+    duck_envelope,
     join_lines,
+    mix_program,
     resolve_treatment,
+    speech_activity,
 )
 
 SR = 16_000
@@ -108,6 +111,31 @@ def test_bed_gain_sets_the_bed_under_the_speech():
     lufs = foley.audio.integrated_lufs
     level = lufs(bed * 10 ** (gain / 20), SR) - lufs(speech, SR)
     assert level == pytest.approx(BED_UNDER_SPEECH_DB, abs=0.1)
+
+
+def test_the_bed_ducks_under_each_line_and_swells_between():
+    clips = [_line(1.0), _line(1.0)]
+    speech, bed = join_lines(clips, SR, gap_s=1.0), _crowd(2.0)
+    activity = speech_activity(clips, SR, gap_s=1.0)
+    ducked, _ = mix_program(speech, bed, SR, activity=activity, duck_db=-10.0)
+    constant, _ = mix_program(speech, bed, SR)
+    bed_part = ducked - speech  # the bed alone (speech goes in unscaled)
+
+    def rms(x, a, b):
+        return float(np.sqrt(np.mean(x[int(a * SR) : int(b * SR)] ** 2)))
+
+    under, between = rms(bed_part, 0.3, 0.9), rms(bed_part, 1.6, 1.9)
+    assert 20 * np.log10(between / under) == pytest.approx(10.0, abs=0.5)
+    assert rms(ducked - constant, 0.3, 0.9) < 1e-3 * under  # under a line: unchanged
+    flat, _ = mix_program(speech, bed, SR, activity=activity, duck_db=0.0)
+    np.testing.assert_array_equal(flat, constant)  # duck_db=0: the constant bed
+
+
+def test_duck_envelope_settles_without_a_jump_at_the_start():
+    env = duck_envelope(np.r_[np.ones(SR), np.zeros(4 * SR)], SR, duck_db=-6.0)
+    assert env[0] == pytest.approx(1.0) and env[SR - 1] == pytest.approx(1.0)
+    assert env[-1] == pytest.approx(10 ** (6 / 20), rel=1e-3)
+    assert np.all(np.diff(env) >= 0)  # one smooth swell, no click
 
 
 def _tone_level(x, hz=900.0):
