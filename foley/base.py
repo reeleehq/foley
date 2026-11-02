@@ -272,6 +272,12 @@ GENERATION_AFFORDANCES: dict[str, Affordance] = {
         False,
         "generate",
     ),
+    # A category preset of the sfxr family (laser, pickup, ...; #76, report 13 §2E):
+    # only a procedural source takes it, and its config's ``presets`` is the list it
+    # accepts (foley.sources.base.resolve_preset); the synthesis params stay native.
+    "preset": Affordance(
+        "preset", str, "Category preset (procedural sources)", stage="generate"
+    ),
 }
 
 
@@ -648,7 +654,7 @@ class LicenseRecord(SerializableMixin):
     # ``license_id`` (a restamp) can never widen a derivative. Empty: not derived.
     derived_from_license_ids: list = field(default_factory=list)
 
-    # generation (present iff AI-generated)
+    # generation (present iff generated: by a model, is_ai_generated, or procedurally)
     is_ai_generated: bool = False
     generator_model: Optional[str] = None
     generator_version: Optional[str] = None
@@ -665,17 +671,21 @@ class LicenseRecord(SerializableMixin):
     def generation_reproducible(self) -> Optional[bool]:
         """Whether this generated clip can be made again: ``True`` iff a seed was recorded.
 
-        ``None`` for a sound that was not generated. A backend with no seed
-        (ElevenLabs, Sonilo) records none, so its clips read ``False`` rather than
-        carrying a seed that would reproduce nothing (#75). A seed is necessary, not
-        sufficient: a hosted endpoint can change its model behind the same id. A
-        prompt the backend rewrote (``expand_prompt``) is ``False`` too: replaying it
-        runs the rewrite again.
+        ``None`` for a sound that was not generated (by a model, or procedurally). A
+        backend with no seed (ElevenLabs, Sonilo) records none, so its clips read
+        ``False`` rather than carrying a seed that would reproduce nothing (#75). A
+        seed is necessary, not sufficient: a hosted endpoint can change its model
+        behind the same id. A clip whose ``generation_params`` say ``bit_exact``
+        is ``False`` (pyfxr's noise waveform, #76) is ``False``: the same seed and
+        params render different bytes. A prompt the backend rewrote
+        (``expand_prompt``) is ``False`` too: replaying it runs the rewrite again.
         """
-        if not self.is_ai_generated:
+        generated = self.acquisition_method == AcquisitionMethod.generated
+        if not (self.is_ai_generated or generated):
             return None
         rewritten = self.generation_prompt_used not in (None, self.generation_prompt)
-        return self.generation_seed is not None and not rewritten
+        bit_exact = (self.generation_params or {}).get("bit_exact", True)
+        return self.generation_seed is not None and not rewritten and bit_exact
 
     # safety / disclosure
     contains_recognizable_voice: bool = False

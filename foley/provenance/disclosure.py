@@ -75,6 +75,10 @@ IPTC_TRAINED_ALGORITHMIC_MEDIA = (
     "http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"
 )
 IPTC_DIGITAL_CREATION = "http://cv.iptc.org/newscodes/digitalsourcetype/digitalCreation"
+#: Made purely by an algorithm, from no sampled training data: procedural synthesis (#76).
+IPTC_ALGORITHMIC_MEDIA = (
+    "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicMedia"
+)
 #: C2PA vocabulary the mix manifest uses (action names, ingredient relationship, id scheme).
 C2PA_CREATED = "c2pa.created"
 C2PA_PLACED = "c2pa.placed"
@@ -479,6 +483,16 @@ def _coerce(record: "CreditInput"):
     )
 
 
+def _procedural(lic) -> bool:
+    """Generated, but not by a model: procedural synthesis (#76; a ``'procedural'`` source)."""
+    from ..base import AcquisitionMethod
+
+    return (
+        not lic.is_ai_generated
+        and lic.acquisition_method == AcquisitionMethod.generated
+    )
+
+
 if TYPE_CHECKING:  # pragma: no cover
     from typing import Union
 
@@ -517,9 +531,11 @@ def build_content_credential(
     from ..licensing import license_meta
 
     lic, caption, fmt = _coerce(record)
-    source_type = (
-        IPTC_TRAINED_ALGORITHMIC_MEDIA if lic.is_ai_generated else IPTC_DIGITAL_CREATION
-    )
+    procedural = _procedural(lic)
+    if lic.is_ai_generated:
+        source_type = IPTC_TRAINED_ALGORITHMIC_MEDIA
+    else:
+        source_type = IPTC_ALGORITHMIC_MEDIA if procedural else IPTC_DIGITAL_CREATION
     # Prefer the record's own URL, else the canonical URL from the licensing SSOT
     # (a resolvable URL is what a machine-readable credential needs), else the id.
     license_ref = lic.license_url or license_meta(lic.license_id).url or lic.license_id
@@ -594,7 +610,7 @@ def build_content_credential(
         {"label": "stds.schema-org.CreativeWork", "data": creative_work},
     ]
     # foley-native reproducibility assertion (self-asserted; kept in the local sidecar)
-    if lic.is_ai_generated:
+    if lic.is_ai_generated or procedural:
         assertions.append(
             {
                 "label": "foley.generation",

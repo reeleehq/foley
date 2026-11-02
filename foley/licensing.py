@@ -134,6 +134,10 @@ LICENSE_FLAGS: dict[str, LicenseFlags] = {
         False, True, False, True, True, False, False, None
     ),
     "MIT": LicenseFlags(True, True, True, True, True, True, True, None),
+    # Procedural synthesis output (#76; the sfxr family: pyfxr, jsfxr, ZzFX, rFXGen):
+    # the tools' licences cover their code, and the sound a parameter set renders
+    # carries none. All rights, no attribution.
+    "procedural-free": LicenseFlags(True, True, True, True, True, True, False, None),
     # Tencent Hunyuan Community licence (HunyuanVideo-Foley, #74): no grant at all in
     # the EU, the UK or South Korea (LICENSE_EXCLUDED_TERRITORIES), and foley treats it
     # as non-commercial; outputs may not train other models.
@@ -479,6 +483,9 @@ LICENSE_META: dict[str, LicenseMeta] = {
         "https://fal.ai/legal/terms-of-service",
     ),
     "MIT": LicenseMeta("MIT License", "https://opensource.org/license/mit"),
+    "procedural-free": LicenseMeta(
+        "Procedural synthesis output (no licence attaches)", None
+    ),
     "Tencent-Hunyuan-Community": LicenseMeta(
         "Tencent Hunyuan Community License (not valid in the EU, the UK or South Korea)",
         "https://huggingface.co/tencent/HunyuanVideo-Foley/blob/main/LICENSE",

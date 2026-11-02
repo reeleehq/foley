@@ -7,7 +7,8 @@ metadata:
 
 # Adding a source to foley
 
-A **source** is anywhere foley gets a sound. Two kinds, one contract:
+A **source** is anywhere foley gets a sound. Two main kinds, one contract (plus the
+procedural kind, below):
 
 - **retrieve** — fetch existing sounds from a library/API. Anchor: **Freesound** (CC0
   subset). Others (BBC, Epidemic, Storyblocks, Pond5, Pro Sound Effects) are mostly
@@ -63,6 +64,10 @@ from its own config. The model: `foley/sources/fal/` (`fal_stable_audio_3`,
 - **Tests:** a replay runner that answers only the requests it was given; a miss raises,
   never falls through to the network. One live test, behind `FOLEY_LIVE_API_TESTS=1` and the key.
 
+### A procedural source (`kind="procedural"`)
+
+A third kind, beside retrieve and generate (#76): synthesis from a parameter set, with no model (the sfxr family: pyfxr, jsfxr, ZzFX, rFXGen). It goes through `foley.generate` like a generator (`foley.sources.base.GENERATING_KINDS` is the SSOT for "makes a sound"), but its output is not AI: the adapter calls `generated_license(..., ai_generated=False)` under the `procedural-free` row, so it is neither watermarked nor flagged for disclosure, and its content credential says `algorithmicMedia`. The canonical affordance is `preset`, and the config's `presets` (canonical name to native function) is the SSOT of what a source plays: a new source adds presets in its config alone. With none given, `resolve_preset` picks one from the prompt with the config's `preset_keywords` (game-specific words only: "bell" or "hit" name ordinary sounds), and `plan_generation` refuses a call with neither before any work (`UnsupportedParameter`). foley's own render handling (a headroom gain, `foley.sources.base.pad_to_qc_minimum` for a blip shorter than QC admits) goes in a `render` block, not `native_defaults`. A clip a seed cannot reproduce records `generation_params["bit_exact"] = False` (so `generation_reproducible` is `False`), and a source where that can happen declares `capabilities: {"deterministic": False}` (a declared fact may narrow a derived `True`). The synthesis params stay native, reachable through `provider_params` (declare them as the policy's `known`, so a typo is refused at plan time). Record the full resolved param set, so a clip can be rebuilt from its params. The model: `foley/sources/pyfxr/`. A procedural source joins no default order: it is named.
+
 ### A generate source and the generation order
 
 An unnamed `foley.generate` walks `foley.sources.generate.DEFAULT_GENERATE_ORDER` (today
@@ -91,7 +96,7 @@ missing-configuration case *before* it sends anything.
 ```python
 SOURCE_CONFIG = {
     "name": "<name>",
-    "kind": "retrieve",  # or "generate"
+    "kind": "retrieve",  # or "generate" / "procedural"
     "display_name": "...",
     "website": "https://...",
     "auth": {"type": "bearer_token", "env_var": "<NAME>_API_KEY"},  # or None

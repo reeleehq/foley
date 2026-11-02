@@ -22,9 +22,10 @@ import json
 from importlib import resources
 from typing import Optional
 
+from .base import GENERATING_KINDS
 from .registry import SOURCE_REGISTRY, list_sources
 
-KINDS = ("generate", "retrieve")
+KINDS = (*GENERATING_KINDS, "retrieve")
 
 
 def capabilities_of(config: dict) -> dict:
@@ -35,16 +36,18 @@ def capabilities_of(config: dict) -> dict:
     ``offline_capable`` (``data_egress == 'local'``), ``max_duration_s`` /
     ``min_duration_s`` / ``sample_rate`` (``None`` when undeclared).
     ``deterministic`` and ``loopable`` are ``None`` for retrieve sources (they only
-    describe generators). A ``config['capabilities']`` dict adds facts a config cannot
-    imply (e.g. ``watermarked``); it may not redefine a derived key.
+    describe the generating kinds, ``'generate'`` and ``'procedural'``). A ``config['capabilities']`` dict adds facts a config cannot
+    imply (e.g. ``watermarked``); it may not redefine a derived key, except to narrow
+    a derived ``True`` to ``False`` (pyfxr takes a seed, but its noise waveform does
+    not reproduce, so it declares ``deterministic: False``).
 
     Raises:
-        ValueError: If ``config['capabilities']`` collides with a derived key.
+        ValueError: If ``config['capabilities']`` widens or retypes a derived key.
     """
     affordances = list(config.get("supported_affordances") or ())
     native = config.get("native_defaults") or {}
     kind = config.get("kind")
-    generates = kind == "generate"
+    generates = kind in GENERATING_KINDS
     view = {
         "kind": kind,
         # generate: text-to-audio unless the config says otherwise (#74: 'v2a').
@@ -58,11 +61,15 @@ def capabilities_of(config: dict) -> dict:
         "sample_rate": native.get("sample_rate"),
     }
     declared = config.get("capabilities") or {}
-    clash = sorted(set(declared) & set(view))
+    clash = sorted(
+        k
+        for k in set(declared) & set(view)
+        if not (view[k] is True and declared[k] is False)  # narrowing is allowed
+    )
     if clash:
         raise ValueError(
             f"source {config.get('name')!r}: capabilities {clash} are derived from "
-            "the config; declare only extra facts"
+            "the config; declare only extra facts (or narrow a True to False)"
         )
     return {**view, **declared}
 
@@ -73,7 +80,7 @@ def list_backends(
     """Names of registered live sources, filtered by ``kind`` and by what they support.
 
     Args:
-        kind: ``'generate'`` or ``'retrieve'`` (``None``: both).
+        kind: ``'generate'``, ``'procedural'`` or ``'retrieve'`` (``None``: all).
         supports: One name or a list (all must hold). A name is an affordance the
             source accepts (``'seed'``, ``'negative_prompt'``, ``'loop'`` ...) or a
             true flag of :func:`capabilities_of` (``'deterministic'``,

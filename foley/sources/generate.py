@@ -47,7 +47,7 @@ from ..index.ingest import IngestReport, IngestResult, ingest_one
 from ..qc import DEFAULT_MIN_STATUS
 from ._dispatch import plan_generation, record_generation_outcome, run_generation
 from ..runtime import EgressBlocked
-from .base import SourceConfigurationError, UndemuxedAnswer
+from .base import GENERATING_KINDS, SourceConfigurationError, UndemuxedAnswer
 from .registry import get_source
 
 #: The order :func:`foley.generate` tries backends in when none is named. ElevenLabs
@@ -164,7 +164,7 @@ def edit_backends(op: str) -> "tuple[str, ...]":
     return tuple(
         name
         for name, entry in SOURCE_REGISTRY.items()
-        if entry["config"].get("kind") == "generate"
+        if entry["config"].get("kind") in GENERATING_KINDS
         and "edit" in source_modes(entry["config"])
         and entry["config"].get("edit_op") == op
     )
@@ -701,8 +701,12 @@ def _generate(
         # Watermark BEFORE ingest so the stored bytes carry the mark AND the
         # content-hash id hashes the watermarked PCM. Graceful degrade: a watermark
         # failure never fails the generation (the mark is descriptive provenance, not
-        # a license gate).
-        if wm is not None:
+        # a license gate). Procedural synthesis (#76) is not AI output: the AI Act's
+        # machine-readable mark is not owed, and a mark would only alter the bytes.
+        if not lic.is_ai_generated:
+            if watermark:
+                clip.notes.append("not watermarked: procedural synthesis, not AI")
+        elif wm is not None:
             try:
                 wres = wm.embed(audio_bytes)
                 audio_bytes = wres.audio_bytes
@@ -1118,7 +1122,7 @@ def generate_in_order(
     for i, name in enumerate(order):
         last = i == len(order) - 1
         entry = SOURCE_REGISTRY.get(name)
-        if entry is None or entry["config"].get("kind") != "generate":
+        if entry is None or entry["config"].get("kind") not in GENERATING_KINDS:
             skipped.append(f"{name}: not a registered generate source")
             continue
         refusal = generation_rights_refusal(name, use)
