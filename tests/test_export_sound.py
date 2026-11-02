@@ -30,6 +30,8 @@ from foley.provenance import (  # noqa: E402
     ASSET_SOURCE_EXTRAS,
     PROVENANCE_FIELDS,
     RIGHTS_FIELDS,
+    id_from_user_data,
+    id_to_user_data,
     sound_rights,
 )
 from foley.sources.base import generated_license  # noqa: E402
@@ -414,3 +416,185 @@ def test_every_licence_validates_as_lacing_rights():
     for license_id in LICENSE_FLAGS:
         rights = _rights_for(license_id)
         assert lacing.Rights(**rights).model_dump() == rights, license_id
+
+
+# ---------------------------------------------------------------------------
+# UCS filename + bext / iXML (#231)
+# ---------------------------------------------------------------------------
+
+
+def _data_chunk(wav: bytes) -> bytes:
+    from foley.embedded_metadata import iter_riff_chunks
+
+    ((at, size),) = [
+        (a, s) for c, a, s in iter_riff_chunks(io.BytesIO(wav)) if c == b"data"
+    ]
+    return wav[at : at + size]
+
+
+@pytest.fixture
+def door(library):
+    lic = apply_license_flags(
+        LicenseRecord(source="fsd50k", source_id="77", source_url="https://freesound.org/s/77/",
+                      creator_name="amy", license_id="CC-BY-4.0", rights_verified=True)
+    )  # fmt: skip
+    rec = SoundRecord(id="door_77", license=lic, ucs_category="DOORWood",
+                      caption="an old wooden door creaks open slowly", tags=["door", "creak"])  # fmt: skip
+    library.add(rec, data=_flac(500))
+    return rec
+
+
+def test_a_wav_export_carries_its_metadata_and_a_ucs_filename(library, door):
+    from foley.embedded_metadata import read_embedded_metadata
+    from foley.index.taxonomy import parse_ucs_name
+
+    data, rights, prov = foley.export_sound(door.id, library=library)
+    name = parse_ucs_name(prov["filename"])
+    # the caption cut at 25 characters, on a word boundary
+    assert (
+        prov["filename"]
+        == "DOORWood_an old wooden door creaks_amy_fsd50k_door%5F77.wav"
+    )
+    assert (name.catid, name.category, name.subcategory) == (
+        "DOORWood",
+        "DOORS",
+        "Wood",
+    )
+    assert (name.creator_id, name.source_id, id_from_user_data(name.user_data)) == (
+        "amy",
+        "fsd50k",
+        door.id,
+    )
+    meta = read_embedded_metadata(data)
+    assert meta["caption"] == door.caption and meta["tags"] == door.tags
+    assert [
+        meta[k] for k in ("ucs_catid", "ucs_category", "ucs_subcategory", "fx_name")
+    ] == [
+        name.catid,
+        name.category,
+        name.subcategory,
+        name.fx_name,
+    ]
+    assert [meta[k] for k in ("license", "license_url", "attribution")] == [
+        rights["license"],
+        rights["license_url"],
+        rights["attribution"],
+    ]
+    assert meta["raw"]["bext"]["description"] == door.caption
+    assert prov["embedded"] == ["ixml", "bext"] and prov["export_notes"] == []
+
+
+def test_embedding_keeps_the_samples_and_the_hash_names_the_bytes_returned(
+    library, door
+):
+    data, _, prov = foley.export_sound(door.id, library=library)
+    plain, _, plain_prov = foley.export_sound(
+        door.id, library=library, embed_metadata=False
+    )
+    assert data != plain and _data_chunk(data) == _data_chunk(plain)
+    assert prov["sha256"] == content_key(data) != plain_prov["sha256"]
+    assert (
+        prov["archived_sha256"] == plain_prov["archived_sha256"] == door.content_sha256
+    )
+    as_int = lambda b: sf.read(io.BytesIO(b), dtype="int32")[0]  # noqa: E731
+    np.testing.assert_array_equal(as_int(data), as_int(library.audio(door.id)))
+    assert plain_prov["embedded"] == [] and b"iXML" not in plain
+
+
+def test_a_flac_export_gets_a_filename_but_no_chunks(library, door):
+    data, _, prov = foley.export_sound(door.id, "flac", library=library)
+    assert data == library.audio(door.id) and prov["sha256"] == prov["archived_sha256"]
+    assert prov["filename"].endswith("_door%5F77.flac") and prov["embedded"] == []
+    assert prov["export_notes"] == ["bext / iXML are written into WAV only, not flac"]
+
+
+def test_a_sound_without_a_known_catid_has_no_filename_but_keeps_its_credit(library):
+    from foley.embedded_metadata import read_embedded_metadata
+
+    data, rights, prov = foley.export_sound("fsd-222", library=library)
+    assert prov["filename"] is None and "ucs_category=None" in prov["export_notes"][0]
+    meta = read_embedded_metadata(data)
+    assert "ucs_catid" not in meta and meta["attribution"] == rights["attribution"]
+    _, _, off = foley.export_sound("fsd-222", library=library, ucs_filename=False)
+    assert off["filename"] is None
+
+
+def _wav_with_ixml(ixml: bytes, *, data_size=None) -> bytes:
+    """A PCM_16 WAV (exported as it is) carrying a source file's own iXML chunk."""
+    import struct
+
+    buf = io.BytesIO()
+    sf.write(buf, np.zeros(480, dtype="int16"), SR, format="WAV", subtype="PCM_16")
+    wav = buf.getvalue()
+    if len(ixml) % 2:
+        ixml += b" "
+    wav += b"iXML" + struct.pack("<I", len(ixml)) + ixml
+    wav = wav[:4] + struct.pack("<I", len(wav) - 8) + wav[8:]
+    if data_size is not None:  # a streamed WAV: its data size never filled in
+        at = wav.index(b"data") + 4
+        wav = wav[:at] + struct.pack("<I", data_size) + wav[at + 4 :]
+    return wav
+
+
+def _unverified(sound_id: str) -> SoundRecord:
+    lic = apply_license_flags(LicenseRecord(source="pack", license_id="CC-BY-NC-4.0"))
+    return SoundRecord(id=sound_id, license=lic, caption="a vendor door")
+
+
+def test_a_source_files_licence_fields_never_survive_beside_foleys(library):
+    from foley.embedded_metadata import read_embedded_metadata
+
+    vendor = (
+        b'<?xml version="1.0"?><BWFXML><!-- vendor note --><USER>'
+        b"<LICENSE>vendor-eula</LICENSE><LICENSE_URL>https://vendor/eula</LICENSE_URL>"
+        b"<LIBRARY>Doors 2</LIBRARY></USER></BWFXML>"
+    )
+    library.add(_unverified("pack-1"), data=_wav_with_ixml(vendor))
+    data, rights, prov = foley.export_sound("pack-1", library=library)
+    assert rights["license"] is None and rights["license_url"] is None
+    ixml = read_embedded_metadata(data)["raw"]["ixml"]
+    assert "LICENSE" not in ixml and "LICENSE_URL" not in ixml
+    assert ixml["LIBRARY"] == "Doors 2" and ixml["ATTRIBUTION"] == rights["attribution"]
+    assert b"<!-- vendor note -->" in data  # the rest of the source iXML is kept
+    assert prov["sha256"] == content_key(data)
+
+
+def test_a_streamed_wav_is_exported_unembedded_with_a_note(library):
+    library.add(
+        _unverified("stream-1"), data=_wav_with_ixml(b"<x/>", data_size=0xFFFFFFFF)
+    )
+    data, _, prov = foley.export_sound("stream-1", library=library)
+    assert data == library.audio("stream-1") and prov["embedded"] == []
+    assert any(n.startswith("bext / iXML not written") for n in prov["export_notes"])
+    assert prov["sha256"] == content_key(data)
+
+
+def test_ids_that_clean_alike_get_distinct_filenames(library, door):
+    from foley.index.taxonomy import parse_ucs_name
+    from foley.provenance import export_ucs_filename
+
+    ids = ["fs:1", "fs/1", "fs?1", "fs 1", "fs_1", "FS:1", "fs.1", "fs%3A1", "fé"]
+    rights = sound_rights(door)
+    names = [
+        export_ucs_filename(SoundRecord(**{**vars(door), "id": i}), rights) for i in ids
+    ]
+    assert len({n.casefold() for n in names}) == len(ids)  # case-insensitive FS too
+    assert [id_from_user_data(parse_ucs_name(n).user_data) for n in names] == ids
+    assert all(id_from_user_data(id_to_user_data(i)) == i for i in ids)
+
+
+def test_a_long_name_is_cut_to_the_filename_limit_keeping_the_id(library, door):
+    from foley.index.taxonomy import UCS_NAME_MAX_BYTES, parse_ucs_name
+    from foley.provenance import export_ucs_filename
+
+    rights = {**sound_rights(door), "author": "é" * 300}
+    name = export_ucs_filename(door, rights)
+    assert len(name.encode()) <= UCS_NAME_MAX_BYTES
+    assert id_from_user_data(parse_ucs_name(name).user_data) == door.id
+
+
+def test_no_filename_note_when_none_was_asked_for(library):
+    _, _, prov = foley.export_sound(
+        "fsd-222", "flac", library=library, ucs_filename=False
+    )
+    assert prov["export_notes"] == ["bext / iXML are written into WAV only, not flac"]

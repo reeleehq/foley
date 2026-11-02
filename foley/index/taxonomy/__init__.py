@@ -21,7 +21,10 @@ from .audioset import default_audioset_ucs_map, load_audioset_ucs_map
 from .model import AudioSetUcsMap, CatIdResolution, UcsName, UcsRow, UcsTable
 from .resolver import KeywordResolver, TaxonomyResolver, resolve_catid
 from .ucs import (
+    UCS_NAME_BLOCKS,
+    UCS_NAME_MAX_BYTES,
     default_ucs_table,
+    format_ucs_name,
     load_ucs_master,
     load_ucs_table,
     parse_catid_token,
@@ -42,6 +45,9 @@ __all__ = [
     "default_ucs_table",
     "parse_ucs_filename",
     "parse_ucs_name",
+    "format_ucs_name",
+    "UCS_NAME_BLOCKS",
+    "UCS_NAME_MAX_BYTES",
     "parse_catid_token",
     # audioset
     "load_audioset_ucs_map",
