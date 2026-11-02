@@ -39,6 +39,7 @@ from __future__ import annotations
 import json
 import math
 import re
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, Union
@@ -92,7 +93,7 @@ DEFAULT_PASSAGES_PATH = (
 
 #: An ellipsis (skipped), or a terminator run plus any closing quotes/brackets, followed by
 #: whitespace, the end, or the next sentence's capital / opening quote.
-_TERMINATOR = re.compile(r"(\.{2,}|…)|([.!?]+)[\"'”’)\]]*(?=\s|$|[A-Z“\"'])")
+_TERMINATOR = re.compile(r"(\.{2,}|…)|([.!?]+)[\"'”’)\]]*(?=\s+[A-Z“\"'‘(\[]|\s*$|[A-Z“\"'])")
 _WORD_BEFORE = re.compile(r"(\w+)$")
 
 #: ``passage -> ScoreResult``: the seam this eval measures.
@@ -127,6 +128,9 @@ _PASSAGE_KEYS = frozenset({"id", "segments", "audio"})
 
 def _passages_from_dicts(raw, *, audio_root: Optional[Path] = None) -> "list[Passage]":
     """Validate ``{id, segments, audio?}`` dicts up front, naming every bad one at once."""
+    not_mappings = [i for i, d in enumerate(raw) if not isinstance(d, (Mapping, Passage))]
+    if not_mappings:
+        raise ValueError(f"invalid passages: entries {not_mappings} are not mappings")
     bad = [
         f"#{i} ({d.get('id', '?')}): "
         + (f"unknown keys {sorted(set(d) - _PASSAGE_KEYS)}" if set(d) - _PASSAGE_KEYS
@@ -366,7 +370,11 @@ class PassageTaste:
 
     @property
     def aligned(self) -> bool:
-        """Whether the word timings came from a real alignment (not the fake's estimates)."""
+        """Whether the word timings came from a real alignment (not the fake's estimates).
+
+        ``"cached"`` timings (carried on the timeline from an earlier weave) count as
+        aligned: the eval cannot tell what produced them, so a cache of estimates passes.
+        """
         return self.alignment not in _ESTIMATED_ALIGNMENTS
 
     @property

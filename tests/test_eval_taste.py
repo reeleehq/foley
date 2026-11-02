@@ -273,3 +273,11 @@ def test_cli_eval_taste_fails_only_when_every_passage_errored(tmp_path, monkeypa
 
     monkeypatch.setattr(taste, "score_designer", boom)
     assert cli.main(["eval-taste", "--passages", str(path)]) == 1
+
+
+def test_quoted_exclamations_inside_a_sentence_and_non_mapping_passages():
+    from foley.eval.taste import _passages_from_dicts, count_sentences
+
+    assert count_sentences('"Stop!" she said. He ran.') == 2
+    with pytest.raises(ValueError, match="not mappings"):
+        _passages_from_dicts([["x"]])
