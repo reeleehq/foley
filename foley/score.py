@@ -19,7 +19,7 @@ this keeps ``import foley`` dol-only.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from .base import MasterProfile, SoundDesignTimeline
@@ -81,6 +81,7 @@ def score(
     *,
     audio=None,
     transcript: Optional[str] = None,
+    segment_starts: "Optional[Sequence[float]]" = None,
     library=None,
     intended_use=None,
     commercial_ok: Optional[bool] = None,
@@ -111,6 +112,12 @@ def score(
         audio: The narration voice audio (path / bytes / ndarray / a library ref). When
             given, the result is woven into a mastered mix (set ``weave=False`` to skip).
         transcript: The full narration transcript for alignment (default: the segments joined).
+        segment_starts: Each segment's start in ``audio``, in seconds (one per segment,
+            non-decreasing), e.g. when the narration is one file per beat, concatenated.
+            Word timings are then aligned per segment over its own span (the last runs to
+            the audio's end), through a :class:`~foley.weave.SegmentedAligner` wrapping
+            ``aligner=`` (default: WhisperX if installed, else the fake). Without it, the
+            fake aligner spreads every word evenly over the whole file.
         library: The :class:`foley.index.SoundLibrary` (default: the process-wide default).
         intended_use: The rights intent (default:
             :data:`foley.licensing.DEFAULT_INTENDED_USE` — commercial publishing, the
@@ -150,7 +157,9 @@ def score(
     Raises:
         TypeError: If a ``weave_kwargs`` key is not a :func:`foley.weave` option (raised
             before any find, verify or generation call).
-        ValueError: If ``master`` is an unknown profile name (raised just as early).
+        ValueError: If ``master`` is an unknown profile name, or ``segment_starts`` does
+            not fit the segments or the transcript (raised just as early); a start past
+            the audio's end is only known once ``weave`` decodes it.
     """
     from . import find, obs, plan
     from . import weave as _weave
@@ -165,6 +174,14 @@ def score(
     use = intended_use_for(intended_use, commercial_ok=commercial_ok)
     full_transcript = transcript or " ".join(segs)
     do_weave = (audio is not None) if weave is None else bool(weave)
+    if segment_starts is not None:
+        from .weave import SegmentedAligner
+
+        seg_aligner = SegmentedAligner(
+            segment_starts, segs, base=weave_kwargs.get("aligner")
+        )
+        seg_aligner.split(full_transcript)  # fail fast on a transcript that won't split
+        weave_kwargs = {**weave_kwargs, "aligner": seg_aligner}
 
     find_kw = {
         "max_events": max_events,

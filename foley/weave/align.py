@@ -16,13 +16,20 @@ word-level timestamps (report 06 §2). foley ships two implementations behind th
 Montreal Forced Aligner and aeneas run as external programs
 (:mod:`foley.weave.cli_aligners`); inject one with ``aligner=``.
 
+:class:`SegmentedAligner` wraps any of them for narration made of segments whose
+start offsets are known (one audio file per beat, concatenated): it aligns each
+segment's words against that segment's own slice of the audio and shifts the
+timings back, so even the fake spreads words over the right span.
+
 ``_default_aligner`` auto-upgrades to WhisperX when ``foley[align]`` is installed,
 else falls back to the fake — the progressive-disclosure rule.
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+import math
+from functools import cached_property
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from ..audio import resample, to_mono
 
@@ -179,3 +186,143 @@ def aligner_name(aligner) -> str:
 def _default_aligner() -> "Aligner":
     """The zero-config aligner: :class:`WhisperXAligner` when installed, else the fake."""
     return WhisperXAligner() if _whisperx_available() else FakeAligner()
+
+
+def validate_segment_starts(
+    starts: "Sequence[float]", *, n_segments: int
+) -> "tuple[float, ...]":
+    """``starts`` as floats, checked: one per segment, finite, ``>= 0``, non-decreasing.
+
+    >>> validate_segment_starts([0, 2.5, 7], n_segments=3)
+    (0.0, 2.5, 7.0)
+    >>> validate_segment_starts([0, 3, 2], n_segments=3)
+    Traceback (most recent call last):
+    ...
+    ValueError: segment_starts must be non-decreasing: segment 2 starts at 2.0s, before segment 1 (3.0s)
+    """
+    out = tuple(float(s) for s in starts)
+    if len(out) != n_segments:
+        raise ValueError(
+            f"segment_starts has {len(out)} value(s) for {n_segments} segment(s): "
+            "give one start (seconds into the narration audio) per segment"
+        )
+    for i, s in enumerate(out):
+        if not math.isfinite(s) or s < 0:
+            raise ValueError(f"segment_starts[{i}] = {s!r}: must be finite and >= 0")
+        if i and s < out[i - 1]:
+            raise ValueError(
+                f"segment_starts must be non-decreasing: segment {i} starts at {s}s, "
+                f"before segment {i - 1} ({out[i - 1]}s)"
+            )
+    return out
+
+
+def _segment_spans(
+    starts: "Sequence[float]", duration: float
+) -> "list[tuple[float, float]]":
+    """Each segment's ``(start, end)``: it ends where the next starts, the last at ``duration``."""
+    late = [(i, s) for i, s in enumerate(starts) if s > duration]
+    if late:
+        i, s = late[0]
+        raise ValueError(
+            f"segment {i} starts at {s}s, past the end of the narration audio "
+            f"({duration:.3f}s)"
+        )
+    return list(zip(starts, [*starts[1:], duration]))
+
+
+def _shifted(word: dict, offset: float) -> dict:
+    """``word`` with its ``start``/``end`` moved ``offset`` seconds later."""
+    return {
+        **word,
+        "start": round(float(word["start"]) + offset, 6),
+        "end": round(float(word["end"]) + offset, 6),
+    }
+
+
+class SegmentedAligner:
+    """An :class:`Aligner` for narration whose segments start at known offsets.
+
+    Splits the transcript's words by segment (each segment's word count), aligns each
+    piece with ``base`` against that segment's slice of the audio, and adds the slice's
+    start to the timings. Segment ``i`` spans ``starts[i]`` to ``starts[i + 1]``; the
+    last runs to the end of the audio. A real aligner benefits too: short spans align
+    more robustly than a whole file. Words keep the transcript's order, so anchors
+    resolve exactly as with a whole-file aligner.
+
+    ``base`` must align the audio it is given: one that returns precomputed whole-file
+    timings should be passed to ``weave(aligner=)`` directly, not wrapped.
+
+    Args:
+        starts: Each segment's start, in seconds into the narration audio (one per
+            segment, non-decreasing).
+        segments: The segments' texts; only their word counts are used, to split the
+            transcript ``word_timeline`` receives.
+        base: The aligner run on each slice (default: WhisperX if installed, else the
+            fake, chosen at first use).
+    """
+
+    def __init__(
+        self,
+        starts: "Sequence[float]",
+        segments: "Sequence[str]",
+        *,
+        base: "Optional[Aligner]" = None,
+    ):
+        self.word_counts = tuple(len(s.split()) for s in segments)
+        self.starts = validate_segment_starts(starts, n_segments=len(self.word_counts))
+        self._base = base
+
+    @cached_property
+    def base(self) -> "Aligner":
+        """The per-slice aligner (the injected one, else the zero-config default)."""
+        return self._base if self._base is not None else _default_aligner()
+
+    @property
+    def name(self) -> str:
+        """The base aligner's name, so weave's alignment notes describe the real timings."""
+        return aligner_name(self.base)
+
+    def split(self, transcript: Optional[str]) -> "list[list[str]]":
+        """``transcript``'s words, one list per segment (``ValueError`` on a count mismatch)."""
+        words = (transcript or "").split()
+        if len(words) != sum(self.word_counts):
+            raise ValueError(
+                f"the transcript has {len(words)} word(s) but the segments have "
+                f"{sum(self.word_counts)}: segment_starts needs a transcript that is "
+                "the segments' words, in order"
+            )
+        ends = [sum(self.word_counts[: i + 1]) for i in range(len(self.word_counts))]
+        return [words[a:b] for a, b in zip([0, *ends[:-1]], ends)]
+
+    def word_timeline(
+        self,
+        audio: "ndarray",
+        sample_rate: int,
+        *,
+        transcript: Optional[str] = None,
+        language: Optional[str] = None,
+    ) -> "list[dict]":
+        """Align each segment on its own slice of ``audio``; timings in whole-file seconds."""
+        if not (transcript or "").split():
+            return []
+        pieces = self.split(transcript)
+        duration = int(audio.shape[0]) / sample_rate
+        lang = {} if language is None else {"language": language}
+        out: "list[dict]" = []
+        for i, (piece, (s, e)) in enumerate(
+            zip(pieces, _segment_spans(self.starts, duration))
+        ):
+            if not piece:
+                continue
+            lo, hi = round(s * sample_rate), round(e * sample_rate)
+            if hi <= lo:
+                raise ValueError(
+                    f"segment {i} has {len(piece)} word(s) but no audio: it starts at "
+                    f"{s}s and the next segment (or the audio's end) at {e}s"
+                )
+            timed = self.base.word_timeline(
+                audio[lo:hi], sample_rate, transcript=" ".join(piece), **lang
+            )
+            out.extend(_shifted(w, lo / sample_rate) for w in timed)
+        return out

@@ -113,6 +113,9 @@ Prompt craft that worked: name the material and the action ("leather shoes on ol
 - **Your own word timings.** `aligner=` (forwarded to `foley.weave`) is the seam for a caller
   that already knows when each word is spoken; without one, foley uses WhisperX when it is
   installed, else a fake aligner that spreads the transcript evenly over the whole narration file.
+- **Narration made of beats.** If the narration is several stems laid end to end, pass
+  `segment_starts=[...]` (each segment's start in the audio, in seconds): each segment's words are
+  aligned over its own span (the last to the audio's end) instead of over the whole file.
 
 ## Audience reactions: the crowd answers, it does not coincide
 
