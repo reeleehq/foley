@@ -83,8 +83,8 @@ from foley.eval import AudioboxAesthetics
 
 aes = AudioboxAesthetics(python="~/venvs/aes/bin/python")  # or set FOLEY_AES_PYTHON
 tone, noise, silence = aes([tone_wav, noise_wav, silence_wav], sr=48000)
-tone.axes      # {'CE': 2.47, 'CU': 5.78, 'PC': 1.74, 'PQ': 6.02}
-tone.to_dict() # the axes plus model='facebook/audiobox-aesthetics', toolkit, version='0.0.4'
+tone.axes  # {'CE': 2.47, 'CU': 5.78, 'PC': 1.74, 'PQ': 6.02}
+tone.to_dict()  # the axes plus model='facebook/audiobox-aesthetics', toolkit, version='0.0.4'
 ```
 
 Those are real scores (version 0.0.4, 3 s clips at 48 kHz): a 440 Hz sine at 0.5 scored CE 2.47, CU 5.78, PC 1.74, PQ 6.02; white noise at 0.3 RMS CE 2.14, CU 4.42, PC 1.97, PQ 4.83; digital silence CE 3.44, CU 6.62, PC 1.70, PQ 7.00; the sine as a stereo pair the same as mono. Silence scoring the highest PQ is the point to remember: the model rates how a clip sounds, it does not detect faults, so Tier-0 QC (`foley.qc`) stays the gate for silent, clipped or broken audio.
