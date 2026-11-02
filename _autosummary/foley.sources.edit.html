@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=83be8e66"></script>
+    <script src="../_static/documentation_options.js?v=27c60a7f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.108" />
+  <meta name="docsearch:version" content="0.0.109" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -521,8 +521,12 @@ and the edit (op, parameters, source id, content key, licence, credit) is append
 to <code class="docutils literal notranslate"><span class="pre">transformations</span></code>, which the credits (<a class="reference internal" href="foley.provenance.credits.html#foley.provenance.credits.derived_sources" title="foley.provenance.credits.derived_sources"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.provenance.credits.derived_sources()</span></code></a>)
 and the content credential (a <code class="docutils literal notranslate"><span class="pre">parentOf</span></code> ingredient) read.</p></li>
 <li><p><a class="reference internal" href="#foley.sources.edit.resolve_edit" title="foley.sources.edit.resolve_edit"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_edit()</span></code></a> — what <a class="reference internal" href="foley.html#foley.edit" title="foley.edit"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.edit()</span></code></a> adds on top: the source sound from
-the library (its bytes, which must be sendable), the op and the backend (named, or
-the op’s default from the registry configs’ <code class="docutils literal notranslate"><span class="pre">edit_op</span></code>).</p></li>
+the library (its bytes, which must be sendable), the op and the backend
+(<a class="reference internal" href="#foley.sources.edit.edit_backend" title="foley.sources.edit.edit_backend"><code class="xref py py-func docutils literal notranslate"><span class="pre">edit_backend()</span></code></a>: named, or the op’s default from the registry configs’
+<code class="docutils literal notranslate"><span class="pre">edit_op</span></code>), and, given an intended use, whether the edit could serve it
+(<a class="reference internal" href="#foley.sources.edit.edit_use_refusal" title="foley.sources.edit.edit_use_refusal"><code class="xref py py-func docutils literal notranslate"><span class="pre">edit_use_refusal()</span></code></a>).</p></li>
+<li><p><a class="reference internal" href="#foley.sources.edit.estimate_edit" title="foley.sources.edit.estimate_edit"><code class="xref py py-func docutils literal notranslate"><span class="pre">estimate_edit()</span></code></a> — what an edit would cost, priced by its op and backend
+through the same path as the call (<a class="reference internal" href="foley.html#foley.estimate" title="foley.estimate"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.estimate()</span></code></a> <code class="docutils literal notranslate"><span class="pre">('edit',</span> <span class="pre">...)</span></code>).</p></li>
 </ul>
 <p class="rubric">Module Attributes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
@@ -536,10 +540,19 @@ the op’s default from the registry configs’ <code class="docutils literal no
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.edit.edit_lineage" title="foley.sources.edit.edit_lineage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">edit_lineage</span></code></a>(derived_from, *, config, ...)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.edit.edit_backend" title="foley.sources.edit.edit_backend"><code class="xref py py-obj docutils literal notranslate"><span class="pre">edit_backend</span></code></a>(op[, backend, injected])</p></td>
+<td><p>The backend that runs an edit of <code class="docutils literal notranslate"><span class="pre">op</span></code>: <code class="docutils literal notranslate"><span class="pre">backend</span></code>, else the <code class="docutils literal notranslate"><span class="pre">injected</span></code> adapter config's name, else the op's default (<code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources.generate.default_edit_backend()</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.edit.edit_lineage" title="foley.sources.edit.edit_lineage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">edit_lineage</span></code></a>(derived_from, *, config, ...)</p></td>
 <td><p>The gated <a class="reference internal" href="#foley.sources.edit.EditLineage" title="foley.sources.edit.EditLineage"><code class="xref py py-class docutils literal notranslate"><span class="pre">EditLineage</span></code></a> of an edit call: the edit mode's licence gate (#162).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.edit.resolve_edit" title="foley.sources.edit.resolve_edit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_edit</span></code></a>(source, op[, prompt, backend, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.edit.edit_use_refusal" title="foley.sources.edit.edit_use_refusal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">edit_use_refusal</span></code></a>(call, intended_use)</p></td>
+<td><p>Why the edit <code class="docutils literal notranslate"><span class="pre">call</span></code> could not serve <code class="docutils literal notranslate"><span class="pre">intended_use</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if it can.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.edit.estimate_edit" title="foley.sources.edit.estimate_edit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">estimate_edit</span></code></a>(op, *[, source, backend, ...])</p></td>
+<td><p>What <a class="reference internal" href="foley.html#foley.edit" title="foley.edit"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.edit()</span></code></a> of <code class="docutils literal notranslate"><span class="pre">op</span></code> would cost in USD, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if unknown.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.edit.resolve_edit" title="foley.sources.edit.resolve_edit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_edit</span></code></a>(source, op[, prompt, backend, ...])</p></td>
 <td><p>Resolve an edit of a library sound: its record, its op and its backend.</p></td>
 </tr>
 </tbody>
@@ -548,7 +561,7 @@ the op’s default from the registry configs’ <code class="docutils literal no
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.edit.EditCall" title="foley.sources.edit.EditCall"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EditCall</span></code></a>(backend, prompt, source)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.sources.edit.EditCall" title="foley.sources.edit.EditCall"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EditCall</span></code></a>(backend, prompt, source, op)</p></td>
 <td><p>An edit of a library sound, resolved (see <a class="reference internal" href="#foley.sources.edit.resolve_edit" title="foley.sources.edit.resolve_edit"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_edit()</span></code></a>).</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.sources.edit.EditLineage" title="foley.sources.edit.EditLineage"><code class="xref py py-obj docutils literal notranslate"><span class="pre">EditLineage</span></code></a>(op, source_id, source_license, ...)</p></td>
@@ -559,7 +572,7 @@ the op’s default from the registry configs’ <code class="docutils literal no
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="foley.sources.edit.EditCall">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.edit.</span></span><span class="sig-name descname"><span class="pre">EditCall</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backend</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/edit.html#EditCall"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.edit.EditCall" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.sources.edit.</span></span><span class="sig-name descname"><span class="pre">EditCall</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">backend</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/edit.html#EditCall"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.edit.EditCall" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>An edit of a library sound, resolved (see <a class="reference internal" href="#foley.sources.edit.resolve_edit" title="foley.sources.edit.resolve_edit"><code class="xref py py-func docutils literal notranslate"><span class="pre">resolve_edit()</span></code></a>).</p>
 <dl class="field-list simple">
@@ -593,6 +606,17 @@ the op’s default from the registry configs’ <code class="docutils literal no
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="foley.base.html#foley.base.SoundRecord" title="foley.base.SoundRecord"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundRecord</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="foley.sources.edit.EditCall.op">
+<span class="sig-name descname"><span class="pre">op</span></span><a class="headerlink" href="#foley.sources.edit.EditCall.op" title="Link to this definition">#</a></dt>
+<dd><p>The edit op (a <a class="reference internal" href="foley.base.html#foley.base.EDIT_OPS" title="foley.base.EDIT_OPS"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.base.EDIT_OPS</span></code></a> name).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -728,6 +752,27 @@ is no wider than <code class="docutils literal notranslate"><span class="pre">ma
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.edit.edit_backend">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.edit.</span></span><span class="sig-name descname"><span class="pre">edit_backend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">injected</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/edit.html#edit_backend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.edit.edit_backend" title="Link to this definition">#</a></dt>
+<dd><p>The backend that runs an edit of <code class="docutils literal notranslate"><span class="pre">op</span></code>: <code class="docutils literal notranslate"><span class="pre">backend</span></code>, else the <code class="docutils literal notranslate"><span class="pre">injected</span></code>
+adapter config’s name, else the op’s default
+(<code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources.generate.default_edit_backend()</span></code>).</p>
+<p>Read from the configs only: no adapter is built and no key is needed, so an
+estimate resolves the backend exactly as the call does.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – For an unknown op, or a named backend that does another op.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – For an unknown backend.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.edit.edit_lineage">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.edit.</span></span><span class="sig-name descname"><span class="pre">edit_lineage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">derived_from</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">affordances</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/edit.html#edit_lineage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.edit.edit_lineage" title="Link to this definition">#</a></dt>
 <dd><p>The gated <a class="reference internal" href="#foley.sources.edit.EditLineage" title="foley.sources.edit.EditLineage"><code class="xref py py-class docutils literal notranslate"><span class="pre">EditLineage</span></code></a> of an edit call: the edit mode’s licence gate (#162).</p>
@@ -758,13 +803,69 @@ edit source given its source clip (<code class="docutils literal notranslate"><s
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.edit.edit_use_refusal">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.edit.</span></span><span class="sig-name descname"><span class="pre">edit_use_refusal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">call</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intended_use</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/edit.html#edit_use_refusal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.edit.edit_use_refusal" title="Link to this definition">#</a></dt>
+<dd><p>Why the edit <code class="docutils literal notranslate"><span class="pre">call</span></code> could not serve <code class="docutils literal notranslate"><span class="pre">intended_use</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if it can.</p>
+<p>The edit’s rights are its backend’s narrowed to its source’s
+(<a class="reference internal" href="#foley.sources.edit.EditLineage.apply" title="foley.sources.edit.EditLineage.apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">EditLineage.apply()</span></code></a>), so the use is refused when either refuses it: an edit
+of a non-commercial sound under a commercial use is money spent on a clip nobody
+may place. Decided before anything is paid for; a backend’s refusal names the
+other backends of the op whose licence fits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.sources.edit.estimate_edit">
+<span class="sig-prename descclassname"><span class="pre">foley.sources.edit.</span></span><span class="sig-name descname"><span class="pre">estimate_edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adapter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/edit.html#estimate_edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.edit.estimate_edit" title="Link to this definition">#</a></dt>
+<dd><p>What <a class="reference internal" href="foley.html#foley.edit" title="foley.edit"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.edit()</span></code></a> of <code class="docutils literal notranslate"><span class="pre">op</span></code> would cost in USD, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if unknown.</p>
+<p>Priced by the backend the call would use (<a class="reference internal" href="#foley.sources.edit.edit_backend" title="foley.sources.edit.edit_backend"><code class="xref py py-func docutils literal notranslate"><span class="pre">edit_backend()</span></code></a>: named, or the op’s
+default, whether or not paid generation is opted in: the price is what opting in
+would spend) through the call’s own pricing
+(<code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources._dispatch.estimate_generation()</span></code>: same translation, same
+parameter checks, same input cover). Given <code class="docutils literal notranslate"><span class="pre">source</span></code>, the clip is read from
+<code class="docutils literal notranslate"><span class="pre">library</span></code> (default: the process-wide one), so a window past its end raises as
+the call would, and a price by the clip’s length is known.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>op</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – The edit op (<a class="reference internal" href="foley.base.html#foley.base.EDIT_OPS" title="foley.base.EDIT_OPS"><code class="xref py py-data docutils literal notranslate"><span class="pre">foley.base.EDIT_OPS</span></code></a>).</p></li>
+<li><p><strong>source</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – The library id of the sound to edit (optional).</p></li>
+<li><p><strong>backend</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – An edit source doing <code class="docutils literal notranslate"><span class="pre">op</span></code>; <code class="docutils literal notranslate"><span class="pre">None</span></code>: the op’s default.</p></li>
+<li><p><strong>library</strong> – The library holding <code class="docutils literal notranslate"><span class="pre">source</span></code>.</p></li>
+<li><p><strong>adapter</strong> – An injected adapter, as the call’s: its config names the backend
+and prices it (the plan prices the adapter’s config).</p></li>
+<li><p><strong>**kwargs</strong> – The op’s parameters and the call’s other keywords (the ones that
+are not generation affordances, <code class="docutils literal notranslate"><span class="pre">prompt=</span></code> included, are ignored).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – For an unknown op, a backend that does another op, the op’s
+    parameters missing or out of range, or an <code class="docutils literal notranslate"><span class="pre">audio=</span></code> / <code class="docutils literal notranslate"><span class="pre">derived_from=</span></code>
+    (as <a class="reference internal" href="foley.html#foley.edit" title="foley.edit"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.edit()</span></code></a>).</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – For an unknown backend, or a <code class="docutils literal notranslate"><span class="pre">source</span></code> not in the library.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.sources.edit.resolve_edit">
 <span class="sig-prename descclassname"><span class="pre">foley.sources.edit.</span></span><span class="sig-name descname"><span class="pre">resolve_edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">adapter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">affordances</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/sources/edit.html#resolve_edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.sources.edit.resolve_edit" title="Link to this definition">#</a></dt>
 <dd><p>Resolve an edit of a library sound: its record, its op and its backend.</p>
 <p>The op’s parameters and the source’s rights are checked by the generation’s edit
 mode itself (<code class="xref py py-func docutils literal notranslate"><span class="pre">foley.sources._dispatch.translate_affordances()</span></code>,
-<a class="reference internal" href="#foley.sources.edit.edit_lineage" title="foley.sources.edit.edit_lineage"><code class="xref py py-func docutils literal notranslate"><span class="pre">edit_lineage()</span></code></a>), before anything is paid for. Checked here is only what must
-be known before the source’s bytes are read from the library.</p>
+<a class="reference internal" href="#foley.sources.edit.edit_lineage" title="foley.sources.edit.edit_lineage"><code class="xref py py-func docutils literal notranslate"><span class="pre">edit_lineage()</span></code></a>), before anything is paid for. Checked here is what must be
+known before the source’s bytes are read from the library, and, when
+<code class="docutils literal notranslate"><span class="pre">affordances</span></code> carry an <code class="docutils literal notranslate"><span class="pre">intended_use</span></code>, whether the edit could serve it
+(<a class="reference internal" href="#foley.sources.edit.edit_use_refusal" title="foley.sources.edit.edit_use_refusal"><code class="xref py py-func docutils literal notranslate"><span class="pre">edit_use_refusal()</span></code></a>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -787,7 +888,8 @@ refused: both come from the library).</p></li>
     that does another op.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">source</span></code> is not in <code class="docutils literal notranslate"><span class="pre">library</span></code>, or <code class="docutils literal notranslate"><span class="pre">backend</span></code> is unknown.</p></li>
 <li><p><a class="reference internal" href="foley.html#foley.EditRefusal" title="foley.EditRefusal"><strong>EditRefusal</strong></a> – If the source’s bytes may not be sent on
-    (<a class="reference internal" href="foley.licensing.html#foley.licensing.upload_refusal" title="foley.licensing.upload_refusal"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.licensing.upload_refusal()</span></code></a>: a by-reference Freesound sound).</p></li>
+    (<a class="reference internal" href="foley.licensing.html#foley.licensing.upload_refusal" title="foley.licensing.upload_refusal"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.licensing.upload_refusal()</span></code></a>: a by-reference Freesound sound),
+    or the edit could not serve the <code class="docutils literal notranslate"><span class="pre">intended_use</span></code> given.</p></li>
 <li><p><a class="reference internal" href="foley.sources.base.html#foley.sources.base.SourceConfigurationError" title="foley.sources.base.SourceConfigurationError"><strong>SourceConfigurationError</strong></a> – For an unnamed paid backend without the opt-in.</p></li>
 </ul>
 </dd>
@@ -850,6 +952,7 @@ refused: both come from the library).</p></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.edit.EditCall.backend"><code class="docutils literal notranslate"><span class="pre">EditCall.backend</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.edit.EditCall.prompt"><code class="docutils literal notranslate"><span class="pre">EditCall.prompt</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.edit.EditCall.source"><code class="docutils literal notranslate"><span class="pre">EditCall.source</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.edit.EditCall.op"><code class="docutils literal notranslate"><span class="pre">EditCall.op</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.edit.EditLineage"><code class="docutils literal notranslate"><span class="pre">EditLineage</span></code></a><ul class="nav section-nav flex-column">
@@ -865,7 +968,10 @@ refused: both come from the library).</p></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.edit.EditSource"><code class="docutils literal notranslate"><span class="pre">EditSource</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.edit.edit_backend"><code class="docutils literal notranslate"><span class="pre">edit_backend()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.edit.edit_lineage"><code class="docutils literal notranslate"><span class="pre">edit_lineage()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.edit.edit_use_refusal"><code class="docutils literal notranslate"><span class="pre">edit_use_refusal()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.edit.estimate_edit"><code class="docutils literal notranslate"><span class="pre">estimate_edit()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.sources.edit.resolve_edit"><code class="docutils literal notranslate"><span class="pre">resolve_edit()</span></code></a></li>
 </ul>
   </nav></div>

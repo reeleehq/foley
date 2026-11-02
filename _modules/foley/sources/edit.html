@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=83be8e66"></script>
+    <script src="../../../_static/documentation_options.js?v=27c60a7f"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.108" />
+  <meta name="docsearch:version" content="0.0.109" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -737,8 +737,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">  to ``transformations``, which the credits (:func:`foley.provenance.credits.derived_sources`)</span>
 <span class="sd">  and the content credential (a ``parentOf`` ingredient) read.</span>
 <span class="sd">* :func:`resolve_edit` — what :func:`foley.edit` adds on top: the source sound from</span>
-<span class="sd">  the library (its bytes, which must be sendable), the op and the backend (named, or</span>
-<span class="sd">  the op's default from the registry configs' ``edit_op``).</span>
+<span class="sd">  the library (its bytes, which must be sendable), the op and the backend</span>
+<span class="sd">  (:func:`edit_backend`: named, or the op's default from the registry configs'</span>
+<span class="sd">  ``edit_op``), and, given an intended use, whether the edit could serve it</span>
+<span class="sd">  (:func:`edit_use_refusal`).</span>
+<span class="sd">* :func:`estimate_edit` — what an edit would cost, priced by its op and backend</span>
+<span class="sd">  through the same path as the call (:func:`foley.estimate` ``('edit', ...)``).</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -937,11 +941,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        backend: The edit source that will run it.</span>
 <span class="sd">        prompt: The prompt sent (the source's caption when none was given).</span>
 <span class="sd">        source: The source sound's record (the edit's ``derived_from``).</span>
+<span class="sd">        op: The edit op (a :data:`foley.base.EDIT_OPS` name).</span>
 <span class="sd">    """</span>
 
     <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">source</span><span class="p">:</span> <span class="n">SoundRecord</span></div>
+    <span class="n">source</span><span class="p">:</span> <span class="n">SoundRecord</span>
+    <span class="n">op</span><span class="p">:</span> <span class="nb">str</span></div>
 
 
 
@@ -961,8 +967,10 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    The op's parameters and the source's rights are checked by the generation's edit</span>
 <span class="sd">    mode itself (:func:`foley.sources._dispatch.translate_affordances`,</span>
-<span class="sd">    :func:`edit_lineage`), before anything is paid for. Checked here is only what must</span>
-<span class="sd">    be known before the source's bytes are read from the library.</span>
+<span class="sd">    :func:`edit_lineage`), before anything is paid for. Checked here is what must be</span>
+<span class="sd">    known before the source's bytes are read from the library, and, when</span>
+<span class="sd">    ``affordances`` carry an ``intended_use``, whether the edit could serve it</span>
+<span class="sd">    (:func:`edit_use_refusal`).</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        source: The library id of the sound to edit.</span>
@@ -982,28 +990,15 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">            that does another op.</span>
 <span class="sd">        KeyError: If ``source`` is not in ``library``, or ``backend`` is unknown.</span>
 <span class="sd">        EditRefusal: If the source's bytes may not be sent on</span>
-<span class="sd">            (:func:`foley.licensing.upload_refusal`: a by-reference Freesound sound).</span>
+<span class="sd">            (:func:`foley.licensing.upload_refusal`: a by-reference Freesound sound),</span>
+<span class="sd">            or the edit could not serve the ``intended_use`` given.</span>
 <span class="sd">        SourceConfigurationError: For an unnamed paid backend without the opt-in.</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload_refusal</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.generate</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-        <span class="n">backend_is_paid</span><span class="p">,</span>
-        <span class="n">default_edit_backend</span><span class="p">,</span>
-        <span class="n">edit_backends</span><span class="p">,</span>
-        <span class="n">paid_generation_opted_in</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_source</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">backend_is_paid</span><span class="p">,</span> <span class="n">paid_generation_opted_in</span>
 
-    <span class="n">taken</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({</span><span class="s2">"audio"</span><span class="p">,</span> <span class="s2">"derived_from"</span><span class="p">}</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">affordances</span> <span class="ow">or</span> <span class="p">()))</span>
-    <span class="k">if</span> <span class="n">taken</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"edit() takes the source clip and its rights from the library, not "</span>
-            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s1">='</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">taken</span><span class="p">)</span><span class="si">}</span><span class="s2">: pass its sound id as source= (a clip "</span>
-            <span class="s2">"that is not in the library: foley.generate(prompt, backend=&lt;an edit "</span>
-            <span class="s2">"backend&gt;, audio=&lt;the clip&gt;, derived_from=&lt;its LicenseRecord&gt;))"</span>
-        <span class="p">)</span>
-    <span class="k">if</span> <span class="n">op</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">EDIT_OPS</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown edit op </span><span class="si">{</span><span class="n">op</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">EDIT_OPS</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">_refuse_given_source</span><span class="p">(</span><span class="n">affordances</span> <span class="ow">or</span> <span class="p">{})</span>
+    <span class="n">_check_op</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="n">record</span> <span class="o">=</span> <span class="n">library</span><span class="p">[</span><span class="n">source</span><span class="p">]</span>
     <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
@@ -1015,27 +1010,201 @@ window.runMermaid = runMermaid;</script>
             <span class="n">source_id</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
             <span class="n">reason</span><span class="o">=</span><span class="n">why</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="n">injected</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="s2">"config"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
-    <span class="n">named</span> <span class="o">=</span> <span class="n">backend</span> <span class="ow">or</span> <span class="n">injected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">named</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">named</span> <span class="o">=</span> <span class="n">default_edit_backend</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">backend_is_paid</span><span class="p">(</span><span class="n">named</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">paid_generation_opted_in</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"edit"</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">SourceConfigurationError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"the </span><span class="si">{</span><span class="n">op</span><span class="si">}</span><span class="s2"> edit's default backend </span><span class="si">{</span><span class="n">named</span><span class="si">!r}</span><span class="s2"> is paid, and paid "</span>
-                <span class="s2">"generation is not opted in: set $FOLEY_GENERATE_PAID=1, or name "</span>
-                <span class="sa">f</span><span class="s2">"backend=</span><span class="si">{</span><span class="n">named</span><span class="si">!r}</span><span class="s2">; nothing was generated"</span>
-            <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">config</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">injected</span> <span class="k">if</span> <span class="n">injected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span> <span class="o">==</span> <span class="n">named</span> <span class="k">else</span> <span class="n">get_source</span><span class="p">(</span><span class="n">named</span><span class="p">)[</span><span class="s2">"config"</span><span class="p">]</span>
+    <span class="n">injected</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="s2">"config"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">named</span> <span class="o">=</span> <span class="n">edit_backend</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">backend</span><span class="p">,</span> <span class="n">injected</span><span class="o">=</span><span class="n">injected</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">_named_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">injected</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">backend_is_paid</span><span class="p">(</span><span class="n">named</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="n">paid_generation_opted_in</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"edit"</span><span class="p">)</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="n">SourceConfigurationError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"the </span><span class="si">{</span><span class="n">op</span><span class="si">}</span><span class="s2"> edit's default backend </span><span class="si">{</span><span class="n">named</span><span class="si">!r}</span><span class="s2"> is paid, and paid "</span>
+            <span class="s2">"generation is not opted in: set $FOLEY_GENERATE_PAID=1, or name "</span>
+            <span class="sa">f</span><span class="s2">"backend=</span><span class="si">{</span><span class="n">named</span><span class="si">!r}</span><span class="s2">; nothing was generated"</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">_does</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">named</span><span class="si">!r}</span><span class="s2"> does not do the </span><span class="si">{</span><span class="n">op</span><span class="si">}</span><span class="s2"> edit; the backends that do: "</span>
-                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">edit_backends</span><span class="p">(</span><span class="n">op</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span>
-            <span class="p">)</span>
-    <span class="k">return</span> <span class="n">EditCall</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">named</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span> <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">caption</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">record</span><span class="p">)</span></div>
+    <span class="n">call</span> <span class="o">=</span> <span class="n">EditCall</span><span class="p">(</span>
+        <span class="n">backend</span><span class="o">=</span><span class="n">named</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="n">prompt</span> <span class="ow">or</span> <span class="n">record</span><span class="o">.</span><span class="n">caption</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">record</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">op</span>
+    <span class="p">)</span>
+    <span class="n">use</span> <span class="o">=</span> <span class="p">(</span><span class="n">affordances</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"intended_use"</span><span class="p">)</span>
+    <span class="n">why</span> <span class="o">=</span> <span class="n">edit_use_refusal</span><span class="p">(</span><span class="n">call</span><span class="p">,</span> <span class="n">use</span><span class="p">)</span> <span class="k">if</span> <span class="n">use</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">why</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">EditRefusal</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"cannot edit </span><span class="si">{</span><span class="n">source</span><span class="si">!r}</span><span class="s2"> for this use: </span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2">; nothing was generated"</span><span class="p">,</span>
+            <span class="n">source_id</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+            <span class="n">reason</span><span class="o">=</span><span class="n">why</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">call</span></div>
 
+
+
+<div class="viewcode-block" id="edit_backend">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.edit.html#foley.sources.edit.edit_backend">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">edit_backend</span><span class="p">(</span><span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">backend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">injected</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The backend that runs an edit of ``op``: ``backend``, else the ``injected``</span>
+<span class="sd">    adapter config's name, else the op's default</span>
+<span class="sd">    (:func:`foley.sources.generate.default_edit_backend`).</span>
+
+<span class="sd">    Read from the configs only: no adapter is built and no key is needed, so an</span>
+<span class="sd">    estimate resolves the backend exactly as the call does.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: For an unknown op, or a named backend that does another op.</span>
+<span class="sd">        KeyError: For an unknown backend.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_edit_backend</span><span class="p">,</span> <span class="n">edit_backends</span>
+
+    <span class="n">_check_op</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+    <span class="n">injected</span> <span class="o">=</span> <span class="n">injected</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">named</span> <span class="o">=</span> <span class="n">_named_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">injected</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">named</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">default_edit_backend</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">injected</span> <span class="k">if</span> <span class="n">injected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span> <span class="o">==</span> <span class="n">named</span> <span class="k">else</span> <span class="n">_registered_config</span><span class="p">(</span><span class="n">named</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_does</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">named</span><span class="si">!r}</span><span class="s2"> does not do the </span><span class="si">{</span><span class="n">op</span><span class="si">}</span><span class="s2"> edit; the backends that do: "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">edit_backends</span><span class="p">(</span><span class="n">op</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">named</span></div>
+
+
+
+<div class="viewcode-block" id="edit_use_refusal">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.edit.html#foley.sources.edit.edit_use_refusal">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">edit_use_refusal</span><span class="p">(</span><span class="n">call</span><span class="p">:</span> <span class="n">EditCall</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Why the edit ``call`` could not serve ``intended_use``, or ``None`` if it can.</span>
+
+<span class="sd">    The edit's rights are its backend's narrowed to its source's</span>
+<span class="sd">    (:meth:`EditLineage.apply`), so the use is refused when either refuses it: an edit</span>
+<span class="sd">    of a non-commercial sound under a commercial use is money spent on a clip nobody</span>
+<span class="sd">    may place. Decided before anything is paid for; a backend's refusal names the</span>
+<span class="sd">    other backends of the op whose licence fits.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">refusal_reason</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">backend_license_refusal</span><span class="p">,</span> <span class="n">edit_backends</span>
+
+    <span class="n">why</span> <span class="o">=</span> <span class="n">refusal_reason</span><span class="p">(</span><span class="n">call</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">license</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">why</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"its source's licence does not allow it (</span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2">)"</span>
+    <span class="n">refused</span> <span class="o">=</span> <span class="n">backend_license_refusal</span><span class="p">(</span><span class="n">call</span><span class="o">.</span><span class="n">backend</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">refused</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">license_id</span><span class="p">,</span> <span class="n">why</span><span class="p">,</span> <span class="n">hint</span> <span class="o">=</span> <span class="n">refused</span>
+    <span class="n">fits</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">name</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">edit_backends</span><span class="p">(</span><span class="n">call</span><span class="o">.</span><span class="n">op</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="n">call</span><span class="o">.</span><span class="n">backend</span> <span class="ow">and</span> <span class="n">backend_license_refusal</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="p">]</span>
+    <span class="k">if</span> <span class="n">fits</span><span class="p">:</span>
+        <span class="n">advice</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"name a </span><span class="si">{</span><span class="n">call</span><span class="o">.</span><span class="n">op</span><span class="si">}</span><span class="s2"> edit backend whose licence fits (</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fits</span><span class="p">)</span><span class="si">}</span><span class="s2">), or </span><span class="si">{</span><span class="n">hint</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">advice</span> <span class="o">=</span> <span class="n">hint</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">call</span><span class="o">.</span><span class="n">backend</span><span class="si">!r}</span><span class="s2"> edits under </span><span class="si">{</span><span class="n">license_id</span><span class="si">!r}</span><span class="s2">, which this use does not allow: "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">advice</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1">#: What an edit priced without its source clip is given in the clip's place: bytes</span>
+<span class="c1">#: that cannot be read, so the clip's length is unknown (as a URL's), a window is not</span>
+<span class="c1">#: checked against its end, and a price by the clip's length is unknown (``None``).</span>
+<span class="n">_UNREAD_CLIP</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">""</span>
+
+
+<div class="viewcode-block" id="estimate_edit">
+<a class="viewcode-back" href="../../../_autosummary/foley.sources.edit.html#foley.sources.edit.estimate_edit">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">estimate_edit</span><span class="p">(</span>
+    <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">backend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">library</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">adapter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""What :func:`foley.edit` of ``op`` would cost in USD, or ``None`` if unknown.</span>
+
+<span class="sd">    Priced by the backend the call would use (:func:`edit_backend`: named, or the op's</span>
+<span class="sd">    default, whether or not paid generation is opted in: the price is what opting in</span>
+<span class="sd">    would spend) through the call's own pricing</span>
+<span class="sd">    (:func:`foley.sources._dispatch.estimate_generation`: same translation, same</span>
+<span class="sd">    parameter checks, same input cover). Given ``source``, the clip is read from</span>
+<span class="sd">    ``library`` (default: the process-wide one), so a window past its end raises as</span>
+<span class="sd">    the call would, and a price by the clip's length is known.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        op: The edit op (:data:`foley.base.EDIT_OPS`).</span>
+<span class="sd">        source: The library id of the sound to edit (optional).</span>
+<span class="sd">        backend: An edit source doing ``op``; ``None``: the op's default.</span>
+<span class="sd">        library: The library holding ``source``.</span>
+<span class="sd">        adapter: An injected adapter, as the call's: its config names the backend</span>
+<span class="sd">            and prices it (the plan prices the adapter's config).</span>
+<span class="sd">        **kwargs: The op's parameters and the call's other keywords (the ones that</span>
+<span class="sd">            are not generation affordances, ``prompt=`` included, are ignored).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: For an unknown op, a backend that does another op, the op's</span>
+<span class="sd">            parameters missing or out of range, or an ``audio=`` / ``derived_from=``</span>
+<span class="sd">            (as :func:`foley.edit`).</span>
+<span class="sd">        KeyError: For an unknown backend, or a ``source`` not in the library.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">estimate_generation</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">priced_affordances</span>
+
+    <span class="n">_refuse_given_source</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">injected</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="s2">"config"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">edit_backend</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">backend</span><span class="p">,</span> <span class="n">injected</span><span class="o">=</span><span class="n">injected</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">source</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">audio</span> <span class="o">=</span> <span class="n">_UNREAD_CLIP</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..index.library</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_library</span>
+
+            <span class="n">library</span> <span class="o">=</span> <span class="n">default_library</span><span class="p">()</span>
+        <span class="n">audio</span> <span class="o">=</span> <span class="n">library</span><span class="o">.</span><span class="n">audio</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">injected</span> <span class="k">if</span> <span class="p">(</span><span class="n">injected</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span> <span class="o">==</span> <span class="n">name</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">estimate_generation</span><span class="p">(</span>
+        <span class="n">name</span><span class="p">,</span> <span class="n">audio</span><span class="o">=</span><span class="n">audio</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">priced_affordances</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_refuse_given_source</span><span class="p">(</span><span class="n">affordances</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Raise ``ValueError`` for an ``audio=`` or ``derived_from=``: an edit of a</span>
+<span class="sd">    library sound takes both from the library."""</span>
+    <span class="n">taken</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">({</span><span class="s2">"audio"</span><span class="p">,</span> <span class="s2">"derived_from"</span><span class="p">}</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">affordances</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">taken</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"edit() takes the source clip and its rights from the library, not "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s1">='</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">taken</span><span class="p">)</span><span class="si">}</span><span class="s2">: pass its sound id as source= (a clip "</span>
+            <span class="s2">"that is not in the library: foley.generate(prompt, backend=&lt;an edit "</span>
+            <span class="s2">"backend&gt;, audio=&lt;the clip&gt;, derived_from=&lt;its LicenseRecord&gt;))"</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_named_backend</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">injected</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The backend an edit call names: ``backend``, else its injected adapter's."""</span>
+    <span class="k">return</span> <span class="n">backend</span> <span class="ow">or</span> <span class="p">(</span><span class="n">injected</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_op</span><span class="p">(</span><span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Raise ``ValueError`` for an op not in :data:`foley.base.EDIT_OPS`."""</span>
+    <span class="k">if</span> <span class="n">op</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">EDIT_OPS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unknown edit op </span><span class="si">{</span><span class="n">op</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">EDIT_OPS</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_registered_config</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The registered config of source ``name`` (no adapter is built).</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: For an unknown source (:func:`foley.sources.registry.get_source`'s).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span><span class="p">,</span> <span class="n">get_source</span>
+
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SOURCE_REGISTRY</span><span class="p">:</span>
+        <span class="n">get_source</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># raises the informative KeyError</span>
+    <span class="k">return</span> <span class="n">SOURCE_REGISTRY</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">"config"</span><span class="p">]</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_does</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>

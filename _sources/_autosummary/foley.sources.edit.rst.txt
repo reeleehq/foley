@@ -14,7 +14,10 @@ foley.sources.edit
 
    .. autosummary::
    
+      edit_backend
       edit_lineage
+      edit_use_refusal
+      estimate_edit
       resolve_edit
    
    .. rubric:: Classes

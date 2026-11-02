@@ -31,7 +31,8 @@ Each store defaults to a [`foley.stores.make_session_store()`](foley.stores.html
 inject plain dicts. All values are JSON-safe dicts.
 
 * **Parameters:**
-  * **session_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The session namespace.
+  * **session_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The session namespace: one plain name
+    ([`foley.stores.check_session_id()`](foley.stores.html.md#foley.stores.check_session_id), else `ValueError`).
   * **rejects** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Optional injected `MutableMapping` stores.
 
 #### add_pick(sound_id, , layer=None, onset=None)

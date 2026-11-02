@@ -1,4 +1,4 @@
-> built 2026-11-02 01:57 UTC from 3d5f9ee (main) · foley 0.0.108. Details: build_info.json
+> built 2026-11-02 02:14 UTC from ffe65e8 (main) · foley 0.0.109. Details: build_info.json
 
 # index.html.md
 
@@ -1773,7 +1773,8 @@ Each store defaults to a [`foley.stores.make_session_store()`](_autosummary/fole
 inject plain dicts. All values are JSON-safe dicts.
 
 * **Parameters:**
-  * **session_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The session namespace.
+  * **session_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The session namespace: one plain name
+    ([`foley.stores.check_session_id()`](_autosummary/foley.stores.html.md#foley.stores.check_session_id), else `ValueError`).
   * **rejects** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Optional injected `MutableMapping` stores.
 
 #### add_pick(sound_id, , layer=None, onset=None)
@@ -2030,6 +2031,7 @@ imports a surface library: `py2mcp` / `fastmcp` load inside
 | [`foley_capabilities`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_capabilities)()                             | What foley can do here — keys / extras / system deps / offline / sources / degraded.      |
 |---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
 | [`foley_drop_pick`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_drop_pick)(sound_id[, session])             | Remove a previously-picked sound from the session.                                        |
+| [`foley_edit`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_edit)(sound_id, op[, prompt, backend, ...]) | Edit a library sound into a new one (paid): audio-to-audio, inpaint or extend.            |
 | [`foley_find`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_find)(context[, max_events, verify, ...])   | Find verified, license-clean sound candidates for a narrative passage.                    |
 | [`foley_generate`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_generate)(prompt[, backend, ...])           | Generate a sound from a text prompt (local backends only when offline).                   |
 | [`foley_guide`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.foley_guide)()                                    | How to sound-design a narration with foley — the operating playbook for an agent.         |
@@ -2057,12 +2059,12 @@ imports a surface library: `py2mcp` / `fastmcp` load inside
 | [`Verb`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.Verb)(fn[, mcp, cli, why])   | One verb of foley's JSON-safe surface: the function and the surfaces it is on (#62).   |
 |------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
 
-### foley.agent.verbs.TOOLS *= [<function foley_find>, <function foley_search>, <function foley_similar_to>, <function foley_preview>, <function foley_refine>, <function foley_pick>, <function foley_drop_pick>, <function foley_reject>, <function foley_list_picks>, <function foley_generate>, <function foley_plan>, <function foley_weave>, <function foley_swap_clip>, <function foley_set_gain>, <function foley_nudge>, <function foley_toggle>, <function foley_set_master>, <function foley_timeline_captions>, <function foley_score>, <function foley_guide>, <function foley_capabilities>, <function foley_status>]*
+### foley.agent.verbs.TOOLS *= [<function foley_find>, <function foley_search>, <function foley_similar_to>, <function foley_preview>, <function foley_refine>, <function foley_pick>, <function foley_drop_pick>, <function foley_reject>, <function foley_list_picks>, <function foley_generate>, <function foley_edit>, <function foley_plan>, <function foley_weave>, <function foley_swap_clip>, <function foley_set_gain>, <function foley_nudge>, <function foley_toggle>, <function foley_set_master>, <function foley_timeline_captions>, <function foley_score>, <function foley_guide>, <function foley_capabilities>, <function foley_status>]*
 
 The MCP tool surface at import, in the table’s order (kept for callers that read it;
 the server reads [`VERBS`](_autosummary/foley.agent.verbs.html.md#foley.agent.verbs.VERBS) when it is built).
 
-### foley.agent.verbs.VERBS *= (Verb(fn=<function foley_find>, mcp=True, cli=True, why=''), Verb(fn=<function foley_search>, mcp=True, cli=False, why="the CLI's own \`foley search\` prints readable rows (it predates the table)"), Verb(fn=<function foley_similar_to>, mcp=True, cli=True, why=''), Verb(fn=<function foley_preview>, mcp=True, cli=True, why=''), Verb(fn=<function foley_refine>, mcp=True, cli=True, why=''), Verb(fn=<function foley_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_drop_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_reject>, mcp=True, cli=True, why=''), Verb(fn=<function foley_list_picks>, mcp=True, cli=True, why=''), Verb(fn=<function foley_generate>, mcp=True, cli=True, why=''), Verb(fn=<function foley_plan>, mcp=True, cli=True, why=''), Verb(fn=<function foley_weave>, mcp=True, cli=True, why=''), Verb(fn=<function foley_swap_clip>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_gain>, mcp=True, cli=True, why=''), Verb(fn=<function foley_nudge>, mcp=True, cli=True, why=''), Verb(fn=<function foley_toggle>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_master>, mcp=True, cli=True, why=''), Verb(fn=<function foley_timeline_captions>, mcp=True, cli=True, why=''), Verb(fn=<function foley_score>, mcp=True, cli=True, why=''), Verb(fn=<function foley_guide>, mcp=True, cli=True, why=''), Verb(fn=<function foley_capabilities>, mcp=True, cli=True, why=''), Verb(fn=<function foley_status>, mcp=True, cli=True, why=''))*
+### foley.agent.verbs.VERBS *= (Verb(fn=<function foley_find>, mcp=True, cli=True, why=''), Verb(fn=<function foley_search>, mcp=True, cli=False, why="the CLI's own \`foley search\` prints readable rows (it predates the table)"), Verb(fn=<function foley_similar_to>, mcp=True, cli=True, why=''), Verb(fn=<function foley_preview>, mcp=True, cli=True, why=''), Verb(fn=<function foley_refine>, mcp=True, cli=True, why=''), Verb(fn=<function foley_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_drop_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_reject>, mcp=True, cli=True, why=''), Verb(fn=<function foley_list_picks>, mcp=True, cli=True, why=''), Verb(fn=<function foley_generate>, mcp=True, cli=True, why=''), Verb(fn=<function foley_edit>, mcp=True, cli=True, why=''), Verb(fn=<function foley_plan>, mcp=True, cli=True, why=''), Verb(fn=<function foley_weave>, mcp=True, cli=True, why=''), Verb(fn=<function foley_swap_clip>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_gain>, mcp=True, cli=True, why=''), Verb(fn=<function foley_nudge>, mcp=True, cli=True, why=''), Verb(fn=<function foley_toggle>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_master>, mcp=True, cli=True, why=''), Verb(fn=<function foley_timeline_captions>, mcp=True, cli=True, why=''), Verb(fn=<function foley_score>, mcp=True, cli=True, why=''), Verb(fn=<function foley_guide>, mcp=True, cli=True, why=''), Verb(fn=<function foley_capabilities>, mcp=True, cli=True, why=''), Verb(fn=<function foley_status>, mcp=True, cli=True, why=''))*
 
 MCP’s tools and the CLI’s generated
 commands are both read from it.
@@ -2102,6 +2104,26 @@ What foley can do here — keys / extras / system deps / offline / sources / deg
 ### foley.agent.verbs.foley_drop_pick(sound_id, session='default')
 
 Remove a previously-picked sound from the session.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_edit(sound_id, op, prompt='', , backend=None, commercial_ok=True, session='default', territory=None, strength=None, inpaint_start_s=None, inpaint_end_s=None, extend_before_s=None, extend_after_s=None)
+
+Edit a library sound into a new one (paid): audio-to-audio, inpaint or extend.
+
+`op`: `audio_to_audio` (regenerate the whole clip; `strength` 0..1, how far
+from the source), `inpaint` (regenerate `inpaint_start_s`..\`\`inpaint_end_s\`\`,
+keep the rest) or `extend` (`extend_before_s` and/or `extend_after_s` seconds
+of new sound). `prompt`: what the result should sound like (default: the
+source’s caption). `backend`: an edit backend doing `op` (default: the op’s,
+which runs only once the host opted in to paid generation).
+
+The new sound is stored in the library and cached in the session (pick it like any
+candidate); its licence is the backend’s narrowed to the source’s, and credits
+the source. Refused before anything is paid for when the source’s rights do not
+allow an edit, or the edit could not serve this call’s intent (`commercial_ok`,
+`territory`): an edit of a non-commercial sound is non-commercial.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -7385,7 +7407,8 @@ Each store defaults to a [`foley.stores.make_session_store()`](_autosummary/fole
 inject plain dicts. All values are JSON-safe dicts.
 
 * **Parameters:**
-  * **session_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The session namespace.
+  * **session_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The session namespace: one plain name
+    ([`foley.stores.check_session_id()`](_autosummary/foley.stores.html.md#foley.stores.check_session_id), else `ValueError`).
   * **rejects** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Optional injected `MutableMapping` stores.
 
 #### add_pick(sound_id, , layer=None, onset=None)
@@ -8400,7 +8423,10 @@ remote LLM endpoint, an unlisted model), and such a call needs the run’s appro
 
 * **Parameters:**
   * **verb** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `'generate'` (`backend=`, plus the generation affordances — priced
-    exactly as the call would be: same drops, same clamp); `'find'` /
+    exactly as the call would be: same drops, same clamp); `'edit'`
+    (`op=`, `backend=` (default: the op’s), the op’s parameters, and
+    optionally `source=` / `library=`: priced as [`edit()`](_autosummary/foley.html.md#foley.edit) would be,
+    see [`foley.sources.edit.estimate_edit()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.estimate_edit)); `'find'` /
     `'score'` (the run’s upper bound: every generation and LLM call it could
     make — what `find` checks against its budget before the first paid call;
     pass `context=` / `segments=` so the decomposer’s prompt is sized, and
@@ -8409,7 +8435,8 @@ remote LLM endpoint, an unlisted model), and such a call needs the run’s appro
     `'add_from'` (`source=`).
   * **\*\*kwargs** – The same keywords the verb takes.
 * **Raises:**
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For an unknown verb.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For an unknown verb, or an unknown edit op (or one its backend
+        does not do, or its parameters do not fit).
   * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – For an unknown backend / source.
   * **UnsupportedParameter** – For `'generate'` on one backend that cannot honour a
         meaning-carrying parameter (`model=`, `seed=`, `video=`): the call
@@ -9164,6 +9191,9 @@ Mapping for the cloud.
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Returns:**
   A `MutableMapping[str, dict]` keyed by the bare key.
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For a `session_id` that is not one plain name
+      (`check_session_id()`).
 
 ### foley.mcp_server(, library=None, session='default', runtime=None, byte_store=None, include=None, name='foley', max_usd=None)
 
@@ -15748,7 +15778,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chimes', 'nbc chime'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'netflix chime', 'tudum', 'netflix intro', 'ta-dum', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel chime', 'intel inside', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer simpson doh', "d'oh", 'homer doh'})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'ta dum', 'netflix sound', 'netflix chime', 'netflix intro', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'metro-goldwyn-mayer lion', 'mgm lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', '20th century fox fanfare', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -18213,8 +18243,12 @@ watermark, ingest, QC). What is particular to an edit lives here:
   to `transformations`, which the credits ([`foley.provenance.credits.derived_sources()`](_autosummary/foley.provenance.credits.html.md#foley.provenance.credits.derived_sources))
   and the content credential (a `parentOf` ingredient) read.
 * [`resolve_edit()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.resolve_edit) — what [`foley.edit()`](_autosummary/foley.html.md#foley.edit) adds on top: the source sound from
-  the library (its bytes, which must be sendable), the op and the backend (named, or
-  the op’s default from the registry configs’ `edit_op`).
+  the library (its bytes, which must be sendable), the op and the backend
+  ([`edit_backend()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_backend): named, or the op’s default from the registry configs’
+  `edit_op`), and, given an intended use, whether the edit could serve it
+  ([`edit_use_refusal()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_use_refusal)).
+* [`estimate_edit()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.estimate_edit) — what an edit would cost, priced by its op and backend
+  through the same path as the call ([`foley.estimate()`](_autosummary/foley.html.md#foley.estimate) `('edit', ...)`).
 
 ### Module Attributes
 
@@ -18223,17 +18257,20 @@ watermark, ingest, QC). What is particular to an edit lives here:
 
 ### Functions
 
-| [`edit_lineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_lineage)(derived_from, \*, config, ...)      | The gated [`EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage) of an edit call: the edit mode's licence gate (#162).   |
-|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| [`resolve_edit`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.resolve_edit)(source, op[, prompt, backend, ...]) | Resolve an edit of a library sound: its record, its op and its backend.                                                        |
+| [`edit_backend`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_backend)(op[, backend, injected])            | The backend that runs an edit of `op`: `backend`, else the `injected` adapter config's name, else the op's default (`foley.sources.generate.default_edit_backend()`).   |
+|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`edit_lineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_lineage)(derived_from, \*, config, ...)      | The gated [`EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage) of an edit call: the edit mode's licence gate (#162).                                            |
+| [`edit_use_refusal`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_use_refusal)(call, intended_use)             | Why the edit `call` could not serve `intended_use`, or `None` if it can.                                                                                                |
+| [`estimate_edit`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.estimate_edit)(op, \*[, source, backend, ...])    | What [`foley.edit()`](_autosummary/foley.html.md#foley.edit) of `op` would cost in USD, or `None` if unknown.                                          |
+| [`resolve_edit`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.resolve_edit)(source, op[, prompt, backend, ...]) | Resolve an edit of a library sound: its record, its op and its backend.                                                                                                 |
 
 ### Classes
 
-| [`EditCall`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditCall)(backend, prompt, source)               | An edit of a library sound, resolved (see [`resolve_edit()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.resolve_edit)).   |
+| [`EditCall`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditCall)(backend, prompt, source, op)           | An edit of a library sound, resolved (see [`resolve_edit()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.resolve_edit)).   |
 |--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
 | [`EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage)(op, source_id, source_license, ...) | What an edited clip derives from: the op and its parameters, and the source.                                  |
 
-### *class* foley.sources.edit.EditCall(backend, prompt, source)
+### *class* foley.sources.edit.EditCall(backend, prompt, source, op)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -18259,6 +18296,13 @@ The source sound’s record (the edit’s `derived_from`).
 
 * **Type:**
   [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord)
+
+#### op
+
+The edit op (a [`foley.base.EDIT_OPS`](_autosummary/foley.base.html.md#foley.base.EDIT_OPS) name).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### *class* foley.sources.edit.EditLineage(op, source_id, source_license, source_credit, source_content=None, params=dict())
 
@@ -18350,6 +18394,21 @@ What an edit may be told it derives from (`derived_from=`).
 
 alias of [`SoundRecord`](_autosummary/foley.base.html.md#foley.base.SoundRecord) | [`LicenseRecord`](_autosummary/foley.base.html.md#foley.base.LicenseRecord)
 
+### foley.sources.edit.edit_backend(op, backend=None, , injected=None)
+
+The backend that runs an edit of `op`: `backend`, else the `injected`
+adapter config’s name, else the op’s default
+(`foley.sources.generate.default_edit_backend()`).
+
+Read from the configs only: no adapter is built and no key is needed, so an
+estimate resolves the backend exactly as the call does.
+
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For an unknown op, or a named backend that does another op.
+  * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – For an unknown backend.
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 ### foley.sources.edit.edit_lineage(derived_from, , config, affordances)
 
 The gated [`EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage) of an edit call: the edit mode’s licence gate (#162).
@@ -18371,14 +18430,58 @@ edit source given its source clip (`affordances['audio']`).
 * **Return type:**
   [`EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage)
 
+### foley.sources.edit.edit_use_refusal(call, intended_use)
+
+Why the edit `call` could not serve `intended_use`, or `None` if it can.
+
+The edit’s rights are its backend’s narrowed to its source’s
+([`EditLineage.apply()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage.apply)), so the use is refused when either refuses it: an edit
+of a non-commercial sound under a commercial use is money spent on a clip nobody
+may place. Decided before anything is paid for; a backend’s refusal names the
+other backends of the op whose licence fits.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.edit.estimate_edit(op, , source=None, backend=None, library=None, adapter=None, \*\*kwargs)
+
+What [`foley.edit()`](_autosummary/foley.html.md#foley.edit) of `op` would cost in USD, or `None` if unknown.
+
+Priced by the backend the call would use ([`edit_backend()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_backend): named, or the op’s
+default, whether or not paid generation is opted in: the price is what opting in
+would spend) through the call’s own pricing
+(`foley.sources._dispatch.estimate_generation()`: same translation, same
+parameter checks, same input cover). Given `source`, the clip is read from
+`library` (default: the process-wide one), so a window past its end raises as
+the call would, and a price by the clip’s length is known.
+
+* **Parameters:**
+  * **op** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The edit op ([`foley.base.EDIT_OPS`](_autosummary/foley.base.html.md#foley.base.EDIT_OPS)).
+  * **source** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The library id of the sound to edit (optional).
+  * **backend** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An edit source doing `op`; `None`: the op’s default.
+  * **library** – The library holding `source`.
+  * **adapter** – An injected adapter, as the call’s: its config names the backend
+    and prices it (the plan prices the adapter’s config).
+  * **\*\*kwargs** – The op’s parameters and the call’s other keywords (the ones that
+    are not generation affordances, `prompt=` included, are ignored).
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For an unknown op, a backend that does another op, the op’s
+        parameters missing or out of range, or an `audio=` / `derived_from=`
+        (as [`foley.edit()`](_autosummary/foley.html.md#foley.edit)).
+  * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – For an unknown backend, or a `source` not in the library.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
 ### foley.sources.edit.resolve_edit(source, op, prompt='', , library, backend=None, adapter=None, affordances=None)
 
 Resolve an edit of a library sound: its record, its op and its backend.
 
 The op’s parameters and the source’s rights are checked by the generation’s edit
 mode itself (`foley.sources._dispatch.translate_affordances()`,
-[`edit_lineage()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_lineage)), before anything is paid for. Checked here is only what must
-be known before the source’s bytes are read from the library.
+[`edit_lineage()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_lineage)), before anything is paid for. Checked here is what must be
+known before the source’s bytes are read from the library, and, when
+`affordances` carry an `intended_use`, whether the edit could serve it
+([`edit_use_refusal()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_use_refusal)).
 
 * **Parameters:**
   * **source** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The library id of the sound to edit.
@@ -18397,7 +18500,8 @@ be known before the source’s bytes are read from the library.
         that does another op.
   * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If `source` is not in `library`, or `backend` is unknown.
   * [**EditRefusal**](_autosummary/foley.html.md#foley.EditRefusal) – If the source’s bytes may not be sent on
-        ([`foley.licensing.upload_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.upload_refusal): a by-reference Freesound sound).
+        ([`foley.licensing.upload_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.upload_refusal): a by-reference Freesound sound),
+        or the edit could not serve the `intended_use` given.
   * [**SourceConfigurationError**](_autosummary/foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – For an unnamed paid backend without the opt-in.
 * **Return type:**
   [`EditCall`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditCall)
@@ -23889,8 +23993,9 @@ Invariants wired here (see the skill):
 
 ### Functions
 
-| [`content_key`](_autosummary/foley.stores.html.md#foley.stores.content_key)(data, \*[, algo])                   | Return the content-address key for `data` — its hex digest.                           |
+| [`check_session_id`](_autosummary/foley.stores.html.md#foley.stores.check_session_id)(session_id)                    | `session_id` if it can name a session's folder, else raise `ValueError`.              |
 |--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| [`content_key`](_autosummary/foley.stores.html.md#foley.stores.content_key)(data, \*[, algo])                   | Return the content-address key for `data` — its hex digest.                           |
 | [`make_byte_store`](_autosummary/foley.stores.html.md#foley.stores.make_byte_store)([rootdir])                      | Build the content-addressable blob store: `Mapping[content_key -> bytes]`.            |
 | [`make_generations_store`](_autosummary/foley.stores.html.md#foley.stores.make_generations_store)([rootdir])               | Build the paid-generations cache (local files by default; any `dol` pair works).      |
 | [`make_meta_store`](_autosummary/foley.stores.html.md#foley.stores.make_meta_store)([rootdir])                      | Build the metadata store: `Mapping[sound_id -> SoundRecord]` (JSON files).            |
@@ -24025,6 +24130,27 @@ A filesystem location (path or path-like string) for a local store root.
 
 alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | `os.PathLike[str]`
 
+### foley.stores.check_session_id(session_id)
+
+`session_id` if it can name a session’s folder, else raise `ValueError`.
+
+A session id is chosen by the caller (an MCP agent), so it must be one plain path
+segment: never a separator, `.` or `..`, which would put the session’s files
+outside the sessions directory (or fail only at the first write, after a paid
+call).
+
+```pycon
+>>> check_session_id("default")
+'default'
+>>> check_session_id("../../x/y")
+Traceback (most recent call last):
+...
+ValueError: session id must be one plain name (no '/', '\', '.' or '..'), got '../../x/y'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 ### foley.stores.content_key(data, , algo='sha256')
 
 Return the content-address key for `data` — its hex digest.
@@ -24139,6 +24265,9 @@ Mapping for the cloud.
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Returns:**
   A `MutableMapping[str, dict]` keyed by the bare key.
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For a `session_id` that is not one plain name
+      ([`check_session_id()`](_autosummary/foley.stores.html.md#foley.stores.check_session_id)).
 
 ### foley.stores.store_sound(record, data=None, , sounds, meta, cache_bytes_ok=None)
 
@@ -25854,18 +25983,16 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 01:57 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/3d5f9ee8cd7da97a43936b491d432db72f950255"><code>3d5f9ee</code></a> on branch <code>main</code>, for **foley 0.0.108** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 02:14 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/ffe65e8e482a8e2da1c67b6594349ee57760e15e"><code>ffe65e8</code></a> on branch <code>main</code>, for **foley 0.0.109** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.108) is behind the latest release on PyPI (0.0.109): `pip install foley` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/3d5f9ee8cd7da97a43936b491d432db72f950255"><code>3d5f9ee8cd7da97a43936b491d432db72f950255</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/ffe65e8e482a8e2da1c67b6594349ee57760e15e"><code>ffe65e8e482a8e2da1c67b6594349ee57760e15e</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -25876,9 +26003,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41374746742">41374746742</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41376424725">41376424725</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>3d5f9ee8cd7da97a43936b491d432db72f950255</code> (in the history of the built commit) |
+| Event commit | <code>ffe65e8e482a8e2da1c67b6594349ee57760e15e</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -25903,13 +26030,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.109/">0.0.109</a>, newer than the documented version (0.0.108).
+Latest release: <a href="https://pypi.org/project/foley/0.0.109/">0.0.109</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 3d5f9ee8cd7da97a43936b491d432db72f950255
+git checkout ffe65e8e482a8e2da1c67b6594349ee57760e15e
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

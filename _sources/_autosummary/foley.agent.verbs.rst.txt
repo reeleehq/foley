@@ -17,6 +17,7 @@ foley.agent.verbs
    
       foley_capabilities
       foley_drop_pick
+      foley_edit
       foley_find
       foley_generate
       foley_guide

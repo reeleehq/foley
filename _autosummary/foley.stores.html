@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=83be8e66"></script>
+    <script src="../_static/documentation_options.js?v=27c60a7f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.108" />
+  <meta name="docsearch:version" content="0.0.109" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -568,28 +568,31 @@ ids are unaffected (percent-encoding is a no-op on them).</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.stores.content_key" title="foley.stores.content_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">content_key</span></code></a>(data, *[, algo])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.stores.check_session_id" title="foley.stores.check_session_id"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_session_id</span></code></a>(session_id)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">session_id</span></code> if it can name a session's folder, else raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.stores.content_key" title="foley.stores.content_key"><code class="xref py py-obj docutils literal notranslate"><span class="pre">content_key</span></code></a>(data, *[, algo])</p></td>
 <td><p>Return the content-address key for <code class="docutils literal notranslate"><span class="pre">data</span></code> — its hex digest.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.stores.make_byte_store" title="foley.stores.make_byte_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_byte_store</span></code></a>([rootdir])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.stores.make_byte_store" title="foley.stores.make_byte_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_byte_store</span></code></a>([rootdir])</p></td>
 <td><p>Build the content-addressable blob store: <code class="docutils literal notranslate"><span class="pre">Mapping[content_key</span> <span class="pre">-&gt;</span> <span class="pre">bytes]</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.stores.make_generations_store" title="foley.stores.make_generations_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_generations_store</span></code></a>([rootdir])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.stores.make_generations_store" title="foley.stores.make_generations_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_generations_store</span></code></a>([rootdir])</p></td>
 <td><p>Build the paid-generations cache (local files by default; any <code class="docutils literal notranslate"><span class="pre">dol</span></code> pair works).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.stores.make_meta_store" title="foley.stores.make_meta_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_meta_store</span></code></a>([rootdir])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.stores.make_meta_store" title="foley.stores.make_meta_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_meta_store</span></code></a>([rootdir])</p></td>
 <td><p>Build the metadata store: <code class="docutils literal notranslate"><span class="pre">Mapping[sound_id</span> <span class="pre">-&gt;</span> <span class="pre">SoundRecord]</span></code> (JSON files).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.stores.make_provenance_store" title="foley.stores.make_provenance_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_provenance_store</span></code></a>([rootdir])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.stores.make_provenance_store" title="foley.stores.make_provenance_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_provenance_store</span></code></a>([rootdir])</p></td>
 <td><p>Build the content-credential store: <code class="docutils literal notranslate"><span class="pre">Mapping[content_id</span> <span class="pre">-&gt;</span> <span class="pre">dict]</span></code> (JSON files).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.stores.make_run_store" title="foley.stores.make_run_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_run_store</span></code></a>([rootdir])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.stores.make_run_store" title="foley.stores.make_run_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_run_store</span></code></a>([rootdir])</p></td>
 <td><p>Build the run-artifact store: <code class="docutils literal notranslate"><span class="pre">Mapping[run_id</span> <span class="pre">-&gt;</span> <span class="pre">RunManifest</span> <span class="pre">dict]</span></code> (JSON files).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.stores.make_session_store" title="foley.stores.make_session_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_session_store</span></code></a>([session_id, name, rootdir])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.stores.make_session_store" title="foley.stores.make_session_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_session_store</span></code></a>([session_id, name, rootdir])</p></td>
 <td><p>Build a per-session JSON store: <code class="docutils literal notranslate"><span class="pre">Mapping[key</span> <span class="pre">-&gt;</span> <span class="pre">dict]</span></code> under <code class="docutils literal notranslate"><span class="pre">sessions/{id}/{name}/</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.stores.store_sound" title="foley.stores.store_sound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">store_sound</span></code></a>(record[, data, cache_bytes_ok])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.stores.store_sound" title="foley.stores.store_sound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">store_sound</span></code></a>(record[, data, cache_bytes_ok])</p></td>
 <td><p>Persist a sound, choosing by-value vs by-reference from <code class="docutils literal notranslate"><span class="pre">cache_bytes_ok</span></code>.</p></td>
 </tr>
 </tbody>
@@ -771,6 +774,29 @@ taken out (#176; <a class="reference internal" href="foley.sources.video.html#fo
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.stores.check_session_id">
+<span class="sig-prename descclassname"><span class="pre">foley.stores.</span></span><span class="sig-name descname"><span class="pre">check_session_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/stores.html#check_session_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.stores.check_session_id" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">session_id</span></code> if it can name a session’s folder, else raise <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p>
+<p>A session id is chosen by the caller (an MCP agent), so it must be one plain path
+segment: never a separator, <code class="docutils literal notranslate"><span class="pre">.</span></code> or <code class="docutils literal notranslate"><span class="pre">..</span></code>, which would put the session’s files
+outside the sessions directory (or fail only at the first write, after a paid
+call).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">check_session_id</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span>
+<span class="go">'default'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">check_session_id</span><span class="p">(</span><span class="s2">"../../x/y"</span><span class="p">)</span>
+<span class="gt">Traceback (most recent call last):</span>
+<span class="c">...</span>
+<span class="gr">ValueError</span>: <span class="n">session id must be one plain name (no '/', '\', '.' or '..'), got '../../x/y'</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.stores.content_key">
 <span class="sig-prename descclassname"><span class="pre">foley.stores.</span></span><span class="sig-name descname"><span class="pre">content_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">algo</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'sha256'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/stores.html#content_key"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.stores.content_key" title="Link to this definition">#</a></dt>
 <dd><p>Return the content-address key for <code class="docutils literal notranslate"><span class="pre">data</span></code> — its hex digest.</p>
@@ -922,6 +948,10 @@ Mapping for the cloud.</p>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>A <code class="docutils literal notranslate"><span class="pre">MutableMapping[str,</span> <span class="pre">dict]</span></code> keyed by the bare key.</p>
 </dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – For a <code class="docutils literal notranslate"><span class="pre">session_id</span></code> that is not one plain name
+    (<a class="reference internal" href="#foley.stores.check_session_id" title="foley.stores.check_session_id"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_session_id()</span></code></a>).</p>
+</dd>
 </dl>
 </dd></dl>
 
@@ -1035,6 +1065,7 @@ metadata reference dangling against a missing blob.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.stores.HASH_ALGO"><code class="docutils literal notranslate"><span class="pre">HASH_ALGO</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.stores.META_FILE_SUFFIX"><code class="docutils literal notranslate"><span class="pre">META_FILE_SUFFIX</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.stores.Rootdir"><code class="docutils literal notranslate"><span class="pre">Rootdir</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.stores.check_session_id"><code class="docutils literal notranslate"><span class="pre">check_session_id()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.stores.content_key"><code class="docutils literal notranslate"><span class="pre">content_key()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.stores.make_byte_store"><code class="docutils literal notranslate"><span class="pre">make_byte_store()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.stores.make_generations_store"><code class="docutils literal notranslate"><span class="pre">make_generations_store()</span></code></a></li>

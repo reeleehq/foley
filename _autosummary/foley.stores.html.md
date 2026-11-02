@@ -55,8 +55,9 @@ Invariants wired here (see the skill):
 
 ### Functions
 
-| [`content_key`](#foley.stores.content_key)(data, \*[, algo])                   | Return the content-address key for `data` — its hex digest.                           |
+| [`check_session_id`](#foley.stores.check_session_id)(session_id)                    | `session_id` if it can name a session's folder, else raise `ValueError`.              |
 |--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| [`content_key`](#foley.stores.content_key)(data, \*[, algo])                   | Return the content-address key for `data` — its hex digest.                           |
 | [`make_byte_store`](#foley.stores.make_byte_store)([rootdir])                      | Build the content-addressable blob store: `Mapping[content_key -> bytes]`.            |
 | [`make_generations_store`](#foley.stores.make_generations_store)([rootdir])               | Build the paid-generations cache (local files by default; any `dol` pair works).      |
 | [`make_meta_store`](#foley.stores.make_meta_store)([rootdir])                      | Build the metadata store: `Mapping[sound_id -> SoundRecord]` (JSON files).            |
@@ -191,6 +192,27 @@ A filesystem location (path or path-like string) for a local store root.
 
 alias of [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | `os.PathLike[str]`
 
+### foley.stores.check_session_id(session_id)
+
+`session_id` if it can name a session’s folder, else raise `ValueError`.
+
+A session id is chosen by the caller (an MCP agent), so it must be one plain path
+segment: never a separator, `.` or `..`, which would put the session’s files
+outside the sessions directory (or fail only at the first write, after a paid
+call).
+
+```pycon
+>>> check_session_id("default")
+'default'
+>>> check_session_id("../../x/y")
+Traceback (most recent call last):
+...
+ValueError: session id must be one plain name (no '/', '\', '.' or '..'), got '../../x/y'
+```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 ### foley.stores.content_key(data, , algo='sha256')
 
 Return the content-address key for `data` — its hex digest.
@@ -305,6 +327,9 @@ Mapping for the cloud.
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Returns:**
   A `MutableMapping[str, dict]` keyed by the bare key.
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For a `session_id` that is not one plain name
+      ([`check_session_id()`](#foley.stores.check_session_id)).
 
 ### foley.stores.store_sound(record, data=None, , sounds, meta, cache_bytes_ok=None)
 

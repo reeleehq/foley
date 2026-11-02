@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=83be8e66"></script>
+    <script src="../../_static/documentation_options.js?v=27c60a7f"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.108" />
+  <meta name="docsearch:version" content="0.0.109" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -950,6 +950,37 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="check_session_id">
+<a class="viewcode-back" href="../../_autosummary/foley.stores.html#foley.check_session_id">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_session_id</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``session_id`` if it can name a session's folder, else raise ``ValueError``.</span>
+
+<span class="sd">    A session id is chosen by the caller (an MCP agent), so it must be one plain path</span>
+<span class="sd">    segment: never a separator, ``.`` or ``..``, which would put the session's files</span>
+<span class="sd">    outside the sessions directory (or fail only at the first write, after a paid</span>
+<span class="sd">    call).</span>
+
+<span class="sd">    &gt;&gt;&gt; check_session_id("default")</span>
+<span class="sd">    'default'</span>
+<span class="sd">    &gt;&gt;&gt; check_session_id("../../x/y")</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: session id must be one plain name (no '/', '\\', '.' or '..'), got '../../x/y'</span>
+<span class="sd">    """</span>
+    <span class="n">plain</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="n">session_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="s2">"."</span><span class="p">,</span> <span class="s2">".."</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span> <span class="ow">in</span> <span class="n">session_id</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"</span><span class="se">\0</span><span class="s2">"</span><span class="p">))</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">plain</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"session id must be one plain name (no '/', '</span><span class="se">\\</span><span class="s2">', '.' or '..'), got "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">session_id</span><span class="si">!r}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">session_id</span></div>
+
+
+
 <div class="viewcode-block" id="make_session_store">
 <a class="viewcode-back" href="../../_autosummary/foley.stores.html#foley.make_session_store">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">make_session_store</span><span class="p">(</span>
@@ -974,8 +1005,15 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        A ``MutableMapping[str, dict]`` keyed by the bare key.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: For a ``session_id`` that is not one plain name</span>
+<span class="sd">            (:func:`check_session_id`).</span>
 <span class="sd">    """</span>
-    <span class="n">root</span> <span class="o">=</span> <span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">rootdir</span><span class="p">)</span> <span class="k">if</span> <span class="n">rootdir</span> <span class="k">else</span> <span class="n">DEFAULT_SESSION_DIR</span><span class="p">)</span> <span class="o">/</span> <span class="n">session_id</span> <span class="o">/</span> <span class="n">name</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">rootdir</span><span class="p">)</span> <span class="k">if</span> <span class="n">rootdir</span> <span class="k">else</span> <span class="n">DEFAULT_SESSION_DIR</span><span class="p">)</span> <span class="o">/</span> <span class="n">check_session_id</span><span class="p">(</span>
+        <span class="n">session_id</span>
+    <span class="p">)</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="n">root</span> <span class="o">/</span> <span class="n">name</span>
     <span class="n">json_store</span> <span class="o">=</span> <span class="n">mk_dirs_if_missing</span><span class="p">(</span><span class="n">JsonFiles</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">root</span><span class="p">)))</span>
     <span class="k">return</span> <span class="n">wrap_kvs</span><span class="p">(</span><span class="n">json_store</span><span class="p">,</span> <span class="n">id_of_key</span><span class="o">=</span><span class="n">_meta_filename</span><span class="p">,</span> <span class="n">key_of_id</span><span class="o">=</span><span class="n">_meta_key</span><span class="p">)</span></div>
 

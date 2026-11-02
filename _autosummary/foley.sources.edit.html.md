@@ -22,8 +22,12 @@ watermark, ingest, QC). What is particular to an edit lives here:
   to `transformations`, which the credits ([`foley.provenance.credits.derived_sources()`](foley.provenance.credits.html.md#foley.provenance.credits.derived_sources))
   and the content credential (a `parentOf` ingredient) read.
 * [`resolve_edit()`](#foley.sources.edit.resolve_edit) — what [`foley.edit()`](foley.html.md#foley.edit) adds on top: the source sound from
-  the library (its bytes, which must be sendable), the op and the backend (named, or
-  the op’s default from the registry configs’ `edit_op`).
+  the library (its bytes, which must be sendable), the op and the backend
+  ([`edit_backend()`](#foley.sources.edit.edit_backend): named, or the op’s default from the registry configs’
+  `edit_op`), and, given an intended use, whether the edit could serve it
+  ([`edit_use_refusal()`](#foley.sources.edit.edit_use_refusal)).
+* [`estimate_edit()`](#foley.sources.edit.estimate_edit) — what an edit would cost, priced by its op and backend
+  through the same path as the call ([`foley.estimate()`](foley.html.md#foley.estimate) `('edit', ...)`).
 
 ### Module Attributes
 
@@ -32,17 +36,20 @@ watermark, ingest, QC). What is particular to an edit lives here:
 
 ### Functions
 
-| [`edit_lineage`](#foley.sources.edit.edit_lineage)(derived_from, \*, config, ...)      | The gated [`EditLineage`](#foley.sources.edit.EditLineage) of an edit call: the edit mode's licence gate (#162).   |
-|---------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| [`resolve_edit`](#foley.sources.edit.resolve_edit)(source, op[, prompt, backend, ...]) | Resolve an edit of a library sound: its record, its op and its backend.                                                        |
+| [`edit_backend`](#foley.sources.edit.edit_backend)(op[, backend, injected])            | The backend that runs an edit of `op`: `backend`, else the `injected` adapter config's name, else the op's default (`foley.sources.generate.default_edit_backend()`).   |
+|---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`edit_lineage`](#foley.sources.edit.edit_lineage)(derived_from, \*, config, ...)      | The gated [`EditLineage`](#foley.sources.edit.EditLineage) of an edit call: the edit mode's licence gate (#162).                                            |
+| [`edit_use_refusal`](#foley.sources.edit.edit_use_refusal)(call, intended_use)             | Why the edit `call` could not serve `intended_use`, or `None` if it can.                                                                                                |
+| [`estimate_edit`](#foley.sources.edit.estimate_edit)(op, \*[, source, backend, ...])    | What [`foley.edit()`](foley.html.md#foley.edit) of `op` would cost in USD, or `None` if unknown.                                          |
+| [`resolve_edit`](#foley.sources.edit.resolve_edit)(source, op[, prompt, backend, ...]) | Resolve an edit of a library sound: its record, its op and its backend.                                                                                                 |
 
 ### Classes
 
-| [`EditCall`](#foley.sources.edit.EditCall)(backend, prompt, source)               | An edit of a library sound, resolved (see [`resolve_edit()`](#foley.sources.edit.resolve_edit)).   |
+| [`EditCall`](#foley.sources.edit.EditCall)(backend, prompt, source, op)           | An edit of a library sound, resolved (see [`resolve_edit()`](#foley.sources.edit.resolve_edit)).   |
 |--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
 | [`EditLineage`](#foley.sources.edit.EditLineage)(op, source_id, source_license, ...) | What an edited clip derives from: the op and its parameters, and the source.                                  |
 
-### *class* foley.sources.edit.EditCall(backend, prompt, source)
+### *class* foley.sources.edit.EditCall(backend, prompt, source, op)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -68,6 +75,13 @@ The source sound’s record (the edit’s `derived_from`).
 
 * **Type:**
   [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord)
+
+#### op
+
+The edit op (a [`foley.base.EDIT_OPS`](foley.base.html.md#foley.base.EDIT_OPS) name).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### *class* foley.sources.edit.EditLineage(op, source_id, source_license, source_credit, source_content=None, params=dict())
 
@@ -159,6 +173,21 @@ What an edit may be told it derives from (`derived_from=`).
 
 alias of [`SoundRecord`](foley.base.html.md#foley.base.SoundRecord) | [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
 
+### foley.sources.edit.edit_backend(op, backend=None, , injected=None)
+
+The backend that runs an edit of `op`: `backend`, else the `injected`
+adapter config’s name, else the op’s default
+(`foley.sources.generate.default_edit_backend()`).
+
+Read from the configs only: no adapter is built and no key is needed, so an
+estimate resolves the backend exactly as the call does.
+
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For an unknown op, or a named backend that does another op.
+  * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – For an unknown backend.
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
 ### foley.sources.edit.edit_lineage(derived_from, , config, affordances)
 
 The gated [`EditLineage`](#foley.sources.edit.EditLineage) of an edit call: the edit mode’s licence gate (#162).
@@ -180,14 +209,58 @@ edit source given its source clip (`affordances['audio']`).
 * **Return type:**
   [`EditLineage`](#foley.sources.edit.EditLineage)
 
+### foley.sources.edit.edit_use_refusal(call, intended_use)
+
+Why the edit `call` could not serve `intended_use`, or `None` if it can.
+
+The edit’s rights are its backend’s narrowed to its source’s
+([`EditLineage.apply()`](#foley.sources.edit.EditLineage.apply)), so the use is refused when either refuses it: an edit
+of a non-commercial sound under a commercial use is money spent on a clip nobody
+may place. Decided before anything is paid for; a backend’s refusal names the
+other backends of the op whose licence fits.
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.sources.edit.estimate_edit(op, , source=None, backend=None, library=None, adapter=None, \*\*kwargs)
+
+What [`foley.edit()`](foley.html.md#foley.edit) of `op` would cost in USD, or `None` if unknown.
+
+Priced by the backend the call would use ([`edit_backend()`](#foley.sources.edit.edit_backend): named, or the op’s
+default, whether or not paid generation is opted in: the price is what opting in
+would spend) through the call’s own pricing
+(`foley.sources._dispatch.estimate_generation()`: same translation, same
+parameter checks, same input cover). Given `source`, the clip is read from
+`library` (default: the process-wide one), so a window past its end raises as
+the call would, and a price by the clip’s length is known.
+
+* **Parameters:**
+  * **op** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The edit op ([`foley.base.EDIT_OPS`](foley.base.html.md#foley.base.EDIT_OPS)).
+  * **source** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The library id of the sound to edit (optional).
+  * **backend** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – An edit source doing `op`; `None`: the op’s default.
+  * **library** – The library holding `source`.
+  * **adapter** – An injected adapter, as the call’s: its config names the backend
+    and prices it (the plan prices the adapter’s config).
+  * **\*\*kwargs** – The op’s parameters and the call’s other keywords (the ones that
+    are not generation affordances, `prompt=` included, are ignored).
+* **Raises:**
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For an unknown op, a backend that does another op, the op’s
+        parameters missing or out of range, or an `audio=` / `derived_from=`
+        (as [`foley.edit()`](foley.html.md#foley.edit)).
+  * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – For an unknown backend, or a `source` not in the library.
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
+
 ### foley.sources.edit.resolve_edit(source, op, prompt='', , library, backend=None, adapter=None, affordances=None)
 
 Resolve an edit of a library sound: its record, its op and its backend.
 
 The op’s parameters and the source’s rights are checked by the generation’s edit
 mode itself (`foley.sources._dispatch.translate_affordances()`,
-[`edit_lineage()`](#foley.sources.edit.edit_lineage)), before anything is paid for. Checked here is only what must
-be known before the source’s bytes are read from the library.
+[`edit_lineage()`](#foley.sources.edit.edit_lineage)), before anything is paid for. Checked here is what must be
+known before the source’s bytes are read from the library, and, when
+`affordances` carry an `intended_use`, whether the edit could serve it
+([`edit_use_refusal()`](#foley.sources.edit.edit_use_refusal)).
 
 * **Parameters:**
   * **source** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The library id of the sound to edit.
@@ -206,7 +279,8 @@ be known before the source’s bytes are read from the library.
         that does another op.
   * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – If `source` is not in `library`, or `backend` is unknown.
   * [**EditRefusal**](foley.html.md#foley.EditRefusal) – If the source’s bytes may not be sent on
-        ([`foley.licensing.upload_refusal()`](foley.licensing.html.md#foley.licensing.upload_refusal): a by-reference Freesound sound).
+        ([`foley.licensing.upload_refusal()`](foley.licensing.html.md#foley.licensing.upload_refusal): a by-reference Freesound sound),
+        or the edit could not serve the `intended_use` given.
   * [**SourceConfigurationError**](foley.sources.base.html.md#foley.sources.base.SourceConfigurationError) – For an unnamed paid backend without the opt-in.
 * **Return type:**
   [`EditCall`](#foley.sources.edit.EditCall)

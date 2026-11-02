@@ -1507,7 +1507,8 @@ Each store defaults to a [`foley.stores.make_session_store()`](foley.stores.html
 inject plain dicts. All values are JSON-safe dicts.
 
 * **Parameters:**
-  * **session_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The session namespace.
+  * **session_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The session namespace: one plain name
+    ([`foley.stores.check_session_id()`](foley.stores.html.md#foley.stores.check_session_id), else `ValueError`).
   * **rejects** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Optional injected `MutableMapping` stores.
 
 #### add_pick(sound_id, , layer=None, onset=None)
@@ -2522,7 +2523,10 @@ remote LLM endpoint, an unlisted model), and such a call needs the run’s appro
 
 * **Parameters:**
   * **verb** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – `'generate'` (`backend=`, plus the generation affordances — priced
-    exactly as the call would be: same drops, same clamp); `'find'` /
+    exactly as the call would be: same drops, same clamp); `'edit'`
+    (`op=`, `backend=` (default: the op’s), the op’s parameters, and
+    optionally `source=` / `library=`: priced as [`edit()`](#foley.edit) would be,
+    see [`foley.sources.edit.estimate_edit()`](foley.sources.edit.html.md#foley.sources.edit.estimate_edit)); `'find'` /
     `'score'` (the run’s upper bound: every generation and LLM call it could
     make — what `find` checks against its budget before the first paid call;
     pass `context=` / `segments=` so the decomposer’s prompt is sized, and
@@ -2531,7 +2535,8 @@ remote LLM endpoint, an unlisted model), and such a call needs the run’s appro
     `'add_from'` (`source=`).
   * **\*\*kwargs** – The same keywords the verb takes.
 * **Raises:**
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For an unknown verb.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For an unknown verb, or an unknown edit op (or one its backend
+        does not do, or its parameters do not fit).
   * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – For an unknown backend / source.
   * **UnsupportedParameter** – For `'generate'` on one backend that cannot honour a
         meaning-carrying parameter (`model=`, `seed=`, `video=`): the call
@@ -3286,6 +3291,9 @@ Mapping for the cloud.
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
 * **Returns:**
   A `MutableMapping[str, dict]` keyed by the bare key.
+* **Raises:**
+  [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – For a `session_id` that is not one plain name
+      (`check_session_id()`).
 
 ### foley.mcp_server(, library=None, session='default', runtime=None, byte_store=None, include=None, name='foley', max_usd=None)
 

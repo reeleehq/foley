@@ -21,6 +21,7 @@ foley.stores
 
    .. autosummary::
    
+      check_session_id
       content_key
       make_byte_store
       make_generations_store

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=83be8e66"></script>
+    <script src="../../../_static/documentation_options.js?v=27c60a7f"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.108" />
+  <meta name="docsearch:version" content="0.0.109" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -985,7 +985,26 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    model under the default commercial intent) is money spent on a sound nobody can</span>
 <span class="sd">    use. A backend whose licence depends on the account (ElevenLabs direct: its</span>
 <span class="sd">    plan) has no fixed row, is not judged here, and is gated after generation as</span>
-<span class="sd">    before.</span>
+<span class="sd">    before. See :func:`backend_license_refusal`.</span>
+<span class="sd">    """</span>
+    <span class="n">refused</span> <span class="o">=</span> <span class="n">backend_license_refusal</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">refused</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">license_id</span><span class="p">,</span> <span class="n">why</span><span class="p">,</span> <span class="n">hint</span> <span class="o">=</span> <span class="n">refused</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">backend</span><span class="si">!r}</span><span class="s2"> generates under </span><span class="si">{</span><span class="n">license_id</span><span class="si">!r}</span><span class="s2">, which this use does not allow: "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2">; nothing was generated. Pick a backend whose licence fits "</span>
+        <span class="sa">f</span><span class="s2">"(fal_stable_audio_3 is commercial under $1M revenue), or </span><span class="si">{</span><span class="n">hint</span><span class="si">}</span><span class="s2">."</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">backend_license_refusal</span><span class="p">(</span>
+    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">intended_use</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Optional[tuple[str, str, str]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``(license_id, why, hint)`` when the licence row ``backend`` generates under</span>
+<span class="sd">    cannot serve ``intended_use``, else ``None`` (also for a backend with no fixed row).</span>
+
+<span class="sd">    ``hint`` says how to change the use (a non-commercial one, or a territory).</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">refusal_reason</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">generated_license</span>
@@ -1013,11 +1032,7 @@ window.runMermaid = runMermaid;</script>
         <span class="k">else</span> <span class="s2">"change the use as the reason says (territory=&lt;the ISO country code where the "</span>
         <span class="s2">"sound is used&gt;, for a licence that excludes territories)"</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="p">(</span>
-        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">backend</span><span class="si">!r}</span><span class="s2"> generates under </span><span class="si">{</span><span class="n">license_id</span><span class="si">!r}</span><span class="s2">, which this use does not allow: "</span>
-        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2">; nothing was generated. Pick a backend whose licence fits "</span>
-        <span class="sa">f</span><span class="s2">"(fal_stable_audio_3 is commercial under $1M revenue), or </span><span class="si">{</span><span class="n">hint</span><span class="si">}</span><span class="s2">."</span>
-    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">license_id</span><span class="p">,</span> <span class="n">why</span><span class="p">,</span> <span class="n">hint</span>
 
 
 <span class="c1">#: The consent note stamped on a stored generation whose license forbids AI</span>
@@ -1640,8 +1655,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    passed over only when nothing was billed, see :func:`generate_in_order`), but which</span>
 <span class="sd">    one depends on who answers, so the bound is the dearest backend the order would try.</span>
 <span class="sd">    ``None`` (unknown) when any of them is unknown. ``affordances`` may carry the call's</span>
-<span class="sd">    ``on_unsupported``; the façade's other keywords (``library=``, ``reuse_cached=``, …)</span>
-<span class="sd">    are not affordances and are ignored.</span>
+<span class="sd">    other keywords (:func:`priced_affordances`).</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        UnsupportedParameter: When every backend tried refuses the call (#164).</span>
@@ -1649,11 +1663,7 @@ window.runMermaid = runMermaid;</script>
     <span class="kn">from</span><span class="w"> </span><span class="nn">._dispatch</span><span class="w"> </span><span class="kn">import</span> <span class="n">UnsupportedParameter</span><span class="p">,</span> <span class="n">estimate_generation</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
 
-    <span class="n">affordances</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">affordances</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_GENERATE_KNOWN</span> <span class="ow">or</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"on_unsupported"</span>
-    <span class="p">}</span>
+    <span class="n">affordances</span> <span class="o">=</span> <span class="n">priced_affordances</span><span class="p">(</span><span class="n">affordances</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
         <span class="n">order</span><span class="p">,</span> <span class="n">paid_ok</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">backend</span><span class="p">),</span> <span class="kc">True</span>
@@ -1688,6 +1698,21 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">prices</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">p</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">prices</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">prices</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">priced_affordances</span><span class="p">(</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The keywords of a generation call that its price is decided from: its</span>
+<span class="sd">    affordances and its ``on_unsupported``. The façade's other keywords (``prompt=``,</span>
+<span class="sd">    ``library=``, ``reuse_cached=``, …) are not affordances and are left out.</span>
+
+<span class="sd">    &gt;&gt;&gt; priced_affordances({"duration_s": 2, "library": None, "on_unsupported": "note"})</span>
+<span class="sd">    {'duration_s': 2, 'on_unsupported': 'note'}</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_NOT_AFFORDANCES</span> <span class="ow">or</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"on_unsupported"</span>
+    <span class="p">}</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_unwrap_own_entry</span><span class="p">(</span><span class="n">provider_params</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">:</span>
@@ -1924,6 +1949,8 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"derived_from"</span><span class="p">,</span>
     <span class="p">}</span>
 <span class="p">)</span>
+<span class="c1">#: The keywords of a generation call that are not affordances (the prompt aside).</span>
+<span class="n">_NOT_AFFORDANCES</span> <span class="o">=</span> <span class="n">_GENERATE_KNOWN</span> <span class="o">|</span> <span class="p">{</span><span class="s2">"prompt"</span><span class="p">}</span>
 
 
 <div class="viewcode-block" id="generate">
@@ -1947,9 +1974,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">backend</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"backend"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">default_generate_backend</span><span class="p">(</span>
         <span class="n">mode</span><span class="o">=</span><span class="n">generation_mode</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="p">)</span>
-    <span class="n">affordances</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_GENERATE_KNOWN</span> <span class="ow">and</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">"prompt"</span>
-    <span class="p">}</span>
+    <span class="n">affordances</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_NOT_AFFORDANCES</span><span class="p">}</span>
     <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">k</span><span class="p">:</span> <span class="n">_manifest_value</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
         <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span>

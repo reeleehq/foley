@@ -25,6 +25,7 @@ imports a surface library: `py2mcp` / `fastmcp` load inside
 | [`foley_capabilities`](#foley.agent.verbs.foley_capabilities)()                             | What foley can do here — keys / extras / system deps / offline / sources / degraded.      |
 |---------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
 | [`foley_drop_pick`](#foley.agent.verbs.foley_drop_pick)(sound_id[, session])             | Remove a previously-picked sound from the session.                                        |
+| [`foley_edit`](#foley.agent.verbs.foley_edit)(sound_id, op[, prompt, backend, ...]) | Edit a library sound into a new one (paid): audio-to-audio, inpaint or extend.            |
 | [`foley_find`](#foley.agent.verbs.foley_find)(context[, max_events, verify, ...])   | Find verified, license-clean sound candidates for a narrative passage.                    |
 | [`foley_generate`](#foley.agent.verbs.foley_generate)(prompt[, backend, ...])           | Generate a sound from a text prompt (local backends only when offline).                   |
 | [`foley_guide`](#foley.agent.verbs.foley_guide)()                                    | How to sound-design a narration with foley — the operating playbook for an agent.         |
@@ -52,12 +53,12 @@ imports a surface library: `py2mcp` / `fastmcp` load inside
 | [`Verb`](#foley.agent.verbs.Verb)(fn[, mcp, cli, why])   | One verb of foley's JSON-safe surface: the function and the surfaces it is on (#62).   |
 |------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
 
-### foley.agent.verbs.TOOLS *= [<function foley_find>, <function foley_search>, <function foley_similar_to>, <function foley_preview>, <function foley_refine>, <function foley_pick>, <function foley_drop_pick>, <function foley_reject>, <function foley_list_picks>, <function foley_generate>, <function foley_plan>, <function foley_weave>, <function foley_swap_clip>, <function foley_set_gain>, <function foley_nudge>, <function foley_toggle>, <function foley_set_master>, <function foley_timeline_captions>, <function foley_score>, <function foley_guide>, <function foley_capabilities>, <function foley_status>]*
+### foley.agent.verbs.TOOLS *= [<function foley_find>, <function foley_search>, <function foley_similar_to>, <function foley_preview>, <function foley_refine>, <function foley_pick>, <function foley_drop_pick>, <function foley_reject>, <function foley_list_picks>, <function foley_generate>, <function foley_edit>, <function foley_plan>, <function foley_weave>, <function foley_swap_clip>, <function foley_set_gain>, <function foley_nudge>, <function foley_toggle>, <function foley_set_master>, <function foley_timeline_captions>, <function foley_score>, <function foley_guide>, <function foley_capabilities>, <function foley_status>]*
 
 The MCP tool surface at import, in the table’s order (kept for callers that read it;
 the server reads [`VERBS`](#foley.agent.verbs.VERBS) when it is built).
 
-### foley.agent.verbs.VERBS *= (Verb(fn=<function foley_find>, mcp=True, cli=True, why=''), Verb(fn=<function foley_search>, mcp=True, cli=False, why="the CLI's own \`foley search\` prints readable rows (it predates the table)"), Verb(fn=<function foley_similar_to>, mcp=True, cli=True, why=''), Verb(fn=<function foley_preview>, mcp=True, cli=True, why=''), Verb(fn=<function foley_refine>, mcp=True, cli=True, why=''), Verb(fn=<function foley_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_drop_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_reject>, mcp=True, cli=True, why=''), Verb(fn=<function foley_list_picks>, mcp=True, cli=True, why=''), Verb(fn=<function foley_generate>, mcp=True, cli=True, why=''), Verb(fn=<function foley_plan>, mcp=True, cli=True, why=''), Verb(fn=<function foley_weave>, mcp=True, cli=True, why=''), Verb(fn=<function foley_swap_clip>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_gain>, mcp=True, cli=True, why=''), Verb(fn=<function foley_nudge>, mcp=True, cli=True, why=''), Verb(fn=<function foley_toggle>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_master>, mcp=True, cli=True, why=''), Verb(fn=<function foley_timeline_captions>, mcp=True, cli=True, why=''), Verb(fn=<function foley_score>, mcp=True, cli=True, why=''), Verb(fn=<function foley_guide>, mcp=True, cli=True, why=''), Verb(fn=<function foley_capabilities>, mcp=True, cli=True, why=''), Verb(fn=<function foley_status>, mcp=True, cli=True, why=''))*
+### foley.agent.verbs.VERBS *= (Verb(fn=<function foley_find>, mcp=True, cli=True, why=''), Verb(fn=<function foley_search>, mcp=True, cli=False, why="the CLI's own \`foley search\` prints readable rows (it predates the table)"), Verb(fn=<function foley_similar_to>, mcp=True, cli=True, why=''), Verb(fn=<function foley_preview>, mcp=True, cli=True, why=''), Verb(fn=<function foley_refine>, mcp=True, cli=True, why=''), Verb(fn=<function foley_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_drop_pick>, mcp=True, cli=True, why=''), Verb(fn=<function foley_reject>, mcp=True, cli=True, why=''), Verb(fn=<function foley_list_picks>, mcp=True, cli=True, why=''), Verb(fn=<function foley_generate>, mcp=True, cli=True, why=''), Verb(fn=<function foley_edit>, mcp=True, cli=True, why=''), Verb(fn=<function foley_plan>, mcp=True, cli=True, why=''), Verb(fn=<function foley_weave>, mcp=True, cli=True, why=''), Verb(fn=<function foley_swap_clip>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_gain>, mcp=True, cli=True, why=''), Verb(fn=<function foley_nudge>, mcp=True, cli=True, why=''), Verb(fn=<function foley_toggle>, mcp=True, cli=True, why=''), Verb(fn=<function foley_set_master>, mcp=True, cli=True, why=''), Verb(fn=<function foley_timeline_captions>, mcp=True, cli=True, why=''), Verb(fn=<function foley_score>, mcp=True, cli=True, why=''), Verb(fn=<function foley_guide>, mcp=True, cli=True, why=''), Verb(fn=<function foley_capabilities>, mcp=True, cli=True, why=''), Verb(fn=<function foley_status>, mcp=True, cli=True, why=''))*
 
 MCP’s tools and the CLI’s generated
 commands are both read from it.
@@ -97,6 +98,26 @@ What foley can do here — keys / extras / system deps / offline / sources / deg
 ### foley.agent.verbs.foley_drop_pick(sound_id, session='default')
 
 Remove a previously-picked sound from the session.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### foley.agent.verbs.foley_edit(sound_id, op, prompt='', , backend=None, commercial_ok=True, session='default', territory=None, strength=None, inpaint_start_s=None, inpaint_end_s=None, extend_before_s=None, extend_after_s=None)
+
+Edit a library sound into a new one (paid): audio-to-audio, inpaint or extend.
+
+`op`: `audio_to_audio` (regenerate the whole clip; `strength` 0..1, how far
+from the source), `inpaint` (regenerate `inpaint_start_s`..\`\`inpaint_end_s\`\`,
+keep the rest) or `extend` (`extend_before_s` and/or `extend_after_s` seconds
+of new sound). `prompt`: what the result should sound like (default: the
+source’s caption). `backend`: an edit backend doing `op` (default: the op’s,
+which runs only once the host opted in to paid generation).
+
+The new sound is stored in the library and cached in the session (pick it like any
+candidate); its licence is the backend’s narrowed to the source’s, and credits
+the source. Refused before anything is paid for when the source’s rights do not
+allow an edit, or the edit could not serve this call’s intent (`commercial_ok`,
+`territory`): an edit of a non-commercial sound is non-commercial.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
