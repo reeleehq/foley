@@ -34,8 +34,8 @@ def _wavs(n, *, freq=440.0, seconds=0.25):
 class _Runner:
     """Records the spec fadtk would get, checks its wav sets, writes ``answer`` as JSON."""
 
-    def __init__(self, answer=None, *, returncode=0):
-        self.answer, self.returncode = answer, returncode
+    def __init__(self, answer=None, *, returncode=0, stderr="Traceback: boom"):
+        self.answer, self.returncode, self.stderr = answer, returncode, stderr
         self.cmd = self.spec = self.kw = None
 
     def __call__(self, cmd, **kw):
@@ -46,14 +46,16 @@ class _Runner:
         self.counts = {
             k: len(list(Path(self.spec[k]).glob("*.wav"))) for k in ("ref", "gen")
         }
-        self.rates = {sf.info(str(f)).samplerate for f in Path(self.spec["ref"]).glob("*.wav")}
+        infos = [sf.info(str(f)) for f in Path(self.spec["ref"]).glob("*.wav")]
+        self.rates = {i.samplerate for i in infos}
+        self.shapes = {(i.frames, i.channels) for i in infos}
         if self.returncode == 0:
             Path(self.spec["out"]).write_text(json.dumps(self.answer), encoding="utf-8")
-        return subprocess.CompletedProcess(cmd, self.returncode, "", "Traceback: no fadtk")
+        return subprocess.CompletedProcess(cmd, self.returncode, "", self.stderr)
 
 
 _ANSWER = {"score": 12.5, "model": "encodec-emb", "fadtk_version": "1.1.0",
-           "n_ref_frames": 60, "n_gen_frames": 45}  # fmt: skip
+           "n_ref_frames": 600, "n_gen_frames": 450, "dim": 128}  # fmt: skip
 
 
 def test_runs_the_driver_in_the_given_interpreter_and_stamps_the_result():
@@ -64,8 +66,8 @@ def test_runs_the_driver_in_the_given_interpreter_and_stamps_the_result():
     assert res.metric == "fad" and res.value == 12.5
     s = res.stamp
     assert (s.embedding, s.toolkit, s.version, s.n_ref, s.n_gen) == (
-        "encodec-emb", "fadtk", "1.1.0", 4, 3,
-    )  # fmt: skip
+        "encodec-emb", "fadtk", "1.1.0", 600, 450,
+    )  # fmt: skip  -- the frames FAD was computed over, not the clip counts
     assert run.cmd[:3] == [sys.executable, "-I", str(DRIVER)]
     assert (run.spec["loader"], run.spec["args"], run.spec["workers"]) == ("EncodecEmbModel", ["24k"], 2)
     assert run.counts == {"ref": 4, "gen": 3} and run.rates == {SR}
@@ -89,12 +91,60 @@ def test_model_table_is_the_seam():
 
 def test_failures_are_reported_with_the_programs_output():
     fad = FadtkFidelity(python=sys.executable, runner=_Runner(returncode=1))
-    with pytest.raises(RuntimeError, match="no fadtk"):
+    with pytest.raises(RuntimeError, match="boom"):
         fad(_wavs(2), _wavs(2), sr=SR)
-    with pytest.raises(ValueError, match="at least 2"):
-        FadtkFidelity(python=sys.executable, runner=_Runner(_ANSWER))(_wavs(1), _wavs(2), sr=SR)
+    missing = _Runner(returncode=1, stderr="ModuleNotFoundError: No module named 'fadtk'")
+    with pytest.raises(RuntimeError, match="has no fadtk. Install: uv venv"):
+        FadtkFidelity(python=sys.executable, runner=missing)(_wavs(2), _wavs(2), sr=SR)
+    with pytest.raises(ValueError, match="at least one clip"):
+        FadtkFidelity(python=sys.executable, runner=_Runner(_ANSWER))([], _wavs(2), sr=SR)
     with pytest.raises(FileNotFoundError, match="uv pip install"):
         FadtkFidelity(python="/no/such/python")(_wavs(2), _wavs(2), sr=SR)
+
+
+def test_too_few_frames_for_the_embedding_dim_fails_loud():
+    """Two short clips give fewer frames than dims: a singular covariance, so refuse."""
+    run = _Runner({**_ANSWER, "n_ref_frames": 8, "n_gen_frames": 8, "score": 2598.9})
+    with pytest.raises(ValueError, match="8 reference and 8 generated .* 128-dim"):
+        FadtkFidelity(python=sys.executable, runner=run)(_wavs(2), _wavs(2), sr=SR)
+    edge = _Runner({**_ANSWER, "n_gen_frames": 128})
+    with pytest.raises(ValueError, match="too little audio"):
+        FadtkFidelity(python=sys.executable, runner=edge)(_wavs(2), _wavs(2), sr=SR)
+
+
+def test_interpreter_comes_from_the_argument_or_the_environment(monkeypatch):
+    monkeypatch.delenv("FOLEY_FADTK_PYTHON", raising=False)
+    with pytest.raises(FileNotFoundError, match="FOLEY_FADTK_PYTHON"):
+        FadtkFidelity(runner=_Runner(_ANSWER))(_wavs(2), _wavs(2), sr=SR)
+    monkeypatch.setenv("FOLEY_FADTK_PYTHON", sys.executable)
+    run = _Runner(_ANSWER)
+    FadtkFidelity(runner=run)(_wavs(2), _wavs(2), sr=SR)
+    assert Path(run.cmd[0]).name == Path(sys.executable).name
+
+
+def test_clip_layouts():
+    """(frames,) and (frames, channels) are mixed to mono; channel-first is refused."""
+    stereo = np.stack([_wavs(1)[0]] * 2, axis=1)  # (frames, 2)
+    run = _Runner(_ANSWER)
+    FadtkFidelity(python=sys.executable, runner=run)([stereo, stereo], _wavs(2), sr=SR)
+    assert run.shapes == {(stereo.shape[0], 1)}
+    fad = FadtkFidelity(python=sys.executable, runner=_Runner(_ANSWER))
+    with pytest.raises(ValueError, match=r"\(frames, channels\)"):
+        fad([stereo.T, stereo.T], _wavs(2), sr=SR)
+    with pytest.raises(ValueError, match="not \\(frames,\\)"):
+        fad([stereo[None], stereo[None]], _wavs(2), sr=SR)
+
+
+def test_run_program_passes_cwd_only_when_given(tmp_path):
+    from foley.external import run_program
+
+    out = tmp_path / "o.txt"
+
+    def strict(cmd, *, capture_output, text, env, timeout):  # no cwd parameter
+        out.write_text("ok")
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    assert run_program(["x"], out=out, runner=strict) == "ok"
 
 
 def test_driver_loads_without_fadtk():
@@ -130,5 +180,7 @@ def test_real_fadtk_matches_foley_numpy_on_the_same_frames(tmp_path):
         files = sorted((kept / d / "embeddings" / res.stamp.embedding).glob("*.npy"))
         return np.concatenate([np.load(f) for f in files]).astype(float)
 
+    ref, gen = frames("ref"), frames("gen")
+    assert (res.stamp.n_ref, res.stamp.n_gen) == (len(ref), len(gen))
     # fadtk takes per-clip means in float16, so agreement is close, not exact.
-    assert frechet_distance(frames("ref"), frames("gen")) == pytest.approx(res.value, rel=1e-3)
+    assert frechet_distance(ref, gen) == pytest.approx(res.value, rel=1e-3)

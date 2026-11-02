@@ -238,22 +238,58 @@ def _aqa_yes_probability(pipeline, wav, sr, query: str) -> "tuple[float, object]
     return (1.0 if text.startswith("yes") else 0.0), out
 
 
-#: The answer words AQAScore reads P(yes) from (first token of each, as the model spells it).
-AQA_ANSWER_WORDS = ("Yes", "No")
+#: The answer spellings AQAScore reads P(yes) from: (yes-words, no-words). Each must be
+#: a single token; P(yes) is the softmax mass on the yes-group over both groups.
+AQA_ANSWER_WORDS = (("Yes", "yes"), ("No", "no"))
 
 #: ``from_pretrained`` options for the audio-LM: the checkpoint's own dtype (bf16 for
 #: Qwen2-Audio, ~15 GB) placed by ``accelerate`` across what devices there are.
 AUDIOLM_LOAD_KWARGS = {"dtype": "auto", "device_map": "auto"}
+
+#: ``load_kwargs`` that only the model takes; the rest (``revision``, ``cache_dir``,
+#: ``token``, ...) also go to the processor so both come from the same snapshot.
+MODEL_ONLY_LOAD_KWARGS = frozenset(
+    {"dtype", "torch_dtype", "device_map", "attn_implementation",
+     "quantization_config", "low_cpu_mem_usage", "max_memory"}
+)  # fmt: skip
 
 
 def _load_qwen2_audio(model_id: str, **load_kwargs):
     """``(processor, model)`` for a Qwen2-Audio checkpoint (lazy ``transformers``; downloads it)."""
     from transformers import AutoProcessor, Qwen2AudioForConditionalGeneration
 
-    processor = AutoProcessor.from_pretrained(model_id)
+    shared = {k: v for k, v in load_kwargs.items() if k not in MODEL_ONLY_LOAD_KWARGS}
+    processor = AutoProcessor.from_pretrained(model_id, **shared)
     model = Qwen2AudioForConditionalGeneration.from_pretrained(model_id, **load_kwargs)
     model.eval()
     return processor, model
+
+
+def aqa_conversation(prompt: str) -> "list[dict]":
+    """The one-turn chat the audio-LM sees: the clip as an audio part, then ``prompt``."""
+    return [
+        {
+            "role": "user",
+            "content": [
+                {"type": "audio", "audio_url": "candidate"},
+                {"type": "text", "text": prompt},
+            ],
+        }
+    ]
+
+
+def _single_token_ids(tokenizer, words) -> "list[int]":
+    """Each word's token id; a :class:`ValueError` if one is not exactly one token."""
+    ids = []
+    for w in words:
+        toks = tokenizer.encode(w, add_special_tokens=False)
+        if len(toks) != 1:
+            raise ValueError(
+                f"answer word {w!r} is {len(toks)} tokens for this tokenizer, not 1; "
+                "pass answers= with single-token spellings"
+            )
+        ids.append(toks[0])
+    return ids
 
 
 def qwen2_audio_pipeline(processor, model, *, answers=AQA_ANSWER_WORDS):
@@ -261,40 +297,46 @@ def qwen2_audio_pipeline(processor, model, *, answers=AQA_ANSWER_WORDS):
 
     One forward pass, no generation: the clip (mono, resampled to the processor's
     rate) and the question go through the chat template with the assistant turn
-    opened, and P(yes) is the softmax of the next-token logits restricted to the
-    first tokens of ``answers`` (the AQAScore read-out, report 08 §2.1).
+    opened, and P(yes) is the next-token softmax mass on the yes-spellings, over the
+    yes- and no-spellings together (the AQAScore read-out, report 08 §2.1). A clip
+    longer than the feature extractor's window (Whisper's 30 s) is truncated by it,
+    so that is warned about.
     """
+    import warnings
+
     import numpy as np
     import torch
 
     from ..audio import resample, to_mono
 
-    target_sr = processor.feature_extractor.sampling_rate
-    ids = [processor.tokenizer.encode(w, add_special_tokens=False)[0] for w in answers]
+    fe = processor.feature_extractor
+    target_sr = fe.sampling_rate
+    max_seconds = getattr(fe, "chunk_length", None)
+    yes_words, no_words = answers
+    yes_ids = _single_token_ids(processor.tokenizer, yes_words)
+    no_ids = _single_token_ids(processor.tokenizer, no_words)
 
     def pipeline(prompt: str, wav, sr: int) -> dict:
         audio = resample(
             to_mono(np.asarray(wav, dtype=np.float32)), sr, target_sr=target_sr
         )
-        conversation = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "audio", "audio_url": "candidate"},
-                    {"type": "text", "text": prompt},
-                ],
-            }
-        ]
+        if max_seconds and len(audio) > max_seconds * target_sr:
+            warnings.warn(
+                f"clip is {len(audio) / target_sr:.1f} s; the audio-LM hears only the "
+                f"first {max_seconds} s",
+                stacklevel=2,
+            )
         text = processor.apply_chat_template(
-            conversation, add_generation_prompt=True, tokenize=False
+            aqa_conversation(prompt), add_generation_prompt=True, tokenize=False
         )
         inputs = processor(
             text=text, audio=[audio], sampling_rate=target_sr, return_tensors="pt"
         ).to(model.device)
         with torch.inference_mode():
             logits = model(**inputs).logits[0, -1]
-        p_yes, p_no = torch.softmax(logits[ids].float(), dim=-1).tolist()
-        return {"p_yes": p_yes, "p_no": p_no}
+        probs = torch.softmax(logits[yes_ids + no_ids].float(), dim=-1)
+        p_yes = float(probs[: len(yes_ids)].sum())
+        return {"p_yes": p_yes, "p_no": 1.0 - p_yes}
 
     return pipeline
 

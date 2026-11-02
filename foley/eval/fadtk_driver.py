@@ -12,7 +12,7 @@ It builds ONE fadtk embedding model from ``spec["loader"]`` (a class name in
 download CLAP checkpoints (about 2.5 GB) in their constructors; building one model
 avoids that. Then it runs fadtk's own pipeline (``cache_embedding_files`` on each
 directory, ``FrechetAudioDistance.score``) and writes the score, fadtk's version, the
-model name and the embedding-frame counts as JSON to ``spec["out"]``.
+model name, the embedding-frame counts and the embedding dimension as JSON to ``spec["out"]``.
 """
 
 import json
@@ -39,11 +39,12 @@ def main(spec_json: str) -> None:
     fad = FrechetAudioDistance(ml, audio_load_worker=workers, load_model=False)
     score = float(fad.score(ref, gen))
 
-    def frames(d: Path) -> int:
-        return sum(
-            int(np.load(get_cache_embedding_path(ml.name, f)).shape[0])
-            for f in d.glob("*.*")
-        )
+    def shapes(d: Path) -> "list[tuple]":
+        return [
+            np.load(get_cache_embedding_path(ml.name, f)).shape for f in d.glob("*.*")
+        ]
+
+    ref_shapes, gen_shapes = shapes(ref), shapes(gen)
 
     Path(spec["out"]).write_text(
         json.dumps(
@@ -51,8 +52,9 @@ def main(spec_json: str) -> None:
                 "score": score,
                 "model": ml.name,
                 "fadtk_version": importlib.metadata.version("fadtk"),
-                "n_ref_frames": frames(ref),
-                "n_gen_frames": frames(gen),
+                "n_ref_frames": sum(sh[0] for sh in ref_shapes),
+                "n_gen_frames": sum(sh[0] for sh in gen_shapes),
+                "dim": int(ref_shapes[0][-1]),
             }
         ),
         encoding="utf-8",

@@ -23,7 +23,6 @@ Installation and the trade-offs between the aligners: ``misc/docs/aligners.md``.
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import sys
 import tempfile
@@ -32,7 +31,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Mapping, Optional, Sequence
 
 from ..audio import save, to_mono
-from ..external import ERROR_TAIL_CHARS, Runner, run_program
+from ..external import Runner, run_program, with_program_dir_on_path
 from ..external import resolve_program as _resolve_program
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
@@ -172,19 +171,6 @@ def onto_transcript(
         for i, word in enumerate(words)
         if i in hits
     ]
-
-
-def with_program_dir_on_path(program: str) -> "dict[str, str]":
-    """This process's environment with ``program``'s directory first on ``PATH``.
-
-    A conda-installed program (MFA) calls helper binaries (``fstcompile``) from its
-    own ``bin``, which is on ``PATH`` only while that env is activated; this makes a
-    path to the executable (or a symlink to it) enough. POSIX layout: on Windows a
-    conda env keeps its helpers in ``Library\\bin``, so activate the env there.
-    """
-    path = os.environ.get("PATH", "")
-    bin_dir = str(Path(program).resolve().parent)
-    return {**os.environ, "PATH": os.pathsep.join([bin_dir, path])}
 
 
 def _timed(word: str, start, end) -> dict:

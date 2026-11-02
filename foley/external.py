@@ -5,7 +5,8 @@ aeneas is AGPL, fadtk pins ``numpy<2``. foley runs each as a subprocess (often a
 interpreter in its own virtualenv) that writes its result to a file. This module is
 the shared part: resolving the executable with an install hint, and running the
 command with an injectable ``runner`` so that a non-zero exit or a missing output file
-raises with the tail of the program's output. Stdlib only.
+raises with the tail of the program's output; and giving a conda program its env's
+``bin`` on ``PATH``. Stdlib only.
 """
 
 from __future__ import annotations
@@ -33,6 +34,19 @@ def resolve_program(program: str, *, what: str, install: str) -> str:
     return found
 
 
+def with_program_dir_on_path(program: str) -> "dict[str, str]":
+    """This process's environment with ``program``'s directory first on ``PATH``.
+
+    A conda-installed program (MFA) calls helper binaries (``fstcompile``) from its
+    own ``bin``, which is on ``PATH`` only while that env is activated; this makes a
+    path to the executable (or a symlink to it) enough. POSIX layout: on Windows a
+    conda env keeps its helpers in ``Library\\bin``, so activate the env there.
+    """
+    path = os.environ.get("PATH", "")
+    bin_dir = str(Path(program).resolve().parent)
+    return {**os.environ, "PATH": os.pathsep.join([bin_dir, path])}
+
+
 def run_program(
     command: Sequence[str],
     *,
@@ -50,13 +64,14 @@ def run_program(
             its stderr, else stdout, is in the message).
         subprocess.TimeoutExpired: If it runs past ``timeout`` seconds.
     """
+    extra = {} if cwd is None else {"cwd": cwd}
     proc = runner(
         list(command),
         capture_output=True,
         text=True,
         env=env,
         timeout=timeout,
-        cwd=cwd,
+        **extra,
     )
     if proc.returncode != 0 or not out.exists():
         tail = (proc.stderr or proc.stdout or "").strip()[-ERROR_TAIL_CHARS:]

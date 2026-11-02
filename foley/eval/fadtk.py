@@ -25,8 +25,8 @@ differ unless fed the same frames. Install and model choice: ``misc/docs/fidelit
 from __future__ import annotations
 
 import json
+import os
 import subprocess
-import sys
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, Mapping, Optional
@@ -56,12 +56,46 @@ DEFAULT_FADTK_MODEL = "encodec-emb"
 #: The script run inside fadtk's interpreter.
 DRIVER = Path(__file__).with_name("fadtk_driver.py")
 
-#: Install hint, printed when the interpreter is missing.
+#: The environment variable naming fadtk's interpreter when ``python=`` is not given.
+FADTK_PYTHON_ENV = "FOLEY_FADTK_PYTHON"
+
+#: Install hint, printed when the interpreter is missing or lacks fadtk.
 FADTK_INSTALL = (
     "uv venv ~/venvs/fadtk --python 3.11 && "
     "uv pip install --python ~/venvs/fadtk/bin/python fadtk torchcodec; "
-    "then FadtkFidelity(python='~/venvs/fadtk/bin/python')"
+    f"then FadtkFidelity(python='~/venvs/fadtk/bin/python') or set {FADTK_PYTHON_ENV}"
 )
+
+#: The most channels a clip may have. A 2-D array with at most this many rows and more
+#: columns than that is channel-first, and is refused (:func:`_as_frames_channels`).
+MAX_CHANNELS = 8
+
+
+def _as_frames_channels(wav) -> "ndarray":
+    """``wav`` as foley's ``(frames,)`` / ``(frames, channels)``; refuse other layouts.
+
+    A channel-first ``(2, N)`` array would otherwise be read as two-sample clips.
+    """
+    import numpy as np
+
+    a = np.asarray(wav, dtype=np.float32)
+    if a.ndim > 2 or (a.ndim == 2 and a.shape[0] <= MAX_CHANNELS < a.shape[1]):
+        raise ValueError(
+            f"a clip of shape {a.shape} is not (frames,) or (frames, channels); "
+            "transpose a channel-first array (wav.T)"
+        )
+    return a
+
+
+def _resolve_fadtk_python(python: Optional[str]) -> str:
+    """``python``, else ``$FOLEY_FADTK_PYTHON``, as an executable path."""
+    python = python or os.environ.get(FADTK_PYTHON_ENV)
+    if not python:
+        raise FileNotFoundError(
+            "FadtkFidelity needs fadtk's interpreter (fadtk pins numpy<2, so it cannot "
+            f"live in foley's environment). Install: {FADTK_INSTALL}"
+        )
+    return resolve_program(python, what="FadtkFidelity", install=FADTK_INSTALL)
 
 
 def _write_set(wavs: Iterable, sr: int, folder: Path, *, prefix: str) -> int:
@@ -70,7 +104,7 @@ def _write_set(wavs: Iterable, sr: int, folder: Path, *, prefix: str) -> int:
     n = 0
     for n, wav in enumerate(wavs, start=1):
         save(
-            to_mono(wav),
+            to_mono(_as_frames_channels(wav)),
             sr,
             folder / f"{prefix}{n:05d}.wav",
             fmt="WAV",
@@ -83,8 +117,8 @@ class FadtkFidelity:
     """Set-level FAD computed by ``fadtk`` in a separate interpreter.
 
     Args:
-        python: An interpreter with ``fadtk`` installed (default: this one, which works
-            only if fadtk fits in foley's environment; usually point it at a venv).
+        python: An interpreter with ``fadtk`` installed, usually in its own venv
+            (default: ``$FOLEY_FADTK_PYTHON``; neither set raises with the install).
         model: A key of ``models`` (default :data:`DEFAULT_FADTK_MODEL`).
         models: fadtk name → (loader class, args) (default :data:`FADTK_MODELS`).
         workers: fadtk's embedding worker processes (each loads the model).
@@ -99,7 +133,7 @@ class FadtkFidelity:
     def __init__(
         self,
         *,
-        python: str = sys.executable,
+        python: Optional[str] = None,
         model: str = DEFAULT_FADTK_MODEL,
         models: "Optional[Mapping[str, tuple[str, tuple]]]" = None,
         workers: int = 1,
@@ -121,20 +155,23 @@ class FadtkFidelity:
     ) -> FidelityResult:
         """FAD between the reference and generated wav sets, stamped ``toolkit='fadtk'``.
 
+        Clips are ``(frames,)`` or ``(frames, channels)`` arrays (mixed to mono).
+
         Raises:
-            FileNotFoundError: If ``python`` is not an executable.
+            FileNotFoundError: If no interpreter is given or found.
             RuntimeError: If fadtk fails (its output tail is in the message).
+            ValueError: If a clip has another layout, a set is empty, or a set has
+                no more embedding frames than the embedding has dimensions (its
+                covariance would be singular and the FAD meaningless).
         """
-        python = resolve_program(
-            self.python, what="FadtkFidelity", install=FADTK_INSTALL
-        )
+        python = _resolve_fadtk_python(self.python)
         loader, args = self.models[self.model]
         with tempfile.TemporaryDirectory(prefix="foley-fadtk-") as tmp:
             ref, gen, out = (Path(tmp) / n for n in ("ref", "gen", "out.json"))
             n_ref = _write_set(ref_wavs, sr, ref, prefix="ref")
             n_gen = _write_set(gen_wavs, sr, gen, prefix="gen")
-            if n_ref < 2 or n_gen < 2:
-                raise ValueError("FAD needs at least 2 clips in each set")
+            if not (n_ref and n_gen):
+                raise ValueError("FAD needs at least one clip in each set")
             spec = {
                 "loader": loader,
                 "args": list(args),
@@ -143,8 +180,8 @@ class FadtkFidelity:
                 "out": str(out),
                 "workers": self.workers,
             }
-            answer = json.loads(
-                run_program(
+            try:
+                output = run_program(
                     [python, "-I", str(DRIVER), json.dumps(spec)],
                     out=out,
                     runner=self.runner,
@@ -153,6 +190,22 @@ class FadtkFidelity:
                     cwd=Path(tmp),
                     what=f"FadtkFidelity (fadtk {self.model})",
                 )
+            except RuntimeError as err:
+                if "No module named 'fadtk'" in str(err):
+                    raise RuntimeError(
+                        f"{err}\n{python} has no fadtk. Install: {FADTK_INSTALL}"
+                    ) from err
+                raise
+        answer = json.loads(output)
+        n_ref, n_gen, dim = (
+            int(answer[k]) for k in ("n_ref_frames", "n_gen_frames", "dim")
+        )
+        if min(n_ref, n_gen) <= dim:
+            raise ValueError(
+                f"too little audio for FAD on {answer.get('model', self.model)}: "
+                f"{n_ref} reference and {n_gen} generated embedding frames for a "
+                f"{dim}-dim embedding (each set needs more frames than dimensions, "
+                "or the covariance is singular); use more or longer clips"
             )
         return FidelityResult(
             metric="fad",

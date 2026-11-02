@@ -22,11 +22,13 @@ uv pip install --python ~/venvs/fadtk/bin/python fadtk torchcodec
 ```python
 from foley.eval import FadtkFidelity
 
-fad = FadtkFidelity(python="~/venvs/fadtk/bin/python")
+fad = FadtkFidelity(python="~/venvs/fadtk/bin/python")  # or set FOLEY_FADTK_PYTHON
 result = fad(reference_wavs, generated_wavs, sr=48000)
 result.value   # the FAD
-result.stamp   # FidelityStamp(embedding='encodec-emb', toolkit='fadtk', version='1.1.0', n_ref=..., n_gen=...)
+result.stamp   # FidelityStamp(embedding='encodec-emb', toolkit='fadtk', version='1.1.0', n_ref=600, n_gen=600)
 ```
+
+With neither `python=` nor `$FOLEY_FADTK_PYTHON` it raises with the install line above (foley's own interpreter cannot hold fadtk). Clips are `(frames,)` or `(frames, channels)` arrays, mixed to mono; a channel-first `(2, N)` array is refused rather than read as two-sample clips. `n_ref` / `n_gen` in the stamp are the embedding frames FAD was computed over, not the clip counts. Each set needs more frames than the embedding has dimensions (128 for `encodec-emb`, which makes 75 frames per second), or the covariance is singular and the number meaningless, so a set that short raises `ValueError`.
 
 Each call writes the two sets as WAVs to a temporary directory, runs fadtk's embedding and scoring on them in that interpreter, and reads back its score. `model=` picks the embedding (`encodec-emb`, `encodec-emb-48k`, `vggish`, `clap-laion-audio`, `clap-laion-music`, `clap-2023`; add any other fadtk loader with `models={"name": ("LoaderClass", args)}`). The default is `encodec-emb` because its weights are the smallest; for SFX, `clap-laion-audio` is the domain-matched choice and downloads about 1.9 GB. Weights go to torch's cache, so pass `env={**os.environ, "TORCH_HOME": ...}` to choose where. `workers=` sets fadtk's embedding processes, `timeout=` bounds a run.
 
@@ -43,4 +45,4 @@ from foley.eval import run_fit_eval
 report = run_fit_eval(fit_judge=AudioLMJudge(), level="listen")
 ```
 
-The first judgement loads `Qwen/Qwen2-Audio-7B-Instruct` with `dtype="auto"` and `device_map="auto"` (change with `load_kwargs=`, or another checkpoint with `model=`). Each clip is resampled to the model's 16 kHz, put through the chat template with the question "Does this audio contain {event}? Answer strictly yes or no.", and P(yes) is read from one forward pass as the softmax of the next-token logits over "Yes" and "No". A match is P(yes) at or above `tau` (default 0.5). It is never picked by default: pass it as `fit_judge=`. For tests, or another audio-LM, pass `pipeline=` a function `(prompt, wav, sr) -> {"p_yes": float}`.
+The first judgement loads `Qwen/Qwen2-Audio-7B-Instruct` with `dtype="auto"` and `device_map="auto"` (change with `load_kwargs=`, or another checkpoint with `model=`). Each clip is resampled to the model's 16 kHz, put through the chat template with the question "Does this audio contain {event}? Answer strictly yes or no.", and P(yes) is read from one forward pass: the softmax mass of the next token on "Yes" and "yes", over "Yes", "yes", "No" and "no" (each must be a single token for the tokenizer, or it raises; change the spellings with `qwen2_audio_pipeline(..., answers=)`). `load_kwargs` other than the model-only ones (`dtype`, `device_map`, ...) also go to the processor, so a `revision=` pins both. Whisper's feature extractor hears only the first 30 s of a clip, so a longer clip warns. A match is P(yes) at or above `tau` (default 0.5). It is never picked by default: pass it as `fit_judge=`. For tests, or another audio-LM, pass `pipeline=` a function `(prompt, wav, sr) -> {"p_yes": float}`.
