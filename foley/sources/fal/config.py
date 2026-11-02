@@ -282,9 +282,14 @@ SOURCE_CONFIGS = (
             "duration_default_s": 10.0,  # fal's own default is 30 s
             "duration_min_s": 0.1,
             "duration_max_s": 600.0,
-            # Billed per sample, and the default is 2: one clip per call here.
+            # Billed per sample, and the default is 2: one clip per call here, unless
+            # foley.variations asks for several (the batch knob below, #210).
             "fixed_arguments": {"num_samples": 1},
-            "seed_field": "seeds",  # a list, one per sample
+            # Per-sample seeds are reported (the "seeds" list), so a seeded request
+            # batches too: each take is keyed by the seed it reports.
+            "batch": {"native_name": "num_samples", "max": 4, "seeds": "reported"},
+            "seed_field": "seeds",  # a list, one per sample ("each sample's seed")
+            "seed_limit": 2**63,  # the schema's seed: a signed 64-bit integer
         },
         license=copy.deepcopy(_MIRELO_TERMS),
         capabilities={"watermark_statement": _MIRELO_WATERMARK},
@@ -293,6 +298,7 @@ SOURCE_CONFIGS = (
         # so the estimate never under-quotes.
         pricing={
             "unit": "per_second",
+            "per_sample": True,  # billed per sample (foley.cost.for_samples)
             "amount_usd": 0.015,
             "source": _FAL_PRICING_SOURCE + " (0.010 until 2026-12-13)",
             "seen": _SEEN,
@@ -401,6 +407,7 @@ SOURCE_CONFIGS = (
         commercial_ok=False,
         pricing={
             "unit": "per_second",
+            "per_sample": True,  # billed per sample (foley.cost.for_samples)
             "amount_usd": 0.0018,
             "source": _FAL_PRICING_SOURCE,
             "seen": _SEEN,
@@ -491,8 +498,17 @@ SOURCE_CONFIGS = (
             "duration_default_s": 10.0,  # fal's own default; never past the video
             "duration_min_s": 1.0,
             "duration_max_s": 600.0,
-            # One clip per call (billed per sample), and no separated speech track.
+            # One clip per call (billed per sample), and no separated speech track;
+            # foley.variations asks for several through the batch knob (#210). The
+            # response reports no seeds: a single take records the seed sent, a
+            # batch's takes record none (and say so).
             "fixed_arguments": {"num_samples": 1, "return_speech": False},
+            # No per-sample seeds: only an unseeded request batches (a seeded one's
+            # takes could not be keyed by their seeds).
+            "batch": {"native_name": "num_samples", "max": 4},
+            # The schema takes up to 2**64 - 1; the narrower int64 range of the
+            # text-to-audio endpoint is kept for both.
+            "seed_limit": 2**63,
         },
         license=copy.deepcopy(_MIRELO_TERMS),
         capabilities={"watermark_statement": _MIRELO_WATERMARK},
@@ -500,6 +516,7 @@ SOURCE_CONFIGS = (
         # $0.010/s per sample until 2026-12-13, then $0.015: priced at the later rate.
         pricing={
             "unit": "per_second",
+            "per_sample": True,  # billed per sample (foley.cost.for_samples)
             "amount_usd": 0.015,
             "source": _FAL_V2A_PRICING_SOURCE + " (0.010 until 2026-12-13)",
             "seen": _SEEN_V2A,
@@ -541,6 +558,7 @@ SOURCE_CONFIGS = (
         commercial_ok=False,
         pricing={
             "unit": "per_second",
+            "per_sample": True,  # billed per sample (foley.cost.for_samples)
             "amount_usd": 0.009,  # per second of output (the video's length), per sample
             "seconds_from": "video",
             "source": _FAL_V2A_PRICING_SOURCE,

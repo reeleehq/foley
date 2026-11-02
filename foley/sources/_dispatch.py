@@ -95,6 +95,10 @@ __all__ = [
     "plan_generation",
     "run_generation",
     "draws_seed",
+    "BatchPlan",
+    "TakeRun",
+    "plan_batch",
+    "run_batch",
     "plan_search",
     "estimate_generation",
     "record_generation_outcome",
@@ -552,6 +556,41 @@ def plan_generation(
         SourceConfigurationError: When the adapter is not configured (key, plan).
     """
     from ..cost import authorize
+    from .registry import require_source_egress
+
+    plan = _planned(
+        backend,
+        prompt,
+        adapter=adapter,
+        config=config,
+        on_unsupported=on_unsupported,
+        provider_params=provider_params,
+        variation=variation,
+        lineage=lineage,
+        **affordances,
+    )
+    plan = _looked_up(plan, adapter=adapter, cache=cache, reuse_cached=reuse_cached)
+    if plan.cached is not None:  # a paid sound already on this disk: no egress, no spend
+        return plan
+    require_source_egress(backend, plan.config)
+    if _is_paid(plan.config):
+        authorize(plan.estimate_usd, what=f"generate via {backend!r}")
+    return plan
+
+
+def _planned(
+    backend: str,
+    prompt: str,
+    *,
+    adapter,
+    config: Optional[dict] = None,
+    on_unsupported: Optional[str] = None,
+    provider_params: Optional[dict] = None,
+    variation: int = 0,
+    lineage: Optional[dict] = None,
+    **affordances,
+) -> GenerationPlan:
+    """:func:`plan_generation` up to its cache lookup: translation, price, cache key."""
     from .registry import SOURCE_REGISTRY, require_source_egress
 
     variation = require_count("variation", variation, minimum=0)
@@ -559,9 +598,20 @@ def plan_generation(
         config = getattr(adapter, "config", None) or SOURCE_REGISTRY.get(
             backend, {}
         ).get("config", {})
+    seeded_note = None
+    if variation and affordances.get("seed") is not None:
+        # Variation i of a request seeded s IS the request seeded s + i (#210): one
+        # key and one seed for it, however it is asked for (alone or in a batch).
+        affordances = {**affordances, "seed": _take_seed(config, affordances, variation)}
+        seeded_note = (
+            f"variation {variation} of a seeded request: seed {affordances['seed']}"
+        )
+        variation = 0
     kept, notes = translate_affordances(
         config, affordances, on_unsupported=on_unsupported
     )
+    if seeded_note is not None:
+        notes.append(seeded_note)
     if config.get("presets"):  # a preset source with nothing to play refuses here (#76)
         kept["preset"], matched = resolve_preset(config, prompt, kept.get("preset"))
         notes += [matched] if matched else []
@@ -587,46 +637,246 @@ def plan_generation(
         try:
             salt = salt_fn() if callable(salt_fn) else None
             salt = {"adapter": salt, "account": _account_id(adapter, config)}
-            if variation:  # only a later variation: every existing key is unchanged
-                salt["variation"] = variation
             if lineage is not None:  # only an edit's key changes
                 salt["lineage"] = lineage
         except SourceConfigurationError:
             require_source_egress(backend, config)  # offline wins over a missing plan
             raise
         plan.salt = salt
-        plan.request_key = request_digest(
-            backend, prompt, config, kept, salt, provider_params=plan.provider_params
-        )
-        plan.replayable = media_replayable(kept)  # whatever reuse_cached says (#185)
-        if reuse_cached and not plan.replayable:
-            name = remote_media_input(kept)
-            plan.notes.append(
-                f"the {name} is a remote URL whose content foley has not seen: what it "
-                "serves may have changed, so this request is not replayed from the "
-                f"cache (pass {name}=foley.RemoteVideo(url=..., sha256=...) to key it "
-                "by content)"
-            )
-            reuse_cached = False
-        if reuse_cached:
-            # A paid sound already on this disk needs no egress and no spend.
-            cache = cache if cache is not None else _default_cache()
-            plan.cached = _cached_clip(
-                cache,
-                plan.request_key,
-                plan.notes,
-                config,
-                demux=getattr(adapter, "demuxer", None),
-            )
-            if plan.cached is not None:
-                from ..stores import content_key
-
-                plan.content_key = content_key(plan.cached.audio_bytes)
-                return plan
-    require_source_egress(backend, config)
-    if _is_paid(config):
-        authorize(plan.estimate_usd, what=f"generate via {backend!r}")
+        plan = _keyed_take(plan, variation)
     return plan
+
+
+def _keyed_take(plan: GenerationPlan, variation: int) -> GenerationPlan:
+    """``plan`` as take ``variation`` of its request, keyed ``(request, variation)``.
+
+    The request's salt gets the variation (only a later one: take 0 keeps the key the
+    request always had), so each take of a batch has its own cache entry (#209, #210).
+    """
+    from dataclasses import replace
+
+    take = replace(plan, variation=variation, notes=list(plan.notes))
+    if plan.salt is None:  # a free call: nothing is keyed
+        return take
+    salt = {k: v for k, v in plan.salt.items() if k != "variation"}
+    if variation:
+        salt["variation"] = variation
+    take.salt = salt
+    take.request_key = request_digest(
+        plan.backend,
+        plan.prompt,
+        plan.config,
+        plan.affordances,
+        salt,
+        provider_params=plan.provider_params,
+    )
+    return take
+
+
+def _looked_up(
+    plan: GenerationPlan, *, adapter, cache, reuse_cached: bool
+) -> GenerationPlan:
+    """``plan`` with its replayed clip, when a paid request's answer is in the cache."""
+    if plan.request_key is None:
+        return plan
+    plan.replayable = media_replayable(plan.affordances)  # whatever reuse_cached says (#185)
+    if reuse_cached and not plan.replayable:
+        name = remote_media_input(plan.affordances)
+        plan.notes.append(
+            f"the {name} is a remote URL whose content foley has not seen: what it "
+            "serves may have changed, so this request is not replayed from the "
+            f"cache (pass {name}=foley.RemoteVideo(url=..., sha256=...) to key it "
+            "by content)"
+        )
+        reuse_cached = False
+    if reuse_cached:
+        cache = cache if cache is not None else _default_cache()
+        plan.cached = _cached_clip(
+            cache,
+            plan.request_key,
+            plan.notes,
+            plan.config,
+            demux=getattr(adapter, "demuxer", None),
+        )
+        if plan.cached is not None:
+            from ..stores import content_key
+
+            plan.content_key = content_key(plan.cached.audio_bytes)
+    return plan
+
+
+def _take_seed(config: dict, affordances: dict, index: int) -> int:
+    """The seed of take ``index`` of a request seeded ``affordances['seed']``: the seed
+    plus ``index``, in the backend's range (:func:`~foley.sources.base.derived_seed`)."""
+    from .base import derived_seed, seed_limit
+
+    return derived_seed(affordances["seed"], index, limit=seed_limit(config))
+
+
+def _take_plan(first: GenerationPlan, index: int) -> GenerationPlan:
+    """Take ``index`` of the request ``first`` plans (its take 0), keyed as asking for
+    it alone would key it (#210): a seeded request's take ``i`` is the request seeded
+    ``s + i``; an unseeded one's is variation ``first.variation + i``."""
+    from dataclasses import replace
+
+    if first.affordances.get("seed") is None:
+        return _keyed_take(first, first.variation + index)
+    seed = _take_seed(first.config, first.affordances, index)
+    return _keyed_take(
+        replace(first, affordances={**first.affordances, "seed": seed}), 0
+    )
+
+
+@dataclass
+class TakeRun:
+    """Consecutive takes of a batch made by one call, reserved at ``estimate_usd``."""
+
+    takes: list
+    estimate_usd: Optional[float] = None
+
+
+@dataclass
+class BatchPlan:
+    """Several takes of one request, made through a backend's batch knob (#210).
+
+    ``takes`` are the per-take plans, in order, each keyed as asking for that take
+    alone would key it. Those the generations cache did not serve are grouped into
+    ``runs`` of consecutive takes, one call each, each priced
+    (:func:`foley.cost.estimate_call` for that many samples) and reserved before
+    anything is sent, and settled once after its call.
+    """
+
+    backend: str
+    takes: list
+    runs: list = field(default_factory=list)
+
+    @property
+    def to_make(self) -> list:
+        """The takes the calls make (those the generations cache did not serve)."""
+        return [p for p in self.takes if p.cached is None]
+
+    @property
+    def estimate_usd(self) -> Optional[float]:
+        """What the calls are reserved at in all (``None``: unknown)."""
+        prices = [run.estimate_usd for run in self.runs]
+        return None if any(p is None for p in prices) else round(math.fsum(prices), 10)
+
+
+def _runs(takes: list, first: GenerationPlan) -> list:
+    """``takes``' uncached ones as runs of consecutive takes, each priced."""
+    from ..cost import for_samples, split_cost
+
+    runs, current = [], []
+    for take in takes:
+        if take.cached is None:
+            current.append(take)
+        elif current:
+            runs.append(current)
+            current = []
+    if current:
+        runs.append(current)
+    priced = [
+        TakeRun(run, for_samples(first.config, first.estimate_usd, len(run)))
+        for run in runs
+    ]
+    for run in priced:
+        for take in run.takes:
+            take.estimate_usd = split_cost(run.estimate_usd, len(run.takes))
+    return priced
+
+
+def _affordable(takes: list, first: GenerationPlan) -> list:
+    """The longest prefix of ``takes`` whose calls every budget in force can afford,
+    holding at least one uncached take (a budget that affords none refuses at
+    :func:`foley.cost.authorize`). So a budget that fits part of a batch still gets
+    those takes, as one call per take would (#210)."""
+    from ..cost import BudgetExceeded, check
+
+    ends = [i + 1 for i, take in enumerate(takes) if take.cached is None]
+    for end in reversed(ends[1:]):
+        batch = BatchPlan(first.backend, takes[:end], _runs(takes[:end], first))
+        try:
+            check(batch.estimate_usd, what=f"generate via {first.backend!r}")
+        except BudgetExceeded:
+            continue
+        return takes[:end]
+    return takes[: ends[0]] if ends else takes
+
+
+def plan_batch(
+    backend: str,
+    prompt: str,
+    n: int,
+    *,
+    adapter,
+    config: Optional[dict] = None,
+    on_unsupported: Optional[str] = None,
+    cache=None,
+    reuse_cached: bool = True,
+    provider_params: Optional[dict] = None,
+    variation: int = 0,
+    lineage: Optional[dict] = None,
+    **affordances,
+) -> BatchPlan:
+    """Decide up to ``n`` takes of one request, made through the backend's batch knob
+    (#210): :func:`plan_generation` for a batch.
+
+    Translated and priced once. Take ``i`` is keyed as asking for it alone would key
+    it: a seeded request's take ``i`` is ``generate(seed=s + i)``, an unseeded one's is
+    variation ``variation + i`` (#209). Each is looked up in the generations cache;
+    the rest are made in runs of consecutive takes (one call each, its first take's
+    seed sent), reserved before anything is sent. A paid batch is cut to the takes
+    the run's budget affords (at least one; the caller asks again for the rest), so
+    the budget refuses only a take it cannot afford.
+
+    Raises:
+        As :func:`plan_generation`.
+    """
+    from ..cost import authorize, release
+    from .registry import require_source_egress
+
+    n = require_count("n", n, minimum=1)
+    first = _planned(
+        backend,
+        prompt,
+        adapter=adapter,
+        config=config,
+        on_unsupported=on_unsupported,
+        provider_params=provider_params,
+        variation=variation,
+        lineage=lineage,
+        **affordances,
+    )
+    takes = [
+        _looked_up(
+            _take_plan(first, i) if i else first,
+            adapter=adapter,
+            cache=cache,
+            reuse_cached=reuse_cached,
+        )
+        for i in range(n)
+    ]
+    paid = _is_paid(first.config)
+    if paid:
+        takes = _affordable(takes, first)
+    batch = BatchPlan(backend=backend, takes=takes, runs=_runs(takes, first))
+    if not batch.runs:
+        return batch
+    require_source_egress(backend, first.config)
+    if paid:
+        reserved = []
+        try:
+            for run in batch.runs:
+                authorize(
+                    run.estimate_usd,
+                    what=f"generate {len(run.takes)} take(s) in one call via {backend!r}",
+                )
+                reserved.append(run)
+        except Exception:
+            for run in reserved:  # never leave a half-reserved batch behind
+                release(run.estimate_usd)
+            raise
+    return batch
 
 
 def _account_id(adapter, config: dict) -> Optional[str]:
@@ -656,15 +906,10 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
         plan's, and ``candidate.cost_estimate_usd`` / ``cost_actual_usd`` set.
     """
     from ..cost import release, settle
-    from ..runtime import EgressBlocked
-    from .base import SourceConfigurationError, UndemuxedAnswer
+    from .base import UndemuxedAnswer
 
     if plan.cached is not None:
-        clip = plan.cached
-        clip.candidate.cost_estimate_usd = plan.estimate_usd
-        clip.candidate.cost_actual_usd = 0.0
-        clip.notes = [*plan.notes, *clip.notes]
-        return clip
+        return _replayed(plan)
     # plan_generation already reserved the estimate on every budget in force.
     paid = plan.request_key is not None
     reserved = plan.estimate_usd if paid else None
@@ -677,55 +922,36 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
         if paid:
             release(reserved)
 
-    try:
-        extra = (
-            {"provider_params": plan.provider_params} if plan.provider_params else {}
-        )
-        affordances = dict(plan.affordances)
-        if affordances.get("seed") is None and draws_seed(plan.config):
-            # After the cache miss: the key is the request as asked, seed-free (#206).
-            affordances["seed"] = draw_seed()
-        clip = adapter.generate(plan.prompt, **affordances, **extra)
-    except (SourceConfigurationError, EgressBlocked):
-        released()  # refused before any request was sent (incl. offline weights)
-        raise
-    except UndemuxedAnswer as exc:  # billed: keep the answer, so a retry is free
-        if plan.request_key is None or exc.clip is None:
-            raise
-        settled(exc.clip)  # it was billed
-        cache = cache if cache is not None else _default_cache()
+    with _sending(plan, released):
         try:
-            plan.kept_key = _answered_key(plan, exc.clip)
-            _store_clip(cache, plan, exc.clip, container="video")
-        except Exception as err:  # noqa: BLE001 - the demux error is the one to report
+            clip = adapter.generate(plan.prompt, **_sent_affordances(plan), **_extra(plan))
+        except UndemuxedAnswer as exc:  # billed: keep the answer, so a retry is free
+            if plan.request_key is None or exc.clip is None:
+                raise
+            settled(exc.clip)  # it was billed
+            cache = cache if cache is not None else _default_cache()
+            try:
+                plan.kept_key = _answered_key(plan, exc.clip)
+                _store_clip(cache, plan, exc.clip, container="video")
+            except Exception as err:  # noqa: BLE001 - the demux error is the one to report
+                raise UndemuxedAnswer(
+                    f"{exc}. It could not be kept in the generations cache ({err!r})",
+                    clip=exc.clip,
+                    cache_key=plan.content_key,  # set once its bytes were written
+                ) from exc
+            retry = (
+                "a retry takes its audio out without paying again"
+                if plan.replayable
+                else "a retry pays again (a bare video URL is never replayed); its audio "
+                "can still be taken out of the kept video (foley.generations.get(key), "
+                "then foley.sources.video.audio_track)"
+            )
             raise UndemuxedAnswer(
-                f"{exc}. It could not be kept in the generations cache ({err!r})",
+                f"{exc}. The answer is kept in the generations cache ({plan.kept_key}): "
+                f"{retry}",
                 clip=exc.clip,
-                cache_key=plan.content_key,  # set once its bytes were written
+                cache_key=plan.content_key,
             ) from exc
-        retry = (
-            "a retry takes its audio out without paying again"
-            if plan.replayable
-            else "a retry pays again (a bare video URL is never replayed); its audio "
-            "can still be taken out of the kept video (foley.generations.get(key), "
-            "then foley.sources.video.audio_track)"
-        )
-        raise UndemuxedAnswer(
-            f"{exc}. The answer is kept in the generations cache ({plan.kept_key}): "
-            f"{retry}",
-            clip=exc.clip,
-            cache_key=plan.content_key,
-        ) from exc
-    except ImportError as exc:
-        released()
-        raise SourceConfigurationError(
-            f"{plan.backend!r} needs an optional dependency that is not installed "
-            f"({exc.name or exc}): pip install 'foley[{_extra_of(plan)}]'"
-        ) from exc
-    except Exception as exc:
-        if provider_refused(exc):
-            released()  # the provider answered with an error: nothing billed
-        raise
     # Any other failure keeps the reservation: the request may have been sent and
     # billed (a read timeout after the server accepted it).
     settled(clip)
@@ -761,6 +987,174 @@ def run_generation(plan: GenerationPlan, adapter, *, cache=None):
     return clip
 
 
+def _replayed(plan: GenerationPlan):
+    """The clip of a plan served from the generations cache: nothing was paid."""
+    clip = plan.cached
+    clip.candidate.cost_estimate_usd = plan.estimate_usd
+    clip.candidate.cost_actual_usd = 0.0
+    clip.notes = [*plan.notes, *clip.notes]
+    return clip
+
+
+def _extra(plan: GenerationPlan) -> dict:
+    """The adapter keywords beside the affordances: the caller's ``provider_params``."""
+    return {"provider_params": plan.provider_params} if plan.provider_params else {}
+
+
+def _sent_affordances(plan: GenerationPlan) -> dict:
+    """The affordances the adapter is called with: the plan's, and for a seedless call
+    to a source that takes a seed but echoes none, a seed drawn here, after the cache
+    miss: the key is the request as asked, seed-free (#206)."""
+    affordances = dict(plan.affordances)
+    if affordances.get("seed") is None and draws_seed(plan.config):
+        affordances["seed"] = draw_seed()
+    return affordances
+
+
+@contextlib.contextmanager
+def _sending(plan: GenerationPlan, released: Callable[[], None]):
+    """Around an adapter call: release the reservation of a call nothing was billed for.
+
+    A refusal before anything was sent (not configured, offline, an absent optional
+    dependency, which is raised as a :class:`~foley.sources.base.SourceConfigurationError`
+    naming the extra) or a provider's refusal it did not bill
+    (:func:`provider_refused`) calls ``released()``. Any other failure keeps the
+    reservation: the request may have been sent and billed (a read timeout after the
+    server accepted it).
+    """
+    from ..runtime import EgressBlocked
+    from .base import SourceConfigurationError
+
+    try:
+        yield
+    except (SourceConfigurationError, EgressBlocked):
+        released()  # refused before any request was sent (incl. offline weights)
+        raise
+    except ImportError as exc:
+        released()
+        raise SourceConfigurationError(
+            f"{plan.backend!r} needs an optional dependency that is not installed "
+            f"({exc.name or exc}): pip install 'foley[{_extra_of(plan)}]'"
+        ) from exc
+    except Exception as exc:
+        if provider_refused(exc):
+            released()  # the provider answered with an error: nothing billed
+        raise
+
+
+def run_batch(batch: BatchPlan, adapter, *, cache=None) -> list:
+    """Run a :class:`BatchPlan`: the cache serves the takes it holds, and one call to
+    the adapter's ``generate_takes`` per run makes the rest (#210).
+
+    Each call is settled once, at the sum of its takes' actual costs; a run never sent
+    (an earlier one raised) has its reservation released, and the takes already made
+    are in the generations cache, so a retry replays them. Each paid take is kept
+    there under its own key before it is returned (so before QC / ingest), as
+    :func:`run_generation` keeps one.
+
+    Returns:
+        One :class:`~foley.sources.base.GeneratedClip` per take, in order; ``None`` for
+        a take the backend did not answer (it answered fewer samples than asked).
+    """
+    from ..cost import release
+
+    made: dict = {}
+    pending = list(batch.runs)
+    try:
+        while pending:
+            run = pending[0]
+            clips = _make_run(run, adapter, cache=cache)
+            pending.pop(0)
+            made.update(zip(map(id, run.takes), clips))
+    except BaseException:
+        if batch.takes and _is_paid(batch.takes[0].config):
+            for run in pending[1:]:  # the failed run's own reservation is _sending's
+                release(run.estimate_usd)
+        raise
+    return [
+        _replayed(p) if p.cached is not None else made.get(id(p)) for p in batch.takes
+    ]
+
+
+def _make_run(run: TakeRun, adapter, *, cache=None) -> list:
+    """The clips of the one call that makes ``run``'s takes (see :func:`run_batch`)."""
+    from ..cost import release, settle
+
+    first = run.takes[0]
+    paid = first.request_key is not None
+    reserved = run.estimate_usd if paid else None
+
+    def released() -> None:
+        if paid:
+            release(reserved)
+
+    with _sending(first, released):
+        clips = list(
+            adapter.generate_takes(
+                first.prompt,
+                len(run.takes),
+                **_sent_affordances(first),
+                **_extra(first),
+            )
+        )[: len(run.takes)]
+    actuals = [c.candidate.cost_actual_usd for c in clips]
+    total = (
+        None
+        if not clips or any(a is None for a in actuals)
+        else round(math.fsum(actuals), 10)
+    )
+    if paid:
+        settle(reserved, _billed_amount(first.config, reserved, total))
+    if len(clips) < len(run.takes):
+        missing = f"{len(clips)} of the {len(run.takes)} takes asked"
+        for clip in clips:
+            clip.notes.append(f"{first.backend} answered {missing}")
+    cache = cache if (cache is not None or not paid) else _default_cache()
+    for plan, clip in zip(run.takes, clips):
+        _check_take_seed(plan, clip)
+        clip.notes = [*plan.notes, *clip.notes]
+        clip.candidate.cost_estimate_usd = plan.estimate_usd
+        if paid:
+            _keep_take(cache, plan, clip)
+    return clips
+
+
+def _check_take_seed(plan: GenerationPlan, clip) -> None:
+    """Note a take whose recorded seed is not the one it is keyed under (a backend that
+    numbers a batch's seeds otherwise than ``s, s + 1, ...``)."""
+    asked = plan.affordances.get("seed")
+    got = clip.candidate.sound.license.generation_seed
+    if asked is not None and got is not None and int(got) != int(asked):
+        clip.notes.append(
+            f"seed: this take is the request seeded {int(asked)}, but {plan.backend} "
+            f"reports seed {int(got)} for it (recorded as reported)"
+        )
+
+
+def _keep_take(cache, plan: GenerationPlan, clip) -> None:
+    """Keep a batch take's paid bytes under the key of the request it answers.
+
+    :func:`_answered_key` decides, as for one call (#97): a take records its own seed
+    in its native params, so one whose backend reports a seed other than the
+    ``s + i`` it is keyed under answers the request for that seed, and is kept there,
+    with a pointer from the request asked that is not replayed (the next ask for
+    ``s + i`` pays again). The batch's sample count and index are not in the planned
+    request, so they never count as a difference.
+    """
+    try:
+        plan.kept_key = _answered_key(plan, clip)
+        _store_clip(cache, plan, clip)
+    except Exception as exc:  # noqa: BLE001 - never lose paid bytes over a cache write
+        clip.notes.append(f"could not keep the paid generation in the cache: {exc!r}")
+        return
+    if plan.kept_key != plan.request_key:
+        clip.notes.append(
+            "kept under the key of the request it answers (its reported seed), not "
+            "the one asked, so the request asked is not replayed from it"
+        )
+    clip.notes.append(f"paid generation kept in the generations cache: {plan.kept_key}")
+
+
 def draws_seed(config: dict) -> bool:
     """Whether :func:`run_generation` draws the seed of a seedless call to this source (#206).
 
@@ -787,6 +1181,13 @@ def draws_seed(config: dict) -> bool:
 
 
 def _billed(plan: GenerationPlan, actual: Optional[float]) -> Optional[float]:
+    """:func:`_billed_amount` for one plan's call."""
+    return _billed_amount(plan.config, plan.estimate_usd, actual)
+
+
+def _billed_amount(
+    config: dict, estimate: Optional[float], actual: Optional[float]
+) -> Optional[float]:
     """What a paid call is settled at: its actual cost, except where the estimate is
     the exact price and the actual a lower measure of it.
 
@@ -795,8 +1196,7 @@ def _billed(plan: GenerationPlan, actual: Optional[float]) -> Optional[float]:
     actual is measured from the audio it returned, which can be shorter: settling to
     that would undercut what the provider bills, so the higher of the two stands.
     """
-    estimate = plan.estimate_usd
-    exact = (plan.config.get("pricing") or {}).get("seconds_from") == "video"
+    exact = (config.get("pricing") or {}).get("seconds_from") == "video"
     if exact and estimate is not None and actual is not None:
         return max(estimate, actual)
     return actual
@@ -851,8 +1251,14 @@ def _answered_key(plan: GenerationPlan, clip) -> str:
         )
         return float(a) == float(b) if numeric else a == b
 
+    def as_planned(a, b):  # a number keyed as the request keys it (2 and 2.0 alike)
+        numeric = all(
+            isinstance(x, (int, float)) and not isinstance(x, bool) for x in (a, b)
+        )
+        return float(a) if numeric and isinstance(b, float) else a
+
     changed = {
-        k: sent_params[k]
+        k: as_planned(sent_params[k], v)
         for k, v in planned.items()
         if sent_params.get(k) is not None and not same(sent_params[k], v)
     }

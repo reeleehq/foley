@@ -45,7 +45,13 @@ from typing import Optional
 from ..base import Candidate, CandidateOrigin
 from ..index.ingest import CONSENT_NOTE, IngestReport, IngestResult, ingest_one
 from ..qc import DEFAULT_MIN_STATUS
-from ._dispatch import plan_generation, record_generation_outcome, run_generation
+from ._dispatch import (
+    plan_batch,
+    plan_generation,
+    record_generation_outcome,
+    run_batch,
+    run_generation,
+)
 from ..runtime import EgressBlocked
 from .base import GENERATING_KINDS, SourceConfigurationError, UndemuxedAnswer
 from .registry import get_source
@@ -445,6 +451,7 @@ def _generate(
     provider_params: Optional[dict] = None,
     variation: int = 0,
     derived_from=None,
+    takes: int = 1,
     **affordances,
 ) -> IngestReport:
     """Generate a sound via ``backend`` and ingest it (by-value) into ``library``.
@@ -539,6 +546,14 @@ def _generate(
         variation: Which variation of the same request this is (#161; see
             :func:`foley.variations`): ``0`` (default) is the request itself, a later
             one is a different paid request in the generations cache.
+        takes: How many takes of the request to make (#210; :func:`foley.variations`
+            asks for several): variations ``variation .. variation + takes - 1``. A
+            backend with a batch knob (``native_defaults['batch']``, an adapter with
+            ``generate_takes``) makes up to its maximum in one call, priced and
+            reserved for all of them before it is sent, each take keyed apart in the
+            generations cache, QC'd and ingested on its own (one result per take, in
+            order); any other makes one (the caller asks again for the rest). Default
+            ``1``.
         derived_from: For an edit (#162: an edit backend given ``audio=``), the source
             clip's :class:`~foley.base.SoundRecord` (what :func:`foley.edit` passes)
             or its :class:`~foley.base.LicenseRecord`. **Required** by the ``edit``
@@ -618,21 +633,28 @@ def _generate(
     # Everything that can refuse the call — offline egress, an unsupported
     # meaning-carrying parameter, the run's cost cap, a missing key or plan — is
     # decided here, BEFORE any provider is called, and raises (#53 #57 #64). A paid
-    # request seen before is served from the generations cache (#59).
+    # request seen before is served from the generations cache (#59). A backend with a
+    # batch knob makes several takes in one call (#210: ``takes``).
     report = IngestReport(root=f"{backend}:{prompt}")
+    n_takes = _batch_takes(
+        backend, gen, takes, seeded=affordances.get("seed") is not None
+    )
+    planned = dict(
+        adapter=gen,
+        on_unsupported=on_unsupported,
+        cache=generations_cache,
+        reuse_cached=reuse_cached,
+        provider_params=provider_params,
+        variation=variation,
+        lineage=lineage.transformation() if lineage is not None else None,
+        **affordances,
+    )
     try:
-        plan = plan_generation(
-            backend,
-            prompt,
-            adapter=gen,
-            on_unsupported=on_unsupported,
-            cache=generations_cache,
-            reuse_cached=reuse_cached,
-            provider_params=provider_params,
-            variation=variation,
-            lineage=lineage.transformation() if lineage is not None else None,
-            **affordances,
-        )
+        if n_takes > 1:
+            batch = plan_batch(backend, prompt, n_takes, **planned)
+            plans = batch.takes
+        else:
+            plans = [plan_generation(backend, prompt, **planned)]
     except UndemuxedAnswer as exc:  # a kept, paid video still not demuxed (#176)
         return _error_report(report, backend, exc)
     # A synthesis failure (rate-limit / model load / bad response) yields an
@@ -651,11 +673,98 @@ def _generate(
                 GENAI["request_model"]: backend,
             },
         ):
-            clip = run_generation(plan, gen, cache=generations_cache)
+            clips = (
+                run_batch(batch, gen, cache=generations_cache)
+                if n_takes > 1
+                else [run_generation(plans[0], gen, cache=generations_cache)]
+            )
     except (SourceConfigurationError, EgressBlocked):
         raise  # not configured, or offline without the model's weights: say so
     except Exception as exc:
         return _error_report(report, backend, exc)
+
+    for plan, clip in zip(plans, clips):
+        if clip is None:  # the backend answered fewer samples than asked
+            report.record(
+                IngestResult(
+                    id=f"{backend}:generate",
+                    status="error",
+                    error=f"{backend} answered fewer takes than the {n_takes} asked",
+                )
+            )
+            continue
+        _ingest_clip(
+            report,
+            clip,
+            plan,
+            prompt=prompt,
+            backend=backend,
+            lineage=lineage,
+            scan=scan,
+            on_flagged=on_flagged,
+            repair=repair,
+            level=level,
+            watermark=watermark,
+            wm=wm,
+            store=store,
+            provenance_store=provenance_store,
+            lib=lib,
+            generations_cache=generations_cache,
+            check_prompt=check_prompt,
+        )
+    return report
+
+
+def _batch_takes(backend: str, adapter, takes: int, *, seeded: bool = False) -> int:
+    """How many of ``takes`` one call to ``backend`` makes (#210): up to its batch
+    knob's maximum (:func:`~foley.sources.base.batch_limit`) when the adapter has
+    ``generate_takes``, else ``1`` (a backend without the knob, or one that answers
+    with a video: one call per take). A ``seeded`` request batches only where each
+    take's seed is known (``batch['seeds']``: ``'reported'`` by the backend or
+    ``'derived'`` by the adapter): take ``i`` is keyed as the request for its seed,
+    which a take of unknown seed cannot be.
+    """
+    from .base import batch_limit, require_count
+    from .registry import SOURCE_REGISTRY
+
+    takes = require_count("takes", takes, minimum=1)
+    if takes == 1 or not callable(getattr(adapter, "generate_takes", None)):
+        return 1
+    config = getattr(adapter, "config", None) or SOURCE_REGISTRY.get(backend, {}).get(
+        "config", {}
+    )
+    if (config.get("output") or {}).get("container") == "video":
+        return 1  # a batch of muxed videos has no demux-failure path: one per call
+    seeds_known = ((config.get("native_defaults") or {}).get("batch") or {}).get("seeds")
+    if seeded and seeds_known not in ("reported", "derived"):
+        return 1
+    return min(takes, batch_limit(config))
+
+
+def _ingest_clip(
+    report: IngestReport,
+    clip,
+    plan,
+    *,
+    prompt: str,
+    backend: str,
+    lineage,
+    scan,
+    on_flagged: str,
+    repair,
+    level,
+    watermark,
+    wm,
+    store: bool,
+    provenance_store,
+    lib,
+    generations_cache,
+    check_prompt: bool,
+) -> None:
+    """Take one generated clip through the safety screen of the prompt used, the repair,
+    the level, the watermark, the content credential and :func:`ingest_one`; record its
+    :class:`~foley.index.ingest.IngestResult` on ``report`` (#210: once per take)."""
+    from ..provenance import disclosure
 
     lic = clip.candidate.sound.license
     if lineage is not None:  # an edit: the source's rights and credit carry over
@@ -685,7 +794,7 @@ def _generate(
             )
         )
         record_generation_outcome(plan, "safety_blocked", cache=generations_cache)
-        return report
+        return
 
     # One try guards everything that decodes the bytes — the repair, the
     # content-credential sidecar (which decodes to pre-compute the id) and the ingest —
@@ -770,7 +879,7 @@ def _generate(
         )
         report.exception = exc
         record_generation_outcome(plan, "error", cache=generations_cache)
-        return report
+        return
 
     res.cache_key = plan.content_key  # where the paid bytes are, whatever the outcome
     record_generation_outcome(plan, res.status, cache=generations_cache)
@@ -814,7 +923,6 @@ def _generate(
     if res.status in ("pass", "warn") and not lic.ai_training_ok:
         res.notes.append(CONSENT_NOTE)
     report.record(res)
-    return report
 
 
 def _edit_lineage(backend: str, adapter, derived_from, affordances: dict):
@@ -1207,6 +1315,7 @@ _GENERATE_KNOWN = frozenset(
         "provider_params",
         "variation",
         "derived_from",
+        "takes",
     }
 )
 #: The keywords of a generation call that are not affordances (the prompt aside).

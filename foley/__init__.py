@@ -846,7 +846,9 @@ def generate(
         variation: Which variation of the same request this is (#161): ``0``
             (default) is the request itself; a later one is a different paid request
             in the generations cache, so it is a new sound even from a backend that
-            takes no seed. :func:`variations` sets it; most callers never do.
+            takes no seed. With a ``seed``, variation ``i`` is the request seeded
+            ``seed + i`` (#210: that seed is sent, and keyed). :func:`variations`
+            sets it; most callers never do.
         derived_from: For an edit (an edit backend given ``audio=``), the source
             clip's :class:`SoundRecord` or :class:`LicenseRecord`: **required** — an
             edit without it is refused (:class:`EditRefusal`), as one whose rights
@@ -888,6 +890,55 @@ def generate(
             :class:`~foley.runtime.ModelNotCached` for a local one whose weights are
             not on this machine.
     """
+    report, backend, skipped = _generation_report(
+        prompt,
+        backend=backend,
+        adapter=adapter,
+        budget=budget,
+        intended_use=intended_use,
+        provider_params=provider_params,
+        library=library,
+        store=store,
+        watermark=watermark,
+        on_flagged=on_flagged,
+        watermarker=watermarker,
+        provenance_store=provenance_store,
+        on_unsupported=on_unsupported,
+        reuse_cached=reuse_cached,
+        repair=repair,
+        level=level,
+        check_prompt=check_prompt,
+        variation=variation,
+        derived_from=derived_from,
+        **affordances,
+    )
+    res = report.results[0] if report.results else None
+    if res is None:
+        from .sources.generate import GenerationError
+
+        raise GenerationError(
+            f"generation via {backend!r} produced no result", report=report, status=None
+        )
+    return _result_candidate(
+        res, report=report, backend=backend, skipped=skipped, library=library
+    )
+
+
+def _generation_report(
+    prompt: str,
+    *,
+    backend=None,
+    adapter=None,
+    budget=None,
+    intended_use=None,
+    provider_params=None,
+    **kwargs,
+):
+    """:func:`generate`'s run, up to its report: ``(report, backend, skipped)``.
+
+    ``kwargs`` are :func:`generate`'s other keywords and affordances, and ``takes``
+    (#210, from :func:`variations`): a report then holds one result per take made.
+    """
     from .cost import spend_scope
     from .sources.generate import (
         default_generate_backend,
@@ -898,7 +949,7 @@ def generate(
         provider_params_by_backend,
     )
 
-    mode = generation_mode(affordances)  # a video= walks the video-to-audio order
+    mode = generation_mode(kwargs)  # a video= walks the video-to-audio order
     paid_ok = True  # a named backend or order is the caller asking for it
     if adapter is not None:  # an injected adapter is one backend, named by its config
         if isinstance(backend, (list, tuple)):
@@ -929,31 +980,21 @@ def generate(
             order,
             paid_ok=paid_ok,
             intended_use=intended_use,
-            library=library,
-            store=store,
             adapter=adapter,
-            watermark=watermark,
-            on_flagged=on_flagged,
-            watermarker=watermarker,
-            provenance_store=provenance_store,
-            on_unsupported=on_unsupported,
-            reuse_cached=reuse_cached,
-            repair=repair,
-            level=level,
-            check_prompt=check_prompt,
             provider_params=by_backend,
-            variation=variation,
-            derived_from=derived_from,
-            **affordances,
+            **kwargs,
         )
-    results = report.results
-    if results and skipped:
-        results[0].notes[:0] = [f"generation order: skipped {line}" for line in skipped]
-    res = results[0] if results else None
-    if res is None:
-        raise GenerationError(
-            f"generation via {backend!r} produced no result", report=report, status=None
-        )
+    if report.results and skipped:
+        report.results[0].notes[:0] = [
+            f"generation order: skipped {line}" for line in skipped
+        ]
+    return report, backend, skipped
+
+
+def _result_candidate(res, *, report, backend: str, skipped, library) -> "Candidate":
+    """The stored :class:`Candidate` of one generation result, or :class:`GenerationError`."""
+    from .sources.generate import GenerationError, candidate_of
+
     if res.status in ("pass", "warn"):
         return _with_call_facts(candidate_of(res), res)
     if res.status == "skipped_dup":
@@ -972,6 +1013,42 @@ def generate(
     ) from report.exception
 
 
+def _generated_takes(prompt: str, n: int, **kwargs) -> "list[Candidate]":
+    """Up to ``n`` takes of one request from one :func:`generate` run (#210): ``n`` from a
+    backend whose batch knob makes them in one call, else one.
+
+    Raises:
+        GenerationError: For the first take that yielded no stored sound, its
+            ``variations`` the run's takes that were stored (after it too: they were
+            made by the same paid call).
+    """
+    from .sources.generate import GenerationError
+
+    report, backend, skipped = _generation_report(prompt, takes=n, **kwargs)
+    if not report.results:
+        raise GenerationError(
+            f"generation via {backend!r} produced no result", report=report, status=None
+        )
+    made, failed = [], None
+    for res in report.results:
+        try:
+            made.append(
+                _result_candidate(
+                    res,
+                    report=report,
+                    backend=backend,
+                    skipped=skipped,
+                    library=kwargs.get("library"),
+                )
+            )
+        except GenerationError as exc:
+            failed = failed or exc
+    if failed is not None:
+        failed.variations = made
+        raise failed
+    return made
+
+
 def variations(
     prompt: str,
     n: int,
@@ -986,15 +1063,28 @@ def variations(
 
     The first is :func:`generate` as asked (``backend=None`` walks the generation
     order); the others come from the backend that made it, so all ``n`` are one
-    generator's takes on one request. Where that backend records its seed, take ``i``
+    generator's takes on one request.
+
+    A backend with a batch knob (#210: Mirelo's ``num_samples``, up to 4; Stable Audio
+    Open's ``num_waveforms_per_prompt``) makes the takes in as few calls as its maximum
+    allows, each call priced and reserved for all its takes before it is sent (a
+    backend billed per sample costs ``k`` times one sample). Each take is still its own
+    sound: keyed ``(request, i)`` in the generations cache (so a re-run replays every
+    take), with its own provenance (its own seed where the backend reports or derives
+    one per sample; a note where it does not), QC'd and stored on its own. Take ``i``
+    of a seeded request is ``generate(seed=seed + i)``: the same cache entry, however
+    it was made. A budget that affords only part of a batch gets those takes, then
+    refuses the next as one call per take would.
+
+    Any other backend makes one call per take. Where it records its seed, take ``i``
     is ``generate(..., seed=derived_seed(first_seed, i))``
     (:func:`~foley.sources.base.derived_seed`: the first seed plus ``i``, wrapped into
-    the signed 32-bit seed range), so it is reproducible like any seeded clip and the
-    same request as asking for that seed; where it records none, take ``i`` is keyed
-    apart in the generations cache, so a backend that takes no seed (ElevenLabs) makes
-    ``n`` paid sounds, each replayable, rather than replaying one ``n`` times. Each
-    take is one call, priced and reserved like any other, under one budget for the
-    whole set.
+    the backend's seed range, :func:`~foley.sources.base.seed_limit`), so it is
+    reproducible like any seeded clip and the same request as asking for that seed;
+    where it records none, take ``i`` is keyed apart in the generations cache, so a
+    backend that takes no seed (ElevenLabs) makes ``n`` paid sounds, each replayable,
+    rather than replaying one ``n`` times. Every call is priced and reserved like any
+    other, under one budget for the whole set.
 
     Args:
         prompt: The natural-language sound description.
@@ -1015,14 +1105,15 @@ def variations(
 
     Raises:
         ValueError: If ``n`` is not an integer >= 1, or ``variation`` is passed.
-        GenerationError: As :func:`generate`, for the variation that failed.
+        GenerationError: As :func:`generate`, for the variation that failed (in a
+            batch, the first take QC or ingest refused: its other takes are stored).
         Exception: Whatever :func:`generate` raises for a take (``BudgetExceeded``
             when the set outruns the budget, ``SourceConfigurationError``,
             ``EgressBlocked``, …). Whatever it is, its ``variations`` attribute holds
             the takes already made (stored, and paid for), in order.
     """
     from .cost import spend_scope
-    from .sources.base import derived_seed, require_count
+    from .sources.base import derived_seed, require_count, seed_limit
 
     n = require_count("n", n, minimum=1)
     if "variation" in kwargs:
@@ -1031,9 +1122,10 @@ def variations(
     out: "list[Candidate]" = []
     with spend_scope(budget):
         try:
-            out.append(
-                generate(
+            out.extend(
+                _generated_takes(
                     prompt,
+                    n,
                     backend=backend,
                     provider_params=provider_params,
                     **seeded,
@@ -1049,14 +1141,20 @@ def variations(
                 # Take 0 checked them as {backend: {...}}; a pinned take is one
                 # named backend, which takes its own entry flat (#61).
                 pinned_params = provider_params.get(lic.source)
-            for i in range(1, n):
-                if first_seed is None:
+            batched = len(out) > 1 or _batches(lic.source, kwargs.get("adapter"))
+            limit = seed_limit(_source_config(lic.source, kwargs.get("adapter")))
+            while len(out) < n:
+                i, takes = len(out), 1
+                if batched:  # the next takes in one call, keyed (request, index)
+                    more, takes = {"variation": i, **seeded}, n - i
+                elif first_seed is None:
                     more = {"variation": i}
                 else:
-                    more = {"seed": derived_seed(first_seed, i)}
-                out.append(
-                    generate(
+                    more = {"seed": derived_seed(first_seed, i, limit=limit)}
+                out.extend(
+                    _generated_takes(
                         prompt,
+                        takes,
                         backend=lic.source,
                         provider_params=pinned_params,
                         **more,
@@ -1064,10 +1162,28 @@ def variations(
                     )
                 )
         except Exception as exc:
+            made = [*out, *(getattr(exc, "variations", None) or [])]
             with contextlib.suppress(AttributeError):  # never hide the real error
-                exc.variations = list(out)  # the takes already made (and paid for)
+                exc.variations = made  # the takes already made (and paid for)
             raise
     return out
+
+
+def _source_config(backend: str, adapter=None) -> dict:
+    """The config of ``backend`` (an injected adapter's own, else the registry's)."""
+    from .sources.registry import SOURCE_REGISTRY, discover_sources
+
+    if adapter is not None and getattr(adapter, "config", None):
+        return adapter.config
+    discover_sources()
+    return (SOURCE_REGISTRY.get(backend) or {}).get("config") or {}
+
+
+def _batches(backend: str, adapter=None) -> bool:
+    """Whether ``backend`` makes several takes in one call (a batch knob, #210)."""
+    from .sources.base import batch_limit
+
+    return batch_limit(_source_config(backend, adapter)) > 1
 
 
 def _may_fall_back(backend, adapter) -> bool:
