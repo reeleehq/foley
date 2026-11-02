@@ -78,6 +78,7 @@ item is redistributable but stored by-reference.
 | [`stamp_source_terms`](#foley.licensing.stamp_source_terms)(record, stated)                | Write what a source `stated` about its terms onto `record`, in place, and return it.                                                                                                                                                                                           |
 | [`territory_excluded`](#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                                                                                                                                                                        |
 | [`upload_refusal`](#foley.licensing.upload_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.                                                                                                                                                                                   |
+| [`vendor_training_refusal`](#foley.licensing.vendor_training_refusal)(source, backend_config)   | Why a sound with rights `source` may not be sent to the backend `backend_config` declares, because its vendor trains on what it is sent, or `None`.                                                                                                                            |
 | [`wanted_license_ids`](#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                                                                                                                                                                                  |
 | [`wider_rights`](#foley.licensing.wider_rights)(record, bound)                       | What `record` allows that `bound` does not (`[]`: no wider than `bound`).                                                                                                                                                                                                      |
 
@@ -917,6 +918,31 @@ by-reference even under CC0): bytes foley may not keep, it does not upload eithe
 True
 >>> upload_refusal(LicenseRecord(source="freesound"))[:30]
 'its bytes may not be kept or s'
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.licensing.vendor_training_refusal(source, backend_config)
+
+Why a sound with rights `source` may not be sent to the backend
+`backend_config` declares, because its vendor trains on what it is sent, or `None`.
+
+A backend whose licence block says `vendor_trains_on_input` (Mirelo’s terms
+§7.4: a training licence on input as well as output) takes the source clip into a
+proprietary, commercial training set. Fail-closed: the source’s rights must allow
+that use ([`ai_use_permitted()`](#foley.licensing.ai_use_permitted), closed-source and commercial); an
+`ai_training_ok` that is off or a narrowed scope refuses it, before any upload.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> trains = {"license": {"vendor_trains_on_input": True}}
+>>> vendor_training_refusal(LicenseRecord(source="x"), trains)[:26]
+"its backend's vendor train"
+>>> vendor_training_refusal(LicenseRecord(source="x", ai_training_ok=True), trains) is None
+True
+>>> vendor_training_refusal(LicenseRecord(source="x"), {"license": {}}) is None
+True
 ```
 
 * **Return type:**

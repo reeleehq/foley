@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=4309da3b"></script>
+    <script src="../../../_static/documentation_options.js?v=69b21de1"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.119" />
+  <meta name="docsearch:version" content="0.0.120" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -872,11 +872,13 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        EditRefusal: Without ``derived_from``; when its rights do not allow the edit</span>
-<span class="sd">            (:func:`foley.licensing.derivative_refusal`); or when the clip sent is not</span>
-<span class="sd">            the bytes of the ``derived_from`` record.</span>
+<span class="sd">            (:func:`foley.licensing.derivative_refusal`), or the backend's vendor</span>
+<span class="sd">            trains on its input and they do not allow that</span>
+<span class="sd">            (:func:`foley.licensing.vendor_training_refusal`); or when the clip sent</span>
+<span class="sd">            is not the bytes of the ``derived_from`` record.</span>
 <span class="sd">        TypeError: For a ``derived_from`` that is neither record.</span>
 <span class="sd">    """</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">derivative_refusal</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">derivative_refusal</span><span class="p">,</span> <span class="n">vendor_training_refusal</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..provenance.credits</span><span class="w"> </span><span class="kn">import</span> <span class="n">attribution_line</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.media</span><span class="w"> </span><span class="kn">import</span> <span class="n">recorded_media_key</span>
 
@@ -898,7 +900,7 @@ window.runMermaid = runMermaid;</script>
             <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">derived_from</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
     <span class="n">source_id</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">lic</span><span class="o">.</span><span class="n">source_id</span>
-    <span class="n">why</span> <span class="o">=</span> <span class="n">derivative_refusal</span><span class="p">(</span><span class="n">lic</span><span class="p">)</span>
+    <span class="n">why</span> <span class="o">=</span> <span class="n">derivative_refusal</span><span class="p">(</span><span class="n">lic</span><span class="p">)</span> <span class="ow">or</span> <span class="n">vendor_training_refusal</span><span class="p">(</span><span class="n">lic</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">why</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">EditRefusal</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">"cannot edit </span><span class="si">{</span><span class="n">source_id</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'the clip'</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2">; nothing was generated"</span><span class="p">,</span>
@@ -1077,7 +1079,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    (:meth:`EditLineage.apply`), so the use is refused when either refuses it: an edit</span>
 <span class="sd">    of a non-commercial sound under a commercial use is money spent on a clip nobody</span>
 <span class="sd">    may place. Decided before anything is paid for; a backend's refusal names the</span>
-<span class="sd">    other backends of the op whose licence fits.</span>
+<span class="sd">    other backends of the op that could run this edit (:func:`_could_edit`) and whose</span>
+<span class="sd">    licence fits.</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">refusal_reason</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">.generate</span><span class="w"> </span><span class="kn">import</span> <span class="n">backend_license_refusal</span><span class="p">,</span> <span class="n">edit_backends</span>
@@ -1092,7 +1095,9 @@ window.runMermaid = runMermaid;</script>
     <span class="n">fits</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">name</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">edit_backends</span><span class="p">(</span><span class="n">call</span><span class="o">.</span><span class="n">op</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="n">call</span><span class="o">.</span><span class="n">backend</span> <span class="ow">and</span> <span class="n">backend_license_refusal</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="o">!=</span> <span class="n">call</span><span class="o">.</span><span class="n">backend</span>
+        <span class="ow">and</span> <span class="n">backend_license_refusal</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">intended_use</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="ow">and</span> <span class="n">_could_edit</span><span class="p">(</span><span class="n">_registered_config</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">call</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="n">fits</span><span class="p">:</span>
         <span class="n">advice</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"name a </span><span class="si">{</span><span class="n">call</span><span class="o">.</span><span class="n">op</span><span class="si">}</span><span class="s2"> edit backend whose licence fits (</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fits</span><span class="p">)</span><span class="si">}</span><span class="s2">), or </span><span class="si">{</span><span class="n">hint</span><span class="si">}</span><span class="s2">"</span>
@@ -1167,6 +1172,22 @@ window.runMermaid = runMermaid;</script>
         <span class="n">name</span><span class="p">,</span> <span class="n">audio</span><span class="o">=</span><span class="n">audio</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">priced_affordances</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="p">)</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_could_edit</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">SoundRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether the edit backend ``config`` could take ``source`` at all: its vendor</span>
+<span class="sd">    would not train on a clip whose rights forbid it</span>
+<span class="sd">    (:func:`foley.licensing.vendor_training_refusal`), and the clip's length is within</span>
+<span class="sd">    its ``edit_limits['clip_s']`` (when the record knows it)."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">vendor_training_refusal</span>
+
+    <span class="k">if</span> <span class="n">vendor_training_refusal</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">license</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"edit_limits"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"clip_s"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">seconds</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">duration_s</span>
+    <span class="k">if</span> <span class="n">seconds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">lo</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">seconds</span> <span class="o">&gt;=</span> <span class="n">lo</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">hi</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">seconds</span> <span class="o">&lt;=</span> <span class="n">hi</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_refuse_given_source</span><span class="p">(</span><span class="n">affordances</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>

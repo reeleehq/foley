@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=4309da3b"></script>
+    <script src="../_static/documentation_options.js?v=69b21de1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.119" />
+  <meta name="docsearch:version" content="0.0.120" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -4204,9 +4204,11 @@ far from the source, 1.0 being pure generation), <code class="docutils literal n
 <li><p><strong>prompt</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – What the result should sound like; <code class="docutils literal notranslate"><span class="pre">''</span></code> (default): the source’s caption.</p></li>
 <li><p><strong>backend</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a> | <span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span>) – An edit source doing <code class="docutils literal notranslate"><span class="pre">op</span></code> (<code class="docutils literal notranslate"><span class="pre">'fal_stable_audio_3_audio_to_audio'</span></code>,
 <code class="docutils literal notranslate"><span class="pre">'fal_stable_audio_3_inpaint'</span></code>, <code class="docutils literal notranslate"><span class="pre">'fal_stable_audio_3_extend'</span></code>: fal’s
-Stable Audio 3 Small-SFX, <code class="docutils literal notranslate"><span class="pre">foley[fal]</span></code> + <code class="docutils literal notranslate"><span class="pre">$FAL_KEY</span></code>). <code class="docutils literal notranslate"><span class="pre">None</span></code>
-(default): the op’s default, read from the registry configs’ <code class="docutils literal notranslate"><span class="pre">edit_op</span></code>;
-it is paid, so it runs only once paid generation is opted in.</p></li>
+Stable Audio 3 Small-SFX, <code class="docutils literal notranslate"><span class="pre">foley[fal]</span></code> + <code class="docutils literal notranslate"><span class="pre">$FAL_KEY</span></code>; the inpaint and
+extend fallbacks <code class="docutils literal notranslate"><span class="pre">'fal_mirelo_inpaint'</span></code>, <code class="docutils literal notranslate"><span class="pre">'fal_mirelo_extend'</span></code>: Mirelo
+SFX 1.6, non-commercial). <code class="docutils literal notranslate"><span class="pre">None</span></code> (default): the op’s default, read from
+the registry configs’ <code class="docutils literal notranslate"><span class="pre">edit_op</span></code>; it is paid, so it runs only once paid
+generation is opted in.</p></li>
 <li><p><strong>library</strong> – The library holding <code class="docutils literal notranslate"><span class="pre">source</span></code> and receiving the edit (default: the
 process-wide default library).</p></li>
 <li><p><strong>budget</strong> – A <a class="reference internal" href="#foley.Budget" title="foley.Budget"><code class="xref py py-class docutils literal notranslate"><span class="pre">Budget</span></code></a> for this call (see <a class="reference internal" href="#foley.generate" title="foley.generate"><code class="xref py py-func docutils literal notranslate"><span class="pre">generate()</span></code></a>).</p></li>

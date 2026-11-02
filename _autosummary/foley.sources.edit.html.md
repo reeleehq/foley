@@ -203,8 +203,10 @@ edit source given its source clip (`affordances['audio']`).
   * **affordances** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – The call’s affordances (the clip, the op’s parameters).
 * **Raises:**
   * [**EditRefusal**](foley.html.md#foley.EditRefusal) – Without `derived_from`; when its rights do not allow the edit
-        ([`foley.licensing.derivative_refusal()`](foley.licensing.html.md#foley.licensing.derivative_refusal)); or when the clip sent is not
-        the bytes of the `derived_from` record.
+        ([`foley.licensing.derivative_refusal()`](foley.licensing.html.md#foley.licensing.derivative_refusal)), or the backend’s vendor
+        trains on its input and they do not allow that
+        ([`foley.licensing.vendor_training_refusal()`](foley.licensing.html.md#foley.licensing.vendor_training_refusal)); or when the clip sent
+        is not the bytes of the `derived_from` record.
   * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – For a `derived_from` that is neither record.
 * **Return type:**
   [`EditLineage`](#foley.sources.edit.EditLineage)
@@ -217,7 +219,8 @@ The edit’s rights are its backend’s narrowed to its source’s
 ([`EditLineage.apply()`](#foley.sources.edit.EditLineage.apply)), so the use is refused when either refuses it: an edit
 of a non-commercial sound under a commercial use is money spent on a clip nobody
 may place. Decided before anything is paid for; a backend’s refusal names the
-other backends of the op whose licence fits.
+other backends of the op that could run this edit (`_could_edit()`) and whose
+licence fits.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]

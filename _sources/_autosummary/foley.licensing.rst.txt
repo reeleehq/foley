@@ -67,6 +67,7 @@ foley.licensing
       stamp_source_terms
       territory_excluded
       upload_refusal
+      vendor_training_refusal
       wanted_license_ids
       wider_rights
    

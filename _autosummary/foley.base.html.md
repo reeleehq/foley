@@ -202,7 +202,7 @@ clip. Only a source whose config declares `modes=['edit']` takes them (see
 * **Type:**
   Edit-stage parameters (#162)
 
-### foley.base.EDIT_OPS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [EditOp](#foley.base.EditOp)]* *= {'audio_to_audio': EditOp(name='audio_to_audio', description='Regenerate the whole clip from the source (strength: how far from it)', requires=(), requires_any=(), accepts=('strength',), ordered=(), within_clip=()), 'extend': EditOp(name='extend', description='Add new sound before and/or after the source', requires=(), requires_any=('extend_before_s', 'extend_after_s'), accepts=(), ordered=(), within_clip=()), 'inpaint': EditOp(name='inpaint', description='Regenerate one window of the source, keeping the rest', requires=('inpaint_start_s', 'inpaint_end_s'), requires_any=(), accepts=(), ordered=(('inpaint_start_s', 'inpaint_end_s'),), within_clip=('inpaint_start_s', 'inpaint_end_s'))}*
+### foley.base.EDIT_OPS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [EditOp](#foley.base.EditOp)]* *= {'audio_to_audio': EditOp(name='audio_to_audio', description='Regenerate the whole clip from the source (strength: how far from it)', requires=(), requires_any=(), accepts=('strength',), ordered=(), within_clip=(), adds=()), 'extend': EditOp(name='extend', description='Add new sound before and/or after the source', requires=(), requires_any=('extend_before_s', 'extend_after_s'), accepts=(), ordered=(), within_clip=(), adds=('extend_before_s', 'extend_after_s')), 'inpaint': EditOp(name='inpaint', description='Regenerate one window of the source, keeping the rest', requires=('inpaint_start_s', 'inpaint_end_s'), requires_any=(), accepts=(), ordered=(('inpaint_start_s', 'inpaint_end_s'),), within_clip=('inpaint_start_s', 'inpaint_end_s'), adds=())}*
 
 each is offered by two or more providers).
 
@@ -216,7 +216,7 @@ each is offered by two or more providers).
 The `kind` of the `transformations` entry an edit appends to its clip’s licence
 (#162): what it derives from (see [`foley.sources.edit.EditLineage`](foley.sources.edit.html.md#foley.sources.edit.EditLineage)).
 
-### *class* foley.base.EditOp(name, description, requires=(), requires_any=(), accepts=(), ordered=(), within_clip=())
+### *class* foley.base.EditOp(name, description, requires=(), requires_any=(), accepts=(), ordered=(), within_clip=(), adds=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -270,6 +270,28 @@ Parameters (times into the source) that may not pass its end.
 
 * **Type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### adds
+
+Parameters whose seconds the output adds to the source’s length.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### output_seconds(clip_s, params)
+
+How long the op’s output is for a `clip_s` source (`None`: unknown), when
+no `duration_s` sets it: the source’s length plus what [`adds`](#foley.base.EditOp.adds) adds.
+
+```pycon
+>>> EDIT_OPS["extend"].output_seconds(4.0, {"extend_after_s": 2.0})
+6.0
+>>> EDIT_OPS["inpaint"].output_seconds(4.0, {"inpaint_start_s": 1.0})
+4.0
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 #### *property* params *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)*
 
@@ -509,15 +531,21 @@ Which rung of the verification ladder produced a `Verdict`.
 The territory of a sound used everywhere (online publishing reaches every country):
 a licence that excludes any territory refuses it (#175).
 
-### foley.base.check_edit_args(op, affordances, , clip_s=None, limits=None)
+### foley.base.check_edit_args(op, affordances, , clip_s=None, limits=None, floors=None, bounds=None)
 
 Raise `ValueError` unless `affordances` are a valid call of the edit `op`.
 
 Checked before anything is paid for: the op is known, its required parameters are
 given, it is given no other op’s parameters, each number is within its
-[`Affordance.bounds`](#foley.base.Affordance.bounds) and below the backend’s own maximum (`limits`: name ->
-max), each `ordered` pair is increasing, and a time into the source
-([`EditOp.within_clip`](#foley.base.EditOp.within_clip)) does not pass its end (`clip_s`, when known).
+[`Affordance.bounds`](#foley.base.Affordance.bounds) and the backend’s own range (`limits`: name -> max;
+`floors`: name -> min), each `ordered` pair is increasing, and a time into the
+source ([`EditOp.within_clip`](#foley.base.EditOp.within_clip)) does not pass its end (`clip_s`, when known).
+
+`bounds` are the backend’s limits on what the parameters make (a config’s
+`edit_limits`, each a `(lo, hi)` pair, either `None`): `clip_s` the source
+clip’s length, `span_s` each `ordered` window’s length, `output_s` the
+output’s length ([`EditOp.output_seconds()`](#foley.base.EditOp.output_seconds)). A length that cannot be read is
+not checked.
 
 ```pycon
 >>> check_edit_args("inpaint", {"inpaint_start_s": 1.0, "inpaint_end_s": 2.5})
@@ -533,6 +561,11 @@ ValueError: the extend edit needs one of extend_before_s=, extend_after_s= above
 Traceback (most recent call last):
 ...
 ValueError: inpaint_end_s=9 is past the end of the 4 s source clip
+>>> check_edit_args("extend", {"extend_after_s": 5}, clip_s=58,
+...                 bounds={"output_s": (None, 60)})
+Traceback (most recent call last):
+...
+ValueError: the extend edit's output is 63 s; this backend takes 60 s at most
 ```
 
 * **Return type:**

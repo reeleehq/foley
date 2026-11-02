@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=4309da3b"></script>
+    <script src="../_static/documentation_options.js?v=69b21de1"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.119" />
+  <meta name="docsearch:version" content="0.0.120" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -795,8 +795,10 @@ edit source given its source clip (<code class="docutils literal notranslate"><s
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><ul class="simple">
 <li><p><a class="reference internal" href="foley.html#foley.EditRefusal" title="foley.EditRefusal"><strong>EditRefusal</strong></a> – Without <code class="docutils literal notranslate"><span class="pre">derived_from</span></code>; when its rights do not allow the edit
-    (<a class="reference internal" href="foley.licensing.html#foley.licensing.derivative_refusal" title="foley.licensing.derivative_refusal"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.licensing.derivative_refusal()</span></code></a>); or when the clip sent is not
-    the bytes of the <code class="docutils literal notranslate"><span class="pre">derived_from</span></code> record.</p></li>
+    (<a class="reference internal" href="foley.licensing.html#foley.licensing.derivative_refusal" title="foley.licensing.derivative_refusal"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.licensing.derivative_refusal()</span></code></a>), or the backend’s vendor
+    trains on its input and they do not allow that
+    (<a class="reference internal" href="foley.licensing.html#foley.licensing.vendor_training_refusal" title="foley.licensing.vendor_training_refusal"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.licensing.vendor_training_refusal()</span></code></a>); or when the clip sent
+    is not the bytes of the <code class="docutils literal notranslate"><span class="pre">derived_from</span></code> record.</p></li>
 <li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError" title="(in Python v3.15)"><strong>TypeError</strong></a> – For a <code class="docutils literal notranslate"><span class="pre">derived_from</span></code> that is neither record.</p></li>
 </ul>
 </dd>
@@ -814,7 +816,8 @@ edit source given its source clip (<code class="docutils literal notranslate"><s
 (<a class="reference internal" href="#foley.sources.edit.EditLineage.apply" title="foley.sources.edit.EditLineage.apply"><code class="xref py py-meth docutils literal notranslate"><span class="pre">EditLineage.apply()</span></code></a>), so the use is refused when either refuses it: an edit
 of a non-commercial sound under a commercial use is money spent on a clip nobody
 may place. Decided before anything is paid for; a backend’s refusal names the
-other backends of the op whose licence fits.</p>
+other backends of the op that could run this edit (<code class="xref py py-func docutils literal notranslate"><span class="pre">_could_edit()</span></code>) and whose
+licence fits.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>

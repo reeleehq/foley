@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=4309da3b"></script>
+    <script src="../../_static/documentation_options.js?v=69b21de1"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.119" />
+  <meta name="docsearch:version" content="0.0.120" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1090,6 +1090,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        accepts: Optional parameters.</span>
 <span class="sd">        ordered: ``(lo, hi)`` parameter pairs that must satisfy ``lo &lt; hi``.</span>
 <span class="sd">        within_clip: Parameters (times into the source) that may not pass its end.</span>
+<span class="sd">        adds: Parameters whose seconds the output adds to the source's length.</span>
 <span class="sd">    """</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -1099,11 +1100,30 @@ window.runMermaid = runMermaid;</script>
     <span class="n">accepts</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">ordered</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">within_clip</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">adds</span><span class="p">:</span> <span class="nb">tuple</span> <span class="o">=</span> <span class="p">()</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Every edit parameter this op takes (the source clip aside)."""</span>
-        <span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">requires</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">requires_any</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">accepts</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">requires</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">requires_any</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">accepts</span><span class="p">)</span>
+
+<div class="viewcode-block" id="EditOp.output_seconds">
+<a class="viewcode-back" href="../../_autosummary/foley.base.html#foley.EditOp.output_seconds">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">output_seconds</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">clip_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""How long the op's output is for a ``clip_s`` source (``None``: unknown), when</span>
+<span class="sd">        no ``duration_s`` sets it: the source's length plus what :attr:`adds` adds.</span>
+
+<span class="sd">        &gt;&gt;&gt; EDIT_OPS["extend"].output_seconds(4.0, {"extend_after_s": 2.0})</span>
+<span class="sd">        6.0</span>
+<span class="sd">        &gt;&gt;&gt; EDIT_OPS["inpaint"].output_seconds(4.0, {"inpaint_start_s": 1.0})</span>
+<span class="sd">        4.0</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">clip_s</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">clip_s</span><span class="p">)</span> <span class="o">+</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">adds</span><span class="p">)</span></div>
+</div>
 
 
 
@@ -1127,6 +1147,7 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"extend"</span><span class="p">,</span>
             <span class="s2">"Add new sound before and/or after the source"</span><span class="p">,</span>
             <span class="n">requires_any</span><span class="o">=</span><span class="p">(</span><span class="s2">"extend_before_s"</span><span class="p">,</span> <span class="s2">"extend_after_s"</span><span class="p">),</span>
+            <span class="n">adds</span><span class="o">=</span><span class="p">(</span><span class="s2">"extend_before_s"</span><span class="p">,</span> <span class="s2">"extend_after_s"</span><span class="p">),</span>
         <span class="p">),</span>
     <span class="p">)</span>
 <span class="p">}</span>
@@ -1140,14 +1161,22 @@ window.runMermaid = runMermaid;</script>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">clip_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">limits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">floors</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">bounds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Raise ``ValueError`` unless ``affordances`` are a valid call of the edit ``op``.</span>
 
 <span class="sd">    Checked before anything is paid for: the op is known, its required parameters are</span>
 <span class="sd">    given, it is given no other op's parameters, each number is within its</span>
-<span class="sd">    :attr:`Affordance.bounds` and below the backend's own maximum (``limits``: name -&gt;</span>
-<span class="sd">    max), each ``ordered`` pair is increasing, and a time into the source</span>
-<span class="sd">    (:attr:`EditOp.within_clip`) does not pass its end (``clip_s``, when known).</span>
+<span class="sd">    :attr:`Affordance.bounds` and the backend's own range (``limits``: name -&gt; max;</span>
+<span class="sd">    ``floors``: name -&gt; min), each ``ordered`` pair is increasing, and a time into the</span>
+<span class="sd">    source (:attr:`EditOp.within_clip`) does not pass its end (``clip_s``, when known).</span>
+
+<span class="sd">    ``bounds`` are the backend's limits on what the parameters make (a config's</span>
+<span class="sd">    ``edit_limits``, each a ``(lo, hi)`` pair, either ``None``): ``clip_s`` the source</span>
+<span class="sd">    clip's length, ``span_s`` each ``ordered`` window's length, ``output_s`` the</span>
+<span class="sd">    output's length (:meth:`EditOp.output_seconds`). A length that cannot be read is</span>
+<span class="sd">    not checked.</span>
 
 <span class="sd">    &gt;&gt;&gt; check_edit_args("inpaint", {"inpaint_start_s": 1.0, "inpaint_end_s": 2.5})</span>
 <span class="sd">    &gt;&gt;&gt; check_edit_args("inpaint", {"inpaint_start_s": 1.0})</span>
@@ -1162,6 +1191,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    Traceback (most recent call last):</span>
 <span class="sd">    ...</span>
 <span class="sd">    ValueError: inpaint_end_s=9 is past the end of the 4 s source clip</span>
+<span class="sd">    &gt;&gt;&gt; check_edit_args("extend", {"extend_after_s": 5}, clip_s=58,</span>
+<span class="sd">    ...                 bounds={"output_s": (None, 60)})</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: the extend edit's output is 63 s; this backend takes 60 s at most</span>
 <span class="sd">    """</span>
     <span class="n">spec</span> <span class="o">=</span> <span class="n">EDIT_OPS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -1180,13 +1214,15 @@ window.runMermaid = runMermaid;</script>
     <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">requires</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">given</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the </span><span class="si">{</span><span class="n">op</span><span class="si">}</span><span class="s2"> edit needs </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s1">='</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="n">limits</span> <span class="o">=</span> <span class="n">limits</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">limits</span><span class="p">,</span> <span class="n">floors</span> <span class="o">=</span> <span class="n">limits</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">floors</span> <span class="ow">or</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">given</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be a number, got </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
         <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="n">EDIT_AFFORDANCES</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">bounds</span> <span class="ow">or</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">limits</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">hi</span> <span class="o">=</span> <span class="n">limits</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="n">hi</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">min</span><span class="p">(</span><span class="n">hi</span><span class="p">,</span> <span class="n">limits</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">floors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">lo</span> <span class="o">=</span> <span class="n">floors</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">if</span> <span class="n">lo</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">max</span><span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="n">floors</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
         <span class="k">if</span> <span class="p">(</span>
             <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
             <span class="ow">or</span> <span class="p">(</span><span class="n">lo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">value</span> <span class="o">&lt;</span> <span class="n">lo</span><span class="p">)</span>
@@ -1208,8 +1244,40 @@ window.runMermaid = runMermaid;</script>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">given</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">!r}</span><span class="s2"> is past the end of the </span><span class="si">{</span><span class="n">clip_s</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2"> s "</span>
                     <span class="s2">"source clip"</span>
-                <span class="p">)</span></div>
+                <span class="p">)</span>
+    <span class="n">_check_edit_bounds</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">given</span><span class="p">,</span> <span class="n">clip_s</span><span class="p">,</span> <span class="n">bounds</span> <span class="ow">or</span> <span class="p">{})</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_edit_bounds</span><span class="p">(</span>
+    <span class="n">spec</span><span class="p">:</span> <span class="s2">"EditOp"</span><span class="p">,</span> <span class="n">given</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">clip_s</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">bounds</span><span class="p">:</span> <span class="n">Mapping</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Raise ``ValueError`` for a length outside a backend's ``bounds`` (see</span>
+<span class="sd">    :func:`check_edit_args`)."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span><span class="n">what</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">seconds</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="n">bounds</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">seconds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">lo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">seconds</span> <span class="o">&lt;</span> <span class="n">lo</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2"> is </span><span class="si">{</span><span class="n">seconds</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2"> s; this backend takes </span><span class="si">{</span><span class="n">lo</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2"> s at least"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">hi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">seconds</span> <span class="o">&gt;</span> <span class="n">hi</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2"> is </span><span class="si">{</span><span class="n">seconds</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2"> s; this backend takes </span><span class="si">{</span><span class="n">hi</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2"> s at most"</span>
+            <span class="p">)</span>
+
+    <span class="n">check</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the </span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> edit's source clip"</span><span class="p">,</span> <span class="n">clip_s</span><span class="p">,</span> <span class="s2">"clip_s"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">lo_name</span><span class="p">,</span> <span class="n">hi_name</span> <span class="ow">in</span> <span class="n">spec</span><span class="o">.</span><span class="n">ordered</span><span class="p">:</span>
+        <span class="n">check</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"the </span><span class="si">{</span><span class="n">lo_name</span><span class="si">}</span><span class="s2">..</span><span class="si">{</span><span class="n">hi_name</span><span class="si">}</span><span class="s2"> window"</span><span class="p">,</span>
+            <span class="n">given</span><span class="p">[</span><span class="n">hi_name</span><span class="p">]</span> <span class="o">-</span> <span class="n">given</span><span class="p">[</span><span class="n">lo_name</span><span class="p">],</span>
+            <span class="s2">"span_s"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">check</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"the </span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> edit's output"</span><span class="p">,</span> <span class="n">spec</span><span class="o">.</span><span class="n">output_seconds</span><span class="p">(</span><span class="n">clip_s</span><span class="p">,</span> <span class="n">given</span><span class="p">),</span> <span class="s2">"output_s"</span>
+    <span class="p">)</span>
 
 
 <span class="c1">#: The ``kind`` of the ``transformations`` entry an edit appends to its clip's licence</span>

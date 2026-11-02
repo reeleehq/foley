@@ -1,4 +1,4 @@
-> built 2026-11-02 05:08 UTC from cef9bfa (main) · foley 0.0.119. Details: build_info.json
+> built 2026-11-02 05:20 UTC from 3a4923e (main) · foley 0.0.120. Details: build_info.json
 
 # index.html.md
 
@@ -3169,7 +3169,7 @@ clip. Only a source whose config declares `modes=['edit']` takes them (see
 * **Type:**
   Edit-stage parameters (#162)
 
-### foley.base.EDIT_OPS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [EditOp](_autosummary/foley.base.html.md#foley.base.EditOp)]* *= {'audio_to_audio': EditOp(name='audio_to_audio', description='Regenerate the whole clip from the source (strength: how far from it)', requires=(), requires_any=(), accepts=('strength',), ordered=(), within_clip=()), 'extend': EditOp(name='extend', description='Add new sound before and/or after the source', requires=(), requires_any=('extend_before_s', 'extend_after_s'), accepts=(), ordered=(), within_clip=()), 'inpaint': EditOp(name='inpaint', description='Regenerate one window of the source, keeping the rest', requires=('inpaint_start_s', 'inpaint_end_s'), requires_any=(), accepts=(), ordered=(('inpaint_start_s', 'inpaint_end_s'),), within_clip=('inpaint_start_s', 'inpaint_end_s'))}*
+### foley.base.EDIT_OPS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [EditOp](_autosummary/foley.base.html.md#foley.base.EditOp)]* *= {'audio_to_audio': EditOp(name='audio_to_audio', description='Regenerate the whole clip from the source (strength: how far from it)', requires=(), requires_any=(), accepts=('strength',), ordered=(), within_clip=(), adds=()), 'extend': EditOp(name='extend', description='Add new sound before and/or after the source', requires=(), requires_any=('extend_before_s', 'extend_after_s'), accepts=(), ordered=(), within_clip=(), adds=('extend_before_s', 'extend_after_s')), 'inpaint': EditOp(name='inpaint', description='Regenerate one window of the source, keeping the rest', requires=('inpaint_start_s', 'inpaint_end_s'), requires_any=(), accepts=(), ordered=(('inpaint_start_s', 'inpaint_end_s'),), within_clip=('inpaint_start_s', 'inpaint_end_s'), adds=())}*
 
 each is offered by two or more providers).
 
@@ -3183,7 +3183,7 @@ each is offered by two or more providers).
 The `kind` of the `transformations` entry an edit appends to its clip’s licence
 (#162): what it derives from (see [`foley.sources.edit.EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage)).
 
-### *class* foley.base.EditOp(name, description, requires=(), requires_any=(), accepts=(), ordered=(), within_clip=())
+### *class* foley.base.EditOp(name, description, requires=(), requires_any=(), accepts=(), ordered=(), within_clip=(), adds=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3237,6 +3237,28 @@ Parameters (times into the source) that may not pass its end.
 
 * **Type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### adds
+
+Parameters whose seconds the output adds to the source’s length.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### output_seconds(clip_s, params)
+
+How long the op’s output is for a `clip_s` source (`None`: unknown), when
+no `duration_s` sets it: the source’s length plus what [`adds`](_autosummary/foley.base.html.md#foley.base.EditOp.adds) adds.
+
+```pycon
+>>> EDIT_OPS["extend"].output_seconds(4.0, {"extend_after_s": 2.0})
+6.0
+>>> EDIT_OPS["inpaint"].output_seconds(4.0, {"inpaint_start_s": 1.0})
+4.0
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]
 
 #### *property* params *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)*
 
@@ -3476,15 +3498,21 @@ Which rung of the verification ladder produced a `Verdict`.
 The territory of a sound used everywhere (online publishing reaches every country):
 a licence that excludes any territory refuses it (#175).
 
-### foley.base.check_edit_args(op, affordances, , clip_s=None, limits=None)
+### foley.base.check_edit_args(op, affordances, , clip_s=None, limits=None, floors=None, bounds=None)
 
 Raise `ValueError` unless `affordances` are a valid call of the edit `op`.
 
 Checked before anything is paid for: the op is known, its required parameters are
 given, it is given no other op’s parameters, each number is within its
-[`Affordance.bounds`](_autosummary/foley.base.html.md#foley.base.Affordance.bounds) and below the backend’s own maximum (`limits`: name ->
-max), each `ordered` pair is increasing, and a time into the source
-([`EditOp.within_clip`](_autosummary/foley.base.html.md#foley.base.EditOp.within_clip)) does not pass its end (`clip_s`, when known).
+[`Affordance.bounds`](_autosummary/foley.base.html.md#foley.base.Affordance.bounds) and the backend’s own range (`limits`: name -> max;
+`floors`: name -> min), each `ordered` pair is increasing, and a time into the
+source ([`EditOp.within_clip`](_autosummary/foley.base.html.md#foley.base.EditOp.within_clip)) does not pass its end (`clip_s`, when known).
+
+`bounds` are the backend’s limits on what the parameters make (a config’s
+`edit_limits`, each a `(lo, hi)` pair, either `None`): `clip_s` the source
+clip’s length, `span_s` each `ordered` window’s length, `output_s` the
+output’s length ([`EditOp.output_seconds()`](_autosummary/foley.base.html.md#foley.base.EditOp.output_seconds)). A length that cannot be read is
+not checked.
 
 ```pycon
 >>> check_edit_args("inpaint", {"inpaint_start_s": 1.0, "inpaint_end_s": 2.5})
@@ -3500,6 +3528,11 @@ ValueError: the extend edit needs one of extend_before_s=, extend_after_s= above
 Traceback (most recent call last):
 ...
 ValueError: inpaint_end_s=9 is past the end of the 4 s source clip
+>>> check_edit_args("extend", {"extend_after_s": 5}, clip_s=58,
+...                 bounds={"output_s": (None, 60)})
+Traceback (most recent call last):
+...
+ValueError: the extend edit's output is 63 s; this backend takes 60 s at most
 ```
 
 * **Return type:**
@@ -8759,9 +8792,11 @@ opted in (`$FOLEY_GENERATE_PAID=1`), or a backend named — is the whole call.
   * **prompt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – What the result should sound like; `''` (default): the source’s caption.
   * **backend** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – An edit source doing `op` (`'fal_stable_audio_3_audio_to_audio'`,
     `'fal_stable_audio_3_inpaint'`, `'fal_stable_audio_3_extend'`: fal’s
-    Stable Audio 3 Small-SFX, `foley[fal]` + `$FAL_KEY`). `None`
-    (default): the op’s default, read from the registry configs’ `edit_op`;
-    it is paid, so it runs only once paid generation is opted in.
+    Stable Audio 3 Small-SFX, `foley[fal]` + `$FAL_KEY`; the inpaint and
+    extend fallbacks `'fal_mirelo_inpaint'`, `'fal_mirelo_extend'`: Mirelo
+    SFX 1.6, non-commercial). `None` (default): the op’s default, read from
+    the registry configs’ `edit_op`; it is paid, so it runs only once paid
+    generation is opted in.
   * **library** – The library holding `source` and receiving the edit (default: the
     process-wide default library).
   * **budget** – A [`Budget`](_autosummary/foley.html.md#foley.Budget) for this call (see [`generate()`](_autosummary/foley.html.md#foley.generate)).
@@ -14747,6 +14782,7 @@ item is redistributable but stored by-reference.
 | [`stamp_source_terms`](_autosummary/foley.licensing.html.md#foley.licensing.stamp_source_terms)(record, stated)                | Write what a source `stated` about its terms onto `record`, in place, and return it.                                                                                                                                                                                           |
 | [`territory_excluded`](_autosummary/foley.licensing.html.md#foley.licensing.territory_excluded)(excluded, territory)           | Whether `territory` is in `excluded` (`"EU"` covers its member states).                                                                                                                                                                                                        |
 | [`upload_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.upload_refusal)(source)                            | Why the bytes of a sound with rights `source` may not be sent to an edit backend, or `None`.                                                                                                                                                                                   |
+| [`vendor_training_refusal`](_autosummary/foley.licensing.html.md#foley.licensing.vendor_training_refusal)(source, backend_config)   | Why a sound with rights `source` may not be sent to the backend `backend_config` declares, because its vendor trains on what it is sent, or `None`.                                                                                                                            |
 | [`wanted_license_ids`](_autosummary/foley.licensing.html.md#foley.licensing.wanted_license_ids)(config, license)               | The licence ids a `license=` request keeps, or `None` for every accepted one.                                                                                                                                                                                                  |
 | [`wider_rights`](_autosummary/foley.licensing.html.md#foley.licensing.wider_rights)(record, bound)                       | What `record` allows that `bound` does not (`[]`: no wider than `bound`).                                                                                                                                                                                                      |
 
@@ -15586,6 +15622,31 @@ by-reference even under CC0): bytes foley may not keep, it does not upload eithe
 True
 >>> upload_refusal(LicenseRecord(source="freesound"))[:30]
 'its bytes may not be kept or s'
+```
+
+* **Return type:**
+  [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.licensing.vendor_training_refusal(source, backend_config)
+
+Why a sound with rights `source` may not be sent to the backend
+`backend_config` declares, because its vendor trains on what it is sent, or `None`.
+
+A backend whose licence block says `vendor_trains_on_input` (Mirelo’s terms
+§7.4: a training licence on input as well as output) takes the source clip into a
+proprietary, commercial training set. Fail-closed: the source’s rights must allow
+that use ([`ai_use_permitted()`](_autosummary/foley.licensing.html.md#foley.licensing.ai_use_permitted), closed-source and commercial); an
+`ai_training_ok` that is off or a narrowed scope refuses it, before any upload.
+
+```pycon
+>>> from foley.base import LicenseRecord
+>>> trains = {"license": {"vendor_trains_on_input": True}}
+>>> vendor_training_refusal(LicenseRecord(source="x"), trains)[:26]
+"its backend's vendor train"
+>>> vendor_training_refusal(LicenseRecord(source="x", ai_training_ok=True), trains) is None
+True
+>>> vendor_training_refusal(LicenseRecord(source="x"), {"license": {}}) is None
+True
 ```
 
 * **Return type:**
@@ -16961,7 +17022,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc three-note', 'nbc chime', 'nbc chimes'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix intro', 'netflix sound', 'netflix chime', 'tudum', 'ta-dum', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'thx', 'deep note'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chimes', 'nbc chime', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'tudum', 'netflix intro', 'netflix chime', 'ta-dum', 'netflix sound', 'ta dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'fox fanfare', 'century fox intro'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel chime', 'intel bong', 'intel inside', 'intel jingle'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({"d'oh", 'homer doh', 'homer simpson doh'})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -20021,8 +20082,10 @@ edit source given its source clip (`affordances['audio']`).
   * **affordances** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)) – The call’s affordances (the clip, the op’s parameters).
 * **Raises:**
   * [**EditRefusal**](_autosummary/foley.html.md#foley.EditRefusal) – Without `derived_from`; when its rights do not allow the edit
-        ([`foley.licensing.derivative_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal)); or when the clip sent is not
-        the bytes of the `derived_from` record.
+        ([`foley.licensing.derivative_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.derivative_refusal)), or the backend’s vendor
+        trains on its input and they do not allow that
+        ([`foley.licensing.vendor_training_refusal()`](_autosummary/foley.licensing.html.md#foley.licensing.vendor_training_refusal)); or when the clip sent
+        is not the bytes of the `derived_from` record.
   * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – For a `derived_from` that is neither record.
 * **Return type:**
   [`EditLineage`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage)
@@ -20035,7 +20098,8 @@ The edit’s rights are its backend’s narrowed to its source’s
 ([`EditLineage.apply()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.EditLineage.apply)), so the use is refused when either refuses it: an edit
 of a non-commercial sound under a commercial use is money spent on a clip nobody
 may place. Decided before anything is paid for; a backend’s refusal names the
-other backends of the op whose licence fits.
+other backends of the op that could run this edit (`_could_edit()`) and whose
+licence fits.
 
 * **Return type:**
   [`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
@@ -20622,7 +20686,8 @@ Licences (the per-sound record is fail-closed, so each row says only what is kno
 * `fal_mmaudio` — MMAudio weights are CC BY-NC 4.0, whatever fal’s `commercial` label
   says. Row: `CC-BY-NC-4.0` with the MMAudio credit, so [`foley.keep()`](_autosummary/foley.html.md#foley.keep) refuses it for
   commercial use and credits render the attribution.
-* `fal_elevenlabs`, `fal_sonilo`, `fal_mirelo` — partner models resold by fal. Whether the vendor’s
+* `fal_elevenlabs`, `fal_sonilo`, `fal_mirelo` (and its edit endpoints
+  `fal_mirelo_inpaint`, `fal_mirelo_extend`) — partner models resold by fal. Whether the vendor’s
   plan rules (ElevenLabs and Sonilo free tiers are non-commercial) apply to a fal-routed
   call is not documented (Sonilo’s own page now allows commercial use of API output,
   but not specifically for calls billed through fal). Row: `fal-partner-unverified` — usable in a derivative,
@@ -20638,7 +20703,12 @@ declare `modes=['edit']` and their `edit_op` (a [`foley.base.EDIT_OPS`](_autosum
 only a call with a source clip (`audio=`, see [`foley.edit()`](_autosummary/foley.html.md#foley.edit)) reaches them, and none
 joins a text-to-audio or video-to-audio order. Their Stable Audio 3 row is the
 generator’s: the edit mode narrows each edit’s rights to its source’s
-([`foley.sources.edit.edit_lineage()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_lineage)).
+([`foley.sources.edit.edit_lineage()`](_autosummary/foley.sources.edit.html.md#foley.sources.edit.edit_lineage)). Mirelo SFX 1.6’s inpaint and extend
+endpoints (#215: `fal_mirelo_inpaint`, `fal_mirelo_extend`) are those ops’
+fallbacks, registered after them so an unnamed edit keeps Stable Audio 3; their
+schema limits (the clip’s, a window’s and the output’s lengths) are their
+`edit_limits`, and they are priced per second of the sound they make. fal
+deprecates both on 2026-12-15, with no SFX 2.0 edit endpoint to move to (yet).
 
 Pricing is fal’s (`unit`/`amount_usd` as in [`foley.cost.estimate_call()`](_autosummary/foley.cost.html.md#foley.cost.estimate_call)), with the
 date it was read. `per_second` with no requested duration is priced at the
@@ -20647,18 +20717,20 @@ bound, when it declares none), never at zero.
 
 ### Module Attributes
 
-| [`EDIT_SOURCE_CONFIGS`](_autosummary/foley.sources.fal.config.html.md#foley.sources.fal.config.EDIT_SOURCE_CONFIGS)   | named, or picked by foley.edit from their edit_op.                           |
-|------------------------------------------------------------------------|------------------------------------------------------------------------------|
-| [`FAL_SOURCES`](_autosummary/foley.sources.fal.config.html.md#foley.sources.fal.config.FAL_SOURCES)           | The fal source names, in the order above (the first is the recommended one). |
+| [`EDIT_SOURCE_CONFIGS`](_autosummary/foley.sources.fal.config.html.md#foley.sources.fal.config.EDIT_SOURCE_CONFIGS)   | named, or picked by foley.edit from their edit_op (the first registered with its key set: the Stable Audio 3 ones, so Mirelo's are the inpaint and extend fallbacks, #215).   |
+|------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`FAL_SOURCES`](_autosummary/foley.sources.fal.config.html.md#foley.sources.fal.config.FAL_SOURCES)           | The fal source names, in the order above (the first is the recommended one).                                                                                                  |
 
-### foley.sources.fal.config.EDIT_SOURCE_CONFIGS *= ({'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-to-audio'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX audio-to-audio (fal)', 'edit_op': 'audio_to_audio', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community', 'license_basis': 'model-licence', 'license_basis_confidence': 'confirmed'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_audio_to_audio', 'native_defaults': {'distilled': True, 'duration_default_s': 10.0, 'duration_max_s': 120.0, 'duration_min_s': 1.0, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-to-audio', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'duration_s': {'native_name': 'duration'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}, 'strength': {'native_name': 'init_noise_level'}}, 'pricing': {'amount_usd': 0.024, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'duration_s', 'strength'], 'unsupported_affordances': ['loop'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-to-audio'}, {'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-inpainting'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX inpaint (fal)', 'edit_op': 'inpaint', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community', 'license_basis': 'model-licence', 'license_basis_confidence': 'confirmed'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_inpaint', 'native_defaults': {'distilled': True, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-inpainting', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'inpaint_end_s': {'native_name': 'mask_end_seconds'}, 'inpaint_start_s': {'native_name': 'mask_start_seconds'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}}, 'pricing': {'amount_usd': 0.0259, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'inpaint_start_s', 'inpaint_end_s'], 'unsupported_affordances': ['loop', 'duration_s'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-inpainting'}, {'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-outpainting'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX extend (fal)', 'edit_op': 'extend', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community', 'license_basis': 'model-licence', 'license_basis_confidence': 'confirmed'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_extend', 'native_defaults': {'distilled': True, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-outpainting', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'extend_after_s': {'max': 120.0, 'native_name': 'extend_seconds_after'}, 'extend_before_s': {'max': 120.0, 'native_name': 'extend_seconds_before'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}}, 'pricing': {'amount_usd': 0.0271, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'extend_before_s', 'extend_after_s'], 'unsupported_affordances': ['loop', 'duration_s'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-outpainting'})*
+### foley.sources.fal.config.EDIT_SOURCE_CONFIGS *= ({'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-to-audio'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX audio-to-audio (fal)', 'edit_op': 'audio_to_audio', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community', 'license_basis': 'model-licence', 'license_basis_confidence': 'confirmed'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_audio_to_audio', 'native_defaults': {'distilled': True, 'duration_default_s': 10.0, 'duration_max_s': 120.0, 'duration_min_s': 1.0, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-to-audio', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'duration_s': {'native_name': 'duration'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}, 'strength': {'native_name': 'init_noise_level'}}, 'pricing': {'amount_usd': 0.024, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'duration_s', 'strength'], 'unsupported_affordances': ['loop'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-to-audio'}, {'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-inpainting'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX inpaint (fal)', 'edit_op': 'inpaint', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community', 'license_basis': 'model-licence', 'license_basis_confidence': 'confirmed'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_inpaint', 'native_defaults': {'distilled': True, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-inpainting', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'inpaint_end_s': {'native_name': 'mask_end_seconds'}, 'inpaint_start_s': {'native_name': 'mask_start_seconds'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}}, 'pricing': {'amount_usd': 0.0259, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'inpaint_start_s', 'inpaint_end_s'], 'unsupported_affordances': ['loop', 'duration_s'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-inpainting'}, {'api': {'endpoint_id': 'fal-ai/stable-audio-3/small/sfx/audio-outpainting'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'commercial_ok': True, 'data_egress': 'external', 'dependencies': [], 'display_name': 'Stable Audio 3 Small-SFX extend (fal)', 'edit_op': 'extend', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'Stability-Community', 'license_basis': 'model-licence', 'license_basis_confidence': 'confirmed'}, 'modes': ['edit'], 'name': 'fal_stable_audio_3_extend', 'native_defaults': {'distilled': True, 'fixed_arguments': {'enable_prompt_expansion': False, 'enable_safety_checker': True}, 'generator_version': 'fal-ai/stable-audio-3/small/sfx/audio-outpainting', 'model_id': 'stable-audio-3-small-sfx', 'output_format': 'wav', 'sample_rate': 44100, 'seed_field': 'seed'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'expand_prompt': {'native_name': 'enable_prompt_expansion'}, 'extend_after_s': {'max': 120.0, 'native_name': 'extend_seconds_after'}, 'extend_before_s': {'max': 120.0, 'native_name': 'extend_seconds_before'}, 'negative_prompt': {'native_name': 'negative_prompt'}, 'output_format': {'native_name': 'output_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'opus': 'opus', 'wav': 'wav'}}, 'prompt': {'native_name': 'prompt', 'required': True}, 'prompt_influence': {'coerce': {'hi': 25.0, 'kind': 'linear', 'lo': 1.0}, 'native_default': 1.0, 'native_name': 'guidance_scale'}, 'seed': {'native_name': 'seed'}, 'steps': {'native_name': 'num_inference_steps'}}, 'pricing': {'amount_usd': 0.0271, 'seen': '2026-10-27', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_call'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'prompt_influence', 'negative_prompt', 'steps', 'seed', 'output_format', 'expand_prompt', 'extend_before_s', 'extend_after_s'], 'unsupported_affordances': ['loop', 'duration_s'], 'website': 'https://fal.ai/models/fal-ai/stable-audio-3/small/sfx/audio-outpainting'}, {'api': {'endpoint_id': 'mirelo-ai/sfx1.6/inpaint-audio'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'capabilities': {'watermark_statement': "Mirelo's terms (§7.5): free-plan output may carry a watermark; whether a fal-routed call does is unverified."}, 'commercial_ok': False, 'data_egress': 'external', 'dependencies': [], 'deprecated_after': '2026-12-15', 'display_name': 'Mirelo SFX 1.6 inpaint (fal)', 'edit_limits': {'clip_s': (None, 10.0), 'span_s': (1.0, 8.0)}, 'edit_op': 'inpaint', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'fal-partner-unverified', 'license_basis': 'vendor-tos', 'license_basis_confidence': 'unverified', 'terms_notes': ["Mirelo's terms (§7.4) give Mirelo a training licence on your input and output; only a paid direct Mirelo account can opt out, which a fal-routed call cannot show."], 'vendor_trains_on_input': True, 'vendor_trains_on_output': True}, 'modes': ['edit'], 'name': 'fal_mirelo_inpaint', 'native_defaults': {'fixed_arguments': {'num_samples': 1}, 'generator_version': 'mirelo-ai/sfx1.6/inpaint-audio', 'model_id': 'mirelo-sfx-1.6', 'seed_limit': 9223372036854775808, 'upload_audio_format': 'wav'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'inpaint_end_s': {'max': 10.0, 'min': 2.0, 'native_name': 'segment.end_s'}, 'inpaint_start_s': {'max': 9.0, 'min': 1.0, 'native_name': 'segment.start_s'}, 'output_format': {'native_name': 'upload_audio_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'wav': 'wav'}}, 'prompt': {'native_name': 'text_prompt'}, 'seed': {'native_name': 'seed'}}, 'pricing': {'amount_usd': 0.01, 'per_sample': True, 'seen': '2026-11-02', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_second'}, 'provider_params': {'append': {}, 'priced': ['duration'], 'reserved': ['audio_url', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'segment', 'text_prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'seed', 'output_format', 'inpaint_start_s', 'inpaint_end_s'], 'unsupported_affordances': ['duration_s', 'prompt_influence', 'negative_prompt', 'steps', 'loop'], 'website': 'https://fal.ai/models/mirelo-ai/sfx1.6/inpaint-audio'}, {'api': {'endpoint_id': 'mirelo-ai/sfx1.6/extend-audio'}, 'auth': {'apply_url': 'https://fal.ai/dashboard/keys', 'env_var': 'FAL_KEY', 'extra': 'fal', 'type': 'token'}, 'capabilities': {'watermark_statement': "Mirelo's terms (§7.5): free-plan output may carry a watermark; whether a fal-routed call does is unverified."}, 'commercial_ok': False, 'data_egress': 'external', 'dependencies': [], 'deprecated_after': '2026-12-15', 'display_name': 'Mirelo SFX 1.6 extend (fal)', 'edit_limits': {'clip_s': (3.0, 59.0), 'output_s': (None, 60.0)}, 'edit_op': 'extend', 'kind': 'generate', 'license': {'cache_bytes_ok': True, 'default_license_id': 'fal-partner-unverified', 'license_basis': 'vendor-tos', 'license_basis_confidence': 'unverified', 'terms_notes': ["Mirelo's terms (§7.4) give Mirelo a training licence on your input and output; only a paid direct Mirelo account can opt out, which a fal-routed call cannot show."], 'vendor_trains_on_input': True, 'vendor_trains_on_output': True}, 'modes': ['edit'], 'name': 'fal_mirelo_extend', 'native_defaults': {'fixed_arguments': {'double_output': False, 'num_samples': 1}, 'generator_version': 'mirelo-ai/sfx1.6/extend-audio', 'model_id': 'mirelo-sfx-1.6', 'seed_limit': 9223372036854775808, 'upload_audio_format': 'wav'}, 'on_unsupported_param': 'warn', 'optional_dependencies': ['falaw'], 'output': {'audio_field': 'audio', 'returns': 'url', 'storage': 'by_value'}, 'param_map': {'audio': {'native_name': 'audio_url'}, 'extend_after_s': {'max': 57.0, 'min': 1.0, 'native_name': 'append_duration'}, 'loop': {'native_name': 'ambience'}, 'output_format': {'native_name': 'upload_audio_format', 'to_native_map': {'flac': 'flac', 'mp3': 'mp3', 'wav': 'wav'}}, 'prompt': {'native_name': 'text_prompt'}, 'seed': {'native_name': 'seed'}}, 'pricing': {'amount_usd': 0.01, 'per_sample': True, 'seen': '2026-11-02', 'source': 'fal pricing API (GET /v1/models/pricing?endpoint_id=...)', 'unit': 'per_second'}, 'provider_params': {'append': {}, 'priced': ['duration', 'append_duration'], 'reserved': ['audio_url', 'double_output', 'enable_prompt_expansion', 'enable_safety_checker', 'num_samples', 'text_prompt']}, 'rate': {'per_min': 60}, 'supported_affordances': ['prompt', 'audio', 'seed', 'output_format', 'extend_after_s', 'loop'], 'unsupported_affordances': ['extend_before_s', 'duration_s', 'prompt_influence', 'negative_prompt', 'steps'], 'website': 'https://fal.ai/models/mirelo-ai/sfx1.6/extend-audio'})*
 
-named, or picked by foley.edit from their edit_op.
+named, or picked by foley.edit from their edit_op (the
+first registered with its key set: the Stable Audio 3 ones, so Mirelo’s are the
+inpaint and extend fallbacks, #215).
 
 * **Type:**
   The edit sources (#162)
 
-### foley.sources.fal.config.FAL_SOURCES *= ('fal_stable_audio_3', 'fal_stable_audio_3_medium', 'fal_mirelo', 'fal_elevenlabs', 'fal_sonilo', 'fal_mmaudio', 'fal_mirelo_v2a', 'fal_sonilo_v2a', 'fal_mmaudio_v2a', 'fal_thinksound', 'fal_hunyuan_foley', 'fal_stable_audio_3_audio_to_audio', 'fal_stable_audio_3_inpaint', 'fal_stable_audio_3_extend')*
+### foley.sources.fal.config.FAL_SOURCES *= ('fal_stable_audio_3', 'fal_stable_audio_3_medium', 'fal_mirelo', 'fal_elevenlabs', 'fal_sonilo', 'fal_mmaudio', 'fal_mirelo_v2a', 'fal_sonilo_v2a', 'fal_mmaudio_v2a', 'fal_thinksound', 'fal_hunyuan_foley', 'fal_stable_audio_3_audio_to_audio', 'fal_stable_audio_3_inpaint', 'fal_stable_audio_3_extend', 'fal_mirelo_inpaint', 'fal_mirelo_extend')*
 
 The fal source names, in the order above (the first is the recommended one).
 
@@ -28694,7 +28766,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 05:08 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/cef9bfa2c676d5f8dba3da438ca7d5fedbc16796"><code>cef9bfa</code></a> on branch <code>main</code>, for **foley 0.0.119** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 05:20 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/3a4923eea4f0f26c7f7ac489f0d2394601a7f039"><code>3a4923e</code></a> on branch <code>main</code>, for **foley 0.0.120** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -28703,7 +28775,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/cef9bfa2c676d5f8dba3da438ca7d5fedbc16796"><code>cef9bfa2c676d5f8dba3da438ca7d5fedbc16796</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/3a4923eea4f0f26c7f7ac489f0d2394601a7f039"><code>3a4923eea4f0f26c7f7ac489f0d2394601a7f039</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -28714,9 +28786,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41391957948">41391957948</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41393161103">41393161103</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>cef9bfa2c676d5f8dba3da438ca7d5fedbc16796</code> (in the history of the built commit) |
+| Event commit | <code>3a4923eea4f0f26c7f7ac489f0d2394601a7f039</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -28741,13 +28813,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.119/">0.0.119</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.120/">0.0.120</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout cef9bfa2c676d5f8dba3da438ca7d5fedbc16796
+git checkout 3a4923eea4f0f26c7f7ac489f0d2394601a7f039
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

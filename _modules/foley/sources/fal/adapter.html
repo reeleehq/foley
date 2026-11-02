@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=4309da3b"></script>
+    <script src="../../../../_static/documentation_options.js?v=69b21de1"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.119" />
+  <meta name="docsearch:version" content="0.0.120" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -1445,7 +1445,8 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""What the call just made, of ``samples`` takes (#210), costs (see</span>
 <span class="sd">    :func:`foley.cost.actual_call_cost`): for the</span>
-<span class="sd">    duration sent, or for a source billed by the video's length (#74), for the length</span>
+<span class="sd">    duration sent, or for a source billed by the video's length (#74) or an edit no</span>
+<span class="sd">    duration sets (#215), for the length</span>
 <span class="sd">    of the audio it returned (``None`` when that cannot be read), or for a source</span>
 <span class="sd">    billed per compute second, for the run time fal reported (#186: the pricing row's</span>
 <span class="sd">    ``compute_seconds_field`` of the run ``metrics``; ``None`` without it), noted as</span>
@@ -1465,12 +1466,15 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">cost</span>
 
-    <span class="k">if</span> <span class="s2">"v2a"</span> <span class="ow">in</span> <span class="n">source_modes</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>  <span class="c1"># billed for the sound it made (#74)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_s"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_name"</span><span class="p">)</span>
+    <span class="n">modes</span> <span class="o">=</span> <span class="n">source_modes</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    <span class="c1"># Billed for the sound it made: a video's (#74), or an edit's that no duration</span>
+    <span class="c1"># sets (#215: an inpaint keeps the source's length, an extension adds to it).</span>
+    <span class="k">if</span> <span class="s2">"v2a"</span> <span class="ow">in</span> <span class="n">modes</span> <span class="ow">or</span> <span class="p">(</span><span class="s2">"edit"</span> <span class="ow">in</span> <span class="n">modes</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
         <span class="n">seconds</span> <span class="o">=</span> <span class="n">_audio_seconds</span><span class="p">(</span><span class="n">audio</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">seconds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="n">actual_call_cost</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">duration_s</span><span class="o">=</span><span class="n">seconds</span><span class="p">,</span> <span class="n">samples</span><span class="o">=</span><span class="n">samples</span><span class="p">)</span>
-    <span class="n">name</span> <span class="o">=</span> <span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s2">"param_map"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"duration_s"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_name"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">actual_call_cost</span><span class="p">(</span>
         <span class="n">config</span><span class="p">,</span> <span class="n">duration_s</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">name</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span> <span class="n">samples</span><span class="o">=</span><span class="n">samples</span>
     <span class="p">)</span>
