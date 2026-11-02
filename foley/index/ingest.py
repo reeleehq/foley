@@ -501,7 +501,7 @@ def _ingest_one(
     lic = resolve_ingest_license(license, source_url=ref_uri)
     if local_default:
         notes.append(_UNKNOWN_LOCAL_NOTE)
-    ai_ok = _ai_ok(lic, lib, commercial)
+    ai_ok = embedding_permitted(lic, lib, commercial)
     # A local file ingested without a licence is the user's own disk: indexing it for
     # local search is not a use anyone has forbidden, so it proceeds — but keep()
     # refuses it for every use, because its rights are unknown (#55).
@@ -623,8 +623,15 @@ def ingest_one(*args, **kwargs) -> "IngestResult":
         return res
 
 
-def _ai_ok(lic: LicenseRecord, lib, commercial: Optional[bool]) -> bool:
-    """Whether ``lib``'s embedder may use a sound under ``lic`` (the ingest rights gate)."""
+def embedding_permitted(
+    lic: LicenseRecord, lib, commercial: Optional[bool] = None
+) -> bool:
+    """Whether ``lib``'s embedder may use a sound under ``lic`` (the ingest rights gate).
+
+    The check :func:`ingest_one` makes before it embeds anything; a caller that will
+    ingest later (a paid render first) asks it up front. Without consent
+    (``allow_ai_training_forbidden``) a ``False`` here is ``'rights_blocked'``.
+    """
     return ai_use_permitted(
         lic,
         open_source_model=bool(getattr(lib.embedder, "open_source", False)),
@@ -655,7 +662,11 @@ def _restamp_stored(
     notes_only = new is not None and replace(new, terms_notes=[]) == replace(
         rec.license, terms_notes=[]
     )
-    if new is not None and not notes_only and not _ai_ok(new, lib, commercial):
+    if (
+        new is not None
+        and not notes_only
+        and not embedding_permitted(new, lib, commercial)
+    ):
         if not consent:
             result.status = "rights_blocked"
             result.notes.append(

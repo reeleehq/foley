@@ -275,9 +275,10 @@ def test_manifest_shape_and_determinism():
 def test_license_meta_covers_every_flags_row():
     # Drift guard: every keep()-permitted license_id must have a display row, else a
     # known license would render "Unknown / unverified license" in a published CREDITS.md.
-    from foley.licensing import LICENSE_FLAGS, LICENSE_META
+    # The share-alike licences a broadcast can be released under (#253) are credited too.
+    from foley.licensing import LICENSE_FLAGS, LICENSE_META, SHARE_ALIKE_FLAGS
 
-    assert set(LICENSE_META) == set(LICENSE_FLAGS)
+    assert set(LICENSE_META) == set(LICENSE_FLAGS) | set(SHARE_ALIKE_FLAGS)
 
 
 def test_watermark_c2pa_pass_through_zero_render_change():

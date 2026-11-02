@@ -189,6 +189,33 @@ LICENSE_FLAGS.update(
     }
 )
 
+#: ``(family id prefix, URL path segment, display label)`` of the CC share-alike
+#: families foley can name (#253).
+_CC_SHARE_ALIKE: "tuple[tuple[str, str, str], ...]" = (
+    ("CC-BY-SA", "by-sa", "CC BY-SA"),
+    ("CC-BY-NC-SA", "by-nc-sa", "CC BY-NC-SA"),
+)
+
+#: What foley grants itself under a share-alike licence: it may keep the bytes, and
+#: must credit them; nothing else. Every other use foley makes (publishing in a
+#: derivative, an edit, training) makes an adaptation that must carry the licence,
+#: which foley's gates cannot express, so :func:`keep` and the edit gate refuse it.
+#: The licence itself travels as the record's ``license_id`` (an export's consumer
+#: code). The one work foley does make from it is a mix of sources all under the
+#: identical licence (:func:`shared_share_alike`), released under that licence.
+SHARE_ALIKE_LICENSE_FLAGS = LicenseFlags(cache_bytes_ok=True, requires_attribution=True)
+
+#: The share-alike licence ids foley can name -> :data:`SHARE_ALIKE_LICENSE_FLAGS`.
+#: Deliberately not :data:`LICENSE_FLAGS` rows: they are never assertable on ingest,
+#: and every gate that needs a licence row (an edit, a mix) still refuses them, except
+#: the identical-licence mix. :func:`derive_license_flags` reads them after
+#: :data:`LICENSE_FLAGS`, so a record under one is bounded by this row (and credited).
+SHARE_ALIKE_FLAGS: "dict[str, LicenseFlags]" = {
+    f"{prefix}-{v}": SHARE_ALIKE_LICENSE_FLAGS
+    for prefix, _seg, _label in _CC_SHARE_ALIKE
+    for v in CC_VERSIONS
+}
+
 #: Licence ids that can never be *asserted* as verified (on ingest, restamp or in a
 #: folder sidecar): ``unknown`` by definition, ``PDM-1.0`` (a claim about the work, not
 #: a grant — verify it by building the ``LicenseRecord`` yourself), and the legacy
@@ -520,7 +547,10 @@ LICENSE_META.update(
         f"{prefix}-{v}": LicenseMeta(
             f"{label} {v}", f"https://creativecommons.org/licenses/{seg}/{v}/"
         )
-        for prefix, seg, label, _flags in _CC_VERSIONED
+        for prefix, seg, label in (
+            *((p, s, lab) for p, s, lab, _flags in _CC_VERSIONED),
+            *_CC_SHARE_ALIKE,
+        )
         for v in CC_VERSIONS
     }
 )
@@ -551,14 +581,17 @@ def derive_license_flags(
             ``cache_bytes_ok=False`` on CC0. Keys must be ``LicenseFlags`` fields.
 
     Returns:
-        The resolved :class:`LicenseFlags` (fallback = all-False
-        ``UNKNOWN_LICENSE_FLAGS`` for unrecognized ids).
+        The resolved :class:`LicenseFlags`: the :data:`LICENSE_FLAGS` row, else the
+        :data:`SHARE_ALIKE_FLAGS` one, else the all-False
+        ``UNKNOWN_LICENSE_FLAGS`` (fail closed).
 
     Raises:
         ValueError: If ``overrides`` contains a key that is not a
             :class:`LicenseFlags` field.
     """
-    flags = LICENSE_FLAGS.get(license_id, UNKNOWN_LICENSE_FLAGS)
+    flags = LICENSE_FLAGS.get(
+        license_id, SHARE_ALIKE_FLAGS.get(license_id, UNKNOWN_LICENSE_FLAGS)
+    )
     if overrides:
         allowed = {f for f in LicenseFlags.__dataclass_fields__}
         bad = set(overrides) - allowed
@@ -597,6 +630,49 @@ def derived_license_ids(record: LicenseRecord) -> "list[str]":
         if isinstance(t, dict) and t.get("kind") == EDIT_TRANSFORMATION:
             ids.append(t.get("source_license_id") or "unknown")  # fail closed
     return list(dict.fromkeys(ids))
+
+
+def carries_share_alike(record: LicenseRecord, license_id: str) -> bool:
+    """Whether a work made from ``record`` may be released under the share-alike ``license_id``.
+
+    It may when ``license_id`` is a share-alike licence foley can name
+    (:data:`SHARE_ALIKE_FLAGS`), ``record`` is under it, and every licence ``record``
+    derives from (:func:`derived_license_ids`) is that same one: its obligations are
+    then exactly the licence's. Another version, another family (BY-NC-SA is not
+    BY-SA) or anything else in the lineage fails closed.
+
+    >>> sa = LicenseRecord(source="s", license_id="CC-BY-SA-4.0")
+    >>> carries_share_alike(sa, "CC-BY-SA-4.0"), carries_share_alike(sa, "CC-BY-SA-3.0")
+    (True, False)
+    >>> carries_share_alike(LicenseRecord(source="s", license_id="CC-BY-SA-4.0",
+    ...     derived_from_license_ids=["CC0-1.0"]), "CC-BY-SA-4.0")
+    False
+    """
+    return (
+        license_id in SHARE_ALIKE_FLAGS
+        and record.license_id == license_id
+        and set(derived_license_ids(record)) <= {license_id}
+    )
+
+
+def shared_share_alike(*records: Optional[LicenseRecord]) -> Optional[str]:
+    """The share-alike licence a work made of ``records`` may be released under, or ``None``.
+
+    Every record must carry the same one (:func:`carries_share_alike`); a missing
+    record (``None``: rights unknown), a source under another licence, or one that is
+    not share-alike at all gives ``None``, and the work cannot carry the licence.
+
+    >>> sa = LicenseRecord(source="s", license_id="CC-BY-SA-4.0")
+    >>> shared_share_alike(sa, sa), shared_share_alike(sa, None)
+    ('CC-BY-SA-4.0', None)
+    >>> shared_share_alike(sa, LicenseRecord(source="s", license_id="CC-BY-NC-SA-4.0"))
+    """
+    if not records or any(r is None for r in records):
+        return None
+    license_id = records[0].license_id
+    if all(carries_share_alike(r, license_id) for r in records):
+        return license_id
+    return None
 
 
 def carry_lineage(new: LicenseRecord, old: LicenseRecord) -> LicenseRecord:

@@ -535,3 +535,221 @@ def test_a_named_bed_backend_whose_licence_cannot_be_mixed_is_refused_before_pay
         _generated_bed("a crowd", library=None, generate=generate,
                        generate_options={"backend": "fal_hunyuan_foley"}, sample_rate=48_000)  # fmt: skip
     assert calls == []
+
+
+# --- the same share-alike licence on both sides (#253) ---------------------------------
+
+
+@pytest.mark.parametrize("license_id", ["CC-BY-SA-4.0", "CC-BY-NC-SA-3.0"])
+def test_identical_share_alike_on_both_sides_is_released_under_it(license_id):
+    from foley.licensing import is_share_alike, license_meta
+
+    bed = _rights(license_id, creator_name="Ann")
+    speech = _rights(license_id, creator_name="Bob")
+    r = foley.broadcast_bed(
+        [_line()], bed=_crowd(), bed_license=bed, speech_license=speech, sr=SR
+    )
+    out = r.license
+    assert out.license_id == license_id and is_share_alike(out.license_id)
+    assert out.requires_attribution and out.rights_verified
+    assert wider_rights(out, bed) == [] and wider_rights(out, speech) == []
+    assert not (out.commercial_ok or out.embed_in_derivative_ok or out.ai_training_ok)
+    md = r.credits.markdown
+    assert "Ann" in md and "Bob" in md and "derived from" in md
+    assert license_meta(license_id).display_name in md  # named, not "Unknown"
+
+
+def test_a_share_alike_broadcast_can_be_the_bed_of_another_under_the_same_licence():
+    sa = "CC-BY-SA-4.0"
+    first = broadcast_license(_rights(sa), _rights(sa), treatment="tv")
+    again = broadcast_license(first, _rights(sa), treatment="tv")
+    assert again.license_id == sa and wider_rights(again, first) == []
+
+
+@pytest.mark.parametrize(
+    "bed, speech",
+    [
+        (dict(license_id="CC-BY-SA-3.0"), dict(license_id="CC-BY-SA-4.0")),  # versions
+        (dict(license_id="CC-BY-NC-SA-4.0"), dict(license_id="CC-BY-SA-4.0")),  # families
+        (dict(license_id="CC-BY-SA-4.0"), dict(license_id="CC0-1.0")),  # SA + non-SA
+        (dict(license_id="CC0-1.0"), dict(license_id="CC-BY-SA-4.0")),  # non-SA + SA
+        (
+            dict(license_id="CC0-1.0", derived_from_license_ids=["CC-BY-SA-4.0"]),
+            dict(license_id="CC-BY-SA-4.0"),
+        ),  # SA only in the bed's lineage
+        (dict(license_id="CC-BY-ND-4.0"), dict(license_id="CC-BY-ND-4.0")),  # ND
+        (dict(license_id="CC-BY-ND-SA-4.0"), dict(license_id="CC-BY-ND-SA-4.0")),  # no such
+        (
+            dict(
+                license_id="CC-BY-SA-4.0",
+                derived_from_license_ids=["Tencent-Hunyuan-Community"],
+            ),
+            dict(license_id="CC-BY-SA-4.0"),
+        ),  # a territory limit in the lineage
+    ],
+    ids=[
+        "versions", "families", "sa_bed", "sa_speech", "sa_lineage", "nd",
+        "nd_sa", "territories",
+    ],
+)  # fmt: skip
+def test_share_alike_the_broadcast_cannot_carry_is_refused(bed, speech):
+    bed, speech = _rights(**bed), _rights(**speech)
+    with pytest.raises(foley.BroadcastRefusal):
+        foley.broadcast_bed(
+            [_line()], bed=_crowd(), bed_license=bed, speech_license=speech, sr=SR
+        )
+    with pytest.raises(foley.BroadcastRefusal):
+        broadcast_license(bed, speech, treatment="x")
+
+
+def test_share_alike_with_unknown_speech_rights_is_refused():
+    with pytest.raises(foley.BroadcastRefusal, match="the bed"):
+        foley.broadcast_bed(
+            [_line()], bed=_crowd(), bed_license=_rights("CC-BY-SA-4.0"), sr=SR
+        )
+
+
+def test_share_alike_speech_over_a_prompted_bed_is_refused_before_generating():
+    def generate(prompt, **kw):
+        raise AssertionError("paid")
+
+    with pytest.raises(foley.BroadcastRefusal, match="the speech"):
+        foley.broadcast_bed(
+            [_line()],
+            bed_prompt="crowd",
+            generate=generate,
+            speech_license=_rights("CC-BY-SA-4.0"),
+            sr=SR,
+        )
+
+
+# --- into the library and out through export_sound (#253) -------------------------------
+
+#: Ingest without the heavy taggers (offline, no model download).
+_QUIET_INGEST = dict(do_supervised=False, do_zeroshot=False)
+
+
+@pytest.fixture
+def sound_library(fake_embedder):
+    from foley.index import MemoryIndex, SoundLibrary
+
+    idx = MemoryIndex(dim=fake_embedder.dim)
+    return SoundLibrary(
+        sounds={}, meta={}, vindex=idx, kindex=idx, embedder=fake_embedder
+    )
+
+
+def _store(lib, *, speech, bed=None, bed_license=None, lines=None, **kw):
+    return foley.broadcast_bed(
+        lines or [_line()],
+        bed=_crowd() if bed is None else bed,
+        bed_license=bed_license,
+        speech_license=speech,
+        library=lib,
+        store=True,
+        ingest_options=_QUIET_INGEST,
+        sr=SR,
+        **kw,
+    )
+
+
+def test_store_puts_the_broadcast_in_the_library_and_its_export_is_never_wider(
+    sound_library,
+):
+    lib = sound_library
+    lib.add(
+        SoundRecord(
+            id="crowd1",
+            caption="stadium crowd",
+            license=_rights("CC0-1.0", creator_name="Ann"),
+        ),
+        data=foley.audio.encode(_crowd(), SR),
+    )
+    speech = _rights("CC-BY-4.0", creator_name="Bob")
+    r = _store(lib, bed="crowd1", speech=speech)
+    assert r.sound_id in lib
+    stored = lib[r.sound_id]
+    assert stored.license.license_id == "CC0-1.0"  # the bed's, narrowed to the speech's
+    assert stored.license.derived_from_license_ids == ["CC-BY-4.0"]
+    entry = stored.license.transformations[-1]
+    assert entry["op"] == "broadcast_bed" and entry["params"]["bed_id"] == "crowd1"
+    assert "broadcast_bed" in stored.tags and "stadium crowd" in stored.caption
+    data, rights, prov = foley.export_sound(r.sound_id, library=lib)
+    assert data[:4] == b"RIFF"
+    assert rights["license"] == "cc-by-4.0"  # the chain's most restrictive, not CC0
+    assert "Ann" in rights["attribution"] and "Bob" in rights["attribution"]
+    assert "CC-BY-4.0" in prov["derived_license_ids"]
+    assert prov["flags"]["requires_attribution"]
+    again = _store(lib, bed="crowd1", speech=speech)  # the same bytes: the same sound
+    assert again.sound_id == r.sound_id
+
+
+def test_store_of_a_share_alike_broadcast_exports_that_licence(sound_library):
+    sa = "CC-BY-SA-4.0"
+    r = _store(
+        sound_library,
+        bed_license=_rights(sa, creator_name="Ann"),
+        speech=_rights(sa, creator_name="Bob"),
+        accept_ai_restricted=True,  # the SA row grants no AI use
+    )
+    _data, rights, _prov = foley.export_sound(r.sound_id, library=sound_library)
+    assert rights["license"] == "cc-by-sa-4.0"
+    assert rights["license_url"] == "https://creativecommons.org/licenses/by-sa/4.0/"
+    assert "Ann" in rights["attribution"] and "Bob" in rights["attribution"]
+
+
+def _counting_tts(calls):
+    def tts(text):
+        calls.append(text)
+        return _line()
+
+    return tts
+
+
+@pytest.mark.parametrize(
+    "bed_kw",
+    [
+        dict(bed_license=_rights("CC0-1.0")),
+        dict(bed_license=_rights("elevenlabs-paid-plan", source="elevenlabs", ai=True)),
+    ],
+    ids=["nc_speech", "ai_bed"],
+)
+def test_store_without_ai_consent_is_refused_before_speaking(sound_library, bed_kw):
+    from foley.index.ingest import CONSENT_NOTE
+
+    speech = (
+        _rights("CC-BY-NC-4.0") if "CC0" in bed_kw["bed_license"].license_id
+        else _rights("CC-BY-4.0")
+    )  # fmt: skip
+    calls = []
+    kw = dict(speech=speech, lines=["Goal!"], tts=_counting_tts(calls), **bed_kw)
+    with pytest.raises(foley.BroadcastRefusal, match="accept_ai_restricted"):
+        _store(sound_library, **kw)
+    assert calls == [] and len(sound_library) == 0
+    r = _store(sound_library, accept_ai_restricted=True, **kw)
+    assert r.sound_id in sound_library and CONSENT_NOTE in r.notes
+    assert not sound_library[r.sound_id].license.ai_training_ok  # consent != training
+
+
+def test_store_of_bytes_that_may_not_be_kept_is_refused(sound_library):
+    bed = _rights("CC0-1.0")
+    bed.cache_bytes_ok = False  # a Freesound API pull: by reference only
+    with pytest.raises(foley.BroadcastRefusal, match="cache_bytes_ok"):
+        _store(sound_library, bed_license=bed, speech=_rights("CC0-1.0"))
+
+
+@pytest.mark.parametrize(
+    "kw, match",
+    [
+        (dict(ingest_options={"do_qc": False}), "store=True"),
+        (dict(store=True, ingest_options={"license": "user-owned"}), "itself"),
+    ],
+)
+def test_ingest_options_are_checked_before_anything_is_spent(kw, match):
+    calls = []
+    with pytest.raises(ValueError, match=match):
+        foley.broadcast_bed(
+            ["Goal!"], bed=_crowd(), bed_license=_rights("CC0-1.0"),
+            tts=_counting_tts(calls), sr=SR, **kw,
+        )  # fmt: skip
+    assert calls == []
