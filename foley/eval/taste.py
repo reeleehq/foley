@@ -8,11 +8,16 @@ passage and aggregated, the four things #45 asks of a tasteful design (report, n
 * **licence cleanliness**: the share of placed sounds :func:`foley.keep` accepts under the
   intended use (target :data:`LICENCE_CLEAN_TARGET`, i.e. 100%); a sound with no library
   record is unclean (fail-closed, the same lookup the weave's rights gate uses);
-* **placement sanity**: each placed sound lands within :data:`PLACEMENT_TOLERANCE_S` of its
-  trigger. The trigger is read from SELECT's *symbolic* anchor (``"on 'door'"``), which edits
-  never erase, and resolved against the timeline's word anchors (``word_timeline``), so a
-  nudged, re-aligned or absolute-pinned spot effect shows up as an error. Without woven
-  audio the words are evenly spaced estimates (the fake aligner), flagged ``aligned=False``;
+* **placement sanity**: each placed sound starts within :data:`PLACEMENT_TOLERANCE_S` of
+  where its cue says (its trigger word, less its pre-roll, clamped at 0 as the render does).
+  The trigger is read from SELECT's *symbolic* anchor (``"on 'door'"``), which edits never
+  erase, and resolved against the timeline's word anchors (``word_timeline``).
+  **What it can and cannot catch:** it resolves the cue with the same resolver
+  (:func:`~foley.weave.anchor.nearest_word`) and the same word timings the weave used, so an
+  *unedited* cue passes by construction and inherits that resolver's false matches (#257).
+  What it catches is everything else: a nudged or absolute-pinned sound, a cue word that is
+  never spoken, a spot effect with no cue. Word timings from the fake aligner (evenly spaced
+  estimates, the default without ``foley[align]``) are flagged ``aligned=False``;
 * **loudness**: the woven mix's integrated LUFS, re-measured, vs the master target, within
   :data:`LOUDNESS_TOLERANCE_LU` (only for passages that carry narration audio).
 
@@ -54,12 +59,41 @@ LICENCE_CLEAN_TARGET: float = 1.0
 PLACEMENT_TOLERANCE_S: float = 0.25
 #: How far (LU) the woven mix may sit from the master target (EBU R128's ±1 LU).
 LOUDNESS_TOLERANCE_LU: float = 1.0
+#: Words whose trailing period does not end a sentence (lower case, no period). Single
+#: letters (initials, ``e.g.``, ``U.S.``) are skipped as well.
+SENTENCE_ABBREVIATIONS: "tuple[str, ...]" = (
+    "mr", "mrs", "ms", "dr", "prof", "st", "sr", "jr", "vs", "mt", "lt", "col",
+    "gen", "capt", "sgt", "rev", "fr", "approx",
+)  # fmt: skip
+#: What the placement metric can see (echoed in the report so a reader does not over-read it).
+PLACEMENT_CAVEAT = (
+    "catches nudged/pinned sounds and unspoken or missing cues; an unedited cue passes "
+    "by construction (same resolver and word timings as the weave)"
+)
+
+
+@dataclass(frozen=True)
+class TasteThresholds:
+    """The eval's thresholds in one place (defaults: the module constants)."""
+
+    sounds_per_sentence: "tuple[float, float]" = SOUNDS_PER_SENTENCE_BAND
+    licence_clean_target: float = LICENCE_CLEAN_TARGET
+    placement_tolerance_s: float = PLACEMENT_TOLERANCE_S
+    loudness_tolerance_lu: float = LOUDNESS_TOLERANCE_LU
+
+    def to_dict(self) -> dict:
+        """Plain, JSON-safe dict."""
+        return {**asdict(self), "sounds_per_sentence": list(self.sounds_per_sentence)}
+
 
 DEFAULT_PASSAGES_PATH = (
     Path(__file__).resolve().parent.parent / "data" / "taste" / "passages.json"
 )
 
-_SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+#: An ellipsis (skipped), or a terminator run plus any closing quotes/brackets, followed by
+#: whitespace, the end, or the next sentence's capital / opening quote.
+_TERMINATOR = re.compile(r"(\.{2,}|…)|([.!?]+)[\"'”’)\]]*(?=\s|$|[A-Z“\"'])")
+_WORD_BEFORE = re.compile(r"(\w+)$")
 
 #: ``passage -> ScoreResult``: the seam this eval measures.
 Designer = Callable[["Passage"], "ScoreResult"]
@@ -88,6 +122,35 @@ class Passage:
         return " ".join(self.segments)
 
 
+_PASSAGE_KEYS = frozenset({"id", "segments", "audio"})
+
+
+def _passages_from_dicts(raw, *, audio_root: Optional[Path] = None) -> "list[Passage]":
+    """Validate ``{id, segments, audio?}`` dicts up front, naming every bad one at once."""
+    bad = [
+        f"#{i} ({d.get('id', '?')}): "
+        + (f"unknown keys {sorted(set(d) - _PASSAGE_KEYS)}" if set(d) - _PASSAGE_KEYS
+           else "needs 'id' and 'segments'")
+        for i, d in enumerate(raw)
+        if not isinstance(d, Passage)
+        and (set(d) - _PASSAGE_KEYS or not {"id", "segments"} <= set(d))
+    ]  # fmt: skip
+    if bad:
+        raise ValueError(
+            f"invalid passages (keys are {sorted(_PASSAGE_KEYS)}): " + "; ".join(bad)
+        )
+
+    def _audio(a):
+        return str(audio_root / a) if audio_root and isinstance(a, str) else a
+
+    return [
+        d
+        if isinstance(d, Passage)
+        else Passage(d["id"], tuple(d["segments"]), _audio(d.get("audio")))
+        for d in raw
+    ]
+
+
 def load_passages(path=DEFAULT_PASSAGES_PATH) -> "list[Passage]":
     """Load a passage set: a JSON list of ``{id, segments, audio?}``.
 
@@ -95,30 +158,41 @@ def load_passages(path=DEFAULT_PASSAGES_PATH) -> "list[Passage]":
     """
     path = Path(path)
     raw = json.loads(path.read_text(encoding="utf-8"))
-
-    def _audio(a):
-        return str(path.parent / a) if isinstance(a, str) else a
-
-    return [
-        Passage(id=p["id"], segments=tuple(p["segments"]), audio=_audio(p.get("audio")))
-        for p in raw
-    ]
+    return _passages_from_dicts(raw, audio_root=path.parent)
 
 
 def _as_passages(passages) -> "list[Passage]":
     if passages is None or isinstance(passages, (str, Path)):
         return load_passages(DEFAULT_PASSAGES_PATH if passages is None else passages)
-    return [
-        p
-        if isinstance(p, Passage)
-        else Passage(**{**p, "segments": tuple(p["segments"])})
-        for p in passages
-    ]
+    return _passages_from_dicts(list(passages))
 
 
-def count_sentences(text: str) -> int:
-    """Sentences in ``text`` (split after ``.!?``); at least 1 for non-empty text."""
-    return len([s for s in _SENTENCE_END.split(text.strip()) if s])
+def count_sentences(
+    text: str, *, abbreviations: "Iterable[str]" = SENTENCE_ABBREVIATIONS
+) -> int:
+    """Sentences in ``text``: terminators (``.!?``, closing quotes allowed) plus an open tail.
+
+    An ellipsis does not end a sentence, nor does the period of an abbreviation
+    (``abbreviations``) or of a single letter (initials, ``e.g.``, ``U.S.``).
+    """
+    abbreviations = frozenset(abbreviations)
+    text = text.strip()
+    n, tail = 0, 0
+    for m in _TERMINATOR.finditer(text):
+        if m.group(1):  # ellipsis
+            continue
+        word = _WORD_BEFORE.search(text[: m.start()])
+        if m.group(2) == "." and word:
+            w = word.group(1)
+            if len(w) == 1 or w.lower() in abbreviations:
+                continue
+        n, tail = n + 1, m.end()
+    return n + (1 if re.search(r"\w", text[tail:]) else 0)
+
+
+def passage_sentences(passage: "Passage") -> int:
+    """Sentences in a passage: counted per segment, each non-empty segment at least one."""
+    return sum(max(1, count_sentences(s)) for s in passage.segments if s.strip())
 
 
 # ---------------------------------------------------------------------------
@@ -162,20 +236,24 @@ def licence_rows(
 ) -> "list[dict]":
     """One ``{clip_ref, clean, reason}`` row per placed sound, judged by its library record.
 
-    Fail-closed: no readable record is unclean, as in the weave's own rights gate.
+    The weave's own rights re-check (:func:`foley.licensing.refusals` over
+    :func:`~foley.licensing.placed_record`), so the rule and its wording are the same:
+    fail-closed, a sound with no readable record is refused.
     """
-    from ..licensing import checked_refusal_reason, placed_record
+    from ..licensing import placed_record, refusals
 
-    def _row(clip_ref):
-        record = placed_record(library, clip_ref)
-        reason = (
-            "no library record"
-            if getattr(record, "license", None) is None
-            else checked_refusal_reason(record.license, intended_use)
-        )
-        return {"clip_ref": clip_ref, "clean": reason is None, "reason": reason}
-
-    return [_row(it.clip_ref) for it in items]
+    items = list(items)
+    refused = refusals(
+        {it.clip_ref: placed_record(library, it.clip_ref) for it in items}, intended_use
+    )
+    return [
+        {
+            "clip_ref": it.clip_ref,
+            "clean": it.clip_ref not in refused,
+            "reason": refused.get(it.clip_ref),
+        }
+        for it in items
+    ]
 
 
 def _trigger_s(item: "TimelineItem", word_timeline: "list[dict]") -> Optional[float]:
@@ -200,25 +278,30 @@ def _trigger_s(item: "TimelineItem", word_timeline: "list[dict]") -> Optional[fl
 def placement_rows(
     timeline: "SoundDesignTimeline", *, tolerance_s: float = PLACEMENT_TOLERANCE_S
 ) -> "list[dict]":
-    """One row per enabled item of a *hydrated* timeline: trigger vs where it lands.
+    """One row per enabled item of a *hydrated* timeline: expected vs actual onset.
 
-    The landing time is the resolved onset plus its pre-roll (the transient, not the file
-    start). An item with no trigger is ``ok=False`` (``trigger_s=None``): a spot effect
-    must hang on a word.
+    The expected onset is the trigger less the item's pre-roll, clamped at 0 exactly as
+    the render clamps it (so a sound cued on the first word is not read as pre-roll late).
+    An item with no trigger is ``ok=False`` (``trigger_s=None``): a spot effect must hang
+    on a word. See :data:`PLACEMENT_CAVEAT` for what this can and cannot catch.
     """
     wt = list(timeline.word_timeline or ())
 
     def _row(it):
         trigger = _trigger_s(it, wt)
         p = it.placement
-        lands = (p.onset + p.pre_roll) if p is not None else None
-        error = abs(lands - trigger) if None not in (lands, trigger) else None
+        onset = p.onset if p is not None else None
+        expected = (
+            None if None in (trigger, p) else max(0.0, trigger - p.pre_roll)
+        )  # fmt: skip
+        error = abs(onset - expected) if None not in (onset, expected) else None
         return {
             "clip_ref": it.clip_ref,
             "layer": getattr(it.layer, "value", it.layer),
             "cue": it.onset,
             "trigger_s": trigger,
-            "lands_s": lands,
+            "expected_onset_s": expected,
+            "onset_s": onset,
             "error_s": error,
             "ok": error is not None and error <= tolerance_s,
         }
@@ -245,15 +328,21 @@ def loudness_row(
     }
 
 
-def _hydrated(timeline: "SoundDesignTimeline", transcript: str):
-    """``(timeline, aligned)``: as woven, or hydrated on evenly spaced estimated words."""
+#: Alignments whose word timings are estimates (or unknown), not a real alignment.
+_ESTIMATED_ALIGNMENTS = (None, "fake")
+
+
+def _hydrated(result: "ScoreResult", transcript: str):
+    """``(timeline, alignment)``: as woven (the weave's aligner), or on estimated words."""
     from ..weave.align import FakeAligner
     from ..weave.timeline import hydrate
 
+    timeline = result.timeline
     if timeline.word_timeline:
-        return timeline, True
-    words = FakeAligner().word_timeline(None, 0, transcript=transcript)
-    return hydrate(timeline, words), False
+        return timeline, getattr(result.weave, "alignment", None)
+    aligner = FakeAligner()
+    words = aligner.word_timeline(None, 0, transcript=transcript)
+    return hydrate(timeline, words), aligner.name
 
 
 # ---------------------------------------------------------------------------
@@ -269,9 +358,16 @@ class PassageTaste:
     restraint: dict = field(default_factory=dict)
     licence: list = field(default_factory=list)
     placement: list = field(default_factory=list)
-    aligned: bool = False
+    alignment: Optional[str] = (
+        None  # the aligner behind the word timings (fake = estimates)
+    )
     loudness: Optional[dict] = None
     error: Optional[str] = None
+
+    @property
+    def aligned(self) -> bool:
+        """Whether the word timings came from a real alignment (not the fake's estimates)."""
+        return self.alignment not in _ESTIMATED_ALIGNMENTS
 
     @property
     def licence_clean_share(self) -> Optional[float]:
@@ -287,6 +383,7 @@ class PassageTaste:
         """Plain, JSON-safe dict (with the derived shares)."""
         return {
             **asdict(self),
+            "aligned": self.aligned,
             "licence_clean_share": self.licence_clean_share,
             "placement_ok_share": self.placement_ok_share,
         }
@@ -298,7 +395,7 @@ class TasteReport:
 
     designer: str
     passages: "list[PassageTaste]"
-    thresholds: dict
+    thresholds: TasteThresholds = field(default_factory=TasteThresholds)
 
     @property
     def _ok(self) -> "list[PassageTaste]":
@@ -314,7 +411,7 @@ class TasteReport:
         loud = [p.loudness for p in ok if p.loudness is not None]
         clean = _share(r["clean"] for r in licence)
         density = n_sounds / n_sentences if n_sentences else None
-        low, high = self.thresholds["sounds_per_sentence_band"]
+        low, high = self.thresholds.sounds_per_sentence
         return {
             "n_passages": len(self.passages),
             "n_failed": len(self.passages) - len(ok),
@@ -324,8 +421,9 @@ class TasteReport:
             "within_ceiling_share": _share(p.restraint["within_ceiling"] for p in ok),
             "licence_clean_share": clean,
             "licence_target_met": clean is None
-            or clean >= self.thresholds["licence_clean_target"],
+            or clean >= self.thresholds.licence_clean_target,
             "placement_ok_share": _share(r["ok"] for r in placement),
+            "placement_caveat": PLACEMENT_CAVEAT,
             "placement_mean_abs_error_s": _mean(r["error_s"] for r in placement),
             "aligned_share": _share(p.aligned for p in ok),
             "n_woven": len(loud),
@@ -339,7 +437,7 @@ class TasteReport:
         """Plain, JSON-safe dict: designer, thresholds, summary, per-passage rows."""
         return {
             "designer": self.designer,
-            "thresholds": dict(self.thresholds),
+            "thresholds": self.thresholds.to_dict(),
             "summary": self.summary(),
             "passages": [p.to_dict() for p in self.passages],
         }
@@ -347,7 +445,7 @@ class TasteReport:
     def to_markdown(self) -> str:
         """A short markdown rendering: the aggregate table, then one row per passage."""
         s, t = self.summary(), self.thresholds
-        low, high = t["sounds_per_sentence_band"]
+        low, high = t.sounds_per_sentence
         lines = [
             f"## Tasteful-weave eval: `{self.designer}` "
             f"({s['n_passages']} passages, {s['n_failed']} failed)",
@@ -358,13 +456,15 @@ class TasteReport:
             f"{'' if s['restraint_in_band'] else ' (out of band)'}; "
             f"{_pct(s['within_ceiling_share'])} of passages ≤ {high} | {low}–{high} |",
             f"| licence cleanliness | {_pct(s['licence_clean_share'])} of "
-            f"{s['n_sounds']} sounds | {_pct(t['licence_clean_target'])} |",
+            f"{s['n_sounds']} sounds | {_pct(t.licence_clean_target)} |",
             f"| placement sanity | {_pct(s['placement_ok_share'])} within "
-            f"{t['placement_tolerance_s']} s (mean err {_fmt(s['placement_mean_abs_error_s'])} s"
+            f"{t.placement_tolerance_s} s (mean err {_fmt(s['placement_mean_abs_error_s'])} s"
             f"{'' if s['aligned_share'] == 1 else ', estimated word timings'}) | 100% |",
             f"| loudness | {_pct(s['loudness_ok_share'])} of {s['n_woven']} woven "
             f"(mean abs Δ {_fmt(s['loudness_mean_abs_delta_lu'])} LU) "
-            f"| ±{t['loudness_tolerance_lu']} LU |",
+            f"| ±{t.loudness_tolerance_lu} LU |",
+            "",
+            f"Placement {PLACEMENT_CAVEAT}.",
             "",
             "| passage | sounds/sentence | licence | placement | loudness (LUFS) |",
             "|---|---|---|---|---|",
@@ -409,16 +509,22 @@ def score_designer(
     intended_use=None,
     llm: Optional[str] = "fake",
     generate: bool = False,
+    aligner=None,
     **score_kwargs,
 ) -> Designer:
     """A designer that is ``foley.score`` on a passage's segments (and audio, when it has some).
 
-    Defaults are the offline, deterministic ones: the fake LLM and no generation fallback
-    (``Budget(allow_generate=False, max_usd=0)``), so nothing is fetched, generated or paid.
-    ``generate=True`` and ``llm=None`` (``$FOLEY_LLM``) give the production behaviour.
+    Defaults are the offline, deterministic ones: the fake LLM, no generation fallback
+    (``Budget(allow_generate=False, max_usd=0)``) and the fake aligner (even with
+    ``foley[align]`` installed), so nothing is fetched, generated or paid and runs repeat.
+    ``generate=True``, ``llm=None`` (``$FOLEY_LLM``) and a real ``aligner`` give the
+    production behaviour.
     """
     from ..agent.policy import Budget
     from ..score import score
+    from ..weave.align import FakeAligner
+
+    aligner = FakeAligner() if aligner is None else aligner
 
     def design(passage: Passage) -> "ScoreResult":
         budget = None if generate else Budget(allow_generate=False, max_usd=0.0)
@@ -429,6 +535,7 @@ def score_designer(
             intended_use=intended_use,
             llm=llm,
             budget=budget,
+            aligner=aligner,
             **score_kwargs,
         )
 
@@ -442,20 +549,21 @@ def measure_passage(
     *,
     library,
     intended_use: "IntendedUse",
-    band: "tuple[float, float]" = SOUNDS_PER_SENTENCE_BAND,
-    placement_tolerance_s: float = PLACEMENT_TOLERANCE_S,
-    loudness_tolerance_lu: float = LOUDNESS_TOLERANCE_LU,
+    thresholds: TasteThresholds = TasteThresholds(),
 ) -> PassageTaste:
     """Measure one designer result for ``passage`` (reads only ``.timeline`` and ``.weave``)."""
-    timeline, aligned = _hydrated(result.timeline, passage.text)
+    t = thresholds
+    timeline, alignment = _hydrated(result, passage.text)
     placed = [it for it in timeline.items if it.enabled]
     return PassageTaste(
         passage_id=passage.id,
-        restraint=restraint(len(placed), count_sentences(passage.text), band=band),
+        restraint=restraint(
+            len(placed), passage_sentences(passage), band=t.sounds_per_sentence
+        ),
         licence=licence_rows(placed, library, intended_use),
-        placement=placement_rows(timeline, tolerance_s=placement_tolerance_s),
-        aligned=aligned,
-        loudness=loudness_row(result.weave, tolerance_lu=loudness_tolerance_lu),
+        placement=placement_rows(timeline, tolerance_s=t.placement_tolerance_s),
+        alignment=alignment,
+        loudness=loudness_row(result.weave, tolerance_lu=t.loudness_tolerance_lu),
     )
 
 
@@ -465,15 +573,13 @@ def run_taste_eval(
     designer: Optional[Designer] = None,
     library=None,
     intended_use=None,
-    band: "tuple[float, float]" = SOUNDS_PER_SENTENCE_BAND,
-    licence_clean_target: float = LICENCE_CLEAN_TARGET,
-    placement_tolerance_s: float = PLACEMENT_TOLERANCE_S,
-    loudness_tolerance_lu: float = LOUDNESS_TOLERANCE_LU,
+    thresholds: TasteThresholds = TasteThresholds(),
 ) -> TasteReport:
     """Run ``designer`` over ``passages`` and report restraint / licence / placement / loudness.
 
-    Report-only: nothing here fails a build. A passage whose designer raises is recorded
-    with its error and left out of the aggregates.
+    Report-only: nothing here fails a build. A passage whose *designer* raises is recorded
+    with its error and left out of the aggregates; a malformed passage set is refused up
+    front (``ValueError`` naming every bad passage), and a metric bug raises.
 
     Args:
         passages: The passage set: ``None`` (the shipped set), a JSON path, or an iterable
@@ -482,8 +588,8 @@ def run_taste_eval(
         library: The library the designer draws from, used for the licence check. Default:
             :func:`eval_library` with the default designer, else ``foley``'s default library.
         intended_use: The rights intent (default: commercial publishing, as ``foley.score``).
-        band / licence_clean_target / placement_tolerance_s / loudness_tolerance_lu: The
-            thresholds (defaults: the module constants); echoed in the report.
+        thresholds: A :class:`TasteThresholds` (default: the module constants); echoed
+            in the report.
 
     Returns:
         A :class:`TasteReport` (``to_dict()`` for JSON, ``to_markdown()`` for people).
@@ -498,30 +604,22 @@ def run_taste_eval(
             from ..index import default_library
 
             library = default_library()
+    passages = _as_passages(passages)  # validated before any designer runs
     designer = designer or score_designer(library=library, intended_use=use)
-    measure = dict(
-        library=library,
-        intended_use=use,
-        band=band,
-        placement_tolerance_s=placement_tolerance_s,
-        loudness_tolerance_lu=loudness_tolerance_lu,
-    )
 
     def _one(passage: Passage) -> PassageTaste:
         try:
-            return measure_passage(passage, designer(passage), **measure)
-        except Exception as exc:  # report, don't gate: one bad passage keeps the rest
+            result = designer(passage)
+        except Exception as exc:  # report, don't gate: one failed design keeps the rest
             return PassageTaste(
                 passage_id=passage.id, error=f"{type(exc).__name__}: {exc}"
             )
+        return measure_passage(
+            passage, result, library=library, intended_use=use, thresholds=thresholds
+        )
 
     return TasteReport(
         designer=getattr(designer, "__name__", type(designer).__name__),
-        passages=[_one(p) for p in _as_passages(passages)],
-        thresholds={
-            "sounds_per_sentence_band": list(band),
-            "licence_clean_target": licence_clean_target,
-            "placement_tolerance_s": placement_tolerance_s,
-            "loudness_tolerance_lu": loudness_tolerance_lu,
-        },
+        passages=[_one(p) for p in passages],
+        thresholds=thresholds,
     )

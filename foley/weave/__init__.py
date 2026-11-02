@@ -101,6 +101,9 @@ class WeaveResult:
     #: What the caller should know about how the mix was made, e.g. that word timings
     #: are estimates because no forced aligner is installed (#65).
     notes: list = field(default_factory=list)
+    #: Where the word timings came from: the aligner's name (``fake`` = evenly spaced
+    #: estimates, ``whisperx``, ``mfa``, …) or ``cached`` (the timeline already had them).
+    alignment: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -518,6 +521,7 @@ def weave(
         content_credential=prov["content_credential"],
         watermark=prov["watermark"],
         notes=notes,
+        alignment=result.alignment,
     )
 
 

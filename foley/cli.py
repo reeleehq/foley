@@ -239,7 +239,9 @@ def _cmd_eval_taste(args) -> int:
         print(json.dumps(report.to_dict(), indent=2))
     else:
         print(report.to_markdown())
-    return 0  # report-only (#45): never a gate
+    # Report-only (#45): non-zero only when nothing could be designed at all.
+    s = report.summary()
+    return 1 if s["n_passages"] and s["n_failed"] == s["n_passages"] else 0
 
 
 def _fit_baseline_command(args, report) -> int:
