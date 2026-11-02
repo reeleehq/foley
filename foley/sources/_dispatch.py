@@ -1132,15 +1132,27 @@ def _check_take_seed(plan: GenerationPlan, clip) -> None:
 
 
 def _keep_take(cache, plan: GenerationPlan, clip) -> None:
-    """Keep a batch take's paid bytes under its own key (never a fallback's: a batch
-    answers the one request it was asked, its seeds and sample count aside)."""
+    """Keep a batch take's paid bytes under the key of the request it answers.
+
+    :func:`_answered_key` decides, as for one call (#97): a take records its own seed
+    in its native params, so one whose backend reports a seed other than the
+    ``s + i`` it is keyed under answers the request for that seed, and is kept there,
+    with a pointer from the request asked that is not replayed (the next ask for
+    ``s + i`` pays again). The batch's sample count and index are not in the planned
+    request, so they never count as a difference.
+    """
     try:
+        plan.kept_key = _answered_key(plan, clip)
         _store_clip(cache, plan, clip)
     except Exception as exc:  # noqa: BLE001 - never lose paid bytes over a cache write
         clip.notes.append(f"could not keep the paid generation in the cache: {exc!r}")
-    else:
-        key = plan.kept_key or plan.request_key
-        clip.notes.append(f"paid generation kept in the generations cache: {key}")
+        return
+    if plan.kept_key != plan.request_key:
+        clip.notes.append(
+            "kept under the key of the request it answers (its reported seed), not "
+            "the one asked, so the request asked is not replayed from it"
+        )
+    clip.notes.append(f"paid generation kept in the generations cache: {plan.kept_key}")
 
 
 def draws_seed(config: dict) -> bool:
@@ -1239,8 +1251,14 @@ def _answered_key(plan: GenerationPlan, clip) -> str:
         )
         return float(a) == float(b) if numeric else a == b
 
+    def as_planned(a, b):  # a number keyed as the request keys it (2 and 2.0 alike)
+        numeric = all(
+            isinstance(x, (int, float)) and not isinstance(x, bool) for x in (a, b)
+        )
+        return float(a) if numeric and isinstance(b, float) else a
+
     changed = {
-        k: sent_params[k]
+        k: as_planned(sent_params[k], v)
         for k, v in planned.items()
         if sent_params.get(k) is not None and not same(sent_params[k], v)
     }

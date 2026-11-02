@@ -48,8 +48,9 @@ class BatchRunner:
     It reports per-sample seeds of its own making (``seeds=False``: none), never
     derived from the seed sent, so a test checks that foley records what the backend
     reports and sends what foley decided (``calls``), not what the fake assumes.
-    ``reported`` holds each call's reported seeds. ``answered`` caps the samples it
-    returns; ``silent`` lists the take indexes it answers with silence.
+    ``reported`` holds each call's reported seeds; ``seeds='sequential'`` is a backend
+    that numbers a batch from the seed sent (``s, s + 1, ...``). ``answered`` caps the
+    samples it returns; ``silent`` lists the take indexes it answers with silence.
     """
 
     def __init__(self, *, seeds=True, answered=None, silent=()):
@@ -65,8 +66,11 @@ class BatchRunner:
             for i in range(k)
         ]
         response = {"audio": [{"url": f"u{i}"} for i in range(k)], "model": "sfx2.0"}
-        if self.seeds:
+        if self.seeds == "sequential" and arguments.get("seed") is not None:
+            response["seeds"] = [arguments["seed"] + i for i in range(k)]
+        elif self.seeds:
             response["seeds"] = [90_000 + 1_000 * len(self.calls) + 7 * i for i in range(k)]
+        if "seeds" in response:
             self.reported.append(response["seeds"])
         return (audios if all_audio else audios[0]), response
 
@@ -206,7 +210,7 @@ def test_a_seeded_batch_sends_each_calls_first_take_seed(library):
 
 def test_a_seeded_take_is_the_request_for_its_seed(library):
     """Take i of seed s is generate(seed=s + i): one key, batch or not (#210)."""
-    runner = BatchRunner()
+    runner = BatchRunner(seeds="sequential")
     takes = _variations(_mirelo(runner), 2, library, seed=5)
     one = foley.generate(
         "a sabre swing", backend="fal_mirelo", adapter=_mirelo(runner),
@@ -218,6 +222,61 @@ def test_a_seeded_take_is_the_request_for_its_seed(library):
 def test_a_reported_seed_other_than_the_keyed_one_is_noted(library):
     takes = _variations(_mirelo(BatchRunner()), 2, library, seed=5)
     assert any("reports seed" in n for n in takes[1].notes)
+
+
+def test_a_take_is_kept_under_the_seed_it_reports_not_the_one_keyed(library):
+    """A provider that renumbers a batch's seeds: take 1 (keyed seed 6) reports another
+    seed, so it answers the request for that seed, not generate(seed=6)."""
+    runner = BatchRunner()
+    takes = _variations(_mirelo(runner), 2, library, seed=5)
+    reported = takes[1].sound.license.generation_seed
+    assert reported != 6
+    assert takes[1].sound.license.generation_params["seed"] == reported
+    one = foley.generate(
+        "a sabre swing", backend="fal_mirelo", adapter=_mirelo(runner),
+        library=library, duration_s=1, seed=6,
+    )
+    assert len(runner.calls) == 2 and runner.calls[-1]["seed"] == 6  # paid: not poisoned
+    assert one.sound.license.generation_seed != reported
+    replayed = foley.generate(
+        "a sabre swing", backend="fal_mirelo", adapter=_mirelo(runner),
+        library=library, duration_s=1, seed=reported,
+    )
+    assert len(runner.calls) == 2 and replayed.sound.id == takes[1].sound.id
+
+
+def test_a_seeded_request_is_not_batched_where_per_take_seeds_are_unknown():
+    from foley.sources.generate import _batch_takes
+
+    v2a = _mirelo(BatchRunner(), name="fal_mirelo_v2a")
+    assert _batch_takes("fal_mirelo_v2a", v2a, 3) == 3
+    assert _batch_takes("fal_mirelo_v2a", v2a, 3, seeded=True) == 1
+    assert _batch_takes("fal_mirelo", _mirelo(BatchRunner()), 3, seeded=True) == 3
+
+
+class _TimesOutFirstRun(BatchRunner):
+    def __call__(self, *args, **kwargs):
+        if len(self.calls) == 1:  # call 0 filled the gap; call 1 is the batch's first run
+            self.calls.append(None)
+            raise TimeoutError("read timeout")
+        return super().__call__(*args, **kwargs)
+
+
+def test_a_run_that_times_out_keeps_its_reservation_and_the_unsent_run_is_released(
+    library,
+):
+    runner = _TimesOutFirstRun()
+    foley.generate(
+        "a sabre swing", backend="fal_mirelo", adapter=_mirelo(runner),
+        library=library, duration_s=1, seed=7,
+    )
+    budget = foley.Budget(max_usd=1.0)
+    with pytest.raises(foley.GenerationError):
+        # takes seeds 5, 6, 7, 8 with 7 cached: runs [5, 6] and [8]
+        _variations(_mirelo(runner), 4, library, seed=5, budget=budget)
+    assert len(runner.calls) == 2  # the second run was never sent
+    # the timed-out run may have been billed (2 samples); the unsent one is released
+    assert budget.spent_usd == pytest.approx(2 * MIRELO_PER_S, abs=1e-12)
 
 
 def test_a_standalone_seeded_variation_sends_the_derived_seed(library):

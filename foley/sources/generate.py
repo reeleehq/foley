@@ -636,7 +636,9 @@ def _generate(
     # request seen before is served from the generations cache (#59). A backend with a
     # batch knob makes several takes in one call (#210: ``takes``).
     report = IngestReport(root=f"{backend}:{prompt}")
-    n_takes = _batch_takes(backend, gen, takes)
+    n_takes = _batch_takes(
+        backend, gen, takes, seeded=affordances.get("seed") is not None
+    )
     planned = dict(
         adapter=gen,
         on_unsupported=on_unsupported,
@@ -713,11 +715,14 @@ def _generate(
     return report
 
 
-def _batch_takes(backend: str, adapter, takes: int) -> int:
+def _batch_takes(backend: str, adapter, takes: int, *, seeded: bool = False) -> int:
     """How many of ``takes`` one call to ``backend`` makes (#210): up to its batch
     knob's maximum (:func:`~foley.sources.base.batch_limit`) when the adapter has
     ``generate_takes``, else ``1`` (a backend without the knob, or one that answers
-    with a video: one call per take).
+    with a video: one call per take). A ``seeded`` request batches only where each
+    take's seed is known (``batch['seeds']``: ``'reported'`` by the backend or
+    ``'derived'`` by the adapter): take ``i`` is keyed as the request for its seed,
+    which a take of unknown seed cannot be.
     """
     from .base import batch_limit, require_count
     from .registry import SOURCE_REGISTRY
@@ -730,6 +735,9 @@ def _batch_takes(backend: str, adapter, takes: int) -> int:
     )
     if (config.get("output") or {}).get("container") == "video":
         return 1  # a batch of muxed videos has no demux-failure path: one per call
+    seeds_known = ((config.get("native_defaults") or {}).get("batch") or {}).get("seeds")
+    if seeded and seeds_known not in ("reported", "derived"):
+        return 1
     return min(takes, batch_limit(config))
 
 

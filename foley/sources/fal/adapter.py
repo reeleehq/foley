@@ -535,6 +535,21 @@ class FalAdapter:
             ) from undemuxed
         return clips
 
+    def _take_params(
+        self, args: dict, seed: Optional[int], sample_index: Optional[int]
+    ) -> dict:
+        """What a batch take records beyond the request sent: its index, the seed the
+        call was sent, and its own seed under the native seed name (nothing for a
+        single sample)."""
+        if sample_index is None:
+            return {}
+        name = (self.config["param_map"].get("seed") or {}).get("native_name")
+        out = {"sample_index": sample_index}
+        if name:
+            out["batch_seed"] = args.get(name)
+            out[name] = seed  # None: this take's seed is not known
+        return out
+
     def _take_seeds(self, response, args: dict, n: int) -> "list[Optional[int]]":
         """Each sample's seed: the one the endpoint reports (``seed_field``; a list holds
         one per sample), else, for a single sample, the one sent; else ``None``."""
@@ -571,10 +586,10 @@ class FalAdapter:
     ) -> GeneratedClip:
         """One answered sample as a :class:`~foley.sources.base.GeneratedClip`.
 
-        A take of a batch records the request as sent (its first sample's seed, the
-        sample count) and its ``sample_index`` in ``generation_params`` (the recipe
-        that made it: that request, then that sample), and its own reported seed as
-        ``generation_seed``.
+        A take of a batch records its own reported seed (as ``generation_seed`` and
+        as the native seed in ``generation_params``: the request it answers, which
+        keys it in the generations cache), beside the batch's ``sample_index``, the
+        sample count and the seed the call was sent (``batch_seed``).
         """
         nd = self.config.get("native_defaults") or {}
         endpoint = self.config["api"]["endpoint_id"]
@@ -594,7 +609,7 @@ class FalAdapter:
                 {
                     **self._recordable(args, affordances),
                     "fal_endpoint": endpoint,
-                    **({} if sample_index is None else {"sample_index": sample_index}),
+                    **self._take_params(args, seed, sample_index),
                 },
                 provider_params,
             ),

@@ -285,7 +285,9 @@ SOURCE_CONFIGS = (
             # Billed per sample, and the default is 2: one clip per call here, unless
             # foley.variations asks for several (the batch knob below, #210).
             "fixed_arguments": {"num_samples": 1},
-            "batch": {"native_name": "num_samples", "max": 4},
+            # Per-sample seeds are reported (the "seeds" list), so a seeded request
+            # batches too: each take is keyed by the seed it reports.
+            "batch": {"native_name": "num_samples", "max": 4, "seeds": "reported"},
             "seed_field": "seeds",  # a list, one per sample ("each sample's seed")
             "seed_limit": 2**63,  # the schema's seed: a signed 64-bit integer
         },
@@ -501,6 +503,8 @@ SOURCE_CONFIGS = (
             # response reports no seeds: a single take records the seed sent, a
             # batch's takes record none (and say so).
             "fixed_arguments": {"num_samples": 1, "return_speech": False},
+            # No per-sample seeds: only an unseeded request batches (a seeded one's
+            # takes could not be keyed by their seeds).
             "batch": {"native_name": "num_samples", "max": 4},
             # The schema takes up to 2**64 - 1; the narrower int64 range of the
             # text-to-audio endpoint is kept for both.
