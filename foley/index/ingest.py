@@ -281,6 +281,10 @@ def content_id(src: "AudioSource") -> str:
     return _audio_identity(_probe(src).wav)
 
 
+#: ``ingest_one(restamp_duplicate=RESTAMP_REMADE)``: the duplicate is the clip made
+#: again, so the fresh record's lineage and credits replace the stored ones.
+RESTAMP_REMADE = "remade"
+
 #: The note on a clip stored under a licence that forbids AI training, by the
 #: caller's explicit consent (``allow_ai_training_forbidden`` / ``accept_ai_restricted``).
 CONSENT_NOTE = "AI-training restriction acknowledged by operator (consent recorded)"
@@ -367,7 +371,7 @@ def _ingest_one(
     allow_ai_training_forbidden: bool = False,
     seed_tags: Optional[list] = None,
     ucs_catid: Optional[str] = None,
-    restamp_duplicate: bool = False,
+    restamp_duplicate: "bool | str" = False,
     commercial: Optional[bool] = None,
 ) -> IngestResult:
     """Ingest one clip into ``library`` and return an :class:`IngestResult`.
@@ -430,7 +434,10 @@ def _ingest_one(
             only with ``allow_ai_training_forbidden``; without it the stored record
             becomes ``unknown`` (unverified, so :func:`foley.keep` refuses it) and
             the result ``rights_blocked``, as a fresh ingest would be. Default
-            ``False``: a duplicate is left as it is.
+            ``False``: a duplicate is left as it is. ``'remade'``: the clip was made
+            again (:data:`RESTAMP_REMADE`), so ``license``'s lineage and credits replace
+            the stored ones too (``restamped_license(remade=True)``), still never
+            widening.
         allow_ai_training_forbidden: The universal fail-closed rights gate. A
             sound whose license has ``ai_training_ok=False`` (e.g. Sonniss,
             BBC RemArc) is refused with status ``'rights_blocked'`` *before* it is
@@ -472,7 +479,13 @@ def _ingest_one(
             fresh = resolve_ingest_license(license)
             consent = allow_ai_training_forbidden
             _restamp_stored(
-                lib, sid, fresh, dup, consent=consent, commercial=commercial
+                lib,
+                sid,
+                fresh,
+                dup,
+                consent=consent,
+                commercial=commercial,
+                remade=restamp_duplicate == RESTAMP_REMADE,
             )
         return dup
 
@@ -654,10 +667,11 @@ def _restamp_stored(
     *,
     consent: bool,
     commercial: Optional[bool],
+    remade: bool = False,
 ) -> None:
     """Re-stamp stored ``sid`` from ``fresh`` (never widening, behind the AI gate); note it."""
     rec = lib.meta[sid]
-    new, note = restamped_license(rec.license, fresh, widen=False)
+    new, note = restamped_license(rec.license, fresh, widen=False, remade=remade)
     # Only fresh terms notes added (#77): the rights are the stored ones, so no AI gate.
     notes_only = new is not None and replace(new, terms_notes=[]) == replace(
         rec.license, terms_notes=[]

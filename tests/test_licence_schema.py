@@ -276,3 +276,25 @@ def test_a_restamp_keeps_the_facts_about_the_bytes_and_an_assertion_drops_the_ba
     assert asserted.rights_verified and asserted.license_basis is None
     assert asserted.license_basis_confidence is None
     assert asserted.vendor_trains_on_output is True  # still a fact about the bytes
+
+
+# -- restamps of a re-made sound (#271): fresh credits and lineage, never wider ----------
+
+
+def test_a_remade_restamp_replaces_credits_and_lineage():
+    stored = _verified("CC-BY-4.0", creator_name="Ann", transformations=[{"op": "a"}])
+    fresh = _verified("CC-BY-4.0", creator_name="Carol", transformations=[{"op": "b"}])
+    assert restamped_license(stored, fresh, widen=False) == (None, None)  # lineage kept
+    new, note = restamped_license(stored, fresh, widen=False, remade=True)
+    assert new.creator_name == "Carol" and new.transformations == [{"op": "b"}]
+    assert "credits and lineage replaced" in note
+    assert restamped_license(new, fresh, widen=False, remade=True) == (None, None)
+
+
+def test_a_remade_restamp_never_drops_a_licence_bounding_the_sound():
+    stored = _verified("CC0-1.0", derived_from_license_ids=["CC-BY-NC-4.0"])
+    fresh = _verified("CC0-1.0", derived_from_license_ids=["CC-BY-4.0"])
+    new, note = restamped_license(stored, fresh, widen=False, remade=True)
+    assert new is None and note.startswith("not widened") and "drops CC-BY-NC-4.0" in note
+    narrower, _ = restamped_license(fresh, stored, widen=False, remade=True)
+    assert narrower.derived_from_license_ids == ["CC-BY-NC-4.0"]  # CC-BY no longer bounds

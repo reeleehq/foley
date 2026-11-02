@@ -48,6 +48,8 @@ lineage and the bed's id recorded), so :func:`foley.export_sound` and the credit
 on it; the result's ``sound_id`` names it. Whether it may be stored is checked before
 anything is spent (:func:`store_refusal`): its bytes must be keepable, and when a
 source's licence does not allow AI use, embedding it needs ``accept_ai_restricted=True``.
+A byte-identical sound already stored with other credits is not handed back; a rerun
+with corrected credits passes ``restamp=True`` to correct that record (never widened).
 
 **The treatment is a seam.** It is an audio "look" with no foley-specific knowledge, so
 its eventual home is the fleet's audio package (``mixing``, beside
@@ -118,7 +120,14 @@ BROADCAST_OP: str = "broadcast_bed"
 UNKNOWN_LICENSE_ID: str = "unknown"
 #: The ``ingest_one`` keywords ``store=True`` sets itself (not ``ingest_options``).
 STORE_OWNED_INGEST_KWARGS: "frozenset[str]" = frozenset(
-    {"library", "license", "store", "allow_ai_training_forbidden", "sound_id"}
+    {
+        "library",
+        "license",
+        "store",
+        "allow_ai_training_forbidden",
+        "sound_id",
+        "restamp_duplicate",
+    }
 )
 
 
@@ -795,8 +804,10 @@ def broadcast_license(
 # --- into the library ------------------------------------------------------------
 
 
-def _check_ingest_options(ingest_options, *, store: bool) -> None:
+def _check_ingest_options(ingest_options, *, store: bool, restamp: bool) -> None:
     """Refuse, before anything is spent, ingest options that cannot apply."""
+    if restamp and not store:
+        raise ValueError("restamp= is for store=True")
     if ingest_options is None:
         return
     if not store:
@@ -805,7 +816,7 @@ def _check_ingest_options(ingest_options, *, store: bool) -> None:
     if owned:
         raise ValueError(
             f"broadcast_bed sets {sorted(owned)} itself; pass library= / "
-            "accept_ai_restricted= to broadcast_bed instead"
+            "accept_ai_restricted= / restamp= to broadcast_bed instead"
         )
 
 
@@ -907,6 +918,7 @@ def _store(
     tags: "list[str]",
     accept_ai_restricted: bool,
     ingest_options: Optional[dict],
+    restamp: bool = False,
 ) -> "tuple[Optional[str], list[str]]":
     """Ingest the broadcast by value under ``rights``: ``(sound id or None, notes)``.
 
@@ -914,12 +926,28 @@ def _store(
     storage), with ``accept_ai_restricted`` as its consent. A byte-identical sound
     already stored is handed back only when it is this broadcast (:func:`_twin_refusal`:
     the same licence, credits and lineage, no wider); else the id is ``None``, with a
-    note.
+    note. ``restamp``: first correct that stored twin from ``rights`` through the
+    ingest's re-stamp (``restamp_duplicate=RESTAMP_REMADE``: never widening, behind the
+    same AI gate), then ask again.
     """
     from ..audio import encode
     from ..bootstrap import MetadataCaptioner
-    from ..index.ingest import CONSENT_NOTE, embedding_permitted, ingest_one
+    from ..index.ingest import (
+        CONSENT_NOTE,
+        RESTAMP_REMADE,
+        content_id,
+        embedding_permitted,
+        ingest_one,
+    )
+    from ..provenance.credits import attribution_line
 
+    data = encode(audio, sample_rate)
+    twin_id = content_id(data) if restamp else None
+    was = (
+        attribution_line(library[twin_id].license, fmt="plain")
+        if twin_id is not None and twin_id in library
+        else None
+    )
     options = {
         "captioner": MetadataCaptioner(caption),
         "seed_tags": tags,
@@ -927,21 +955,27 @@ def _store(
     }
     consented = accept_ai_restricted and not embedding_permitted(rights, library)
     res = ingest_one(
-        encode(audio, sample_rate),
+        data,
         library=library,
         license=rights,
         store=True,
         allow_ai_training_forbidden=accept_ai_restricted,
+        restamp_duplicate=RESTAMP_REMADE if restamp else False,
         **options,
     )
     notes = list(res.notes)
     if res.status in ("pass", "warn"):
         return res.id, notes + ([CONSENT_NOTE] if consented else [])
     if res.status == "skipped_dup":
-        why = _twin_refusal(library[res.id].license, rights)
-        return (
-            (res.id, notes) if why is None else (None, [*notes, f"{why} ({res.id!r})"])
-        )
+        twin = library[res.id].license
+        why = _twin_refusal(twin, rights)
+        if why is not None:
+            hint = "" if restamp else "; restamp=True corrects it (never widened)"
+            return None, [*notes, f"{why} ({res.id!r}){hint}"]
+        now = attribution_line(twin, fmt="plain")
+        if was not in (None, now):
+            notes.append(f"stored record: credit {was!r} -> {now!r}")
+        return res.id, notes
     return None, notes + [f"not stored ({res.status})"]
 
 
@@ -1012,6 +1046,7 @@ def broadcast_bed(
     generate_options: Optional[dict] = None,
     store: bool = False,
     accept_ai_restricted: bool = False,
+    restamp: bool = False,
     ingest_options: Optional[dict] = None,
     sr: Optional[int] = None,
 ) -> BroadcastBed:
@@ -1070,6 +1105,15 @@ def broadcast_bed(
             speech's). Without it such a ``store=True`` is refused, fail-closed. The
             consent is to embed and store only: the stored licence still forbids
             training.
+        restamp: With ``store=True``: when a byte-identical sound is already stored
+            with other credits, licence or lineage (a rerun with corrected credits),
+            correct that stored record to this broadcast's instead of refusing it
+            (``sound_id=None``). Through the ingest's re-stamp
+            (:func:`foley.licensing.restamped_license` with ``remade=True``): its
+            credits and lineage are replaced, its rights only ever narrowed (a wider
+            rerun is refused with a note, the record kept), and a licence that does
+            not allow AI use still needs ``accept_ai_restricted``. Exports already
+            made keep the credits they were exported with.
         ingest_options: More keywords for :func:`foley.index.ingest.ingest_one`
             (``tagger``, ``do_supervised``, ``thresholds``, ...) with ``store=True``.
         sr: Working sample rate (default :data:`foley.audio.WORKING_SAMPLE_RATE`).
@@ -1094,7 +1138,7 @@ def broadcast_bed(
     _check_bed_form(
         bed, bed_prompt, bed_license=bed_license, generate_options=generate_options
     )
-    _check_ingest_options(ingest_options, store=store)
+    _check_ingest_options(ingest_options, store=store, restamp=restamp)
     if store:
         library = library if library is not None else _default_library()
     if bed is not None:
@@ -1158,6 +1202,7 @@ def broadcast_bed(
             tags=[BROADCAST_OP, name],
             accept_ai_restricted=accept_ai_restricted,
             ingest_options=ingest_options,
+            restamp=restamp,
         )
         mix_notes.extend(store_notes)
     return BroadcastBed(

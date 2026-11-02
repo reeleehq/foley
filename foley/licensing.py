@@ -1445,9 +1445,23 @@ RESTAMP_FIELDS = (
     "attribution_text",
 )
 
+#: The credit fields a re-made sound's fresh record corrects besides
+#: :data:`RESTAMP_FIELDS` (``restamped_license(remade=True)``): who made it, from where.
+REMADE_CREDIT_FIELDS = (
+    "source",
+    "source_id",
+    "source_url",
+    "creator_name",
+    "creator_url",
+)
+
 
 def restamped_license(
-    stored: LicenseRecord, fresh: LicenseRecord, *, widen: bool = True
+    stored: LicenseRecord,
+    fresh: LicenseRecord,
+    *,
+    widen: bool = True,
+    remade: bool = False,
 ) -> "tuple[Optional[LicenseRecord], Optional[str]]":
     """What a stored sound's licence becomes when its source now states ``fresh``.
 
@@ -1468,6 +1482,14 @@ def restamped_license(
       the other does not, the stored licence is bounded by ``fresh``
       (:func:`narrow_to_source`): the sound may be used only where both allow.
 
+    ``remade=True``: the sound was made again (a byte-identical derivative re-rendered
+    with corrected credits), so ``fresh`` is its whole record: its lineage and credits
+    (:data:`REMADE_CREDIT_FIELDS`) replace the stored ones wherever ``fresh`` is
+    applied. A credit change is a correction, not a widening; dropping a licence the
+    stored record derives from (:func:`derived_license_ids`) whose row would still
+    narrow it is a widening, so ``widen=False`` keeps it. Default ``False``: the
+    source restates its terms and the stored lineage (the edits made since) is kept.
+
     >>> from foley.base import LicenseRecord
     >>> cc0 = apply_license_flags(LicenseRecord(source="s", license_id="CC0-1.0", rights_verified=True))
     >>> nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0", rights_verified=True))
@@ -1477,16 +1499,43 @@ def restamped_license(
     >>> new is None, note.startswith("not widened")
     (True, True)
     """
-    candidate = carry_lineage(replace(fresh), stored)  # what fresh means for this sound
+    # The lineage the restamped sound keeps: the stored one, or a re-made sound's own.
+    lineage = (
+        replace(
+            stored,
+            transformations=fresh.transformations,
+            derived_from_license_ids=fresh.derived_from_license_ids,
+        )
+        if remade
+        else stored
+    )
+    # What fresh means for this sound.
+    candidate = carry_lineage(replace(fresh), lineage)
     wider, narrower = wider_rights(candidate, stored), wider_rights(stored, candidate)
-    if not (wider or narrower) and all(
-        getattr(stored, f) == getattr(fresh, f) for f in RESTAMP_FIELDS
+    # A licence that bounded the sound and is dropped (only ever with remade=True).
+    held, kept = _flags_of(candidate), set(derived_license_ids(candidate))
+    loosened = [
+        d
+        for d in sorted(set(derived_license_ids(stored)) - kept)
+        if _bounded_by(held, derive_license_flags(d)) != held
+    ]
+    if loosened:
+        wider.append(f"derived_from_license_ids (drops {', '.join(loosened)})")
+    fields = RESTAMP_FIELDS + (REMADE_CREDIT_FIELDS if remade else ())
+    relineaged = candidate.transformations != list(stored.transformations or ())
+    if not (wider or narrower or relineaged) and all(
+        getattr(stored, f) == getattr(fresh, f) for f in fields
     ):
         return _with_fresh_notes(stored, fresh), None
     was = ", ".join(filter(None, (stored.source, stored.license_url)))
     change = f"licence {stored.license_id} -> {fresh.license_id} (was from {was})" + (
         f"; no longer allows {', '.join(narrower)}" if narrower else ""
     )
+    if remade and (
+        relineaged
+        or any(getattr(stored, f) != getattr(fresh, f) for f in REMADE_CREDIT_FIELDS)
+    ):
+        change += "; credits and lineage replaced by the re-made sound's"
     if widen or not stored.rights_verified or not wider:
         return candidate, change
     if not narrower:
