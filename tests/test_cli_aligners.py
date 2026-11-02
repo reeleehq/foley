@@ -93,6 +93,39 @@ def test_aeneas_sends_one_word_per_line_with_the_task_language(monkeypatch):
     assert run.text == "the\ndoor\n"
 
 
+def _tok(word, start, end):
+    return {"word": word, "start": start, "end": end}
+
+
+def test_mfa_tokens_map_back_onto_the_given_words(monkeypatch):
+    """MFA's own output for SPOKEN (real run): normalised, clitic split, two <unk>."""
+    _which_any(monkeypatch)
+    toks = ["the", "door", "opened", "mr", "smith", "'s", "<unk>", "<unk>", "cats", "ran"]
+    out = json.dumps({"tiers": {"words": {"entries": [
+        [i, i + 1, w] for i, w in enumerate(toks)]}}})  # fmt: skip
+    wt = MFAAligner(runner=_Runner(out)).word_timeline(AUDIO, SR, transcript=SPOKEN)
+    assert [w["word"] for w in wt] == SPOKEN.split()
+    by = {w["word"]: (w["start"], w["end"]) for w in wt}
+    assert by["Smith's"] == (4.0, 6.0)  # smith + 's
+    assert by["42"] == (6.0, 7.0) and by["zorblaxian"] == (7.0, 8.0)  # one <unk> each
+
+
+def test_onto_transcript_edge_cases():
+    from foley.weave.cli_aligners import onto_transcript
+
+    words = ["Hello", "—", "world"]  # a dash: no token covers it, so it is left out
+    toks = [_tok("hello", 0, 1), _tok("world", 1, 2)]
+    assert [w["word"] for w in onto_transcript(words, toks)] == ["Hello", "world"]
+    # one <unk> for two unknown words: both take its span
+    out = onto_transcript(["xq", "zz", "cat"], [_tok("<unk>", 0, 2), _tok("cat", 2, 3)])
+    assert [(w["word"], w["start"], w["end"]) for w in out] == [
+        ("xq", 0, 2), ("zz", 0, 2), ("cat", 2, 3)]  # fmt: skip
+    # an extra token the transcript lacks is ignored; a repeated word maps in order
+    toks = [_tok("the", 0, 1), _tok("uh", 1, 2), _tok("the", 2, 3)]
+    assert [w["start"] for w in onto_transcript(["the", "the"], toks)] == [0, 2]
+    assert onto_transcript(["a"], []) == []
+
+
 @pytest.mark.parametrize("make", [MFAAligner, AeneasAligner])
 def test_no_transcript_is_an_empty_timeline_without_running_anything(make):
     def never(*a, **k):
@@ -150,34 +183,41 @@ def test_render_records_the_injected_aligner(monkeypatch):
 # --- real round trips (guarded) ---------------------------------------------------
 
 
-def _speech():
+#: Case, punctuation, a clitic, a number and a made-up word: what MFA rewrites.
+SPOKEN = "The door, opened! Mr. Smith's 42 zorblaxian cats ran."
+
+
+def _speech(tmp_path):
     """A short spoken clip from macOS ``say`` (else skip): real speech to align."""
     import soundfile as sf
 
     if not shutil.which("say"):
         pytest.skip("no `say` to synthesise speech")
-    tmp = Path(os.environ.get("TMPDIR", "/tmp")) / "foley-align-say.aiff"
-    subprocess.run(["say", "-o", str(tmp), "the door opened slowly"], check=True)
-    data, sr = sf.read(str(tmp), dtype="float32")
-    return data, sr, "the door opened slowly"
+    clip = tmp_path / "say.aiff"
+    subprocess.run(["say", "-o", str(clip), SPOKEN], check=True)
+    data, sr = sf.read(str(clip), dtype="float32")
+    return data, sr
 
 
-def test_mfa_round_trip():
-    mfa = os.environ.get("FOLEY_TEST_MFA", "mfa")
-    if not shutil.which(mfa):
-        pytest.skip("mfa not installed (set $FOLEY_TEST_MFA to its path)")
-    audio, sr, text = _speech()
-    wt = MFAAligner(mfa=mfa).word_timeline(audio, sr, transcript=text)
-    assert [w["word"] for w in wt] == text.split()
+def _check_round_trip(wt, audio, sr):
+    assert [w["word"] for w in wt] == SPOKEN.split()  # the words as given, every one
     assert all(0 <= w["start"] < w["end"] <= len(audio) / sr + 0.05 for w in wt)
     assert all(a["end"] <= b["start"] + 1e-6 for a, b in zip(wt, wt[1:]))
 
 
-def test_aeneas_round_trip():
+def test_mfa_round_trip(tmp_path):
+    mfa = os.environ.get("FOLEY_TEST_MFA", "mfa")
+    if not shutil.which(mfa):
+        pytest.skip("mfa not installed (set $FOLEY_TEST_MFA to its path)")
+    audio, sr = _speech(tmp_path)
+    _check_round_trip(MFAAligner(mfa=mfa).word_timeline(audio, sr, transcript=SPOKEN), audio, sr)
+
+
+def test_aeneas_round_trip(tmp_path):
     python = os.environ.get("FOLEY_TEST_AENEAS_PYTHON", sys.executable)
     probe = subprocess.run([python, "-c", "import aeneas"], capture_output=True)
     if probe.returncode != 0:
         pytest.skip("aeneas not importable (set $FOLEY_TEST_AENEAS_PYTHON)")
-    audio, sr, text = _speech()
-    wt = AeneasAligner(python=python).word_timeline(audio, sr, transcript=text)
-    assert [w["word"] for w in wt] == text.split()
+    audio, sr = _speech(tmp_path)
+    wt = AeneasAligner(python=python).word_timeline(audio, sr, transcript=SPOKEN)
+    _check_round_trip(wt, audio, sr)
