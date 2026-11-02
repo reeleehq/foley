@@ -13,7 +13,9 @@ concrete trigger time (seconds) against a forced-aligned ``word_timeline``
 
 These are pure ``(anchor, word_timeline) -> seconds`` functions with no I/O and no
 heavy dependency, so they are independently unit-testable and keep ``import
-foley.weave`` dol-only. ``foley.weave.anchor.parse_symbolic_anchor`` is the single
+foley.weave`` dol-only. Every word lookup goes through one resolver,
+:func:`match_word`, which also says HOW it matched (``exact`` / ``stem`` / ``fuzzy`` /
+``fallback``); :func:`resolve_placement` records that on the resolved placement. ``foley.weave.anchor.parse_symbolic_anchor`` is the single
 SSOT bridge from SELECT's sparse ``TimelineItem.onset`` string to a
 :class:`~foley.base.Placement`.
 """
@@ -22,9 +24,10 @@ from __future__ import annotations
 
 import difflib
 import re
+from dataclasses import replace
 from typing import Optional
 
-from ..base import Anchor, Layer, Placement
+from ..base import Anchor, Layer, MatchKind, Placement
 
 #: Inter-word gap (seconds) that ends a sentence segment (report 06 §2.4 uses
 #: ``> ~350 ms`` as a lightweight sentence segmenter over the aligned transcript).
@@ -32,6 +35,8 @@ SEGMENT_GAP_S: float = 0.35
 
 #: A stem match needs at least this many letters; a cue shorter than the spoken word
 #: must also hold this share of it (``slam`` → ``slammed``), so ``a`` never claims ``apple``.
+#: A spoken word that is a compound cue's tail must leave a head this long too
+#: (``foot|steps``), so ``th|under`` is not a compound of ``thunder`` (#263).
 PREFIX_MIN_CHARS: int = 3
 PREFIX_MIN_SHARE: float = 0.5
 
@@ -102,31 +107,35 @@ def parse_symbolic_anchor(
     return Placement(anchor=anchor, ref=ref)
 
 
-def nearest_word(ref: Optional[str], word_timeline: "list[dict]") -> Optional[dict]:
-    """Return the ``word_timeline`` entry best matching ``ref`` (earliest wins).
+def match_word(
+    ref: Optional[str], word_timeline: "list[dict]"
+) -> "tuple[Optional[dict], MatchKind]":
+    """Return the ``word_timeline`` entry best matching ``ref`` and how it matched (#263).
 
-    Matches the phrase's first token exactly if present, else a word sharing its stem
-    (:func:`_is_stem_match`), else the closest word by lexical (``difflib``) ratio over
-    any token among words at least :data:`FUZZY_MIN_LENGTH_SHARE` of its length;
-    ``None`` when nothing is close or ``ref`` is empty.
+    The one word resolver every anchor goes through, cheapest and surest first (earliest
+    occurrence wins at each step): the phrase's first token **exactly**; else a word
+    sharing its **stem** (:func:`_is_stem_match`); else the closest word by lexical
+    (``difflib``) ratio over any token, among words at least
+    :data:`FUZZY_MIN_LENGTH_SHARE` of its length (**fuzzy**, which can be a false match).
+    ``(None, MatchKind.fallback)`` when nothing is close or ``ref`` is empty.
+
+    >>> wt = [{"word": "The"}, {"word": "doors"}, {"word": "slammed."}]
+    >>> [(w["word"], k.value) for w, k in (match_word(c, wt) for c in ("door", "slam"))]
+    [('doors', 'stem'), ('slammed.', 'stem')]
+    >>> match_word("zzzzz", wt)
+    (None, <MatchKind.fallback: 'fallback'>)
     """
-    if not ref or not word_timeline:
-        return None
-    tokens = [_norm(t) for t in ref.split() if _norm(t)]
-    if not tokens:
-        return None
+    tokens = [_norm(t) for t in (ref or "").split() if _norm(t)]
+    if not tokens or not word_timeline:
+        return None, MatchKind.fallback
     normed = [(_norm(w.get("word", "")), w) for w in word_timeline]
     head = tokens[0]
-    # 1) exact match on the phrase head (earliest occurrence).
     for nw, w in normed:
         if nw == head:
-            return w
-    # 2) a stem: an inflection (slam / slammed) or the spoken part of a compound cue
-    #    (gunshot / gun, footsteps / steps), never a short stub (a / apple).
+            return w, MatchKind.exact
     for nw, w in normed:
         if nw and _is_stem_match(head, nw):
-            return w
-    # 3) closest lexical match over the full phrase, earliest of the best.
+            return w, MatchKind.stem
     best, best_ratio = None, 0.0
     for token in tokens:
         for nw, w in normed:
@@ -135,14 +144,23 @@ def nearest_word(ref: Optional[str], word_timeline: "list[dict]") -> Optional[di
             ratio = difflib.SequenceMatcher(None, token, nw).ratio()
             if ratio > best_ratio:
                 best, best_ratio = w, ratio
-    return best if best_ratio >= FUZZY_MIN_RATIO else None
+    if best_ratio >= FUZZY_MIN_RATIO:
+        return best, MatchKind.fuzzy
+    return None, MatchKind.fallback
+
+
+def nearest_word(ref: Optional[str], word_timeline: "list[dict]") -> Optional[dict]:
+    """The ``word_timeline`` entry best matching ``ref`` (see :func:`match_word`), or ``None``."""
+    return match_word(ref, word_timeline)[0]
 
 
 def _is_stem_match(cue: str, word: str) -> bool:
     """Whether the spoken ``word`` and the ``cue`` share a stem long enough to mean it.
 
     The spoken word may be the cue's stem at either end (``gun`` for ``gunshot``,
-    ``steps`` for ``footsteps``) once it has :data:`PREFIX_MIN_CHARS` letters. A cue
+    ``steps`` for ``footsteps``) once it has :data:`PREFIX_MIN_CHARS` letters; as the
+    cue's tail it must also leave a head that long, since English inflects at the end,
+    so a tail match is a compound (``foot|steps``), never ``th|under``. A cue
     shorter than the word must start it and hold :data:`PREFIX_MIN_SHARE` of it (an
     inflection, ``slam`` for ``slammed``), so a short cue never claims a longer word.
 
@@ -150,11 +168,12 @@ def _is_stem_match(cue: str, word: str) -> bool:
     (True, True)
     >>> _is_stem_match("footsteps", "steps"), _is_stem_match("apple", "a"), _is_stem_match("car", "carpets")
     (True, False, False)
+    >>> _is_stem_match("thunder", "under")
+    False
     """
     if len(word) <= len(cue):
-        return len(word) >= PREFIX_MIN_CHARS and (
-            cue.startswith(word) or cue.endswith(word)
-        )
+        is_tail = cue.endswith(word) and len(cue) - len(word) >= PREFIX_MIN_CHARS
+        return len(word) >= PREFIX_MIN_CHARS and (cue.startswith(word) or is_tail)
     return (
         word.startswith(cue)
         and len(cue) >= PREFIX_MIN_CHARS
@@ -193,33 +212,31 @@ def _segment_sentences(
 
 def _span_onset(
     ref: Optional[str], word_timeline: "list[dict]"
-) -> "tuple[float, float]":
-    """Return the ``(start, end)`` seconds of the sentence span ``ref`` sits in.
+) -> "tuple[float, float, MatchKind]":
+    """Return the ``(start, end, match_kind)`` of the sentence span ``ref`` sits in.
 
-    With no ``ref`` (a bed with no cue) or no match, the span is the whole narration.
+    With no ``ref`` (a bed with no cue) the span is the whole narration by design
+    (``absolute``); with an unmatched ``ref`` it is the whole narration as a ``fallback``.
     """
     if not word_timeline:
-        return 0.0, 0.0
+        return 0.0, 0.0, MatchKind.fallback
     whole = (
         float(word_timeline[0].get("start", 0.0)),
         float(word_timeline[-1].get("end", word_timeline[-1].get("start", 0.0))),
     )
-    w = nearest_word(ref, word_timeline)
+    if not ref:
+        return (*whole, MatchKind.absolute)
+    w, kind = match_word(ref, word_timeline)
     if w is None:
-        return whole
+        return (*whole, kind)
     for seg in _segment_sentences(word_timeline):
         if any(sw is w for sw in seg):
             return (
                 float(seg[0].get("start", 0.0)),
                 float(seg[-1].get("end", seg[-1].get("start", 0.0))),
+                kind,
             )
-    return whole
-
-
-def _boundary_onset(ref: Optional[str], word_timeline: "list[dict]") -> float:
-    """Return the onset (seconds) of the sentence/scene boundary ``ref`` opens."""
-    start, _ = _span_onset(ref, word_timeline)
-    return start
+    return (*whole, kind)
 
 
 def _apply_pre_roll(onset: float, pre_roll: float) -> float:
@@ -244,19 +261,22 @@ def _snap_to_pause(
     return best
 
 
-def resolve_anchor(
+def resolve_placement(
     placement: Placement,
     word_timeline: "list[dict]",
     *,
     snap_pauses: bool = False,
-) -> "tuple[float, Optional[float]]":
-    """Resolve a :class:`Placement` to a concrete ``(onset_seconds, duration_seconds)``.
+) -> Placement:
+    """Resolve a :class:`Placement` against the ``word_timeline`` — a NEW placement.
 
     Dispatches on ``placement.anchor`` (report 06 §2.4): ``absolute`` uses the
     stored offset; ``word`` fires on the trigger word; ``sentence`` spans its
     sentence (filling ``duration`` when unset — beds loop to fill it); ``scene`` /
     ``paragraph`` land on the boundary. ``pre_roll`` is then subtracted (clamped at
     0), and — when ``snap_pauses`` — the onset snaps to the nearest inter-word gap.
+    ``match_kind`` records how the anchor matched (:class:`~foley.base.MatchKind`): a
+    speech anchor with no word timings, or whose cue matched no word, is a ``fallback``
+    at its stored onset (word) or the whole narration (span).
 
     Args:
         placement: The symbolic placement to resolve.
@@ -264,23 +284,36 @@ def resolve_anchor(
         snap_pauses: If ``True``, snap the resolved onset to the nearest pause.
 
     Returns:
-        ``(onset_seconds, duration_seconds_or_None)``. ``duration`` is filled only
-        for a span anchor whose ``placement.duration`` was unset.
+        A copy with ``onset`` (seconds), ``duration`` (filled only for a span anchor
+        whose ``duration`` was unset) and ``match_kind`` resolved.
     """
     duration = placement.duration
-    if placement.anchor is Anchor.absolute or not word_timeline:
-        onset = placement.onset
+    if placement.anchor is Anchor.absolute:
+        onset, kind = placement.onset, MatchKind.absolute
+    elif not word_timeline:
+        onset, kind = placement.onset, MatchKind.fallback
     elif placement.anchor is Anchor.word:
-        w = nearest_word(placement.ref, word_timeline)
+        w, kind = match_word(placement.ref, word_timeline)
         onset = float(w["start"]) if w else placement.onset
-    elif placement.anchor is Anchor.sentence:
-        start, end = _span_onset(placement.ref, word_timeline)
-        onset = start
-        if duration is None:
-            duration = max(0.0, end - start)
-    else:  # scene / paragraph boundary
-        onset = _boundary_onset(placement.ref, word_timeline)
+    else:  # sentence span, or scene / paragraph boundary (the span's first word)
+        onset, end, kind = _span_onset(placement.ref, word_timeline)
+        if placement.anchor is Anchor.sentence and duration is None:
+            duration = max(0.0, end - onset)
     onset = _apply_pre_roll(onset, placement.pre_roll)
     if snap_pauses and word_timeline:
         onset = _snap_to_pause(onset, word_timeline)
-    return onset, duration
+    return replace(placement, onset=onset, duration=duration, match_kind=kind)
+
+
+def resolve_anchor(
+    placement: Placement,
+    word_timeline: "list[dict]",
+    *,
+    snap_pauses: bool = False,
+) -> "tuple[float, Optional[float]]":
+    """Resolve a :class:`Placement` to ``(onset_seconds, duration_seconds_or_None)``.
+
+    The tuple view of :func:`resolve_placement` (which also says how it matched).
+    """
+    resolved = resolve_placement(placement, word_timeline, snap_pauses=snap_pauses)
+    return resolved.onset, resolved.duration

@@ -135,6 +135,26 @@ def test_a_timeline_that_carries_word_timings_needs_no_note():
     assert r.notes == []
 
 
+def test_a_cue_that_matched_only_a_similar_word_or_none_is_noted():
+    """#263: fuzzy and fallback anchor matches are surfaced, exact ones are not."""
+    from dataclasses import replace
+
+    wt = [{"word": "door", "start": 0.5, "end": 0.8}]
+    items = [
+        TimelineItem(clip_ref="door", onset="on 'door'"),
+        TimelineItem(clip_ref="door", onset="on 'doom'"),
+        TimelineItem(clip_ref="door", onset="on 'xylophone'"),
+    ]
+    tl = replace(_tl(), items=items, word_timeline=wt)
+    r = foley.weave(_voice(), tl, library=_Lib(), aligner=None)
+    kinds = [it.placement.match_kind.value for it in r.timeline.items]
+    assert kinds == ["exact", "fuzzy", "fallback"]
+    (fuzzy,) = [n for n in r.notes if "match=fuzzy" in n]
+    (fallback,) = [n for n in r.notes if "match=fallback" in n]
+    assert "doom" in fuzzy and "xylophone" not in fuzzy
+    assert "xylophone" in fallback and "doom" not in fallback
+
+
 def test_absolute_onsets_need_no_alignment_note():
     from dataclasses import replace
 

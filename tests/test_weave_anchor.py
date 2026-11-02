@@ -115,3 +115,61 @@ def test_a_short_unrelated_word_never_claims_a_cue():
            for i, w in enumerate("A gun went off. Heavy steps followed.".split())]  # fmt: skip
     assert nearest_word("gunshot", gun)["word"] == "gun"  # a compound cue's spoken stem
     assert nearest_word("footsteps", gun)["word"] == "steps"
+
+
+def _words(text):
+    return [{"word": w, "start": i * 0.5, "end": (i + 1) * 0.5}
+            for i, w in enumerate(text.split())]  # fmt: skip
+
+
+def test_match_word_says_how_it_matched():
+    """#263: exact / stem / fuzzy / fallback, so a false match is visible, not silent."""
+    from foley.base import MatchKind
+    from foley.weave.anchor import match_word
+
+    def kind(cue, text):
+        w, k = match_word(cue, _words(text))
+        return (w and w["word"]), k
+
+    assert kind("door", "the door opened") == ("door", MatchKind.exact)
+    assert kind("slam", "it slammed.") == ("slammed.", MatchKind.stem)
+    assert kind("footsteps", "soft steps") == ("steps", MatchKind.stem)
+    assert kind("carpet", "the car stopped") == ("car", MatchKind.stem)  # a stem, not a meaning
+    # 'th|under' is no compound: no longer a stem, and only a fuzzy match is left
+    assert kind("thunder", "he hid under the bed") == ("under", MatchKind.fuzzy)
+    assert kind("hiss", "This is it") == ("This", MatchKind.fuzzy)
+    assert kind("xylophone", "the door opened") == (None, MatchKind.fallback)
+    assert kind(None, "the door opened") == (None, MatchKind.fallback)
+
+
+def test_resolve_placement_records_the_match_kind():
+    from foley.base import MatchKind
+    from foley.weave.anchor import resolve_placement
+
+    def resolved(placement, wt=WT):
+        return resolve_placement(placement, wt)
+
+    p = resolved(Placement(anchor=Anchor.word, ref="door", pre_roll=0.1))
+    assert (p.onset, p.match_kind) == (0.4, MatchKind.exact)
+    assert resolved(Placement(anchor=Anchor.absolute, onset=4.2)).match_kind is MatchKind.absolute
+    no_words = resolved(Placement(anchor=Anchor.word, ref="door", onset=1.0), [])
+    assert (no_words.onset, no_words.match_kind) == (1.0, MatchKind.fallback)
+    stray = resolved(Placement(anchor=Anchor.word, ref="xylophone", onset=3.0))
+    assert (stray.onset, stray.match_kind) == (3.0, MatchKind.fallback)
+    bed = resolved(Placement(anchor=Anchor.sentence, ref=None))  # spans by design
+    assert (bed.onset, bed.duration, bed.match_kind) == (0.0, 2.6, MatchKind.absolute)
+    lost = resolved(Placement(anchor=Anchor.sentence, ref="xylophone"))
+    assert (lost.onset, lost.duration, lost.match_kind) == (0.0, 2.6, MatchKind.fallback)
+    scene = resolved(Placement(anchor=Anchor.scene, ref="rain"))
+    assert (scene.onset, scene.match_kind) == (2.0, MatchKind.exact)
+    # resolve_anchor stays the (onset, duration) view of the same resolver
+    assert resolve_anchor(Placement(anchor=Anchor.sentence, ref="door"), WT) == (0.0, 1.2)
+
+
+def test_placement_match_kind_serialises_back_compatibly():
+    from foley.base import MatchKind
+
+    old = Placement.from_dict({"anchor": "word", "ref": "door", "onset": 0.5})
+    assert old.match_kind is None  # a placement saved before #263 still loads
+    p = Placement(anchor=Anchor.word, ref="door", onset=0.5, match_kind=MatchKind.fuzzy)
+    assert Placement.from_json(p.to_json()) == p

@@ -96,6 +96,24 @@ class Anchor(str, Enum):
     paragraph = "paragraph"
 
 
+class MatchKind(str, Enum):
+    """HOW a :class:`Placement`'s anchor was resolved against the narration (#263).
+
+    ``exact`` — the cue word was spoken as written; ``stem`` — a word sharing its stem
+    (an inflection, or the spoken part of a compound cue); ``fuzzy`` — only a lexically
+    similar word (it may be a false match: ``thunder`` lands on "under"); ``fallback`` —
+    nothing matched (or there were no word timings), so the stored onset or the whole
+    narration was used; ``absolute`` — the placement names no word to match (an
+    absolute offset, or a bed with no cue spanning the narration).
+    """
+
+    exact = "exact"
+    stem = "stem"
+    fuzzy = "fuzzy"
+    fallback = "fallback"
+    absolute = "absolute"
+
+
 class VerifyLevel(str, Enum):
     """Which rung of the verification ladder produced a ``Verdict``."""
 
@@ -1005,7 +1023,8 @@ class Placement(SerializableMixin):
     Filled by WEAVE's aligner+anchor pass. ``onset`` is the resolved start in
     seconds (distinct from the sparse :attr:`TimelineItem.onset` symbolic string);
     ``pre_roll`` shifts the clip earlier so its salient transient — not its file
-    start — lands on the anchor (report 06 §2.4).
+    start — lands on the anchor (report 06 §2.4). ``match_kind`` records how the
+    anchor resolved (:class:`MatchKind`), so a fuzzy or fallback placement is visible.
     """
 
     anchor: Anchor = Anchor.absolute
@@ -1016,6 +1035,7 @@ class Placement(SerializableMixin):
     pre_roll: float = 0.0  # lead so the clip's transient lands on the anchor
     duration: Optional[float] = None  # None = full clip length
     loop: bool = False  # seamless-loop to fill ``duration`` (beds)
+    match_kind: Optional[MatchKind] = None  # how ``onset`` was resolved; None = unresolved
 
 
 @dataclass

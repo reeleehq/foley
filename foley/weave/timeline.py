@@ -22,7 +22,7 @@ from dataclasses import replace
 from typing import Optional
 
 from ..base import Processing, SoundDesignTimeline, TimelineItem
-from .anchor import parse_symbolic_anchor, resolve_anchor
+from .anchor import parse_symbolic_anchor, resolve_anchor, resolve_placement
 
 #: How long a one-shot's caption stays on screen (seconds) when the item has no
 #: resolved duration of its own.
@@ -59,7 +59,8 @@ def hydrate(
     Idempotent: an item that already carries a :class:`~foley.base.Placement` keeps
     its symbolic anchor (a hand edit is never clobbered) but is re-resolved against
     ``word_timeline`` so a re-recorded/re-aligned narration re-flows the SFX
-    (report 06 §6.1). ``processing`` falls back to the sparse ``gain`` and ``id`` to a
+    (report 06 §6.1); each placement records how its anchor matched
+    (``match_kind``, #263). ``processing`` falls back to the sparse ``gain`` and ``id`` to a
     stable content hash. The resolved ``word_timeline`` is cached on the returned
     timeline (the reproducible seed).
 
@@ -77,13 +78,8 @@ def hydrate(
         placement = it.placement or parse_symbolic_anchor(
             it.onset, layer=it.layer, loop=it.loop
         )
-        onset, duration = resolve_anchor(placement, wt)
-        resolved = replace(
-            placement,
-            onset=onset,
-            duration=duration,
-            loop=placement.loop or it.loop,
-        )
+        resolved = resolve_placement(placement, wt)
+        resolved = replace(resolved, loop=placement.loop or it.loop)
         processing = it.processing or Processing(gain_db=it.gain)
         cue = it.id or _cue_id(it, resolved)
         if cue in seen:  # disambiguate identical placements, deterministically
