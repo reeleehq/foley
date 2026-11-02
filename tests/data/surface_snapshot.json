@@ -128,9 +128,9 @@
       "commercial_ok": true,
       "verify": "listen",
       "max_events": 6,
-      "allow_generate": true,
       "session": "default",
-      "territory": null
+      "territory": null,
+      "allow_generate": true
     },
     "foley_guide": {},
     "foley_capabilities": {},

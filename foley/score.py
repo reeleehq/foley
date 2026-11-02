@@ -86,7 +86,7 @@ def score(
     commercial_ok: Optional[bool] = None,
     max_events: int = 6,
     verify: str = "listen",
-    backend: str = "auto",
+    backend: "Union[str, tuple]" = "auto",
     allow_generate: bool = True,
     master: "Union[str, MasterProfile]" = "podcast",
     weave: Optional[bool] = None,
@@ -119,12 +119,15 @@ def score(
             ``False`` explicitly admits non-commercial material.
         max_events: The sparse density cap **per segment** (restraint).
         verify: The max verify rung — ``'clap'`` | ``'listen'`` | ``'judge'``.
-        backend: The generation fallback's backend, forwarded to :func:`foley.find`
-            (``'auto'`` walks the generation order).
+        backend: The generation fallback's backend (a name, or a tuple of names as your
+            own order), forwarded to :func:`foley.find` (``'auto'`` walks the
+            generation order).
         allow_generate: ``False`` makes the run retrieval-only: no generation fallback
             (so no generation spend and no local model process); an event nothing in the
             library fits stays silent. Same name as
-            :attr:`~foley.agent.policy.Budget.allow_generate`, which it overrides.
+            :attr:`~foley.agent.policy.Budget.allow_generate`: ``False`` overrides a
+            ``budget`` that allows generation; ``True`` (default) leaves the budget's
+            own setting in force.
         master: The delivery :data:`~foley.base.MASTER_PROFILES` target (``'podcast'``
             default) or a :class:`~foley.base.MasterProfile`. foley always masters the
             woven mix (the true-peak limiter is what keeps the summed voice + beds +
@@ -147,14 +150,17 @@ def score(
     Raises:
         TypeError: If a ``weave_kwargs`` key is not a :func:`foley.weave` option (raised
             before any find, verify or generation call).
+        ValueError: If ``master`` is an unknown profile name (raised just as early).
     """
     from . import find, obs, plan
     from . import weave as _weave
     from .index import default_library
+    from .base import resolve_master
     from .licensing import intended_use_for
 
     # fail fast: a typo raises before any find/verify/generation spend
     _check_weave_kwargs(weave_kwargs)
+    master = resolve_master(master)
     segs = [segments] if isinstance(segments, str) else list(segments)
     use = intended_use_for(intended_use, commercial_ok=commercial_ok)
     full_transcript = transcript or " ".join(segs)
@@ -186,7 +192,15 @@ def score(
         # One cap for the whole score run, sized to the LLM the caller chose (#88).
         budget = Budget(max_usd=default_max_usd(llm))
     with (
-        obs.run("score", params={"n_segments": len(segs), "verify": str(verify)}),
+        obs.run(
+            "score",
+            params={
+                "n_segments": len(segs),
+                "verify": str(verify),
+                "backend": str(backend),
+                "allow_generate": allow_generate,
+            },
+        ),
         spend_scope(budget),
     ):
         for i, seg in enumerate(segs):
@@ -231,11 +245,10 @@ def _check_weave_kwargs(weave_kwargs: dict) -> None:
 
     from .weave import weave
 
-    accepted = {
-        name
-        for name, p in inspect.signature(weave).parameters.items()
-        if p.kind is p.KEYWORD_ONLY
-    }
+    params = inspect.signature(weave).parameters.values()
+    if any(p.kind is p.VAR_KEYWORD for p in params):
+        return  # weave takes any keyword: nothing to check against
+    accepted = {p.name for p in params if p.kind is p.KEYWORD_ONLY}
     unknown = sorted(set(weave_kwargs) - accepted)
     if not unknown:
         return

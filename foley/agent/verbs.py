@@ -844,9 +844,9 @@ def foley_score(
     commercial_ok: bool = DEFAULT_INTENDED_USE.commercial,
     verify: str = "listen",
     max_events: int = 6,
-    allow_generate: bool = True,
     session: str = "default",
     territory: Optional[str] = None,
+    allow_generate: bool = True,
 ) -> dict:
     """Score a narration passage → an editable sound-design timeline + a per-event rationale.
 

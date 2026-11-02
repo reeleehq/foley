@@ -93,6 +93,27 @@ def test_score_refuses_a_typod_weave_kwarg_before_any_find(monkeypatch):
     assert calls == []  # nothing ran, nothing spent
 
 
+def test_score_refuses_an_unknown_master_before_any_find(monkeypatch):
+    calls = _find_spy(monkeypatch)
+    with pytest.raises(ValueError, match="podkast"):
+        foley.score("A door creak.", audio="nar", master="podkast")
+    assert calls == []
+
+
+def test_score_kwarg_check_defers_to_a_weave_taking_any_keyword(monkeypatch):
+    _find_spy(monkeypatch)
+    monkeypatch.setattr(sys.modules["foley.weave"], "weave", lambda n, t, **kw: None)
+    foley.score("A door creak.", anything_goes=1)  # no TypeError: weave accepts **kw
+
+
+def test_score_survives_a_backend_that_cannot_honour_an_event():
+    # pyfxr has no preset for an engine: that event is skipped, the run is not lost
+    segs = ["The heavy oak door creaked.", "The spaceship engine hummed."]
+    with pytest.warns(UserWarning, match="generation skipped.*pyfxr"):
+        res = foley.score(segs, backend="pyfxr", library=_demo_lib())
+    assert res.n_sounds >= 1 and {e.segment for e in res.events} == {0}
+
+
 def test_score_forwards_backend_to_find(monkeypatch):
     calls = _find_spy(monkeypatch)
     foley.score(["A door creak.", "Rain fell."], backend="pyfxr", library=_demo_lib())

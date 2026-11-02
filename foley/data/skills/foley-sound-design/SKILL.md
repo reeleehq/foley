@@ -111,8 +111,8 @@ Prompt craft that worked: name the material and the action ("leather shoes on ol
   a `foley.base.MasterProfile`) and do not re-level `result.weave.audio`. Levelling narration
   stems *before* `score` is input gain, not a second master, and is fine.
 - **Your own word timings.** `aligner=` (forwarded to `foley.weave`) is the seam for a caller
-  that already knows when each word is spoken; without one, the fake aligner spreads the
-  transcript evenly over the whole narration file.
+  that already knows when each word is spoken; without one, foley uses WhisperX when it is
+  installed, else a fake aligner that spreads the transcript evenly over the whole narration file.
 
 ## Audience reactions: the crowd answers, it does not coincide
 

@@ -234,7 +234,7 @@ def _generate_and_reverify(
     from ..cost import BudgetExceeded
     from ..runtime import EgressBlocked
     from ..sources import GenerationError  # lazy: keeps import foley dol-only
-
+    from ..sources._dispatch import UnsupportedParameter
     from ..sources.base import SourceConfigurationError
 
     from ..sources.generate import generation_rights_refusal
@@ -252,10 +252,12 @@ def _generate_and_reverify(
         gc = generate_sound(
             event.query, backend=backend, library=library, intended_use=intended_use
         )
-    except (BudgetExceeded, SourceConfigurationError) as exc:
-        # Generation is find's optional fallback: an exhausted enclosing budget, or a
-        # backend that is not set up (no key, no plan, extra not installed), skips it —
-        # loudly, since nothing was generated — and find falls back to retrieval.
+    except (BudgetExceeded, SourceConfigurationError, UnsupportedParameter) as exc:
+        # Generation is find's optional fallback: an exhausted enclosing budget, a
+        # backend that is not set up (no key, no plan, extra not installed), or one that
+        # cannot honour this event (pyfxr has no preset for it) skips it — loudly, since
+        # nothing was generated — and find falls back to retrieval. All are refused
+        # before any billed call, so the rest of the run's work is kept.
         import warnings
 
         skipped = getattr(exc, "skipped_backends", None)
