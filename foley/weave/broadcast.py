@@ -31,8 +31,10 @@ The pipeline is small pure stages, each its own function:
 
 Rights are checked first (:func:`mix_refusal`: no share-alike, no-derivatives,
 territory-limited or unmodifiable source on either side), then the bed is resolved or
-generated, and only then is any text spoken, so a refusal never follows a paid call
-it could have preceded. The result always ends in the peak limiter, whatever the
+generated, and only then is any text spoken. A named generate backend's licence row
+is checked before it is called; a bed from an unnamed generation order can only be
+gated on the clip it returns, so that refusal comes after the bed was paid for (never
+after the speech). The result always ends in the peak limiter, whatever the
 treatment.
 
 **The treatment is a seam.** It is an audio "look" with no foley-specific knowledge, so
@@ -429,6 +431,7 @@ def _gate(source: "SoundRecord | LicenseRecord | None", role: str) -> None:
 
 # --- bed -----------------------------------------------------------------------------
 
+
 def _unknown_rights(source: str) -> LicenseRecord:
     """A fail-closed licence for a source whose rights were not given."""
     from ..licensing import apply_license_flags
@@ -475,6 +478,9 @@ def _generated_bed(prompt, *, library, generate, generate_options, sample_rate):
     """``(samples, record, notes)`` for ``bed_prompt=``, through :func:`foley.generate`."""
     from .render import load_clip_mono
 
+    refusal = _named_backend_refusal((generate_options or {}).get("backend"))
+    if refusal:  # known before paying: the named backend's own licence row
+        raise BroadcastRefusal(f"bed: {refusal}")
     if generate is None:
         from .. import generate
     cand = generate(prompt, library=library, **(generate_options or {}))
@@ -483,6 +489,29 @@ def _generated_bed(prompt, *, library, generate, generate_options, sample_rate):
         return as_clip(cand.audio_bytes, sample_rate), record, list(cand.notes)
     lib = library if library is not None else _default_library()
     return load_clip_mono(lib, record.id, sr=sample_rate), record, list(cand.notes)
+
+
+def _named_backend_refusal(backend) -> Optional[str]:
+    """:func:`mix_refusal` of a named generate backend's licence row, before any call.
+
+    ``None`` when no single backend is named (an unnamed order is gated on the clip it
+    returns) or its licence depends on the account (no fixed row).
+    """
+    if not isinstance(backend, str):
+        return None
+    from ..licensing import apply_license_flags
+    from ..sources.registry import SOURCE_REGISTRY, discover_sources
+
+    discover_sources()
+    lic_cfg = (SOURCE_REGISTRY.get(backend) or {}).get("config", {}).get(
+        "license"
+    ) or {}
+    license_id = lic_cfg.get("default_license_id")
+    if license_id is None:
+        return None
+    return mix_refusal(
+        apply_license_flags(LicenseRecord(source=backend, license_id=license_id))
+    )
 
 
 def _default_library():

@@ -437,3 +437,21 @@ def test_ai_disclosure_comes_from_either_source():
     bed.disclosure_recommended, bed.watermark = True, {"present": True}
     out = broadcast_license(bed, _rights("CC0-1.0"), treatment="x")
     assert out.disclosure_recommended and out.watermark is None
+
+
+def test_a_named_bed_backend_whose_licence_cannot_be_mixed_is_refused_before_paying():
+    """A territory-limited backend's row is known before the call: nothing is generated."""
+    import pytest
+
+    from foley.weave.broadcast import BroadcastRefusal, _generated_bed
+
+    calls = []
+
+    def generate(prompt, **kw):
+        calls.append(kw)
+        raise AssertionError("paid")
+
+    with pytest.raises(BroadcastRefusal, match="bed:"):
+        _generated_bed("a crowd", library=None, generate=generate,
+                       generate_options={"backend": "fal_hunyuan_foley"}, sample_rate=48_000)  # fmt: skip
+    assert calls == []
