@@ -254,14 +254,17 @@ def _next_chunk_at(f: BinaryIO, end: int, size: int, total: int) -> int:
 
 
 def iter_riff_chunks(
-    f: BinaryIO, *, forms=RIFF_FORMS
+    f: BinaryIO, *, forms=RIFF_FORMS, stop_at_declared_end: bool = False
 ) -> "Iterator[tuple[bytes, int, int]]":
     """``(chunk_id, offset, size)`` for each top-level chunk of a RIFF / RF64 / BW64 WAVE.
 
     Walks the chunk headers with seeks, never reading the audio, so a large file costs
-    a few small reads. Stops quietly at a truncated chunk, and at the RIFF's declared
-    end when that is inside the file (bytes after it are not the WAVE's). For RF64 / BW64, a ``data``
-    chunk sized ``0xFFFFFFFF`` takes its real size from ``ds64``'s ``dataSize``.
+    a few small reads. Stops quietly at a truncated chunk. ``stop_at_declared_end``
+    also stops at the RIFF's declared end when that is inside the file: a writer must
+    not fold trailing bytes into the WAVE, while a reader keeps going, since many files
+    understate their RIFF size and still carry ``bext`` / iXML after it. For RF64 /
+    BW64, a ``data`` chunk sized ``0xFFFFFFFF`` takes its real size from ``ds64``'s
+    ``dataSize``.
 
     >>> import io
     >>> body = b"WAVE" + b"abcd" + struct.pack("<I", 1) + b"x\\0"
@@ -275,7 +278,7 @@ def iter_riff_chunks(
     if len(head) < 12 or head[:4] not in forms or head[8:12] != b"WAVE":
         return
     declared_end = 8 + struct.unpack("<I", head[4:8])[0]
-    if 12 < declared_end < total:  # a placeholder or a too-big size: the file's end
+    if stop_at_declared_end and 12 < declared_end < total:
         total = declared_end
     pos, data_size = 12, None
     while pos + 8 <= total:
@@ -564,7 +567,9 @@ def write_metadata_chunks(
     unknown = set(chunks) - set(builders)
     if unknown:
         raise ValueError(f"no builder for chunks {sorted(unknown)}")
-    listed = list(iter_riff_chunks(io.BytesIO(wav), forms=(b"RIFF",)))
+    listed = list(
+        iter_riff_chunks(io.BytesIO(wav), forms=(b"RIFF",), stop_at_declared_end=True)
+    )
     present = {chunk_id for chunk_id, _, _ in listed}
     if INSERT_BEFORE not in present:
         raise ValueError(f"no whole {INSERT_BEFORE!r} chunk: the file is truncated")

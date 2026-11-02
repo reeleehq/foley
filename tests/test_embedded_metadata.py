@@ -369,8 +369,8 @@ def test_cleared_fields_are_removed_from_an_existing_ixml():
 
 def test_bytes_after_the_declared_riff_end_are_not_folded_in():
     src = _wav(DATA) + _chunk(b"iXML", _ixml(FXNAME="outside"))  # RIFF size not updated
-    assert read_embedded_metadata(src) == {}
-    wav, notes = _write(src, {"caption": "c"})
+    assert read_embedded_metadata(src)["caption"] == "outside"  # the reader still reads it
+    wav, notes = _write(src, {"caption": "c"})  # the writer does not fold it in
     _assert_well_formed(wav)
     assert read_embedded_metadata(wav)["raw"]["ixml"] == {"DESCRIPTION": "c"}
     assert notes and "dropped" in notes[0]
@@ -391,3 +391,12 @@ def test_what_the_writer_cannot_keep_is_reported():
     write_metadata_chunks(big, chunks_from_fields({"caption": "c"}), max_chunk_bytes=16,
                           report=notes.append)  # fmt: skip
     assert "replaced, not merged" in notes[0]
+
+
+def test_the_reader_reads_past_an_understated_riff_size(tmp_path):
+    """Many files understate their RIFF size; metadata after that point is still read."""
+    wav = _wav(DATA, _chunk(b"iXML", _ixml(FXNAME="Late")))
+    short = wav[:4] + struct.pack("<I", len(wav) - 8 - 200) + wav[8:]  # understated
+    f = tmp_path / "short.wav"
+    f.write_bytes(short)
+    assert read_embedded_metadata(f)["caption"] == "Late"
