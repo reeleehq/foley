@@ -26,25 +26,26 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 
 ### Functions
 
-| [`weave`](#foley.weave.weave)(narration, timeline, \*[, master, ...])   | Weave the chosen sounds under `narration` into a mastered, editable mix.                                                     |
-|--------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| [`render`](#foley.weave.render)(timeline, library, \*[, sr, ...])        | Render `timeline` against `library` into a mastered mix (PURE, deterministic).                                               |
-| [`hydrate`](#foley.weave.hydrate)(timeline[, word_timeline])              | Resolve every item's anchor + fill processing/id, returning a NEW timeline.                                                  |
-| [`parse_symbolic_anchor`](#foley.weave.parse_symbolic_anchor)(onset, \*[, layer, loop]) | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`.                                             |
-| [`resolve_anchor`](#foley.weave.resolve_anchor)(placement, word_timeline, \*)    | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.                                                     |
-| [`swap_clip`](#foley.weave.swap_clip)(timeline, item_id, new_clip_ref)      | Swap an item's clip (keeping its placement/processing) — a NEW timeline.                                                     |
-| [`nudge`](#foley.weave.nudge)(timeline, item_id, delta_s)               | Shift an item's resolved onset by `delta_s` seconds — a NEW timeline.                                                        |
-| [`set_gain`](#foley.weave.set_gain)(timeline, item_id, gain_db)            | Set an item's processing gain (dB, voice-relative) — a NEW timeline.                                                         |
-| [`toggle`](#foley.weave.toggle)(timeline, item_id, enabled)              | Non-destructively mute/unmute an item — a NEW timeline.                                                                      |
-| [`set_master`](#foley.weave.set_master)(timeline, master)                    | Set the timeline's master profile (name or [`MasterProfile`](#foley.weave.MasterProfile)) — a NEW timeline. |
-| [`to_webvtt`](#foley.weave.to_webvtt)(timeline, \*[, window_s])             | Render the timeline's SFX cues as a WebVTT SDH caption file (report 06 / issue #8).                                          |
-| [`to_srt`](#foley.weave.to_srt)(timeline, \*[, window_s])                | Render the timeline's SFX cues as an SRT SDH caption file (report 06 / issue #8).                                            |
-| [`to_edl`](#foley.weave.to_edl)(timeline, \*[, title])                   | Export `timeline` as a pure-stdlib CMX3600 EDL (deterministic, pinned ids).                                                  |
-| [`to_otio`](#foley.weave.to_otio)(timeline, \*[, rate])                   | Export `timeline` as an OpenTimelineIO JSON string (lazy `foley[weave]`).                                                    |
-| [`export`](#foley.weave.export)(timeline, \*[, fmt])                     | Export `timeline` as `(format, text)` — OTIO when available, else EDL.                                                       |
-| [`reassert_provenance`](#foley.weave.reassert_provenance)(audio, sample_rate, ...)    | Re-assert provenance over the mastered mix — watermark + C2PA sidecar (fail-safe).                                           |
-| [`check_requirements`](#foley.weave.check_requirements)(\*[, names, verbose])        | Report which optional WEAVE system binaries are available (`shutil.which`).                                                  |
-| [`verify_and_setup`](#foley.weave.verify_and_setup)(\*[, names])                   | Check the optional system deps and return a per-dep status + guidance report.                                                |
+| [`weave`](#foley.weave.weave)(narration, timeline, \*[, master, ...])    | Weave the chosen sounds under `narration` into a mastered, editable mix.                                                     |
+|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
+| [`render`](#foley.weave.render)(timeline, library, \*[, sr, ...])         | Render `timeline` against `library` into a mastered mix (PURE, deterministic).                                               |
+| [`hydrate`](#foley.weave.hydrate)(timeline[, word_timeline])               | Resolve every item's anchor + fill processing/id, returning a NEW timeline.                                                  |
+| [`parse_symbolic_anchor`](#foley.weave.parse_symbolic_anchor)(onset, \*[, layer, loop])  | Parse SELECT's sparse symbolic `onset` string into a resolved-later `Placement`.                                             |
+| [`resolve_anchor`](#foley.weave.resolve_anchor)(placement, word_timeline, \*)     | Resolve a `Placement` to a concrete `(onset_seconds, duration_seconds)`.                                                     |
+| [`swap_clip`](#foley.weave.swap_clip)(timeline, item_id, new_clip_ref)       | Swap an item's clip (keeping its placement/processing) — a NEW timeline.                                                     |
+| [`nudge`](#foley.weave.nudge)(timeline, item_id, delta_s)                | Shift an item's resolved onset by `delta_s` seconds — a NEW timeline.                                                        |
+| [`set_gain`](#foley.weave.set_gain)(timeline, item_id, gain_db)             | Set an item's processing gain (dB, voice-relative) — a NEW timeline.                                                         |
+| [`toggle`](#foley.weave.toggle)(timeline, item_id, enabled)               | Non-destructively mute/unmute an item — a NEW timeline.                                                                      |
+| [`set_master`](#foley.weave.set_master)(timeline, master)                     | Set the timeline's master profile (name or [`MasterProfile`](#foley.weave.MasterProfile)) — a NEW timeline. |
+| [`to_webvtt`](#foley.weave.to_webvtt)(timeline, \*[, window_s])              | Render the timeline's SFX cues as a WebVTT SDH caption file (report 06 / issue #8).                                          |
+| [`to_srt`](#foley.weave.to_srt)(timeline, \*[, window_s])                 | Render the timeline's SFX cues as an SRT SDH caption file (report 06 / issue #8).                                            |
+| [`to_edl`](#foley.weave.to_edl)(timeline, \*[, title])                    | Export `timeline` as a pure-stdlib CMX3600 EDL (deterministic, pinned ids).                                                  |
+| [`to_otio`](#foley.weave.to_otio)(timeline, \*[, rate])                    | Export `timeline` as an OpenTimelineIO JSON string (lazy `foley[weave]`).                                                    |
+| [`export`](#foley.weave.export)(timeline, \*[, fmt])                      | Export `timeline` as `(format, text)` — OTIO when available, else EDL.                                                       |
+| [`reassert_provenance`](#foley.weave.reassert_provenance)(audio, sample_rate, ...)     | Re-assert provenance over the mastered mix — watermark + C2PA sidecar (fail-safe).                                           |
+| [`check_requirements`](#foley.weave.check_requirements)(\*[, names, verbose])         | Report which optional WEAVE system binaries are available (`shutil.which`).                                                  |
+| [`verify_and_setup`](#foley.weave.verify_and_setup)(\*[, names])                    | Check the optional system deps and return a per-dep status + guidance report.                                                |
+| [`broadcast_bed`](#foley.weave.broadcast_bed)(lines, \*[, bed, bed_prompt, ...]) | Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).                                        |
 
 ### Classes
 
@@ -62,6 +63,13 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`AeneasAligner`](#foley.weave.AeneasAligner)(\*[, python, languages, ...])      | aeneas (TTS + DTW) behind the [`Aligner`](#foley.weave.Aligner) seam, one fragment per word.                |
 | [`MasterProfile`](#foley.weave.MasterProfile)([target_lufs, true_peak_db, ...])  | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                     |
 | [`MasterReport`](#foley.weave.MasterReport)(target_lufs, input_lufs, ...)       | What the master stage did — a JSON-serialisable audit row for the run-artifact.                                                    |
+| [`BroadcastBed`](#foley.weave.BroadcastBed)(audio, sr, license, sources, ...)   | A rendered broadcast bed: the audio and the rights of everything in it.                                                            |
+| [`TreatmentPreset`](#foley.weave.TreatmentPreset)(name, highpass_hz, ...[, ...])   | A diegetic-source colouring: band-pass -> RMS compressor -> make-up -> limiter.                                                    |
+
+### Exceptions
+
+| [`BroadcastRefusal`](#foley.weave.BroadcastRefusal)   | A source whose rights do not allow it into a broadcast bed (refused, fail-closed).   |
+|---------------------------------------------------------------------|--------------------------------------------------------------------------------------|
 
 ### *class* foley.weave.AeneasAligner(\*, python='/opt/hostedtoolcache/Python/3.12.15/x64/bin/python', languages=None, timeout=None, runner=<function run>)
 
@@ -116,6 +124,77 @@ overlay (fast preview / DSP-free fallback). `item` is already anchor-resolved
 `float32` working arrays at `sample_rate`. A strategy with settings that change
 its output should expose them as a `cache_key` string: the [`RenderCache`](#foley.weave.RenderCache)
 keys on it (default: the class name).
+
+### *class* foley.weave.BroadcastBed(audio, sr, license, sources, treatment, notes=list())
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A rendered broadcast bed: the audio and the rights of everything in it.
+
+#### audio
+
+Mono `float32` samples.
+
+* **Type:**
+  `ndarray`
+
+#### sr
+
+Sample rate (Hz).
+
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+#### license
+
+The mix’s rights (`broadcast_license()`): the bed’s narrowed to the
+speech’s, never wider than either.
+
+* **Type:**
+  [`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)
+
+#### sources
+
+`(bed, speech)` provenance as given: the bed’s
+[`SoundRecord`](foley.base.html.md#foley.base.SoundRecord) (library or generated) or
+[`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord), and the speech’s licence (`None` if not
+given). For the credit line use [`credits`](#foley.weave.BroadcastBed.credits), which reads both off
+`license`.
+
+* **Type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)
+
+#### treatment
+
+The device’s name (`'dry'` for none).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### notes
+
+What the caller should know (unmeasurable levels, missing rights, the
+bed generation’s own notes).
+
+* **Type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)
+
+#### *property* credits
+
+the bed, “derived from” the speech.
+
+* **Type:**
+  The attribution [`Credits`](foley.provenance.html.md#foley.provenance.Credits)
+
+#### *property* duration_s *: [float](https://docs.python.org/3/builtins/functions.html#float)*
+
+Length of [`audio`](#foley.weave.BroadcastBed.audio) in seconds.
+
+### *exception* foley.weave.BroadcastRefusal
+
+Bases: [`ValueError`](https://docs.python.org/3/builtins/exceptions.html#ValueError)
+
+A source whose rights do not allow it into a broadcast bed (refused, fail-closed).
 
 ### *class* foley.weave.FakeAligner
 
@@ -243,6 +322,78 @@ the aligner that produced them (`"fake"`, `"whisperx"`, a class name), or
 * **Type:**
   Where the word timings came from
 
+### *class* foley.weave.TreatmentPreset(name, highpass_hz, lowpass_hz, threshold_db, ratio, makeup_db=0.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+A diegetic-source colouring: band-pass -> RMS compressor -> make-up -> limiter.
+
+Callable as `preset(samples, sample_rate)`, so a preset is just one value of the
+`treatment=` strategy (any `(samples, sr) -> samples` callable is another).
+
+#### name
+
+The preset’s name (recorded on the result’s licence).
+
+* **Type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+#### highpass_hz
+
+Lower edge of the device’s passband (Hz).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### lowpass_hz
+
+Upper edge of the device’s passband (Hz).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### threshold_db
+
+Compressor threshold (dBFS of the RMS detector).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### ratio
+
+Compressor ratio above the threshold (`1` = none).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### makeup_db
+
+Gain after the compressor (dB).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### filter_order
+
+Butterworth order of the band-pass.
+
+* **Type:**
+  [`int`](https://docs.python.org/3/builtins/functions.html#int)
+
+#### detector_s
+
+RMS detector time constant (s).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
+#### ceiling_db
+
+Peak ceiling of the final limiter (dBFS).
+
+* **Type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
+
 ### *class* foley.weave.WeaveResult(audio, sr, timeline, credits, captions_vtt, captions_srt, master_report, run_manifest_ref=None, content_credential=None, watermark=None, notes=list())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -277,6 +428,56 @@ Force-align `audio` to its transcript, returning word-level timestamps.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### foley.weave.broadcast_bed(lines, , bed=None, bed_prompt=None, treatment='am_radio', gap_s=0.6, duration=None, bed_under_speech_db=-12.0, loop_speech=True, crossfade_s=0.05, ceiling_db=-1.0, speech_license=None, bed_license=None, tts=None, library=None, generate=None, generate_options=None, sr=None)
+
+Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).
+
+Everything that can be checked is checked before anything is paid for: the lines,
+the treatment, the bed’s form, and the rights of the speech and of a given bed
+(`mix_refusal()`). Then the bed is generated (if prompted) and gated, and only
+then is the text spoken.
+
+* **Parameters:**
+  * **lines** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)) – The spoken lines, in order: each an array at `sr`, `(samples, sr)`,
+    encoded bytes or a path; or text (a `str` that is not a file), which goes
+    through `tts=`. Audio lines never go through `tts`.
+  * **bed** – The bed: a library sound id, or its audio (any `lines` form).
+  * **bed_prompt** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – Instead of `bed`: a prompt for [`foley.generate()`](foley.html.md#foley.generate) (its budget,
+    paid-generation consent and licence gate apply unchanged).
+  * **treatment** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`TreatmentPreset`](foley.weave.broadcast.html.md#foley.weave.broadcast.TreatmentPreset), [`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[`ndarray`, [`int`](https://docs.python.org/3/builtins/functions.html#int)], `ndarray`], [`None`](https://docs.python.org/3/builtins/constants.html#None)]) – The device: a `TREATMENTS` name (`'am_radio'` default,
+    `'tv'`, `'pa'`, `'phone'`), a [`TreatmentPreset`](#foley.weave.TreatmentPreset), any
+    `(samples, sr) -> samples` callable (e.g. the fleet’s, once `mixing` has
+    it), or `None` for dry. Applied to the whole program, crowd included.
+  * **gap_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Silence after each line (s).
+  * **duration** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Length of the result (s); `None`: the lines once, with their gaps.
+  * **bed_under_speech_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The bed’s level under the speech (LU, integrated
+    loudness), set **before** the treatment: the device’s compressor then
+    narrows the gap a little, as a real one would.
+  * **loop_speech** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Repeat the lines to fill `duration` (else they play once).
+  * **crossfade_s** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – Equal-power crossfade at each loop seam (s).
+  * **ceiling_db** ([`float`](https://docs.python.org/3/builtins/functions.html#float)) – The result’s peak ceiling (dBFS), held whatever the treatment
+    (`mixing.loudness.limit_peaks()`).
+  * **speech_license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – The speech’s rights, as given (e.g. the TTS vendor’s terms).
+    `None`: unknown, so the result’s rights fail closed.
+  * **bed_license** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`LicenseRecord`](foley.base.html.md#foley.base.LicenseRecord)]) – The rights of raw bed audio given as `bed` (a library or
+    generated bed carries its own).
+  * **tts** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[`ndarray`, [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`PathLike`](https://docs.python.org/3/library/os.html#os.PathLike)]]]) – A `text -> audio` callable that speaks text lines (no default: see the
+    module docstring for voxy and an’s ElevenLabs provider).
+  * **library** – Where a bed id is looked up and a generated bed is stored (default:
+    the process-wide library).
+  * **generate** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Callable`](https://docs.python.org/3/library/typing.html#typing.Callable)]) – The bed generator (default [`foley.generate()`](foley.html.md#foley.generate); a test seam).
+  * **generate_options** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]) – Keyword arguments for it (`backend`, `budget`,
+    `duration_s`, `store`, …; not `library`).
+  * **sr** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]) – Working sample rate (default `foley.audio.WORKING_SAMPLE_RATE`).
+* **Return type:**
+  [`BroadcastBed`](foley.weave.broadcast.html.md#foley.weave.broadcast.BroadcastBed)
+* **Returns:**
+  A [`BroadcastBed`](#foley.weave.BroadcastBed).
+* **Raises:**
+  * [**BroadcastRefusal**](#foley.weave.BroadcastRefusal) – A source’s rights do not allow it in (`mix_refusal()`).
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – Unusable lines, treatment or bed form (before anything is spent).
+  * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – A bed id that is neither a file nor in the library.
 
 ### foley.weave.check_requirements(, names=None, verbose=False)
 
@@ -560,6 +761,7 @@ an optional keyword.
 | [`align`](foley.weave.align.html.md#module-foley.weave.align)               | Forced-alignment adapters — the `Aligner` seam's fake default + WhisperX real impl.          |
 |-----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
 | [`anchor`](foley.weave.anchor.html.md#module-foley.weave.anchor)             | Symbolic-anchor → sample-onset heuristics — the SELECT→WEAVE timing bridge (report 06 §2.4). |
+| [`broadcast`](foley.weave.broadcast.html.md#module-foley.weave.broadcast)       | A diegetic broadcast bed: speech lines heard through a radio/TV/PA/phone over a bed (#108).  |
 | [`cli_aligners`](foley.weave.cli_aligners.html.md#module-foley.weave.cli_aligners) | Forced aligners run as external programs: Montreal Forced Aligner and aeneas (#43).          |
 | [`master`](foley.weave.master.html.md#module-foley.weave.master)             | Mastering — loudness-normalize + true-peak-limit the finished mix (report 06 §5).            |
 | [`mix`](foley.weave.mix.html.md#module-foley.weave.mix)                   | Pure-numpy mixing DSP — making a clip sit under the voice (report 06 §3).                    |

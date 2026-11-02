@@ -82,6 +82,7 @@
       refine_query
       verify_match
       decide
+      broadcast_bed
       score
       install_agent_kit
       mcp_server
@@ -159,6 +160,7 @@
       Budget
       Decision
       WeaveResult
+      BroadcastBed
       ScoreResult
       ScoredEvent
       SessionStore
@@ -176,6 +178,7 @@
       SafetyRefusal
       TrademarkRefusal
       RecognizableVoiceRefusal
+      BroadcastRefusal
    
 .. rubric:: Modules
 

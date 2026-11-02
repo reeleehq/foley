@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../../_static/documentation_options.js?v=0f6bfde0"></script>
+    <script src="../../../../_static/documentation_options.js?v=e7715e22"></script>
     <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.117" />
+  <meta name="docsearch:version" content="0.0.118" />
   
     
     <script src="../../../../_static/searchtools.js"></script>
@@ -911,7 +911,9 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="StableAudioAdapter.generate_takes">
 <a class="viewcode-back" href="../../../../_autosummary/foley.sources.stable_audio.adapter.html#foley.sources.stable_audio.adapter.StableAudioAdapter.generate_takes">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">generate_takes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[GeneratedClip]"</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate_takes</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">affordances</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[GeneratedClip]"</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""``n`` takes of ``prompt`` from one pipeline call (#210), through the batch</span>
 <span class="sd">        knob ``num_waveforms_per_prompt``: take ``i`` is drawn from its own generator,</span>
 <span class="sd">        seeded ``seed + i`` (:func:`~foley.sources.base.derived_seed`), and records</span>
@@ -1071,7 +1073,9 @@ window.runMermaid = runMermaid;</script>
         <span class="n">ran_on</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">k</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"torch."</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ran_on</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="p">}</span>
-        <span class="n">audios</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_encode</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">audios</span><span class="p">)[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">seeds</span><span class="p">)]]</span>
+        <span class="n">audios</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_encode</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">output</span><span class="o">.</span><span class="n">audios</span><span class="p">)[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">seeds</span><span class="p">)]</span>
+        <span class="p">]</span>
         <span class="k">return</span> <span class="n">audios</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">ran_on</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">audio</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>

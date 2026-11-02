@@ -32,6 +32,7 @@ foley.weave
       reassert_provenance
       check_requirements
       verify_and_setup
+      broadcast_bed
    
    .. rubric:: Classes
 
@@ -50,6 +51,14 @@ foley.weave
       AeneasAligner
       MasterProfile
       MasterReport
+      BroadcastBed
+      TreatmentPreset
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      BroadcastRefusal
    
 .. rubric:: Modules
 
@@ -59,6 +68,7 @@ foley.weave
 
    align
    anchor
+   broadcast
    cli_aligners
    master
    mix

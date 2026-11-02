@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=0f6bfde0"></script>
+    <script src="../_static/documentation_options.js?v=e7715e22"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.117" />
+  <meta name="docsearch:version" content="0.0.118" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -739,6 +739,7 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    foley.ingest("~/my_sounds/")</span>
 <span class="sd">    foley.ingest_library("~/SFX/", accept_ai_restricted=True)  # owned packs + sidecars</span>
 <span class="sd">    data, rights, provenance = foley.export_sound(sound_id)  # lacing.Rights-keyed rights</span>
+<span class="sd">    foley.broadcast_bed(lines, bed_prompt="stadium crowd", treatment="am_radio")  # a radio in the scene</span>
 
 <span class="sd">The design is grounded in the research reports under ``misc/docs/research/``.</span>
 
@@ -976,7 +977,7 @@ window.runMermaid = runMermaid;</script>
 <span class="c1"># ``foley.weave(narration, timeline)`` runs the façade while ``foley.weave.&lt;submodule&gt;``</span>
 <span class="c1"># (``foley.weave.render`` etc.) stays fully importable.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">weave</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">.weave</span><span class="w"> </span><span class="kn">import</span> <span class="n">WeaveResult</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.weave</span><span class="w"> </span><span class="kn">import</span> <span class="n">BroadcastBed</span><span class="p">,</span> <span class="n">BroadcastRefusal</span><span class="p">,</span> <span class="n">WeaveResult</span><span class="p">,</span> <span class="n">broadcast_bed</span>
 
 <span class="c1"># --- score: the one-call AI-first entry — narration text → tasteful woven sound design ---</span>
 <span class="c1"># (composes find → plan → weave; numpy/torch stay lazy inside them, so this stays dol-only.)</span>
@@ -1178,6 +1179,9 @@ window.runMermaid = runMermaid;</script>
     <span class="c1"># --- weave: the WEAVE stage — weave() (#8) --------------------------------</span>
     <span class="s2">"weave"</span><span class="p">,</span>
     <span class="s2">"WeaveResult"</span><span class="p">,</span>
+    <span class="s2">"broadcast_bed"</span><span class="p">,</span>
+    <span class="s2">"BroadcastBed"</span><span class="p">,</span>
+    <span class="s2">"BroadcastRefusal"</span><span class="p">,</span>
     <span class="c1"># --- score: the one-call AI-first entry (narration → woven sound design) --</span>
     <span class="s2">"score"</span><span class="p">,</span>
     <span class="s2">"ScoreResult"</span><span class="p">,</span>

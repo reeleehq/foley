@@ -1,0 +1,52 @@
+foley.weave.broadcast
+=====================
+
+.. automodule:: foley.weave.broadcast
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      LINE_GAP_S
+      BED_UNDER_SPEECH_DB
+      LOOP_CROSSFADE_S
+      DEFAULT_TREATMENT
+      FILTER_ORDER
+      MAX_CUTOFF_NYQUIST_FRACTION
+      COMPRESSOR_DETECTOR_S
+      TREATMENT_CEILING_DB
+      DETECTOR_FLOOR_DB
+      BROADCAST_OP
+      UNKNOWN_LICENSE_ID
+      TREATMENTS
+      Treatment
+      ClipLike
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      apply_treatment
+      as_clip
+      bed_gain_db
+      broadcast_bed
+      broadcast_license
+      join_lines
+      mix_program
+      mix_refusal
+      resolve_treatment
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BroadcastBed
+      TreatmentPreset
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      BroadcastRefusal
+   

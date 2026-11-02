@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="alternate" type="text/markdown" href="broadcast.html.md">
+<link rel="describedby" href="../../../llms.txt" type="text/markdown">
+    <title>foley.weave.broadcast &#8212; foley</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_autodoc_typehints.css?v=057ac668" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/epythet.css?v=e39d37f2" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../../_static/documentation_options.js?v=e7715e22"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=fd10adb8"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = "pre.mermaid {\n    /* Same as .mermaid-container > pre */\n    display: block;\n    width: 100%;\n}\n\npre.mermaid > svg {\n    /* Same as .mermaid-container > pre > svg */\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}";
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = ".mermaid-container {\n    position: relative;\n    display: flex;\n    flex-direction: row;\n    width: 100%;\n}\n\n.mermaid-container > pre {\n    display: block;\n    width: 100%;\n}\n\n.mermaid-container > pre > svg {\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}\n\n.mermaid-fullscreen-btn {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.3);\n    border-radius: 4px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.2s;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n    font-size: 14px;\n    line-height: 1;\n    padding: 0;\n    color: #333;\n}\n\n.mermaid-fullscreen-btn:hover {\n    opacity: 100% !important;\n    background: rgba(255, 255, 255, 1);\n    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-btn.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.3);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-btn.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal {\n    display: none;\n    position: fixed !important;\n    top: 0 !important;\n    left: 0 !important;\n    width: 95vw;\n    height: 100vh;\n    background: rgba(255, 255, 255, 0.98);\n    z-index: 9999;\n    padding: 20px;\n    overflow: auto;\n}\n\n.mermaid-fullscreen-modal.dark-theme {\n    background: rgba(0, 0, 0, 0.98);\n}\n\n.mermaid-fullscreen-modal.active {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen {\n    position: relative;\n    width: 95vw;\n    height: 90vh;\n    max-width: 95vw;\n    max-height: 90vh;\n    background: white;\n    border-radius: 8px;\n    padding: 20px;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);\n    overflow: auto;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen.dark-theme {\n    background: #1a1a1a;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);\n}\n\n.mermaid-container-fullscreen pre.mermaid {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen .mermaid svg {\n    height: 100% !important;\n    width: 100% !important;\n    cursor: grab;\n}\n\n.mermaid-fullscreen-close {\n    position: fixed !important;\n    top: 20px !important;\n    right: 20px !important;\n    width: 40px;\n    height: 40px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.2);\n    border-radius: 50%;\n    cursor: pointer;\n    z-index: 10000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n    transition: all 0.2s;\n    font-size: 24px;\n    line-height: 1;\n    color: #333;\n}\n\n.mermaid-fullscreen-close:hover {\n    background: white;\n    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-close.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.2);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-close.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal .mermaid-fullscreen-btn {\n    display: none !important;\n}";
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+let _lazyObserver = null;
+let _renderQueue = Promise.resolve();
+let closeModal = () => {};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeModal();
+    }
+});
+
+// Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
+// so this is safe to call both for the initial batch and for diagrams that
+// render lazily once they become visible.
+const addZoomToSvgs = (svgs) => {
+    svgs.each(function() {
+        if (this.getAttribute('data-zoom-applied') === 'true') return;
+        var svg = d3.select(this);
+        svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+        var inner = svg.select("g");
+        var zoom = d3.zoom().on("zoom", function(event) {
+            inner.attr("transform", event.transform);
+        });
+        svg.call(zoom);
+        this.setAttribute('data-zoom-applied', 'true');
+    });
+};
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        // Disconnect any previous lazy rendering observer
+        if (_lazyObserver) {
+            _lazyObserver.disconnect();
+            _lazyObserver = null;
+        }
+
+        all_mermaids.forEach((el) => {
+            el.removeAttribute('data-mermaid-deferred');
+            el.removeAttribute('data-mermaid-render-failed');
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+
+        // Separate visible and hidden elements. Mermaid's layout engine measures
+        // text dimensions via the DOM, which fails for elements hidden by a parent
+        // (e.g., Reveal.js non-active slides, sphinx-design unopened tabs),
+        // producing broken SVGs. Render visible elements now, defer hidden ones.
+        const visible = [];
+        const hidden = [];
+        all_mermaids.forEach((el) => {
+            // offsetParent is null for display:none ancestors.
+            // getClientRects().length > 0 catches position:fixed elements
+            // (which also have null offsetParent but are still visible).
+            if (el.offsetParent !== null || el.getClientRects().length > 0) {
+                visible.push(el);
+            } else {
+                hidden.push(el);
+                el.setAttribute('data-mermaid-deferred', 'true');
+            }
+        });
+
+        if (visible.length > 0) {
+            try {
+                await mermaid.run({ nodes: visible });
+            } catch (e) {
+                console.error("Mermaid rendering failed:", e);
+            }
+        }
+
+        // Lazily render hidden elements when they become visible.
+        // Uses a promise chain (_renderQueue) to serialize rendering,
+        // since IntersectionObserver may report multiple entries at once
+        // and mermaid.run() is not safe to call concurrently.
+        if (hidden.length > 0) {
+            if (typeof IntersectionObserver === 'undefined') {
+                console.warn("IntersectionObserver not available; hidden mermaid diagrams will not render.");
+            } else {
+                _renderQueue = Promise.resolve();
+                _lazyObserver = new IntersectionObserver((entries) => {
+                    for (const entry of entries) {
+                        if (entry.isIntersecting && entry.target.getAttribute("data-processed") !== "true") {
+                            _lazyObserver.unobserve(entry.target);
+                            const el = entry.target;
+                            _renderQueue = _renderQueue.then(async () => {
+                                try {
+                                    await mermaid.run({ nodes: [el] });
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    // Apply zoom to the now-rendered diagram, matching
+                                    // the decoration visible diagrams receive.
+                                    if (false) {
+                                        addZoomToSvgs(d3.selectAll("").select(function() {
+                                            return this.querySelector("svg");
+                                        }));
+                                    }
+                                } catch (e) {
+                                    console.error("Mermaid deferred rendering failed:", e);
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    el.setAttribute('data-mermaid-render-failed', 'true');
+                                }
+                            });
+                        }
+                    }
+                });
+                hidden.forEach((el) => _lazyObserver.observe(el));
+            }
+        }
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    // Exclude deferred (hidden) and render-failed elements from completion checks
+    const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
+    const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
+
+    if (false) {
+        const mermaids_to_add_zoom = 0 === -1 ? mermaids_active.length : 0;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("").select(function() {
+                return this.querySelector("svg");
+            });
+            // Wait until every active (visible) diagram has rendered. Deferred
+            // diagrams are excluded, so a fixed d3_node_count that counts a
+            // hidden diagram no longer loops forever waiting for its SVG.
+            if(mermaids_active.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            }
+            addZoomToSvgs(svgs);
+        }
+    } else if(mermaids_active.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if (!true) return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = "\u26f6";
+        fullscreenBtn.style.opacity = "50%";
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scrollX, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.display = 'block';
+
+                if (false) {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+
+
+const load = async () => {
+    initStyles();
+
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...{"startOnLoad": false},
+                ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...{"startOnLoad": false},
+    ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/foley/weave/broadcast';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.118" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">foley</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../foley.html" class="nav-link">foley</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../weave.html" class="nav-link">foley.weave</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">foley.weave.broadcast</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for foley.weave.broadcast</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""A diegetic broadcast bed: speech lines heard through a radio/TV/PA/phone over a bed (#108).</span>
+
+<span class="sd">A scene needs "the car radio": a commentator's lines over a stadium crowd, coloured as</span>
+<span class="sd">the device that plays them, looped for the scene. :func:`broadcast_bed` makes it in one</span>
+<span class="sd">call and returns a :class:`BroadcastBed` whose licence carries the rights of **both**</span>
+<span class="sd">sources, narrowed, never widened::</span>
+
+<span class="sd">    bed = foley.broadcast_bed(</span>
+<span class="sd">        [line1, line2],                      # speech already spoken (arrays, bytes, paths)</span>
+<span class="sd">        bed_prompt="football stadium crowd", # or bed=&lt;library id or audio&gt;</span>
+<span class="sd">        speech_license=speech_rights,        # the speech's provenance, as given</span>
+<span class="sd">        duration=90.0,</span>
+<span class="sd">    )</span>
+<span class="sd">    bed.audio, bed.sr, bed.license</span>
+
+<span class="sd">The pipeline is small pure stages, each its own function:</span>
+
+<span class="sd">1. **speech** — each line becomes a mono clip at ``sr`` (:func:`as_clip`); lines given as</span>
+<span class="sd">   text go through the injected ``tts=`` seam first. :func:`join_lines` puts ``gap_s`` of</span>
+<span class="sd">   silence after each line.</span>
+<span class="sd">2. **bed** — a library sound id, raw bed audio (with its ``bed_license``), or</span>
+<span class="sd">   ``bed_prompt`` through :func:`foley.generate` (budget, consent and licence rules</span>
+<span class="sd">   unchanged; the ``generate=`` seam replaces it in tests).</span>
+<span class="sd">3. **mix** — :func:`mix_program` loops speech and bed to ``duration`` (the WEAVE</span>
+<span class="sd">   :func:`~foley.weave.mix.fit_duration` loop with its equal-power seam) and sets the bed</span>
+<span class="sd">   ``bed_under_speech_db`` below the speech by integrated loudness.</span>
+<span class="sd">4. **treatment** — the whole program goes through the device (a radio colours the crowd</span>
+<span class="sd">   it carries as much as the voice): a named :class:`TreatmentPreset` from</span>
+<span class="sd">   :data:`TREATMENTS` (band-pass -&gt; RMS compressor -&gt; lookahead peak limiter), or any</span>
+<span class="sd">   ``(samples, sr) -&gt; samples`` callable.</span>
+
+<span class="sd">Rights are checked first (:func:`mix_refusal`: no share-alike, no-derivatives,</span>
+<span class="sd">territory-limited or unmodifiable source on either side), then the bed is resolved or</span>
+<span class="sd">generated, and only then is any text spoken. A named generate backend's licence row</span>
+<span class="sd">is checked before it is called; a bed from an unnamed generation order can only be</span>
+<span class="sd">gated on the clip it returns, so that refusal comes after the bed was paid for (never</span>
+<span class="sd">after the speech). The result always ends in the peak limiter, whatever the</span>
+<span class="sd">treatment.</span>
+
+<span class="sd">**The treatment is a seam.** It is an audio "look" with no foley-specific knowledge, so</span>
+<span class="sd">its eventual home is the fleet's audio package (``mixing``, beside</span>
+<span class="sd">:mod:`mixing.loudness`), not foley; until it lands there, foley's in-house preset chain</span>
+<span class="sd">is the default (numpy + scipy, which ``foley[audio]`` already brings through</span>
+<span class="sd">``mixing[loudness]``; the limiter *is* :func:`mixing.loudness.limit_peaks`). Swapping in</span>
+<span class="sd">the fleet's one is ``treatment=&lt;its callable&gt;``.</span>
+
+<span class="sd">**Text-to-speech is a seam with no default.** ``tts`` is any ``text -&gt; audio`` callable</span>
+<span class="sd">(an array at ``sr``, ``(samples, sr)``, encoded bytes, or a path); foley adds no TTS</span>
+<span class="sd">dependency. Two that exist in the fleet::</span>
+
+<span class="sd">    import voxy</span>
+<span class="sd">    tts = lambda text: voxy.text_to_speech(text, "commentator").audio  # encoded bytes</span>
+
+<span class="sd">    from an.audio.elevenlabs_tts import ElevenLabsTTS</span>
+<span class="sd">    eleven = ElevenLabsTTS(output_format="pcm_44100")  # a format soundfile decodes</span>
+<span class="sd">    tts = lambda text: eleven.synthesize(text, VOICE_ID).bytes_</span>
+
+<span class="sd">The speech's rights are never inferred from the TTS call: pass them as</span>
+<span class="sd">``speech_license`` (e.g. a :class:`~foley.base.LicenseRecord` for the TTS vendor's</span>
+<span class="sd">terms). Without it the result is fail-closed: the speech counts as unknown rights.</span>
+
+<span class="sd">Import cost: stdlib + :mod:`foley.base` only; numpy, scipy and :mod:`mixing.loudness`</span>
+<span class="sd">are imported inside the functions that need them, so ``import foley.weave`` stays</span>
+<span class="sd">dol-only.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">SoundRecord</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ndarray</span>
+
+<span class="c1"># --- named defaults (no literal hides in code) -------------------------------------</span>
+<span class="c1">#: Silence after each spoken line (s); the 0.6 s that read naturally in the #108 starter.</span>
+<span class="n">LINE_GAP_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span>
+<span class="c1">#: Where the bed sits under the speech, in LU of integrated loudness (#108: -12 dB).</span>
+<span class="n">BED_UNDER_SPEECH_DB</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">12.0</span>
+<span class="c1">#: Equal-power crossfade at each loop seam of the speech and the bed (s).</span>
+<span class="n">LOOP_CROSSFADE_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span>
+<span class="c1">#: The device a broadcast is heard through when none is named.</span>
+<span class="n">DEFAULT_TREATMENT</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"am_radio"</span>
+<span class="c1">#: Butterworth order of the treatment's band-pass (per edge).</span>
+<span class="n">FILTER_ORDER</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="c1">#: The band-pass's upper edge is held under this fraction of Nyquist (a low ``sr``).</span>
+<span class="n">MAX_CUTOFF_NYQUIST_FRACTION</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span>
+<span class="c1">#: Time constant of the compressor's RMS level detector (s).</span>
+<span class="n">COMPRESSOR_DETECTOR_S</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.02</span>
+<span class="c1">#: The treatment's peak ceiling (dBFS) after make-up gain.</span>
+<span class="n">TREATMENT_CEILING_DB</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+<span class="c1">#: Floor of the compressor's level detector, so silence has a finite level (dBFS).</span>
+<span class="n">DETECTOR_FLOOR_DB</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">120.0</span>
+<span class="c1">#: The ``transformations`` op recorded on the result's licence.</span>
+<span class="n">BROADCAST_OP</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"broadcast_bed"</span>
+<span class="c1">#: The licence id of rights that were not given (fail-closed, never refused).</span>
+<span class="n">UNKNOWN_LICENSE_ID</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"unknown"</span>
+
+
+<span class="c1"># --- treatment: the device the broadcast is heard through ---------------------------</span>
+
+
+<div class="viewcode-block" id="TreatmentPreset">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.TreatmentPreset">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TreatmentPreset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A diegetic-source colouring: band-pass -&gt; RMS compressor -&gt; make-up -&gt; limiter.</span>
+
+<span class="sd">    Callable as ``preset(samples, sample_rate)``, so a preset is just one value of the</span>
+<span class="sd">    ``treatment=`` strategy (any ``(samples, sr) -&gt; samples`` callable is another).</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        name: The preset's name (recorded on the result's licence).</span>
+<span class="sd">        highpass_hz: Lower edge of the device's passband (Hz).</span>
+<span class="sd">        lowpass_hz: Upper edge of the device's passband (Hz).</span>
+<span class="sd">        threshold_db: Compressor threshold (dBFS of the RMS detector).</span>
+<span class="sd">        ratio: Compressor ratio above the threshold (``1`` = none).</span>
+<span class="sd">        makeup_db: Gain after the compressor (dB).</span>
+<span class="sd">        filter_order: Butterworth order of the band-pass.</span>
+<span class="sd">        detector_s: RMS detector time constant (s).</span>
+<span class="sd">        ceiling_db: Peak ceiling of the final limiter (dBFS).</span>
+<span class="sd">    """</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">highpass_hz</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">lowpass_hz</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">threshold_db</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">ratio</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">makeup_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">filter_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">FILTER_ORDER</span>
+    <span class="n">detector_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">COMPRESSOR_DETECTOR_S</span>
+    <span class="n">ceiling_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">TREATMENT_CEILING_DB</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">problems</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">why</span>
+            <span class="k">for</span> <span class="n">bad</span><span class="p">,</span> <span class="n">why</span> <span class="ow">in</span> <span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">highpass_hz</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">lowpass_hz</span><span class="p">,</span>
+                    <span class="s2">"0 &lt; highpass_hz &lt; lowpass_hz"</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"ratio &gt;= 1"</span><span class="p">),</span>
+                <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_order</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"filter_order &gt;= 1"</span><span class="p">),</span>
+                <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">detector_s</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"detector_s &gt; 0"</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">bad</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">problems</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"treatment </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> needs </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">problems</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">apply_treatment</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div>
+
+
+
+<span class="c1">#: The named devices. Passbands: ``am_radio`` is the #108 starter's chain (highpass 450,</span>
+<span class="c1">#: lowpass 3200); ``phone`` is the narrowband telephone channel (300-3400 Hz, ITU-T</span>
+<span class="c1">#: G.712); ``tv`` a small TV speaker; ``pa`` a horn loudspeaker, squashed hardest.</span>
+<span class="n">TREATMENTS</span><span class="p">:</span> <span class="s2">"dict[str, TreatmentPreset]"</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">p</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">(</span>
+        <span class="n">TreatmentPreset</span><span class="p">(</span>
+            <span class="s2">"am_radio"</span><span class="p">,</span> <span class="mf">450.0</span><span class="p">,</span> <span class="mf">3200.0</span><span class="p">,</span> <span class="n">threshold_db</span><span class="o">=-</span><span class="mf">24.0</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">makeup_db</span><span class="o">=</span><span class="mf">6.0</span>
+        <span class="p">),</span>
+        <span class="n">TreatmentPreset</span><span class="p">(</span>
+            <span class="s2">"tv"</span><span class="p">,</span> <span class="mf">150.0</span><span class="p">,</span> <span class="mf">7000.0</span><span class="p">,</span> <span class="n">threshold_db</span><span class="o">=-</span><span class="mf">20.0</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">makeup_db</span><span class="o">=</span><span class="mf">4.0</span>
+        <span class="p">),</span>
+        <span class="n">TreatmentPreset</span><span class="p">(</span>
+            <span class="s2">"pa"</span><span class="p">,</span> <span class="mf">400.0</span><span class="p">,</span> <span class="mf">4000.0</span><span class="p">,</span> <span class="n">threshold_db</span><span class="o">=-</span><span class="mf">26.0</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">6.0</span><span class="p">,</span> <span class="n">makeup_db</span><span class="o">=</span><span class="mf">8.0</span>
+        <span class="p">),</span>
+        <span class="n">TreatmentPreset</span><span class="p">(</span>
+            <span class="s2">"phone"</span><span class="p">,</span> <span class="mf">300.0</span><span class="p">,</span> <span class="mf">3400.0</span><span class="p">,</span> <span class="n">threshold_db</span><span class="o">=-</span><span class="mf">22.0</span><span class="p">,</span> <span class="n">ratio</span><span class="o">=</span><span class="mf">4.0</span><span class="p">,</span> <span class="n">makeup_db</span><span class="o">=</span><span class="mf">6.0</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">#: What ``treatment=`` takes: a :data:`TREATMENTS` name, a :class:`TreatmentPreset`,</span>
+<span class="c1">#: any ``(samples, sr) -&gt; samples`` callable, or ``None`` (dry, no device).</span>
+<span class="n">Treatment</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TreatmentPreset</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">"ndarray"</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="s2">"ndarray"</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_band_pass</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">preset</span><span class="p">:</span> <span class="n">TreatmentPreset</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Butterworth band-pass along axis 0 (causal, as the device is)."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">butter</span><span class="p">,</span> <span class="n">sosfilt</span>
+
+    <span class="n">nyquist</span> <span class="o">=</span> <span class="n">sample_rate</span> <span class="o">/</span> <span class="mf">2.0</span>
+    <span class="n">high</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">preset</span><span class="o">.</span><span class="n">lowpass_hz</span><span class="p">,</span> <span class="n">MAX_CUTOFF_NYQUIST_FRACTION</span> <span class="o">*</span> <span class="n">nyquist</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">preset</span><span class="o">.</span><span class="n">highpass_hz</span> <span class="o">&lt;</span> <span class="n">high</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"treatment </span><span class="si">{</span><span class="n">preset</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: passband </span><span class="si">{</span><span class="n">preset</span><span class="o">.</span><span class="n">highpass_hz</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">high</span><span class="si">}</span><span class="s2"> Hz is empty "</span>
+            <span class="sa">f</span><span class="s2">"at </span><span class="si">{</span><span class="n">sample_rate</span><span class="si">}</span><span class="s2"> Hz"</span>
+        <span class="p">)</span>
+    <span class="n">sos</span> <span class="o">=</span> <span class="n">butter</span><span class="p">(</span>
+        <span class="n">preset</span><span class="o">.</span><span class="n">filter_order</span><span class="p">,</span>
+        <span class="p">[</span><span class="n">preset</span><span class="o">.</span><span class="n">highpass_hz</span><span class="p">,</span> <span class="n">high</span><span class="p">],</span>
+        <span class="n">btype</span><span class="o">=</span><span class="s2">"bandpass"</span><span class="p">,</span>
+        <span class="n">fs</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">,</span>
+        <span class="n">output</span><span class="o">=</span><span class="s2">"sos"</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">sosfilt</span><span class="p">(</span><span class="n">sos</span><span class="p">,</span> <span class="n">samples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_compress</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">preset</span><span class="p">:</span> <span class="n">TreatmentPreset</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Feed-forward compressor on a one-pole RMS detector (channels linked)."""</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">lfilter</span>
+
+    <span class="n">mono</span> <span class="o">=</span> <span class="n">samples</span> <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">samples</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">preset</span><span class="o">.</span><span class="n">detector_s</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">)))</span>
+    <span class="n">power</span> <span class="o">=</span> <span class="n">lfilter</span><span class="p">([</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">a</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="n">a</span><span class="p">],</span> <span class="n">mono</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float64"</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">floor</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="p">(</span><span class="n">DETECTOR_FLOOR_DB</span> <span class="o">/</span> <span class="mf">10.0</span><span class="p">)</span>
+    <span class="n">level_db</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">power</span><span class="p">,</span> <span class="n">floor</span><span class="p">))</span>
+    <span class="n">over</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">level_db</span> <span class="o">-</span> <span class="n">preset</span><span class="o">.</span><span class="n">threshold_db</span><span class="p">)</span>
+    <span class="n">gain</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="p">((</span><span class="o">-</span><span class="n">over</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">preset</span><span class="o">.</span><span class="n">ratio</span><span class="p">)</span> <span class="o">+</span> <span class="n">preset</span><span class="o">.</span><span class="n">makeup_db</span><span class="p">)</span> <span class="o">/</span> <span class="mf">20.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">samples</span> <span class="o">*</span> <span class="p">(</span><span class="n">gain</span> <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">gain</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_limit</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">ceiling_db</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Peak-limit to ``ceiling_db`` with the shared lookahead limiter (mixing.loudness)."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">loudness_component</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="n">samples</span> <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">samples</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">limited</span> <span class="o">=</span> <span class="n">loudness_component</span><span class="p">()</span><span class="o">.</span><span class="n">limit_peaks</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">ceiling</span><span class="o">=</span><span class="mf">10.0</span> <span class="o">**</span> <span class="p">(</span><span class="n">ceiling_db</span> <span class="o">/</span> <span class="mf">20.0</span><span class="p">),</span> <span class="n">fs</span><span class="o">=</span><span class="n">sample_rate</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">limited</span> <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">limited</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="apply_treatment">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.apply_treatment">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">apply_treatment</span><span class="p">(</span>
+    <span class="n">samples</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">preset</span><span class="p">:</span> <span class="n">TreatmentPreset</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Colour ``samples`` as heard through ``preset``'s device (mono or ``(n, ch)``).</span>
+
+<span class="sd">    Band-pass -&gt; RMS compressor with make-up gain -&gt; lookahead peak limiter</span>
+<span class="sd">    (:func:`mixing.loudness.limit_peaks`). Returns ``float32``, same shape.</span>
+
+<span class="sd">    Lazy dependencies: numpy, scipy, ``mixing[loudness]`` (all in ``foley[audio]``).</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+    <span class="k">if</span> <span class="n">samples</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">samples</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">)</span>
+    <span class="n">shaped</span> <span class="o">=</span> <span class="n">_compress</span><span class="p">(</span><span class="n">_band_pass</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">preset</span><span class="p">),</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">preset</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">_limit</span><span class="p">(</span><span class="n">shaped</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">preset</span><span class="o">.</span><span class="n">ceiling_db</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"float32"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="resolve_treatment">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.resolve_treatment">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve_treatment</span><span class="p">(</span><span class="n">treatment</span><span class="p">:</span> <span class="n">Treatment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="s2">"ndarray"</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="s2">"ndarray"</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""``treatment=`` as a ``(samples, sr) -&gt; samples`` callable (``None``: dry).</span>
+
+<span class="sd">    &gt;&gt;&gt; resolve_treatment("phone").name</span>
+<span class="sd">    'phone'</span>
+<span class="sd">    &gt;&gt;&gt; resolve_treatment(None)(1, 2)</span>
+<span class="sd">    1</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">treatment</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">lambda</span> <span class="n">samples</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="n">samples</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">treatment</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">TREATMENTS</span><span class="p">[</span><span class="n">treatment</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"unknown treatment </span><span class="si">{</span><span class="n">treatment</span><span class="si">!r}</span><span class="s2">; one of </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">TREATMENTS</span><span class="p">)</span><span class="si">}</span><span class="s2">, "</span>
+                <span class="s2">"a TreatmentPreset, or a (samples, sr) -&gt; samples callable"</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">treatment</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">treatment</span>
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"treatment must be a name, a preset or a callable, not </span><span class="si">{</span><span class="n">treatment</span><span class="si">!r}</span><span class="s2">"</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_treatment_name</span><span class="p">(</span><span class="n">treatment</span><span class="p">:</span> <span class="n">Treatment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The device's name as recorded on the result (``'dry'`` for none)."""</span>
+    <span class="k">if</span> <span class="n">treatment</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">treatment</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">treatment</span> <span class="ow">or</span> <span class="s2">"dry"</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">treatment</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span>
+        <span class="n">treatment</span><span class="p">,</span> <span class="s2">"__name__"</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">treatment</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="p">)</span>
+
+
+<span class="c1"># --- speech --------------------------------------------------------------------------</span>
+
+<span class="c1">#: One clip: an array at ``sr``, ``(samples, its_sr)``, encoded bytes, or a file path.</span>
+<span class="n">ClipLike</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="s2">"ndarray"</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_as_float</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``samples`` as floats at full scale 1.0: integer PCM is scaled by its range.</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; _as_float(np.array([-32768, 16384], dtype="int16")).tolist()</span>
+<span class="sd">    [-1.0, 0.5]</span>
+<span class="sd">    &gt;&gt;&gt; _as_float(np.array([0, 128], dtype="uint8")).tolist()</span>
+<span class="sd">    [-1.0, 0.0]</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">signedinteger</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">iinfo</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">min</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">unsignedinteger</span><span class="p">):</span>
+        <span class="n">mid</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">iinfo</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">max</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">mid</span><span class="p">)</span> <span class="o">/</span> <span class="n">mid</span>
+    <span class="k">return</span> <span class="n">x</span>
+
+
+<div class="viewcode-block" id="as_clip">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.as_clip">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">as_clip</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="n">ClipLike</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``item`` as a mono ``float32`` working array at ``sample_rate``.</span>
+
+<span class="sd">    A bare array is taken to be at ``sample_rate`` already; ``(samples, sr)`` is</span>
+<span class="sd">    resampled; bytes and paths are decoded with :func:`foley.audio.load`. Integer PCM</span>
+<span class="sd">    is scaled to full scale 1.0.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">load</span><span class="p">,</span> <span class="n">to_working</span>
+
+    <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"no audio (got None)"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">samples</span><span class="p">,</span> <span class="n">orig</span> <span class="o">=</span> <span class="n">item</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)):</span>
+        <span class="n">samples</span><span class="p">,</span> <span class="n">orig</span> <span class="o">=</span> <span class="n">load</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">bytearray</span><span class="p">)</span> <span class="k">else</span> <span class="n">item</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">samples</span><span class="p">,</span> <span class="n">orig</span> <span class="o">=</span> <span class="n">item</span><span class="p">,</span> <span class="n">sample_rate</span>
+    <span class="k">return</span> <span class="n">to_working</span><span class="p">(</span><span class="n">_as_float</span><span class="p">(</span><span class="n">samples</span><span class="p">),</span> <span class="n">orig</span><span class="p">,</span> <span class="n">mono</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">target_sr</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="join_lines">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.join_lines">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">join_lines</span><span class="p">(</span>
+    <span class="n">clips</span><span class="p">:</span> <span class="s2">"Sequence[ndarray]"</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">gap_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LINE_GAP_S</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Concatenate mono ``clips`` with ``gap_s`` of silence after each one.</span>
+
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; join_lines([np.ones(2), np.ones(3)], 10, gap_s=0.1).tolist()</span>
+<span class="sd">    [1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0]</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+    <span class="n">gap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">gap_s</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">))),</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"float32"</span><span class="p">)</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">clip</span> <span class="ow">in</span> <span class="n">clips</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">"float32"</span><span class="p">),</span> <span class="n">gap</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="k">if</span> <span class="n">parts</span> <span class="k">else</span> <span class="n">gap</span><span class="p">[:</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_text</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A line to be spoken: a ``str`` that is not an existing audio file."""</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_lines</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">tts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Refuse, before anything is spent, lines that cannot become audio."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">lines</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"no speech lines given"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">tts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">_is_text</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"line </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> is text, not audio (</span><span class="si">{</span><span class="n">line</span><span class="p">[:</span><span class="mi">40</span><span class="p">]</span><span class="si">!r}</span><span class="s2">): pass tts= (a text "</span>
+                    <span class="s2">"-&gt; audio callable) or the spoken audio"</span>
+                <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_speak</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">tts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[ndarray]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Each line as a clip: text through ``tts``, audio as is (never through ``tts``)."""</span>
+    <span class="n">clips</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">_is_text</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">tts</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">line</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"tts returned no audio for line </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">clips</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">as_clip</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">clips</span>
+
+
+<span class="c1"># --- rights gate ---------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="BroadcastRefusal">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.BroadcastRefusal">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BroadcastRefusal</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A source whose rights do not allow it into a broadcast bed (refused, fail-closed)."""</span></div>
+
+
+
+<div class="viewcode-block" id="mix_refusal">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.mix_refusal">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mix_refusal</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Why a sound with rights ``source`` may not be treated and mixed in, or ``None``.</span>
+
+<span class="sd">    The broadcast's licence is the bed's narrowed to the speech's, so it cannot carry a</span>
+<span class="sd">    share-alike obligation, and the device modifies both sources. Refused: a</span>
+<span class="sd">    share-alike licence (on the record or in its lineage), a territory exclusion, a</span>
+<span class="sd">    licence with no :data:`~foley.licensing.LICENSE_FLAGS` row (an ``ND`` one among</span>
+<span class="sd">    them), or one that forbids modification. Unknown rights (``'unknown'``) are not</span>
+<span class="sd">    refused: the result fails closed instead.</span>
+
+<span class="sd">    &gt;&gt;&gt; from foley.licensing import apply_license_flags</span>
+<span class="sd">    &gt;&gt;&gt; ok = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-4.0"))</span>
+<span class="sd">    &gt;&gt;&gt; mix_refusal(ok) is None</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; mix_refusal(LicenseRecord(source="s", license_id="CC-BY-SA-4.0"))[:40]</span>
+<span class="sd">    'its licence (CC-BY-SA-4.0) is share-alik'</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">LICENSE_FLAGS</span><span class="p">,</span>
+        <span class="n">derived_license_ids</span><span class="p">,</span>
+        <span class="n">excluded_territories</span><span class="p">,</span>
+        <span class="n">is_share_alike</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">lid</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">license_id</span>
+    <span class="n">shared</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">(</span><span class="n">lid</span><span class="p">,</span> <span class="o">*</span><span class="n">derived_license_ids</span><span class="p">(</span><span class="n">source</span><span class="p">))</span> <span class="k">if</span> <span class="n">is_share_alike</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">shared</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"its licence (</span><span class="si">{</span><span class="n">shared</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">) is share-alike, which the broadcast's licence "</span>
+            <span class="s2">"cannot carry"</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">excluded_territories</span><span class="p">(</span><span class="n">source</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">"its licence excludes territories, which the broadcast cannot carry"</span>
+    <span class="k">if</span> <span class="n">lid</span> <span class="o">==</span> <span class="n">UNKNOWN_LICENSE_ID</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">lid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">LICENSE_FLAGS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"foley has no licence row for </span><span class="si">{</span><span class="n">lid</span><span class="si">!r}</span><span class="s2">, so the mix's rights cannot be derived"</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">source</span><span class="o">.</span><span class="n">modification_ok</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"its licence does not allow modification (the device filters it)"</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_gate</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="s2">"SoundRecord | LicenseRecord | None"</span><span class="p">,</span> <span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Raise :class:`BroadcastRefusal` for a source :func:`mix_refusal` refuses."""</span>
+    <span class="k">if</span> <span class="n">source</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span>
+    <span class="n">why</span> <span class="o">=</span> <span class="n">mix_refusal</span><span class="p">(</span><span class="n">_license_of</span><span class="p">(</span><span class="n">source</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">why</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">BroadcastRefusal</span><span class="p">(</span><span class="sa">f</span><span class="s2">"cannot use the </span><span class="si">{</span><span class="n">role</span><span class="si">}</span><span class="s2"> in a broadcast bed: </span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="c1"># --- bed -----------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_unknown_rights</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A fail-closed licence for a source whose rights were not given."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_license_flags</span>
+
+    <span class="k">return</span> <span class="n">apply_license_flags</span><span class="p">(</span>
+        <span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">license_id</span><span class="o">=</span><span class="n">UNKNOWN_LICENSE_ID</span><span class="p">)</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_bed_form</span><span class="p">(</span><span class="n">bed</span><span class="p">,</span> <span class="n">bed_prompt</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">bed_license</span><span class="p">,</span> <span class="n">generate_options</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Refuse, before anything is spent, a bed given in no form, two, or inconsistently."""</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">bed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">bed_prompt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"give exactly one of bed= (a sound id or audio) and bed_prompt="</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">bed_license</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">bed_prompt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">_is_text</span><span class="p">(</span><span class="n">bed</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"bed_license= is for raw bed audio; a library or generated sound carries "</span>
+            <span class="s2">"its own licence"</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="s2">"library"</span> <span class="ow">in</span> <span class="p">(</span><span class="n">generate_options</span> <span class="ow">or</span> <span class="p">{}):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"pass library= to broadcast_bed, not in generate_options"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_given_bed</span><span class="p">(</span><span class="n">bed</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">bed_license</span><span class="p">,</span> <span class="n">library</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""``(samples, provenance, notes)`` for ``bed=``: a library sound id or raw audio."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.render</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_clip_mono</span>
+
+    <span class="k">if</span> <span class="n">_is_text</span><span class="p">(</span><span class="n">bed</span><span class="p">):</span>  <span class="c1"># a sound id, not a file</span>
+        <span class="n">lib</span> <span class="o">=</span> <span class="n">library</span> <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_default_library</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">bed</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">lib</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"bed </span><span class="si">{</span><span class="n">bed</span><span class="si">!r}</span><span class="s2"> is neither a file nor a sound in the library"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">load_clip_mono</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">bed</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">),</span> <span class="n">lib</span><span class="p">[</span><span class="n">bed</span><span class="p">],</span> <span class="p">[]</span>
+    <span class="n">notes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">bed_license</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bed_license</span> <span class="o">=</span> <span class="n">_unknown_rights</span><span class="p">(</span><span class="s2">"bed"</span><span class="p">)</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"bed rights not given (bed_license=): treated as unknown, fail-closed"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">as_clip</span><span class="p">(</span><span class="n">bed</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">),</span> <span class="n">bed_license</span><span class="p">,</span> <span class="n">notes</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_generated_bed</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">library</span><span class="p">,</span> <span class="n">generate</span><span class="p">,</span> <span class="n">generate_options</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""``(samples, record, notes)`` for ``bed_prompt=``, through :func:`foley.generate`."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.render</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_clip_mono</span>
+
+    <span class="n">refusal</span> <span class="o">=</span> <span class="n">_named_backend_refusal</span><span class="p">((</span><span class="n">generate_options</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"backend"</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">refusal</span><span class="p">:</span>  <span class="c1"># known before paying: the named backend's own licence row</span>
+        <span class="k">raise</span> <span class="n">BroadcastRefusal</span><span class="p">(</span><span class="sa">f</span><span class="s2">"bed: </span><span class="si">{</span><span class="n">refusal</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">generate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate</span>
+    <span class="n">cand</span> <span class="o">=</span> <span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">library</span><span class="o">=</span><span class="n">library</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">generate_options</span> <span class="ow">or</span> <span class="p">{}))</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="n">cand</span><span class="o">.</span><span class="n">sound</span>
+    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cand</span><span class="p">,</span> <span class="s2">"audio_bytes"</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>  <span class="c1"># a store=False preview holds its bytes</span>
+        <span class="k">return</span> <span class="n">as_clip</span><span class="p">(</span><span class="n">cand</span><span class="o">.</span><span class="n">audio_bytes</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">),</span> <span class="n">record</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">cand</span><span class="o">.</span><span class="n">notes</span><span class="p">)</span>
+    <span class="n">lib</span> <span class="o">=</span> <span class="n">library</span> <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_default_library</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">load_clip_mono</span><span class="p">(</span><span class="n">lib</span><span class="p">,</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">sr</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">),</span> <span class="n">record</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">cand</span><span class="o">.</span><span class="n">notes</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_named_backend_refusal</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">""":func:`mix_refusal` of a named generate backend's licence row, before any call.</span>
+
+<span class="sd">    ``None`` when no single backend is named (an unnamed order is gated on the clip it</span>
+<span class="sd">    returns) or its licence depends on the account (no fixed row).</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="n">apply_license_flags</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..sources.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOURCE_REGISTRY</span><span class="p">,</span> <span class="n">discover_sources</span>
+
+    <span class="n">discover_sources</span><span class="p">()</span>
+    <span class="n">lic_cfg</span> <span class="o">=</span> <span class="p">(</span><span class="n">SOURCE_REGISTRY</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"config"</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+        <span class="s2">"license"</span>
+    <span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">license_id</span> <span class="o">=</span> <span class="n">lic_cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"default_license_id"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">license_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">mix_refusal</span><span class="p">(</span>
+        <span class="n">apply_license_flags</span><span class="p">(</span><span class="n">LicenseRecord</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span> <span class="n">license_id</span><span class="o">=</span><span class="n">license_id</span><span class="p">))</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_library</span><span class="p">():</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..index</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_library</span>
+
+    <span class="k">return</span> <span class="n">default_library</span><span class="p">()</span>
+
+
+<span class="c1"># --- mix -----------------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_exact</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"ndarray"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``x`` trimmed or zero-padded to exactly ``n`` frames."""</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+    <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">n</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">[:</span><span class="n">n</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)])</span>
+
+
+<div class="viewcode-block" id="bed_gain_db">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.bed_gain_db">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">bed_gain_db</span><span class="p">(</span>
+    <span class="n">speech</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span>
+    <span class="n">bed</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span>
+    <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">under_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">BED_UNDER_SPEECH_DB</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[float, Optional[str]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The gain that puts ``bed`` ``under_db`` below ``speech`` in integrated loudness.</span>
+
+<span class="sd">    Returns ``(gain_db, note)``. When either is too short or too quiet to measure, the</span>
+<span class="sd">    gain is ``under_db`` applied to the bed as is, and ``note`` says so. A boost is</span>
+<span class="sd">    capped at :data:`mixing.loudness.MAX_GAIN_DB`.</span>
+<span class="sd">    """</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">integrated_lufs</span><span class="p">,</span> <span class="n">loudness_component</span>
+
+    <span class="n">speech_lufs</span> <span class="o">=</span> <span class="n">integrated_lufs</span><span class="p">(</span><span class="n">speech</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">)</span>
+    <span class="n">bed_lufs</span> <span class="o">=</span> <span class="n">integrated_lufs</span><span class="p">(</span><span class="n">bed</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">speech_lufs</span><span class="p">)</span> <span class="ow">and</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">bed_lufs</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">under_db</span><span class="p">,</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"speech or bed too short/quiet to measure: bed at </span><span class="si">{</span><span class="n">under_db</span><span class="si">}</span><span class="s2"> dB as is"</span>
+        <span class="p">)</span>
+    <span class="n">gain</span> <span class="o">=</span> <span class="n">speech_lufs</span> <span class="o">+</span> <span class="n">under_db</span> <span class="o">-</span> <span class="n">bed_lufs</span>
+    <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">gain</span><span class="p">,</span> <span class="n">loudness_component</span><span class="p">()</span><span class="o">.</span><span class="n">MAX_GAIN_DB</span><span class="p">),</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="mix_program">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.mix_program">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mix_program</span><span class="p">(</span>
+    <span class="n">speech</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span>
+    <span class="n">bed</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span>
+    <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">bed_under_speech_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">BED_UNDER_SPEECH_DB</span><span class="p">,</span>
+    <span class="n">loop_speech</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">crossfade_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LOOP_CROSSFADE_S</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[ndarray, list[str]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Speech over the bed, both fitted to ``duration`` (default: the speech's length).</span>
+
+<span class="sd">    The bed always loops (seamless, equal-power seams); the speech loops too when</span>
+<span class="sd">    ``loop_speech``, else plays once and the bed carries on. Returns ``(mono, notes)``.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.mix</span><span class="w"> </span><span class="kn">import</span> <span class="n">db_to_lin</span><span class="p">,</span> <span class="n">fit_duration</span>
+
+    <span class="k">if</span> <span class="n">bed</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"the bed is empty"</span><span class="p">)</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">speech</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">duration</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="k">else</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">duration</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">)))</span>
+    <span class="p">)</span>
+    <span class="n">span</span> <span class="o">=</span> <span class="n">n</span> <span class="o">/</span> <span class="n">sample_rate</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="n">clip</span><span class="p">,</span> <span class="n">loop</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_exact</span><span class="p">(</span>
+            <span class="n">fit_duration</span><span class="p">(</span>
+                <span class="n">clip</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">span</span><span class="p">,</span> <span class="n">loop</span><span class="o">=</span><span class="n">loop</span><span class="p">,</span> <span class="n">crossfade_s</span><span class="o">=</span><span class="n">crossfade_s</span>
+            <span class="p">),</span>
+            <span class="n">n</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">gain</span><span class="p">,</span> <span class="n">note</span> <span class="o">=</span> <span class="n">bed_gain_db</span><span class="p">(</span><span class="n">speech</span><span class="p">,</span> <span class="n">bed</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">under_db</span><span class="o">=</span><span class="n">bed_under_speech_db</span><span class="p">)</span>
+    <span class="n">program</span> <span class="o">=</span> <span class="n">fit</span><span class="p">(</span><span class="n">speech</span><span class="p">,</span> <span class="n">loop_speech</span><span class="p">)</span> <span class="o">+</span> <span class="n">fit</span><span class="p">(</span><span class="n">bed</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span> <span class="o">*</span> <span class="n">db_to_lin</span><span class="p">(</span><span class="n">gain</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">program</span><span class="p">,</span> <span class="p">[</span><span class="n">note</span><span class="p">]</span> <span class="k">if</span> <span class="n">note</span> <span class="k">else</span> <span class="p">[]</span></div>
+
+
+
+<span class="c1"># --- provenance ----------------------------------------------------------------------</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_license_of</span><span class="p">(</span><span class="n">source</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">source</span><span class="o">.</span><span class="n">license</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">SoundRecord</span><span class="p">)</span> <span class="k">else</span> <span class="n">source</span>
+
+
+<div class="viewcode-block" id="broadcast_license">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.broadcast_license">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">broadcast_license</span><span class="p">(</span>
+    <span class="n">bed</span><span class="p">:</span> <span class="s2">"SoundRecord | LicenseRecord"</span><span class="p">,</span>
+    <span class="n">speech</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LicenseRecord</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">treatment</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LicenseRecord</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The broadcast's rights: the bed's, narrowed to the speech's (never widened).</span>
+
+<span class="sd">    A copy of the bed's licence, narrowed to the speech's through the same lineage an</span>
+<span class="sd">    edit records (:class:`foley.sources.edit.EditLineage`: the permissions both hold,</span>
+<span class="sd">    either's attribution and notice, the stricter AI-use scope, and a ``transformations``</span>
+<span class="sd">    entry the credits and content credential read as "derived from" the speech). It is</span>
+<span class="sd">    AI-generated, and its AI disclosure recommended, if either source's is; the</span>
+<span class="sd">    generator named is the bed's, else the speech's. Its bytes may be stored only if</span>
+<span class="sd">    both allow it, and its rights are verified only if both are. The bed's own</span>
+<span class="sd">    watermark and content-credential reference are dropped: they described the bed's</span>
+<span class="sd">    bytes, not the mix. ``speech=None`` narrows to unknown rights. Raises</span>
+<span class="sd">    :class:`BroadcastRefusal` for a source :func:`mix_refusal` refuses.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..provenance.credits</span><span class="w"> </span><span class="kn">import</span> <span class="n">attribution_line</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..sources.edit</span><span class="w"> </span><span class="kn">import</span> <span class="n">EditLineage</span>
+
+    <span class="n">_gate</span><span class="p">(</span><span class="n">bed</span><span class="p">,</span> <span class="s2">"bed"</span><span class="p">)</span>
+    <span class="n">_gate</span><span class="p">(</span><span class="n">speech</span><span class="p">,</span> <span class="s2">"speech"</span><span class="p">)</span>
+    <span class="n">speech</span> <span class="o">=</span> <span class="n">speech</span> <span class="k">if</span> <span class="n">speech</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_unknown_rights</span><span class="p">(</span><span class="s2">"speech"</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">_license_of</span><span class="p">(</span><span class="n">bed</span><span class="p">))</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">content_sha256</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># these bytes are the mix, not the bed</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">watermark</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">c2pa_manifest_ref</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">EditLineage</span><span class="p">(</span>
+        <span class="n">op</span><span class="o">=</span><span class="n">BROADCAST_OP</span><span class="p">,</span>
+        <span class="n">source_id</span><span class="o">=</span><span class="n">speech</span><span class="o">.</span><span class="n">source_id</span><span class="p">,</span>
+        <span class="n">source_license</span><span class="o">=</span><span class="n">speech</span><span class="p">,</span>
+        <span class="n">source_credit</span><span class="o">=</span><span class="n">attribution_line</span><span class="p">(</span><span class="n">speech</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">"plain"</span><span class="p">),</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"treatment"</span><span class="p">:</span> <span class="n">treatment</span><span class="p">,</span> <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"speech"</span><span class="p">},</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">is_ai_generated</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">is_ai_generated</span> <span class="ow">or</span> <span class="n">speech</span><span class="o">.</span><span class="n">is_ai_generated</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">disclosure_recommended</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">disclosure_recommended</span> <span class="ow">or</span> <span class="n">speech</span><span class="o">.</span><span class="n">disclosure_recommended</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">out</span><span class="o">.</span><span class="n">generator_model</span><span class="p">:</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">generator_model</span> <span class="o">=</span> <span class="n">speech</span><span class="o">.</span><span class="n">generator_model</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">generator_version</span> <span class="o">=</span> <span class="n">speech</span><span class="o">.</span><span class="n">generator_version</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">cache_bytes_ok</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">cache_bytes_ok</span> <span class="ow">and</span> <span class="n">speech</span><span class="o">.</span><span class="n">cache_bytes_ok</span>
+    <span class="n">out</span><span class="o">.</span><span class="n">rights_verified</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">rights_verified</span> <span class="ow">and</span> <span class="n">speech</span><span class="o">.</span><span class="n">rights_verified</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+
+<span class="c1"># --- the façade ----------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="BroadcastBed">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.BroadcastBed">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BroadcastBed</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A rendered broadcast bed: the audio and the rights of everything in it.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        audio: Mono ``float32`` samples.</span>
+<span class="sd">        sr: Sample rate (Hz).</span>
+<span class="sd">        license: The mix's rights (:func:`broadcast_license`): the bed's narrowed to the</span>
+<span class="sd">            speech's, never wider than either.</span>
+<span class="sd">        sources: ``(bed, speech)`` provenance as given: the bed's</span>
+<span class="sd">            :class:`~foley.base.SoundRecord` (library or generated) or</span>
+<span class="sd">            :class:`~foley.base.LicenseRecord`, and the speech's licence (``None`` if not</span>
+<span class="sd">            given). For the credit line use :attr:`credits`, which reads both off</span>
+<span class="sd">            ``license``.</span>
+<span class="sd">        treatment: The device's name (``'dry'`` for none).</span>
+<span class="sd">        notes: What the caller should know (unmeasurable levels, missing rights, the</span>
+<span class="sd">            bed generation's own notes).</span>
+<span class="sd">    """</span>
+
+    <span class="n">audio</span><span class="p">:</span> <span class="s2">"ndarray"</span>
+    <span class="n">sr</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">license</span><span class="p">:</span> <span class="n">LicenseRecord</span>
+    <span class="n">sources</span><span class="p">:</span> <span class="nb">tuple</span>
+    <span class="n">treatment</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">notes</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">duration_s</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Length of :attr:`audio` in seconds."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">sr</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">credits</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""The attribution :class:`~foley.provenance.Credits`: the bed, "derived from" the speech."""</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..provenance.credits</span><span class="w"> </span><span class="kn">import</span> <span class="n">credits_for</span>
+
+        <span class="k">return</span> <span class="n">credits_for</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">license</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="broadcast_bed">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.broadcast.html#foley.broadcast_bed">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">broadcast_bed</span><span class="p">(</span>
+    <span class="n">lines</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">bed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">bed_prompt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">treatment</span><span class="p">:</span> <span class="n">Treatment</span> <span class="o">=</span> <span class="n">DEFAULT_TREATMENT</span><span class="p">,</span>
+    <span class="n">gap_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LINE_GAP_S</span><span class="p">,</span>
+    <span class="n">duration</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">bed_under_speech_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">BED_UNDER_SPEECH_DB</span><span class="p">,</span>
+    <span class="n">loop_speech</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">crossfade_s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">LOOP_CROSSFADE_S</span><span class="p">,</span>
+    <span class="n">ceiling_db</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">TREATMENT_CEILING_DB</span><span class="p">,</span>
+    <span class="n">speech_license</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LicenseRecord</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">bed_license</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LicenseRecord</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="n">ClipLike</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">library</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">generate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">generate_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">sr</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BroadcastBed</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Speech lines heard through a radio/TV/PA/phone over a bed, looped for a scene (#108).</span>
+
+<span class="sd">    Everything that can be checked is checked before anything is paid for: the lines,</span>
+<span class="sd">    the treatment, the bed's form, and the rights of the speech and of a given bed</span>
+<span class="sd">    (:func:`mix_refusal`). Then the bed is generated (if prompted) and gated, and only</span>
+<span class="sd">    then is the text spoken.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        lines: The spoken lines, in order: each an array at ``sr``, ``(samples, sr)``,</span>
+<span class="sd">            encoded bytes or a path; or text (a ``str`` that is not a file), which goes</span>
+<span class="sd">            through ``tts=``. Audio lines never go through ``tts``.</span>
+<span class="sd">        bed: The bed: a library sound id, or its audio (any ``lines`` form).</span>
+<span class="sd">        bed_prompt: Instead of ``bed``: a prompt for :func:`foley.generate` (its budget,</span>
+<span class="sd">            paid-generation consent and licence gate apply unchanged).</span>
+<span class="sd">        treatment: The device: a :data:`TREATMENTS` name (``'am_radio'`` default,</span>
+<span class="sd">            ``'tv'``, ``'pa'``, ``'phone'``), a :class:`TreatmentPreset`, any</span>
+<span class="sd">            ``(samples, sr) -&gt; samples`` callable (e.g. the fleet's, once ``mixing`` has</span>
+<span class="sd">            it), or ``None`` for dry. Applied to the whole program, crowd included.</span>
+<span class="sd">        gap_s: Silence after each line (s).</span>
+<span class="sd">        duration: Length of the result (s); ``None``: the lines once, with their gaps.</span>
+<span class="sd">        bed_under_speech_db: The bed's level under the speech (LU, integrated</span>
+<span class="sd">            loudness), set **before** the treatment: the device's compressor then</span>
+<span class="sd">            narrows the gap a little, as a real one would.</span>
+<span class="sd">        loop_speech: Repeat the lines to fill ``duration`` (else they play once).</span>
+<span class="sd">        crossfade_s: Equal-power crossfade at each loop seam (s).</span>
+<span class="sd">        ceiling_db: The result's peak ceiling (dBFS), held whatever the treatment</span>
+<span class="sd">            (:func:`mixing.loudness.limit_peaks`).</span>
+<span class="sd">        speech_license: The speech's rights, as given (e.g. the TTS vendor's terms).</span>
+<span class="sd">            ``None``: unknown, so the result's rights fail closed.</span>
+<span class="sd">        bed_license: The rights of raw bed audio given as ``bed`` (a library or</span>
+<span class="sd">            generated bed carries its own).</span>
+<span class="sd">        tts: A ``text -&gt; audio`` callable that speaks text lines (no default: see the</span>
+<span class="sd">            module docstring for voxy and an's ElevenLabs provider).</span>
+<span class="sd">        library: Where a bed id is looked up and a generated bed is stored (default:</span>
+<span class="sd">            the process-wide library).</span>
+<span class="sd">        generate: The bed generator (default :func:`foley.generate`; a test seam).</span>
+<span class="sd">        generate_options: Keyword arguments for it (``backend``, ``budget``,</span>
+<span class="sd">            ``duration_s``, ``store``, ...; not ``library``).</span>
+<span class="sd">        sr: Working sample rate (default :data:`foley.audio.WORKING_SAMPLE_RATE`).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A :class:`BroadcastBed`.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        BroadcastRefusal: A source's rights do not allow it in (:func:`mix_refusal`).</span>
+<span class="sd">        ValueError: Unusable lines, treatment or bed form (before anything is spent).</span>
+<span class="sd">        KeyError: A bed id that is neither a file nor in the library.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">WORKING_SAMPLE_RATE</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.mix</span><span class="w"> </span><span class="kn">import</span> <span class="n">declick</span>
+
+    <span class="n">sr</span> <span class="o">=</span> <span class="n">WORKING_SAMPLE_RATE</span> <span class="k">if</span> <span class="n">sr</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">sr</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">resolve_treatment</span><span class="p">(</span><span class="n">treatment</span><span class="p">)</span>
+    <span class="n">_check_lines</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">tts</span><span class="p">)</span>
+    <span class="n">_check_bed_form</span><span class="p">(</span>
+        <span class="n">bed</span><span class="p">,</span> <span class="n">bed_prompt</span><span class="p">,</span> <span class="n">bed_license</span><span class="o">=</span><span class="n">bed_license</span><span class="p">,</span> <span class="n">generate_options</span><span class="o">=</span><span class="n">generate_options</span>
+    <span class="p">)</span>
+    <span class="n">_gate</span><span class="p">(</span><span class="n">speech_license</span><span class="p">,</span> <span class="s2">"speech"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">bed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bed_audio</span><span class="p">,</span> <span class="n">bed_source</span><span class="p">,</span> <span class="n">notes</span> <span class="o">=</span> <span class="n">_given_bed</span><span class="p">(</span>
+            <span class="n">bed</span><span class="p">,</span> <span class="n">bed_license</span><span class="o">=</span><span class="n">bed_license</span><span class="p">,</span> <span class="n">library</span><span class="o">=</span><span class="n">library</span><span class="p">,</span> <span class="n">sample_rate</span><span class="o">=</span><span class="n">sr</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">bed_audio</span><span class="p">,</span> <span class="n">bed_source</span><span class="p">,</span> <span class="n">notes</span> <span class="o">=</span> <span class="n">_generated_bed</span><span class="p">(</span>
+            <span class="n">bed_prompt</span><span class="p">,</span>
+            <span class="n">library</span><span class="o">=</span><span class="n">library</span><span class="p">,</span>
+            <span class="n">generate</span><span class="o">=</span><span class="n">generate</span><span class="p">,</span>
+            <span class="n">generate_options</span><span class="o">=</span><span class="n">generate_options</span><span class="p">,</span>
+            <span class="n">sample_rate</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">_gate</span><span class="p">(</span><span class="n">bed_source</span><span class="p">,</span> <span class="s2">"bed"</span><span class="p">)</span>
+    <span class="n">speech</span> <span class="o">=</span> <span class="n">join_lines</span><span class="p">(</span><span class="n">_speak</span><span class="p">(</span><span class="n">lines</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">tts</span><span class="p">),</span> <span class="n">sr</span><span class="p">,</span> <span class="n">gap_s</span><span class="o">=</span><span class="n">gap_s</span><span class="p">)</span>
+    <span class="n">program</span><span class="p">,</span> <span class="n">mix_notes</span> <span class="o">=</span> <span class="n">mix_program</span><span class="p">(</span>
+        <span class="n">speech</span><span class="p">,</span>
+        <span class="n">bed_audio</span><span class="p">,</span>
+        <span class="n">sr</span><span class="p">,</span>
+        <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span>
+        <span class="n">bed_under_speech_db</span><span class="o">=</span><span class="n">bed_under_speech_db</span><span class="p">,</span>
+        <span class="n">loop_speech</span><span class="o">=</span><span class="n">loop_speech</span><span class="p">,</span>
+        <span class="n">crossfade_s</span><span class="o">=</span><span class="n">crossfade_s</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">speech_license</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">notes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="s2">"speech rights not given (speech_license=): treated as unknown, fail-closed"</span>
+        <span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">_treatment_name</span><span class="p">(</span><span class="n">treatment</span><span class="p">)</span>
+    <span class="n">coloured</span> <span class="o">=</span> <span class="n">declick</span><span class="p">(</span><span class="n">device</span><span class="p">(</span><span class="n">program</span><span class="p">,</span> <span class="n">sr</span><span class="p">),</span> <span class="n">sr</span><span class="p">)</span>
+    <span class="n">audio</span> <span class="o">=</span> <span class="n">_limit</span><span class="p">(</span><span class="n">coloured</span><span class="p">,</span> <span class="n">sr</span><span class="p">,</span> <span class="n">ceiling_db</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">BroadcastBed</span><span class="p">(</span>
+        <span class="n">audio</span><span class="o">=</span><span class="n">audio</span><span class="p">,</span>
+        <span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span>
+        <span class="n">license</span><span class="o">=</span><span class="n">broadcast_license</span><span class="p">(</span><span class="n">bed_source</span><span class="p">,</span> <span class="n">speech_license</span><span class="p">,</span> <span class="n">treatment</span><span class="o">=</span><span class="n">name</span><span class="p">),</span>
+        <span class="n">sources</span><span class="o">=</span><span class="p">(</span><span class="n">bed_source</span><span class="p">,</span> <span class="n">speech_license</span><span class="p">),</span>
+        <span class="n">treatment</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">notes</span><span class="o">=</span><span class="p">[</span><span class="o">*</span><span class="n">notes</span><span class="p">,</span> <span class="o">*</span><span class="n">mix_notes</span><span class="p">],</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
