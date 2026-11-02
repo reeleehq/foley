@@ -24,7 +24,13 @@ import logging
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Optional, Union
 
-from ..base import Anchor, MasterProfile, SoundDesignTimeline, resolve_master
+from ..base import (
+    Anchor,
+    MasterProfile,
+    SUSPECT_MATCH_KINDS,
+    SoundDesignTimeline,
+    resolve_master,
+)
 
 # Public WEAVE surface (all import-time dol-only) ----------------------------
 from .align import FakeAligner, WhisperXAligner, _default_aligner
@@ -36,7 +42,12 @@ from .broadcast import (
     broadcast_bed,
 )
 from .cli_aligners import AeneasAligner, MFAAligner
-from .anchor import parse_symbolic_anchor, resolve_anchor
+from .anchor import (
+    match_word,
+    parse_symbolic_anchor,
+    resolve_anchor,
+    resolve_placement,
+)
 from .master import MasterReport
 from .protocols import Aligner, ApplyStrategy
 from .render import (
@@ -476,7 +487,10 @@ def weave(
             cache=cache,
         )
         rendered = result.timeline
-        notes = _alignment_notes(result.alignment, rendered)
+        notes = [
+            *_alignment_notes(result.alignment, rendered),
+            *_anchor_notes(rendered),
+        ]
         if language is not None and result.alignment == "cached":
             notes.append(
                 f"language={language!r} was not used: the timeline already carried word "
@@ -553,10 +567,39 @@ def _alignment_notes(alignment: Optional[str], timeline: SoundDesignTimeline) ->
     if alignment == "whisperx":
         return [
             "aligner=whisperx: word timings come from WhisperX's own transcription "
-            "of the narration, not from the given transcript; a word the recogniser "
-            "heard differently lands at a fallback onset."
+            "of the narration, not from the given transcript (a cue the recogniser "
+            "heard differently is named in an anchor match note)."
         ]
     return []
+
+
+def _anchor_notes(timeline: SoundDesignTimeline) -> list:
+    """Which enabled items' cues matched only a similar word, or none (#263).
+
+    Without word timings every speech-anchored item falls back, which
+    :func:`_alignment_notes` already says, so this notes nothing then.
+    """
+    if not timeline.word_timeline:
+        return []
+
+    def _hits(kind):
+        return [
+            f"{it.clip_ref} (cue {it.onset!r}, at {it.placement.onset:.2f} s)"
+            for it in timeline.items
+            if it.enabled
+            and it.placement is not None
+            and it.placement.match_kind is kind
+        ]
+
+    notes = []
+    for kind, what in SUSPECT_MATCH_KINDS.items():
+        hits = _hits(kind)
+        if hits:
+            notes.append(
+                f"anchor match={kind.value}: {len(hits)} item(s) matched {what}: "
+                + "; ".join(hits)
+            )
+    return notes
 
 
 def _emit_weave_steps(run, result: RenderResult) -> None:
@@ -591,6 +634,8 @@ __all__ = [
     "hydrate",
     "parse_symbolic_anchor",
     "resolve_anchor",
+    "resolve_placement",
+    "match_word",
     "swap_clip",
     "nudge",
     "set_gain",

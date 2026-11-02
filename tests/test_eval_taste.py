@@ -131,6 +131,29 @@ def test_a_spot_with_no_trigger_is_not_ok_but_a_bed_with_no_cue_is():
     assert rows["b"]["ok"] and rows["b"]["trigger_s"] == 0.0
 
 
+def test_rows_and_summary_say_how_each_cue_matched():
+    """#263: a fuzzy or fallback cue is counted, since it passes placement by construction."""
+    items = [
+        _spot("on 'door'", onset=1.0, clip="exact"),
+        _spot("on 'doom'", onset=1.0, clip="fuzzy"),
+        _spot("on 'xylophone'", onset=1.0, clip="lost"),
+    ]
+    rows = {r["clip_ref"]: r["match"] for r in taste.placement_rows(_woven(*items))}
+    assert rows == {"exact": "exact", "fuzzy": "fuzzy", "lost": "fallback"}
+    report = taste.TasteReport(
+        designer="d",
+        passages=[taste.PassageTaste(
+            passage_id="p",
+            restraint={"n_sounds": 3, "n_sentences": 3, "within_ceiling": True},
+            placement=taste.placement_rows(_woven(*items)),
+        )],
+    )  # fmt: skip
+    matches = report.summary()["placement_matches"]
+    assert matches == {"exact": 1, "fuzzy": 1, "fallback": 1}
+    assert "1 fuzzy, 1 fallback" in report.to_markdown()
+    assert taste._suspect_matches({"exact": 2}) == "no cue matched fuzzy or fallback"
+
+
 def test_disabled_items_are_not_measured():
     item = _spot("on 'door'", onset=5.0)
     item.enabled = False

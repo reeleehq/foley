@@ -13,9 +13,11 @@ passage and aggregated, the four things #45 asks of a tasteful design (report, n
   The trigger is read from SELECT's *symbolic* anchor (``"on 'door'"``), which edits never
   erase, and resolved against the timeline's word anchors (``word_timeline``).
   **What it can and cannot catch:** it resolves the cue with the same resolver
-  (:func:`~foley.weave.anchor.nearest_word`) and the same word timings the weave used, so an
+  (:func:`~foley.weave.anchor.resolve_placement`) and the same word timings the weave used, so an
   *unedited* cue passes by construction and inherits that resolver's false matches (#257).
-  What it catches is everything else: a nudged or absolute-pinned sound, a cue word that is
+  So each row also says how its cue matched (``match``: ``exact`` / ``stem`` / ``fuzzy`` /
+  ``fallback`` / ``absolute``, #263) and the summary counts them: a ``fuzzy`` cue may sit on
+  the wrong word, a ``fallback`` one on none. What it catches is everything else: a nudged or absolute-pinned sound, a cue word that is
   never spoken, a spot effect with no cue. Word timings from the fake aligner (evenly spaced
   estimates, the default without ``foley[align]``) are flagged ``aligned=False``;
 * **loudness**: the woven mix's integrated LUFS, re-measured, vs the master target, within
@@ -39,6 +41,7 @@ from __future__ import annotations
 import json
 import math
 import re
+from collections import Counter
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
@@ -69,7 +72,8 @@ SENTENCE_ABBREVIATIONS: "tuple[str, ...]" = (
 #: What the placement metric can see (echoed in the report so a reader does not over-read it).
 PLACEMENT_CAVEAT = (
     "catches nudged/pinned sounds and unspoken or missing cues; an unedited cue passes "
-    "by construction (same resolver and word timings as the weave)"
+    "by construction (same resolver and word timings as the weave), so fuzzy and fallback "
+    "cue matches are counted separately"
 )
 
 
@@ -265,23 +269,26 @@ def licence_rows(
     ]
 
 
-def _trigger_s(item: "TimelineItem", word_timeline: "list[dict]") -> Optional[float]:
-    """When ``item`` should land: its symbolic anchor resolved on the word timeline.
+def _trigger(
+    item: "TimelineItem", word_timeline: "list[dict]"
+) -> "tuple[Optional[float], str]":
+    """``(trigger_s, match)``: when ``item`` should land, and how its cue matched a word.
 
-    ``None`` when it has no trigger (a spot effect with no cue word, or a cue word that is
-    not in the narration). A bed with no cue spans the narration, so it triggers at its start.
+    The trigger is ``None`` when there is none (a spot effect with no cue word, or a cue
+    word that is not in the narration: a ``fallback``). A bed with no cue spans the
+    narration, so it triggers at its start.
     """
-    from ..base import Anchor
-    from ..weave.anchor import nearest_word, parse_symbolic_anchor, resolve_anchor
+    from ..base import Anchor, MatchKind
+    from ..weave.anchor import parse_symbolic_anchor, resolve_placement
 
     intent = parse_symbolic_anchor(item.onset, layer=item.layer, loop=item.loop)
     if intent.ref is None:
         is_bed = intent.anchor is Anchor.sentence
-        return float(word_timeline[0]["start"]) if is_bed and word_timeline else None
-    if nearest_word(intent.ref, word_timeline) is None:
-        return None
-    onset, _ = resolve_anchor(replace(intent, pre_roll=0.0), word_timeline)
-    return onset
+        trigger = float(word_timeline[0]["start"]) if is_bed and word_timeline else None
+        return trigger, MatchKind.absolute.value
+    resolved = resolve_placement(replace(intent, pre_roll=0.0), word_timeline)
+    found = resolved.match_kind is not MatchKind.fallback
+    return (resolved.onset if found else None), resolved.match_kind.value
 
 
 def placement_rows(
@@ -297,7 +304,7 @@ def placement_rows(
     wt = list(timeline.word_timeline or ())
 
     def _row(it):
-        trigger = _trigger_s(it, wt)
+        trigger, match = _trigger(it, wt)
         p = it.placement
         onset = p.onset if p is not None else None
         expected = (
@@ -308,6 +315,7 @@ def placement_rows(
             "clip_ref": it.clip_ref,
             "layer": getattr(it.layer, "value", it.layer),
             "cue": it.onset,
+            "match": match,
             "trigger_s": trigger,
             "expected_onset_s": expected,
             "onset_s": onset,
@@ -438,6 +446,7 @@ class TasteReport:
             "placement_ok_share": _share(r["ok"] for r in placement),
             "placement_caveat": PLACEMENT_CAVEAT,
             "placement_mean_abs_error_s": _mean(r["error_s"] for r in placement),
+            "placement_matches": dict(Counter(r["match"] for r in placement)),
             "aligned_share": _share(p.aligned for p in ok),
             "n_woven": len(loud),
             "loudness_ok_share": _share(r["ok"] for r in loud),
@@ -477,7 +486,7 @@ class TasteReport:
             f"(mean abs Δ {_fmt(s['loudness_mean_abs_delta_lu'])} LU) "
             f"| ±{t.loudness_tolerance_lu} LU |",
             "",
-            f"Placement {PLACEMENT_CAVEAT}.",
+            f"Placement {PLACEMENT_CAVEAT}: {_suspect_matches(s['placement_matches'])}.",
             "",
             "| passage | sounds/sentence | licence | placement | loudness (LUFS) |",
             "|---|---|---|---|---|",
@@ -494,6 +503,15 @@ class TasteReport:
                 f"{'n/a' if loud is None else _fmt(loud['lufs'])} |"
             )
         return "\n".join(lines)
+
+
+def _suspect_matches(matches: "Mapping[str, int]") -> str:
+    """``"2 fuzzy, 1 fallback"`` from match counts (:data:`~foley.base.SUSPECT_MATCH_KINDS`)."""
+    from ..base import SUSPECT_MATCH_KINDS
+
+    kinds = [k.value for k in SUSPECT_MATCH_KINDS]
+    parts = [f"{matches[k]} {k}" for k in kinds if matches.get(k)]
+    return ", ".join(parts) or f"no cue matched {' or '.join(kinds)}"
 
 
 def _fmt(x: Optional[float]) -> str:
