@@ -65,6 +65,9 @@ TRUE_PEAK_MAX_DBTP: float = -1.0  # ceiling after loudness normalization
 LUFS_GATE_FLOOR: float = -70.0  # BS.1770 absolute gate; flag, don't amplify
 LUFS_MIN_BLOCK_S: float = 0.4  # BS.1770 gating block; shorter clips can't be measured
 SILENT_PEAK_DBFS: float = -80.0  # a clip whose sample peak is under this is silent
+#: The decode dtype of :func:`transcode`: wide enough that PCM up to 24 bits survives a
+#: decode/encode round trip sample-exact (FLAC archive -> WAV export keeps the samples).
+TRANSCODE_DTYPE: str = "float64"
 
 #: A source ``load`` can decode: a filesystem path, raw encoded bytes, or an
 #: already-open binary file-like object (e.g. ``io.BytesIO``).
@@ -167,6 +170,84 @@ def encode(
     buf = io.BytesIO()
     sf.write(buf, samples, sample_rate, format=fmt.upper(), subtype=subtype)
     return buf.getvalue()
+
+
+def container_of(data: bytes) -> "tuple[str, str]":
+    """The ``(format, subtype)`` of encoded ``data``, as lowercase / libsndfile names.
+
+    Lazy dependency: ``soundfile``.
+    """
+    import soundfile as sf
+
+    info = sf.info(io.BytesIO(data))
+    return info.format.lower(), info.subtype
+
+
+#: The PCM subtypes, with their bit depths (what :func:`is_lossless_conversion` reads).
+PCM_BITS: "dict[str, int]" = {
+    "PCM_S8": 8,
+    "PCM_U8": 8,
+    "PCM_16": 16,
+    "PCM_24": 24,
+    "PCM_32": 32,
+}
+
+#: What a non-PCM source (``FLOAT`` / ``DOUBLE``) is exported as: consumers of an export
+#: (``an``) take PCM only, and 24 bits is the archive's own depth.
+EXPORT_PCM_SUBTYPE: str = ARCHIVE_SUBTYPE
+
+
+def is_lossless_conversion(src_subtype: str, dst_subtype: str) -> bool:
+    """Whether re-encoding ``src_subtype`` samples as ``dst_subtype`` keeps them exactly.
+
+    >>> is_lossless_conversion("PCM_16", "PCM_24"), is_lossless_conversion("FLOAT", "PCM_24")
+    (True, False)
+    """
+    if src_subtype == dst_subtype:
+        return True
+    src, dst = PCM_BITS.get(src_subtype), PCM_BITS.get(dst_subtype)
+    return src is not None and dst is not None and dst >= src
+
+
+def export_subtype(fmt: str, src_subtype: str) -> str:
+    """The PCM subtype an export as ``fmt`` uses for ``src_subtype`` samples.
+
+    The source's own when it is PCM and ``fmt`` holds it, else
+    :data:`EXPORT_PCM_SUBTYPE` when ``fmt`` holds that, else ``fmt``'s default.
+
+    Lazy dependency: ``soundfile``.
+    """
+    import soundfile as sf
+
+    target = fmt.upper()
+    for subtype in (src_subtype, EXPORT_PCM_SUBTYPE):
+        if subtype in PCM_BITS and sf.check_format(target, subtype):
+            return subtype
+    return sf.default_subtype(target)
+
+
+def transcode(
+    data: bytes,
+    *,
+    fmt: str,
+    subtype: Optional[str] = None,
+    dtype: str = TRANSCODE_DTYPE,
+) -> bytes:
+    """Re-encode ``data`` as ``fmt`` with ``subtype`` (default: :func:`export_subtype`).
+
+    ``data`` already in ``fmt`` and that subtype comes back unchanged, byte for byte.
+    Otherwise it is decoded at ``dtype`` and encoded: a FLAC ``PCM_24`` archive gives a
+    sample-exact ``PCM_24`` WAV; a ``FLOAT`` source gives ``PCM_24`` (quantised: see
+    :func:`is_lossless_conversion`).
+
+    Lazy dependency: ``soundfile``.
+    """
+    src_fmt, src_subtype = container_of(data)
+    subtype = subtype or export_subtype(fmt, src_subtype)
+    if src_fmt == fmt.lower() and subtype == src_subtype:
+        return data
+    samples, sample_rate = load(data, dtype=dtype)
+    return encode(samples, sample_rate, fmt=fmt, subtype=subtype)
 
 
 # ---------------------------------------------------------------------------

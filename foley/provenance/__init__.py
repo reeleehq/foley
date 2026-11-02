@@ -12,6 +12,10 @@ module top level is stdlib-only, but ``audioseal`` / ``torch`` / ``torchaudio``
 (the ``foley[provenance]`` extra) are imported lazily inside its watermark
 functions. Import it explicitly (``from foley.provenance import disclosure``) or
 reach the pure helpers via ``foley.art50_checklist`` / ``foley.scan_prompt``.
+
+:mod:`foley.provenance.rights` exports a sound for a store outside foley (#66):
+:func:`export_sound` gives ``(bytes, rights, provenance)``, ``rights`` keyed by
+``lacing.Rights`` field names.
 """
 
 from __future__ import annotations
@@ -26,6 +30,7 @@ from .credits import (
     credits_manifest,
     render_credits_md,
 )
+from .rights import export_sound, sound_provenance, sound_rights
 
 __all__ = [
     "CreditEntry",
@@ -34,7 +39,10 @@ __all__ = [
     "credit_entry",
     "credits_for",
     "credits_manifest",
+    "export_sound",
     "make_c2pa_signer",
     "make_self_signed_c2pa_certs",
     "render_credits_md",
+    "sound_provenance",
+    "sound_rights",
 ]
