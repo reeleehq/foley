@@ -27,8 +27,9 @@ Two rules carry the rights:
   An edit is exported under the most restrictive licence of its lineage
   (:func:`foley.licensing.rights_license_id`), so it never reads wider than a source,
   and never under a code that implies more than the record's flags allow
-  (:func:`foley.licensing.code_implies_at_most`: else the exact intersection licence,
-  such as CC BY-NC-SA, or ``None``).
+  (:func:`foley.licensing.code_implies_at_most`, else ``None``). AI use is not in a
+  code: a consumer reads it from the provenance (``flags``, ``ai_training_scope``,
+  ``gen_ai_preference``).
   A provider-terms licence names the terms' owner as ``provider``
   (:data:`foley.licensing.LICENSE_TERMS_PROVIDER`), since a consumer reads such a
   code only on that provider's source.
