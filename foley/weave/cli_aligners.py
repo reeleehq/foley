@@ -23,8 +23,6 @@ Installation and the trade-offs between the aligners: ``misc/docs/aligners.md``.
 from __future__ import annotations
 
 import json
-import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -33,12 +31,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Mapping, Optional, Sequence
 
 from ..audio import save, to_mono
+from ..external import Runner, run_program, with_program_dir_on_path
+from ..external import resolve_program as _resolve_program
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from numpy import ndarray
-
-#: Runs a command (``subprocess.run``'s signature); injected in tests.
-Runner = Callable[..., "subprocess.CompletedProcess"]
 
 #: MFA's (dictionary, acoustic model) per foley language code; names as in
 #: ``mfa model download``. Extend with ``MFAAligner(models={...})``.
@@ -59,9 +56,6 @@ AENEAS_LANGUAGES: "Mapping[str, str]" = {
 #: marker); each stands for whichever transcript word(s) sit at its place.
 UNKNOWN_TOKENS: "frozenset[str]" = frozenset({"<unk>", "<oov>", "spn"})
 
-#: How much of a failed program's output an error quotes (its tail, in characters).
-ERROR_TAIL_CHARS = 800
-
 #: Install hints, printed when the program is missing.
 MFA_INSTALL = (
     "conda create -n mfa -c conda-forge montreal-forced-aligner, then "
@@ -71,16 +65,6 @@ AENEAS_INSTALL = (
     "install espeak and ffmpeg (brew/apt), then pip install numpy aeneas "
     "(in a separate venv if it clashes with foley's; pass its python=)"
 )
-
-
-def _resolve_program(program: str, *, what: str, install: str) -> str:
-    """``program`` as an executable path, or a :class:`FileNotFoundError` saying how to get it."""
-    found = shutil.which(os.path.expanduser(program))
-    if found is None:
-        raise FileNotFoundError(
-            f"{what}: {program!r} is not on PATH. Install: {install}"
-        )
-    return found
 
 
 def run_cli_aligner(
@@ -117,20 +101,15 @@ def run_cli_aligner(
         )
         save(to_mono(audio), sample_rate, wav, fmt="WAV", subtype="PCM_16")
         txt.write_text(text(words) + "\n", encoding="utf-8")
-        proc = runner(
+        output = run_program(
             command(wav, txt, out),
-            capture_output=True,
-            text=True,
+            out=out,
+            runner=runner,
             env=env,
             timeout=timeout,
+            what=what,
         )
-        if proc.returncode != 0 or not out.exists():
-            tail = (proc.stderr or proc.stdout or "").strip()[-ERROR_TAIL_CHARS:]
-            raise RuntimeError(
-                f"{what} failed (exit {proc.returncode}"
-                f"{'' if out.exists() else ', no output file'}): {tail}"
-            )
-        return onto_transcript(words, parse(out.read_text(encoding="utf-8")))
+        return onto_transcript(words, parse(output))
 
 
 def _norm(word: str) -> str:
@@ -192,19 +171,6 @@ def onto_transcript(
         for i, word in enumerate(words)
         if i in hits
     ]
-
-
-def with_program_dir_on_path(program: str) -> "dict[str, str]":
-    """This process's environment with ``program``'s directory first on ``PATH``.
-
-    A conda-installed program (MFA) calls helper binaries (``fstcompile``) from its
-    own ``bin``, which is on ``PATH`` only while that env is activated; this makes a
-    path to the executable (or a symlink to it) enough. POSIX layout: on Windows a
-    conda env keeps its helpers in ``Library\\bin``, so activate the env there.
-    """
-    path = os.environ.get("PATH", "")
-    bin_dir = str(Path(program).resolve().parent)
-    return {**os.environ, "PATH": os.pathsep.join([bin_dir, path])}
 
 
 def _timed(word: str, start, end) -> dict:

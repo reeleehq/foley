@@ -73,7 +73,7 @@ generating when the library has no match.
 
 ## Phase 6 — Evaluation, breadth & polish
 
-- [x] Eval harness: audio QC → retrieval metrics (R@k, mAP) → LLM/audio-LM fit-judging (**Prompt 8**)
+- [x] Eval harness: audio QC → retrieval metrics (R@k, mAP) → LLM/audio-LM fit-judging (**Prompt 8**); real backends: the Qwen2-Audio judge and reference FAD through fadtk ([fidelity.md](fidelity.md)). kadtk, PAM and Audiobox-Aesthetics are still open.
 - [x] Golden eval set: (narrative-context → expected-sound) pairs (**Prompt 11**)
 - [ ] More source & generation adapters (FSD50K, Clotho, BBC REMArc, Sonniss and FoleySet corpora ship); MS-CLAP/BEATs embedder upgrades are **not started**.
 - [x] Provenance/attribution export; disclosure/watermarking (credits, AudioSeal behind an extra, a C2PA sidecar) (**Prompt 7, 12**)

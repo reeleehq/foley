@@ -221,12 +221,15 @@ local-llm = [
 # Tier-2 pure-numpy metrics (fit_precision, krippendorff_alpha, frechet_distance,
 # kernel_audio_distance) need NONE of this — CI uses the deterministic StringOverlapJudge
 # fake + an injected fake embedder. Deliberately NOT in [tool.wads.ci.install] (stays
-# ['test']); the real Qwen2-Audio round-trip test is importorskip-guarded. Exact FAD/KAD
-# reference numbers (fadtk/kadtk) are optional externals, not pinned here.
+# ['test']); the real Qwen2-Audio pipeline test is importorskip-guarded (and fakes the
+# model load). transformers>=4.56 for `dtype=` and the processor's `audio=`; accelerate
+# for device_map="auto". Reference FAD (fadtk, #48) is NOT an extra: it pins numpy<2, so
+# it runs in its own venv through foley.eval.FadtkFidelity (misc/docs/fidelity.md).
 fit = [
-    "transformers>=4.40",
+    "transformers>=4.56",
     "torch",
     "torchaudio",
+    "accelerate",
 ]
 # WEAVE forced alignment (#8): the real WhisperXAligner (≈±50 ms word timestamps).
 # `whisperx`/`torch` are imported LAZILY inside WhisperXAligner.word_timeline ONLY, so
