@@ -134,6 +134,10 @@ LICENSE_FLAGS: dict[str, LicenseFlags] = {
         False, True, False, True, True, False, False, None
     ),
     "MIT": LicenseFlags(True, True, True, True, True, True, True, None),
+    # A purchased sound-effects library (BOOM, Pro Sound Effects, ...), stated in a
+    # folder sidecar (#229): the usual EULA grants use in productions, never the raw
+    # files on their own, and says nothing of AI training (so: no).
+    "owned-pack": LicenseFlags(True, True, False, True, True, False, False, None),
     # Procedural synthesis output (#76; the sfxr family: pyfxr, jsfxr, ZzFX, rFXGen):
     # the tools' licences cover their code, and the sound a parameter set renders
     # carries none. All rights, no attribution.
@@ -483,6 +487,11 @@ LICENSE_META: dict[str, LicenseMeta] = {
         "https://fal.ai/legal/terms-of-service",
     ),
     "MIT": LicenseMeta("MIT License", "https://opensource.org/license/mit"),
+    "owned-pack": LicenseMeta(
+        "Purchased sound-effects library (its EULA: use in productions, no "
+        "redistribution of the raw files)",
+        None,
+    ),
     "procedural-free": LicenseMeta(
         "Procedural synthesis output (no licence attaches)", None
     ),
