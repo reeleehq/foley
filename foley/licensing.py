@@ -189,6 +189,15 @@ LICENSE_FLAGS.update(
     }
 )
 
+#: Licence ids that can never be *asserted* as verified (on ingest, restamp or in a
+#: folder sidecar): ``unknown`` by definition, ``PDM-1.0`` (a claim about the work, not
+#: a grant — verify it by building the ``LicenseRecord`` yourself), and the legacy
+#: ``ElevenLabs-SFX`` row (say the plan).
+UNASSERTABLE_LICENSE_IDS = frozenset({"unknown", "PDM-1.0", "ElevenLabs-SFX"})
+
+#: The ids a user may assert (``foley ingest --license``, a ``foley-license.toml``).
+ASSERTABLE_LICENSE_IDS = frozenset(LICENSE_FLAGS) - UNASSERTABLE_LICENSE_IDS
+
 #: A CC version token (``3.0``, ``2.5``) in a URL path or a label.
 _CC_VERSION_RE = re.compile(r"^\d\.\d$")
 

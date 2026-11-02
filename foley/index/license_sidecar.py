@@ -8,24 +8,28 @@ A purchased pack's licence is not in its files, so the user writes it once, in a
     pack = "GDC 2024 Game Audio Bundle"
     license_url = "https://sonniss.com/gdc-bundle-license"   # optional
     attribution = "Sound effects: Sonniss GDC 2024"          # optional
-    ai_training = false             # optional: overrides the row's flag
+    ai_training = false             # optional: can only narrow the row's flag
 
 A file takes the nearest sidecar in its folder or above (up to ``root``), so a
 sub-folder can override its pack. The licence goes through the licence SSOT
-(:func:`foley.licensing.apply_license_flags`) like any asserted licence. Fail-closed:
-no sidecar, an unreadable one, an unknown key or an unknown licence id raises
-:class:`SidecarError`; nothing is guessed.
+(:func:`foley.licensing.apply_license_flags`) like any asserted licence, and only an
+id the user may assert (:data:`foley.licensing.ASSERTABLE_LICENSE_IDS`) is taken. A
+sidecar can narrow a grant, never widen it: ``ai_training = true`` does not unlock
+training a licence forbids. Fail-closed: no sidecar, two in one folder, an unreadable
+one, an unknown key or an unassertable licence raises :class:`SidecarError`; nothing
+is guessed.
 """
 
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 from ..base import AcquisitionMethod, LicenseRecord
-from ..licensing import LICENSE_FLAGS, apply_license_flags
+from ..licensing import ASSERTABLE_LICENSE_IDS, LICENSE_FLAGS, apply_license_flags
 
 #: Sidecar file names, by precedence within one folder.
 SIDECAR_NAMES = ("foley-license.toml", "foley-license.json")
@@ -40,27 +44,43 @@ SIDECAR_FIELDS = {
     "ai_training": bool,
 }
 
-#: Licence ids a sidecar may not assert (they describe the absence of a grant).
-UNASSERTABLE = frozenset({"unknown"})
+#: ``LicenseRecord.source`` of a sound whose licence a sidecar states.
+SIDECAR_SOURCE = "licensed_library"
 
 
 class SidecarError(ValueError):
     """A missing, unreadable or invalid licence sidecar: the file is not ingested."""
 
 
+def _absolute(path) -> Path:
+    """``path`` made absolute and normalised, symlinks NOT followed (the tree as walked)."""
+    return Path(os.path.abspath(path))
+
+
 def find_sidecar(path, *, root=None) -> Optional[Path]:
     """The nearest sidecar for ``path`` (a file or folder), searching up to ``root``.
 
     ``root`` (default: the filesystem root) bounds the search, so a library folder
-    never inherits a sidecar from above it.
+    never inherits a sidecar from above it. The path is walked as given, not through
+    symlinks, so a linked file takes the sidecar of the folder it is listed in.
+
+    Raises:
+        SidecarError: If ``path`` is not under ``root``, or a folder holds two
+            sidecars, or a sidecar name is not a file.
     """
-    here = Path(path).resolve()
+    here = _absolute(path)
     folder = here if here.is_dir() else here.parent
-    stop = Path(root).resolve() if root is not None else None
+    stop = _absolute(root) if root is not None else None
+    if stop is not None and stop != folder and stop not in folder.parents:
+        raise SidecarError(f"{path} is not under the library root {root}")
     for candidate in (folder, *folder.parents):
-        for name in SIDECAR_NAMES:
-            if (candidate / name).is_file():
-                return candidate / name
+        found = [candidate / n for n in SIDECAR_NAMES if (candidate / n).exists()]
+        if len(found) > 1 or any(not f.is_file() for f in found):
+            raise SidecarError(
+                f"{candidate}: expected one sidecar file, found {[f.name for f in found]}"
+            )
+        if found:
+            return found[0]
         if candidate == stop:
             return None
     return None
@@ -88,13 +108,13 @@ def read_sidecar(sidecar) -> dict:
             lacks ``license``, or names a licence that has no ``LICENSE_FLAGS`` row.
     """
     sidecar = Path(sidecar)
-    text = sidecar.read_text(encoding="utf-8")
     try:
+        text = sidecar.read_text(encoding="utf-8-sig")
         data = _load_toml(text) if sidecar.suffix == ".toml" else json.loads(text)
     except SidecarError:
         raise
-    except ValueError as exc:  # tomllib.TOMLDecodeError and JSONDecodeError
-        raise SidecarError(f"{sidecar}: not valid {sidecar.suffix[1:]}: {exc}") from exc
+    except (OSError, ValueError) as exc:  # unreadable, not UTF-8, bad TOML/JSON
+        raise SidecarError(f"{sidecar}: cannot read it as {sidecar.suffix[1:]}: {exc}") from exc
     if not isinstance(data, dict):
         raise SidecarError(f"{sidecar}: expected a table of keys")
     unknown = sorted(set(data) - set(SIDECAR_FIELDS))
@@ -105,10 +125,11 @@ def read_sidecar(sidecar) -> dict:
             f"expected {', '.join(f'{k}: {t.__name__}' for k, t in SIDECAR_FIELDS.items())}"
         )
     license_id = data.get("license")
-    if license_id not in LICENSE_FLAGS or license_id in UNASSERTABLE:
+    if license_id not in ASSERTABLE_LICENSE_IDS:
+        known = "cannot be asserted" if license_id in LICENSE_FLAGS else "is unknown"
         raise SidecarError(
-            f"{sidecar}: license {license_id!r} is not a licence foley knows; "
-            f"use one of {sorted(set(LICENSE_FLAGS) - UNASSERTABLE)}"
+            f"{sidecar}: license {license_id!r} {known}; "
+            f"use one of {sorted(ASSERTABLE_LICENSE_IDS)}"
         )
     return data
 
@@ -118,7 +139,8 @@ def sidecar_license(path, *, root=None) -> LicenseRecord:
 
     ``rights_verified`` is ``True`` (the user asserted it, as with
     ``foley.ingest(path, license=...)``), the flags come from the licence row, and
-    ``ai_training``, when the sidecar states it, overrides that row's flag.
+    ``ai_training = false`` narrows the row's flag (``true`` never widens it). The
+    pack and the licensor are recorded as the rights holder and in ``license_name``.
 
     Raises:
         SidecarError: If no sidecar covers ``path`` (up to ``root``), or it is invalid.
@@ -130,10 +152,11 @@ def sidecar_license(path, *, root=None) -> LicenseRecord:
             "folder; foley does not guess one"
         )
     data = read_sidecar(sidecar)
+    row = LICENSE_FLAGS[data["license"]]
     record = LicenseRecord(
-        source="licensed_library",
-        source_id=data.get("pack"),
+        source=SIDECAR_SOURCE,
         license_id=data["license"],
+        license_name=data.get("pack"),
         license_url=data.get("license_url"),
         rights_holder=data.get("licensor"),
         attribution_text=data.get("attribution"),
@@ -141,5 +164,5 @@ def sidecar_license(path, *, root=None) -> LicenseRecord:
         rights_verified=True,
         verified_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
     )
-    overrides = {"ai_training_ok": data["ai_training"]} if "ai_training" in data else None
-    return apply_license_flags(record, overrides=overrides)
+    ai_training = row.ai_training_ok and data.get("ai_training", True)
+    return apply_license_flags(record, overrides={"ai_training_ok": ai_training})

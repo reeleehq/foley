@@ -31,9 +31,11 @@ from typing import TYPE_CHECKING, Iterator, Optional
 
 from ..audio import ARCHIVE_FORMAT, WORKING_SAMPLE_RATE, encode, load, to_working
 from ..base import AcquisitionMethod, LicenseRecord, SerializableMixin, SoundRecord
-from ..licensing import (
+from ..licensing import (  # noqa: F401 - the assertable sets are re-exported here
+    ASSERTABLE_LICENSE_IDS,
     DEFAULT_INTENDED_USE,
     LICENSE_FLAGS,
+    UNASSERTABLE_LICENSE_IDS,
     ai_use_permitted,
     apply_license_flags,
     carry_lineage,
@@ -271,13 +273,6 @@ def content_id(src: "AudioSource") -> str:
     return _audio_identity(_probe(src).wav)
 
 
-#: Licence ids that can never be *asserted* as verified: ``unknown`` by definition,
-#: ``PDM-1.0`` (a claim about the work, not a grant — verify it by building the
-#: ``LicenseRecord`` yourself), and the legacy ``ElevenLabs-SFX`` row (say the plan).
-UNASSERTABLE_LICENSE_IDS = frozenset({"unknown", "PDM-1.0", "ElevenLabs-SFX"})
-
-#: The ids a caller may assert on ingest / restamp (``foley ingest --license``).
-ASSERTABLE_LICENSE_IDS = frozenset(LICENSE_FLAGS) - UNASSERTABLE_LICENSE_IDS
 
 #: The note on every clip ingested without a licence (#55).
 _UNKNOWN_LOCAL_NOTE = (
