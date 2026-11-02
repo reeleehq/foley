@@ -231,7 +231,7 @@ def media_key(media: MediaValue) -> str:
         st = os.stat(path)
         return _file_key(os.path.abspath(path), st.st_mtime_ns, st.st_size)
     raise TypeError(
-        f"video must be a URL, a local path or bytes, got {type(media).__name__}"
+        f"a media input must be a URL, a local path or bytes, got {type(media).__name__}"
     )
 
 

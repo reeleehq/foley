@@ -12,8 +12,19 @@ RENAMED = {
     "local_video_file": "local_media_file",
     "VideoInput": "MediaValue",
 }
-KEPT = ("MEDIA", "MEDIA_INPUTS", "MediaInput", "RemoteVideo", "keyed", "replayable",
-        "remote_media_input", "is_url", "video_suffix", "audio_suffix", "audio_seconds")
+KEPT = (
+    "MEDIA",
+    "MEDIA_INPUTS",
+    "MediaInput",
+    "RemoteVideo",
+    "keyed",
+    "replayable",
+    "remote_media_input",
+    "is_url",
+    "video_suffix",
+    "audio_suffix",
+    "audio_seconds",
+)
 
 
 @pytest.mark.parametrize("old, new", RENAMED.items())
