@@ -13,7 +13,7 @@ passage and aggregated, the four things #45 asks of a tasteful design (report, n
   The trigger is read from SELECT's *symbolic* anchor (``"on 'door'"``), which edits never
   erase, and resolved against the timeline's word anchors (``word_timeline``).
   **What it can and cannot catch:** it resolves the cue with the same resolver
-  (:func:`~foley.weave.anchor.nearest_word`) and the same word timings the weave used, so an
+  (:func:`~foley.weave.anchor.resolve_placement`) and the same word timings the weave used, so an
   *unedited* cue passes by construction and inherits that resolver's false matches (#257).
   So each row also says how its cue matched (``match``: ``exact`` / ``stem`` / ``fuzzy`` /
   ``fallback`` / ``absolute``, #263) and the summary counts them: a ``fuzzy`` cue may sit on
@@ -75,8 +75,6 @@ PLACEMENT_CAVEAT = (
     "by construction (same resolver and word timings as the weave), so fuzzy and fallback "
     "cue matches are counted separately"
 )
-#: Cue match kinds that may not sit on the cued word (a resemblance, or no word at all).
-SUSPECT_MATCH_KINDS: "tuple[str, ...]" = ("fuzzy", "fallback")
 
 
 @dataclass(frozen=True)
@@ -508,9 +506,12 @@ class TasteReport:
 
 
 def _suspect_matches(matches: "Mapping[str, int]") -> str:
-    """``"2 fuzzy, 1 fallback"`` (or ``"none fuzzy or fallback"``) from match counts."""
-    parts = [f"{matches[k]} {k}" for k in SUSPECT_MATCH_KINDS if matches.get(k)]
-    return ", ".join(parts) or "none fuzzy or fallback"
+    """``"2 fuzzy, 1 fallback"`` from match counts (:data:`~foley.base.SUSPECT_MATCH_KINDS`)."""
+    from ..base import SUSPECT_MATCH_KINDS
+
+    kinds = [k.value for k in SUSPECT_MATCH_KINDS]
+    parts = [f"{matches[k]} {k}" for k in kinds if matches.get(k)]
+    return ", ".join(parts) or f"no cue matched {' or '.join(kinds)}"
 
 
 def _fmt(x: Optional[float]) -> str:

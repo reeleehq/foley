@@ -134,13 +134,14 @@ def nudge(
     if idx < 0:
         raise KeyError(f"no timeline item with id/clip_ref {item_id!r}")
     it = timeline.items[idx]
-    from ..base import Anchor
+    from ..base import Anchor, MatchKind
 
     base = it.placement or parse_symbolic_anchor(it.onset, layer=it.layer, loop=it.loop)
     onset0, _ = resolve_anchor(base, list(timeline.word_timeline or ()))
     moved = replace(
         base,
         anchor=Anchor.absolute,
+        match_kind=MatchKind.absolute,
         onset=max(0.0, onset0 + delta_s),
         # onset0 already folds in any pre_roll; zero it so a re-hydrate (absolute branch)
         # doesn't subtract the pre_roll a second time.

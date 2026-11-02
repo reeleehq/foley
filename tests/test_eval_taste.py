@@ -151,6 +151,7 @@ def test_rows_and_summary_say_how_each_cue_matched():
     matches = report.summary()["placement_matches"]
     assert matches == {"exact": 1, "fuzzy": 1, "fallback": 1}
     assert "1 fuzzy, 1 fallback" in report.to_markdown()
+    assert taste._suspect_matches({"exact": 2}) == "no cue matched fuzzy or fallback"
 
 
 def test_disabled_items_are_not_measured():

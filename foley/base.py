@@ -114,6 +114,14 @@ class MatchKind(str, Enum):
     absolute = "absolute"
 
 
+#: The match kinds whose sound may not sit on its cue word, and why — the SSOT the weave
+#: notes and the taste eval both flag (#263).
+SUSPECT_MATCH_KINDS: "dict[MatchKind, str]" = {
+    MatchKind.fuzzy: "only a similar word (it may be the wrong one)",
+    MatchKind.fallback: "no spoken word (placed at a fallback onset)",
+}
+
+
 class VerifyLevel(str, Enum):
     """Which rung of the verification ladder produced a ``Verdict``."""
 

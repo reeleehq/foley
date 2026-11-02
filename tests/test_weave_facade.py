@@ -144,15 +144,17 @@ def test_a_cue_that_matched_only_a_similar_word_or_none_is_noted():
         TimelineItem(clip_ref="door", onset="on 'door'"),
         TimelineItem(clip_ref="door", onset="on 'doom'"),
         TimelineItem(clip_ref="door", onset="on 'xylophone'"),
+        TimelineItem(clip_ref="door", onset="on 'harpsichord'", enabled=False),
     ]
     tl = replace(_tl(), items=items, word_timeline=wt)
     r = foley.weave(_voice(), tl, library=_Lib(), aligner=None)
     kinds = [it.placement.match_kind.value for it in r.timeline.items]
-    assert kinds == ["exact", "fuzzy", "fallback"]
+    assert kinds == ["exact", "fuzzy", "fallback", "fallback"]
     (fuzzy,) = [n for n in r.notes if "match=fuzzy" in n]
     (fallback,) = [n for n in r.notes if "match=fallback" in n]
     assert "doom" in fuzzy and "xylophone" not in fuzzy
     assert "xylophone" in fallback and "doom" not in fallback
+    assert "1 item(s)" in fallback and "harpsichord" not in fallback  # a muted item is not noted
 
 
 def test_absolute_onsets_need_no_alignment_note():

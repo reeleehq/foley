@@ -219,7 +219,7 @@ def _span_onset(
     (``absolute``); with an unmatched ``ref`` it is the whole narration as a ``fallback``.
     """
     if not word_timeline:
-        return 0.0, 0.0, MatchKind.fallback
+        return 0.0, 0.0, (MatchKind.absolute if not ref else MatchKind.fallback)
     whole = (
         float(word_timeline[0].get("start", 0.0)),
         float(word_timeline[-1].get("end", word_timeline[-1].get("start", 0.0))),
@@ -275,8 +275,8 @@ def resolve_placement(
     ``paragraph`` land on the boundary. ``pre_roll`` is then subtracted (clamped at
     0), and — when ``snap_pauses`` — the onset snaps to the nearest inter-word gap.
     ``match_kind`` records how the anchor matched (:class:`~foley.base.MatchKind`): a
-    speech anchor with no word timings, or whose cue matched no word, is a ``fallback``
-    at its stored onset (word) or the whole narration (span).
+    cue with no word timings, or that matched no word, is a ``fallback`` at its stored
+    onset (word) or the whole narration (span); a cue-less span is ``absolute``.
 
     Args:
         placement: The symbolic placement to resolve.
@@ -288,7 +288,8 @@ def resolve_placement(
         whose ``duration`` was unset) and ``match_kind`` resolved.
     """
     duration = placement.duration
-    if placement.anchor is Anchor.absolute:
+    names_no_word = placement.anchor is not Anchor.word and not placement.ref
+    if placement.anchor is Anchor.absolute or (names_no_word and not word_timeline):
         onset, kind = placement.onset, MatchKind.absolute
     elif not word_timeline:
         onset, kind = placement.onset, MatchKind.fallback

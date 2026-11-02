@@ -160,10 +160,22 @@ def test_resolve_placement_records_the_match_kind():
     assert (bed.onset, bed.duration, bed.match_kind) == (0.0, 2.6, MatchKind.absolute)
     lost = resolved(Placement(anchor=Anchor.sentence, ref="xylophone"))
     assert (lost.onset, lost.duration, lost.match_kind) == (0.0, 2.6, MatchKind.fallback)
+    cueless = resolved(Placement(anchor=Anchor.sentence, ref=None, onset=0.0), [])
+    assert cueless.match_kind is MatchKind.absolute  # names no word, timings or not
     scene = resolved(Placement(anchor=Anchor.scene, ref="rain"))
     assert (scene.onset, scene.match_kind) == (2.0, MatchKind.exact)
     # resolve_anchor stays the (onset, duration) view of the same resolver
     assert resolve_anchor(Placement(anchor=Anchor.sentence, ref="door"), WT) == (0.0, 1.2)
+
+
+def test_a_nudge_pins_the_match_kind_to_absolute_with_the_anchor():
+    from foley.base import MatchKind, SoundDesignTimeline, TimelineItem
+    from foley.weave.timeline import hydrate, nudge
+
+    tl = hydrate(SoundDesignTimeline(items=[TimelineItem(clip_ref="a", onset="on 'doors'")]), WT)
+    assert tl.items[0].placement.match_kind is MatchKind.stem
+    moved = nudge(tl, "a", 0.2).items[0].placement
+    assert (moved.anchor, moved.match_kind) == (Anchor.absolute, MatchKind.absolute)
 
 
 def test_placement_match_kind_serialises_back_compatibly():

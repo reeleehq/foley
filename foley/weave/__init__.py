@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Optional, Union
 from ..base import (
     Anchor,
     MasterProfile,
-    MatchKind,
+    SUSPECT_MATCH_KINDS,
     SoundDesignTimeline,
     resolve_master,
 )
@@ -42,7 +42,12 @@ from .broadcast import (
     broadcast_bed,
 )
 from .cli_aligners import AeneasAligner, MFAAligner
-from .anchor import parse_symbolic_anchor, resolve_anchor
+from .anchor import (
+    match_word,
+    parse_symbolic_anchor,
+    resolve_anchor,
+    resolve_placement,
+)
 from .master import MasterReport
 from .protocols import Aligner, ApplyStrategy
 from .render import (
@@ -562,17 +567,10 @@ def _alignment_notes(alignment: Optional[str], timeline: SoundDesignTimeline) ->
     if alignment == "whisperx":
         return [
             "aligner=whisperx: word timings come from WhisperX's own transcription "
-            "of the narration, not from the given transcript; a word the recogniser "
-            "heard differently lands at a fallback onset."
+            "of the narration, not from the given transcript (a cue the recogniser "
+            "heard differently is named in an anchor match note)."
         ]
     return []
-
-
-#: The cue matches a weave note calls out, and why: the sound may not sit on its word (#263).
-NOTED_MATCH_KINDS: "dict[MatchKind, str]" = {
-    MatchKind.fuzzy: "only a similar word (it may be the wrong one)",
-    MatchKind.fallback: "no spoken word (placed at a fallback onset)",
-}
 
 
 def _anchor_notes(timeline: SoundDesignTimeline) -> list:
@@ -594,7 +592,7 @@ def _anchor_notes(timeline: SoundDesignTimeline) -> list:
         ]
 
     notes = []
-    for kind, what in NOTED_MATCH_KINDS.items():
+    for kind, what in SUSPECT_MATCH_KINDS.items():
         hits = _hits(kind)
         if hits:
             notes.append(
@@ -636,6 +634,8 @@ __all__ = [
     "hydrate",
     "parse_symbolic_anchor",
     "resolve_anchor",
+    "resolve_placement",
+    "match_word",
     "swap_clip",
     "nudge",
     "set_gain",
