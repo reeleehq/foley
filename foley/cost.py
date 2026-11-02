@@ -42,6 +42,8 @@ __all__ = [
     "DEFAULT_MAX_USD_BY_LLM",
     "default_max_usd",
     "charge",
+    "for_samples",
+    "split_cost",
 ]
 
 #: The default cumulative cap for one run (a ``find`` / ``score`` / ``generate`` call).
@@ -90,8 +92,13 @@ class CostApprovalRequired(BudgetExceeded):
     """Raised before a call whose cost is unknown, when the budget has not approved that."""
 
 
-def estimate_call(config: dict, **affordances) -> Optional[float]:
+def estimate_call(config: dict, *, samples: int = 1, **affordances) -> Optional[float]:
     """The USD cost of one call to the source ``config`` declares, or ``None`` if unknown.
+
+    ``samples``: how many takes the call asks for (a backend's batch knob, #210). A
+    source billed per sample (``pricing['per_sample']``: Mirelo, Sonilo) costs
+    ``samples`` times the one-sample price; any other bills the call (see
+    :func:`for_samples`).
 
     ``config['pricing']`` units:
 
@@ -117,8 +124,39 @@ def estimate_call(config: dict, **affordances) -> Optional[float]:
 
     Args:
         config: A ``SOURCE_CONFIG``.
+        samples: The takes the call asks for (default ``1``).
         **affordances: The canonical affordances of the call (``duration_s``, …).
     """
+    return for_samples(config, _one_sample_price(config, affordances), samples)
+
+
+def for_samples(config: dict, usd: Optional[float], samples: int) -> Optional[float]:
+    """``usd`` (the price of one sample) for a call asking ``samples`` takes.
+
+    Times ``samples`` for a source billed per sample (``pricing['per_sample']``),
+    else unchanged: the call is billed once whatever its batch size.
+
+    >>> for_samples({"pricing": {"per_sample": True}}, 0.15, 3)
+    0.45
+    >>> for_samples({"pricing": {}}, 0.02, 3), for_samples({}, None, 3)
+    (0.02, None)
+    """
+    if usd is None or not ((config.get("pricing") or {}).get("per_sample")):
+        return usd
+    return round(float(usd) * int(samples), 10)
+
+
+def split_cost(usd: Optional[float], takes: int) -> Optional[float]:
+    """Each take's share of a call's ``usd`` that made ``takes`` takes (``None``: unknown).
+
+    >>> split_cost(0.45, 3), split_cost(None, 3)
+    (0.15, None)
+    """
+    return None if usd is None else round(float(usd) / int(takes), 10)
+
+
+def _one_sample_price(config: dict, affordances: dict) -> Optional[float]:
+    """:func:`estimate_call` for one sample."""
     pricing = config.get("pricing")
     if not pricing:
         return None
@@ -189,8 +227,11 @@ def actual_call_cost(
     *,
     duration_s: Optional[float] = None,
     compute_s: Optional[float] = None,
+    samples: int = 1,
 ) -> Optional[float]:
     """What a call just made costs at the declared price, for the duration actually sent.
+
+    ``samples``: the takes the call made (see :func:`for_samples`).
 
     The same pricing rule as :func:`estimate_call`, so the estimate and the actual
     cannot disagree on it; ``None`` (unknown) when a per-second source was left to
@@ -218,11 +259,13 @@ def actual_call_cost(
         amount = pricing.get("amount_usd")
         if amount is None or not _finite_non_negative(compute_s):
             return None
-        return round(float(amount) * float(compute_s), 10)
+        return for_samples(config, round(float(amount) * float(compute_s), 10), samples)
     if duration_s is None and pricing.get("unit") == "per_second":
         return None
     # A source billed by its video's length bills the seconds it actually produced.
-    return estimate_call(config, duration_s=duration_s, video_duration_s=duration_s)
+    return estimate_call(
+        config, samples=samples, duration_s=duration_s, video_duration_s=duration_s
+    )
 
 
 def _stack() -> tuple:

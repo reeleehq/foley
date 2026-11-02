@@ -59,8 +59,8 @@ from its own config. The model: `foley/sources/fal/` (`fal_stable_audio_3`,
   "commercial" while its weights are CC BY-NC; fal's terms disclaim fal's own rights and
   defer to the model owner. A partner model whose terms for gateway calls are undocumented
   gets the `fal-partner-unverified` row (non-commercial) until they are confirmed.
-- **Price:** `per_call` or `per_second`; a temporary intro price is recorded at the later
-  rate, so the estimate never under-quotes.
+- **Price:** `per_call` or `per_second`; a temporary intro price is recorded at the later rate, so the estimate never under-quotes. A source billed per sample says `pricing["per_sample"] = True` (`foley.cost.for_samples` scales the estimate and the actual).
+- **A batch knob** (several takes per call: Mirelo's `num_samples`, diffusers' `num_waveforms_per_prompt`; #210): declare `native_defaults["batch"] = {"native_name": ..., "max": ...}`, reserve the native name from `provider_params`, and give the adapter `generate_takes(prompt, n, **affordances) -> list[GeneratedClip]` (one clip per sample, each with its own seed when the endpoint reports one, else none and a note). `foley.variations` then makes its takes in one call each batch, reserved for all of them, each take keyed `(request, index)` in the generations cache. A seed range other than the signed 32-bit one goes in `native_defaults["seed_limit"]` (one past the largest seed).
 - **Tests:** a replay runner that answers only the requests it was given; a miss raises,
   never falls through to the network. One live test, behind `FOLEY_LIVE_API_TESTS=1` and the key.
 

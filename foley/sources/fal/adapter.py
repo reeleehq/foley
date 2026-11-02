@@ -69,12 +69,23 @@ def audio_url(response: dict, field: str = "audio") -> Optional[str]:
     >>> audio_url({"audio_file": {"url": "https://x/c.wav"}}, "audio_file")
     'https://x/c.wav'
     """
+    urls = audio_urls(response, field)
+    return urls[0] if urls else None
+
+
+def audio_urls(response: dict, field: str = "audio") -> "list[str]":
+    """Every audio URL in a fal response, in order: one per sample for an endpoint that
+    answers a list (Mirelo's ``audio``, #210).
+
+    >>> audio_urls({"audio": [{"url": "u1"}, {"url": "u2"}]})
+    ['u1', 'u2']
+    >>> audio_urls({"audio": {"url": "u"}}), audio_urls({})
+    (['u'], [])
+    """
     value = response.get(field) if isinstance(response, dict) else None
-    if isinstance(value, list):
-        value = value[0] if value else None
-    if isinstance(value, dict):
-        return value.get("url")
-    return value if isinstance(value, str) else None
+    values = value if isinstance(value, list) else [value]
+    urls = [v.get("url") if isinstance(v, dict) else v for v in values]
+    return [u for u in urls if isinstance(u, str) and u]
 
 
 def falaw_uploader(path: str, *, api_key: str) -> str:
@@ -107,9 +118,18 @@ class FalAnswer(tuple):
 
 
 def falaw_runner(
-    endpoint_id: str, arguments: dict, *, api_key: str, audio_field: str = "audio"
+    endpoint_id: str,
+    arguments: dict,
+    *,
+    api_key: str,
+    audio_field: str = "audio",
+    all_audio: bool = False,
 ) -> FalAnswer:
     """Call a fal endpoint through falaw and return ``(audio bytes, raw response)``.
+
+    ``all_audio=True`` (a batch call, #210) answers ``(list of audio bytes, raw
+    response)``: every sample the response lists, in order. A runner that serves a
+    batch takes this keyword; one that never does need not.
 
     A :class:`FalAnswer`: its ``.metrics`` are fal's ``Completed.metrics``
     (``inference_time``: the seconds the runner spent), which falaw carries on its
@@ -151,15 +171,21 @@ def falaw_runner(
             raise SourceConfigurationError(
                 f"fal refused {endpoint_id} before generating anything: {exc}"
             ) from exc
-        url = audio_url(response, audio_field)
-        if not url:
+        urls = audio_urls(response, audio_field)
+        if not urls:
             raise RuntimeError(
                 f"fal {endpoint_id} returned no audio URL in {audio_field!r}: "
                 f"{sorted(response) if isinstance(response, dict) else type(response)}"
             )
-        path = falaw.materialize_asset(url, key_hint="foley")
-    with open(path, "rb") as f:
-        return FalAnswer(f.read(), response, metrics or None)
+        paths = [
+            falaw.materialize_asset(url, key_hint="foley")
+            for url in (urls if all_audio else urls[:1])
+        ]
+    medias = []
+    for path in paths:
+        with open(path, "rb") as f:
+            medias.append(f.read())
+    return FalAnswer(medias if all_audio else medias[0], response, metrics or None)
 
 
 class FalAdapter:
@@ -298,20 +324,26 @@ class FalAdapter:
         Raises:
             SourceConfigurationError: If no fal key is available (before any call).
         """
-        media, response, _ = self._call(arguments)
-        return media, response
+        medias, response, _ = self._call(arguments)
+        return medias[0], response
 
-    def _call(self, arguments: dict) -> "tuple[bytes, dict, Optional[dict]]":
-        """:meth:`invoke_native` with the run metrics the runner reported: a
+    def _call(
+        self, arguments: dict, *, takes: int = 1
+    ) -> "tuple[list[bytes], dict, Optional[dict]]":
+        """:meth:`invoke_native` with every sample's media (``takes`` > 1 asks the runner
+        for all of them, ``all_audio=True``) and the run metrics the runner reported: a
         :class:`FalAnswer`'s ``.metrics``; ``None`` for a plain ``(media, response)``."""
+        batch = {"all_audio": True} if takes > 1 else {}
         answer = self._runner(
             self.config["api"]["endpoint_id"],
             arguments,
             api_key=self.api_key,
             audio_field=(self.config.get("output") or {}).get("audio_field", "audio"),
+            **batch,
         )
         media, response = answer
-        return media, response, getattr(answer, "metrics", None)
+        medias = list(media) if takes > 1 else [media]
+        return medias, response, getattr(answer, "metrics", None)
 
     def _media_url(self, media, *, kind: str = "video") -> str:
         """The URL fal fetches a media input from: a URL as is, a path or bytes uploaded
@@ -386,6 +418,44 @@ class FalAdapter:
         Raises:
             SourceConfigurationError: If no fal key is available (before any call).
         """
+        return self._generate(prompt, 1, provider_params, affordances)[0]
+
+    def generate_takes(
+        self,
+        prompt: str,
+        n: int,
+        *,
+        provider_params: Optional[dict] = None,
+        **affordances,
+    ) -> "list[GeneratedClip]":
+        """``n`` takes of ``prompt`` from one call, through the endpoint's batch knob
+        (``native_defaults['batch']``: Mirelo's ``num_samples``, #210).
+
+        As :meth:`generate`, but the request asks for ``n`` samples, and each answered
+        sample is its own clip: its own seed when the endpoint reports one per sample
+        (``seed_field`` a list), else none and a note; each carries its share of the
+        call's actual cost. The ``seed`` sent is the first sample's.
+
+        Raises:
+            ValueError: If ``n`` exceeds the endpoint's batch maximum (before any call).
+            SourceConfigurationError: If no fal key is available (before any call).
+        """
+        from ..base import batch_limit, require_count
+
+        n = require_count("n", n, minimum=1)
+        if n > batch_limit(self.config):
+            raise ValueError(
+                f"{self.name} makes at most {batch_limit(self.config)} take(s) per "
+                f"call, not {n}"
+            )
+        return self._generate(prompt, n, provider_params, affordances)
+
+    def _generate(
+        self, prompt: str, takes: int, provider_params, affordances: dict
+    ) -> "list[GeneratedClip]":
+        """The clips of one call asking for ``takes`` samples (see :meth:`generate`)."""
+        from ...cost import split_cost
+
         notes: list = []
         nd = self.config.get("native_defaults") or {}
         demux = self.demuxer()  # before the upload and the call: nothing spent yet
@@ -394,6 +464,8 @@ class FalAdapter:
             provider_params,
             policy=self.config.get("provider_params"),
         )
+        if takes > 1:  # the batch knob (#210); reserved from provider_params
+            args[nd["batch"]["native_name"]] = takes
         if affordances.get("prompt_influence") is not None:
             from ..base import native_adherence
 
@@ -411,35 +483,93 @@ class FalAdapter:
                 f"{nd['duration_default_s']:g} s"
             )
         endpoint = self.config["api"]["endpoint_id"]
-        audio, response, metrics = self._call(args)
+        medias, response, metrics = self._call(args, takes=takes)
         undemuxed = None  # the call is paid: a failed demux still returns the answer
         if demux is not None:
             try:
-                audio = demux(audio)
+                medias = [demux(media) for media in medias]
             except Exception as exc:  # noqa: BLE001 - raised below, with the answer
                 undemuxed = exc
             else:
                 notes.append(
                     f"{self.name} answered with a video: its audio track was kept"
                 )
-        seed_field = nd.get("seed_field")
-        seed = (
-            response.get(seed_field)
-            if seed_field and isinstance(response, dict)
-            else None
-        )
-        if isinstance(seed, list):  # one seed per sample (Mirelo); we ask for one
-            seed = seed[0] if seed else None
-        if seed is None:
-            seed = args.get(
-                (self.config["param_map"].get("seed") or {}).get("native_name", "")
-            )
+        seeds = self._take_seeds(response, args, len(medias))
         used_prompt = response.get("prompt") if isinstance(response, dict) else None
         if used_prompt and used_prompt != prompt:
             # Not quoted: notes reach the run manifest, which redacts by key only.
             notes.append(
                 "the endpoint rewrote the prompt (recorded as generation_prompt_used)"
             )
+        call_cost = _actual_cost(
+            self.config,
+            args,
+            medias[0],
+            metrics=metrics,
+            notes=notes,
+            samples=len(medias),
+        )
+        clips = [
+            self._clip(
+                prompt,
+                media,
+                seed=seed,
+                args=args,
+                affordances=affordances,
+                provider_params=provider_params,
+                used_prompt=used_prompt,
+                response=response,
+                cost=split_cost(call_cost, len(medias)),
+                notes=[*notes, *_take_notes(self.name, i, len(medias), seed, args)],
+            )
+            for i, (media, seed) in enumerate(zip(medias, seeds))
+        ]
+        if undemuxed is not None:
+            url = audio_url(response, self.config["output"]["audio_field"])
+            where = f"; the video is at {url} (an expiring fal URL)" if url else ""
+            raise UndemuxedAnswer(
+                f"{self.name}: the generation was billed, but its audio could not be "
+                f"taken out of the video ({type(undemuxed).__name__}){where}",
+                clip=clips[0],
+            ) from undemuxed
+        return clips
+
+    def _take_seeds(self, response, args: dict, n: int) -> "list[Optional[int]]":
+        """Each sample's seed: the one the endpoint reports (``seed_field``; a list holds
+        one per sample), else, for a single sample, the one sent; else ``None``."""
+        nd = self.config.get("native_defaults") or {}
+        seed_field = nd.get("seed_field")
+        reported = (
+            response.get(seed_field)
+            if seed_field and isinstance(response, dict)
+            else None
+        )
+        if isinstance(reported, list):  # one seed per sample (Mirelo)
+            seeds = [reported[i] if i < len(reported) else None for i in range(n)]
+        else:
+            seeds = [reported] + [None] * (n - 1)
+        if n == 1 and seeds[0] is None:
+            seed_name = (self.config["param_map"].get("seed") or {}).get("native_name")
+            seeds[0] = args.get(seed_name or "")
+        return [_as_int(seed) for seed in seeds]
+
+    def _clip(
+        self,
+        prompt: str,
+        media: bytes,
+        *,
+        seed: Optional[int],
+        args: dict,
+        affordances: dict,
+        provider_params,
+        used_prompt,
+        response,
+        cost: Optional[float],
+        notes: list,
+    ) -> GeneratedClip:
+        """One answered sample as a :class:`~foley.sources.base.GeneratedClip`."""
+        nd = self.config.get("native_defaults") or {}
+        endpoint = self.config["api"]["endpoint_id"]
         lic_cfg = self.config["license"]
         lic = generated_license(
             terms=source_stated_terms(self.config),
@@ -451,7 +581,7 @@ class FalAdapter:
             generation_prompt_used=used_prompt
             if isinstance(used_prompt, str)
             else None,
-            generation_seed=_as_int(seed),
+            generation_seed=seed,
             generation_params=recorded_params(
                 {**self._recordable(args, affordances), "fal_endpoint": endpoint},
                 provider_params,
@@ -464,24 +594,28 @@ class FalAdapter:
             stamp_source_terms(lic, {"vendor_watermark": reported})
         record = SoundRecord(id=f"{self.name}:pending", license=lic, caption=prompt)
         candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
-        candidate.cost_actual_usd = _actual_cost(
-            self.config, args, audio, metrics=metrics, notes=notes
-        )
-        clip = GeneratedClip(
-            audio_bytes=audio,
+        candidate.cost_actual_usd = cost
+        return GeneratedClip(
+            audio_bytes=media,
             candidate=candidate,
             notes=notes,
             raw=dict(response) if isinstance(response, dict) else None,
         )
-        if undemuxed is not None:
-            url = audio_url(response, self.config["output"]["audio_field"])
-            where = f"; the video is at {url} (an expiring fal URL)" if url else ""
-            raise UndemuxedAnswer(
-                f"{self.name}: the generation was billed, but its audio could not be "
-                f"taken out of the video ({type(undemuxed).__name__}){where}",
-                clip=clip,
-            ) from undemuxed
-        return clip
+
+
+def _take_notes(
+    name: str, index: int, n: int, seed: Optional[int], args: dict
+) -> "list[str]":
+    """What a take of a batch says about itself (nothing for a single sample)."""
+    if n == 1:
+        return []
+    notes = [f"take {index + 1} of {n} from one {name} call (#210)"]
+    if seed is None:
+        notes.append(
+            f"seed: {name} reports no per-sample seed, so this take records none "
+            "(not reproducible from its provenance)"
+        )
+    return notes
 
 
 def reported_watermark(
@@ -521,8 +655,10 @@ def _actual_cost(
     *,
     metrics: Optional[dict] = None,
     notes: Optional[list] = None,
+    samples: int = 1,
 ) -> Optional[float]:
-    """What the call just made costs (see :func:`foley.cost.actual_call_cost`): for the
+    """What the call just made, of ``samples`` takes (#210), costs (see
+    :func:`foley.cost.actual_call_cost`): for the
     duration sent, or for a source billed by the video's length (#74), for the length
     of the audio it returned (``None`` when that cannot be read), or for a source
     billed per compute second, for the run time fal reported (#186: the pricing row's
@@ -535,7 +671,7 @@ def _actual_cost(
     pricing = config.get("pricing") or {}
     if pricing.get("unit") == "per_compute_second":
         seconds = _compute_seconds(metrics, pricing.get("compute_seconds_field"))
-        cost = actual_call_cost(config, compute_s=seconds)
+        cost = actual_call_cost(config, compute_s=seconds, samples=samples)
         if cost is not None and notes is not None:
             notes.append(
                 f"{COST_NOTE_PREFIX}fal's reported run time ({seconds:g} s): an "
@@ -545,9 +681,13 @@ def _actual_cost(
 
     if "v2a" in source_modes(config):  # billed for the sound it made (#74)
         seconds = _audio_seconds(audio)
-        return None if seconds is None else actual_call_cost(config, duration_s=seconds)
+        if seconds is None:
+            return None
+        return actual_call_cost(config, duration_s=seconds, samples=samples)
     name = (config["param_map"].get("duration_s") or {}).get("native_name")
-    return actual_call_cost(config, duration_s=args.get(name) if name else None)
+    return actual_call_cost(
+        config, duration_s=args.get(name) if name else None, samples=samples
+    )
 
 
 def _compute_seconds(metrics: Optional[dict], field: Optional[str]):

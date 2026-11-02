@@ -1055,6 +1055,13 @@ class GenerateAdapter(Protocol):
     answers with a video (#176): the strategy that takes its audio out (``None`` when
     the answer is already audio). The dispatch uses it again when it replays a kept
     video answer; without one, ffmpeg (:func:`foley.sources.video.audio_track`).
+
+    Optional: ``generate_takes(prompt, n, **affordances) -> list[GeneratedClip]``, for a
+    backend whose config declares a batch knob (``native_defaults['batch']``, see
+    :func:`batch_limit`; #210): ``n`` takes from one call, in order, each with its own
+    licence (its own seed, where the backend reports or derives one). The ``seed``
+    affordance is the first take's. Fewer clips than asked means the backend answered
+    fewer samples.
     """
 
     #: Registry / façade key — ``'stable_audio'`` | ``'elevenlabs'`` | …
@@ -1270,18 +1277,46 @@ def draw_seed() -> int:
     return secrets.randbelow(_SEED_LIMIT)
 
 
-def derived_seed(seed: int, index: int) -> int:
+def seed_limit(config: Optional[dict] = None) -> int:
+    """One past the largest seed the backend ``config`` takes (#210).
+
+    Its ``native_defaults['seed_limit']`` (Mirelo: ``2**63``, a signed 64-bit seed),
+    else the signed 32-bit range every local backend takes.
+
+    >>> seed_limit({"native_defaults": {"seed_limit": 2**63}}) == 2**63, seed_limit()
+    (True, 2147483648)
+    """
+    nd = (config or {}).get("native_defaults") or {}
+    return int(nd.get("seed_limit") or _SEED_LIMIT)
+
+
+def derived_seed(seed: int, index: int, *, limit: int = _SEED_LIMIT) -> int:
     """The seed of variation ``index`` of a request seeded with ``seed`` (#161).
 
-    ``(seed + index) % _SEED_LIMIT``: wrapped into the signed 32-bit range every local
-    backend takes, so variation 0 is the request itself and each later one is a seed
-    of its own. It is ``seed + index`` only below the limit; near it, the seed wraps
-    to 0.
+    ``(seed + index) % limit``: wrapped into the backend's seed range
+    (:func:`seed_limit`; default the signed 32-bit range every local backend takes),
+    so variation 0 is the request itself and each later one is a seed of its own. It
+    is ``seed + index`` only below the limit; near it, the seed wraps to 0.
 
     >>> derived_seed(7, 0), derived_seed(7, 2), derived_seed(2**31 - 1, 1)
     (7, 9, 0)
+    >>> derived_seed(2**31 - 1, 1, limit=2**63)
+    2147483648
     """
-    return (int(seed) + int(index)) % _SEED_LIMIT
+    return (int(seed) + int(index)) % int(limit)
+
+
+def batch_limit(config: dict) -> int:
+    """How many takes one call to the backend ``config`` can make (#210): its batch
+    knob's ``native_defaults['batch']['max']``, else ``1`` (no knob: one call per take).
+
+    >>> batch_limit({"native_defaults": {"batch": {"native_name": "num_samples", "max": 4}}})
+    4
+    >>> batch_limit({})
+    1
+    """
+    batch = ((config or {}).get("native_defaults") or {}).get("batch") or {}
+    return max(1, int(batch.get("max") or 1))
 
 
 def require_count(name: str, value, *, minimum: int) -> int:

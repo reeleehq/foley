@@ -54,12 +54,14 @@ from ...base import Candidate, CandidateOrigin, SoundRecord
 from ..base import (
     GeneratedClip,
     SourceConfigurationError,
+    derived_seed,
     draw_seed,
     generated_license,
     source_stated_terms,
     merge_provider_params,
     native_adherence,
     recorded_params,
+    seed_limit,
     unsupported_notes,
 )
 from .config import SOURCE_CONFIG
@@ -142,20 +144,7 @@ class StableAudioAdapter:
 
     # -- GenerateAdapter surface --------------------------------------------
 
-    def generate(
-        self,
-        prompt: str,
-        *,
-        duration_s: Optional[float] = None,
-        prompt_influence: Optional[float] = None,
-        negative_prompt: Optional[str] = None,
-        steps: Optional[int] = None,
-        seed: Optional[int] = None,
-        loop: bool = False,
-        output_format: str = "wav",
-        provider_params: Optional[dict] = None,
-        **kw,
-    ) -> GeneratedClip:
+    def generate(self, prompt: str, **affordances) -> GeneratedClip:
         """Generate a sound for ``prompt``; return its bytes + provisional candidate.
 
         Args:
@@ -190,6 +179,43 @@ class StableAudioAdapter:
             ``license_id='Stability-Community'``, ``is_ai_generated=True``,
             ``generation_seed`` captured).
         """
+        return self._generate(prompt, 1, **affordances)[0]
+
+    def generate_takes(self, prompt: str, n: int, **affordances) -> "list[GeneratedClip]":
+        """``n`` takes of ``prompt`` from one pipeline call (#210), through the batch
+        knob ``num_waveforms_per_prompt``: take ``i`` is drawn from its own generator,
+        seeded ``seed + i`` (:func:`~foley.sources.base.derived_seed`), and records
+        that seed. Takes the keywords of :meth:`generate`.
+
+        Raises:
+            ValueError: If ``n`` exceeds the config's batch maximum.
+        """
+        from ..base import batch_limit, require_count
+
+        n = require_count("n", n, minimum=1)
+        if n > batch_limit(self.config):
+            raise ValueError(
+                f"{self.name} renders at most {batch_limit(self.config)} take(s) per "
+                f"call, not {n}"
+            )
+        return self._generate(prompt, n, **affordances)
+
+    def _generate(
+        self,
+        prompt: str,
+        takes: int,
+        *,
+        duration_s: Optional[float] = None,
+        prompt_influence: Optional[float] = None,
+        negative_prompt: Optional[str] = None,
+        steps: Optional[int] = None,
+        seed: Optional[int] = None,
+        loop: bool = False,
+        output_format: str = "wav",
+        provider_params: Optional[dict] = None,
+        **kw,
+    ) -> "list[GeneratedClip]":
+        """The ``takes`` clips of one pipeline call (see :meth:`generate`)."""
         nd = self.config["native_defaults"]
         notes = unsupported_notes(
             self.config, loop=loop, output_format=output_format, **kw
@@ -216,38 +242,53 @@ class StableAudioAdapter:
             ),
             "guidance_scale": guidance_scale,
             "negative_prompt": negative_prompt,
-            "num_waveforms_per_prompt": nd["num_waveforms_per_prompt"],
+            "num_waveforms_per_prompt": (
+                takes if takes > 1 else nd["num_waveforms_per_prompt"]
+            ),
         }
         native = merge_provider_params(
             native, provider_params, policy=self.config.get("provider_params")
         )
 
         seed = int(seed) if seed is not None else draw_seed()
-        audio_bytes, sample_rate, ran_on = self._render(
-            prompt, native=native, seed=seed
-        )
+        seeds = _take_seeds(seed, takes, limit=seed_limit(self.config))
+        audios, sample_rate, ran_on = self._render(prompt, native=native, seeds=seeds)
 
         resolved = recorded_params(
             dict(native, sample_rate=sample_rate, model_id=nd["model_id"], **ran_on),
             provider_params,
         )
-        lic = generated_license(
-            terms=source_stated_terms(self.config),
-            source=self.name,
-            license_id=self.config["license"]["default_license_id"],
-            generator_model=nd["generator_version"],
-            generator_version=nd["generator_version"],
-            generation_prompt=prompt,
-            generation_seed=seed,  # the seed sent: the caller's or the one drawn
-            generation_params=resolved,
-        )
-        record = SoundRecord(
-            id=f"{self.name}:pending",  # discarded placeholder (façade ingests sound_id=None)
-            license=lic,
-            caption=prompt,
-        )
-        candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
-        return GeneratedClip(audio_bytes=audio_bytes, candidate=candidate, notes=notes)
+        clips = []
+        for i, (audio_bytes, take_seed) in enumerate(zip(audios, seeds)):
+            lic = generated_license(
+                terms=source_stated_terms(self.config),
+                source=self.name,
+                license_id=self.config["license"]["default_license_id"],
+                generator_model=nd["generator_version"],
+                generator_version=nd["generator_version"],
+                generation_prompt=prompt,
+                generation_seed=take_seed,  # the seed this take's generator was given
+                generation_params=resolved,
+            )
+            record = SoundRecord(
+                id=f"{self.name}:pending",  # discarded placeholder (façade ingests sound_id=None)
+                license=lic,
+                caption=prompt,
+            )
+            candidate = Candidate(sound=record, origin=CandidateOrigin.generated)
+            take_notes = (
+                [f"take {i + 1} of {takes} from one pipeline call (#210)"]
+                if takes > 1
+                else []
+            )
+            clips.append(
+                GeneratedClip(
+                    audio_bytes=audio_bytes,
+                    candidate=candidate,
+                    notes=[*notes, *take_notes],
+                )
+            )
+        return clips
 
     # -- helpers ------------------------------------------------------------
 
@@ -261,18 +302,24 @@ class StableAudioAdapter:
         :meth:`generate`, which draws one when none is given, ``seed=None`` here sends
         no generator, so the pipeline falls back on its own randomness.
         """
-        audio_bytes, sample_rate, _ = self._render(prompt, native=native, seed=seed)
-        return audio_bytes, sample_rate
+        audios, sample_rate, _ = self._render(prompt, native=native, seeds=[seed])
+        return audios[0], sample_rate
 
-    def _render(self, prompt: str, *, native: dict, seed: Optional[int]):
-        """``(encoded bytes, sample_rate, where it ran)``: :meth:`invoke_native`'s work.
+    def _render(self, prompt: str, *, native: dict, seeds: list):
+        """``(encoded bytes per take, sample_rate, where it ran)``: :meth:`invoke_native`'s
+        work, for one take per seed (one generator per take when there are several,
+        #210; ``[None]``: no generator).
 
         Where it ran is what a seed reproduces on (#207): the pipeline's ``device`` and
         ``dtype`` and the generator's device, each only when known (as strings,
         ``torch.`` dropped: ``'float16'``).
         """
         pipe = self._pipe()
-        generator = None if seed is None else self._make_generator(pipe.device, seed)
+        generators = [
+            None if seed is None else self._make_generator(pipe.device, seed)
+            for seed in seeds
+        ]
+        generator = generators if len(generators) > 1 else generators[0]
         output = pipe(
             prompt=prompt,
             output_type=self.config["native_defaults"]["output_type"],
@@ -283,12 +330,13 @@ class StableAudioAdapter:
         ran_on = {
             "device": getattr(pipe, "device", None),
             "dtype": getattr(pipe, "dtype", None),
-            "generator_device": getattr(generator, "device", None),
+            "generator_device": getattr(generators[0], "device", None),
         }
         ran_on = {
             k: str(v).removeprefix("torch.") for k, v in ran_on.items() if v is not None
         }
-        return self._encode(output.audios[0], sample_rate), sample_rate, ran_on
+        audios = [self._encode(a, sample_rate) for a in list(output.audios)[: len(seeds)]]
+        return audios, sample_rate, ran_on
 
     def _encode(self, audio, sample_rate: int) -> bytes:
         """Encode one waveform to container (FLAC) bytes for ingest.
@@ -304,6 +352,15 @@ class StableAudioAdapter:
         if arr.ndim == 2:  # (channels, samples) -> (samples, channels)
             arr = arr.T
         return encode(arr, sample_rate)
+
+
+def _take_seeds(seed: int, takes: int, *, limit: int) -> "list[int]":
+    """The seed of each take of a call seeded ``seed``: ``seed + i``, in the range.
+
+    >>> _take_seeds(7, 3, limit=2**31)
+    [7, 8, 9]
+    """
+    return [derived_seed(seed, i, limit=limit) for i in range(takes)]
 
 
 #: Registry convention (arioso): the loader imports ``adapter.Adapter``.

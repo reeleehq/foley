@@ -78,6 +78,10 @@ SOURCE_CONFIG = {
         # then noted and not applied (#70). Stable Audio Open 1.0 is not distilled.
         "distilled": False,
         "num_waveforms_per_prompt": 1,
+        # The batch knob (#210): foley.variations renders up to this many takes in one
+        # pipeline call, each from its own seeded generator. The cap is foley's (the
+        # pipeline has none): it bounds the memory one call takes.
+        "batch": {"native_name": "num_waveforms_per_prompt", "max": 4},
         "output_type": "np",
     },
     "output": {"default_format": "wav", "returns": "bytes", "storage": "by_value"},
@@ -103,6 +107,7 @@ SOURCE_CONFIG = {
             "generator",
             "latents",
             "output_type",
+            "num_waveforms_per_prompt",  # the batch knob: foley.variations sets it
         ],
         "priced": [],
     },
