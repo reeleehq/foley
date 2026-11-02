@@ -83,6 +83,7 @@ clip = foley.generate(
 | `fal_mirelo` | Mirelo SFX 2.0 via fal, to 600 s | `fal-partner-unverified` | $0.015/s (0.010 until 2026-12-13) |
 | `fal_mmaudio` | MMAudio via fal | CC BY-NC 4.0 (attribution) | $0.001/s |
 | `stable_audio` | Stable Audio Open 1.0, local (GPU, gated weights) | Stability Community | free |
+| `pyfxr` | Procedural sfxr-style cues (`preset=`: pickup, laser, explosion, powerup, hurt, jump, select; or a prompt naming one): UI blips and game-style sounds, offline, seeded; not AI, so no watermark or disclosure; not in the generation order (name it) | `procedural-free`: all rights, no attribution | free |
 | `elevenlabs` | ElevenLabs direct: **first in the generation order**; seconds come out of a paid plan's monthly allowance (10 credits/s, seen 2026-10-26), stereo 48 kHz PCM, `loop` | the account's plan (`$FOLEY_ELEVENLABS_PLAN`): paid = commercial, royalty-free, no attribution; free = non-commercial + attribution | $0.002/s once the allowance is used |
 
 All `fal_*` backends need `foley[fal]` and `$FAL_KEY`; `elevenlabs` needs `foley[elevenlabs]`, `$ELEVENLABS_API_KEY` (or the fleet's `$ELEVEN_API_KEY`) and `$FOLEY_ELEVENLABS_PLAN`.
@@ -133,7 +134,8 @@ A cheer, laugh or applause synced to the *instant* of the on-screen event sounds
   `ai_training_ok`, `is_ai_generated`, …). `foley.credits(sounds)` builds the attribution
   (a `CREDITS.md` + JSON) — always ship it.
 - Generated audio (`foley.generate`) is disclosed (EU AI Act Art. 50) and watermarked when the
-  provenance extra is installed; the mix carries a C2PA content credential.
+  provenance extra is installed; the mix carries a C2PA content credential. Procedural cues
+  (`backend="pyfxr"`) are not AI output: neither watermarked nor disclosed.
 
 ## Offline / sensitive narration
 

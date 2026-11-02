@@ -283,7 +283,11 @@ def test_list_backends_supports_seed_and_kind():
     both = foley.list_backends(supports=["seed", "negative_prompt"])
     assert "stable_audio" in both and "fal_mirelo" in both
     assert "fal_sonilo" not in foley.list_backends(supports="seed")
-    assert foley.list_backends(supports="offline_capable") == ["stable_audio", "stable_audio_3"]
+    assert foley.list_backends(supports="offline_capable") == [
+        "pyfxr",  # procedural (#76)
+        "stable_audio",
+        "stable_audio_3",
+    ]
     assert foley.capabilities_of(SOURCE("freesound"))["deterministic"] is None
     assert foley.capabilities_of(SOURCE("stable_audio_3"))["sample_rate"] == 44100
 

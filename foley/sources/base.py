@@ -59,6 +59,8 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
     from ..base import Candidate, SoundRecord
 
 __all__ = [
+    "GENERATING_KINDS",
+    "resolve_preset",
     "check_prompt_influence",
     "check_provider_params",
     "require_params_mapping",
@@ -95,6 +97,13 @@ __all__ = [
     "corpora_in_rings",
     "select_corpora",
 ]
+
+
+#: The source kinds that make a sound rather than fetch one (SSOT): ``'generate'`` (a
+#: model or a hosted API, AI output) and ``'procedural'`` (deterministic synthesis such
+#: as the sfxr family, #76: not AI, no watermark). Both go through
+#: :func:`foley.generate` (estimate, budget, cache, QC) and serve its generation modes.
+GENERATING_KINDS = ("generate", "procedural")
 
 
 class SourceConfigurationError(RuntimeError):
@@ -244,7 +253,8 @@ def check_provider_params(
     foley estimated and reserved from its own request) are refused, before anything
     is sent or paid for. So is a grouped ``append`` value that would close its
     ``(...)`` group: checked here, a search refuses it before its try, as it does a
-    reserved key, rather than recording it as a failed search (#181).
+    reserved key, rather than recording it as a failed search (#181). A policy that
+    lists the source's native params as ``known`` refuses any other key (a typo).
 
     >>> check_provider_params({"steps": 8}, policy={"reserved": ["prompt"]})
     {'steps': 8}
@@ -259,9 +269,9 @@ def check_provider_params(
 
     Raises:
         TypeError: If ``provider_params`` is not a mapping, or a key is not a ``str``.
-        ValueError: If a key is ``reserved`` or ``priced`` by the policy, an
-            ``append``-ed value would escape its group, or the source declares no
-            policy at all.
+        ValueError: If a key is ``reserved`` or ``priced`` by the policy, or not
+            among its ``known`` ones, an ``append``-ed value would escape its group,
+            or the source declares no policy at all.
     """
     if provider_params is None:
         return {}
@@ -298,6 +308,13 @@ def check_provider_params(
                 "estimates and reserves from its own request: use the unified "
                 "argument (e.g. duration_s=) or the source config instead"
             )
+    known = policy.get("known")
+    unknown = sorted(set(provider_params) - set(known)) if known is not None else []
+    if unknown:
+        raise ValueError(
+            f"provider_params {unknown} are not native params of this source; it "
+            f"takes {sorted(known)}"
+        )
     append = policy.get("append") or {}
     for key, value in provider_params.items():
         if key in append and _append_spec(append[key])[1] and value is not None:
@@ -629,6 +646,52 @@ def unsupported_notes(
         if value is not None
     ]
     return notes
+
+
+def resolve_preset(
+    config: dict, prompt: str, preset: Optional[str] = None
+) -> "tuple[str, Optional[str]]":
+    """``(preset, matched word)``: the category preset a procedural source plays (#76).
+
+    ``preset`` when given (the matched word is then ``None``); else the preset whose
+    keyword (``config['preset_keywords']``, a plural ``s`` allowed) comes first in
+    ``prompt``.
+
+    >>> cfg = {"name": "x", "presets": {"laser": "laser", "jump": "jump"},
+    ...        "preset_keywords": {"laser": ["zap"], "jump": ["hop"]}}
+    >>> resolve_preset(cfg, "two zaps, then a hop")
+    ('laser', 'zap')
+    >>> resolve_preset(cfg, "", "jump")
+    ('jump', None)
+
+    Raises:
+        UnsupportedParameter: For a preset the source does not have, or no preset and
+            no keyword in the prompt; before any work, so the generation order skips it.
+    """
+    from ocracy.kit import UnsupportedParameter
+
+    presets = config.get("presets") or {}
+    listed = ", ".join(presets)
+    if preset is not None:
+        if preset not in presets:
+            raise UnsupportedParameter(
+                f"{config['name']} has no preset {preset!r}; its presets: {listed}"
+            )
+        return preset, None
+    hits = [
+        (m.start(), -len(word), name, word)
+        for name, words in (config.get("preset_keywords") or {}).items()
+        for word in words
+        for m in [re.search(rf"\b{re.escape(word)}(?:e?s)?\b", prompt or "", re.I)]
+        if m is not None
+    ]
+    if not hits:
+        raise UnsupportedParameter(
+            f"{config['name']} plays category presets and none matches the prompt "
+            f"{prompt!r}: pass preset= (one of {listed}) or name one in the prompt"
+        )
+    _, _, name, word = min(hits)
+    return name, word
 
 
 def auth_env_vars(config: dict) -> "tuple[str, ...]":
@@ -1187,8 +1250,9 @@ def generated_license(
     license_url: Optional[str] = None,
     creator_name: Optional[str] = None,
     attribution_text: Optional[str] = None,
+    ai_generated: bool = True,
 ) -> LicenseRecord:
-    """Build an AI-generated :class:`~foley.base.LicenseRecord`, flags derived + provenance stamped.
+    """Build a generated :class:`~foley.base.LicenseRecord`, flags derived + provenance stamped.
 
     The generation sibling of :func:`bulk_license` / :func:`api_license`
     (``acquisition_method=generated``): it routes through the shared
@@ -1235,10 +1299,14 @@ def generated_license(
         license_url: Optional license URL/label.
         creator_name: Optional creator (usually unset for generation).
         attribution_text: Optional ready-made attribution string.
+        ai_generated: ``True`` (default) for a model's output. ``False`` for
+            procedural synthesis (a ``'procedural'`` source, #76): the record then
+            has ``is_ai_generated=False`` and ``disclosure_recommended=False``
+            (whatever was passed), and still carries the generation-provenance block.
 
     Returns:
         A populated ``LicenseRecord`` with derived flags applied AND
-        ``is_ai_generated=True`` plus the full generation-provenance block.
+        ``is_ai_generated=ai_generated`` plus the full generation-provenance block.
     """
     record = _build_license(
         source=source,
@@ -1254,14 +1322,14 @@ def generated_license(
     )
     # Generation-provenance block — stamped after flag derivation, in one place, so
     # no adapter hand-sets flags and every generator populates provenance identically.
-    record.is_ai_generated = True
+    record.is_ai_generated = bool(ai_generated)
     record.generator_model = generator_model
     record.generator_version = generator_version
     record.generation_prompt = generation_prompt
     record.generation_prompt_used = generation_prompt_used
     record.generation_seed = generation_seed
     record.generation_params = generation_params or {}
-    record.disclosure_recommended = disclosure_recommended
+    record.disclosure_recommended = bool(ai_generated and disclosure_recommended)
     record.watermark = watermark
     record.c2pa_manifest_ref = c2pa_manifest_ref
     return record

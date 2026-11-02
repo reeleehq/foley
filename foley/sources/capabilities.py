@@ -22,9 +22,10 @@ import json
 from importlib import resources
 from typing import Optional
 
+from .base import GENERATING_KINDS
 from .registry import SOURCE_REGISTRY, list_sources
 
-KINDS = ("generate", "retrieve")
+KINDS = (*GENERATING_KINDS, "retrieve")
 
 
 def capabilities_of(config: dict) -> dict:
@@ -35,7 +36,7 @@ def capabilities_of(config: dict) -> dict:
     ``offline_capable`` (``data_egress == 'local'``), ``max_duration_s`` /
     ``min_duration_s`` / ``sample_rate`` (``None`` when undeclared).
     ``deterministic`` and ``loopable`` are ``None`` for retrieve sources (they only
-    describe generators). A ``config['capabilities']`` dict adds facts a config cannot
+    describe the generating kinds, ``'generate'`` and ``'procedural'``). A ``config['capabilities']`` dict adds facts a config cannot
     imply (e.g. ``watermarked``); it may not redefine a derived key.
 
     Raises:
@@ -44,7 +45,7 @@ def capabilities_of(config: dict) -> dict:
     affordances = list(config.get("supported_affordances") or ())
     native = config.get("native_defaults") or {}
     kind = config.get("kind")
-    generates = kind == "generate"
+    generates = kind in GENERATING_KINDS
     view = {
         "kind": kind,
         # generate: text-to-audio unless the config says otherwise (#74: 'v2a').
@@ -73,7 +74,7 @@ def list_backends(
     """Names of registered live sources, filtered by ``kind`` and by what they support.
 
     Args:
-        kind: ``'generate'`` or ``'retrieve'`` (``None``: both).
+        kind: ``'generate'``, ``'procedural'`` or ``'retrieve'`` (``None``: all).
         supports: One name or a list (all must hold). A name is an affordance the
             source accepts (``'seed'``, ``'negative_prompt'``, ``'loop'`` ...) or a
             true flag of :func:`capabilities_of` (``'deterministic'``,

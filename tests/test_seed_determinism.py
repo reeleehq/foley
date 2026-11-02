@@ -23,6 +23,7 @@ import foley  # noqa: E402
 from foley.audio import encode  # noqa: E402
 from foley.sources._dispatch import plan_generation, run_generation  # noqa: E402
 from foley.sources.fal.adapter import FalAdapter  # noqa: E402
+from foley.sources.pyfxr.adapter import PyfxrAdapter  # noqa: E402
 from foley.sources.registry import SOURCE_REGISTRY, _declared_configs  # noqa: E402
 from foley.sources.stable_audio.adapter import StableAudioAdapter  # noqa: E402
 from foley.sources.stable_audio_3.adapter import StableAudio3Adapter  # noqa: E402
@@ -87,6 +88,7 @@ def _stable_audio(**_):
 
 
 FAKES = {
+    "pyfxr": lambda **_: PyfxrAdapter(),  # real synthesis: offline, no fake needed (#76)
     "stable_audio": _stable_audio,
     "stable_audio_3": _stable_audio3,
     **{
@@ -111,6 +113,8 @@ def _mode_inputs(adapter) -> dict:
     """What a call of ``adapter``'s modes needs besides the prompt and the seed."""
     config = getattr(adapter, "config", {})
     extra: dict = {}
+    if config.get("presets"):  # a procedural source plays a preset (a non-noise one)
+        extra["preset"] = "laser"
     for mode in config.get("modes") or ():
         extra.update(_MODE_INPUTS.get(mode, lambda config: {})(config))
     return extra

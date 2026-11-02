@@ -72,6 +72,7 @@ from .video import (
 from .video import keyed as video_keyed
 from .video import replayable as video_replayable
 from .base import (
+    GENERATING_KINDS,
     check_prompt_influence,
     check_provider_params,
     draw_seed,
@@ -80,6 +81,7 @@ from .base import (
     page_size,
     provider_params_policy,
     require_count,
+    resolve_preset,
 )
 
 __all__ = [
@@ -560,6 +562,8 @@ def plan_generation(
     kept, notes = translate_affordances(
         config, affordances, on_unsupported=on_unsupported
     )
+    if config.get("presets"):  # a preset source with nothing to play refuses here (#76)
+        resolve_preset(config, prompt, kept.get("preset"))
     priced = _priced(config, kept)
     kept = _cover_the_input(config, kept, priced, notes)
     plan = GenerationPlan(
@@ -1216,7 +1220,7 @@ def _check_mode(config: dict, affordances: dict) -> None:
     none has nothing to sound (#74); likewise an edit source needs its source clip
     (``audio``), and any other source given one would ignore it (#162).
     """
-    if config.get("kind") not in (None, "generate"):
+    if config.get("kind") not in (None, *GENERATING_KINDS):
         return
     from .generate import generation_mode
 

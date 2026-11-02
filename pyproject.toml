@@ -148,6 +148,13 @@ elevenlabs = [
 fal = [
     "falaw[fal]",  # falaw's [fal] extra brings fal-client, the network client
 ]
+# Procedural SFX (#76): pyfxr (BSD-3-Clause), the sfxr-family presets (laser, pickup,
+# explosion, ...), free, offline and seeded; its output carries no licence. A small
+# Cython wheel (cp310-313, Linux/macOS/Windows), imported lazily inside
+# foley.sources.pyfxr.adapter ONLY. Also in the "test" extra, so CI synthesizes for real.
+pyfxr = [
+    "pyfxr",
+]
 # Local Stable Audio Open 1.0 generator (#6) — diffusers StableAudioPipeline. Heavy
 # ML stack, lazy-imported inside foley.sources.stable_audio.adapter ONLY, so
 # `import foley` + source discovery stay dol-only. Deliberately NOT in
@@ -270,6 +277,7 @@ test = [
     "soxr", # so resample/encode tests execute in CI (skipif-guarded in lean envs)
     "mixing[loudness]>=0.0.64", # so LUFS / master tests execute in CI
     "pyloudnorm", # an independent BS.1770 oracle the default meter is checked against
+    "pyfxr", # the procedural source synthesizes for real, offline (#76)
     # NB: librosa is intentionally NOT here — it pulls numba/llvmlite, which have no
     # wheels / a hard <3.10 guard on new CPython patches and break the CI install;
     # trim_silence tests importorskip librosa and run locally via foley[audio]. The

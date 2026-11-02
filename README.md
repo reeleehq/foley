@@ -53,6 +53,11 @@ clip.sound.qc["prompt_match"]  # CLAP prompt-vs-audio verdict, or 'unchecked'
 # Several takes on one request, each stored and replayable (seeded: seed, seed+1, …)
 takes = foley.variations("a single wooden door creak", 4, duration_s=3)
 
+# UI and game-style cues, synthesized procedurally (foley[pyfxr]): free, offline, seeded;
+# preset= or a prompt naming one (laser, coin pickup, explosion, power-up, hurt, jump,
+# menu blip). Not AI output, so no watermark or disclosure; licence procedural-free
+clip = foley.generate("a coin pickup", backend="pyfxr", seed=7)
+
 # Sound timed to picture (video-to-audio): video= walks the V2A order (Mirelo SFX 2.0,
 # then Sonilo, both on fal; FOLEY_V2A_ORDER replaces it). Their fal-route output terms
 # are unverified, so name the backend (its licence is then gated by keep()) — #170
@@ -199,6 +204,7 @@ lazily, so a bare install stays light. What each adds:
 | `clap` | the CLAP text↔audio retrieval engine |
 | `index` / `index-sqlite` | the hybrid vector+keyword index (LanceDB / sqlite-vec) |
 | `freesound` · `stable-audio` · `elevenlabs` · `fal` | live retrieve / generate sources (`fal`: the fal-hosted generators through `falaw`) |
+| `pyfxr` | procedural sfxr-style cues (UI blips, lasers, coins): free, offline, seeded, no licence attached, not AI |
 | `agent` · `local-llm` | the SELECT LLM rungs (Claude / a local OpenAI-compatible endpoint) |
 | `align` · `weave` · `provenance` · `c2pa` | word timing (WhisperX), OTIO/rubberband, watermarking, signed C2PA |
 | `mcp` · `obs` | the MCP server · OpenTelemetry export |
