@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="alternate" type="text/markdown" href="rights.html.md">
+<link rel="describedby" href="../../../llms.txt" type="text/markdown">
+    <title>foley.provenance.rights &#8212; foley</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_autodoc_typehints.css?v=057ac668" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/epythet.css?v=e39d37f2" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../../_static/documentation_options.js?v=f31ae747"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=fd10adb8"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = "pre.mermaid {\n    /* Same as .mermaid-container > pre */\n    display: block;\n    width: 100%;\n}\n\npre.mermaid > svg {\n    /* Same as .mermaid-container > pre > svg */\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}";
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = ".mermaid-container {\n    position: relative;\n    display: flex;\n    flex-direction: row;\n    width: 100%;\n}\n\n.mermaid-container > pre {\n    display: block;\n    width: 100%;\n}\n\n.mermaid-container > pre > svg {\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}\n\n.mermaid-fullscreen-btn {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.3);\n    border-radius: 4px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.2s;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n    font-size: 14px;\n    line-height: 1;\n    padding: 0;\n    color: #333;\n}\n\n.mermaid-fullscreen-btn:hover {\n    opacity: 100% !important;\n    background: rgba(255, 255, 255, 1);\n    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-btn.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.3);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-btn.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal {\n    display: none;\n    position: fixed !important;\n    top: 0 !important;\n    left: 0 !important;\n    width: 95vw;\n    height: 100vh;\n    background: rgba(255, 255, 255, 0.98);\n    z-index: 9999;\n    padding: 20px;\n    overflow: auto;\n}\n\n.mermaid-fullscreen-modal.dark-theme {\n    background: rgba(0, 0, 0, 0.98);\n}\n\n.mermaid-fullscreen-modal.active {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen {\n    position: relative;\n    width: 95vw;\n    height: 90vh;\n    max-width: 95vw;\n    max-height: 90vh;\n    background: white;\n    border-radius: 8px;\n    padding: 20px;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);\n    overflow: auto;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen.dark-theme {\n    background: #1a1a1a;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);\n}\n\n.mermaid-container-fullscreen pre.mermaid {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen .mermaid svg {\n    height: 100% !important;\n    width: 100% !important;\n    cursor: grab;\n}\n\n.mermaid-fullscreen-close {\n    position: fixed !important;\n    top: 20px !important;\n    right: 20px !important;\n    width: 40px;\n    height: 40px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.2);\n    border-radius: 50%;\n    cursor: pointer;\n    z-index: 10000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n    transition: all 0.2s;\n    font-size: 24px;\n    line-height: 1;\n    color: #333;\n}\n\n.mermaid-fullscreen-close:hover {\n    background: white;\n    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-close.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.2);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-close.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal .mermaid-fullscreen-btn {\n    display: none !important;\n}";
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+let _lazyObserver = null;
+let _renderQueue = Promise.resolve();
+let closeModal = () => {};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeModal();
+    }
+});
+
+// Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
+// so this is safe to call both for the initial batch and for diagrams that
+// render lazily once they become visible.
+const addZoomToSvgs = (svgs) => {
+    svgs.each(function() {
+        if (this.getAttribute('data-zoom-applied') === 'true') return;
+        var svg = d3.select(this);
+        svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+        var inner = svg.select("g");
+        var zoom = d3.zoom().on("zoom", function(event) {
+            inner.attr("transform", event.transform);
+        });
+        svg.call(zoom);
+        this.setAttribute('data-zoom-applied', 'true');
+    });
+};
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        // Disconnect any previous lazy rendering observer
+        if (_lazyObserver) {
+            _lazyObserver.disconnect();
+            _lazyObserver = null;
+        }
+
+        all_mermaids.forEach((el) => {
+            el.removeAttribute('data-mermaid-deferred');
+            el.removeAttribute('data-mermaid-render-failed');
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+
+        // Separate visible and hidden elements. Mermaid's layout engine measures
+        // text dimensions via the DOM, which fails for elements hidden by a parent
+        // (e.g., Reveal.js non-active slides, sphinx-design unopened tabs),
+        // producing broken SVGs. Render visible elements now, defer hidden ones.
+        const visible = [];
+        const hidden = [];
+        all_mermaids.forEach((el) => {
+            // offsetParent is null for display:none ancestors.
+            // getClientRects().length > 0 catches position:fixed elements
+            // (which also have null offsetParent but are still visible).
+            if (el.offsetParent !== null || el.getClientRects().length > 0) {
+                visible.push(el);
+            } else {
+                hidden.push(el);
+                el.setAttribute('data-mermaid-deferred', 'true');
+            }
+        });
+
+        if (visible.length > 0) {
+            try {
+                await mermaid.run({ nodes: visible });
+            } catch (e) {
+                console.error("Mermaid rendering failed:", e);
+            }
+        }
+
+        // Lazily render hidden elements when they become visible.
+        // Uses a promise chain (_renderQueue) to serialize rendering,
+        // since IntersectionObserver may report multiple entries at once
+        // and mermaid.run() is not safe to call concurrently.
+        if (hidden.length > 0) {
+            if (typeof IntersectionObserver === 'undefined') {
+                console.warn("IntersectionObserver not available; hidden mermaid diagrams will not render.");
+            } else {
+                _renderQueue = Promise.resolve();
+                _lazyObserver = new IntersectionObserver((entries) => {
+                    for (const entry of entries) {
+                        if (entry.isIntersecting && entry.target.getAttribute("data-processed") !== "true") {
+                            _lazyObserver.unobserve(entry.target);
+                            const el = entry.target;
+                            _renderQueue = _renderQueue.then(async () => {
+                                try {
+                                    await mermaid.run({ nodes: [el] });
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    // Apply zoom to the now-rendered diagram, matching
+                                    // the decoration visible diagrams receive.
+                                    if (false) {
+                                        addZoomToSvgs(d3.selectAll("").select(function() {
+                                            return this.querySelector("svg");
+                                        }));
+                                    }
+                                } catch (e) {
+                                    console.error("Mermaid deferred rendering failed:", e);
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    el.setAttribute('data-mermaid-render-failed', 'true');
+                                }
+                            });
+                        }
+                    }
+                });
+                hidden.forEach((el) => _lazyObserver.observe(el));
+            }
+        }
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    // Exclude deferred (hidden) and render-failed elements from completion checks
+    const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
+    const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
+
+    if (false) {
+        const mermaids_to_add_zoom = 0 === -1 ? mermaids_active.length : 0;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("").select(function() {
+                return this.querySelector("svg");
+            });
+            // Wait until every active (visible) diagram has rendered. Deferred
+            // diagrams are excluded, so a fixed d3_node_count that counts a
+            // hidden diagram no longer loops forever waiting for its SVG.
+            if(mermaids_active.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            }
+            addZoomToSvgs(svgs);
+        }
+    } else if(mermaids_active.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if (!true) return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = "\u26f6";
+        fullscreenBtn.style.opacity = "50%";
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scrollX, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.display = 'block';
+
+                if (false) {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+
+
+const load = async () => {
+    initStyles();
+
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...{"startOnLoad": false},
+                ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...{"startOnLoad": false},
+    ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/foley/provenance/rights';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.113" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">foley</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/foley" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="../../foley.html" class="nav-link">foley</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">foley.provenance.rights</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for foley.provenance.rights</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Export a sound with its rights and provenance, for a store outside foley (#66).</span>
+
+<span class="sd">:func:`export_sound` returns ``(bytes, rights, provenance)``:</span>
+
+<span class="sd">* ``rights`` is a plain dict keyed by the field names of ``lacing.Rights`` (pinned to</span>
+<span class="sd">  ``an``'s ``AssetSource``: ``provider``, ``id``, ``title``, ``license``,</span>
+<span class="sd">  ``license_url``, ``attribution``, ``source_page_url``, ``author``, ``author_url``,</span>
+<span class="sd">  ``cacheable``), so a consumer validates it with ``lacing.Rights(**rights)``. foley</span>
+<span class="sd">  never imports lacing (it pulls pydantic), so the dict is the contract.</span>
+<span class="sd">* ``provenance`` is what ``Rights`` has no field for and a consumer must not lose:</span>
+<span class="sd">  foley's id, the sha256 of the archived bytes AND of the exported bytes (a FLAC</span>
+<span class="sd">  archive re-encoded to WAV hashes differently, so both are kept to chain them) and</span>
+<span class="sd">  whether the re-encode was lossless, the eight licence flags (``ai_training_ok``,</span>
+<span class="sd">  ``revenue_cap_usd``, ...), a required notice, excluded territories, the safety</span>
+<span class="sd">  flags, the edit lineage and, for an AI-generated clip, its EU AI Act Art. 50</span>
+<span class="sd">  checklist with the generation block.</span>
+
+<span class="sd">Two rules carry the rights:</span>
+
+<span class="sd">* **Licence codes are what a consumer classifies**, from the SSOT consumers import</span>
+<span class="sd">  (:func:`foley.licensing.consumer_license_code`): ``cc0-1.0``, ``cc-by-4.0``,</span>
+<span class="sd">  ``stability-community``, and ``None`` -- UNKNOWN, never unencumbered -- when the</span>
+<span class="sd">  rights are unverified (a Public Domain Mark is a claim, not a grant) or unknown.</span>
+<span class="sd">  An edit is exported under the most restrictive licence of its lineage</span>
+<span class="sd">  (:func:`foley.licensing.rights_license_id`), so it never reads wider than a source.</span>
+<span class="sd">  A provider-terms licence names the terms' owner as ``provider``</span>
+<span class="sd">  (:data:`foley.licensing.LICENSE_TERMS_PROVIDER`), since a consumer reads such a</span>
+<span class="sd">  code only on that provider's source.</span>
+<span class="sd">* **The export is fail-closed**: bytes foley may not keep (``cache_bytes_ok=False``,</span>
+<span class="sd">  a Freesound API pull stored by reference) are not handed to another store either</span>
+<span class="sd">  (:func:`foley.licensing.export_refusal`), and bytes are exported only when they</span>
+<span class="sd">  match the content hash their record names.</span>
+
+<span class="sd">Everything is read off the :class:`~foley.base.LicenseRecord` SSOT through the</span>
+<span class="sd">credits layer (title, author, licence URL, attribution line); no flag is re-derived.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">SoundRecord</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..licensing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">LICENSE_EXCLUDED_TERRITORIES</span><span class="p">,</span>
+    <span class="n">LICENSE_TERMS_PROVIDER</span><span class="p">,</span>
+    <span class="n">LicenseFlags</span><span class="p">,</span>
+    <span class="n">LicenseRefusal</span><span class="p">,</span>
+    <span class="n">consumer_license_code</span><span class="p">,</span>
+    <span class="n">derived_license_ids</span><span class="p">,</span>
+    <span class="n">export_refusal</span><span class="p">,</span>
+    <span class="n">license_meta</span><span class="p">,</span>
+    <span class="n">rights_license_id</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">content_key</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.credits</span><span class="w"> </span><span class="kn">import</span> <span class="n">attribution_line</span><span class="p">,</span> <span class="n">credit_entry</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>  <span class="c1"># pragma: no cover - typing only</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..index.library</span><span class="w"> </span><span class="kn">import</span> <span class="n">SoundLibrary</span>
+
+<span class="c1">#: The format an export is encoded in when none is named.</span>
+<span class="n">DEFAULT_EXPORT_FORMAT</span> <span class="o">=</span> <span class="s2">"wav"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_text</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""``value``, or ``None`` for a blank string (``Rights`` refuses blank text)."""</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="rights_provider">
+<a class="viewcode-back" href="../../../_autosummary/foley.provenance.rights.html#foley.rights_provider">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rights_provider</span><span class="p">(</span><span class="n">lic</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Who the rights come from: a provider-terms licence's owner, else the source.</span>
+
+<span class="sd">    &gt;&gt;&gt; rights_provider(LicenseRecord(source="fal_stable_audio_3", license_id="Stability-Community"))</span>
+<span class="sd">    'stability-ai'</span>
+<span class="sd">    &gt;&gt;&gt; rights_provider(LicenseRecord(source="freesound", license_id="CC0-1.0"))</span>
+<span class="sd">    'freesound'</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">LICENSE_TERMS_PROVIDER</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">license_id</span><span class="p">,</span> <span class="n">lic</span><span class="o">.</span><span class="n">source</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_license_url</span><span class="p">(</span>
+    <span class="n">lic</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">license_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">own_url</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The URL of the licence exported: the record's own, or a lineage source's."""</span>
+    <span class="k">if</span> <span class="n">license_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">own_url</span> <span class="k">if</span> <span class="n">license_id</span> <span class="o">==</span> <span class="n">lic</span><span class="o">.</span><span class="n">license_id</span> <span class="k">else</span> <span class="n">license_meta</span><span class="p">(</span><span class="n">license_id</span><span class="p">)</span><span class="o">.</span><span class="n">url</span>
+
+
+<div class="viewcode-block" id="sound_rights">
+<a class="viewcode-back" href="../../../_autosummary/foley.provenance.rights.html#foley.sound_rights">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sound_rights</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="n">SoundRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``record``'s rights as a dict keyed by ``lacing.Rights`` field names.</span>
+
+<span class="sd">    ``license`` is :func:`~foley.licensing.rights_license_id` as a consumer code (the</span>
+<span class="sd">    most restrictive licence of an edit's lineage), ``license_url`` that licence's.</span>
+<span class="sd">    ``attribution`` is foley's plain-text credit line, so it carries the</span>
+<span class="sd">    ``(modified)`` notice, the AI disclosure (``AI-generated with &lt;model&gt;``) and an</span>
+<span class="sd">    edit's sources. ``author`` is ``None`` when no creator or rights holder is</span>
+<span class="sd">    recorded (the credit line falls back to the source name; a rights record does not).</span>
+<span class="sd">    """</span>
+    <span class="n">lic</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">license</span>
+    <span class="n">entry</span> <span class="o">=</span> <span class="n">credit_entry</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+    <span class="n">license_id</span> <span class="o">=</span> <span class="n">rights_license_id</span><span class="p">(</span><span class="n">lic</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"provider"</span><span class="p">:</span> <span class="n">rights_provider</span><span class="p">(</span><span class="n">lic</span><span class="p">),</span>
+        <span class="s2">"id"</span><span class="p">:</span> <span class="n">_text</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">source_id</span><span class="p">),</span>
+        <span class="s2">"title"</span><span class="p">:</span> <span class="n">_text</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">title</span><span class="p">),</span>
+        <span class="s2">"license"</span><span class="p">:</span> <span class="n">consumer_license_code</span><span class="p">(</span><span class="n">license_id</span><span class="p">),</span>
+        <span class="s2">"license_url"</span><span class="p">:</span> <span class="n">_text</span><span class="p">(</span><span class="n">_license_url</span><span class="p">(</span><span class="n">lic</span><span class="p">,</span> <span class="n">license_id</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">license_url</span><span class="p">)),</span>
+        <span class="s2">"attribution"</span><span class="p">:</span> <span class="n">_text</span><span class="p">(</span><span class="n">attribution_line</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">"plain"</span><span class="p">)),</span>
+        <span class="s2">"source_page_url"</span><span class="p">:</span> <span class="n">_text</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">source_url</span><span class="p">),</span>
+        <span class="s2">"author"</span><span class="p">:</span> <span class="n">_text</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">creator_name</span> <span class="ow">or</span> <span class="n">lic</span><span class="o">.</span><span class="n">rights_holder</span><span class="p">),</span>
+        <span class="s2">"author_url"</span><span class="p">:</span> <span class="n">_text</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">creator_url</span><span class="p">),</span>
+        <span class="s2">"cacheable"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">cache_bytes_ok</span><span class="p">),</span>
+    <span class="p">}</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ai_disclosure</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="n">SoundRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The Art. 50 checklist (with its generation block) of an AI clip, else ``None``."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">record</span><span class="o">.</span><span class="n">license</span><span class="o">.</span><span class="n">is_ai_generated</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">.disclosure</span><span class="w"> </span><span class="kn">import</span> <span class="n">art50_checklist</span>
+
+    <span class="k">return</span> <span class="n">art50_checklist</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="excluded_territories">
+<a class="viewcode-back" href="../../../_autosummary/foley.provenance.rights.html#foley.excluded_territories">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">excluded_territories</span><span class="p">(</span><span class="n">lic</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Where ``lic`` or any licence it derives from grants nothing (sorted codes).</span>
+
+<span class="sd">    &gt;&gt;&gt; excluded_territories(LicenseRecord(source="s", license_id="CC0-1.0"))</span>
+<span class="sd">    []</span>
+<span class="sd">    """</span>
+    <span class="n">ids</span> <span class="o">=</span> <span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">license_id</span><span class="p">,</span> <span class="o">*</span><span class="n">derived_license_ids</span><span class="p">(</span><span class="n">lic</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">LICENSE_EXCLUDED_TERRITORIES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="p">())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ids</span><span class="p">)))</span></div>
+
+
+
+<div class="viewcode-block" id="sound_provenance">
+<a class="viewcode-back" href="../../../_autosummary/foley.provenance.rights.html#foley.sound_provenance">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sound_provenance</span><span class="p">(</span>
+    <span class="n">record</span><span class="p">:</span> <span class="n">SoundRecord</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">archived_sha256</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">sha256</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">subtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">archived_subtype</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">lossless</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What an export must carry that ``Rights`` has no field for (JSON-native).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        record: The exported sound.</span>
+<span class="sd">        archived_sha256: The sha256 of the bytes foley holds (its content key).</span>
+<span class="sd">        sha256: The sha256 of the exported bytes (``an``'s ``AssetSource.sha256``).</span>
+<span class="sd">        fmt: The exported format (``'wav'``).</span>
+<span class="sd">        subtype: The exported sample format (``'PCM_24'``).</span>
+<span class="sd">        archived_subtype: The sample format of the bytes foley holds.</span>
+<span class="sd">        lossless: Whether the exported samples are exactly the archived ones.</span>
+<span class="sd">    """</span>
+    <span class="n">lic</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">license</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"foley_id"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="s2">"sha256"</span><span class="p">:</span> <span class="n">sha256</span><span class="p">,</span>
+        <span class="s2">"archived_sha256"</span><span class="p">:</span> <span class="n">archived_sha256</span><span class="p">,</span>
+        <span class="s2">"format"</span><span class="p">:</span> <span class="n">fmt</span><span class="p">,</span>
+        <span class="s2">"subtype"</span><span class="p">:</span> <span class="n">subtype</span><span class="p">,</span>
+        <span class="s2">"archived_subtype"</span><span class="p">:</span> <span class="n">archived_subtype</span><span class="p">,</span>
+        <span class="s2">"lossless"</span><span class="p">:</span> <span class="n">lossless</span><span class="p">,</span>
+        <span class="s2">"source"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
+        <span class="s2">"source_id"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">source_id</span><span class="p">,</span>
+        <span class="s2">"source_url"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">source_url</span><span class="p">,</span>
+        <span class="s2">"source_sha256"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">content_sha256</span><span class="p">,</span>
+        <span class="s2">"acquisition_method"</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span>
+            <span class="n">lic</span><span class="o">.</span><span class="n">acquisition_method</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">,</span> <span class="n">lic</span><span class="o">.</span><span class="n">acquisition_method</span>
+        <span class="p">),</span>
+        <span class="s2">"retrieved_at"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">retrieved_at</span><span class="p">,</span>
+        <span class="s2">"license_id"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">license_id</span><span class="p">,</span>
+        <span class="s2">"rights_verified"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">rights_verified</span><span class="p">,</span>
+        <span class="s2">"flags"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">lic</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">LicenseFlags</span><span class="o">.</span><span class="n">__dataclass_fields__</span>
+        <span class="p">},</span>
+        <span class="s2">"ai_training_scope"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">ai_training_scope</span><span class="p">,</span>
+        <span class="s2">"gen_ai_preference"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">gen_ai_preference</span><span class="p">,</span>
+        <span class="s2">"notice_text_required"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">notice_text_required</span><span class="p">,</span>
+        <span class="s2">"excluded_territories"</span><span class="p">:</span> <span class="n">excluded_territories</span><span class="p">(</span><span class="n">lic</span><span class="p">),</span>
+        <span class="s2">"contains_recognizable_voice"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">contains_recognizable_voice</span><span class="p">,</span>
+        <span class="s2">"potential_trademark"</span><span class="p">:</span> <span class="n">lic</span><span class="o">.</span><span class="n">potential_trademark</span><span class="p">,</span>
+        <span class="s2">"transformations"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">lic</span><span class="o">.</span><span class="n">transformations</span> <span class="ow">or</span> <span class="p">()),</span>
+        <span class="s2">"derived_license_ids"</span><span class="p">:</span> <span class="n">derived_license_ids</span><span class="p">(</span><span class="n">lic</span><span class="p">),</span>
+        <span class="s2">"ai_disclosure"</span><span class="p">:</span> <span class="n">_ai_disclosure</span><span class="p">(</span><span class="n">record</span><span class="p">),</span>
+    <span class="p">}</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_verified_archive</span><span class="p">(</span>
+    <span class="n">library</span><span class="p">:</span> <span class="s2">"SoundLibrary"</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">SoundRecord</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[bytes, str]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``record``'s bytes from ``library`` and their sha256, refused unless they match</span>
+<span class="sd">    the content hash the record names (fail-closed: no hash, nothing to check)."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">record</span><span class="o">.</span><span class="n">content_sha256</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="si">!r}</span><span class="s2"> names no content hash, so its bytes cannot be checked "</span>
+            <span class="sa">f</span><span class="s2">"before export; re-ingest it to record one"</span>
+        <span class="p">)</span>
+    <span class="n">archived</span> <span class="o">=</span> <span class="n">library</span><span class="o">.</span><span class="n">audio</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="n">archived_sha256</span> <span class="o">=</span> <span class="n">content_key</span><span class="p">(</span><span class="n">archived</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">archived_sha256</span> <span class="o">!=</span> <span class="n">record</span><span class="o">.</span><span class="n">content_sha256</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"the bytes of </span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">id</span><span class="si">!r}</span><span class="s2"> hash to </span><span class="si">{</span><span class="n">archived_sha256</span><span class="si">}</span><span class="s2">, not the "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">content_sha256</span><span class="si">}</span><span class="s2"> its record names: they changed since ingest"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">archived</span><span class="p">,</span> <span class="n">archived_sha256</span>
+
+
+<div class="viewcode-block" id="export_sound">
+<a class="viewcode-back" href="../../../_autosummary/foley.provenance.rights.html#foley.export_sound">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">export_sound</span><span class="p">(</span>
+    <span class="n">sound_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_EXPORT_FORMAT</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">library</span><span class="p">:</span> <span class="s2">"Optional[SoundLibrary]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">subtype</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[bytes, dict, dict]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Export a sound's bytes as ``fmt`` with its rights and provenance (#66).</span>
+
+<span class="sd">    The sound's bytes are fetched from ``library``, checked against the record's</span>
+<span class="sd">    content hash, and re-encoded (:func:`foley.audio.transcode`: PCM, the archive's</span>
+<span class="sd">    own depth where ``fmt`` allows, so a ``PCM_24`` FLAC gives a sample-exact</span>
+<span class="sd">    ``PCM_24`` WAV; bytes already in ``fmt`` come back untouched).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        sound_id: The record id in ``library``.</span>
+<span class="sd">        fmt: The container to export (any libsndfile format: ``'wav'``, ``'flac'``).</span>
+<span class="sd">        library: The :class:`~foley.index.library.SoundLibrary` to read (default:</span>
+<span class="sd">            :func:`foley.default_library`).</span>
+<span class="sd">        subtype: The sample format (default: :func:`foley.audio.export_subtype`).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ``(bytes, rights, provenance)``: ``rights`` from :func:`sound_rights`,</span>
+<span class="sd">        ``provenance`` from :func:`sound_provenance`.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        KeyError: ``sound_id`` is not in ``library``.</span>
+<span class="sd">        LicenseRefusal: the sound's terms forbid keeping its bytes</span>
+<span class="sd">            (``cache_bytes_ok=False``).</span>
+<span class="sd">        LookupError: the bytes are not available locally.</span>
+<span class="sd">        ValueError: the record names no content hash, or the bytes no longer match it.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">container_of</span><span class="p">,</span> <span class="n">is_lossless_conversion</span><span class="p">,</span> <span class="n">transcode</span>
+
+    <span class="k">if</span> <span class="n">library</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..index.library</span><span class="w"> </span><span class="kn">import</span> <span class="n">default_library</span>
+
+        <span class="n">library</span> <span class="o">=</span> <span class="n">default_library</span><span class="p">()</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="n">library</span><span class="p">[</span><span class="n">sound_id</span><span class="p">]</span>
+    <span class="n">reason</span> <span class="o">=</span> <span class="n">export_refusal</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">license</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">LicenseRefusal</span><span class="p">({</span><span class="n">sound_id</span><span class="p">:</span> <span class="n">reason</span><span class="p">})</span>
+    <span class="n">archived</span><span class="p">,</span> <span class="n">archived_sha256</span> <span class="o">=</span> <span class="n">_verified_archive</span><span class="p">(</span><span class="n">library</span><span class="p">,</span> <span class="n">record</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">transcode</span><span class="p">(</span><span class="n">archived</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">fmt</span><span class="p">,</span> <span class="n">subtype</span><span class="o">=</span><span class="n">subtype</span><span class="p">)</span>
+    <span class="c1"># Embedded metadata (#231: a UCS filename, bext / iXML via</span>
+    <span class="c1"># foley.embedded_metadata.chunks_from_fields) goes here, before ``sha256`` is</span>
+    <span class="c1"># taken, so the hash names the bytes as delivered.</span>
+    <span class="n">_fmt</span><span class="p">,</span> <span class="n">archived_subtype</span> <span class="o">=</span> <span class="n">container_of</span><span class="p">(</span><span class="n">archived</span><span class="p">)</span>
+    <span class="n">out_fmt</span><span class="p">,</span> <span class="n">out_subtype</span> <span class="o">=</span> <span class="n">container_of</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">provenance</span> <span class="o">=</span> <span class="n">sound_provenance</span><span class="p">(</span>
+        <span class="n">record</span><span class="p">,</span>
+        <span class="n">archived_sha256</span><span class="o">=</span><span class="n">archived_sha256</span><span class="p">,</span>
+        <span class="n">sha256</span><span class="o">=</span><span class="n">content_key</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+        <span class="n">fmt</span><span class="o">=</span><span class="n">out_fmt</span><span class="p">,</span>
+        <span class="n">subtype</span><span class="o">=</span><span class="n">out_subtype</span><span class="p">,</span>
+        <span class="n">archived_subtype</span><span class="o">=</span><span class="n">archived_subtype</span><span class="p">,</span>
+        <span class="n">lossless</span><span class="o">=</span><span class="n">is_lossless_conversion</span><span class="p">(</span><span class="n">archived_subtype</span><span class="p">,</span> <span class="n">out_subtype</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">sound_rights</span><span class="p">(</span><span class="n">record</span><span class="p">),</span> <span class="n">provenance</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -104,6 +104,7 @@
       credits_for
       attribution_line
       credit_entry
+      export_sound
    
    .. rubric:: Classes
 

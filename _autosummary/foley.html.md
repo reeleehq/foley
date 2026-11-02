@@ -29,6 +29,7 @@ foley.generate("a single wooden door creak", backend="stable_audio")
 foley.edit(sound_id, "extend", extend_after_s=2)  # audio-to-audio | inpaint | extend
 foley.ingest("~/my_sounds/")
 foley.ingest_library("~/SFX/", accept_ai_restricted=True)  # owned packs + sidecars
+data, rights, provenance = foley.export_sound(sound_id)  # lacing.Rights-keyed rights
 ```
 
 The design is grounded in the research reports under `misc/docs/research/`.
@@ -158,6 +159,7 @@ lazy-imported inside the audio/QC functions that need them (install via the
 | [`credits_for`](#foley.credits_for)(sounds, \*[, title, ...])               | Build the deduplicated [`Credits`](#foley.Credits) for the sounds used in a run.                                                                  |
 | [`attribution_line`](#foley.attribution_line)(source, \*[, fmt])                 | Render one sound's TASL attribution line.                                                                                                                                      |
 | [`credit_entry`](#foley.credit_entry)(record, \*[, title])                   | Build a [`CreditEntry`](#foley.CreditEntry) from a record (title override optional).                                                                  |
+| [`export_sound`](#foley.export_sound)(sound_id[, fmt, library, subtype])     | Export a sound's bytes as `fmt` with its rights and provenance (#66).                                                                                                          |
 
 ### Classes
 
@@ -2615,6 +2617,33 @@ Ring-0 fixture with the deterministic fake judge — no network, key, or heavy d
     keeps the deterministic fake (a local endpoint is never picked implicitly).
 * **Returns:**
   A [`foley.eval.FitReport`](foley.eval.html.md#foley.eval.FitReport).
+
+### foley.export_sound(sound_id, fmt='wav', , library=None, subtype=None)
+
+Export a sound’s bytes as `fmt` with its rights and provenance (#66).
+
+The sound’s bytes are fetched from `library`, checked against the record’s
+content hash, and re-encoded ([`foley.audio.transcode()`](foley.audio.html.md#foley.audio.transcode): PCM, the archive’s
+own depth where `fmt` allows, so a `PCM_24` FLAC gives a sample-exact
+`PCM_24` WAV; bytes already in `fmt` come back untouched).
+
+* **Parameters:**
+  * **sound_id** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The record id in `library`.
+  * **fmt** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The container to export (any libsndfile format: `'wav'`, `'flac'`).
+  * **library** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary)]) – The [`SoundLibrary`](foley.index.library.html.md#foley.index.library.SoundLibrary) to read (default:
+    [`foley.default_library()`](#foley.default_library)).
+  * **subtype** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The sample format (default: [`foley.audio.export_subtype()`](foley.audio.html.md#foley.audio.export_subtype)).
+* **Returns:**
+  `rights` from `sound_rights()`,
+  `provenance` from `sound_provenance()`.
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict), [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+* **Raises:**
+  * [**KeyError**](https://docs.python.org/3/builtins/exceptions.html#KeyError) – `sound_id` is not in `library`.
+  * [**LicenseRefusal**](#foley.LicenseRefusal) – the sound’s terms forbid keeping its bytes
+        (`cache_bytes_ok=False`).
+  * [**LookupError**](https://docs.python.org/3/builtins/exceptions.html#LookupError) – the bytes are not available locally.
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – the record names no content hash, or the bytes no longer match it.
 
 ### foley.fade(samples, sample_rate, , fade_in_s=0.01, fade_out_s=0.01, kind='linear')
 

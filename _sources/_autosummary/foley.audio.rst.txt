@@ -8,7 +8,10 @@ foley.audio
 
    .. autosummary::
    
+      TRANSCODE_DTYPE
       AudioSource
+      PCM_BITS
+      EXPORT_PCM_SUBTYPE
       Meter
       DEFAULT_METER
    
@@ -16,10 +19,13 @@ foley.audio
 
    .. autosummary::
    
+      container_of
       encode
       ensure_channels
+      export_subtype
       fade
       integrated_lufs
+      is_lossless_conversion
       limit_true_peak
       load
       loudness_component
@@ -30,5 +36,6 @@ foley.audio
       save
       to_mono
       to_working
+      transcode
       trim_silence
    

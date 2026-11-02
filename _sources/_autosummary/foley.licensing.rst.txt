@@ -21,6 +21,10 @@ foley.licensing
       GEN_AI_PREFERENCE_SCOPES
       EU_MEMBER_STATES
       LICENSE_EXCLUDED_TERRITORIES
+      LICENSE_TERMS_PROVIDER
+      CONSUMER_LICENSE_CODES
+      PUBLIC_LICENSE_IDS
+      CONSUMER_LICENSE_CLASSES
       RESTAMP_FIELDS
       NO_RECORD_REASON
    
@@ -31,13 +35,17 @@ foley.licensing
       ai_scope_from_gen_ai_preference
       ai_use_permitted
       apply_license_flags
+      carries_own_restriction
       carry_lineage
       cc_refused_terms
       check_placed
       checked_refusal_reason
+      consumer_license_class
+      consumer_license_code
       derivative_refusal
       derive_license_flags
       derived_license_ids
+      export_refusal
       intended_use_for
       is_cc_license_token
       is_share_alike
@@ -50,6 +58,7 @@ foley.licensing
       refusal_reason
       refusals
       restamped_license
+      rights_license_id
       territory_excluded
       upload_refusal
       wanted_license_ids

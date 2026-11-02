@@ -1,0 +1,22 @@
+foley.provenance.rights
+=======================
+
+.. automodule:: foley.provenance.rights
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DEFAULT_EXPORT_FORMAT
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      excluded_territories
+      export_sound
+      rights_provider
+      sound_provenance
+      sound_rights
+   

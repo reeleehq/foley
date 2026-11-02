@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=5762635e"></script>
+    <script src="../_static/documentation_options.js?v=f31ae747"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.112" />
+  <meta name="docsearch:version" content="0.0.113" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -387,6 +387,7 @@
 <li class="toctree-l2 has-children"><a class="reference internal" href="foley.provenance.html">foley.provenance</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="foley.provenance.credits.html">foley.provenance.credits</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.provenance.disclosure.html">foley.provenance.disclosure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="foley.provenance.rights.html">foley.provenance.rights</a></li>
 <li class="toctree-l3"><a class="reference internal" href="foley.provenance.signing.html">foley.provenance.signing</a></li>
 </ul>
 </details></li>
@@ -516,6 +517,7 @@ narrative context, and a <em>compositor</em> that places it under the voice.</p>
 <span class="n">foley</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">sound_id</span><span class="p">,</span> <span class="s2">"extend"</span><span class="p">,</span> <span class="n">extend_after_s</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>  <span class="c1"># audio-to-audio | inpaint | extend</span>
 <span class="n">foley</span><span class="o">.</span><span class="n">ingest</span><span class="p">(</span><span class="s2">"~/my_sounds/"</span><span class="p">)</span>
 <span class="n">foley</span><span class="o">.</span><span class="n">ingest_library</span><span class="p">(</span><span class="s2">"~/SFX/"</span><span class="p">,</span> <span class="n">accept_ai_restricted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># owned packs + sidecars</span>
+<span class="n">data</span><span class="p">,</span> <span class="n">rights</span><span class="p">,</span> <span class="n">provenance</span> <span class="o">=</span> <span class="n">foley</span><span class="o">.</span><span class="n">export_sound</span><span class="p">(</span><span class="n">sound_id</span><span class="p">)</span>  <span class="c1"># lacing.Rights-keyed rights</span>
 </pre></div>
 </div>
 <p>The design is grounded in the research reports under <code class="docutils literal notranslate"><span class="pre">misc/docs/research/</span></code>.</p>
@@ -839,6 +841,9 @@ lazy-imported inside the audio/QC functions that need them (install via the
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#foley.credit_entry" title="foley.credit_entry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">credit_entry</span></code></a>(record, *[, title])</p></td>
 <td><p>Build a <a class="reference internal" href="#foley.CreditEntry" title="foley.CreditEntry"><code class="xref py py-class docutils literal notranslate"><span class="pre">CreditEntry</span></code></a> from a record (title override optional).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.export_sound" title="foley.export_sound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_sound</span></code></a>(sound_id[, fmt, library, subtype])</p></td>
+<td><p>Export a sound's bytes as <code class="docutils literal notranslate"><span class="pre">fmt</span></code> with its rights and provenance (#66).</p></td>
 </tr>
 </tbody>
 </table>
@@ -4222,6 +4227,43 @@ keeps the deterministic fake (a local endpoint is never picked implicitly).</p><
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="foley.export_sound">
+<span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">export_sound</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sound_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmt</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'wav'</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">library</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/provenance/rights.html#export_sound"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.export_sound" title="Link to this definition">#</a></dt>
+<dd><p>Export a sound’s bytes as <code class="docutils literal notranslate"><span class="pre">fmt</span></code> with its rights and provenance (#66).</p>
+<p>The sound’s bytes are fetched from <code class="docutils literal notranslate"><span class="pre">library</span></code>, checked against the record’s
+content hash, and re-encoded (<a class="reference internal" href="foley.audio.html#foley.audio.transcode" title="foley.audio.transcode"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.audio.transcode()</span></code></a>: PCM, the archive’s
+own depth where <code class="docutils literal notranslate"><span class="pre">fmt</span></code> allows, so a <code class="docutils literal notranslate"><span class="pre">PCM_24</span></code> FLAC gives a sample-exact
+<code class="docutils literal notranslate"><span class="pre">PCM_24</span></code> WAV; bytes already in <code class="docutils literal notranslate"><span class="pre">fmt</span></code> come back untouched).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sound_id</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – The record id in <code class="docutils literal notranslate"><span class="pre">library</span></code>.</p></li>
+<li><p><strong>fmt</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span>) – The container to export (any libsndfile format: <code class="docutils literal notranslate"><span class="pre">'wav'</span></code>, <code class="docutils literal notranslate"><span class="pre">'flac'</span></code>).</p></li>
+<li><p><strong>library</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="foley.index.library.html#foley.index.library.SoundLibrary" title="foley.index.library.SoundLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundLibrary</span></code></a>]</span>) – The <a class="reference internal" href="foley.index.library.html#foley.index.library.SoundLibrary" title="foley.index.library.SoundLibrary"><code class="xref py py-class docutils literal notranslate"><span class="pre">SoundLibrary</span></code></a> to read (default:
+<a class="reference internal" href="#foley.default_library" title="foley.default_library"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.default_library()</span></code></a>).</p></li>
+<li><p><strong>subtype</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – The sample format (default: <a class="reference internal" href="foley.audio.html#foley.audio.export_subtype" title="foley.audio.export_subtype"><code class="xref py py-func docutils literal notranslate"><span class="pre">foley.audio.export_subtype()</span></code></a>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">rights</span></code> from <code class="xref py py-func docutils literal notranslate"><span class="pre">sound_rights()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">provenance</span></code> from <code class="xref py py-func docutils literal notranslate"><span class="pre">sound_provenance()</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#KeyError" title="(in Python v3.15)"><strong>KeyError</strong></a> – <code class="docutils literal notranslate"><span class="pre">sound_id</span></code> is not in <code class="docutils literal notranslate"><span class="pre">library</span></code>.</p></li>
+<li><p><a class="reference internal" href="#foley.LicenseRefusal" title="foley.LicenseRefusal"><strong>LicenseRefusal</strong></a> – the sound’s terms forbid keeping its bytes
+    (<code class="docutils literal notranslate"><span class="pre">cache_bytes_ok=False</span></code>).</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#LookupError" title="(in Python v3.15)"><strong>LookupError</strong></a> – the bytes are not available locally.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError" title="(in Python v3.15)"><strong>ValueError</strong></a> – the record names no content hash, or the bytes no longer match it.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="foley.fade">
 <span class="sig-prename descclassname"><span class="pre">foley.</span></span><span class="sig-name descname"><span class="pre">fade</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">fade_in_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fade_out_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.01</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/audio.html#fade"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.fade" title="Link to this definition">#</a></dt>
 <dd><p>Apply in/out gain ramps to <code class="docutils literal notranslate"><span class="pre">samples</span></code> (a short declick by default).</p>
@@ -6375,6 +6417,7 @@ escalates to the injected/​default judge for that rung and returns <em>its</em
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.estimate_snr"><code class="docutils literal notranslate"><span class="pre">estimate_snr()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.evaluate"><code class="docutils literal notranslate"><span class="pre">evaluate()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.evaluate_fit"><code class="docutils literal notranslate"><span class="pre">evaluate_fit()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.export_sound"><code class="docutils literal notranslate"><span class="pre">export_sound()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.fade"><code class="docutils literal notranslate"><span class="pre">fade()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.find"><code class="docutils literal notranslate"><span class="pre">find()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.fuse_hits"><code class="docutils literal notranslate"><span class="pre">fuse_hits()</span></code></a></li>

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=5762635e"></script>
+    <script src="../../_static/documentation_options.js?v=f31ae747"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.112" />
+  <meta name="docsearch:version" content="0.0.113" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1603,11 +1603,17 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="c1">#: Why the bytes of a sound whose ``cache_bytes_ok`` is off may not be edited.</span>
-<span class="n">_NO_UPLOAD</span> <span class="o">=</span> <span class="p">(</span>
+<span class="c1">#: Why the bytes of a sound whose ``cache_bytes_ok`` is off may not be kept or sent on,</span>
+<span class="c1">#: completed by what that means for the caller (see :func:`upload_refusal`).</span>
+<span class="n">_NOT_CACHEABLE</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s2">"its bytes may not be kept or sent on (its source's terms, e.g. the Freesound "</span>
-    <span class="s2">"API's), so they are not uploaded to an edit backend"</span>
+    <span class="s2">"API's)"</span>
 <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_cacheable_refusal</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">,</span> <span class="n">consequence</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""``None`` when ``source``'s bytes may be kept, else why not, then ``consequence``."""</span>
+    <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">cache_bytes_ok</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_NOT_CACHEABLE</span><span class="si">}{</span><span class="n">consequence</span><span class="si">}</span><span class="s2">"</span>
 
 
 <div class="viewcode-block" id="upload_refusal">
@@ -1624,7 +1630,190 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    &gt;&gt;&gt; upload_refusal(LicenseRecord(source="freesound"))[:30]</span>
 <span class="sd">    'its bytes may not be kept or s'</span>
 <span class="sd">    """</span>
-    <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">cache_bytes_ok</span> <span class="k">else</span> <span class="n">_NO_UPLOAD</span></div>
+    <span class="k">return</span> <span class="n">_cacheable_refusal</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="s2">", so they are not uploaded to an edit backend"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="export_refusal">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.export_refusal">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">export_refusal</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Why the bytes of a sound with rights ``source`` may not be exported, or ``None``.</span>
+
+<span class="sd">    The gate of :func:`foley.export_sound`, fail-closed: an export hands the bytes to</span>
+<span class="sd">    another store, which is keeping them, so it follows ``cache_bytes_ok`` exactly as</span>
+<span class="sd">    storage does (:func:`foley.stores.store_sound`).</span>
+
+<span class="sd">    &gt;&gt;&gt; from foley.base import LicenseRecord</span>
+<span class="sd">    &gt;&gt;&gt; export_refusal(LicenseRecord(source="x", cache_bytes_ok=True)) is None</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; export_refusal(LicenseRecord(source="freesound"))[-24:]</span>
+<span class="sd">    'fetch it from its source'</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_cacheable_refusal</span><span class="p">(</span>
+        <span class="n">source</span><span class="p">,</span>
+        <span class="s2">": it is stored by reference, so the consumer must fetch it from its source"</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># Consumer licence codes — the SSOT a consumer of foley's rights imports (#66)</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<span class="c1">#: Whose terms a provider-terms ``license_id`` is, under the provider names a consumer</span>
+<span class="c1">#: classifies them by (``an``'s ``PROVIDER_TERMS``: a code counts only on a source</span>
+<span class="c1">#: whose provider is that provider). Used as ``Rights.provider`` on export (#66), so a</span>
+<span class="c1">#: Stable Audio clip reads as Stability's Community License, with its revenue cap,</span>
+<span class="c1">#: whichever foley source (local, fal) made it. Ids not listed are their source's own.</span>
+<span class="n">LICENSE_TERMS_PROVIDER</span><span class="p">:</span> <span class="s2">"dict[str, str]"</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"Stability-Community"</span><span class="p">:</span> <span class="s2">"stability-ai"</span><span class="p">,</span>
+    <span class="s2">"elevenlabs-paid-plan"</span><span class="p">:</span> <span class="s2">"elevenlabs"</span><span class="p">,</span>
+    <span class="s2">"elevenlabs-free-plan"</span><span class="p">:</span> <span class="s2">"elevenlabs"</span><span class="p">,</span>
+    <span class="s2">"ElevenLabs-SFX"</span><span class="p">:</span> <span class="s2">"elevenlabs"</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1">#: foley licence ids whose consumer code is not the id in lowercase. ``None`` is</span>
+<span class="c1">#: UNKNOWN (``lacing.Rights.license is None``), never unencumbered. Consumers (``an``'s</span>
+<span class="c1">#: music library and its foley fetcher) import :func:`consumer_license_code` rather</span>
+<span class="c1">#: than keep a copy of this table.</span>
+<span class="n">CONSUMER_LICENSE_CODES</span><span class="p">:</span> <span class="s2">"dict[str, Optional[str]]"</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"unknown"</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+
+<span class="c1">#: Licences whose code means the same to any consumer, whoever the provider: the</span>
+<span class="c1">#: public CC ones. A provider-terms or private code (``stability-community``,</span>
+<span class="c1">#: ``user-owned``, ``owned-pack``) is classifiable only on its own provider's record,</span>
+<span class="c1">#: so in an edit's lineage, where that provider is gone, it reads as UNKNOWN. ``MIT``</span>
+<span class="c1">#: is left out until consumers agree it owes a credit (foley's row says it does;</span>
+<span class="c1">#: ``an`` reads ``mit`` as free with nothing owed), so an MIT link fails closed.</span>
+<span class="n">PUBLIC_LICENSE_IDS</span><span class="p">:</span> <span class="nb">frozenset</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"CC0-1.0"</span><span class="p">}</span>
+    <span class="o">|</span> <span class="p">{</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">for</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">_seg</span><span class="p">,</span> <span class="n">_label</span><span class="p">,</span> <span class="n">_f</span> <span class="ow">in</span> <span class="n">_CC_VERSIONED</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">CC_VERSIONS</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="c1">#: A licence's class for a consumer, from the least to the most restrictive (the</span>
+<span class="c1">#: classes ``an``'s ``license_class`` gives).</span>
+<span class="n">CONSUMER_LICENSE_CLASSES</span><span class="p">:</span> <span class="s2">"tuple[str, ...]"</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"free"</span><span class="p">,</span>
+    <span class="s2">"attribution"</span><span class="p">,</span>
+    <span class="s2">"noncommercial"</span><span class="p">,</span>
+    <span class="s2">"unknown"</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="consumer_license_code">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.consumer_license_code">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">consumer_license_code</span><span class="p">(</span><span class="n">license_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""foley's ``license_id`` as a consumer's licence code: the SSOT consumers import.</span>
+
+<span class="sd">    :data:`CONSUMER_LICENSE_CODES` first, else the id in lowercase (an SPDX-style</span>
+<span class="sd">    code such as ``cc-by-4.0``, or a provider's own code such as</span>
+<span class="sd">    ``stability-community``, read with :data:`LICENSE_TERMS_PROVIDER`).</span>
+
+<span class="sd">    &gt;&gt;&gt; consumer_license_code("CC0-1.0"), consumer_license_code("unknown")</span>
+<span class="sd">    ('cc0-1.0', None)</span>
+<span class="sd">    &gt;&gt;&gt; consumer_license_code(None) is None</span>
+<span class="sd">    True</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">license_id</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">license_id</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">license_id</span> <span class="ow">in</span> <span class="n">CONSUMER_LICENSE_CODES</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">CONSUMER_LICENSE_CODES</span><span class="p">[</span><span class="n">license_id</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">license_id</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="consumer_license_class">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.consumer_license_class">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">consumer_license_class</span><span class="p">(</span><span class="n">license_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The :data:`CONSUMER_LICENSE_CLASSES` entry of ``license_id``, from its flag row.</span>
+
+<span class="sd">    &gt;&gt;&gt; [consumer_license_class(i) for i in ("CC0-1.0", "CC-BY-4.0", "CC-BY-NC-4.0")]</span>
+<span class="sd">    ['free', 'attribution', 'noncommercial']</span>
+<span class="sd">    &gt;&gt;&gt; consumer_license_class("Tencent-Hunyuan-Community"), consumer_license_class("x")</span>
+<span class="sd">    ('unknown', 'unknown')</span>
+<span class="sd">    """</span>
+    <span class="n">flags</span> <span class="o">=</span> <span class="n">LICENSE_FLAGS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">license_id</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">flags</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">consumer_license_code</span><span class="p">(</span><span class="n">license_id</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"unknown"</span>
+    <span class="k">if</span> <span class="n">flags</span><span class="o">.</span><span class="n">commercial_ok</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"attribution"</span> <span class="k">if</span> <span class="n">flags</span><span class="o">.</span><span class="n">requires_attribution</span> <span class="k">else</span> <span class="s2">"free"</span>
+    <span class="k">if</span> <span class="n">flags</span><span class="o">.</span><span class="n">requires_attribution</span> <span class="ow">and</span> <span class="n">flags</span><span class="o">.</span><span class="n">embed_in_derivative_ok</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"noncommercial"</span>
+    <span class="k">return</span> <span class="s2">"unknown"</span></div>
+
+
+
+<div class="viewcode-block" id="rights_license_id">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.rights_license_id">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rights_license_id</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="n">LicenseRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The licence id a consumer should read ``record`` under, or ``None`` (UNKNOWN).</span>
+
+<span class="sd">    ``None`` when the rights are unverified (a Public Domain Mark is a claim, not a</span>
+<span class="sd">    grant). For a clip derived from others (an edit, :func:`derived_license_ids`), the</span>
+<span class="sd">    most restrictive of its own licence and every source's: an edit keeps its</span>
+<span class="sd">    generator's ``license_id`` and narrows only its flags, so exporting that id alone</span>
+<span class="sd">    would read a Stable Audio edit of a CC BY-NC sound as free. A source licence that</span>
+<span class="sd">    is not public (:data:`PUBLIC_LICENSE_IDS`) counts as UNKNOWN, and a source that</span>
+<span class="sd">    wins as UNKNOWN gives ``None``. Ties go to the clip's own licence.</span>
+
+<span class="sd">    A code is returned only when it alone carries every restriction of the chain: a</span>
+<span class="sd">    source that wins over a clip whose own licence restricts beyond its class</span>
+<span class="sd">    (:func:`carries_own_restriction`: a revenue cap, a provider's terms) gives</span>
+<span class="sd">    ``None``, since a ``Rights`` record has one licence field and the source's public</span>
+<span class="sd">    code would drop the clip's restriction (Stability's revenue cap).</span>
+
+<span class="sd">    &gt;&gt;&gt; rights_license_id(LicenseRecord(source="s", license_id="CC-BY-4.0", rights_verified=True))</span>
+<span class="sd">    'CC-BY-4.0'</span>
+<span class="sd">    &gt;&gt;&gt; rights_license_id(LicenseRecord(source="g", license_id="elevenlabs-free-plan",</span>
+<span class="sd">    ...     rights_verified=True, derived_from_license_ids=["CC-BY-4.0"]))</span>
+<span class="sd">    'elevenlabs-free-plan'</span>
+<span class="sd">    &gt;&gt;&gt; rights_license_id(LicenseRecord(source="g", license_id="procedural-free",</span>
+<span class="sd">    ...     rights_verified=True, derived_from_license_ids=["CC-BY-NC-4.0"]))</span>
+<span class="sd">    'CC-BY-NC-4.0'</span>
+<span class="sd">    &gt;&gt;&gt; rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",</span>
+<span class="sd">    ...     rights_verified=True, derived_from_license_ids=["CC-BY-4.0"])) is None</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; rights_license_id(LicenseRecord(source="g", license_id="Stability-Community",</span>
+<span class="sd">    ...     rights_verified=True, derived_from_license_ids=["Tencent-Hunyuan-Community"])) is None</span>
+<span class="sd">    True</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">record</span><span class="o">.</span><span class="n">rights_verified</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">own</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">license_id</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">rank</span><span class="p">(</span><span class="n">license_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">public</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">source</span> <span class="ow">or</span> <span class="n">license_id</span> <span class="ow">in</span> <span class="n">PUBLIC_LICENSE_IDS</span>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="n">consumer_license_class</span><span class="p">(</span><span class="n">license_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">public</span> <span class="k">else</span> <span class="s2">"unknown"</span>
+        <span class="k">return</span> <span class="n">CONSUMER_LICENSE_CLASSES</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+
+    <span class="c1"># A source under the clip's own licence is read under it, provider and all.</span>
+    <span class="n">sources</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">derived_license_ids</span><span class="p">(</span><span class="n">record</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">own</span><span class="p">]</span>
+    <span class="n">worst</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">sources</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">worst</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rank</span><span class="p">(</span><span class="n">worst</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">rank</span><span class="p">(</span><span class="n">own</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">own</span> <span class="k">if</span> <span class="n">consumer_license_code</span><span class="p">(</span><span class="n">own</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">CONSUMER_LICENSE_CLASSES</span><span class="p">[</span><span class="n">rank</span><span class="p">(</span><span class="n">worst</span><span class="p">)]</span> <span class="o">==</span> <span class="s2">"unknown"</span> <span class="ow">or</span> <span class="n">carries_own_restriction</span><span class="p">(</span>
+        <span class="n">own</span>
+    <span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">worst</span></div>
+
+
+
+<div class="viewcode-block" id="carries_own_restriction">
+<a class="viewcode-back" href="../../_autosummary/foley.licensing.html#foley.carries_own_restriction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">carries_own_restriction</span><span class="p">(</span><span class="n">license_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether ``license_id`` restricts beyond what its class says, so that no other</span>
+<span class="sd">    licence's code can stand in for it: a revenue cap, or a provider's own terms</span>
+<span class="sd">    (:data:`LICENSE_TERMS_PROVIDER`, which a consumer attaches restrictions to).</span>
+
+<span class="sd">    &gt;&gt;&gt; carries_own_restriction("Stability-Community"), carries_own_restriction("CC-BY-4.0")</span>
+<span class="sd">    (True, False)</span>
+<span class="sd">    """</span>
+    <span class="n">flags</span> <span class="o">=</span> <span class="n">LICENSE_FLAGS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">license_id</span><span class="p">,</span> <span class="n">UNKNOWN_LICENSE_FLAGS</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">flags</span><span class="o">.</span><span class="n">revenue_cap_usd</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">license_id</span> <span class="ow">in</span> <span class="n">LICENSE_TERMS_PROVIDER</span></div>
 
 
 
@@ -1655,7 +1844,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">source</span><span class="o">.</span><span class="n">rights_verified</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">"its rights are not verified"</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">source</span><span class="o">.</span><span class="n">cache_bytes_ok</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">_NO_UPLOAD</span>
+        <span class="k">return</span> <span class="n">upload_refusal</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">is_share_alike</span><span class="p">(</span><span class="n">lid</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="sa">f</span><span class="s2">"its licence (</span><span class="si">{</span><span class="n">lid</span><span class="si">}</span><span class="s2">) is share-alike, which the edit's licence cannot carry"</span>
