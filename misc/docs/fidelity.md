@@ -136,8 +136,8 @@ from foley.eval import Pam
 
 pam = Pam(python="~/venvs/pam/bin/python")  # or set FOLEY_PAM_PYTHON
 tone, noise, silence = pam([tone_wav, noise_wav, silence_wav], sr=48000)
-tone.score      # 0.68
-tone.segments   # (0.68,): one score per 7 s window
+tone.score  # 0.68
+tone.segments  # (0.68,): one score per 7 s window
 tone.to_dict()  # {'pam': 0.68, 'segments': [...], 'model': 'microsoft/msclap:CLAP_weights_2023.pth', 'toolkit': 'msclap', 'version': '1.3.4'}
 ```
 
