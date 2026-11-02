@@ -1,12 +1,13 @@
 # Generation fidelity and the audio-LM judge
 
-Tier-2 evaluation backends that need more than foley's own environment: reference FAD from Microsoft's [fadtk](https://github.com/microsoft/fadtk) and reference KAD from [kadtk](https://github.com/YoonjinXD/kadtk), each run as a separate program, and the Qwen2-Audio "does this clip contain {event}?" judge. All are for nightly or pre-release comparisons, never a per-PR gate.
+Tier-2 evaluation backends that need more than foley's own environment: reference FAD from Microsoft's [fadtk](https://github.com/microsoft/fadtk) and reference KAD from [kadtk](https://github.com/YoonjinXD/kadtk), each run as a separate program, Meta's per-clip [Audiobox Aesthetics](https://github.com/facebookresearch/audiobox-aesthetics) scores, run the same way, and the Qwen2-Audio "does this clip contain {event}?" judge. All are for nightly or pre-release comparisons, never a per-PR gate; Audiobox Aesthetics can also be recorded on each generated clip when asked.
 
 | Backend | What it scores | How it runs | Install | Download |
 |---|---|---|---|---|
 | `foley.eval.generation_fidelity` (default) | FAD or KAD between two embedding sets, pure numpy | in process | nothing | whatever your embedder needs |
 | `foley.eval.FadtkFidelity` | FAD with fadtk's own models, loading and statistics, comparable with published fadtk numbers | `python -I toolkit_driver.py` in a fadtk virtualenv | its own venv (below) | about 90 MB for the default `encodec-emb` |
 | `foley.eval.KadtkFidelity` | KAD with kadtk's own models, loading and kernel, comparable with published kadtk numbers | the same driver in a kadtk virtualenv | its own venv (below) | about 90 MB for the default `encodec-emb` |
+| `foley.eval.AudioboxAesthetics` | per clip: content enjoyment (CE), content usefulness (CU), production complexity (PC), production quality (PQ), about 1 to 10 | the same driver in an `audiobox_aesthetics` virtualenv | its own venv (below) | about 415 MB (`facebook/audiobox-aesthetics`) |
 | `foley.agent.AudioLMJudge` | P(yes) that a clip contains the wanted event (AQAScore) | in process | `pip install 'foley[fit]'` | about 15 GB (Qwen2-Audio-7B-Instruct, bf16) on first use |
 
 ## Reference FAD with fadtk
@@ -37,7 +38,7 @@ foley does not call `python -m fadtk`: that command builds every model fadtk kno
 
 fadtk's FAD is over embedding frames (every frame of every clip), so it is not the number `generation_fidelity` gives with one vector per clip. Fed the same frames, foley's numpy `frechet_distance` agrees with fadtk to about 1e-5 relative; the remainder is fadtk taking each clip's mean in float16. Numbers are only comparable within one embedding, toolkit and version, which is why the stamp carries all three.
 
-Both toolkits run through one mechanism, `foley.eval.external_fidelity.ExternalFidelity`: writing the sets, the clip-layout and interpreter guards, the driver (`foley/eval/toolkit_driver.py`, which builds the one model named, whichever toolkit) and the stamped result. A toolkit adapter only names its package, metric, models, interpreter variable and install line, and how many frames a set needs.
+Both toolkits run through one mechanism, `foley.eval.external_fidelity.ExternalFidelity`: writing the sets, the clip-layout guards, the driver (`foley/eval/toolkit_driver.py`, which builds the one model named, whichever toolkit) and the stamped result. A toolkit adapter only names its package, metric, models, interpreter variable and install line, and how many frames a set needs. Its base, `foley.eval.external_toolkit.ExternalToolkit` (the interpreter and its install hint, the failure hints, running the driver on a JSON spec), is shared with the per-clip Audiobox Aesthetics scorer below; the driver's `spec["task"]` says which computation it runs (`fidelity` or `aesthetics`).
 
 ## Reference KAD with kadtk
 
@@ -65,6 +66,47 @@ Arguments, guards and errors are fadtk's (`model=`, `models=`, `workers=`, `env=
 KAD is the unbiased MMD² times 100, so for two sets from one distribution it is centred on 0 and negative about half the time. Values near 0 mean "indistinguishable at this sample size", not "identical", and with few frames they are noise: two sets of the same noise gave -1.49 at 8 frames a set and -0.37 at 50, against about 100 for tones vs noise.
 
 kadtk's number is not the one `kernel_audio_distance` gives by default, for two reasons. kadtk reports the MMD² times 100. Its default bandwidth is torch's median (the lower of the two middle values) of the pairwise distances between the generated set's frames, where foley's default pools both sets. The bandwidth used and the scale are in `result.params`. Because the default bandwidth comes from the generated set, two generators scored against one reference are on different kernels; pass the first run's `params["bandwidth"]` as `bandwidth=` to the second to compare them. Fed kadtk's own frames with that bandwidth, `100 * kernel_audio_distance(ref, gen, bandwidth=...)` agrees with kadtk to about 5e-5 relative; the remainder is kadtk's float32 arithmetic.
+
+## Per-clip quality with Audiobox Aesthetics
+
+[Audiobox Aesthetics](https://github.com/facebookresearch/audiobox-aesthetics) (Tjandra et al. 2025, [arXiv:2502.05139](https://arxiv.org/abs/2502.05139)) is a WavLM encoder with four regression heads that rates one clip of speech, music or sound, with no reference set and no prompt, on four axes of about 1 to 10: content enjoyment (CE), content usefulness (CU), production complexity (PC) and production quality (PQ). The package brings its own torch and torchaudio, so it gets a virtualenv (about 700 MB, plus 415 MB of weights):
+
+```bash
+uv venv ~/venvs/aes --python 3.11
+uv pip install --python ~/venvs/aes/bin/python audiobox_aesthetics requests
+```
+
+`requests` because the package imports it without declaring it, and `huggingface_hub` 1.0 and later no longer bring it in. Then:
+
+```python
+from foley.eval import AudioboxAesthetics
+
+aes = AudioboxAesthetics(python="~/venvs/aes/bin/python")  # or set FOLEY_AES_PYTHON
+tone, noise, silence = aes([tone_wav, noise_wav, silence_wav], sr=48000)
+tone.axes      # {'CE': 2.47, 'CU': 5.78, 'PC': 1.74, 'PQ': 6.02}
+tone.to_dict() # the axes plus model='facebook/audiobox-aesthetics', toolkit, version='0.0.4'
+```
+
+Those are real scores (version 0.0.4, 3 s clips at 48 kHz): a 440 Hz sine at 0.5 scored CE 2.47, CU 5.78, PC 1.74, PQ 6.02; white noise at 0.3 RMS CE 2.14, CU 4.42, PC 1.97, PQ 4.83; digital silence CE 3.44, CU 6.62, PC 1.70, PQ 7.00; the sine as a stereo pair the same as mono. Silence scoring the highest PQ is the point to remember: the model rates how a clip sounds, it does not detect faults, so Tier-0 QC (`foley.qc`) stays the gate for silent, clipped or broken audio.
+
+The first call downloads the weights from Hugging Face into the toolkit's `HF_HOME` (pass `env={"HF_HOME": ...}` to choose where), or `checkpoint=` names a local `checkpoint.pt`. Loading the model takes a few seconds, once per call, so score many clips in one call; `batch_size=` (default 10) sets the clips a forward pass. Clips are `(frames,)` or `(frames, channels)` arrays, mixed to mono; channel-first arrays are refused, as for fadtk. A clip shorter than 25 ms (one WavLM encoder frame, its 400-sample receptive field at the model's 16 kHz; `min_seconds=`) or with a NaN or infinite sample raises `ValueError` before anything runs: the toolkit pads every clip to a 10 s window, so a shorter clip would still get numbers, but they would describe the padding. With neither `python=` nor `$FOLEY_AES_PYTHON` it raises with the install line. A run is abandoned after `timeout=` seconds (default `AES_TIMEOUT_S`, 300, room for the first run's download; `None` waits forever).
+
+### On generated clips
+
+`foley.generate(prompt, ..., aesthetics=True)` scores each stored clip and records the verdict in `sound.qc['aesthetics']` and the notes, next to `qc['prompt_match']`. It is a record, not a gate: the default `None` skips it (each scored clip starts the model in its own process, so `foley.variations` loads it once per take), and when it runs, nothing is quarantined. The clip's content credential is written before it is scored, so a slow or failed score never leaves a stored clip without one. `aesthetics=True` (or an `AudioboxAesthetics` instance) without a reachable interpreter raises before anything is paid for, as `watermark=True` does. A generation that duplicates a stored clip scores that clip if it has no score yet (no verdict, or `unchecked`), and otherwise notes that its recorded verdict stands. `True` uses `AudioboxAesthetics()` with its interpreter from `$FOLEY_AES_PYTHON`; pass a configured instance to set the interpreter, checkpoint or floors:
+
+```python
+aes = AudioboxAesthetics(python="~/venvs/aes/bin/python", floors={"PQ": 5.0})
+cand = foley.generate("a wooden door creak", aesthetics=aes)
+cand.sound.qc["aesthetics"]
+# {'status': 'ok', 'CE': ..., 'CU': ..., 'PC': ..., 'PQ': ..., 'model': ..., 'toolkit': ..., 'version': ..., 'floors': {'PQ': 5.0}}
+```
+
+The status is `scored` without floors, `ok` at or above every floor, `low` (with the axes `below` them, flagged in the notes as "listen before using it") under one, or `unchecked` with the reason when the scorer cannot run (a clip too short, a timeout, a crash, a scorer answering anything but one score with all four axes): never a silent pass, and never an exception out of `generate`. The record is published with the clip, so the reason is short: the exception type, the first and last line of its message, local paths replaced by `<path>` (`foley.obs.redact.redact_paths`: the home, temp, interpreter and venv directories whole, spaces and all, then any other POSIX, drive, UNC or `file:` path), never the command or the program's full output. A non-finite axis is stored as `null` (strict JSON) and counts as below any floor on it. No floor is calibrated for SFX yet, so none is set by default. Any callable `(wavs, *, sr) -> [AestheticsScore]` with an optional `floors` attribute can stand in for the scorer (the tests pass one).
+
+It is wired on `generate` rather than on ingest because it is a generation-quality signal: a retrieved library sound was already chosen by a person, while a generated clip is what a model happened to produce, the same reason `prompt_match` runs there.
+
+Licences: the code is CC-BY-4.0, with parts from microsoft/unilm under MIT. Meta's README states no separate licence for the weights; the Hugging Face repository that holds them (`facebook/audiobox-aesthetics`) is tagged `cc-by-4.0`. The scores are metadata about a clip, not part of it, so they do not change the clip's own licence.
 
 ## The Qwen2-Audio judge
 

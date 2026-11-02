@@ -1,12 +1,13 @@
-"""The script :class:`foley.eval.external_fidelity.ExternalFidelity` runs inside a toolkit's interpreter.
+"""The script :class:`foley.eval.external_toolkit.ExternalToolkit` runs inside a toolkit's interpreter.
 
 It is not imported by foley: foley runs it as ``python -I toolkit_driver.py SPEC_JSON``
-with the interpreter of a virtualenv that has the toolkit (``fadtk`` or ``kadtk``)
-installed (both pin ``numpy<2`` and an old torch, so neither can share foley's
-environment). It imports only the standard library and the toolkit, and only inside
-the functions, so foley's test collection and linters can load this file without them.
+with the interpreter of a virtualenv that has the toolkit (``fadtk``, ``kadtk`` or
+``audiobox_aesthetics``) installed (none can share foley's environment). It imports
+only the standard library and the toolkit, and only inside the functions, so foley's
+test collection and linters can load this file without them. ``spec["task"]`` picks
+what it computes (:data:`TASKS`): ``fidelity`` (the default) or ``aesthetics``.
 
-It builds ONE embedding model from ``spec["loader"]`` (a class name in
+``fidelity`` builds ONE embedding model from ``spec["loader"]`` (a class name in
 ``<toolkit>.model_loader``) and ``spec["args"]``. The toolkits' own command lines
 (``python -m fadtk``, ``python -m kadtk``) instantiate every model they know first,
 and the CLAP constructors download their checkpoints (about 2.5 GB); building one
@@ -15,6 +16,14 @@ on each directory, then the toolkit's scorer, see :data:`TOOLKITS`) and writes t
 score, the toolkit's version, the model name, the embedding-frame counts, the
 embedding dimension and the scorer's parameters (kadtk: the bandwidth it used and its
 scale) as JSON to ``spec["out"]``.
+
+``aesthetics`` scores each WAV of ``spec["clips"]`` (in that order) with Meta's
+Audiobox Aesthetics predictor (``initialize_predictor``, from ``spec["checkpoint"]``
+or, when that is ``None``, the Hugging Face ``facebook/audiobox-aesthetics`` weights),
+``spec["batch_size"]`` clips a forward pass. The WAVs are read with the standard
+library's ``wave`` (foley writes them as 16-bit PCM) rather than ``torchaudio.load``,
+which needs ``torchcodec`` from torchaudio 2.9 on. It writes one ``{CE, CU, PC, PQ}``
+row per clip, the package version and the model as JSON to ``spec["out"]``.
 """
 
 import json
@@ -69,15 +78,14 @@ def _kadtk(spec: dict):
 TOOLKITS = {"fadtk": _fadtk, "kadtk": _kadtk}
 
 
-def main(spec_json: str) -> None:
-    """Score ``spec['ref']`` against ``spec['gen']`` with ``spec['toolkit']``; write JSON to ``spec['out']``."""
+def _fidelity(spec: dict) -> dict:
+    """Score ``spec['ref']`` against ``spec['gen']`` with ``spec['toolkit']``."""
     import importlib
     import importlib.metadata
     from pathlib import Path
 
     import numpy as np
 
-    spec = json.loads(spec_json)
     toolkit = spec["toolkit"]
     spec["workers"] = int(spec.get("workers", 1))
     cache_embedding_files, score = TOOLKITS[toolkit](spec)
@@ -96,20 +104,73 @@ def main(spec_json: str) -> None:
         ]
 
     ref_shapes, gen_shapes = shapes(ref), shapes(gen)
-    Path(spec["out"]).write_text(
-        json.dumps(
-            {
-                "score": value,
-                "model": ml.name,
-                "version": importlib.metadata.version(toolkit),
-                "n_ref_frames": sum(sh[0] for sh in ref_shapes),
-                "n_gen_frames": sum(sh[0] for sh in gen_shapes),
-                "dim": int(ml.num_features),
-                "params": params,
-            }
-        ),
-        encoding="utf-8",
-    )
+    return {
+        "score": value,
+        "model": ml.name,
+        "version": importlib.metadata.version(toolkit),
+        "n_ref_frames": sum(sh[0] for sh in ref_shapes),
+        "n_gen_frames": sum(sh[0] for sh in gen_shapes),
+        "dim": int(ml.num_features),
+        "params": params,
+    }
+
+
+def _read_pcm16(path: str) -> "tuple":
+    """A 16-bit PCM WAV as a ``(channels, frames)`` float32 numpy array and its rate."""
+    import wave
+
+    import numpy as np
+
+    with wave.open(path, "rb") as w:
+        if w.getsampwidth() != 2:
+            raise ValueError(
+                f"{path}: expected 16-bit PCM, got {8 * w.getsampwidth()}-bit"
+            )
+        channels, sr, raw = (
+            w.getnchannels(),
+            w.getframerate(),
+            w.readframes(w.getnframes()),
+        )
+    pcm = np.frombuffer(raw, dtype="<i2").reshape(-1, channels).T
+    return (pcm.astype(np.float32) / 32768.0), sr
+
+
+def _aesthetics(spec: dict) -> dict:
+    """Audiobox Aesthetics' four axes for each clip of ``spec['clips']``, in order."""
+    import importlib.metadata
+
+    import torch
+    from audiobox_aesthetics.infer import initialize_predictor
+
+    predictor = initialize_predictor(spec.get("checkpoint"))
+    batch = []
+    for path in spec["clips"]:
+        wav, sr = _read_pcm16(path)
+        batch.append({"path": torch.from_numpy(wav), "sample_rate": sr})
+    size = int(spec.get("batch_size", 1))
+    rows = [
+        {k: float(v) for k, v in row.items()}
+        for i in range(0, len(batch), size)
+        for row in predictor.forward(batch[i : i + size])
+    ]
+    return {
+        "scores": rows,
+        "version": importlib.metadata.version("audiobox_aesthetics"),
+        "model": spec.get("checkpoint") or "facebook/audiobox-aesthetics",
+    }
+
+
+#: ``spec["task"]`` → the function of the spec computing the answer.
+TASKS = {"fidelity": _fidelity, "aesthetics": _aesthetics}
+
+
+def main(spec_json: str) -> None:
+    """Compute ``spec['task']`` (default ``fidelity``) and write its JSON to ``spec['out']``."""
+    from pathlib import Path
+
+    spec = json.loads(spec_json)
+    answer = TASKS[spec.get("task", "fidelity")](spec)
+    Path(spec["out"]).write_text(json.dumps(answer), encoding="utf-8")
 
 
 if __name__ == "__main__":

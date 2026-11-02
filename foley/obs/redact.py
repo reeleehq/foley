@@ -15,14 +15,22 @@ Stdlib-only. Applied at TWO boundaries (belt-and-suspenders, mirroring
   ``RunManifest`` — so raw text never reaches the OTel mirror either;
 * **emit-time** (net): :meth:`Redactor.redact_manifest` deep-walks the serialized
   manifest before the store write, catching anything stuffed past record-time.
+
+:func:`redact_paths` is the other half: local filesystem paths (which carry the user's
+name, the machine's layout and temp names) taken out of a message that will be stored
+or published, such as an error reason on a sound's record.
 """
 
 from __future__ import annotations
 
 import hashlib
+import os
+import re
+import tempfile
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
+from pathlib import Path
+from typing import Iterable, Optional
 
 #: The attribute / field keys whose string values are sensitive and redacted. The
 #: narration/prompt/query surfaces report 12 §11 names; ``context_text`` / ``narration``
@@ -47,6 +55,62 @@ REDACT_FIELDS: "frozenset[str]" = frozenset(
 #: credits.py ethos). Inject a secret per-deployment salt for stronger
 #: dictionary-attack resistance (at the cost of cross-process diffability).
 _DEFAULT_SALT = "foley-obs-v1"
+
+
+#: What :func:`redact_paths` puts in place of a path.
+PATH_PLACEHOLDER = "<path>"
+
+#: The characters that end a path in a message (whitespace, quotes, a closing bracket,
+#: a comma or semicolon).
+_PATH_END = r"\s'\",;)\]"
+
+#: An absolute path not already caught by a known prefix: a ``file:`` URL, a UNC path
+#: (``\\\\server\\share``), a drive path (``C:\\`` or ``C:/``), or a POSIX path (a ``/``
+#: not inside a word, a ``~/`` path, a URL or a relative path).
+_ABSOLUTE_PATH = re.compile(
+    rf"file:/[^{_PATH_END}]*"
+    # A Windows drive or UNC path may hold spaces ("C:\\Users\\Ada Lovelace\\..."): it
+    # takes the rest of the line, so nothing after a space can leak (fail-closed).
+    r"|\\\\[^\n]+"
+    r"|(?<![A-Za-z])[A-Za-z]:[\\/][^\n]*"
+    rf"|(?<![\w~.:/\\])/[^{_PATH_END}]+"
+)
+
+
+def local_path_prefixes() -> "list[str]":
+    """This machine's home and temp directories, as given and resolved (``/var`` → ``/private/var``)."""
+    found = []
+    for path in (Path.home(), Path(tempfile.gettempdir())):
+        found += [str(path), os.path.realpath(path)]
+    return found
+
+
+def redact_paths(
+    text: str,
+    *,
+    prefixes: "Iterable[str]" = (),
+    placeholder: str = PATH_PLACEHOLDER,
+) -> str:
+    """``text`` with every local filesystem path replaced by ``placeholder``.
+
+    Known prefixes go first, longest first and verbatim, so a path with a space in it
+    (``C:\\Users\\Ada Lovelace\\...``) goes whole: ``prefixes`` (an interpreter, its
+    venv) and :func:`local_path_prefixes`, each also with ``/`` for ``\\``. Then any
+    other absolute path (:data:`_ABSOLUTE_PATH`), and a path's rest after a replaced
+    prefix, become ``placeholder`` too.
+
+    >>> redact_paths("no file at /opt/x/y.wav; see ~/notes, a/b")
+    'no file at <path>; see ~/notes, a/b'
+    >>> redact_paths(r"cannot open C:\\Users\\Ada Lovelace\\x.wav (exit 2)")
+    'cannot open <path>'
+    """
+    known = {p for p in (*prefixes, *local_path_prefixes()) if p and len(p) > 1}
+    known |= {p.replace("\\", "/") for p in known}
+    for prefix in sorted(known, key=len, reverse=True):
+        text = text.replace(prefix, placeholder)
+    text = _ABSOLUTE_PATH.sub(placeholder, text)
+    rest = re.compile(rf"(?:{re.escape(placeholder)}[^{_PATH_END}]*)+")
+    return rest.sub(placeholder, text)
 
 
 class RedactionMode(str, Enum):

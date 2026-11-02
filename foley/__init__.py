@@ -750,6 +750,7 @@ def generate(
     repair=True,
     level=None,
     check_prompt: bool = True,
+    aesthetics=None,
     intended_use=None,
     provider_params=None,
     variation: int = 0,
@@ -834,6 +835,15 @@ def generate(
             embedder (CLAP) and flag a mismatch in the notes and
             ``sound.qc['prompt_match']``; ``'unchecked'`` (with the reason) when no
             capable embedder is available. Default ``True``.
+        aesthetics: Score the stored clip with Meta's Audiobox Aesthetics (content
+            enjoyment / usefulness, production complexity / quality, about 1 to 10) and
+            record them in ``sound.qc['aesthetics']`` and the notes: ``True`` for
+            :class:`foley.eval.AudioboxAesthetics` in the interpreter
+            ``$FOLEY_AES_PYTHON`` names, or a configured instance (``floors=`` flags a
+            low axis). Never a quarantine; ``'unchecked'`` (with the reason) when it
+            cannot run; an explicit opt-in without the interpreter raises before the
+            spend. Default ``None``: off (it loads a 415 MB model per clip, so per take
+            of :func:`variations`).
         intended_use: The :class:`IntendedUse` the clip must serve when an order is
             walked (default: commercial): a backend whose licence cannot serve it is
             skipped before anything is paid for. A single named backend is used as
@@ -914,6 +924,7 @@ def generate(
         repair=repair,
         level=level,
         check_prompt=check_prompt,
+        aesthetics=aesthetics,
         variation=variation,
         derived_from=derived_from,
         **affordances,
