@@ -7,7 +7,8 @@ A UCS filename is underscore-delimited with the **CatID first**::
 Only the CatID carries the controlled taxonomy; it is looked up in the table (never
 string-split, since the category prefix is variable-length).
 :func:`parse_ucs_name` returns every block (:class:`~.model.UcsName`);
-:func:`parse_ucs_filename` just the category pair. The
+:func:`parse_ucs_filename` just the category pair; :func:`format_ucs_name` is the
+inverse of :func:`parse_ucs_name` (it sanitises each block so the name parses back). The
 loader merges the in-code seed with an optional full-table JSON drop under
 ``taxonomy/data/ucs_full.json`` (JSON wins on CatID collision) — open/closed.
 """
@@ -16,9 +17,10 @@ from __future__ import annotations
 
 import json
 import re
+from dataclasses import fields as dataclass_fields
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Mapping, Optional, Union
 
 from .model import UcsName, UcsRow, UcsTable
 from .seed import SEED_UCS_TABLE
@@ -219,3 +221,129 @@ def parse_ucs_filename(
     """
     name = parse_ucs_name(filename, table=table)
     return (name.category, name.subcategory) if name else (None, None)
+
+
+#: The blocks of a UCS filename, as :class:`~.model.UcsName` fields (``category`` and
+#: ``subcategory`` are not blocks: they come from the CatID's table row).
+UCS_NAME_BLOCKS = tuple(
+    f.name
+    for f in dataclass_fields(UcsName)
+    if f.name not in ("category", "subcategory")
+)
+
+#: Characters a filename block may not hold (path separators, Windows-reserved
+#: characters, controls); each becomes a space.
+_UNSAFE_CHARS = re.compile(r'[\\/:*?"<>|\x00-\x1f\x7f]')
+_WHITESPACE = re.compile(r"\s+")
+_CATID = re.compile(r"[A-Za-z0-9]+")
+
+
+def _clean(text: Optional[str], *, unmake_ext: bool = False) -> str:
+    """``text`` with unsafe characters and :data:`BLOCK_SEP` as spaces, whitespace collapsed.
+
+    ``unmake_ext``: a trailing ``.abc``, which a parse would strip as an extension,
+    has its dot made a space.
+    """
+    text = _UNSAFE_CHARS.sub(" ", str(text or "")).replace(BLOCK_SEP, " ")
+    text = _WHITESPACE.sub(" ", text).strip()
+    if unmake_ext and _EXTENSION.search(text):
+        return _clean(_EXTENSION.sub(lambda m: " " + m.group()[1:], text))
+    return text
+
+
+def _fx_block(
+    fx_name: str, vendor: Optional[str], is_vendor_tag: Callable[[str], bool]
+) -> str:
+    """The ``[VendorCategory-]FXName`` block, so that the parse splits it back the same way.
+
+    A VendorCategory is cleaned to upper-case alphanumerics (what
+    :func:`looks_like_vendor_tag` accepts). Without one, an FXName whose head would
+    read as a vendor tag (``BOOM-Creak``) has that hyphen made a space, until none does.
+    """
+    if vendor is not None:
+        vendor = re.sub(r"[^0-9A-Za-z]", "", vendor).upper()
+        if not (vendor and is_vendor_tag(vendor)):
+            raise ValueError(f"{vendor!r} cannot be read back as a VendorCategory")
+        if not fx_name:
+            raise ValueError("a VendorCategory attaches to an FXName; there is none")
+        return f"{vendor}{ATTACH_SEP}{fx_name}"
+    while True:  # each pass removes a hyphen, so this ends
+        head, tail = _split_attached(fx_name)
+        if tail is None or not is_vendor_tag(head):
+            return fx_name
+        fx_name = _clean(fx_name.replace(ATTACH_SEP, " ", 1))
+
+
+def format_ucs_name(
+    name: "Union[UcsName, Mapping, None]" = None,
+    /,
+    *,
+    ext: Optional[str] = None,
+    table: Optional[UcsTable] = None,
+    is_vendor_tag: Callable[[str], bool] = looks_like_vendor_tag,
+    **blocks,
+) -> str:
+    """The UCS filename of ``name`` (a :class:`~.model.UcsName` or a mapping of its
+    blocks), with ``blocks`` (:data:`UCS_NAME_BLOCKS`) overriding it: the inverse of
+    :func:`parse_ucs_name`.
+
+    Each block is sanitised so the name parses back to the same blocks: unsafe
+    characters and underscores inside a block become spaces, whitespace is collapsed,
+    a VendorCategory is upper-cased, and a hyphen that would make an FXName's head
+    read as a VendorCategory becomes a space (``Sci-Fi Door`` stays as it is). So
+    ``format_ucs_name(parse_ucs_name(f))`` is ``f`` for any ``f`` this function made.
+    The CatID is looked up in ``table`` (default: :func:`default_ucs_table`) and
+    written in its canonical spelling; an unknown one raises, since the name would
+    not parse.
+
+    Args:
+        name: The blocks to format (``category`` / ``subcategory`` are ignored).
+        ext: The extension to append (``'wav'`` or ``'.wav'``), or ``None`` for a stem.
+        table: The UCS table the CatID must be in.
+        is_vendor_tag: What reads as a VendorCategory (as in :func:`parse_ucs_name`).
+        **blocks: Block values overriding ``name``'s.
+
+    Raises:
+        TypeError: a keyword is not a UCS block.
+        ValueError: no CatID, or one not in ``table``; a bad ``ext``; a
+            VendorCategory that cannot be read back or has no FXName.
+
+    >>> format_ucs_name(catid="doorwood", fx_name="Sci-Fi Door_slam", creator_id="JD",
+    ...                 source_id="NYC", ext="wav")
+    'DOORWood_Sci-Fi Door slam_JD_NYC.wav'
+    >>> n = parse_ucs_name("DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take_2.wav")
+    >>> format_ucs_name(n, ext="wav")
+    'DOORWood-Gate_SCIFI-Creak Open_JD_NYC_take_2.wav'
+    >>> format_ucs_name(catid="DOORWood", fx_name="BOOM-Creak")  # not a vendor tag
+    'DOORWood_BOOM Creak'
+    """
+    unknown = set(blocks) - set(UCS_NAME_BLOCKS)
+    if unknown:
+        raise TypeError(f"not UCS filename blocks: {sorted(unknown)}")
+    given = dict(name) if isinstance(name, Mapping) else vars(name) if name else {}
+    values = {k: blocks.get(k, given.get(k)) for k in UCS_NAME_BLOCKS}
+    row = (table or default_ucs_table()).get(str(values["catid"] or ""))
+    if row is None or not _CATID.fullmatch(row.catid):
+        raise ValueError(f"{values['catid']!r} is not a CatID of the UCS table")
+    suffix = "" if ext is None else "." + str(ext).lstrip(".")
+    if ext is not None and not _EXTENSION.fullmatch(suffix):
+        raise ValueError(f"{ext!r} is not a filename extension")
+
+    def clean(text) -> str:  # a stem's last block must not end like an extension
+        return _clean(text, unmake_ext=ext is None)
+
+    user_category = clean(values["user_category"])
+    head = f"{row.catid}{ATTACH_SEP}{user_category}" if user_category else row.catid
+    fx = _fx_block(
+        clean(values["fx_name"]),
+        clean(values["vendor_category"]) if values["vendor_category"] else None,
+        is_vendor_tag,
+    )
+    parts = [head, fx, clean(values["creator_id"]), clean(values["source_id"])]
+    user_data = [clean(p) for p in str(values["user_data"] or "").split(BLOCK_SEP)]
+    if any(user_data):
+        parts += user_data
+    else:
+        while len(parts) > 2 and not parts[-1]:
+            parts.pop()
+    return BLOCK_SEP.join(parts) + suffix

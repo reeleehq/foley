@@ -414,3 +414,103 @@ def test_every_licence_validates_as_lacing_rights():
     for license_id in LICENSE_FLAGS:
         rights = _rights_for(license_id)
         assert lacing.Rights(**rights).model_dump() == rights, license_id
+
+
+# ---------------------------------------------------------------------------
+# UCS filename + bext / iXML (#231)
+# ---------------------------------------------------------------------------
+
+
+def _data_chunk(wav: bytes) -> bytes:
+    from foley.embedded_metadata import iter_riff_chunks
+
+    ((at, size),) = [
+        (a, s) for c, a, s in iter_riff_chunks(io.BytesIO(wav)) if c == b"data"
+    ]
+    return wav[at : at + size]
+
+
+@pytest.fixture
+def door(library):
+    lic = apply_license_flags(
+        LicenseRecord(source="fsd50k", source_id="77", source_url="https://freesound.org/s/77/",
+                      creator_name="amy", license_id="CC-BY-4.0", rights_verified=True)
+    )  # fmt: skip
+    rec = SoundRecord(id="door_77", license=lic, ucs_category="DOORWood",
+                      caption="an old wooden door creaks open slowly", tags=["door", "creak"])  # fmt: skip
+    library.add(rec, data=_flac(500))
+    return rec
+
+
+def test_a_wav_export_carries_its_metadata_and_a_ucs_filename(library, door):
+    from foley.embedded_metadata import read_embedded_metadata
+    from foley.index.taxonomy import parse_ucs_name
+
+    data, rights, prov = foley.export_sound(door.id, library=library)
+    name = parse_ucs_name(prov["filename"])
+    # the caption cut at 25 characters, on a word boundary
+    assert (
+        prov["filename"] == "DOORWood_an old wooden door creaks_amy_fsd50k_door_77.wav"
+    )
+    assert (name.catid, name.category, name.subcategory) == (
+        "DOORWood",
+        "DOORS",
+        "Wood",
+    )
+    assert (name.creator_id, name.source_id, name.user_data) == (
+        "amy",
+        "fsd50k",
+        door.id,
+    )
+    meta = read_embedded_metadata(data)
+    assert meta["caption"] == door.caption and meta["tags"] == door.tags
+    assert [
+        meta[k] for k in ("ucs_catid", "ucs_category", "ucs_subcategory", "fx_name")
+    ] == [
+        name.catid,
+        name.category,
+        name.subcategory,
+        name.fx_name,
+    ]
+    assert [meta[k] for k in ("license", "license_url", "attribution")] == [
+        rights["license"],
+        rights["license_url"],
+        rights["attribution"],
+    ]
+    assert meta["raw"]["bext"]["description"] == door.caption
+    assert prov["embedded"] == ["ixml", "bext"] and prov["export_notes"] == []
+
+
+def test_embedding_keeps_the_samples_and_the_hash_names_the_bytes_returned(
+    library, door
+):
+    data, _, prov = foley.export_sound(door.id, library=library)
+    plain, _, plain_prov = foley.export_sound(
+        door.id, library=library, embed_metadata=False
+    )
+    assert data != plain and _data_chunk(data) == _data_chunk(plain)
+    assert prov["sha256"] == content_key(data) != plain_prov["sha256"]
+    assert (
+        prov["archived_sha256"] == plain_prov["archived_sha256"] == door.content_sha256
+    )
+    as_int = lambda b: sf.read(io.BytesIO(b), dtype="int32")[0]  # noqa: E731
+    np.testing.assert_array_equal(as_int(data), as_int(library.audio(door.id)))
+    assert plain_prov["embedded"] == [] and b"iXML" not in plain
+
+
+def test_a_flac_export_gets_a_filename_but_no_chunks(library, door):
+    data, _, prov = foley.export_sound(door.id, "flac", library=library)
+    assert data == library.audio(door.id) and prov["sha256"] == prov["archived_sha256"]
+    assert prov["filename"].endswith("_door_77.flac") and prov["embedded"] == []
+    assert prov["export_notes"] == ["bext / iXML are written into WAV only, not flac"]
+
+
+def test_a_sound_without_a_known_catid_has_no_filename_but_keeps_its_credit(library):
+    from foley.embedded_metadata import read_embedded_metadata
+
+    data, rights, prov = foley.export_sound("fsd-222", library=library)
+    assert prov["filename"] is None and "ucs_category=None" in prov["export_notes"][0]
+    meta = read_embedded_metadata(data)
+    assert "ucs_catid" not in meta and meta["attribution"] == rights["attribution"]
+    _, _, off = foley.export_sound("fsd-222", library=library, ucs_filename=False)
+    assert off["filename"] is None

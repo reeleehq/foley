@@ -1,4 +1,4 @@
-"""What a pro sound file says about itself: Broadcast-WAV ``bext`` and iXML (#228).
+"""What a pro sound file says about itself: Broadcast-WAV ``bext`` and iXML (#228, #231).
 
 Commercial packs (BOOM, Pro Sound Effects, Sonniss GDC) describe each file inside it:
 the EBU Broadcast-WAV ``bext`` chunk (``Description``, ``Originator``, the origination
@@ -13,6 +13,10 @@ standard library and returns foley's view of them::
 Only the fields the file has are present. A file that is not a RIFF / RF64 / BW64 WAVE,
 or has neither chunk, gives ``{}``; a missing file raises :class:`FileNotFoundError`.
 
+:func:`write_embedded_metadata` is the other direction (#231): it puts foley's fields
+into a RIFF WAV's ``bext`` and ``iXML`` chunks, replacing the fields it writes and
+keeping the rest of each chunk, and leaves the audio bytes as they are.
+
 :data:`FIELDS` is the one table between the chunks and foley's names, both ways: each
 :class:`Field` has a canonical ``write`` location (where an exporter puts the value,
 and where a reader looks first) and ordered ``read_also`` fallbacks, plus the
@@ -20,7 +24,14 @@ and where a reader looks first) and ordered ``read_also`` fallbacks, plus the
 :func:`fields_from_chunks` and :func:`chunks_from_fields` are its two directions, so
 the writer of #231 reuses the table rather than inverting it. The names are foley's
 (``caption``, ``tags``, ``ucs_*`` as on :class:`~foley.base.SoundRecord` /
-:class:`~foley.base.SoundEvent`, ``fx_name`` as on the UCS filename parse).
+:class:`~foley.base.SoundEvent`, ``fx_name`` as on the UCS filename parse, and
+``license`` / ``license_url`` / ``attribution`` as in the rights dict of
+:func:`foley.export_sound`).
+
+The caption is also written to bext ``Description`` (cut to its 256 bytes on a
+character boundary): DAWs and most library tools (Pro Tools, BaseHead, Soundly) show
+the BWF Description, while the iXML ``DESCRIPTION`` keeps the whole caption and is read
+first, so a long caption still reads back whole.
 
 This module sits beside :mod:`foley.audio` rather than in :mod:`foley.index`: it is
 file-format I/O that both ingest (reading) and export (writing) use, stdlib-only.
@@ -28,6 +39,7 @@ file-format I/O that both ingest (reading) and export (writing) use, stdlib-only
 
 from __future__ import annotations
 
+import io
 import re
 import struct
 import xml.etree.ElementTree as ET
@@ -55,6 +67,12 @@ KEYWORD_JOINER = ", "
 
 #: The names :data:`FIELDS` locations use for the two chunks (also the ``raw`` keys).
 BEXT, IXML = "bext", "ixml"
+
+#: The size of a ``bext`` chunk's fixed part (EBU Tech 3285), before its CodingHistory.
+BEXT_FIXED_BYTES = 602
+
+#: The root and ``<USER>`` tags of a new iXML document, and the iXML version it states.
+IXML_ROOT, IXML_USER, IXML_VERSION = "BWFXML", "USER", "1.61"
 
 #: The 32-bit size RF64 / BW64 write for a chunk whose real size is in ``ds64``.
 _SIZE_PLACEHOLDER = 0xFFFFFFFF
@@ -113,7 +131,8 @@ class Field:
     """One foley field and where it lives in a WAV's metadata chunks.
 
     ``write`` is the canonical location: a writer puts the value there and a reader
-    looks there first. ``read_also`` are read-only fallbacks, tried in order.
+    looks there first. ``write_also`` are copies a writer also fills (for tools that
+    read only there), read next. ``read_also`` are read-only fallbacks, tried in order.
     ``decode`` turns the stored text into foley's value; ``encode`` turns it back.
     """
 
@@ -122,11 +141,17 @@ class Field:
     read_also: "tuple[Location, ...]" = ()
     decode: Callable[[str], Any] = str
     encode: Callable[[Any], str] = str
+    write_also: "tuple[Location, ...]" = ()
+
+    @property
+    def write_to(self) -> "tuple[Location, ...]":
+        """Every location a writer fills: the canonical one, then its copies."""
+        return (self.write, *self.write_also)
 
     @property
     def read_from(self) -> "tuple[Location, ...]":
-        """Every location a reader tries, canonical first."""
-        return (self.write, *self.read_also)
+        """Every location a reader tries: where it is written, then the fallbacks."""
+        return (*self.write_to, *self.read_also)
 
 
 #: foley field <-> chunk locations (see :class:`Field`).
@@ -134,7 +159,8 @@ FIELDS: "tuple[Field, ...]" = (
     Field(
         "caption",
         Location(IXML, "DESCRIPTION"),
-        read_also=(Location(BEXT, "description"), Location(IXML, "FXNAME")),
+        write_also=(Location(BEXT, "description"),),
+        read_also=(Location(IXML, "FXNAME"),),
     ),
     Field(
         "tags", Location(IXML, "KEYWORDS"), decode=split_keywords, encode=join_keywords
@@ -150,6 +176,9 @@ FIELDS: "tuple[Field, ...]" = (
         read_also=(Location(BEXT, "originator"),),
     ),
     Field("designer", Location(IXML, "DESIGNER")),
+    Field("license", Location(IXML, "LICENSE")),
+    Field("license_url", Location(IXML, "LICENSE_URL")),
+    Field("attribution", Location(IXML, "ATTRIBUTION")),
 )
 
 
@@ -170,16 +199,16 @@ def fields_from_chunks(raw: Mapping, *, fields=FIELDS) -> dict:
 
 
 def chunks_from_fields(meta: Mapping, *, fields=FIELDS) -> "dict[str, dict[str, str]]":
-    """Where a writer puts each of foley's fields: ``{chunk: {key: text}}``, canonical only.
+    """Where a writer puts each of foley's fields: ``{chunk: {key: text}}`` (``write_to``).
 
     >>> chunks_from_fields({"caption": "Rain", "tags": ["a", "b"], "other": 1})
-    {'ixml': {'DESCRIPTION': 'Rain', 'KEYWORDS': 'a, b'}}
+    {'ixml': {'DESCRIPTION': 'Rain', 'KEYWORDS': 'a, b'}, 'bext': {'description': 'Rain'}}
     """
     out: "dict[str, dict[str, str]]" = {}
     for fld in fields:
         text = fld.encode(meta[fld.name]) if meta.get(fld.name) else ""
-        if text:
-            out.setdefault(fld.write.chunk, {})[fld.write.key] = text
+        for loc in fld.write_to if text else ():
+            out.setdefault(loc.chunk, {})[loc.key] = text
     return out
 
 
@@ -330,17 +359,25 @@ CHUNK_PARSERS = {b"bext": (BEXT, parse_bext), b"iXML": (IXML, parse_ixml_user)}
 # --------------------------------------------------------------------------------------
 
 
+def _open_wav(src) -> BinaryIO:
+    """A binary file object over ``src``: a path, or the WAV's bytes."""
+    if isinstance(src, (bytes, bytearray, memoryview)):
+        return io.BytesIO(src)
+    return open(src, "rb")
+
+
 def read_metadata_chunks(
     path, *, max_chunk_bytes: int = MAX_METADATA_CHUNK_BYTES, parsers=CHUNK_PARSERS
 ) -> "dict[str, dict[str, str]]":
     """The parsed, non-empty metadata chunks of a WAV (``{"bext": ..., "ixml": ...}``).
 
-    Chunks larger than ``max_chunk_bytes`` are skipped unread. A file that is not a
-    WAV gives ``{}``; one that cannot be opened (missing, a directory, no permission)
-    raises the ``OSError``, so a wrong path is not mistaken for a file without metadata.
+    ``path`` is a file path or the WAV's bytes. Chunks larger than ``max_chunk_bytes``
+    are skipped unread. A file that is not a WAV gives ``{}``; one that cannot be
+    opened (missing, a directory, no permission) raises the ``OSError``, so a wrong
+    path is not mistaken for a file without metadata.
     """
     raw = {}
-    with open(path, "rb") as f:
+    with _open_wav(path) as f:
         for chunk_id, offset, size in iter_riff_chunks(f):
             if chunk_id in parsers and size <= max_chunk_bytes:
                 name, parse = parsers[chunk_id]
@@ -354,6 +391,8 @@ def read_embedded_metadata(
 ) -> dict:
     """foley's view of a WAV's ``bext`` and iXML metadata (see the module docs), or ``{}``.
 
+    ``path`` is a file path or the WAV's bytes.
+
     >>> read_embedded_metadata(__file__)  # not a WAV
     {}
     """
@@ -361,3 +400,156 @@ def read_embedded_metadata(
     if not raw:
         return {}
     return {**fields_from_chunks(raw, fields=fields), "raw": raw}
+
+
+# --------------------------------------------------------------------------------------
+# Chunk builders and the writer (#231)
+# --------------------------------------------------------------------------------------
+
+
+def _fixed_width(text: str, width: int) -> bytes:
+    """``text`` as UTF-8 in ``width`` bytes, NUL-padded, cut before a character that
+    would not fit whole.
+
+    >>> _fixed_width("café", 4), _fixed_width("ab", 4)
+    (b'caf\\x00', b'ab\\x00\\x00')
+    """
+    cut = text.encode("utf-8")[:width].decode("utf-8", "ignore")
+    return cut.encode("utf-8").ljust(width, b"\0")
+
+
+def build_bext(fields: "Mapping[str, str]", *, base: bytes = b"") -> bytes:
+    """A ``bext`` payload with ``fields`` (:data:`BEXT_FIELDS` names) written over ``base``.
+
+    ``base`` is the file's existing ``bext`` payload, so what foley does not write (the
+    time reference, UMID, loudness, CodingHistory) is kept; with none, the rest is
+    zero (version 0: no UMID). Text is UTF-8 (ASCII is a subset), cut on a character
+    boundary at the field's width.
+
+    >>> parse_bext(build_bext({"description": "Rain"}))
+    {'description': 'Rain'}
+    """
+    offsets, pos = {}, 0
+    for name, width in BEXT_FIELDS:
+        offsets[name], pos = (pos, width), pos + width
+    unknown = set(fields) - set(offsets)
+    if unknown:
+        raise ValueError(f"not bext text fields: {sorted(unknown)}")
+    payload = bytearray(base.ljust(BEXT_FIXED_BYTES, b"\0"))
+    for name, text in fields.items():
+        at, width = offsets[name]
+        payload[at : at + width] = _fixed_width(text, width)
+    return bytes(payload)
+
+
+def _ixml_root(base: bytes) -> ET.Element:
+    """The iXML document of ``base`` to write into, or a new one if it has none (or is broken)."""
+    try:
+        return ET.fromstring(_xml_document(base))
+    except (ET.ParseError, LookupError, ValueError):
+        root = ET.Element(IXML_ROOT)
+        ET.SubElement(root, "IXML_VERSION").text = IXML_VERSION
+        return root
+
+
+def build_ixml(fields: "Mapping[str, str]", *, base: bytes = b"") -> bytes:
+    """An iXML payload (UTF-8) with ``fields`` as ``<USER>`` children, written into ``base``.
+
+    ``base`` is the file's existing iXML payload: its other elements, and the
+    ``<USER>`` fields not in ``fields``, are kept.
+
+    >>> parse_ixml_user(build_ixml({"CATID": "DOORWood", "FXNAME": "Creak & slam"}))
+    {'CATID': 'DOORWood', 'FXNAME': 'Creak & slam'}
+    """
+    root = _ixml_root(base)
+    user = next((el for el in root if el.tag.upper() == IXML_USER), None)
+    if user is None:
+        user = ET.SubElement(root, IXML_USER)
+    for key, text in fields.items():
+        el = next((c for c in user if c.tag.upper() == key.upper()), None)
+        if el is None:
+            el = ET.SubElement(user, key)
+        el.clear()
+        el.text = text
+    doc = ET.tostring(root, encoding="unicode")
+    return f'<?xml version="1.0" encoding="UTF-8"?>\n{doc}'.encode("utf-8")
+
+
+#: Chunk name (as in :data:`FIELDS` and ``raw``) -> (its chunk id, its builder).
+CHUNK_BUILDERS = {BEXT: (b"bext", build_bext), IXML: (b"iXML", build_ixml)}
+
+#: A metadata chunk the file does not have yet is inserted before this one.
+INSERT_BEFORE = b"data"
+
+
+def _chunk_bytes(chunk_id: bytes, payload: bytes) -> bytes:
+    """A chunk: header, payload and the pad byte that word-aligns an odd payload."""
+    pad = b"\0" if len(payload) % 2 else b""
+    return chunk_id + struct.pack("<I", len(payload)) + payload + pad
+
+
+def write_metadata_chunks(
+    wav: bytes,
+    chunks: "Mapping[str, Mapping[str, str]]",
+    *,
+    builders=CHUNK_BUILDERS,
+    max_chunk_bytes: int = MAX_METADATA_CHUNK_BYTES,
+) -> bytes:
+    """``wav`` (RIFF WAVE bytes) with ``chunks`` (``{"bext": {...}, "ixml": {...}}``) written.
+
+    A chunk the file has is rewritten in place (the first of its kind; any others are
+    dropped, since a reader would see two), keeping what ``chunks`` does not set; one
+    it lacks is inserted before ``data``. Every other chunk, ``data`` included, is
+    copied byte for byte; the RIFF size is recomputed and odd chunks are padded.
+    Anything after the last whole chunk is dropped.
+
+    Raises:
+        ValueError: ``wav`` is not a RIFF WAVE (RF64 / BW64 are refused: their sizes
+            live in ``ds64``), has no whole ``data`` chunk, would outgrow RIFF's
+            4 GB, or ``chunks`` names a chunk with no builder.
+    """
+    if wav[:4] != b"RIFF" or wav[8:12] != b"WAVE":
+        raise ValueError(
+            f"only RIFF WAVE files take metadata here, not a {bytes(wav[:4])!r} file"
+        )
+    unknown = set(chunks) - set(builders)
+    if unknown:
+        raise ValueError(f"no builder for chunks {sorted(unknown)}")
+    listed = list(iter_riff_chunks(io.BytesIO(wav), forms=(b"RIFF",)))
+    present = {chunk_id for chunk_id, _, _ in listed}
+    if INSERT_BEFORE not in present:
+        raise ValueError(f"no whole {INSERT_BEFORE!r} chunk: the file is truncated")
+    new = {}
+    for name, values in chunks.items():
+        chunk_id, build = builders[name]
+        bases = [
+            wav[at : at + size]
+            for cid, at, size in listed
+            if cid == chunk_id and size <= max_chunk_bytes
+        ]
+        # the last of its kind is the base: a reader sees that one
+        new[chunk_id] = build(values, base=bases[-1] if bases else b"")
+    out, written = [], set()
+    for chunk_id, at, size in listed:
+        if chunk_id == INSERT_BEFORE:
+            out += [_chunk_bytes(c, p) for c, p in new.items() if c not in present]
+        if chunk_id not in new:
+            out.append(_chunk_bytes(chunk_id, wav[at : at + size]))
+        elif chunk_id not in written:
+            out.append(_chunk_bytes(chunk_id, new[chunk_id]))
+            written.add(chunk_id)
+    body = b"WAVE" + b"".join(out)
+    if len(body) >= _SIZE_PLACEHOLDER:
+        raise ValueError("the file would outgrow RIFF's 4 GB; it needs RF64")
+    return b"RIFF" + struct.pack("<I", len(body)) + body
+
+
+def write_embedded_metadata(wav: bytes, meta: Mapping, *, fields=FIELDS) -> bytes:
+    """``wav`` with foley's fields ``meta`` written where :data:`FIELDS` says (``bext``
+    and ``iXML``): the inverse of :func:`read_embedded_metadata`.
+
+    ``wav`` comes back unchanged when ``meta`` has nothing to write. See
+    :func:`write_metadata_chunks` for what is kept and what is refused.
+    """
+    chunks = chunks_from_fields(meta, fields=fields)
+    return write_metadata_chunks(wav, chunks) if chunks else wav

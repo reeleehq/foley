@@ -15,6 +15,7 @@ from foley.embedded_metadata import (
     fields_from_chunks,
     iter_riff_chunks,
     read_embedded_metadata,
+    write_embedded_metadata,
 )
 
 
@@ -188,16 +189,21 @@ def test_chunks_after_an_odd_one_are_found_with_or_without_the_pad(tmp_path, pad
 
 
 def test_the_field_table_round_trips(tmp_path):
-    """What a writer (#231) puts where FIELDS says reads back as the same fields."""
+    """What the writer (#231) puts where FIELDS says reads back as the same fields."""
     meta = {
         "caption": "Old oak door creaks", "tags": ["door", "creak"], "fx_name": "Creak",
         "ucs_catid": "DOORWood", "ucs_category": "DOORS", "ucs_subcategory": "WOOD",
         "library": "Doors 2", "manufacturer": "BOOM Library", "designer": "JD",
+        "license": "cc-by-4.0", "license_url": "https://creativecommons.org/licenses/by/4.0/",
+        "attribution": '"Creak" by JD, CC BY 4.0',
     }  # fmt: skip
     assert set(meta) == {fld.name for fld in FIELDS}
     chunks = chunks_from_fields(meta)
-    assert set(chunks) == {"ixml"} and fields_from_chunks(chunks) == meta
-    read = _read(tmp_path, _wav(DATA, _chunk(b"iXML", _ixml(**chunks["ixml"]))))
+    # the caption is copied into bext Description
+    assert set(chunks) == {"ixml", "bext"}
+    assert chunks["bext"] == {"description": meta["caption"]}
+    assert fields_from_chunks(chunks) == meta
+    read = _read(tmp_path, write_embedded_metadata(_wav(DATA), meta))
     assert {k: v for k, v in read.items() if k != "raw"} == meta
 
 
@@ -214,8 +220,127 @@ def test_a_real_encoder_file_with_injected_chunks(tmp_path):
 
 def test_a_utf8_description_cut_at_the_field_width_stays_utf8(tmp_path):
     """bext Description is 256 bytes: a UTF-8 character cut there must not turn the field into mojibake."""
-    desc = ("a" + "é" * 128).encode()  # 257 bytes: the field's 256 cut the last é in half
+    desc = (
+        "a" + "é" * 128
+    ).encode()  # 257 bytes: the field's 256 cut the last é in half
     payload = desc[:256] + b"\0" * (602 - 256)
     f = tmp_path / "cut.wav"
     f.write_bytes(_wav(_chunk(b"bext", payload), DATA))
     assert read_embedded_metadata(f)["caption"] == "a" + "é" * 127
+
+
+# ---------------------------------------------------------------------------
+# The writer (#231)
+# ---------------------------------------------------------------------------
+
+
+def _chunks(wav: bytes) -> "list[tuple[bytes, int, int]]":
+    return list(iter_riff_chunks(io.BytesIO(wav)))
+
+
+def _payload(wav: bytes, chunk_id: bytes) -> bytes:
+    (at, size), *_ = [(at, size) for cid, at, size in _chunks(wav) if cid == chunk_id]
+    return wav[at : at + size]
+
+
+def _assert_well_formed(wav: bytes):
+    assert wav[:4] == b"RIFF" and struct.unpack("<I", wav[4:8])[0] == len(wav) - 8
+    listed = _chunks(wav)
+    assert all(at % 2 == 0 for _, at, _ in listed)  # word-aligned
+    last_id, last_at, last_size = listed[-1]
+    # nothing lost or left over
+    assert last_at + last_size + (last_size & 1) == len(wav)
+
+
+def test_writing_keeps_the_audio_bytes_and_soundfile_reads_the_file(tmp_path):
+    sf = pytest.importorskip("soundfile")
+    np = pytest.importorskip("numpy")
+    buf = io.BytesIO()
+    samples = (np.arange(1001) % 200 - 100).astype("int16")
+    sf.write(buf, samples, 48000, format="WAV", subtype="PCM_16")
+    plain = buf.getvalue()
+    meta = {"caption": "A door creaks", "tags": ["door"], "ucs_catid": "DOORWood"}
+    wav = write_embedded_metadata(plain, meta)
+    _assert_well_formed(wav)
+    assert _payload(wav, b"data") == _payload(plain, b"data")
+    np.testing.assert_array_equal(sf.read(io.BytesIO(wav), dtype="int16")[0], samples)
+    read = read_embedded_metadata(wav)  # bytes are read as well as paths
+    assert (read["caption"], read["tags"], read["ucs_catid"]) == (
+        "A door creaks",
+        ["door"],
+        "DOORWood",
+    )
+    ids = [cid for cid, _, _ in _chunks(wav)]
+    assert ids.index(b"bext") < ids.index(b"data") and ids.index(b"iXML") < ids.index(
+        b"data"
+    )
+
+
+def test_existing_chunks_are_rewritten_in_place_and_keep_what_is_not_written():
+    ixml = _ixml(LIBRARY="Doors 2", DESCRIPTION="old")
+    ixml = ixml.replace(
+        b"<USER>", b"<SPEED><TIMECODE_RATE>25/1</TIMECODE_RATE></SPEED><USER>"
+    )
+    src = _wav(
+        _chunk(b"bext", _bext("old", "BOOM Library")), DATA, _chunk(b"iXML", ixml)
+    )
+    wav = write_embedded_metadata(src, {"caption": "new", "fx_name": "Creak"})
+    _assert_well_formed(wav)
+    assert [cid for cid, _, _ in _chunks(wav)] == [b"fmt ", b"bext", b"data", b"iXML"]
+    read = read_embedded_metadata(wav)
+    assert read["raw"]["bext"] == {
+        "description": "new",
+        "originator": "BOOM Library",
+        "origination_date": "2024-01-02",
+    }
+    assert read["raw"]["ixml"] == {
+        "LIBRARY": "Doors 2",
+        "DESCRIPTION": "new",
+        "FXNAME": "Creak",
+    }
+    assert b"<TIMECODE_RATE>25/1</TIMECODE_RATE>" in _payload(wav, b"iXML")
+
+
+def test_duplicate_metadata_chunks_collapse_to_one():
+    src = _wav(
+        _chunk(b"iXML", _ixml(FXNAME="a")), DATA, _chunk(b"iXML", _ixml(FXNAME="b"))
+    )
+    wav = write_embedded_metadata(src, {"caption": "c"})
+    assert [cid for cid, _, _ in _chunks(wav)].count(b"iXML") == 1
+    assert read_embedded_metadata(wav)["raw"]["ixml"] == {
+        "FXNAME": "b",
+        "DESCRIPTION": "c",
+    }
+
+
+def test_an_odd_sized_chunk_is_padded():
+    wav = write_embedded_metadata(_wav(DATA), {"fx_name": "x" * 8})  # odd iXML payload
+    _assert_well_formed(wav)
+    assert len(_payload(wav, b"iXML")) % 2 == 1
+
+
+def test_a_long_utf8_caption_is_cut_safely_in_bext_and_whole_in_ixml():
+    caption = "a" + "é" * 200  # 401 bytes
+    read = read_embedded_metadata(
+        write_embedded_metadata(_wav(DATA), {"caption": caption})
+    )
+    assert read["caption"] == caption  # iXML DESCRIPTION, read first
+    assert read["raw"]["bext"]["description"] == "a" + "é" * 127  # 255 bytes, no half é
+
+
+def test_nothing_to_write_returns_the_bytes_untouched():
+    src = _wav(DATA)
+    assert write_embedded_metadata(src, {"caption": "", "tags": []}) is src
+
+
+@pytest.mark.parametrize(
+    "wav, match",
+    [
+        (_wav(DATA, form=b"RF64"), "RIFF WAVE"),
+        (b"fLaC" + b"\0" * 40, "RIFF WAVE"),
+        (_wav(), "truncated"),
+    ],
+)
+def test_what_the_writer_refuses(wav, match):
+    with pytest.raises(ValueError, match=match):
+        write_embedded_metadata(wav, {"caption": "x"})
