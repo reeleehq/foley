@@ -814,11 +814,112 @@ def test_a_stored_share_alike_twin_is_not_handed_back_as_a_cc0_broadcast(
     assert any("licence" in n for n in again.notes)
 
 
+# --- restamp=True: a rerun with corrected credits corrects the stored twin (#271) --------
+
+
+def _attribution(lib, sound_id):
+    return foley.export_sound(sound_id, library=lib)[1]["attribution"]
+
+
+def test_a_refused_twin_says_restamp_corrects_it(sound_library):
+    by = "CC-BY-4.0"
+    _store(sound_library, bed_license=_rights(by, creator_name="Ann"),
+           speech=_rights(by, creator_name="Bob"))  # fmt: skip
+    again = _store(sound_library, bed_license=_rights(by, creator_name="Carol"),
+                   speech=_rights(by, creator_name="Dave"))  # fmt: skip
+    assert again.sound_id is None and any("restamp=True" in n for n in again.notes)
+
+
+def test_restamp_corrects_the_stored_twins_credits(sound_library):
+    lib, by = sound_library, "CC-BY-4.0"
+    first = _store(lib, bed_license=_rights(by, creator_name="Ann"),
+                   speech=_rights(by, creator_name="Bob"))  # fmt: skip
+    earlier = foley.export_sound(first.sound_id, library=lib, fmt="wav")
+    fixed = _store(lib, bed_license=_rights(by, creator_name="Carol"),
+                   speech=_rights(by, creator_name="Dave"), restamp=True)  # fmt: skip
+    assert fixed.sound_id == first.sound_id  # the same record, corrected
+    later = foley.export_sound(fixed.sound_id, library=lib, fmt="wav")
+    assert "Carol" in later[1]["attribution"] and "Dave" in later[1]["attribution"]
+    assert "Ann" not in later[1]["attribution"] and b"Ann" not in later[0]
+    # the export made before the restamp keeps the credits it was made with
+    assert "Ann" in earlier[1]["attribution"] and "Bob" in earlier[1]["attribution"]
+    assert b"Ann" in earlier[0] and b"Carol" not in earlier[0]  # embedded in its bytes
+    assert any("credit" in n and "Carol" in n for n in fixed.notes)
+    stored = lib[fixed.sound_id].license
+    assert not wider_rights(stored, fixed.license)
+    again = _store(lib, bed_license=_rights(by, creator_name="Carol"),
+                   speech=_rights(by, creator_name="Dave"), restamp=True)  # fmt: skip
+    assert again.sound_id == first.sound_id  # idempotent
+    assert not any("credit" in n for n in again.notes)
+
+
+def test_restamp_narrows_the_stored_twin(sound_library):
+    lib, by, nc = sound_library, "CC-BY-4.0", "CC-BY-NC-4.0"
+    first = _store(lib, bed_license=_rights(by), speech=_rights(by, creator_name="Bob"))
+    assert lib[first.sound_id].license.commercial_ok
+    fixed = _store(lib, bed_license=_rights(by), restamp=True,
+                   speech=_rights(nc, creator_name="Bob"),
+                   accept_ai_restricted=True)  # fmt: skip
+    assert fixed.sound_id == first.sound_id
+    stored = lib[fixed.sound_id].license
+    assert not stored.commercial_ok and nc in stored.derived_from_license_ids
+    assert foley.export_sound(fixed.sound_id, library=lib)[1]["license"] == "cc-by-nc-4.0"
+
+
+def test_restamp_never_widens_the_stored_twin(sound_library):
+    lib, by, nc = sound_library, "CC-BY-4.0", "CC-BY-NC-4.0"
+    first = _store(lib, bed_license=_rights(by), speech=_rights(nc, creator_name="Bob"),
+                   accept_ai_restricted=True)  # fmt: skip
+    wider = _store(lib, bed_license=_rights(by), restamp=True,
+                   speech=_rights(by, creator_name="Bob"))  # fmt: skip
+    assert first.sound_id and wider.sound_id is None
+    stored = lib[first.sound_id].license
+    assert not stored.commercial_ok and nc in stored.derived_from_license_ids
+    assert any("not widened" in n for n in wider.notes)
+
+
+def test_restamp_never_widens_non_commercial_share_alike_to_share_alike(sound_library):
+    lib, ncsa, sa = sound_library, "CC-BY-NC-SA-4.0", "CC-BY-SA-4.0"
+    first = _store(lib, bed_license=_rights(ncsa), speech=_rights(ncsa),
+                   accept_ai_restricted=True)  # fmt: skip
+    wider = _store(lib, bed_license=_rights(sa), speech=_rights(sa), restamp=True,
+                   accept_ai_restricted=True)  # fmt: skip
+    assert first.sound_id and wider.sound_id is None
+    stored = lib[first.sound_id].license
+    assert stored.license_id == ncsa and stored.derived_from_license_ids == [ncsa]
+    assert foley.export_sound(first.sound_id, library=lib)[1]["license"] == "cc-by-nc-sa-4.0"
+    assert any("not widened" in n and "commercial use" in n for n in wider.notes)
+
+
+def test_restamp_keeps_the_ai_disclosure(sound_library):
+    lib, by = sound_library, "CC-BY-4.0"
+    ai_speech = _rights(by, creator_name="Bob", ai=True, disclosure_recommended=True,
+                        generator_model="tts-1")  # fmt: skip
+    first = _store(lib, bed_license=_rights(by), speech=ai_speech)
+    _store(lib, bed_license=_rights(by), speech=_rights(by, creator_name="Dave"),
+           restamp=True)  # fmt: skip
+    stored = lib[first.sound_id].license
+    assert stored.is_ai_generated and stored.disclosure_recommended
+    assert stored.generator_model == "tts-1"
+    assert foley.export_sound(first.sound_id, library=lib)[2].get("ai_disclosure")
+
+
+def test_restamp_still_needs_ai_consent(sound_library):
+    lib, by, nc = sound_library, "CC-BY-4.0", "CC-BY-NC-4.0"
+    first = _store(lib, bed_license=_rights(by), speech=_rights(by, creator_name="Bob"))
+    with pytest.raises(foley.BroadcastRefusal, match="accept_ai_restricted"):
+        _store(lib, bed_license=_rights(by), restamp=True,
+               speech=_rights(nc, creator_name="Bob"))  # fmt: skip
+    assert lib[first.sound_id].license.commercial_ok  # untouched
+
+
 @pytest.mark.parametrize(
     "kw, match",
     [
         (dict(ingest_options={"do_qc": False}), "store=True"),
         (dict(store=True, ingest_options={"license": "user-owned"}), "itself"),
+        (dict(restamp=True), "store=True"),
+        (dict(store=True, ingest_options={"restamp_duplicate": True}), "restamp="),
     ],
 )
 def test_ingest_options_are_checked_before_anything_is_spent(kw, match):

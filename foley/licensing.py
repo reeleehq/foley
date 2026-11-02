@@ -675,6 +675,19 @@ def shared_share_alike(*records: Optional[LicenseRecord]) -> Optional[str]:
     return None
 
 
+#: How a clip's bytes were made: :func:`carry_lineage` keeps the stored record's.
+GENERATION_FIELDS = (
+    "generator_model",
+    "generator_version",
+    "generation_prompt",
+    "generation_prompt_used",
+    "generation_seed",
+    "generation_params",
+    "watermark",
+    "c2pa_manifest_ref",
+)
+
+
 def carry_lineage(new: LicenseRecord, old: LicenseRecord) -> LicenseRecord:
     """Copy ``old``'s lineage onto ``new``, in place, and return ``new``.
 
@@ -682,7 +695,9 @@ def carry_lineage(new: LicenseRecord, old: LicenseRecord) -> LicenseRecord:
     ``transformations`` (the edits and fixes, so the credit still reads "(modified)"),
     its ``derived_from_license_ids`` (the licences bounding it, #214), its
     ``terms_notes`` (added to ``new``'s: the source's API obligations, #77) and the
-    facts about its bytes (a vendor that reuses them, the vendor's watermark). Fresh lists,
+    facts about its bytes (a vendor that reuses them, the vendor's watermark, that they
+    are AI-generated and to be disclosed, and how they were made:
+    :data:`GENERATION_FIELDS`, ``old``'s where it states them). Fresh lists,
     so the two records never share one; a ``None`` reads as empty. ``new``'s flags are
     then bounded by every licence it now derives from (never widened), so the copy is
     safe on its own; a later :func:`apply_license_flags` re-derives under the same bound.
@@ -707,6 +722,15 @@ def carry_lineage(new: LicenseRecord, old: LicenseRecord) -> LicenseRecord:
     if old.vendor_trains_on_output:
         new.vendor_trains_on_output = True
     new.vendor_watermark = new.vendor_watermark or old.vendor_watermark
+    # AI provenance is sticky: a restamp never un-discloses what made the bytes.
+    new.is_ai_generated = bool(new.is_ai_generated or old.is_ai_generated)
+    new.disclosure_recommended = bool(
+        new.disclosure_recommended or old.disclosure_recommended
+    )
+    for name in GENERATION_FIELDS:
+        made = getattr(old, name)
+        if made is not None and made != {}:
+            setattr(new, name, dict(made) if isinstance(made, dict) else made)
     return _set_flags(new, _bounded_by_lineage(_flags_of(new), new))
 
 
@@ -1396,8 +1420,11 @@ def wider_rights(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
     A permission of :data:`_DERIVATIVE_SHARED_FLAGS` it holds and ``bound`` lacks, an
     attribution or a notice ``bound`` requires and it does not, a higher (or no)
     revenue cap, a looser AI-use scope, a voice or trademark flag ``bound`` raises
-    and it does not, another stated AI-use preference. How an edit tells that a byte-identical sound
-    already in the library is not the edit it made (see :func:`narrow_to_source`).
+    and it does not, another stated AI-use preference. When the flags show nothing, the
+    licence a consumer reads it under (:func:`exported_licence_wider`): every
+    share-alike licence has the same flag row, so only the id tells CC BY-NC-SA from
+    CC BY-SA. How an edit tells that a byte-identical sound already in the library is
+    not the edit it made (see :func:`narrow_to_source`).
 
     >>> from foley.base import LicenseRecord
     >>> nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0"))
@@ -1431,7 +1458,51 @@ def wider_rights(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
             wider.append(flag)
     if bound.gen_ai_preference and bound.gen_ai_preference != record.gen_ai_preference:
         wider.append("gen_ai_preference")
-    return wider
+    return wider or exported_licence_wider(record, bound)
+
+
+def _noncommercial(license_id: str) -> bool:
+    """Whether ``license_id`` forbids commercial use, by its name or its consumer class."""
+    named = bool(set(_cc_tokens(license_id)) & _NC_TOKENS)
+    return named or consumer_license_class(license_id) == "noncommercial"
+
+
+def exported_licence_wider(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
+    """What the licence ``record`` is exported under allows that ``bound``'s does not.
+
+    Read off :func:`rights_license_id` (the code a consumer classifies), for two
+    verified records: a known code where ``bound`` reads as unknown, a commercial one
+    where ``bound``'s is non-commercial, one without share-alike where ``bound``'s has
+    it, or a less restrictive consumer class (:data:`CONSUMER_LICENSE_CLASSES`).
+
+    >>> from foley.base import LicenseRecord
+    >>> ncsa = LicenseRecord(source="s", license_id="CC-BY-NC-SA-4.0", rights_verified=True)
+    >>> sa = LicenseRecord(source="s", license_id="CC-BY-SA-4.0", rights_verified=True)
+    >>> exported_licence_wider(sa, ncsa), exported_licence_wider(ncsa, sa)
+    (['commercial use (CC-BY-NC-SA-4.0 -> CC-BY-SA-4.0)'], [])
+    """
+    if not (record.rights_verified and bound.rights_verified):
+        return []  # verification is its own axis (rights_verified), not a licence
+    mine, theirs = rights_license_id(record), rights_license_id(bound)
+    if mine == theirs or mine is None:
+        return []
+    change = f"({theirs or 'unknown'} -> {mine})"
+    if theirs is None:
+        return [f"a known licence {change}"]
+    wider = [
+        what
+        for what, looser in (
+            ("commercial use", _noncommercial(theirs) and not _noncommercial(mine)),
+            ("no share-alike", is_share_alike(theirs) and not is_share_alike(mine)),
+        )
+        if looser
+    ]
+    rank = CONSUMER_LICENSE_CLASSES.index
+    if not wider and rank(consumer_license_class(mine)) < rank(
+        consumer_license_class(theirs)
+    ):
+        wider.append("a less restrictive licence class")
+    return [f"{what} {change}" for what in wider]
 
 
 #: The fields that say a stored licence and a fresh one differ besides their rights
@@ -1445,9 +1516,23 @@ RESTAMP_FIELDS = (
     "attribution_text",
 )
 
+#: The credit fields a re-made sound's fresh record corrects besides
+#: :data:`RESTAMP_FIELDS` (``restamped_license(remade=True)``): who made it, from where.
+REMADE_CREDIT_FIELDS = (
+    "source",
+    "source_id",
+    "source_url",
+    "creator_name",
+    "creator_url",
+)
+
 
 def restamped_license(
-    stored: LicenseRecord, fresh: LicenseRecord, *, widen: bool = True
+    stored: LicenseRecord,
+    fresh: LicenseRecord,
+    *,
+    widen: bool = True,
+    remade: bool = False,
 ) -> "tuple[Optional[LicenseRecord], Optional[str]]":
     """What a stored sound's licence becomes when its source now states ``fresh``.
 
@@ -1468,6 +1553,14 @@ def restamped_license(
       the other does not, the stored licence is bounded by ``fresh``
       (:func:`narrow_to_source`): the sound may be used only where both allow.
 
+    ``remade=True``: the sound was made again (a byte-identical derivative re-rendered
+    with corrected credits), so ``fresh`` is its whole record: its lineage and credits
+    (:data:`REMADE_CREDIT_FIELDS`) replace the stored ones wherever ``fresh`` is
+    applied. A credit change is a correction, not a widening; dropping a licence the
+    stored record derives from (:func:`derived_license_ids`) whose row would still
+    narrow it is a widening, so ``widen=False`` keeps it. Default ``False``: the
+    source restates its terms and the stored lineage (the edits made since) is kept.
+
     >>> from foley.base import LicenseRecord
     >>> cc0 = apply_license_flags(LicenseRecord(source="s", license_id="CC0-1.0", rights_verified=True))
     >>> nc = apply_license_flags(LicenseRecord(source="s", license_id="CC-BY-NC-4.0", rights_verified=True))
@@ -1477,16 +1570,43 @@ def restamped_license(
     >>> new is None, note.startswith("not widened")
     (True, True)
     """
-    candidate = carry_lineage(replace(fresh), stored)  # what fresh means for this sound
+    # The lineage the restamped sound keeps: the stored one, or a re-made sound's own.
+    lineage = (
+        replace(
+            stored,
+            transformations=fresh.transformations,
+            derived_from_license_ids=fresh.derived_from_license_ids,
+        )
+        if remade
+        else stored
+    )
+    # What fresh means for this sound.
+    candidate = carry_lineage(replace(fresh), lineage)
     wider, narrower = wider_rights(candidate, stored), wider_rights(stored, candidate)
-    if not (wider or narrower) and all(
-        getattr(stored, f) == getattr(fresh, f) for f in RESTAMP_FIELDS
+    # A licence that bounded the sound and is dropped (only ever with remade=True).
+    held, kept = _flags_of(candidate), set(derived_license_ids(candidate))
+    loosened = [
+        d
+        for d in sorted(set(derived_license_ids(stored)) - kept)
+        if _bounded_by(held, derive_license_flags(d)) != held
+    ]
+    if loosened:
+        wider.append(f"derived_from_license_ids (drops {', '.join(loosened)})")
+    fields = RESTAMP_FIELDS + (REMADE_CREDIT_FIELDS if remade else ())
+    relineaged = candidate.transformations != list(stored.transformations or ())
+    if not (wider or narrower or relineaged) and all(
+        getattr(stored, f) == getattr(fresh, f) for f in fields
     ):
         return _with_fresh_notes(stored, fresh), None
     was = ", ".join(filter(None, (stored.source, stored.license_url)))
     change = f"licence {stored.license_id} -> {fresh.license_id} (was from {was})" + (
         f"; no longer allows {', '.join(narrower)}" if narrower else ""
     )
+    if remade and (
+        relineaged
+        or any(getattr(stored, f) != getattr(fresh, f) for f in REMADE_CREDIT_FIELDS)
+    ):
+        change += "; credits and lineage replaced by the re-made sound's"
     if widen or not stored.rights_verified or not wider:
         return candidate, change
     if not narrower:

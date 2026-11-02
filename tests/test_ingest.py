@@ -252,3 +252,11 @@ def test_foley_ingest_facade_accepts_library():
     import foley
 
     assert "library" in inspect.signature(foley.ingest).parameters
+
+
+@pytest.mark.parametrize("mode", ["yes", "Remade", 1, None])
+def test_an_unknown_restamp_mode_is_refused_before_anything_is_read(mode):
+    from foley.index.ingest import ingest_one
+
+    with pytest.raises(ValueError, match="restamp_duplicate"):
+        ingest_one(b"not audio", restamp_duplicate=mode)
