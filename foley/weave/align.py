@@ -13,6 +13,9 @@ word-level timestamps (report 06 §2). foley ships two implementations behind th
   (``whisperx`` + ``torch``), lazy-imported inside its method so ``import
   foley.weave`` stays dol-only.
 
+Montreal Forced Aligner and aeneas run as external programs
+(:mod:`foley.weave.cli_aligners`); inject one with ``aligner=``.
+
 ``_default_aligner`` auto-upgrades to WhisperX when ``foley[align]`` is installed,
 else falls back to the fake — the progressive-disclosure rule.
 """
@@ -45,6 +48,8 @@ class FakeAligner:
     :data:`WORDS_PER_SECOND` when the audio is empty). No transcript → an empty
     ``word_timeline`` (the render then falls back to absolute anchors).
     """
+
+    name = "fake"
 
     def word_timeline(
         self,
@@ -104,6 +109,8 @@ class WhisperXAligner:
         device: ``'cpu'`` or ``'cuda'``.
         batch_size: Transcription batch size.
     """
+
+    name = "whisperx"
 
     def __init__(
         self, *, model_size: str = "small", device: str = "cpu", batch_size: int = 16
@@ -165,12 +172,8 @@ def _whisperx_available() -> bool:
 
 
 def aligner_name(aligner) -> str:
-    """``fake`` / ``whisperx`` for the built-ins, else the class name (run manifest)."""
-    if isinstance(aligner, FakeAligner):
-        return "fake"
-    if isinstance(aligner, WhisperXAligner):
-        return "whisperx"
-    return type(aligner).__name__
+    """The aligner's ``name`` (``fake``, ``whisperx``, ``mfa``, …), else its class name (run manifest)."""
+    return getattr(aligner, "name", None) or type(aligner).__name__
 
 
 def _default_aligner() -> "Aligner":
