@@ -22,5 +22,6 @@ foley.weave.align
    .. autosummary::
    
       FakeAligner
+      SegmentedAligner
       WhisperXAligner
    

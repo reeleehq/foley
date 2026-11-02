@@ -49,6 +49,7 @@ foley.weave
       ApplyStrategy
       FakeAligner
       WhisperXAligner
+      SegmentedAligner
       MFAAligner
       AeneasAligner
       MasterProfile

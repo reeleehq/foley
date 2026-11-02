@@ -20,6 +20,7 @@ foley.audio
    .. autosummary::
    
       container_of
+      duration_s
       encode
       ensure_channels
       export_subtype

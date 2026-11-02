@@ -61,6 +61,7 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`ApplyStrategy`](#foley.weave.ApplyStrategy)(\*args, \*\*kwargs)                | How ONE hydrated item's clip is placed onto its layer bus (report 10 §4.2).                                                        |
 | [`FakeAligner`](#foley.weave.FakeAligner)()                                    | Deterministic, torch-free [`Aligner`](#foley.weave.Aligner) — evenly spaces the transcript's words.         |
 | [`WhisperXAligner`](#foley.weave.WhisperXAligner)(\*[, model_size, device, ...])   | The real ≈±50 ms [`Aligner`](#foley.weave.Aligner) (`foley[align]`) — faster-whisper ASR + wav2vec2 CTC.    |
+| [`SegmentedAligner`](#foley.weave.SegmentedAligner)(starts, segments, \*[, base])   | An [`Aligner`](#foley.weave.Aligner) for narration whose segments start at known offsets.                   |
 | [`MFAAligner`](#foley.weave.MFAAligner)(\*[, mfa, models, extra_args, ...])   | Montreal Forced Aligner (`mfa align_one`) behind the [`Aligner`](#foley.weave.Aligner) seam.                |
 | [`AeneasAligner`](#foley.weave.AeneasAligner)(\*[, python, languages, ...])      | aeneas (TTS + DTW) behind the [`Aligner`](#foley.weave.Aligner) seam, one fragment per word.                |
 | [`MasterProfile`](#foley.weave.MasterProfile)([target_lufs, true_peak_db, ...])  | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                     |
@@ -324,6 +325,63 @@ the aligner that produced them (`"fake"`, `"whisperx"`, a class name), or
 * **Type:**
   Where the word timings came from
 
+### *class* foley.weave.SegmentedAligner(starts, segments, , base=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+An [`Aligner`](#foley.weave.Aligner) for narration whose segments start at known offsets.
+
+Splits the transcript’s words by segment (each segment’s word count), aligns each
+piece with `base` against that segment’s slice of the audio, and adds the slice’s
+start to the timings. Segment `i` spans `starts[i]` to `starts[i + 1]`; the
+last runs to the end of the audio; a segment with no words is skipped. Words keep the
+transcript’s order, so anchors resolve exactly as with a whole-file aligner.
+
+`base` is called once per segment: [`WhisperXAligner`](#foley.weave.WhisperXAligner) loads its models once
+and reuses them, but a subprocess aligner ([`MFAAligner`](#foley.weave.MFAAligner),
+[`AeneasAligner`](#foley.weave.AeneasAligner)) starts one process per segment.
+
+`base` must align the audio it is given: one that returns precomputed whole-file
+timings should be passed to `weave(aligner=)` directly, not wrapped.
+
+* **Parameters:**
+  * **starts** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Each segment’s start, in seconds into the narration audio (one per
+    segment, non-decreasing).
+  * **segments** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The segments’ texts; only their word counts are used, to split the
+    transcript `word_timeline` receives.
+  * **base** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Aligner`](foley.weave.protocols.html.md#foley.weave.protocols.Aligner)]) – The aligner run on each slice (default: WhisperX if installed, else the
+    fake, chosen at first use).
+
+#### *property* base *: [Aligner](foley.weave.protocols.html.md#foley.weave.protocols.Aligner)*
+
+The per-slice aligner (the injected one, else the zero-config default).
+
+#### *property* name *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The base aligner’s name, so weave’s alignment notes describe the real timings.
+
+#### spans(duration, , sample_rate)
+
+Each segment’s `(start, end)` in audio of `duration` seconds (`ValueError`
+if a segment with words starts at or past the end, or spans no sample).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
+#### split(transcript)
+
+`transcript`’s words, one list per segment (`ValueError` on a count mismatch).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+#### word_timeline(audio, sample_rate, , transcript=None, language=None)
+
+Align each segment on its own slice of `audio`; timings in whole-file seconds.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
 ### *class* foley.weave.TreatmentPreset(name, highpass_hz, lowpass_hz, threshold_db, ratio, makeup_db=0.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -426,6 +484,8 @@ The real ≈±50 ms [`Aligner`](#foley.weave.Aligner) (`foley[align]`) — faste
 
 Lazy-imports `whisperx` inside [`word_timeline()`](#foley.weave.WhisperXAligner.word_timeline) so `import foley.weave`
 stays dol-only. Transcribes (if no transcript) then force-aligns at 16 kHz mono.
+The loaded models are kept on the instance (per model size, device and language),
+so aligning many clips, or a [`SegmentedAligner`](#foley.weave.SegmentedAligner)’s segments, loads them once.
 
 * **Parameters:**
   * **model_size** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – faster-whisper model name (`tiny`/`base`/`small`/…).

@@ -3881,7 +3881,7 @@ Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).
 
 Lazy dependency: `soundfile`.
 
-### foley.score(segments, , audio=None, transcript=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', backend='auto', allow_generate=True, master='podcast', weave=None, llm=None, budget=None, \*\*weave_kwargs)
+### foley.score(segments, , audio=None, transcript=None, segment_starts=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', backend='auto', allow_generate=True, master='podcast', weave=None, llm=None, budget=None, \*\*weave_kwargs)
 
 Choose sounds for narration text and (optionally) weave them into the narration audio.
 
@@ -3902,6 +3902,13 @@ editable [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeli
   * **audio** – The narration voice audio (path / bytes / ndarray / a library ref). When
     given, the result is woven into a mastered mix (set `weave=False` to skip).
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The full narration transcript for alignment (default: the segments joined).
+  * **segment_starts** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – Each segment’s start in `audio`, in seconds (one per segment,
+    non-decreasing), e.g. when the narration is one file per beat, concatenated.
+    Word timings are then aligned per segment over its own span (the last runs to
+    the audio’s end), through a [`SegmentedAligner`](foley.weave.html.md#foley.weave.SegmentedAligner) wrapping
+    `aligner=` (default: WhisperX if installed, else the fake). Without it, the
+    aligner aligns the whole file. Only used when weaving (a warning says so
+    otherwise).
   * **library** – The [`foley.index.SoundLibrary`](foley.index.html.md#foley.index.SoundLibrary) (default: the process-wide default).
   * **intended_use** – The rights intent (default:
     [`foley.licensing.DEFAULT_INTENDED_USE`](foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) — commercial publishing, the
@@ -3941,7 +3948,10 @@ editable [`SoundDesignTimeline`](foley.base.html.md#foley.base.SoundDesignTimeli
 * **Raises:**
   * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If a `weave_kwargs` key is not a [`foley.weave()`](foley.weave.html.md#module-foley.weave) option (raised
         before any find, verify or generation call).
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `master` is an unknown profile name (raised just as early).
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `master` is an unknown profile name, or `segment_starts` does
+        not fit the segments, the transcript or (for a path, bytes or an array) the
+        audio’s duration, all raised just as early. For a library ref or a file-like
+        `audio`, a start past its end is only caught once `weave` decodes it.
 
 ### foley.search(query, , k=10, filters=None, commercial_ok=None, ucs_category=None, min_snr=None, duration_range=None, rerank=False, intended_use=None, library=None)
 

@@ -1,4 +1,4 @@
-> built 2026-11-02 06:30 UTC from 2104787 (main) · foley 0.0.125. Details: build_info.json
+> built 2026-11-02 06:34 UTC from 6229d46 (main) · foley 0.0.126. Details: build_info.json
 
 # index.html.md
 
@@ -2644,6 +2644,7 @@ a file-like object).
 
 | [`container_of`](_autosummary/foley.audio.html.md#foley.audio.container_of)(data)                                | The `(format, subtype)` of encoded `data`, as lowercase / libsndfile names.                                                 |
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| [`duration_s`](_autosummary/foley.audio.html.md#foley.audio.duration_s)(src)                                   | `src`'s duration in seconds, read from its header (nothing is decoded).                                                     |
 | [`encode`](_autosummary/foley.audio.html.md#foley.audio.encode)(samples, sample_rate, \*[, fmt, subtype])  | Encode `samples` fully in memory and return the container bytes.                                                            |
 | [`ensure_channels`](_autosummary/foley.audio.html.md#foley.audio.ensure_channels)(samples, \*, channels)            | Coerce `samples` to exactly `channels` channels.                                                                            |
 | [`export_subtype`](_autosummary/foley.audio.html.md#foley.audio.export_subtype)(fmt, src_subtype)                  | The PCM subtype an export as `fmt` uses for `src_subtype` samples.                                                          |
@@ -2720,6 +2721,18 @@ Lazy dependency: `soundfile`.
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.audio.duration_s(src)
+
+`src`’s duration in seconds, read from its header (nothing is decoded).
+
+`src` is a path or raw encoded `bytes` (a file-like object would be left
+moved, so decode it with [`load()`](_autosummary/foley.audio.html.md#foley.audio.load) instead).
+
+Lazy dependency: `soundfile`.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### foley.audio.encode(samples, sample_rate, , fmt='flac', subtype='PCM_24')
 
@@ -10841,7 +10854,7 @@ Write `samples` to `dst` as `fmt`/`subtype` (default = FLAC archive).
 
 Lazy dependency: `soundfile`.
 
-### foley.score(segments, , audio=None, transcript=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', backend='auto', allow_generate=True, master='podcast', weave=None, llm=None, budget=None, \*\*weave_kwargs)
+### foley.score(segments, , audio=None, transcript=None, segment_starts=None, library=None, intended_use=None, commercial_ok=None, max_events=6, verify='listen', backend='auto', allow_generate=True, master='podcast', weave=None, llm=None, budget=None, \*\*weave_kwargs)
 
 Choose sounds for narration text and (optionally) weave them into the narration audio.
 
@@ -10862,6 +10875,13 @@ editable [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.Soun
   * **audio** – The narration voice audio (path / bytes / ndarray / a library ref). When
     given, the result is woven into a mastered mix (set `weave=False` to skip).
   * **transcript** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The full narration transcript for alignment (default: the segments joined).
+  * **segment_starts** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]]) – Each segment’s start in `audio`, in seconds (one per segment,
+    non-decreasing), e.g. when the narration is one file per beat, concatenated.
+    Word timings are then aligned per segment over its own span (the last runs to
+    the audio’s end), through a [`SegmentedAligner`](_autosummary/foley.weave.html.md#foley.weave.SegmentedAligner) wrapping
+    `aligner=` (default: WhisperX if installed, else the fake). Without it, the
+    aligner aligns the whole file. Only used when weaving (a warning says so
+    otherwise).
   * **library** – The [`foley.index.SoundLibrary`](_autosummary/foley.index.html.md#foley.index.SoundLibrary) (default: the process-wide default).
   * **intended_use** – The rights intent (default:
     [`foley.licensing.DEFAULT_INTENDED_USE`](_autosummary/foley.licensing.html.md#foley.licensing.DEFAULT_INTENDED_USE) — commercial publishing, the
@@ -10901,7 +10921,10 @@ editable [`SoundDesignTimeline`](_autosummary/foley.base.html.md#foley.base.Soun
 * **Raises:**
   * [**TypeError**](https://docs.python.org/3/builtins/exceptions.html#TypeError) – If a `weave_kwargs` key is not a [`foley.weave()`](_autosummary/foley.weave.html.md#module-foley.weave) option (raised
         before any find, verify or generation call).
-  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `master` is an unknown profile name (raised just as early).
+  * [**ValueError**](https://docs.python.org/3/builtins/exceptions.html#ValueError) – If `master` is an unknown profile name, or `segment_starts` does
+        not fit the segments, the transcript or (for a path, bytes or an array) the
+        audio’s duration, all raised just as early. For a library ref or a file-like
+        `audio`, a start past its end is only caught once `weave` decodes it.
 
 ### foley.search(query, , k=10, filters=None, commercial_ok=None, ucs_category=None, min_snr=None, duration_range=None, rerank=False, intended_use=None, library=None)
 
@@ -17837,7 +17860,7 @@ True if the prompt matched any trademark or recognizable-voice pattern.
 
 True if the prompt matched a branded-audio-logo entry.
 
-### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'tudum', 'ta dum', 'netflix intro', 'netflix chime', 'ta-dum'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm lion', 'mgm roar', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'century fox intro', 'fox fanfare', '20th century fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel jingle', 'intel inside', 'intel chime', 'intel bong'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
+### foley.provenance.disclosure.TRADEMARK_REGISTRY *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[TrademarkEntry](_autosummary/foley.provenance.disclosure.html.md#foley.provenance.disclosure.TrademarkEntry), ...]* *= (TrademarkEntry(canonical='THX Deep Note', aliases=frozenset({'deep note', 'thx'})), TrademarkEntry(canonical='NBC chimes', aliases=frozenset({'nbc chime', 'nbc chimes', 'nbc three-note'})), TrademarkEntry(canonical='Netflix Ta-dum', aliases=frozenset({'netflix sound', 'ta-dum', 'netflix chime', 'ta dum', 'tudum', 'netflix intro'})), TrademarkEntry(canonical='MGM lion roar', aliases=frozenset({'mgm roar', 'mgm lion', 'metro-goldwyn-mayer lion'})), TrademarkEntry(canonical='20th Century Fox fanfare', aliases=frozenset({'20th century fox fanfare', 'century fox intro', 'fox fanfare'})), TrademarkEntry(canonical='Intel five-note bong', aliases=frozenset({'intel bong', 'intel jingle', 'intel inside', 'intel chime'})), TrademarkEntry(canonical="Homer Simpson D'oh", aliases=frozenset({'homer doh', 'homer simpson doh', "d'oh"})))*
 
 Seed registry of branded audio logos foley must not knowingly generate for
 commercial use (report 07 §7.2). Each entry maps a canonical mark to a set of
@@ -27126,6 +27149,11 @@ word-level timestamps (report 06 §2). foley ships two implementations behind th
 Montreal Forced Aligner and aeneas run as external programs
 ([`foley.weave.cli_aligners`](_autosummary/foley.weave.cli_aligners.html.md#module-foley.weave.cli_aligners)); inject one with `aligner=`.
 
+[`SegmentedAligner`](_autosummary/foley.weave.align.html.md#foley.weave.align.SegmentedAligner) wraps any of them for narration made of segments whose
+start offsets are known (one audio file per beat, concatenated): it aligns each
+segment’s words against that segment’s own slice of the audio and shifts the
+timings back, so even the fake spreads words over the right span.
+
 `_default_aligner` auto-upgrades to WhisperX when `foley[align]` is installed,
 else falls back to the fake — the progressive-disclosure rule.
 
@@ -27144,6 +27172,7 @@ else falls back to the fake — the progressive-disclosure rule.
 
 | [`FakeAligner`](_autosummary/foley.weave.align.html.md#foley.weave.align.FakeAligner)()                                  | Deterministic, torch-free `Aligner` — evenly spaces the transcript's words.      |
 |-------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| [`SegmentedAligner`](_autosummary/foley.weave.align.html.md#foley.weave.align.SegmentedAligner)(starts, segments, \*[, base]) | An `Aligner` for narration whose segments start at known offsets.                |
 | [`WhisperXAligner`](_autosummary/foley.weave.align.html.md#foley.weave.align.WhisperXAligner)(\*[, model_size, device, ...]) | The real ≈±50 ms `Aligner` (`foley[align]`) — faster-whisper ASR + wav2vec2 CTC. |
 
 ### *class* foley.weave.align.FakeAligner
@@ -27160,6 +27189,63 @@ per whitespace token, spread uniformly across the clip’s duration (or at
 #### word_timeline(audio, sample_rate, , transcript=None, language='en')
 
 Return an evenly-spaced word timeline for `transcript` over `audio`’s duration.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
+### *class* foley.weave.align.SegmentedAligner(starts, segments, , base=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+An `Aligner` for narration whose segments start at known offsets.
+
+Splits the transcript’s words by segment (each segment’s word count), aligns each
+piece with `base` against that segment’s slice of the audio, and adds the slice’s
+start to the timings. Segment `i` spans `starts[i]` to `starts[i + 1]`; the
+last runs to the end of the audio; a segment with no words is skipped. Words keep the
+transcript’s order, so anchors resolve exactly as with a whole-file aligner.
+
+`base` is called once per segment: [`WhisperXAligner`](_autosummary/foley.weave.align.html.md#foley.weave.align.WhisperXAligner) loads its models once
+and reuses them, but a subprocess aligner ([`MFAAligner`](_autosummary/foley.weave.html.md#foley.weave.MFAAligner),
+[`AeneasAligner`](_autosummary/foley.weave.html.md#foley.weave.AeneasAligner)) starts one process per segment.
+
+`base` must align the audio it is given: one that returns precomputed whole-file
+timings should be passed to `weave(aligner=)` directly, not wrapped.
+
+* **Parameters:**
+  * **starts** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Each segment’s start, in seconds into the narration audio (one per
+    segment, non-decreasing).
+  * **segments** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The segments’ texts; only their word counts are used, to split the
+    transcript `word_timeline` receives.
+  * **base** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Aligner`](_autosummary/foley.weave.protocols.html.md#foley.weave.protocols.Aligner)]) – The aligner run on each slice (default: WhisperX if installed, else the
+    fake, chosen at first use).
+
+#### *property* base *: [Aligner](_autosummary/foley.weave.protocols.html.md#foley.weave.protocols.Aligner)*
+
+The per-slice aligner (the injected one, else the zero-config default).
+
+#### *property* name *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The base aligner’s name, so weave’s alignment notes describe the real timings.
+
+#### spans(duration, , sample_rate)
+
+Each segment’s `(start, end)` in audio of `duration` seconds (`ValueError`
+if a segment with words starts at or past the end, or spans no sample).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
+#### split(transcript)
+
+`transcript`’s words, one list per segment (`ValueError` on a count mismatch).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+#### word_timeline(audio, sample_rate, , transcript=None, language=None)
+
+Align each segment on its own slice of `audio`; timings in whole-file seconds.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
@@ -27182,6 +27268,8 @@ The real ≈±50 ms `Aligner` (`foley[align]`) — faster-whisper ASR + wav2vec2
 
 Lazy-imports `whisperx` inside [`word_timeline()`](_autosummary/foley.weave.align.html.md#foley.weave.align.WhisperXAligner.word_timeline) so `import foley.weave`
 stays dol-only. Transcribes (if no transcript) then force-aligns at 16 kHz mono.
+The loaded models are kept on the instance (per model size, device and language),
+so aligning many clips, or a [`SegmentedAligner`](_autosummary/foley.weave.align.html.md#foley.weave.align.SegmentedAligner)’s segments, loads them once.
 
 * **Parameters:**
   * **model_size** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – faster-whisper model name (`tiny`/`base`/`small`/…).
@@ -28151,6 +28239,7 @@ signed + embedded C2PA manifest are best-effort no-ops when their extras/cert ar
 | [`ApplyStrategy`](_autosummary/foley.weave.html.md#foley.weave.ApplyStrategy)(\*args, \*\*kwargs)                | How ONE hydrated item's clip is placed onto its layer bus (report 10 §4.2).                                                        |
 | [`FakeAligner`](_autosummary/foley.weave.html.md#foley.weave.FakeAligner)()                                    | Deterministic, torch-free [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) — evenly spaces the transcript's words.         |
 | [`WhisperXAligner`](_autosummary/foley.weave.html.md#foley.weave.WhisperXAligner)(\*[, model_size, device, ...])   | The real ≈±50 ms [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) (`foley[align]`) — faster-whisper ASR + wav2vec2 CTC.    |
+| [`SegmentedAligner`](_autosummary/foley.weave.html.md#foley.weave.SegmentedAligner)(starts, segments, \*[, base])   | An [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) for narration whose segments start at known offsets.                   |
 | [`MFAAligner`](_autosummary/foley.weave.html.md#foley.weave.MFAAligner)(\*[, mfa, models, extra_args, ...])   | Montreal Forced Aligner (`mfa align_one`) behind the [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) seam.                |
 | [`AeneasAligner`](_autosummary/foley.weave.html.md#foley.weave.AeneasAligner)(\*[, python, languages, ...])      | aeneas (TTS + DTW) behind the [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) seam, one fragment per word.                |
 | [`MasterProfile`](_autosummary/foley.weave.html.md#foley.weave.MasterProfile)([target_lufs, true_peak_db, ...])  | Loudness master target — the delivery spec as data, not code (report 06 §5.2).                                                     |
@@ -28414,6 +28503,63 @@ the aligner that produced them (`"fake"`, `"whisperx"`, a class name), or
 * **Type:**
   Where the word timings came from
 
+### *class* foley.weave.SegmentedAligner(starts, segments, , base=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+An [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Aligner) for narration whose segments start at known offsets.
+
+Splits the transcript’s words by segment (each segment’s word count), aligns each
+piece with `base` against that segment’s slice of the audio, and adds the slice’s
+start to the timings. Segment `i` spans `starts[i]` to `starts[i + 1]`; the
+last runs to the end of the audio; a segment with no words is skipped. Words keep the
+transcript’s order, so anchors resolve exactly as with a whole-file aligner.
+
+`base` is called once per segment: [`WhisperXAligner`](_autosummary/foley.weave.html.md#foley.weave.WhisperXAligner) loads its models once
+and reuses them, but a subprocess aligner ([`MFAAligner`](_autosummary/foley.weave.html.md#foley.weave.MFAAligner),
+[`AeneasAligner`](_autosummary/foley.weave.html.md#foley.weave.AeneasAligner)) starts one process per segment.
+
+`base` must align the audio it is given: one that returns precomputed whole-file
+timings should be passed to `weave(aligner=)` directly, not wrapped.
+
+* **Parameters:**
+  * **starts** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`float`](https://docs.python.org/3/builtins/functions.html#float)]) – Each segment’s start, in seconds into the narration audio (one per
+    segment, non-decreasing).
+  * **segments** ([`Sequence`](https://docs.python.org/3/library/typing.html#typing.Sequence)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]) – The segments’ texts; only their word counts are used, to split the
+    transcript `word_timeline` receives.
+  * **base** ([`Optional`](https://docs.python.org/3/library/typing.html#typing.Optional)[[`Aligner`](_autosummary/foley.weave.protocols.html.md#foley.weave.protocols.Aligner)]) – The aligner run on each slice (default: WhisperX if installed, else the
+    fake, chosen at first use).
+
+#### *property* base *: [Aligner](_autosummary/foley.weave.protocols.html.md#foley.weave.protocols.Aligner)*
+
+The per-slice aligner (the injected one, else the zero-config default).
+
+#### *property* name *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+The base aligner’s name, so weave’s alignment notes describe the real timings.
+
+#### spans(duration, , sample_rate)
+
+Each segment’s `(start, end)` in audio of `duration` seconds (`ValueError`
+if a segment with words starts at or past the end, or spans no sample).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`float`](https://docs.python.org/3/builtins/functions.html#float), [`float`](https://docs.python.org/3/builtins/functions.html#float)]]
+
+#### split(transcript)
+
+`transcript`’s words, one list per segment (`ValueError` on a count mismatch).
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]
+
+#### word_timeline(audio, sample_rate, , transcript=None, language=None)
+
+Align each segment on its own slice of `audio`; timings in whole-file seconds.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)]
+
 ### *class* foley.weave.TreatmentPreset(name, highpass_hz, lowpass_hz, threshold_db, ratio, makeup_db=0.0, filter_order=4, detector_s=0.02, ceiling_db=-1.0)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -28516,6 +28662,8 @@ The real ≈±50 ms [`Aligner`](_autosummary/foley.weave.html.md#foley.weave.Ali
 
 Lazy-imports `whisperx` inside [`word_timeline()`](_autosummary/foley.weave.html.md#foley.weave.WhisperXAligner.word_timeline) so `import foley.weave`
 stays dol-only. Transcribes (if no transcript) then force-aligns at 16 kHz mono.
+The loaded models are kept on the instance (per model size, device and language),
+so aligning many clips, or a [`SegmentedAligner`](_autosummary/foley.weave.html.md#foley.weave.SegmentedAligner)’s segments, loads them once.
 
 * **Parameters:**
   * **model_size** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – faster-whisper model name (`tiny`/`base`/`small`/…).
@@ -29662,7 +29810,7 @@ Non-destructively mute/unmute an item — a NEW timeline.
 
 # About this build
 
-This documentation was built on **2026-11-02 06:30 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/21047875834698af64595dc1112b35119161a609"><code>2104787</code></a> on branch <code>main</code>, for **foley 0.0.125** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-02 06:34 UTC** from commit <a href="https://github.com/reeleehq/foley/commit/6229d46f3ebbee4d3cc9a64f87dbe8b3fd1a3be9"><code>6229d46</code></a> on branch <code>main</code>, for **foley 0.0.126** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -29671,7 +29819,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                       |
 |---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/reeleehq/foley/commit/21047875834698af64595dc1112b35119161a609"><code>21047875834698af64595dc1112b35119161a609</code></a> |
+| Commit              | <a href="https://github.com/reeleehq/foley/commit/6229d46f3ebbee4d3cc9a64f87dbe8b3fd1a3be9"><code>6229d46f3ebbee4d3cc9a64f87dbe8b3fd1a3be9</code></a> |
 | Branch              | <code>main</code>                                                                                                                                     |
 | Tags at this commit | none                                                                                                                                                  |
 | Working tree        | clean                                                                                                                                                 |
@@ -29682,9 +29830,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>reeleehq/foley</code>                                                                |
-| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41400054244">41400054244</a>       |
+| Run          | <a href="https://github.com/reeleehq/foley/actions/runs/41400507140">41400507140</a>       |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>21047875834698af64595dc1112b35119161a609</code> (in the history of the built commit) |
+| Event commit | <code>6229d46f3ebbee4d3cc9a64f87dbe8b3fd1a3be9</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -29709,13 +29857,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/foley/0.0.125/">0.0.125</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/foley/0.0.126/">0.0.126</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/reeleehq/foley && cd foley
-git checkout 21047875834698af64595dc1112b35119161a609
+git checkout 6229d46f3ebbee4d3cc9a64f87dbe8b3fd1a3be9
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

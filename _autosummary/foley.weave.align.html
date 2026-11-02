@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=31bb835f"></script>
+    <script src="../_static/documentation_options.js?v=06430935"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.125" />
+  <meta name="docsearch:version" content="0.0.126" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -521,6 +521,10 @@ fully reproducible — so hermetic CI (and any bare install) gets a usable
 </ul>
 <p>Montreal Forced Aligner and aeneas run as external programs
 (<a class="reference internal" href="foley.weave.cli_aligners.html#module-foley.weave.cli_aligners" title="foley.weave.cli_aligners"><code class="xref py py-mod docutils literal notranslate"><span class="pre">foley.weave.cli_aligners</span></code></a>); inject one with <code class="docutils literal notranslate"><span class="pre">aligner=</span></code>.</p>
+<p><a class="reference internal" href="#foley.weave.align.SegmentedAligner" title="foley.weave.align.SegmentedAligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">SegmentedAligner</span></code></a> wraps any of them for narration made of segments whose
+start offsets are known (one audio file per beat, concatenated): it aligns each
+segment’s words against that segment’s own slice of the audio and shifts the
+timings back, so even the fake spreads words over the right span.</p>
 <p><code class="docutils literal notranslate"><span class="pre">_default_aligner</span></code> auto-upgrades to WhisperX when <code class="docutils literal notranslate"><span class="pre">foley[align]</span></code> is installed,
 else falls back to the fake — the progressive-disclosure rule.</p>
 <p class="rubric">Module Attributes</p>
@@ -550,7 +554,10 @@ else falls back to the fake — the progressive-disclosure rule.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.align.FakeAligner" title="foley.weave.align.FakeAligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FakeAligner</span></code></a>()</p></td>
 <td><p>Deterministic, torch-free <code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code> — evenly spaces the transcript's words.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.align.WhisperXAligner" title="foley.weave.align.WhisperXAligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WhisperXAligner</span></code></a>(*[, model_size, device, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.weave.align.SegmentedAligner" title="foley.weave.align.SegmentedAligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SegmentedAligner</span></code></a>(starts, segments, *[, base])</p></td>
+<td><p>An <code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code> for narration whose segments start at known offsets.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.weave.align.WhisperXAligner" title="foley.weave.align.WhisperXAligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WhisperXAligner</span></code></a>(*[, model_size, device, ...])</p></td>
 <td><p>The real ≈±50 ms <code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code> (<code class="docutils literal notranslate"><span class="pre">foley[align]</span></code>) — faster-whisper ASR + wav2vec2 CTC.</p></td>
 </tr>
 </tbody>
@@ -569,6 +576,81 @@ per whitespace token, spread uniformly across the clip’s duration (or at
 <dt class="sig sig-object py" id="foley.weave.align.FakeAligner.word_timeline">
 <span class="sig-name descname"><span class="pre">word_timeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">transcript</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">language</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'en'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/align.html#FakeAligner.word_timeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.align.FakeAligner.word_timeline" title="Link to this definition">#</a></dt>
 <dd><p>Return an evenly-spaced word timeline for <code class="docutils literal notranslate"><span class="pre">transcript</span></code> over <code class="docutils literal notranslate"><span class="pre">audio</span></code>’s duration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="foley.weave.align.SegmentedAligner">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">foley.weave.align.</span></span><span class="sig-name descname"><span class="pre">SegmentedAligner</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">starts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">segments</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/align.html#SegmentedAligner"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.align.SegmentedAligner" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>An <code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code> for narration whose segments start at known offsets.</p>
+<p>Splits the transcript’s words by segment (each segment’s word count), aligns each
+piece with <code class="docutils literal notranslate"><span class="pre">base</span></code> against that segment’s slice of the audio, and adds the slice’s
+start to the timings. Segment <code class="docutils literal notranslate"><span class="pre">i</span></code> spans <code class="docutils literal notranslate"><span class="pre">starts[i]</span></code> to <code class="docutils literal notranslate"><span class="pre">starts[i</span> <span class="pre">+</span> <span class="pre">1]</span></code>; the
+last runs to the end of the audio; a segment with no words is skipped. Words keep the
+transcript’s order, so anchors resolve exactly as with a whole-file aligner.</p>
+<p><code class="docutils literal notranslate"><span class="pre">base</span></code> is called once per segment: <a class="reference internal" href="#foley.weave.align.WhisperXAligner" title="foley.weave.align.WhisperXAligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">WhisperXAligner</span></code></a> loads its models once
+and reuses them, but a subprocess aligner (<a class="reference internal" href="foley.weave.html#foley.weave.MFAAligner" title="foley.weave.MFAAligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">MFAAligner</span></code></a>,
+<a class="reference internal" href="foley.weave.html#foley.weave.AeneasAligner" title="foley.weave.AeneasAligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">AeneasAligner</span></code></a>) starts one process per segment.</p>
+<p><code class="docutils literal notranslate"><span class="pre">base</span></code> must align the audio it is given: one that returns precomputed whole-file
+timings should be passed to <code class="docutils literal notranslate"><span class="pre">weave(aligner=)</span></code> directly, not wrapped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>starts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]</span>) – Each segment’s start, in seconds into the narration audio (one per
+segment, non-decreasing).</p></li>
+<li><p><strong>segments</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span>) – The segments’ texts; only their word counts are used, to split the
+transcript <code class="docutils literal notranslate"><span class="pre">word_timeline</span></code> receives.</p></li>
+<li><p><strong>base</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="foley.weave.protocols.html#foley.weave.protocols.Aligner" title="foley.weave.protocols.Aligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code></a>]</span>) – The aligner run on each slice (default: WhisperX if installed, else the
+fake, chosen at first use).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="foley.weave.align.SegmentedAligner.base">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">base</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="foley.weave.protocols.html#foley.weave.protocols.Aligner" title="foley.weave.protocols.Aligner"><span class="pre">Aligner</span></a></span><a class="headerlink" href="#foley.weave.align.SegmentedAligner.base" title="Link to this definition">#</a></dt>
+<dd><p>The per-slice aligner (the injected one, else the zero-config default).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="foley.weave.align.SegmentedAligner.name">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a></span><a class="headerlink" href="#foley.weave.align.SegmentedAligner.name" title="Link to this definition">#</a></dt>
+<dd><p>The base aligner’s name, so weave’s alignment notes describe the real timings.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.weave.align.SegmentedAligner.spans">
+<span class="sig-name descname"><span class="pre">spans</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">duration</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/align.html#SegmentedAligner.spans"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.align.SegmentedAligner.spans" title="Link to this definition">#</a></dt>
+<dd><p>Each segment’s <code class="docutils literal notranslate"><span class="pre">(start,</span> <span class="pre">end)</span></code> in audio of <code class="docutils literal notranslate"><span class="pre">duration</span></code> seconds (<code class="docutils literal notranslate"><span class="pre">ValueError</span></code>
+if a segment with words starts at or past the end, or spans no sample).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.weave.align.SegmentedAligner.split">
+<span class="sig-name descname"><span class="pre">split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transcript</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/align.html#SegmentedAligner.split"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.align.SegmentedAligner.split" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">transcript</span></code>’s words, one list per segment (<code class="docutils literal notranslate"><span class="pre">ValueError</span></code> on a count mismatch).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="foley.weave.align.SegmentedAligner.word_timeline">
+<span class="sig-name descname"><span class="pre">word_timeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">transcript</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">language</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/weave/align.html#SegmentedAligner.word_timeline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.weave.align.SegmentedAligner.word_timeline" title="Link to this definition">#</a></dt>
+<dd><p>Align each segment on its own slice of <code class="docutils literal notranslate"><span class="pre">audio</span></code>; timings in whole-file seconds.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
@@ -598,7 +680,9 @@ audio duration so its timings are audio-length-aware.</p>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>The real ≈±50 ms <code class="xref py py-class docutils literal notranslate"><span class="pre">Aligner</span></code> (<code class="docutils literal notranslate"><span class="pre">foley[align]</span></code>) — faster-whisper ASR + wav2vec2 CTC.</p>
 <p>Lazy-imports <code class="docutils literal notranslate"><span class="pre">whisperx</span></code> inside <a class="reference internal" href="#foley.weave.align.WhisperXAligner.word_timeline" title="foley.weave.align.WhisperXAligner.word_timeline"><code class="xref py py-meth docutils literal notranslate"><span class="pre">word_timeline()</span></code></a> so <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">foley.weave</span></code>
-stays dol-only. Transcribes (if no transcript) then force-aligns at 16 kHz mono.</p>
+stays dol-only. Transcribes (if no transcript) then force-aligns at 16 kHz mono.
+The loaded models are kept on the instance (per model size, device and language),
+so aligning many clips, or a <a class="reference internal" href="#foley.weave.align.SegmentedAligner" title="foley.weave.align.SegmentedAligner"><code class="xref py py-class docutils literal notranslate"><span class="pre">SegmentedAligner</span></code></a>’s segments, loads them once.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -683,6 +767,14 @@ stays dol-only. Transcribes (if no transcript) then force-aligns at 16 kHz mono.
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.align.FakeAligner"><code class="docutils literal notranslate"><span class="pre">FakeAligner</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.align.FakeAligner.word_timeline"><code class="docutils literal notranslate"><span class="pre">FakeAligner.word_timeline()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.align.SegmentedAligner"><code class="docutils literal notranslate"><span class="pre">SegmentedAligner</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.align.SegmentedAligner.base"><code class="docutils literal notranslate"><span class="pre">SegmentedAligner.base</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.align.SegmentedAligner.name"><code class="docutils literal notranslate"><span class="pre">SegmentedAligner.name</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.align.SegmentedAligner.spans"><code class="docutils literal notranslate"><span class="pre">SegmentedAligner.spans()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.align.SegmentedAligner.split"><code class="docutils literal notranslate"><span class="pre">SegmentedAligner.split()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.align.SegmentedAligner.word_timeline"><code class="docutils literal notranslate"><span class="pre">SegmentedAligner.word_timeline()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.weave.align.WHISPERX_SAMPLE_RATE"><code class="docutils literal notranslate"><span class="pre">WHISPERX_SAMPLE_RATE</span></code></a></li>

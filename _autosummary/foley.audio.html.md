@@ -45,6 +45,7 @@ a file-like object).
 
 | [`container_of`](#foley.audio.container_of)(data)                                | The `(format, subtype)` of encoded `data`, as lowercase / libsndfile names.                                                 |
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| [`duration_s`](#foley.audio.duration_s)(src)                                   | `src`'s duration in seconds, read from its header (nothing is decoded).                                                     |
 | [`encode`](#foley.audio.encode)(samples, sample_rate, \*[, fmt, subtype])  | Encode `samples` fully in memory and return the container bytes.                                                            |
 | [`ensure_channels`](#foley.audio.ensure_channels)(samples, \*, channels)            | Coerce `samples` to exactly `channels` channels.                                                                            |
 | [`export_subtype`](#foley.audio.export_subtype)(fmt, src_subtype)                  | The PCM subtype an export as `fmt` uses for `src_subtype` samples.                                                          |
@@ -121,6 +122,18 @@ Lazy dependency: `soundfile`.
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
+### foley.audio.duration_s(src)
+
+`src`’s duration in seconds, read from its header (nothing is decoded).
+
+`src` is a path or raw encoded `bytes` (a file-like object would be left
+moved, so decode it with [`load()`](#foley.audio.load) instead).
+
+Lazy dependency: `soundfile`.
+
+* **Return type:**
+  [`float`](https://docs.python.org/3/builtins/functions.html#float)
 
 ### foley.audio.encode(samples, sample_rate, , fmt='flac', subtype='PCM_24')
 

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=31bb835f"></script>
+    <script src="../_static/documentation_options.js?v=06430935"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.125" />
+  <meta name="docsearch:version" content="0.0.126" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -568,58 +568,61 @@ a file-like object).</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.container_of" title="foley.audio.container_of"><code class="xref py py-obj docutils literal notranslate"><span class="pre">container_of</span></code></a>(data)</p></td>
 <td><p>The <code class="docutils literal notranslate"><span class="pre">(format,</span> <span class="pre">subtype)</span></code> of encoded <code class="docutils literal notranslate"><span class="pre">data</span></code>, as lowercase / libsndfile names.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.encode" title="foley.audio.encode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encode</span></code></a>(samples, sample_rate, *[, fmt, subtype])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.duration_s" title="foley.audio.duration_s"><code class="xref py py-obj docutils literal notranslate"><span class="pre">duration_s</span></code></a>(src)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">src</span></code>'s duration in seconds, read from its header (nothing is decoded).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.encode" title="foley.audio.encode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encode</span></code></a>(samples, sample_rate, *[, fmt, subtype])</p></td>
 <td><p>Encode <code class="docutils literal notranslate"><span class="pre">samples</span></code> fully in memory and return the container bytes.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.ensure_channels" title="foley.audio.ensure_channels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ensure_channels</span></code></a>(samples, *, channels)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.ensure_channels" title="foley.audio.ensure_channels"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ensure_channels</span></code></a>(samples, *, channels)</p></td>
 <td><p>Coerce <code class="docutils literal notranslate"><span class="pre">samples</span></code> to exactly <code class="docutils literal notranslate"><span class="pre">channels</span></code> channels.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.export_subtype" title="foley.audio.export_subtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_subtype</span></code></a>(fmt, src_subtype)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.export_subtype" title="foley.audio.export_subtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">export_subtype</span></code></a>(fmt, src_subtype)</p></td>
 <td><p>The PCM subtype an export as <code class="docutils literal notranslate"><span class="pre">fmt</span></code> uses for <code class="docutils literal notranslate"><span class="pre">src_subtype</span></code> samples.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.fade" title="foley.audio.fade"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fade</span></code></a>(samples, sample_rate, *[, fade_in_s, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.fade" title="foley.audio.fade"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fade</span></code></a>(samples, sample_rate, *[, fade_in_s, ...])</p></td>
 <td><p>Apply in/out gain ramps to <code class="docutils literal notranslate"><span class="pre">samples</span></code> (a short declick by default).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.integrated_lufs" title="foley.audio.integrated_lufs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">integrated_lufs</span></code></a>(samples, sample_rate, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.integrated_lufs" title="foley.audio.integrated_lufs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">integrated_lufs</span></code></a>(samples, sample_rate, *[, ...])</p></td>
 <td><p>Integrated loudness (LUFS, BS.1770-4) of <code class="docutils literal notranslate"><span class="pre">samples</span></code>; <code class="docutils literal notranslate"><span class="pre">-inf</span></code> when too short to gate.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.is_lossless_conversion" title="foley.audio.is_lossless_conversion"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_lossless_conversion</span></code></a>(src_subtype, dst_subtype)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.is_lossless_conversion" title="foley.audio.is_lossless_conversion"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_lossless_conversion</span></code></a>(src_subtype, dst_subtype)</p></td>
 <td><p>Whether re-encoding <code class="docutils literal notranslate"><span class="pre">src_subtype</span></code> samples as <code class="docutils literal notranslate"><span class="pre">dst_subtype</span></code> keeps them exactly.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.limit_true_peak" title="foley.audio.limit_true_peak"><code class="xref py py-obj docutils literal notranslate"><span class="pre">limit_true_peak</span></code></a>(samples, sample_rate, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.limit_true_peak" title="foley.audio.limit_true_peak"><code class="xref py py-obj docutils literal notranslate"><span class="pre">limit_true_peak</span></code></a>(samples, sample_rate, *[, ...])</p></td>
 <td><p>Attenuate <code class="docutils literal notranslate"><span class="pre">samples</span></code> so their inter-sample true peak sits at or below <code class="docutils literal notranslate"><span class="pre">ceiling_dbtp</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.load" title="foley.audio.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(src, *[, target_sr, mono, dtype])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.load" title="foley.audio.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(src, *[, target_sr, mono, dtype])</p></td>
 <td><p>Decode audio into a float working array.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.loudness_component" title="foley.audio.loudness_component"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loudness_component</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.loudness_component" title="foley.audio.loudness_component"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loudness_component</span></code></a>()</p></td>
 <td><p>The shared loudness component, <code class="xref py py-mod docutils literal notranslate"><span class="pre">mixing.loudness</span></code> (foley#91).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.loudness_gain_db" title="foley.audio.loudness_gain_db"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loudness_gain_db</span></code></a>(samples, sample_rate, *, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.loudness_gain_db" title="foley.audio.loudness_gain_db"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loudness_gain_db</span></code></a>(samples, sample_rate, *, ...)</p></td>
 <td><p>The one loudness-gain rule: <code class="docutils literal notranslate"><span class="pre">(gain_db,</span> <span class="pre">measured_lufs)</span></code> to bring a clip to a target.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.loudness_normalize" title="foley.audio.loudness_normalize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loudness_normalize</span></code></a>(samples, sample_rate, *)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.loudness_normalize" title="foley.audio.loudness_normalize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">loudness_normalize</span></code></a>(samples, sample_rate, *)</p></td>
 <td><p>Loudness-normalize to <code class="docutils literal notranslate"><span class="pre">target_lufs</span></code>, then keep it peak-safe.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.resample" title="foley.audio.resample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resample</span></code></a>(samples, sample_rate, *[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.resample" title="foley.audio.resample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resample</span></code></a>(samples, sample_rate, *[, ...])</p></td>
 <td><p>Resample <code class="docutils literal notranslate"><span class="pre">samples</span></code> to <code class="docutils literal notranslate"><span class="pre">target_sr</span></code> (a no-op when already there).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.resolve_meter" title="foley.audio.resolve_meter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_meter</span></code></a>([meter])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.resolve_meter" title="foley.audio.resolve_meter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resolve_meter</span></code></a>([meter])</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">meter</span></code>, or <a class="reference internal" href="#foley.audio.DEFAULT_METER" title="foley.audio.DEFAULT_METER"><code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_METER</span></code></a> for <code class="docutils literal notranslate"><span class="pre">None</span></code>; an unknown name raises <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.save" title="foley.audio.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>(samples, sample_rate, dst, *[, fmt, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.save" title="foley.audio.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>(samples, sample_rate, dst, *[, fmt, ...])</p></td>
 <td><p>Write <code class="docutils literal notranslate"><span class="pre">samples</span></code> to <code class="docutils literal notranslate"><span class="pre">dst</span></code> as <code class="docutils literal notranslate"><span class="pre">fmt</span></code>/<code class="docutils literal notranslate"><span class="pre">subtype</span></code> (default = FLAC archive).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.to_mono" title="foley.audio.to_mono"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_mono</span></code></a>(samples)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.to_mono" title="foley.audio.to_mono"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_mono</span></code></a>(samples)</p></td>
 <td><p>Down-mix to mono by averaging channels; 1-D input passes through.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.to_working" title="foley.audio.to_working"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_working</span></code></a>(samples, sample_rate, *[, mono, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.to_working" title="foley.audio.to_working"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_working</span></code></a>(samples, sample_rate, *[, mono, ...])</p></td>
 <td><p>Produce the canonical CLAP/QC working array from an arbitrary clip.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.transcode" title="foley.audio.transcode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transcode</span></code></a>(data, *, fmt[, subtype, dtype])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.transcode" title="foley.audio.transcode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transcode</span></code></a>(data, *, fmt[, subtype, dtype])</p></td>
 <td><p>Re-encode <code class="docutils literal notranslate"><span class="pre">data</span></code> as <code class="docutils literal notranslate"><span class="pre">fmt</span></code> with <code class="docutils literal notranslate"><span class="pre">subtype</span></code> (default: <a class="reference internal" href="#foley.audio.export_subtype" title="foley.audio.export_subtype"><code class="xref py py-func docutils literal notranslate"><span class="pre">export_subtype()</span></code></a>).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#foley.audio.trim_silence" title="foley.audio.trim_silence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trim_silence</span></code></a>(samples, sample_rate, *[, top_db])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#foley.audio.trim_silence" title="foley.audio.trim_silence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trim_silence</span></code></a>(samples, sample_rate, *[, top_db])</p></td>
 <td><p>Strip leading/trailing silence, returning the clip and its kept span.</p></td>
 </tr>
 </tbody>
@@ -702,6 +705,20 @@ decode/encode round trip sample-exact (FLAC archive -&gt; WAV export keeps the s
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="foley.audio.duration_s">
+<span class="sig-prename descclassname"><span class="pre">foley.audio.</span></span><span class="sig-name descname"><span class="pre">duration_s</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/foley/audio.html#duration_s"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#foley.audio.duration_s" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">src</span></code>’s duration in seconds, read from its header (nothing is decoded).</p>
+<p><code class="docutils literal notranslate"><span class="pre">src</span></code> is a path or raw encoded <code class="docutils literal notranslate"><span class="pre">bytes</span></code> (a file-like object would be left
+moved, so decode it with <a class="reference internal" href="#foley.audio.load" title="foley.audio.load"><code class="xref py py-func docutils literal notranslate"><span class="pre">load()</span></code></a> instead).</p>
+<p>Lazy dependency: <code class="docutils literal notranslate"><span class="pre">soundfile</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1176,6 +1193,7 @@ full-length span <code class="docutils literal notranslate"><span class="pre">(0
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.audio.PCM_BITS"><code class="docutils literal notranslate"><span class="pre">PCM_BITS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.audio.TRANSCODE_DTYPE"><code class="docutils literal notranslate"><span class="pre">TRANSCODE_DTYPE</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.audio.container_of"><code class="docutils literal notranslate"><span class="pre">container_of()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.audio.duration_s"><code class="docutils literal notranslate"><span class="pre">duration_s()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.audio.encode"><code class="docutils literal notranslate"><span class="pre">encode()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.audio.ensure_channels"><code class="docutils literal notranslate"><span class="pre">ensure_channels()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#foley.audio.export_subtype"><code class="docutils literal notranslate"><span class="pre">export_subtype()</span></code></a></li>

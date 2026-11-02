@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=31bb835f"></script>
+    <script src="../../../_static/documentation_options.js?v=06430935"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.125" />
+  <meta name="docsearch:version" content="0.0.126" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -736,13 +736,20 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">Montreal Forced Aligner and aeneas run as external programs</span>
 <span class="sd">(:mod:`foley.weave.cli_aligners`); inject one with ``aligner=``.</span>
 
+<span class="sd">:class:`SegmentedAligner` wraps any of them for narration made of segments whose</span>
+<span class="sd">start offsets are known (one audio file per beat, concatenated): it aligns each</span>
+<span class="sd">segment's words against that segment's own slice of the audio and shifts the</span>
+<span class="sd">timings back, so even the fake spreads words over the right span.</span>
+
 <span class="sd">``_default_aligner`` auto-upgrades to WhisperX when ``foley[align]`` is installed,</span>
 <span class="sd">else falls back to the fake — the progressive-disclosure rule.</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Optional</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached_property</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..audio</span><span class="w"> </span><span class="kn">import</span> <span class="n">resample</span><span class="p">,</span> <span class="n">to_mono</span>
 
@@ -831,6 +838,8 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    Lazy-imports ``whisperx`` inside :meth:`word_timeline` so ``import foley.weave``</span>
 <span class="sd">    stays dol-only. Transcribes (if no transcript) then force-aligns at 16 kHz mono.</span>
+<span class="sd">    The loaded models are kept on the instance (per model size, device and language),</span>
+<span class="sd">    so aligning many clips, or a :class:`SegmentedAligner`'s segments, loads them once.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        model_size: faster-whisper model name (``tiny``/``base``/``small``/…).</span>
@@ -846,6 +855,29 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">model_size</span> <span class="o">=</span> <span class="n">model_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_models</span><span class="p">:</span> <span class="s2">"dict[tuple, tuple]"</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_loaded</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">whisperx</span><span class="p">,</span> <span class="n">language</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``(asr_model, align_model, align_meta)`` for ``language``, loaded on first use."""</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> <span class="n">language</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_models</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">no_download</span>
+
+            <span class="k">with</span> <span class="n">no_download</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"the whisperX models (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_size</span><span class="si">!r}</span><span class="s2">, </span><span class="si">{</span><span class="n">language</span><span class="si">!r}</span><span class="s2"> alignment)"</span><span class="p">,</span>
+                <span class="n">how_to_fetch</span><span class="o">=</span><span class="s2">"align one clip with foley.weave once while online."</span><span class="p">,</span>
+            <span class="p">):</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">whisperx</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">model_size</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+                    <span class="n">language</span><span class="o">=</span><span class="n">language</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">_offline_kwargs</span><span class="p">(</span><span class="n">whisperx</span><span class="p">),</span>
+                <span class="p">)</span>
+                <span class="n">align_model</span><span class="p">,</span> <span class="n">meta</span> <span class="o">=</span> <span class="n">whisperx</span><span class="o">.</span><span class="n">load_align_model</span><span class="p">(</span>
+                    <span class="n">language_code</span><span class="o">=</span><span class="n">language</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_models</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">align_model</span><span class="p">,</span> <span class="n">meta</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_models</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
 <div class="viewcode-block" id="WhisperXAligner.word_timeline">
 <a class="viewcode-back" href="../../../_autosummary/foley.weave.align.html#foley.weave.WhisperXAligner.word_timeline">[docs]</a>
@@ -863,21 +895,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">audio16</span> <span class="o">=</span> <span class="n">resample</span><span class="p">(</span>
             <span class="n">to_mono</span><span class="p">(</span><span class="n">audio</span><span class="p">),</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">target_sr</span><span class="o">=</span><span class="n">WHISPERX_SAMPLE_RATE</span>
         <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"float32"</span><span class="p">)</span>
-        <span class="kn">from</span><span class="w"> </span><span class="nn">..runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">no_download</span>
-
-        <span class="k">with</span> <span class="n">no_download</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"the whisperX models (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_size</span><span class="si">!r}</span><span class="s2">, </span><span class="si">{</span><span class="n">language</span><span class="si">!r}</span><span class="s2"> alignment)"</span><span class="p">,</span>
-            <span class="n">how_to_fetch</span><span class="o">=</span><span class="s2">"align one clip with foley.weave once while online."</span><span class="p">,</span>
-        <span class="p">):</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="n">whisperx</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model_size</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
-                <span class="n">language</span><span class="o">=</span><span class="n">language</span><span class="p">,</span>
-                <span class="o">**</span><span class="n">_offline_kwargs</span><span class="p">(</span><span class="n">whisperx</span><span class="p">),</span>
-            <span class="p">)</span>
-            <span class="n">align_model</span><span class="p">,</span> <span class="n">meta</span> <span class="o">=</span> <span class="n">whisperx</span><span class="o">.</span><span class="n">load_align_model</span><span class="p">(</span>
-                <span class="n">language_code</span><span class="o">=</span><span class="n">language</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span>
-            <span class="p">)</span>
+        <span class="n">model</span><span class="p">,</span> <span class="n">align_model</span><span class="p">,</span> <span class="n">meta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loaded</span><span class="p">(</span><span class="n">whisperx</span><span class="p">,</span> <span class="n">language</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">transcribe</span><span class="p">(</span><span class="n">audio16</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
         <span class="n">aligned</span> <span class="o">=</span> <span class="n">whisperx</span><span class="o">.</span><span class="n">align</span><span class="p">(</span>
             <span class="n">result</span><span class="p">[</span><span class="s2">"segments"</span><span class="p">],</span> <span class="n">align_model</span><span class="p">,</span> <span class="n">meta</span><span class="p">,</span> <span class="n">audio16</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">device</span>
@@ -914,6 +932,180 @@ window.runMermaid = runMermaid;</script>
 <span class="k">def</span><span class="w"> </span><span class="nf">_default_aligner</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">"Aligner"</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The zero-config aligner: :class:`WhisperXAligner` when installed, else the fake."""</span>
     <span class="k">return</span> <span class="n">WhisperXAligner</span><span class="p">()</span> <span class="k">if</span> <span class="n">_whisperx_available</span><span class="p">()</span> <span class="k">else</span> <span class="n">FakeAligner</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_segment_starts</span><span class="p">(</span>
+    <span class="n">starts</span><span class="p">:</span> <span class="s2">"Sequence[float]"</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">n_segments</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"tuple[float, ...]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``starts`` as floats, checked: one per segment, finite, ``&gt;= 0``, non-decreasing.</span>
+
+<span class="sd">    &gt;&gt;&gt; _validate_segment_starts([0, 2.5, 7], n_segments=3)</span>
+<span class="sd">    (0.0, 2.5, 7.0)</span>
+<span class="sd">    &gt;&gt;&gt; _validate_segment_starts([0, 3, 2], n_segments=3)</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    ValueError: segment_starts must be non-decreasing: segment 2 starts at 2.0s, before segment 1 (3.0s)</span>
+<span class="sd">    """</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">starts</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n_segments</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"segment_starts has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="si">}</span><span class="s2"> value(s) for </span><span class="si">{</span><span class="n">n_segments</span><span class="si">}</span><span class="s2"> segment(s): "</span>
+            <span class="s2">"give one start (seconds into the narration audio) per segment"</span>
+        <span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">out</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">math</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">or</span> <span class="n">s</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"segment_starts[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">] = </span><span class="si">{</span><span class="n">s</span><span class="si">!r}</span><span class="s2">: must be finite and &gt;= 0"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="ow">and</span> <span class="n">s</span> <span class="o">&lt;</span> <span class="n">out</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"segment_starts must be non-decreasing: segment </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> starts at </span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">s, "</span>
+                <span class="sa">f</span><span class="s2">"before segment </span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">s)"</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_segment_spans</span><span class="p">(</span>
+    <span class="n">starts</span><span class="p">:</span> <span class="s2">"Sequence[float]"</span><span class="p">,</span>
+    <span class="n">word_counts</span><span class="p">:</span> <span class="s2">"Sequence[int]"</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[tuple[float, float]]"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Each segment's ``(start, end)``, clipped to the audio; checked for worded segments.</span>
+
+<span class="sd">    A segment ends where the next starts, the last at ``duration``. A segment with words</span>
+<span class="sd">    must start before the audio's end and span at least one sample at ``sample_rate``</span>
+<span class="sd">    (what its slice will hold); an empty one may lie anywhere.</span>
+
+<span class="sd">    &gt;&gt;&gt; _segment_spans([0, 4, 12], [3, 2, 0], duration=10, sample_rate=1000)</span>
+<span class="sd">    [(0, 4), (4, 10), (12, 10)]</span>
+<span class="sd">    """</span>
+    <span class="n">spans</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">duration</span><span class="p">))</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">starts</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">starts</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">duration</span><span class="p">])]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">((</span><span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">),</span> <span class="n">n</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">spans</span><span class="p">,</span> <span class="n">word_counts</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="ow">and</span> <span class="n">s</span> <span class="o">&gt;=</span> <span class="n">duration</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"segment </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> starts at </span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">s, at or past the end of the narration "</span>
+                <span class="sa">f</span><span class="s2">"audio (</span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s)"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="ow">and</span> <span class="nb">round</span><span class="p">(</span><span class="n">e</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="nb">round</span><span class="p">(</span><span class="n">s</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"segment </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2"> has </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2"> word(s) but no audio: it starts at </span><span class="si">{</span><span class="n">s</span><span class="si">}</span><span class="s2">s and "</span>
+                <span class="sa">f</span><span class="s2">"the next segment at </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">s"</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="n">spans</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_shifted</span><span class="p">(</span><span class="n">word</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``word`` with its ``start``/``end`` moved ``offset`` seconds later."""</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="o">**</span><span class="n">word</span><span class="p">,</span>
+        <span class="s2">"start"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="s2">"start"</span><span class="p">])</span> <span class="o">+</span> <span class="n">offset</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+        <span class="s2">"end"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">word</span><span class="p">[</span><span class="s2">"end"</span><span class="p">])</span> <span class="o">+</span> <span class="n">offset</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+    <span class="p">}</span>
+
+
+<div class="viewcode-block" id="SegmentedAligner">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.align.html#foley.weave.SegmentedAligner">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SegmentedAligner</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""An :class:`Aligner` for narration whose segments start at known offsets.</span>
+
+<span class="sd">    Splits the transcript's words by segment (each segment's word count), aligns each</span>
+<span class="sd">    piece with ``base`` against that segment's slice of the audio, and adds the slice's</span>
+<span class="sd">    start to the timings. Segment ``i`` spans ``starts[i]`` to ``starts[i + 1]``; the</span>
+<span class="sd">    last runs to the end of the audio; a segment with no words is skipped. Words keep the</span>
+<span class="sd">    transcript's order, so anchors resolve exactly as with a whole-file aligner.</span>
+
+<span class="sd">    ``base`` is called once per segment: :class:`WhisperXAligner` loads its models once</span>
+<span class="sd">    and reuses them, but a subprocess aligner (:class:`~foley.weave.MFAAligner`,</span>
+<span class="sd">    :class:`~foley.weave.AeneasAligner`) starts one process per segment.</span>
+
+<span class="sd">    ``base`` must align the audio it is given: one that returns precomputed whole-file</span>
+<span class="sd">    timings should be passed to ``weave(aligner=)`` directly, not wrapped.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        starts: Each segment's start, in seconds into the narration audio (one per</span>
+<span class="sd">            segment, non-decreasing).</span>
+<span class="sd">        segments: The segments' texts; only their word counts are used, to split the</span>
+<span class="sd">            transcript ``word_timeline`` receives.</span>
+<span class="sd">        base: The aligner run on each slice (default: WhisperX if installed, else the</span>
+<span class="sd">            fake, chosen at first use).</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">starts</span><span class="p">:</span> <span class="s2">"Sequence[float]"</span><span class="p">,</span>
+        <span class="n">segments</span><span class="p">:</span> <span class="s2">"Sequence[str]"</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">base</span><span class="p">:</span> <span class="s2">"Optional[Aligner]"</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">word_counts</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">segments</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">starts</span> <span class="o">=</span> <span class="n">_validate_segment_starts</span><span class="p">(</span><span class="n">starts</span><span class="p">,</span> <span class="n">n_segments</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">word_counts</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_base</span> <span class="o">=</span> <span class="n">base</span>
+
+    <span class="nd">@cached_property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">base</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Aligner"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The per-slice aligner (the injected one, else the zero-config default)."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_default_aligner</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The base aligner's name, so weave's alignment notes describe the real timings."""</span>
+        <span class="k">return</span> <span class="n">aligner_name</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SegmentedAligner.split">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.align.html#foley.weave.SegmentedAligner.split">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">split</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transcript</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">"list[list[str]]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``transcript``'s words, one list per segment (``ValueError`` on a count mismatch)."""</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="p">(</span><span class="n">transcript</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">word_counts</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"the transcript has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span><span class="si">}</span><span class="s2"> word(s) but the segments have "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">word_counts</span><span class="p">)</span><span class="si">}</span><span class="s2">: segment_starts needs a transcript that is "</span>
+                <span class="s2">"the segments' words, in order"</span>
+            <span class="p">)</span>
+        <span class="n">ends</span> <span class="o">=</span> <span class="p">[</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">word_counts</span><span class="p">[:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">word_counts</span><span class="p">))]</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">words</span><span class="p">[</span><span class="n">a</span><span class="p">:</span><span class="n">b</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="o">*</span><span class="n">ends</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">ends</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="SegmentedAligner.spans">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.align.html#foley.weave.SegmentedAligner.spans">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">spans</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[tuple[float, float]]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Each segment's ``(start, end)`` in audio of ``duration`` seconds (``ValueError``</span>
+<span class="sd">        if a segment with words starts at or past the end, or spans no sample)."""</span>
+        <span class="k">return</span> <span class="n">_segment_spans</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">starts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">word_counts</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="n">duration</span><span class="p">,</span> <span class="n">sample_rate</span><span class="o">=</span><span class="n">sample_rate</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SegmentedAligner.word_timeline">
+<a class="viewcode-back" href="../../../_autosummary/foley.weave.align.html#foley.weave.SegmentedAligner.word_timeline">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">word_timeline</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">audio</span><span class="p">:</span> <span class="s2">"ndarray"</span><span class="p">,</span>
+        <span class="n">sample_rate</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">transcript</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">language</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"list[dict]"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Align each segment on its own slice of ``audio``; timings in whole-file seconds."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">transcript</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="n">pieces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">transcript</span><span class="p">)</span>
+        <span class="n">duration</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">audio</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="n">sample_rate</span>
+        <span class="n">lang</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">language</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="s2">"language"</span><span class="p">:</span> <span class="n">language</span><span class="p">}</span>
+        <span class="n">out</span><span class="p">:</span> <span class="s2">"list[dict]"</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">piece</span><span class="p">,</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pieces</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">spans</span><span class="p">(</span><span class="n">duration</span><span class="p">,</span> <span class="n">sample_rate</span><span class="o">=</span><span class="n">sample_rate</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">piece</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">lo</span><span class="p">,</span> <span class="n">hi</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">s</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">),</span> <span class="nb">round</span><span class="p">(</span><span class="n">e</span> <span class="o">*</span> <span class="n">sample_rate</span><span class="p">)</span>
+            <span class="n">timed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">word_timeline</span><span class="p">(</span>
+                <span class="n">audio</span><span class="p">[</span><span class="n">lo</span><span class="p">:</span><span class="n">hi</span><span class="p">],</span> <span class="n">sample_rate</span><span class="p">,</span> <span class="n">transcript</span><span class="o">=</span><span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">piece</span><span class="p">),</span> <span class="o">**</span><span class="n">lang</span>
+            <span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">_shifted</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">lo</span> <span class="o">/</span> <span class="n">sample_rate</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">timed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+</div>
+
 </pre></div>
 
                 </article>
