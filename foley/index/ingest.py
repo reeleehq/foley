@@ -273,7 +273,6 @@ def content_id(src: "AudioSource") -> str:
     return _audio_identity(_probe(src).wav)
 
 
-
 #: The note on every clip ingested without a licence (#55).
 _UNKNOWN_LOCAL_NOTE = (
     "rights unknown (no license given): indexed for local search only; foley.keep() "

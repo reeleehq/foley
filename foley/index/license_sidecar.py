@@ -123,11 +123,15 @@ def read_sidecar(sidecar) -> dict:
     except SidecarError:
         raise
     except (OSError, ValueError) as exc:  # unreadable, not UTF-8, bad TOML/JSON
-        raise SidecarError(f"{sidecar}: cannot read it as {sidecar.suffix[1:]}: {exc}") from exc
+        raise SidecarError(
+            f"{sidecar}: cannot read it as {sidecar.suffix[1:]}: {exc}"
+        ) from exc
     if not isinstance(data, dict):
         raise SidecarError(f"{sidecar}: expected a table of keys")
     unknown = sorted(set(data) - set(SIDECAR_FIELDS))
-    wrong = [k for k, t in SIDECAR_FIELDS.items() if k in data and type(data[k]) is not t]
+    wrong = [
+        k for k, t in SIDECAR_FIELDS.items() if k in data and type(data[k]) is not t
+    ]
     if unknown or wrong:
         raise SidecarError(
             f"{sidecar}: unknown keys {unknown} / wrong types {wrong}; "
