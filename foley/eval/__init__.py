@@ -9,8 +9,9 @@ downloads — so the gate runs on every index/embedder/prompt PR in foley's CI.
 
 Tier-2 fit-judging (#10b) — "does this clip match the intent?" — lives alongside
 in :mod:`~foley.eval.fit` (the judge-based fit harness), :mod:`~foley.eval.reliability`
-(Krippendorff's α + judge-vs-human calibration), and :mod:`~foley.eval.fidelity`
-(set-level FAD/KAD generation fidelity). Tier-2 is nightly/pre-release + cost-gated —
+(Krippendorff's α + judge-vs-human calibration), :mod:`~foley.eval.fidelity`
+(set-level FAD/KAD generation fidelity) and :mod:`~foley.eval.aesthetics` (per-clip
+Audiobox Aesthetics scores). Tier-2 is nightly/pre-release + cost-gated —
 NOT a per-PR gate — and never touches the retrieval ranking. The tasteful-weave eval (#45),
 :mod:`~foley.eval.taste`, reports the restraint / licence / placement / loudness of a whole
 sound design over a passage set, with a pluggable ``designer`` (``foley.score`` by
@@ -30,6 +31,7 @@ from .baseline import (
 )
 from . import bradley_terry, panel
 from .panel_page import render_panel_html
+from .aesthetics import AestheticsScore, AudioboxAesthetics, aesthetics_verdict
 from .fadtk import FadtkFidelity
 from .kadtk import KadtkFidelity
 from .fidelity import (
@@ -139,6 +141,9 @@ __all__ = [
     "kernel_audio_distance",
     "generation_fidelity",
     "FidelityStamp",
+    "AestheticsScore",
+    "AudioboxAesthetics",
+    "aesthetics_verdict",
     "FadtkFidelity",
     "KadtkFidelity",
     "FidelityResult",
