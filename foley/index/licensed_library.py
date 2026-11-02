@@ -162,7 +162,8 @@ def _annotate(report: IngestReport, *, accept_ai_restricted: bool) -> IngestRepo
     blocked = [r for r in report.results if r.status == "rights_blocked"]
     if blocked:
         report.notes.append(
-            f"{len(blocked)} file(s) not embedded: their licence forbids AI training. "
+            f"{len(blocked)} file(s) not admitted (a stored one kept as unknown): their "
+            "licence forbids AI training, and CLAP-embedding counts. "
             "Pass accept_ai_restricted=True to make them searchable (their licence still "
             "refuses any training use)"
         )

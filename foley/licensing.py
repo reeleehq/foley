@@ -1033,7 +1033,8 @@ def wider_rights(record: LicenseRecord, bound: LicenseRecord) -> "list[str]":
     return wider
 
 
-#: The fields that say a stored licence and a fresh one differ (``verified_at`` does not).
+#: The fields that say a stored licence and a fresh one differ besides their rights
+#: (:func:`wider_rights`, either way); ``verified_at`` does not.
 RESTAMP_FIELDS = (
     "license_id",
     "rights_verified",
@@ -1073,13 +1074,19 @@ def restamped_license(
     >>> new is None, note.startswith("not widened")
     (True, True)
     """
-    if all(getattr(stored, f) == getattr(fresh, f) for f in RESTAMP_FIELDS):
+    candidate = carry_lineage(replace(fresh), stored)  # what fresh means for this sound
+    wider, narrower = wider_rights(candidate, stored), wider_rights(stored, candidate)
+    if not (wider or narrower) and all(
+        getattr(stored, f) == getattr(fresh, f) for f in RESTAMP_FIELDS
+    ):
         return None, None
-    change = f"licence {stored.license_id} -> {fresh.license_id}"
-    wider = wider_rights(fresh, stored)
+    was = ", ".join(filter(None, (stored.source, stored.license_url)))
+    change = f"licence {stored.license_id} -> {fresh.license_id} (was from {was})" + (
+        f"; no longer allows {', '.join(narrower)}" if narrower else ""
+    )
     if widen or not stored.rights_verified or not wider:
-        return carry_lineage(replace(fresh), stored), change
-    if not wider_rights(stored, fresh):
+        return candidate, change
+    if not narrower:
         return None, (
             f"not widened: {fresh.license_id} would also allow {', '.join(wider)} over "
             f"the stored {stored.license_id}; to widen it, "

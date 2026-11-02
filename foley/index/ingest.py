@@ -425,7 +425,12 @@ def _ingest_one(
         restamp_duplicate: When the clip is already stored (``skipped_dup``),
             re-stamp the stored record from ``license`` without ever widening it
             (:func:`foley.licensing.restamped_license` with ``widen=False``; its
-            note lands on the result). Default ``False``: a duplicate is left as it is.
+            note lands on the result). The rights gate below holds here too: a new
+            licence that forbids AI use (the clip is already embedded) is applied
+            only with ``allow_ai_training_forbidden``; without it the stored record
+            becomes ``unknown`` (unverified, so :func:`foley.keep` refuses it) and
+            the result ``rights_blocked``, as a fresh ingest would be. Default
+            ``False``: a duplicate is left as it is.
         allow_ai_training_forbidden: The universal fail-closed rights gate. A
             sound whose license has ``ai_training_ok=False`` (e.g. Sonniss,
             BBC RemArc) is refused with status ``'rights_blocked'`` *before* it is
@@ -464,7 +469,11 @@ def _ingest_one(
     if store and sid in lib:
         dup = IngestResult(id=sid, status="skipped_dup")
         if restamp_duplicate and license is not None:
-            _restamp_stored(lib, sid, resolve_ingest_license(license), dup)
+            fresh = resolve_ingest_license(license)
+            consent = allow_ai_training_forbidden
+            _restamp_stored(
+                lib, sid, fresh, dup, consent=consent, commercial=commercial
+            )
         return dup
 
     # Stage 1 — QC gate (report 08 §3)
@@ -492,13 +501,7 @@ def _ingest_one(
     lic = resolve_ingest_license(license, source_url=ref_uri)
     if local_default:
         notes.append(_UNKNOWN_LOCAL_NOTE)
-    ai_ok = ai_use_permitted(
-        lic,
-        open_source_model=bool(getattr(lib.embedder, "open_source", False)),
-        commercial=DEFAULT_INTENDED_USE.commercial
-        if commercial is None
-        else commercial,
-    )
+    ai_ok = _ai_ok(lic, lib, commercial)
     # A local file ingested without a licence is the user's own disk: indexing it for
     # local search is not a use anyone has forbidden, so it proceeds — but keep()
     # refuses it for every use, because its rights are unknown (#55).
@@ -620,10 +623,47 @@ def ingest_one(*args, **kwargs) -> "IngestResult":
         return res
 
 
-def _restamp_stored(lib, sid: str, fresh: LicenseRecord, result: IngestResult) -> None:
-    """Narrow stored ``sid``'s licence to ``fresh`` (never widening); note it on ``result``."""
+def _ai_ok(lic: LicenseRecord, lib, commercial: Optional[bool]) -> bool:
+    """Whether ``lib``'s embedder may use a sound under ``lic`` (the ingest rights gate)."""
+    return ai_use_permitted(
+        lic,
+        open_source_model=bool(getattr(lib.embedder, "open_source", False)),
+        commercial=DEFAULT_INTENDED_USE.commercial
+        if commercial is None
+        else commercial,
+    )
+
+
+#: The licence a stored, embedded clip falls back to when its new licence needs AI
+#: consent that was not given (fail-closed: unverified, so keep() refuses it).
+UNCONSENTED_LICENSE_ID = "unknown"
+
+
+def _restamp_stored(
+    lib,
+    sid: str,
+    fresh: LicenseRecord,
+    result: IngestResult,
+    *,
+    consent: bool,
+    commercial: Optional[bool],
+) -> None:
+    """Re-stamp stored ``sid`` from ``fresh`` (never widening, behind the AI gate); note it."""
     rec = lib.meta[sid]
     new, note = restamped_license(rec.license, fresh, widen=False)
+    if new is not None and not _ai_ok(new, lib, commercial):
+        if not consent:
+            result.status = "rights_blocked"
+            result.notes.append(
+                f"stored record: {fresh.license_id} does not allow AI use here and the "
+                f"clip is embedded; kept as {UNCONSENTED_LICENSE_ID} until you consent "
+                "(accept_ai_restricted=True / allow_ai_training_forbidden=True)"
+            )
+            unchanged = rec.license.license_id == UNCONSENTED_LICENSE_ID
+            new = None if unchanged else _restamped(rec.license, UNCONSENTED_LICENSE_ID)
+            note = None
+        else:
+            result.notes.append(CONSENT_NOTE)
     if new is not None:
         rec.license = new
         lib.update_record(rec)

@@ -348,3 +348,40 @@ def test_cli_ingest_library_errors_cleanly(packs, monkeypatch, capsys, tmp_path)
     assert "no such library folder" in capsys.readouterr().err
     assert cli.main(["ingest-library", str(packs / "packA"), "--root", str(packs / "packB")]) == 2
     assert "not under" in capsys.readouterr().err
+
+
+def test_a_narrowing_under_the_same_licence_id_is_applied(packs, library):
+    rain = packs / "packB" / "rain_loop.wav"
+    ingest_licensed_folder(packs, library=library, **ALL)
+    assert _stored(library, rain).ai_training_ok is True
+    _sidecar(packs / "packB", "CC0-1.0", ai_training=False)
+    report = ingest_licensed_folder(packs, library=library, **ALL)
+    lic = _stored(library, rain)
+    assert (lic.license_id, lic.ai_training_ok) == ("CC0-1.0", False)
+    notes = [n for r in report.skipped for n in r.notes]
+    assert any("no longer allows ai_training_ok" in n for n in notes)
+    assert CONSENT_NOTE in notes  # the embedded clip now needs the consent given
+
+
+def test_a_restamp_that_needs_ai_consent_waits_for_it(packs, library):
+    door = packs / "packA" / "DOORWood_Creak Open_JD_NYC.wav"
+    ingest_folder(packs / "packA", library=library, **QUIET)  # plain ingest: unknown
+    report = ingest_licensed_folder(packs, library=library, **QUIET)  # no consent
+    lic = _stored(library, door)
+    assert (lic.license_id, lic.rights_verified) == ("unknown", False)
+    assert not keep(lic, IntendedUse())
+    blocked = [r for r in report.results if r.status == "rights_blocked"]
+    assert len(blocked) == 2 and all("accept_ai_restricted=True" in r.notes[0] for r in blocked)
+    consented = ingest_licensed_folder(packs, library=library, **ALL)
+    assert _stored(library, door).license_id == "owned-pack"
+    (door_res,) = [r for r in consented.results if r.id == content_id(str(door))]
+    assert door_res.status == "skipped_dup" and CONSENT_NOTE in door_res.notes
+
+
+def test_a_narrowing_to_a_restricted_licence_without_consent_fails_closed(packs, library):
+    rain = packs / "packB" / "rain_loop.wav"
+    ingest_licensed_folder(packs, library=library, **QUIET)  # CC0: no consent needed
+    _sidecar(packs / "packB", "owned-pack")
+    report = ingest_licensed_folder(packs, library=library, **QUIET)
+    assert _stored(library, rain).license_id == "unknown"  # never left CC0
+    assert report.rights_blocked
