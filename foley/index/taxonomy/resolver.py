@@ -20,7 +20,7 @@ from typing import Optional, Protocol, Sequence, runtime_checkable
 
 from .audioset import default_audioset_ucs_map
 from .model import AudioSetUcsMap, CatIdResolution, UcsTable
-from .ucs import default_ucs_table, parse_catid_token, parse_ucs_name
+from .ucs import default_ucs_table, parse_ucs_name
 
 # Coarse per-stage confidence bands.
 _CONF_FILENAME: float = 1.0
@@ -163,7 +163,7 @@ def resolve_catid(
                 subcategory=name.subcategory,
                 source="filename",
                 confidence=_CONF_FILENAME,
-                matched_terms=[parse_catid_token(filename)],
+                matched_terms=[name.catid],
             )
 
     kw = _keyword_stage(tags, caption, table)

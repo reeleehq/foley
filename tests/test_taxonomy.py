@@ -73,6 +73,7 @@ def test_parse_ucs_name_reads_every_block():
     # a dot that is not an extension stays in the name; only the extension goes
     n = parse_ucs_name("DOORWood_Creak 5.1_JD_NYC")
     assert (n.fx_name, n.creator_id, n.source_id) == ("Creak 5.1", "JD", "NYC")
+    assert parse_ucs_name("DOORWood_Creak 5.1").fx_name == "Creak 5.1"  # .1 is no extension
     # a caller with its own vendor convention injects the predicate
     n = parse_ucs_name("DOORWood_Sci-Fi Door_JD_NYC.wav", is_vendor_tag=lambda p: True)
     assert (n.vendor_category, n.fx_name) == ("Sci", "Fi Door")

@@ -76,7 +76,7 @@ ATTACH_SEP = "-"
 
 #: A filename extension: a short alphanumeric suffix (``.wav``, ``.flac``). A dot
 #: anywhere else (``Creak 5.1_JD``) belongs to the name.
-_EXTENSION = re.compile(r"\.[A-Za-z0-9]{1,5}$")
+_EXTENSION = re.compile(r"\.[A-Za-z][A-Za-z0-9]{0,4}$")
 
 
 def looks_like_vendor_tag(prefix: str) -> bool:
