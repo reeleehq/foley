@@ -1,7 +1,7 @@
 """Per-clip PAM quality scores, run in an msclap interpreter — ``foley.eval.Pam`` (#262).
 
 Hermetic tests inject a runner that records the spec and writes an answer; the clip
-windowing of the driver (PAM's ``process_audio``) is tested directly when torch is
+windowing of the shared driver's ``pam`` task (PAM's ``process_audio``) is tested directly when torch is
 importable. The real run needs an interpreter with ``msclap`` installed, named by
 ``$FOLEY_TEST_PAM_PYTHON``; it downloads the 690 MB CLAP 2023 checkpoint once (set
 ``HF_HOME`` to choose where).
@@ -20,7 +20,8 @@ np = pytest.importorskip("numpy")
 pytest.importorskip("soundfile")
 
 from foley.eval import Pam, PamScore  # noqa: E402
-from foley.eval.pam import DRIVER, PAM_PROMPTS, PAM_PYTHON_ENV  # noqa: E402
+from foley.eval.external_toolkit import DRIVER  # noqa: E402
+from foley.eval.pam import PAM_PROMPTS, PAM_PYTHON_ENV  # noqa: E402
 
 SR = 16_000
 
@@ -62,6 +63,7 @@ def test_scores_each_clip_in_order_with_its_stamp():
     )  # fmt: skip
     assert scores[0].to_dict()["pam"] == 0.1 and scores[0].toolkit == "msclap"
     assert run.cmd[:3] == [sys.executable, "-I", str(DRIVER)]
+    assert (run.spec["task"], run.spec["toolkit"]) == ("pam", "msclap")
     assert [Path(c).name for c in run.spec["clips"]] == [
         "clip00001.wav",
         "clip00002.wav",
@@ -121,7 +123,7 @@ def test_a_failed_run_says_what_to_do():
 
 
 def _driver():
-    spec = importlib.util.spec_from_file_location("pam_driver", DRIVER)
+    spec = importlib.util.spec_from_file_location("toolkit_driver", DRIVER)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)  # stdlib only at module level
     return module
@@ -129,7 +131,9 @@ def _driver():
 
 def test_driver_windows_like_pam():
     torch = pytest.importorskip("torch")
-    windows = _driver().windows
+    driver = _driver()
+    assert "pam" in driver.TASKS
+    windows = driver._pam_windows
     short = windows(torch.arange(3.0), 7)  # tiled to one window
     assert short.tolist() == [[0, 1, 2, 0, 1, 2, 0]]
     exact = windows(torch.arange(14.0), 7)  # whole windows only

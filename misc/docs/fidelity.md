@@ -9,7 +9,7 @@ Tier-2 evaluation backends that need more than foley's own environment: referenc
 | `foley.eval.KadtkFidelity` | KAD with kadtk's own models, loading and kernel, comparable with published kadtk numbers | the same driver in a kadtk virtualenv | its own venv (below) | about 90 MB for the default `encodec-emb` |
 | `foley.eval.AudioboxAesthetics` | per clip: content enjoyment (CE), content usefulness (CU), production complexity (PC), production quality (PQ), about 1 to 10 | the same driver in an `audiobox_aesthetics` virtualenv | its own venv (below) | about 415 MB (`facebook/audiobox-aesthetics`) |
 | `foley.agent.AudioLMJudge` | P(yes) that a clip contains the wanted event (AQAScore) | in process | `pip install 'foley[fit]'` | about 15 GB (Qwen2-Audio-7B-Instruct, bf16) on first use |
-| `foley.eval.Pam` | per clip, no reference: PAM, the probability that a clip is "clear and clean" rather than "noisy and with artifacts" (0 to 1) | `python -I pam_driver.py` in an `msclap` virtualenv | its own venv (below) | 690 MB (`microsoft/msclap` `CLAP_weights_2023.pth`) plus 3 MB of GPT-2 tokenizer files |
+| `foley.eval.Pam` | per clip, no reference: PAM, the probability that a clip is "clear and clean" rather than "noisy and with artifacts" (0 to 1) | the same driver (`pam` task) in an `msclap` virtualenv | its own venv (below) | 690 MB (`microsoft/msclap` `CLAP_weights_2023.pth`) plus 3 MB of GPT-2 tokenizer files |
 
 ## Reference FAD with fadtk
 
@@ -124,7 +124,7 @@ The first judgement loads `Qwen/Qwen2-Audio-7B-Instruct` with `dtype="auto"` and
 
 [PAM](https://github.com/soham97/PAM) (Deshmukh et al., "PAM: Prompting Audio-Language Models for Audio Quality Assessment", Interspeech 2024, [arXiv:2402.00282](https://arxiv.org/abs/2402.00282)) scores one clip with no reference set and no task-specific model. It asks Microsoft's CLAP 2023 audio-language model which of two antonym prompts fits the clip better, and the score is the softmax probability of the first: "the sound is clear and clean." against "the sound is noisy and with artifacts." (`PAM_PROMPTS`). It runs from 0 to 1, higher is cleaner.
 
-PAM itself is a research repository (pinned 2023 requirements, no package). Its model and config are the ones the [`msclap`](https://pypi.org/project/msclap/) package ships, so foley installs `msclap` in its own virtualenv (it pins `numpy<2` and brings its own torch, about 1 GB installed) and runs PAM's scoring there, in `foley/eval/pam_driver.py`:
+PAM itself is a research repository (pinned 2023 requirements, no package). Its model and config are the ones the [`msclap`](https://pypi.org/project/msclap/) package ships, so foley installs `msclap` in its own virtualenv (it pins `numpy<2` and brings its own torch, about 1 GB installed) and runs PAM's scoring there as the `pam` task of the shared driver (`foley/eval/toolkit_driver.py`); `Pam` is an `ExternalToolkit` like `AudioboxAesthetics`:
 
 ```bash
 uv venv ~/venvs/pam --python 3.11
@@ -147,6 +147,6 @@ How it scores, as the reference does: each clip is mixed to mono, resampled to 4
 
 One deviation from msclap that does not change the numbers: msclap builds its GPT-2 text encoder with `AutoModel.from_pretrained("gpt2")`, a 548 MB download, then overwrites every one of those weights from the CLAP checkpoint, which carries all of them (`caption_encoder.base.*`, 137M parameters). The driver builds GPT-2 from its config instead and refuses to run if the checkpoint leaves any parameter unset. The first call downloads the checkpoint (690 MB) and GPT-2's tokenizer files (3 MB) into the interpreter's `HF_HOME` (pass `env={"HF_HOME": ...}` to choose where), or `checkpoint=` names a local `CLAP_weights_2023.pth`. `prompts=` takes another pair (the clean one first), which gives a PAM-style score, not PAM's.
 
-`Pam` is an eval-side scorer for any set of clips; it is not wired into `foley.generate`. Recording it on generated clips, the way `generate(aesthetics=)` records Audiobox Aesthetics, is a follow-up once that hook lands, and `Pam` can then share the `ExternalToolkit` base it mirrors (same attribute names and interpreter guards).
+`Pam` is an eval-side scorer for any set of clips; it is not wired into `foley.generate`. It raises rather than storing anything, so no failure text of its own reaches a record. Recording it on generated clips, the way `generate(aesthetics=)` records Audiobox Aesthetics (with the reason passed through `redact_paths`), is a follow-up.
 
 Licences: PAM's code and msclap's are MIT. The CLAP weights are tagged MS-PL (Microsoft Public License) on their Hugging Face repository, `microsoft/msclap`; the GPT-2 tokenizer files are MIT. The scores are metadata about a clip, not part of it, so they do not change the clip's own licence.
