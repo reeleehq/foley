@@ -2,7 +2,7 @@
 
 from foley.base import Anchor, Layer, Placement
 from foley.weave.anchor import (
-    _nearest_word,
+    nearest_word,
     _segment_sentences,
     _snap_to_pause,
     parse_symbolic_anchor,
@@ -77,9 +77,9 @@ def test_segment_sentences_splits_on_gap_and_punct():
 
 
 def test_nearest_word_exact_prefix_fuzzy():
-    assert _nearest_word("door", WT)["word"] == "door"  # exact
-    assert _nearest_word("doors", WT)["word"] == "door"  # prefix/fuzzy
-    assert _nearest_word("zzzzz", WT) is None  # nothing close
+    assert nearest_word("door", WT)["word"] == "door"  # exact
+    assert nearest_word("doors", WT)["word"] == "door"  # prefix/fuzzy
+    assert nearest_word("zzzzz", WT) is None  # nothing close
 
 
 def test_absolute_uses_stored_onset():

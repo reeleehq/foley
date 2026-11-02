@@ -228,6 +228,20 @@ def _cmd_eval_fit(args) -> int:
     return 0
 
 
+def _cmd_eval_taste(args) -> int:
+    """``eval-taste``: the tasteful-weave report (restraint / licence / placement / loudness)."""
+    from .eval.taste import run_taste_eval
+
+    report = run_taste_eval(args.passages)
+    if args.json:
+        import json
+
+        print(json.dumps(report.to_dict(), indent=2))
+    else:
+        print(report.to_markdown())
+    return 0  # report-only (#45): never a gate
+
+
 def _fit_baseline_command(args, report) -> int:
     """``eval-fit --update-baseline`` (re-stamp) or ``--baseline`` (gate against the stamp)."""
     from .eval.baseline import (
@@ -554,6 +568,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="re-stamp the committed fit baseline from this run (a reviewable diff)",
     )
     p_eval_fit.set_defaults(func=_cmd_eval_fit)
+
+    p_eval_taste = sub.add_parser(
+        "eval-taste",
+        help="tasteful-weave eval of foley.score over a passage set (report-only)",
+    )
+    p_eval_taste.add_argument(
+        "--passages", help="a passage-set JSON (default: the shipped set)"
+    )
+    p_eval_taste.add_argument(
+        "--json", action="store_true", help="emit the full TasteReport as JSON"
+    )
+    p_eval_taste.set_defaults(func=_cmd_eval_taste)
 
     p_search = sub.add_parser("search", help="hybrid search of the default library")
     p_search.add_argument("query")
