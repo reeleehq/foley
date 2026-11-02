@@ -210,3 +210,12 @@ def test_a_real_encoder_file_with_injected_chunks(tmp_path):
     raw = f.read_bytes() + _chunk(b"bext", _bext("Tone"))
     f.write_bytes(raw[:4] + struct.pack("<I", len(raw) - 8) + raw[8:])
     assert read_embedded_metadata(f)["caption"] == "Tone"
+
+
+def test_a_utf8_description_cut_at_the_field_width_stays_utf8(tmp_path):
+    """bext Description is 256 bytes: a UTF-8 character cut there must not turn the field into mojibake."""
+    desc = ("a" + "é" * 128).encode()  # 257 bytes: the field's 256 cut the last é in half
+    payload = desc[:256] + b"\0" * (602 - 256)
+    f = tmp_path / "cut.wav"
+    f.write_bytes(_wav(_chunk(b"bext", payload), DATA))
+    assert read_embedded_metadata(f)["caption"] == "a" + "é" * 127

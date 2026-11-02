@@ -248,19 +248,37 @@ def iter_riff_chunks(
 # --------------------------------------------------------------------------------------
 
 
-def _decode_text(data: bytes) -> str:
-    """Strict UTF-8, else Latin-1 (which decodes any bytes)."""
-    try:
-        return data.decode("utf-8")
-    except UnicodeDecodeError:
-        return data.decode("latin-1")
+#: The most bytes a fixed-width field can cut off the end of one UTF-8 character.
+_UTF8_TAIL = 3
+
+
+def _decode_text(data: bytes, *, may_be_cut: bool = False) -> str:
+    """Strict UTF-8, else Latin-1 (which decodes any bytes).
+
+    ``may_be_cut``: the bytes filled their fixed-width field, so a UTF-8 character
+    may have been cut at the end; drop up to :data:`_UTF8_TAIL` bytes before giving up
+    on UTF-8. Off otherwise, since a Latin-1 ``é`` (``0xE9``) also looks like a cut lead.
+
+    >>> _decode_text("café".encode()[:-1], may_be_cut=True), _decode_text("café".encode("latin-1"))
+    ('caf', 'café')
+    """
+    for cut in range(_UTF8_TAIL + 1 if may_be_cut else 1):
+        try:
+            return data[: len(data) - cut].decode("utf-8")
+        except UnicodeDecodeError as exc:
+            if exc.start < len(data) - _UTF8_TAIL:  # not a cut tail: not UTF-8
+                break
+    return data.decode("latin-1")
 
 
 def parse_bext(payload: bytes) -> "dict[str, str]":
     """The text fields of a ``bext`` chunk (NUL-padded; UTF-8 or Latin-1), non-empty only."""
     out, pos = {}, 0
     for name, width in BEXT_FIELDS:
-        text = _decode_text(payload[pos : pos + width].split(b"\0", 1)[0]).strip()
+        field = payload[pos : pos + width]
+        text = _decode_text(
+            field.split(b"\0", 1)[0], may_be_cut=b"\0" not in field
+        ).strip()
         if text:
             out[name] = text
         pos += width
@@ -308,7 +326,9 @@ def read_metadata_chunks(
 ) -> "dict[str, dict[str, str]]":
     """The parsed, non-empty metadata chunks of a WAV (``{"bext": ..., "ixml": ...}``).
 
-    Chunks larger than ``max_chunk_bytes`` are skipped unread.
+    Chunks larger than ``max_chunk_bytes`` are skipped unread. A file that is not a
+    WAV gives ``{}``; one that cannot be opened (missing, a directory, no permission)
+    raises the ``OSError``, so a wrong path is not mistaken for a file without metadata.
     """
     raw = {}
     with open(path, "rb") as f:
