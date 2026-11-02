@@ -131,6 +131,58 @@ def test_the_bed_ducks_under_each_line_and_swells_between():
     np.testing.assert_array_equal(flat, constant)  # duck_db=0: the constant bed
 
 
+def test_a_positive_duck_db_is_refused_before_anything_is_spoken():
+    with pytest.raises(ValueError, match="duck_db"):
+        duck_envelope(np.ones(4), SR, duck_db=6.0)
+
+    def tts(text):
+        raise AssertionError("spoke before checking duck_db")
+
+    with pytest.raises(ValueError, match="duck_db"):
+        foley.broadcast_bed(
+            ["hi"], bed=_crowd(), bed_license=_rights("CC0-1.0"), tts=tts, duck_db=6.0
+        )
+
+
+@pytest.mark.parametrize("loop_speech", [False, True])
+def test_broadcast_bed_ducks_the_bed_under_the_lines(loop_speech):
+    from foley.weave.broadcast import _limit
+    from foley.weave.mix import declick
+
+    lines, bed, gap = [_line(1.0), _line(1.0)], _crowd(2.0), 1.0
+    kw = dict(
+        bed=bed,
+        bed_license=_rights("CC0-1.0"),
+        speech_license=_rights("CC0-1.0"),
+        treatment=None,  # dry, so levels are the mix's
+        gap_s=gap,
+        duration=8.0,  # lines take 4 s: the second half is the loop (or the bed alone)
+        loop_speech=loop_speech,
+        sr=SR,
+    )
+    ducked = foley.broadcast_bed(lines, **kw).audio
+    flat = foley.broadcast_bed(lines, duck_db=0.0, **kw).audio
+    program, _ = mix_program(  # the constant bed, as before #253
+        join_lines(lines, SR, gap_s=gap),
+        bed,
+        SR,
+        duration=8.0,
+        loop_speech=loop_speech,
+    )
+    np.testing.assert_array_equal(flat, _limit(declick(program, SR), SR, -1.0))
+
+    def rms(x, a, b):
+        return float(np.sqrt(np.mean(x[int(a * SR) : int(b * SR)] ** 2)))
+
+    gap_gain_db = 20 * np.log10(rms(ducked, 1.5, 1.9) / rms(flat, 1.5, 1.9))
+    assert 8.0 < gap_gain_db <= 10.0  # up to -duck_db louder between the lines
+    under = rms(ducked - flat, 0.3, 0.9)
+    assert under < 1e-3 * rms(flat, 0.3, 0.9)  # unchanged under a line
+    if loop_speech:  # the looped lines are ducked under too, and swell between
+        assert rms(ducked - flat, 4.3, 4.8) < 1e-3 * rms(flat, 4.3, 4.8)
+        assert rms(ducked, 5.5, 5.8) > 2 * rms(flat, 5.5, 5.8)
+
+
 def test_duck_envelope_settles_without_a_jump_at_the_start():
     env = duck_envelope(np.r_[np.ones(SR), np.zeros(4 * SR)], SR, duck_db=-6.0)
     assert env[0] == pytest.approx(1.0) and env[SR - 1] == pytest.approx(1.0)

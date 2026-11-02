@@ -142,7 +142,9 @@ def attack_release_envelope(
     starting from ``y[-1] = initial``. Within a run of equal targets the follower never
     crosses the target, so ``c`` is fixed for the run and the recurrence has the closed
     form ``y = t + c**k·(y0 - t)``: each run is one vectorised numpy expression, and the
-    Python loop is over runs (a handful per speech span), not samples.
+    Python loop is over runs (a handful per speech span), not samples. It is built for
+    piecewise-constant targets (on/off gates): one numpy call per stretch means a
+    target that changes every sample is slower than a plain per-sample loop.
 
     Args:
         target: ``(n,)`` gain the follower chases (linear; piecewise constant).

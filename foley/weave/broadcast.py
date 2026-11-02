@@ -25,7 +25,9 @@ The pipeline is small pure stages, each its own function:
    :func:`~foley.weave.mix.fit_duration` loop with its equal-power seam), sets the bed
    ``bed_under_speech_db`` below the speech by integrated loudness, and ducks it
    (:func:`duck_envelope`): the bed holds that level while a line is spoken and swells
-   ``-duck_db`` back up between lines (``duck_db=0``: a constant bed).
+   up to ``-duck_db`` back up between lines (a gap shorter than a few release time
+   constants does not reach it: ~9.2 of 10 dB with the defaults; ``duck_db=0``: a
+   constant bed).
 4. **treatment** — the whole program goes through the device (a radio colours the crowd
    it carries as much as the voice): a named :class:`TreatmentPreset` from
    :data:`TREATMENTS` (band-pass -> RMS compressor -> lookahead peak limiter), or any
@@ -584,6 +586,12 @@ def bed_gain_db(
     return min(gain, loudness_component().MAX_GAIN_DB), None
 
 
+def _check_duck_db(duck_db: float) -> None:
+    """Refuse a positive ``duck_db``: it would make the bed quieter between lines."""
+    if duck_db > 0:
+        raise ValueError(f"duck_db must be <= 0 dB (a duck attenuates), got {duck_db}")
+
+
 def duck_envelope(
     activity: "ndarray",
     sample_rate: int,
@@ -592,11 +600,12 @@ def duck_envelope(
     attack: float = DUCK_ATTACK_S,
     release: float = DUCK_RELEASE_S,
 ) -> "ndarray":
-    """The bed's linear gain: ``1`` while speech is active, ``-duck_db`` dB above between.
+    """The bed's linear gain: ``1`` while speech is active, up to ``-duck_db`` dB above between.
 
     ``activity`` above :data:`ACTIVITY_THRESHOLD` counts as speech; the transitions are
     the WEAVE attack/release follower (:func:`~foley.weave.mix.attack_release_envelope`),
-    so the bed dips into each line and swells back after it without clicks.
+    so the bed dips into each line and swells back after it without clicks. A
+    positive ``duck_db`` would invert the effect, so it is refused.
 
     >>> duck_envelope([1.0, 1.0], 10, duck_db=-6.0).tolist()
     [1.0, 1.0]
@@ -605,6 +614,7 @@ def duck_envelope(
 
     from .mix import attack_release_envelope, db_to_lin
 
+    _check_duck_db(duck_db)
     active = np.asarray(activity) > ACTIVITY_THRESHOLD
     target = np.where(active, 1.0, db_to_lin(-duck_db))
     settled = float(target[0]) if target.shape[0] else 1.0  # no swell-in at the start
@@ -622,6 +632,8 @@ def mix_program(
     bed_under_speech_db: float = BED_UNDER_SPEECH_DB,
     activity: "Optional[ndarray]" = None,
     duck_db: float = BED_DUCK_DB,
+    duck_attack_s: float = DUCK_ATTACK_S,
+    duck_release_s: float = DUCK_RELEASE_S,
     loop_speech: bool = True,
     crossfade_s: float = LOOP_CROSSFADE_S,
 ) -> "tuple[ndarray, list[str]]":
@@ -630,8 +642,8 @@ def mix_program(
     The bed always loops (seamless, equal-power seams); the speech loops too when
     ``loop_speech``, else plays once and the bed carries on. When ``activity`` (where
     the speech is spoken, as from :func:`speech_activity`) is given, the bed is ducked
-    (:func:`duck_envelope`): ``bed_under_speech_db`` under each line, ``-duck_db``
-    louder between them; without it, or with ``duck_db=0``, the bed sits at
+    (:func:`duck_envelope`, with ``duck_attack_s`` / ``duck_release_s``):
+    ``bed_under_speech_db`` under each line, up to ``-duck_db`` louder between them; without it, or with ``duck_db=0``, the bed sits at
     ``bed_under_speech_db`` throughout. Returns ``(mono, notes)``.
     """
     from .mix import db_to_lin, fit_duration
@@ -657,7 +669,11 @@ def mix_program(
     bed_gain = db_to_lin(gain)
     if activity is not None and duck_db != 0:
         bed_gain = bed_gain * duck_envelope(
-            fit(activity, loop_speech), sample_rate, duck_db=duck_db
+            fit(activity, loop_speech),
+            sample_rate,
+            duck_db=duck_db,
+            attack=duck_attack_s,
+            release=duck_release_s,
         )
     program = fit(speech, loop_speech) + fit(bed, True) * bed_gain
     return program, [note] if note else []
@@ -770,6 +786,8 @@ def broadcast_bed(
     duration: Optional[float] = None,
     bed_under_speech_db: float = BED_UNDER_SPEECH_DB,
     duck_db: float = BED_DUCK_DB,
+    duck_attack_s: float = DUCK_ATTACK_S,
+    duck_release_s: float = DUCK_RELEASE_S,
     loop_speech: bool = True,
     crossfade_s: float = LOOP_CROSSFADE_S,
     ceiling_db: float = TREATMENT_CEILING_DB,
@@ -806,8 +824,11 @@ def broadcast_bed(
             narrows the gap a little, as a real one would.
         duck_db: How far the bed dips under each line relative to its level between
             lines (dB, negative): the bed sits ``bed_under_speech_db`` under the speech
-            while a line is spoken and swells ``-duck_db`` back up in the gaps.
+            while a line is spoken and swells up to ``-duck_db`` back up in the gaps
+            (short gaps fall short: ~9.2 dB with the defaults). Must be ``<= 0``.
             ``0``: a constant bed (the behaviour before #253).
+        duck_attack_s: Time constant (s) of the bed's dip into each line.
+        duck_release_s: Time constant (s) of the bed's swell after each line.
         loop_speech: Repeat the lines to fill ``duration`` (else they play once).
         crossfade_s: Equal-power crossfade at each loop seam (s).
         ceiling_db: The result's peak ceiling (dBFS), held whatever the treatment
@@ -838,6 +859,7 @@ def broadcast_bed(
 
     sr = WORKING_SAMPLE_RATE if sr is None else sr
     device = resolve_treatment(treatment)
+    _check_duck_db(duck_db)
     _check_lines(lines, tts)
     _check_bed_form(
         bed, bed_prompt, bed_license=bed_license, generate_options=generate_options
@@ -865,6 +887,8 @@ def broadcast_bed(
         bed_under_speech_db=bed_under_speech_db,
         activity=speech_activity(clips, sr, gap_s=gap_s),
         duck_db=duck_db,
+        duck_attack_s=duck_attack_s,
+        duck_release_s=duck_release_s,
         loop_speech=loop_speech,
         crossfade_s=crossfade_s,
     )
